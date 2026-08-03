@@ -1,0 +1,26 @@
+{
+  "name": "@sharedos/testkit",
+  "version": "0.1.0",
+  "description": "In-memory conformance helpers for SharedOS hosts",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.11"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/.tsbuildinfo"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@sharedos/contracts": "workspace:*",
+    "@sharedos/core": "workspace:*"
+  }
+}

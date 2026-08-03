@@ -1,0 +1,25 @@
+{
+  "name": "@sharedos/core",
+  "version": "0.1.0",
+  "description": "Deny-by-default capability kernel for SharedOS",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.11"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/.tsbuildinfo"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@sharedos/contracts": "workspace:*"
+  }
+}

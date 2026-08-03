@@ -1,0 +1,30 @@
+{
+  "name": "@sharedos/http",
+  "version": "0.1.0",
+  "description": "Fetch-compatible HTTP adapter for SharedOS",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.11"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/.tsbuildinfo"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@sharedos/contracts": "workspace:*",
+    "@sharedos/core": "workspace:*",
+    "@sharedos/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@sharedos/client": "workspace:*"
+  }
+}

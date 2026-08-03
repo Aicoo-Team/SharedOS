@@ -1,0 +1,16 @@
+{
+  "name": "@sharedos/example-quickstart",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@sharedos/contracts": "workspace:*",
+    "@sharedos/core": "workspace:*",
+    "@sharedos/os": "workspace:*",
+    "@sharedos/runtime": "workspace:*",
+    "@sharedos/testkit": "workspace:*"
+  }
+}

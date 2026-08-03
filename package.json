@@ -1,0 +1,30 @@
+{
+  "name": "sharedos",
+  "version": "0.0.0",
+  "description": "Permission-controlled agent-to-agent runtime",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "example:quickstart": "pnpm build && pnpm --filter @sharedos/example-quickstart start",
+    "test:watch": "vitest",
+    "check": "pnpm format:check && pnpm typecheck && pnpm test"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.8",
+    "@types/node": "^22.10.2",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

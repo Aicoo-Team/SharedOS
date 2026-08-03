@@ -1,0 +1,100 @@
+import { z } from "zod";
+
+import { AddressSchema } from "./address.js";
+import { IdentifierSchema, TimestampSchema } from "./common.js";
+import { JsonObjectSchema } from "./json.js";
+
+const PathSegmentSchema = z.string().trim().min(1).max(256);
+const ActionSchema = z.string().trim().min(1).max(128);
+const PurposeSchema = z.string().trim().min(1).max(512);
+
+/** A host-independent reference to a resource exposed through SharedOS. */
+export const ResourceRefSchema = z
+  .object({
+    namespace: IdentifierSchema,
+    path: z.array(PathSegmentSchema).max(64),
+    owner: AddressSchema.optional(),
+  })
+  .strict();
+
+export type ResourceRef = z.infer<typeof ResourceRefSchema>;
+
+/** A positive capability. SharedOS is deny-by-default when no grant matches. */
+export const CapabilitySchema = z
+  .object({
+    resource: ResourceRefSchema,
+    actions: z.array(ActionSchema).min(1).max(64),
+    scope: z.enum(["exact", "descendants"]),
+  })
+  .strict();
+
+export type Capability = z.infer<typeof CapabilitySchema>;
+
+export const CapabilityConstraintsSchema = z
+  .object({
+    purposes: z.array(PurposeSchema).min(1).max(64).optional(),
+    notBefore: TimestampSchema.optional(),
+    expiresAt: TimestampSchema.optional(),
+    maxUses: z.number().int().positive().optional(),
+    delegationDepth: z.number().int().nonnegative().optional(),
+  })
+  .strict()
+  .superRefine((constraints, context) => {
+    if (
+      constraints.notBefore !== undefined &&
+      constraints.expiresAt !== undefined &&
+      Date.parse(constraints.notBefore) > Date.parse(constraints.expiresAt)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "notBefore must not be after expiresAt",
+        path: ["notBefore"],
+      });
+    }
+  });
+
+export type CapabilityConstraints = z.infer<typeof CapabilityConstraintsSchema>;
+
+/** A request for authority. A request is not itself proof of authority. */
+export const CapabilityRequestSchema = z
+  .object({
+    id: IdentifierSchema,
+    namespaceId: IdentifierSchema,
+    requester: AddressSchema,
+    owner: AddressSchema,
+    capabilities: z.array(CapabilitySchema).min(1).max(64),
+    purpose: PurposeSchema,
+    constraints: CapabilityConstraintsSchema.optional(),
+    requestedAt: TimestampSchema,
+    metadata: JsonObjectSchema.optional(),
+  })
+  .strict();
+
+export type CapabilityRequest = z.infer<typeof CapabilityRequestSchema>;
+
+/** Authority issued to one subject and bounded by explicit constraints. */
+export const CapabilityGrantSchema = z
+  .object({
+    id: IdentifierSchema,
+    namespaceId: IdentifierSchema,
+    subject: AddressSchema,
+    issuer: AddressSchema,
+    capabilities: z.array(CapabilitySchema).min(1).max(64),
+    constraints: CapabilityConstraintsSchema,
+    issuedAt: TimestampSchema,
+    revokedAt: TimestampSchema.optional(),
+    metadata: JsonObjectSchema.optional(),
+  })
+  .strict();
+
+export type CapabilityGrant = z.infer<typeof CapabilityGrantSchema>;
+
+/** The exact capability a tool invocation requires. */
+export const CapabilityRequirementSchema = z
+  .object({
+    resource: ResourceRefSchema,
+    action: ActionSchema,
+  })
+  .strict();
+
+export type CapabilityRequirement = z.infer<typeof CapabilityRequirementSchema>;
