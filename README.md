@@ -1,8 +1,8 @@
 # SharedOS
 
-SharedOS is a **permission-controlled agent-to-agent runtime**. It lets agents
-communicate, access files, and invoke built-in or external tools without
-allowing a message—or a model—to grant itself authority.
+SharedOS is a **permission-controlled state and delegation runtime for agents**.
+It lets agents communicate, access files, and invoke built-in or external tools
+without allowing a message—or a model—to grant itself authority.
 
 SharedOS is more than a messaging protocol. It provides the reusable execution
 and authorization layer beneath products such as Aicoo and experiment systems
@@ -11,6 +11,51 @@ such as PACT.
 > **Project status:** initial architecture and contracts are under active
 > development. Every workspace package is intentionally private: the `0.x`
 > API is not published or production-ready yet.
+
+## Why SharedOS is more than messaging
+
+Cross-boundary agent requests ultimately target state: facts to retrieve, state
+changes to perform, or understanding to carry into future work. That state has
+two operational forms:
+
+| Access surface   | What it represents                                                                        | SharedOS control                                                  |
+| ---------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Knowledge access | Accumulated understanding such as project context, identity, decisions, plans, and memory | `files` capabilities over explicit paths and actions              |
+| Live tool access | Transient state and external side effects such as calendar, email, APIs, records, and MCP | Tool namespace enablement plus exact resource/action capabilities |
+
+Transient information must be observed at request time. Calendar availability,
+inbox contents, and the current status of an external record remain behind live
+tools because a copied answer can immediately become stale. Accumulated
+understanding is different: it develops across interactions and should remain
+inspectable, searchable, editable, snapshotable, and governable.
+
+SharedOS therefore adopts **file-as-memory** for accumulated understanding.
+Memory is not a second opaque store with separate authority. It is a role over
+authorized files, and agents are expected to distill knowledge into the file
+tree. Memory, workspace, identity, history, and curated knowledge can occupy
+different paths or mounted views, but they retain one file identity and one
+permission model. Derived indexes and context mounts must preserve the grants
+of their source files.
+
+A live tool result becomes durable SharedOS knowledge only when an agent
+distills it into a file. Reading the source tool and creating, replacing, or
+appending that file are separate permission decisions; authority does not
+transfer implicitly between them.
+
+This gives every agent relationship two independently partitionable capability
+sets:
+
+1. **File capabilities:** which accumulated knowledge the other agent may list,
+   search, read, create, replace, append, delete, or snapshot.
+2. **Tool capabilities:** which live systems, accounts, resources, and actions
+   the other agent may use. Tool namespace selection is an additional coarse
+   availability gate, never authority by itself.
+
+A colleague can therefore search one project subtree and read only calendar
+free/busy information without seeing personal knowledge or sending email. A
+different delegate can share the same files while receiving a narrower—or
+broader—tool surface. Messages coordinate the work, but they grant neither kind
+of access.
 
 ## What belongs in SharedOS
 
