@@ -8,9 +8,10 @@ SharedOS never depends on a host product.
 
 - `packages/contracts` contains JSON-safe protocol types and runtime schemas.
 - `packages/core` contains deterministic authorization and dispatch logic.
-- `packages/os` contains standard memory/workspace operations and tool adapters.
+- `packages/os` contains standard `files` operations and tool adapters.
 - `packages/runtime` owns one agent turn, never product or benchmark scheduling.
 - `packages/http` and `packages/client` are adapters over the same core contracts.
+- `packages/sdk` is an ergonomic re-export layer and contains no policy logic.
 - `packages/testkit` may provide in-memory implementations, but production storage
   belongs to the host.
 - Core packages must not import Next.js, Drizzle, Azure, Aicoo billing, or PACT

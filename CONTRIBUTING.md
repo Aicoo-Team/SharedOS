@@ -37,10 +37,11 @@ the test suite. Run it before handing off a change.
 | -------------------- | ------------------------------------------------------------------- |
 | `packages/contracts` | JSON-safe types, schemas, protocol errors and identifiers           |
 | `packages/core`      | Deterministic authorization, routing and dispatch                   |
-| `packages/os`        | Standard memory/workspace schemas and guarded tool adapters         |
+| `packages/os`        | Standard `files` schemas and guarded tool adapters                  |
 | `packages/runtime`   | One bounded agent turn over provider ports                          |
 | `packages/client`    | Typed remote client with no separate policy semantics               |
 | `packages/http`      | HTTP adapter over contracts, core and runtime                       |
+| `packages/sdk`       | Deliberate re-exports only; no independent policy semantics         |
 | `packages/testkit`   | Deterministic fixtures, in-memory providers and conformance helpers |
 | `examples`           | Small, non-production demonstrations                                |
 | `docs/adr`           | Durable architectural decisions and trade-offs                      |

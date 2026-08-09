@@ -327,6 +327,13 @@ export class SharedOSKernel {
     throwIfAborted(options.signal);
     context = structuredClone(context);
     request = structuredClone(request);
+    request = {
+      ...request,
+      resource: {
+        ...request.resource,
+        owner: request.resource.owner ?? context.owner,
+      },
+    };
     const decision = await this.#authorize(
       context,
       { resource: request.resource, action: request.action },

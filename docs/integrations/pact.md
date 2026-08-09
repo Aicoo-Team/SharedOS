@@ -50,14 +50,14 @@ SharedOS provider ports with run-local state for:
 
 - grants and revocations;
 - messages and conversations;
-- memory and workspace resources;
+- files and derived retrieval indexes;
 - registered deterministic tools;
 - audit events and state changes.
 
 The agent and SharedOS runtime must not receive gold labels, evaluator channels,
 hidden expected actions, or another run's namespace. Starting a fresh process is
 not sufficient isolation if both processes still share a database or external
-workspace.
+file plane.
 
 The in-memory implementations in `@sharedos/testkit` can seed early integration
 tests. Official PACT execution should use an explicitly versioned PACT world
@@ -71,7 +71,7 @@ The complete legacy experiment script belongs to PACT, not SharedOS.
 | Behavior                                                    | Owner    |
 | ----------------------------------------------------------- | -------- |
 | Execute one permission-controlled agent turn                | SharedOS |
-| Authorize message, memory, workspace, and tool calls        | SharedOS |
+| Authorize message, file, and tool calls                     | SharedOS |
 | Emit execution, denial, provenance, and state-change events | SharedOS |
 | Choose tick count and agent order                           | PACT     |
 | Apply budgets, retry, resume, and stopping rules            | PACT     |

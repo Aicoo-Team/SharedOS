@@ -11,7 +11,7 @@ describe("testkit", () => {
 
     await expect(
       kernel.authorize(context, {
-        resource: { namespace: "memory", path: ["project-x"] },
+        resource: { namespace: "files", path: ["Workspace", "project-x"] },
         action: "search",
       }),
     ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
@@ -20,7 +20,7 @@ describe("testkit", () => {
   it("builds grants bound to the same namespace as the context", async () => {
     const { kernel } = createTestKernel();
     const capability: Capability = {
-      resource: { namespace: "memory", path: ["project-x"] },
+      resource: { namespace: "files", path: ["Workspace", "project-x"] },
       actions: ["search"],
       scope: "descendants",
     };
@@ -29,7 +29,7 @@ describe("testkit", () => {
 
     await expect(
       kernel.authorize(context, {
-        resource: { namespace: "memory", path: ["project-x", "status"] },
+        resource: { namespace: "files", path: ["Workspace", "project-x", "status.md"] },
         action: "search",
       }),
     ).resolves.toEqual({ allowed: true, reasonCode: "allowed", matchedGrantId: "grant-1" });

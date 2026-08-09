@@ -10,6 +10,7 @@ import {
   MessageEnvelopeSchema,
   RemoteExecutionRequestSchema,
   RemoteResourceOperationSchema,
+  ResourceRefSchema,
   ResourceOperationSchema,
   ToolResultSchema,
   type AccessContext,
@@ -28,8 +29,8 @@ const grant = {
   capabilities: [
     {
       resource: {
-        namespace: "memory",
-        path: ["project-x"],
+        namespace: "files",
+        path: ["Workspace", "project-x"],
         owner,
       },
       actions: ["search", "read"],
@@ -96,6 +97,13 @@ describe("JSON-safe protocol contracts", () => {
     expect(CapabilityGrantSchema.safeParse(invalid).success).toBe(false);
   });
 
+  it.each([["."], [".."], ["project/secret"], ["project\\secret"], ["nul\u0000byte"]])(
+    "rejects unsafe structured path segment %j",
+    (path) => {
+      expect(ResourceRefSchema.safeParse({ namespace: "files", path }).success).toBe(false);
+    },
+  );
+
   it("keeps authority out of message envelopes", () => {
     const message = {
       version: "1",
@@ -144,21 +152,21 @@ describe("JSON-safe protocol contracts", () => {
       id: "message-1",
       sender: owner,
       receiver: actor,
-      intent: "search-memory",
+      intent: "search-files",
       purpose: context.purpose,
       payload: { query: "project status" },
       traceId: context.traceId,
       createdAt: now,
     };
     const tool = {
-      name: "memory.search",
-      description: "Search an authorized memory namespace",
+      name: "files.search",
+      description: "Search an authorized file path",
       inputSchema: {
         type: "object",
         properties: { query: { type: "string" } },
       },
       requiredCapability: {
-        resource: { namespace: "memory", path: ["project-x"], owner },
+        resource: { namespace: "files", path: ["Workspace", "project-x"], owner },
         action: "search",
       },
       annotations: { readOnly: true },
@@ -190,7 +198,7 @@ describe("JSON-safe protocol contracts", () => {
     expect(
       ToolResultSchema.safeParse({
         callId: "call-1",
-        tool: "memory.search",
+        tool: "files.search",
         status: "failed",
         output: [],
         completedAt: now,
@@ -200,7 +208,7 @@ describe("JSON-safe protocol contracts", () => {
     expect(
       ToolResultSchema.safeParse({
         callId: "call-1",
-        tool: "memory.search",
+        tool: "files.search",
         status: "failed",
         error: { code: "provider_unavailable", message: "Try again" },
         completedAt: now,
@@ -212,14 +220,14 @@ describe("JSON-safe protocol contracts", () => {
     expect(
       RemoteResourceOperationSchema.safeParse({
         operationId: "operation-1",
-        resource: { namespace: "memory", path: ["project-x"] },
+        resource: { namespace: "files", path: ["Workspace", "project-x"] },
         action: "read",
       }).success,
     ).toBe(true);
     expect(
       RemoteResourceOperationSchema.safeParse({
         operationId: "operation-1",
-        resource: { namespace: "memory", path: ["project-x"] },
+        resource: { namespace: "files", path: ["Workspace", "project-x"] },
         action: "read",
         context,
       }).success,

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="SharedOS Agent Network Studio — configure runtime coordination and adaptive agent networks."
+    />
+    <title>SharedOS · Agent Network Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@75..125,400..800&amp;family=Noto+Sans+SC:wght@400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" type="module"></script>
+  </head>
+  <body>
+    <div class="app-shell" data-mode="runtime">
+      <header class="topbar">
+        <a class="wordmark" href="#" aria-label="SharedOS home">
+          <span class="wordmark-mark">S/OS</span>
+          <span>NETWORK STUDIO</span>
+        </a>
+        <div class="topbar-meta">
+          <span class="system-light" aria-hidden="true"></span>
+          <span>LOCAL PROTOTYPE</span>
+          <span class="topbar-divider" aria-hidden="true"></span>
+          <button class="quiet-button" type="button" id="save-blueprint">Save blueprint</button>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">AGENT NETWORK / CONFIGURATION 001</p>
+            <h1 id="page-title">Choose how<br />intelligence moves.</h1>
+          </div>
+          <div class="hero-copy">
+            <p>
+              先定义入口，再定义完成。SharedOS 负责一次可信执行；network coordinator
+              决定工作如何流动，以及什么时候真正结束。
+            </p>
+            <div class="hero-index" aria-label="Prototype progress">
+              <span>01</span>
+              <div><i></i></div>
+              <span>03</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="mode-chooser" aria-label="Network type" role="radiogroup">
+          <button
+            class="mode-option is-active"
+            type="button"
+            role="radio"
+            aria-checked="true"
+            data-mode-option="runtime"
+          >
+            <span class="mode-number">01</span>
+            <span class="mode-copy">
+              <strong>Runtime coordination</strong>
+              <small>固定入口 · 运行时路由 · 收敛后返回</small>
+            </span>
+            <span class="mode-symbol" aria-hidden="true">→</span>
+          </button>
+          <button
+            class="mode-option"
+            type="button"
+            role="radio"
+            aria-checked="false"
+            data-mode-option="adaptive"
+          >
+            <span class="mode-number">02</span>
+            <span class="mode-copy">
+              <strong>Adaptive / trainable network</strong>
+              <small>多入口 · 动态拓扑 · 以评测驱动进化</small>
+            </span>
+            <span class="mode-symbol" aria-hidden="true">↗</span>
+          </button>
+        </section>
+
+        <section class="workbench" aria-label="Agent network configuration">
+          <aside class="configuration-panel">
+            <div class="panel-heading">
+              <span>Blueprint</span>
+              <span id="blueprint-kind">FIXED ENTRY</span>
+            </div>
+
+            <label class="field-group" for="objective">
+              <span class="field-label">Objective</span>
+              <textarea id="objective" rows="3">
+研究一个新的 agent benchmark，并输出可以进入榜单前三的执行方案。</textarea>
+            </label>
+
+            <fieldset class="field-group agent-picker">
+              <legend class="field-label">
+                <span id="agent-picker-title">First agent</span>
+                <small id="agent-picker-limit">SELECT 1</small>
+              </legend>
+              <div class="agent-options" id="agent-options">
+                <button class="agent-chip is-selected" type="button" data-agent="Aiko">
+                  <span>AK</span>Aiko / Orchestrator
+                </button>
+                <button class="agent-chip" type="button" data-agent="Scout">
+                  <span>SC</span>Scout / Research
+                </button>
+                <button class="agent-chip" type="button" data-agent="Forge">
+                  <span>FG</span>Forge / Build
+                </button>
+                <button class="agent-chip" type="button" data-agent="Judge">
+                  <span>JG</span>Judge / Evaluate
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset class="field-group completion-picker">
+              <legend class="field-label">Completion policy</legend>
+              <div id="completion-options"></div>
+            </fieldset>
+
+            <details class="advanced-settings">
+              <summary>Runtime limits <span>+</span></summary>
+              <div class="limit-row">
+                <label>Max steps <input type="number" value="40" min="1" /></label>
+                <label>Deadline <input type="text" value="12 min" /></label>
+              </div>
+            </details>
+          </aside>
+
+          <section class="network-panel" aria-labelledby="network-title">
+            <header class="network-header">
+              <div>
+                <p class="eyebrow">LIVE TOPOLOGY / SIMULATED</p>
+                <h2 id="network-title">A fixed lead, elastic execution.</h2>
+              </div>
+              <div class="network-state" id="network-state">
+                <span></span>
+                <strong>DRAFT</strong>
+              </div>
+            </header>
+
+            <div class="network-body">
+              <div class="graph-stage" id="graph-stage">
+                <span class="coordinate coordinate-x">X 204.08</span>
+                <span class="coordinate coordinate-y">Y 037.12</span>
+                <svg class="edges" viewBox="0 0 760 480" aria-hidden="true">
+                  <path class="edge edge-a" d="M120 238 C230 238 245 92 350 92" />
+                  <path class="edge edge-b" d="M120 238 C230 238 245 360 350 360" />
+                  <path class="edge edge-c" d="M350 92 C470 92 470 190 590 190" />
+                  <path class="edge edge-d" d="M350 360 C470 360 470 282 590 282" />
+                  <path class="edge edge-e" d="M590 190 C700 190 700 282 590 282" />
+                  <circle class="edge-pulse pulse-a" cx="0" cy="0" r="5">
+                    <animateMotion
+                      dur="2.8s"
+                      repeatCount="indefinite"
+                      path="M120 238 C230 238 245 92 350 92"
+                    />
+                  </circle>
+                  <circle class="edge-pulse pulse-b" cx="0" cy="0" r="5">
+                    <animateMotion
+                      dur="3.3s"
+                      repeatCount="indefinite"
+                      path="M350 360 C470 360 470 282 590 282"
+                    />
+                  </circle>
+                </svg>
+
+                <button class="agent-node node-root is-active" type="button" data-node="root">
+                  <span class="node-orbit"></span>
+                  <strong id="node-root-name">AIKO</strong>
+                  <small id="node-root-role">FIRST AGENT</small>
+                  <i>01</i>
+                </button>
+                <button class="agent-node node-a" type="button" data-node="a">
+                  <strong id="node-a-name">SCOUT</strong>
+                  <small id="node-a-role">RESEARCH</small>
+                  <i>02</i>
+                </button>
+                <button class="agent-node node-b" type="button" data-node="b">
+                  <strong id="node-b-name">PLANNER</strong>
+                  <small id="node-b-role">DECOMPOSE</small>
+                  <i>03</i>
+                </button>
+                <button class="agent-node node-c" type="button" data-node="c">
+                  <strong id="node-c-name">FORGE</strong>
+                  <small id="node-c-role">EXECUTE</small>
+                  <i>04</i>
+                </button>
+                <button class="agent-node node-d" type="button" data-node="d">
+                  <strong id="node-d-name">JUDGE</strong>
+                  <small id="node-d-role">VERIFY</small>
+                  <i>05</i>
+                </button>
+              </div>
+
+              <aside class="run-ledger" aria-label="Run ledger">
+                <div class="ledger-heading">
+                  <span>Run ledger</span>
+                  <span id="ledger-id">#DRAFT</span>
+                </div>
+                <dl class="run-metrics">
+                  <div>
+                    <dt>Active</dt>
+                    <dd id="metric-active">0</dd>
+                  </div>
+                  <div>
+                    <dt>Delegations</dt>
+                    <dd id="metric-delegations">0</dd>
+                  </div>
+                  <div>
+                    <dt>Score</dt>
+                    <dd id="metric-score">—</dd>
+                  </div>
+                </dl>
+                <div class="event-stream" id="event-stream" aria-live="polite">
+                  <div class="event-row">
+                    <span>00:00</span>
+                    <p>Blueprint ready. Waiting to launch.</p>
+                  </div>
+                </div>
+                <div class="completion-gate">
+                  <div>
+                    <span>Completion gate</span>
+                    <strong id="gate-value">0 / 3</strong>
+                  </div>
+                  <div class="gate-track"><i id="gate-progress"></i></div>
+                  <p id="gate-copy">Root result + network quiescence + budget guard</p>
+                </div>
+              </aside>
+            </div>
+          </section>
+        </section>
+
+        <section class="launch-dock" aria-label="Launch controls">
+          <div class="schema-preview">
+            <span>NETWORK CONTRACT</span>
+            <code id="contract-preview"
+              >{ first_agent: ["Aiko"], completion_policy: [3 rules] }</code
+            >
+          </div>
+          <div class="launch-copy">
+            <span class="system-light"></span>
+            <p><strong>UI simulation only.</strong> No agents or tools will be invoked.</p>
+          </div>
+          <button class="launch-button" id="launch-button" type="button">
+            <span>Run network</span><i aria-hidden="true">→</i>
+          </button>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

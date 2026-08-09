@@ -1,16 +1,16 @@
 {
-  "name": "@sharedos/testkit",
+  "name": "@sharedos/sdk",
   "version": "0.1.0-alpha.0",
-  "description": "In-memory conformance helpers for SharedOS hosts",
+  "description": "Complete SDK entry point for the SharedOS agent runtime",
   "private": true,
   "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Aicoo-Team/SharedOS.git",
-    "directory": "packages/testkit"
+    "directory": "packages/sdk"
   },
-  "type": "module",
-  "sideEffects": false,
   "engines": {
     "node": ">=20.11"
   },
@@ -30,7 +30,11 @@
     }
   },
   "dependencies": {
+    "@sharedos/client": "workspace:*",
     "@sharedos/contracts": "workspace:*",
-    "@sharedos/core": "workspace:*"
+    "@sharedos/core": "workspace:*",
+    "@sharedos/http": "workspace:*",
+    "@sharedos/os": "workspace:*",
+    "@sharedos/runtime": "workspace:*"
   }
 }

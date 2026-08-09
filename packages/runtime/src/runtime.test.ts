@@ -21,11 +21,11 @@ const receiver = { kind: "agent", agentId: "agent-alice" } as const;
 const owner = { kind: "human", userId: "user-alice" } as const;
 
 const tool: ToolDefinition = {
-  name: "memory.search",
+  name: "files.search",
   description: "Authoritative registry definition",
   inputSchema: { type: "object" },
   requiredCapability: {
-    resource: { namespace: "memory", path: [] },
+    resource: { namespace: "files", path: [] },
     action: "search",
   },
 };
@@ -190,7 +190,7 @@ describe("TurnExecutor", () => {
         type: "tool_call",
         call: {
           id: "call-hidden",
-          tool: "workspace.write",
+          tool: "files.delete",
           arguments: { path: ["secret"], content: "changed" },
           traceId: context.traceId,
           requestedAt: now,
@@ -212,7 +212,7 @@ describe("TurnExecutor", () => {
       {
         type: "tool_result",
         result: expect.objectContaining({
-          tool: "workspace.write",
+          tool: "files.delete",
           status: "denied",
           error: expect.objectContaining({ code: "tool_not_available" }),
         }),

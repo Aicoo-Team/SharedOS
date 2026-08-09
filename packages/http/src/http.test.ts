@@ -152,7 +152,7 @@ describe("createSharedOSHandler", () => {
     const handler = createSharedOSHandler({ api, resolveContext: async () => context });
     const operation = {
       operationId: "operation-1",
-      resource: { namespace: "memory", path: ["project-x"] },
+      resource: { namespace: "files", path: ["Workspace", "project-x"] },
       action: "search",
     };
 

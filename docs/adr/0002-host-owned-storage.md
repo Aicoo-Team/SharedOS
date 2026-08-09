@@ -5,16 +5,16 @@
 
 ## Context
 
-Memory, workspace, messages, grants, and audit records need durable storage in a
-product. Aicoo already has a database and embedding infrastructure. PACT needs a
-fresh isolated world for each experiment. Future hosts may use files, SQLite,
-Postgres, a vector store, or a remote data service.
+Files, derived indexes, messages, grants, and audit records need durable storage
+in a product. Aicoo already has a database and embedding infrastructure. PACT
+needs a fresh isolated world for each experiment. Future hosts may use a native
+filesystem, SQLite, Postgres, a vector store, or a remote data service.
 
 If SharedOS embeds one storage technology, its permission model becomes coupled
 to one product and PACT cannot reproduce production execution against an
 isolated world. If storage semantics are entirely left to hosts, however, hosts
-can accidentally bypass authorization or disagree about what a memory or
-workspace operation means.
+can accidentally bypass authorization or disagree about what a file operation
+means.
 
 ## Decision
 
@@ -24,11 +24,12 @@ implements the providers.
 
 In particular:
 
-- Memory capability semantics belong to SharedOS.
-- Memory records, embeddings, retention, deletion, and databases belong to the
-  host.
-- Workspace operations and permission checks belong to SharedOS.
-- Notes, files, folders, and sandbox state belong to the host.
+- File capability semantics and portable operations belong to SharedOS.
+- Notes, folders, file content, retention, deletion, and databases belong to
+  the host.
+- Memory and workspace are file roles, roots, indexes, or mounted views; their
+  storage and indexing belong to the host while their source-file authority is
+  preserved by SharedOS.
 - Tool registration and invocation gates belong to SharedOS.
 - OAuth credentials, MCP sessions, and concrete connectors belong to the host.
 
@@ -59,5 +60,7 @@ They are not a recommended production data layer.
 migration and couple the core to a persistence stack.
 
 **Opaque host tools for every resource.** Rejected because it would discard
-portable memory and workspace semantics and make permission enforcement
-inconsistent.
+portable file semantics and make permission enforcement inconsistent.
+
+ADR 0005 later tightened the standard resource plane to the canonical `files`
+namespace. That refinement preserves this ADR's host-owned-storage boundary.

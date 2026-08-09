@@ -9,10 +9,6 @@ npm release or a production security boundary. Every leaf package remains
 - Choose and add a repository license; propagate it into every package archive.
 - Verify Aicoo-Team ownership of the `@sharedos` npm scope and configure trusted
   publishing/provenance.
-- Add a pnpm-only clean build and pack smoke test. It must reject `workspace:*`
-  in archives and install all packages in a fresh consumer project.
-- Add package-level READMEs and decide whether archives include sources, inline
-  source maps, or no source maps.
 - Enable and verify a real private vulnerability-reporting channel.
 - Align PACT's Node.js floor with SharedOS (`>=20.11`) before integration.
 
@@ -44,5 +40,8 @@ npm release or a production security boundary. Every leaf package remains
 - Sanitized model context without grants or issuing authority.
 - Bounded one-turn execution with cooperative cancellation and bounded cleanup.
 - Runtime-validated HTTP client responses and shared wire schemas.
+- Canonical resource path segments and explicit provider-facing owners.
+- Package-level READMEs, distributable source and source maps, exact packed
+  dependency versions, and a fresh-consumer runtime/type smoke test.
 - Private packages, Node 20/22 CI, type checks, tests, build, and executable
   sender-to-receiver quickstart.

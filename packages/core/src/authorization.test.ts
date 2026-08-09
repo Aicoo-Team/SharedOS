@@ -14,14 +14,14 @@ const ACTOR = { kind: "agent", agentId: "agent-bob" } as const;
 const AUTHORITY = { kind: "human", userId: "user-alice" } as const;
 const OWNER = { kind: "human", userId: "user-alice" } as const;
 const RESOURCE: ResourceRef = {
-  namespace: "memory",
-  path: ["projects", "sharedos"],
+  namespace: "files",
+  path: ["Workspace", "projects", "sharedos"],
   owner: OWNER,
 };
 
 function grant(overrides: Partial<CapabilityGrant> = {}): CapabilityGrant {
   return {
-    id: "grant-memory-read",
+    id: "grant-files-read",
     namespaceId: "world-alpha",
     subject: ACTOR,
     issuer: AUTHORITY,
@@ -57,7 +57,7 @@ describe("CapabilityAuthorizer", () => {
     await expect(authorizer.authorize(context([grant()]), request)).resolves.toEqual({
       allowed: true,
       reasonCode: "allowed",
-      matchedGrantId: "grant-memory-read",
+      matchedGrantId: "grant-files-read",
     });
   });
 
@@ -102,8 +102,8 @@ describe("CapabilityAuthorizer", () => {
       capabilities: [
         {
           resource: {
-            namespace: "workspace",
-            path: ["projects", "sharedos"],
+            namespace: "files",
+            path: ["Workspace", "projects", "sharedos"],
           },
           actions: ["grep"],
           scope: "descendants",
@@ -116,8 +116,8 @@ describe("CapabilityAuthorizer", () => {
     await expect(
       authorizer.authorize(access, {
         resource: {
-          namespace: "workspace",
-          path: ["projects", "sharedos", "README.md"],
+          namespace: "files",
+          path: ["Workspace", "projects", "sharedos", "README.md"],
         },
         action: "grep",
       }),
@@ -126,8 +126,8 @@ describe("CapabilityAuthorizer", () => {
     await expect(
       authorizer.authorize(access, {
         resource: {
-          namespace: "workspace",
-          path: ["projects", "sharedos-evil", "README.md"],
+          namespace: "files",
+          path: ["Workspace", "projects", "sharedos-evil", "README.md"],
         },
         action: "grep",
       }),

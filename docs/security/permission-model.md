@@ -43,10 +43,11 @@ A capability binds these fields together:
 - one or more actions;
 - exact or descendant scope.
 
-Canonical resource namespaces include `memory`, `workspace`,
-`sharedos.messaging`, `sharedos.execution`, and host-registered external tool
-namespaces. Paths identify the smallest stable resource scope, such as
-`project-x`, a specific folder, or a structured recipient address.
+Canonical resource namespaces include `files`, `sharedos.messaging`,
+`sharedos.execution`, and host-registered external tool namespaces. A file path
+identifies the smallest stable resource scope, such as
+`["Memory", "project-x"]`, `["Workspace", "public", "summary.md"]`, or a
+single file. Messaging uses a structured recipient address instead.
 
 The execution namespace/world is a separate isolation boundary and must be
 bound to every resolution. A resource identifier from one world cannot resolve
@@ -103,21 +104,22 @@ Independent grant fields must not be unioned into a new synthetic authority.
 Suppose one grant allows:
 
 ```text
-memory/project-x: search, read
+files/Memory/project-x: search, read
 purpose: prepare-update
 ```
 
 and another allows:
 
 ```text
-workspace/public: write
+files/Workspace/public/summary.md: replace
 purpose: publish-summary
 ```
 
-They do not combine into permission to write `memory/project-x`, nor to write
-for `prepare-update`. The full requested tuple must match a complete capability
-under a compatible grant. A set of valid grants may provide a union of complete
-authorities, never a cross-product of their individual fields.
+They do not combine into permission to replace a file under
+`files/Memory/project-x`, nor to replace a file for `prepare-update`. The full
+requested tuple must match a complete capability under a compatible grant. A
+set of valid grants may provide a union of complete authorities, never a
+cross-product of their individual fields.
 
 ### Path scope
 
@@ -158,7 +160,7 @@ time, and provenance. It intentionally contains no grants.
 
 Sending or receiving a message and performing the requested work are separate
 authorization decisions. A recipient may accept the message yet be denied
-access to the memory or tool named inside it. Replying can also require its own
+access to the file or tool named inside it. Replying can also require its own
 `sharedos.messaging` + `send` capability. Opening a target agent turn requires a
 separate recipient-scoped `sharedos.execution` + `invoke` capability.
 
@@ -181,10 +183,10 @@ External and MCP tools follow the same gates as built-in OS capabilities. The
 host additionally protects credentials, validates destinations, and prevents a
 connector from escaping its configured account or tenant.
 
-## Memory and workspace
+## Files, indexes, and memory views
 
-Memory and workspace providers receive an already authorized context plus the
-exact operation. They must:
+The file provider receives an already authorized context plus the exact
+operation. It must:
 
 - resolve only within the bound namespace/world and owner;
 - return only the fields authorized by the operation;
@@ -194,9 +196,12 @@ exact operation. They must:
 - report actual affected resource identifiers for audit;
 - treat stored content as untrusted data, not policy instructions.
 
-Search indexes and embeddings are part of the same isolation boundary as source
-records. A filtered final result does not make a cross-tenant search safe if the
-search itself leaked ranking, counts, timing, or embeddings.
+Memory, workspace, raw material, and wiki content are file paths or mounted
+views over the same file plane; they are not independent stores of authority.
+Search indexes and embeddings are derived from files and remain inside the same
+isolation boundary as their sources. A filtered final result does not make a
+cross-tenant search safe if the search itself leaked ranking, counts, timing,
+or embeddings.
 
 ## Time, revocation, and bounded use
 

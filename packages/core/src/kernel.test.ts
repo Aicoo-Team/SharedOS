@@ -52,16 +52,16 @@ function context(grants: CapabilityGrant[]): AccessContext {
   };
 }
 
-const MEMORY_RESOURCE: ResourceRef = {
-  namespace: "memory",
-  path: ["project-sharedos"],
+const FILE_RESOURCE: ResourceRef = {
+  namespace: "files",
+  path: ["Workspace", "project-sharedos"],
 };
 
-const MEMORY_TOOL: ToolDefinition = {
-  name: "memory.search",
-  description: "Search memory visible to the current agent",
+const FILE_TOOL: ToolDefinition = {
+  name: "files.search",
+  description: "Search files visible to the current agent",
   inputSchema: { type: "object" },
-  requiredCapability: { resource: MEMORY_RESOURCE, action: "search" },
+  requiredCapability: { resource: FILE_RESOURCE, action: "search" },
   annotations: { readOnly: true },
 };
 
@@ -79,7 +79,7 @@ const CALENDAR_TOOL: ToolDefinition = {
 function toolCall(overrides: Partial<ToolCall> = {}): ToolCall {
   return {
     id: "call-1",
-    tool: MEMORY_TOOL.name,
+    tool: FILE_TOOL.name,
     arguments: { query: "architecture" },
     traceId: "trace-1",
     requestedAt: NOW,
@@ -87,7 +87,7 @@ function toolCall(overrides: Partial<ToolCall> = {}): ToolCall {
   };
 }
 
-function successfulTool(definition = MEMORY_TOOL): ToolHandler {
+function successfulTool(definition = FILE_TOOL): ToolHandler {
   return {
     definition,
     parseArguments: (arguments_) => arguments_,
@@ -110,17 +110,15 @@ describe("SharedOSKernel tools", () => {
       authorizer: new CapabilityAuthorizer({ usageStore: new InMemoryGrantUsageStore() }),
     });
     kernel.registerTool({
-      definition: MEMORY_TOOL,
+      definition: FILE_TOOL,
       parseArguments: (arguments_) => arguments_,
       invoke,
     });
     kernel.registerTool(successfulTool(CALENDAR_TOOL));
-    const access = context([
-      grant("grant-search-once", MEMORY_RESOURCE, ["search"], { maxUses: 1 }),
-    ]);
+    const access = context([grant("grant-search-once", FILE_RESOURCE, ["search"], { maxUses: 1 })]);
 
-    await expect(kernel.listTools(access)).resolves.toEqual([MEMORY_TOOL]);
-    await expect(kernel.listTools(access)).resolves.toEqual([MEMORY_TOOL]);
+    await expect(kernel.listTools(access)).resolves.toEqual([FILE_TOOL]);
+    await expect(kernel.listTools(access)).resolves.toEqual([FILE_TOOL]);
 
     await expect(kernel.invokeTool(access, toolCall())).resolves.toMatchObject({
       status: "succeeded",
@@ -138,11 +136,11 @@ describe("SharedOSKernel tools", () => {
       authorizer: new CapabilityAuthorizer({ usageStore: new InMemoryGrantUsageStore() }),
     });
     kernel.registerTool({
-      definition: MEMORY_TOOL,
+      definition: FILE_TOOL,
       parseArguments: (arguments_) => arguments_,
       invoke,
     });
-    const access = context([grant("grant-search", MEMORY_RESOURCE, ["search"], { maxUses: 1 })]);
+    const access = context([grant("grant-search", FILE_RESOURCE, ["search"], { maxUses: 1 })]);
 
     await expect(
       kernel.invokeTool(access, toolCall({ traceId: "trace-other" })),
@@ -158,11 +156,11 @@ describe("SharedOSKernel tools", () => {
 
   it("discovers a generic OS tool from a narrow grant and gates its exact arguments", async () => {
     const dynamicTool: ToolDefinition = {
-      name: "memory.read",
-      description: "Read one selected memory namespace",
+      name: "files.read",
+      description: "Read one selected file path",
       inputSchema: { type: "object" },
       requiredCapability: {
-        resource: { namespace: "memory", path: [] },
+        resource: { namespace: "files", path: [] },
         action: "read",
       },
     };
@@ -183,14 +181,14 @@ describe("SharedOSKernel tools", () => {
           throw new TypeError("project is required");
         }
         return {
-          resource: { namespace: "memory", path: [project] },
+          resource: { namespace: "files", path: ["Workspace", project] },
           action: "read",
         };
       },
       invoke,
     });
     const access = context([
-      grant("grant-project-x", { namespace: "memory", path: ["project-x"] }, ["read"]),
+      grant("grant-project-x", { namespace: "files", path: ["Workspace", "project-x"] }, ["read"]),
     ]);
 
     await expect(kernel.listTools(access)).resolves.toEqual([dynamicTool]);
@@ -199,7 +197,7 @@ describe("SharedOSKernel tools", () => {
         access,
         toolCall({
           id: "read-x",
-          tool: "memory.read",
+          tool: "files.read",
           arguments: { project: "project-x" },
         }),
       ),
@@ -209,7 +207,7 @@ describe("SharedOSKernel tools", () => {
         access,
         toolCall({
           id: "read-y",
-          tool: "memory.read",
+          tool: "files.read",
           arguments: { project: "project-y" },
         }),
       ),
@@ -224,7 +222,7 @@ describe("SharedOSKernel tools", () => {
     const invoke = vi.fn(successfulTool().invoke);
     const kernel = new SharedOSKernel();
     kernel.registerTool({
-      definition: MEMORY_TOOL,
+      definition: FILE_TOOL,
       parseArguments: (arguments_) => arguments_,
       resolveRequirement() {
         return {
@@ -235,7 +233,7 @@ describe("SharedOSKernel tools", () => {
       invoke,
     });
     const access = context([
-      grant("grant-memory-discovery", MEMORY_RESOURCE, ["search"]),
+      grant("grant-files-discovery", FILE_RESOURCE, ["search"]),
       grant("grant-calendar", { namespace: "calendar", path: ["primary"] }, ["create"]),
     ]);
 
@@ -249,13 +247,13 @@ describe("SharedOSKernel tools", () => {
   it("does not expose provider exceptions or invalid protocol responses", async () => {
     const kernel = new SharedOSKernel();
     kernel.registerTool({
-      definition: MEMORY_TOOL,
+      definition: FILE_TOOL,
       parseArguments: (arguments_) => arguments_,
       async invoke() {
         throw new Error("secret provider credential");
       },
     });
-    const access = context([grant("grant-search", MEMORY_RESOURCE, ["search"])]);
+    const access = context([grant("grant-search", FILE_RESOURCE, ["search"])]);
 
     const result = await kernel.invokeTool(access, toolCall());
     expect(result).toMatchObject({
@@ -269,7 +267,7 @@ describe("SharedOSKernel tools", () => {
     const invoke = vi.fn(successfulTool().invoke);
     const kernel = new SharedOSKernel();
     kernel.registerTool({
-      definition: MEMORY_TOOL,
+      definition: FILE_TOOL,
       parseArguments(arguments_) {
         if (typeof arguments_["query"] !== "string") {
           throw new TypeError("query is required");
@@ -278,7 +276,7 @@ describe("SharedOSKernel tools", () => {
       },
       invoke,
     });
-    const access = context([grant("grant-search", MEMORY_RESOURCE, ["search"])]);
+    const access = context([grant("grant-search", FILE_RESOURCE, ["search"])]);
 
     await expect(
       kernel.invokeTool(access, toolCall({ arguments: { query: 42 } })),
@@ -356,10 +354,10 @@ describe("SharedOSKernel resources", () => {
       completedAt: NOW,
     }));
     const kernel = new SharedOSKernel();
-    kernel.registerResourceProvider({ namespace: "workspace", invoke });
+    kernel.registerResourceProvider({ namespace: "files", invoke });
     const request: ResourceInvocationRequest = {
       operationId: "operation-1",
-      resource: { namespace: "workspace", path: ["project", "README.md"] },
+      resource: { namespace: "files", path: ["Workspace", "project", "README.md"] },
       action: "grep",
       input: { pattern: "SharedOS" },
     };
@@ -377,12 +375,13 @@ describe("SharedOSKernel resources", () => {
     });
     expect(invoke).toHaveBeenCalledTimes(1);
     expect(invoke.mock.calls[0]?.[0].context).toEqual(access);
+    expect(invoke.mock.calls[0]?.[0].resource.owner).toEqual(OWNER);
   });
 
   it("rejects duplicate resource and tool registrations", () => {
     const kernel = new SharedOSKernel();
     const provider: ResourceProvider = {
-      namespace: "memory",
+      namespace: "files",
       async invoke(operation) {
         return {
           operationId: operation.operationId,
@@ -481,7 +480,7 @@ describe("SharedOSKernel messaging and audit", () => {
     };
     const kernel = new SharedOSKernel({ audit });
     kernel.registerTool(successfulTool());
-    const access = context([grant("grant-search", MEMORY_RESOURCE, ["search"])]);
+    const access = context([grant("grant-search", FILE_RESOURCE, ["search"])]);
 
     await kernel.invokeTool(access, toolCall());
 
@@ -513,13 +512,13 @@ describe("SharedOSKernel messaging and audit", () => {
     const invoke = vi.fn(successfulTool().invoke);
     const kernel = new SharedOSKernel({ audit, onAuditError });
     kernel.registerTool({
-      definition: MEMORY_TOOL,
+      definition: FILE_TOOL,
       parseArguments: (arguments_) => arguments_,
       invoke,
     });
 
     await expect(
-      kernel.invokeTool(context([grant("grant-search", MEMORY_RESOURCE, ["search"])]), toolCall()),
+      kernel.invokeTool(context([grant("grant-search", FILE_RESOURCE, ["search"])]), toolCall()),
     ).resolves.toMatchObject({ status: "succeeded" });
     expect(invoke).toHaveBeenCalledOnce();
     expect(onAuditError).toHaveBeenCalledOnce();

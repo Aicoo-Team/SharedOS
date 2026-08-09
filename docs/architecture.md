@@ -3,8 +3,8 @@
 ## Definition
 
 SharedOS is a host-neutral, permission-controlled runtime for agent-to-agent
-delegation. A delegation can include communication, access to memory or
-workspace resources, and invocation of built-in or external tools.
+delegation. A delegation can include communication, access to files, and
+invocation of built-in or external tools.
 
 The central rule is:
 
@@ -21,8 +21,8 @@ or rejects it.
 | Identity    | Structured human, agent, group, and service addresses              | Account login, sessions, identity proofing                     |
 | Permissions | Grant semantics, evaluation, revocation behavior, decision records | Grant persistence, consent UI, organizational policy ceiling   |
 | Messaging   | Envelopes, routing, dispatch, provenance                           | Product inbox, notifications, retention UX                     |
-| Memory      | Capability names, query contracts, authorization, context mounting | Records, database, embeddings, tenancy, deletion               |
-| Workspace   | Read/search/grep/write semantics and authorization                 | Files, notes, folders, sandbox or database implementation      |
+| Files       | Paths, operations, authorization, result and audit contracts       | Notes, folders, storage, indexes, embeddings and deletion      |
+| Memory      | Rule that mounted/indexed context retains source file authority    | Selection, compaction, ranking and context assembly            |
 | Tools       | Registry contracts, permission-filtered discovery, invocation gate | OAuth, secrets, MCP connections, concrete tool implementations |
 | Execution   | One bounded agent turn and its event stream                        | Model provider configuration and product policy                |
 | Audit       | Audit event shape and required provenance                          | Durable append-only storage, export and retention              |
@@ -45,6 +45,12 @@ flowchart TD
   HT --> CO
   HT --> CT
   CL["@sharedos/client"] --> CT
+  SDK["@sharedos/sdk"] --> CT
+  SDK --> CO
+  SDK --> OS
+  SDK --> RT
+  SDK --> HT
+  SDK --> CL
   TK["@sharedos/testkit"] --> CO
   TK --> CT
 ```
@@ -70,17 +76,17 @@ provider ports.
 
 ### `@sharedos/runtime`
 
-Coordinates one bounded agent turn. It uses provider ports for state, memory,
-workspace, tools, the responding agent, and audit persistence. Runtime owns the
+Coordinates one bounded agent turn. It uses provider ports for files, tools,
+the responding agent, and audit persistence. Runtime owns the
 order of security checks but not the host's data implementation.
 
 ### `@sharedos/os`
 
-Defines the portable memory and workspace vocabulary—including read, search,
-grep, append, write, and snapshot operations—and adapts those resources into
-permission-controlled agent tools. Hosts provide the storage implementation;
-the package provides schemas, exact per-call capability resolution, and stable
-tool definitions.
+Defines the portable `files` vocabulary—including list, stat, read, search,
+grep, create, replace, append, delete, and snapshot operations—and adapts those
+resources into permission-controlled agent tools. Hosts provide the storage
+implementation; the package provides schemas, exact per-call capability
+resolution, and stable tool definitions.
 
 ### Adapters
 
@@ -90,6 +96,10 @@ must not develop a second authorization model.
 
 `@sharedos/testkit` supplies deterministic in-memory providers and conformance
 fixtures. It is intended for unit tests and examples, not production storage.
+
+`@sharedos/sdk` is an ergonomic distribution layer that re-exports the
+production packages from one install. It contains no policy, storage, or
+transport logic and does not change the dependency direction.
 
 ## Domain model
 
@@ -135,17 +145,23 @@ SharedOS defines operations, authorization hooks, cancellation, and result
 shapes. Hosts implement the exported `ResourceProvider` port, for example:
 
 ```ts
-const memory: ResourceProvider = {
-  namespace: "memory",
+const files: ResourceProvider = {
+  namespace: "files",
   async invoke(operation, signal) {
     signal.throwIfAborted();
-    return searchHostMemory(operation);
+    return invokeHostFileOperation(operation);
   },
 };
 ```
 
-An Aicoo provider can use Postgres and an embedding service. A PACT provider can
-use an isolated in-memory world. The runtime sees only the provider contract.
+An Aicoo provider can map notes and folders to files while using its search
+index for `files.search`. A PACT provider can use an isolated in-memory world.
+The runtime sees only the provider contract.
+
+Memory, active work, raw evidence, and curated knowledge may be represented as
+different file roots. Indexes and context mounts are derived views: they must
+preserve the grants of their source files and cannot introduce a second
+resource identity.
 
 ### Built-in and external capabilities
 
@@ -154,10 +170,9 @@ names such as:
 
 - `sharedos.execution` + `invoke`, scoped to a target agent
 - `sharedos.messaging` + `send`, scoped to a recipient
-- `memory.search`, `memory.read`, `memory.append`
-- `workspace.list`, `workspace.read`, `workspace.search`, `workspace.grep`
-- `workspace.write`
-- `workspace.snapshot.create`, `workspace.snapshot.restore`
+- `files.list`, `files.stat`, `files.read`, `files.search`, `files.grep`
+- `files.create`, `files.replace`, `files.append`, `files.delete`
+- `files.snapshot.create`, `files.snapshot.list`, `files.snapshot.restore`
 
 External capabilities—calendar, email, GitHub, Notion, MCP servers, and similar
 connectors—are registered by a host. Both categories appear in one filtered
