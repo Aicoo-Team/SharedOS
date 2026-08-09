@@ -166,12 +166,20 @@ separate recipient-scoped `sharedos.execution` + `invoke` capability.
 
 ## Tools and MCP
 
-Tool security uses two gates:
+Tool usability requires three independent facts:
 
-1. **Discovery:** return only definitions whose required capability the actor
-   can currently exercise. Discovery does not consume `maxUses`.
-2. **Invocation:** authorize the exact registered definition and resource again
-   immediately before execution. Invocation atomically consumes a bounded use.
+1. the trusted registry or context-specific provider registered the tool;
+2. the trusted access context enables the tool's logical namespace;
+3. an active capability grant covers the required resource and action.
+
+The kernel enforces them in two phases:
+
+1. **Discovery:** return only definitions in enabled namespaces whose required
+   capability the actor can currently exercise. Discovery does not consume
+   `maxUses`.
+2. **Invocation:** recheck namespace enablement and authorize the exact
+   registered definition and resource immediately before execution. Invocation
+   atomically consumes a bounded use.
 
 Never trust a model-supplied tool name, required capability, annotations, or
 schema. Resolve the definition from the host registry, reject ambiguity, validate
@@ -179,9 +187,28 @@ arguments with the handler's mandatory runtime parser, then authorize and invoke
 the same immutable parsed call. A read-only annotation is descriptive metadata
 and cannot replace the capability action.
 
+Likewise, a tool's `namespace`, `source`, and `readWrite` fields are catalog
+metadata, not authority. Enabling `calendar` only makes qualifying calendar
+tools eligible for discovery; it does not grant read, create, update, or delete
+access to any calendar or event.
+
+Namespace settings come from the authenticated host, never from model output.
+An empty effective selection means all namespaces are disabled. Standard
+updates are idempotent enable/disable patches applied atomically by a host-owned
+settings store. The host may narrow the returned selection according to product
+or organization policy and must load that authoritative selection into future
+access contexts.
+
+The full namespace catalog is management-plane metadata. Hosts expose it only
+to an authenticated principal allowed to manage that selection and must not add
+disabled connector metadata to the model's turn context. The runtime gives the
+model only `listTools` output after namespace and capability filtering.
+
 External and MCP tools follow the same gates as built-in OS capabilities. The
 host additionally protects credentials, validates destinations, and prevents a
-connector from escaping its configured account or tenant.
+connector from escaping its configured account or tenant. Dynamic tools are
+resolved for one access context and must not be installed by mutating a
+process-global registry shared across users.
 
 ## Files, indexes, and memory views
 

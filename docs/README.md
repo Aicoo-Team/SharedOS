@@ -13,6 +13,8 @@
 ## Host integrations
 
 - [Aicoo](integrations/aicoo.md): embedded adoption and provider migration.
+- [Pulse migration](integrations/pulse-migration.md): concrete files, tools, and
+  one-turn cutover plan.
 - [PACT](integrations/pact.md): isolated worlds, execution adapters, and the
   experiment scheduler boundary.
 
@@ -21,6 +23,9 @@
 - [ADR 0001: Library-first runtime](adr/0001-library-first-runtime.md)
 - [ADR 0002: Host-owned storage](adr/0002-host-owned-storage.md)
 - [ADR 0003: Scheduler boundary](adr/0003-scheduler-boundary.md)
+- [ADR 0004: Canonical resource path segments](adr/0004-canonical-resource-path-segments.md)
+- [ADR 0005: Files are the canonical resource plane](adr/0005-files-resource-plane.md)
+- [ADR 0006: Tool namespace control plane](adr/0006-tool-namespace-control-plane.md)
 
 ## Project governance
 

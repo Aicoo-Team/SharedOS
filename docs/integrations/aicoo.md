@@ -32,6 +32,8 @@ semantic role, and retrieval view over files.
 | Note/folder hierarchy         | Host implementation of `ResourceProvider`            |
 | Memory embeddings and loaders | Derived index/view that preserves source-file grants |
 | Notes management tools        | Standard `files.*` tools                             |
+| Tool namespace preferences    | Host store behind SharedOS namespace control port    |
+| Per-user MCP tool catalog     | SharedOS context-specific tool provider              |
 | Agent permission rows         | Host ceiling plus trusted capability grants          |
 | Agent v04 response path       | Host driver around one SharedOS turn                 |
 | Heartbeats and recurring work | Pulse-owned scheduling outside one-turn runtime      |
@@ -44,11 +46,13 @@ host metadata; they do not replace the capability path.
 
 Pulse keeps authentication, sessions, billing, quotas, Next.js routes, Drizzle
 schemas, Postgres transactions, embeddings, OAuth credentials, MCP connections,
-conversation persistence, heartbeats, retries, and user-facing consent.
+tool namespace setting rows, conversation persistence, heartbeats, retries, and
+user-facing consent.
 
 SharedOS owns the portable operation names, complete capability matching,
-permission-filtered tool discovery, invocation re-authorization, message and
-execution contracts, one-turn ordering, and audit event shape.
+tool namespace catalog/update semantics, permission-filtered discovery,
+invocation re-authorization, message and execution contracts, one-turn
+ordering, and audit event shape.
 
 Search indexes, snippets, counts, and embeddings must be filtered by authorized
 file scope inside the query. Filtering only the final matches is insufficient.
@@ -62,8 +66,10 @@ database or copying `/api/v1/os` into this repository:
 2. Translate existing agent permissions into a host ceiling and trusted grants.
 3. Run SharedOS authorization in shadow mode and compare decisions.
 4. Route file reads/search through SharedOS, then file mutations.
-5. Put the agent-v04 and shared-agent execution paths behind one SharedOS turn.
-6. Converge network messaging and tool dispatch after file parity is proven.
+5. Move native and per-user MCP tools behind the SharedOS namespace control
+   plane and capability gate.
+6. Put the agent-v04 and shared-agent execution paths behind one SharedOS turn.
+7. Converge network messaging and tool dispatch after file parity is proven.
 
 The detailed cutover, code seams, rollout gates, and acceptance criteria are in
 [Pulse migration plan](./pulse-migration.md).

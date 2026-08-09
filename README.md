@@ -21,6 +21,8 @@ such as PACT.
   such as list, read, search, grep, create, replace, append, delete, and snapshot.
 - A registry for built-in OS capabilities and host-provided external or MCP
   tools.
+- A default-off tool namespace control plane with context-specific catalogs,
+  host-owned settings, and discovery/invocation enforcement.
 - One permission-controlled agent turn, with provenance and audit events.
 - Equivalent embedded-library and HTTP client boundaries over the same
   contracts.
@@ -102,12 +104,13 @@ authorization.
 1. No matching grant means deny.
 2. A message carries intent and context, never authority.
 3. Tool discovery is filtered, and every invocation is authorized again.
-4. Invoking a target agent requires its own recipient-scoped execution grant.
-5. Reads, writes, messages, and external calls use the same capability model.
-6. Resource, action, purpose, expiry, actor, authority, namespace, and trace are
+4. A tool namespace must be enabled independently of its capability grant.
+5. Invoking a target agent requires its own recipient-scoped execution grant.
+6. Reads, writes, messages, and external calls use the same capability model.
+7. Resource, action, purpose, expiry, actor, authority, namespace, and trace are
    retained in authorization and audit decisions.
-7. The model sees a sanitized context, never grants or issuing authority.
-8. A host adapter cannot silently widen the authority evaluated by the core.
+8. The model sees a sanitized context, never grants or issuing authority.
+9. A host adapter cannot silently widen the authority evaluated by the core.
 
 ## Local quickstart
 
@@ -174,6 +177,7 @@ npm scope ownership, durable replay/idempotency, and security contact setup.
 - [ADR 0003: Scheduler boundary](docs/adr/0003-scheduler-boundary.md)
 - [ADR 0004: Canonical resource path segments](docs/adr/0004-canonical-resource-path-segments.md)
 - [ADR 0005: Files are the canonical resource plane](docs/adr/0005-files-resource-plane.md)
+- [ADR 0006: Tool namespace control plane](docs/adr/0006-tool-namespace-control-plane.md)
 
 ## License
 

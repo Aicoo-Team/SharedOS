@@ -52,6 +52,7 @@ const context = createTestContext({
   authority: owner,
   owner,
   purpose: "prepare-report",
+  enabledToolNamespaces: ["files"],
   grants,
   now,
 });

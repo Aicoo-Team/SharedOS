@@ -52,6 +52,7 @@ SharedOS provider ports with run-local state for:
 - messages and conversations;
 - files and derived retrieval indexes;
 - registered deterministic tools;
+- an explicit tool namespace selection, empty unless the fixture enables it;
 - audit events and state changes.
 
 The agent and SharedOS runtime must not receive gold labels, evaluator channels,
@@ -63,6 +64,12 @@ The in-memory implementations in `@sharedos/testkit` can seed early integration
 tests. Official PACT execution should use an explicitly versioned PACT world
 adapter so fixtures, snapshot semantics, and persistence guarantees remain
 under PACT control.
+
+PACT normally uses static deterministic tool handlers rather than user OAuth or
+MCP connections. It still sets `enabledToolNamespaces` explicitly so benchmark
+fixtures exercise the same registry + namespace + capability conjunction as a
+production host. Benchmark configuration owns that selection; model output
+cannot change it.
 
 ## Ownership of `experiment_v2.ts`
 

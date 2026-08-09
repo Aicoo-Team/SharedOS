@@ -12,18 +12,22 @@ until a real process boundary is required.
 
 ## Current Pulse seams
 
-| Current Pulse seam                             | Target role                                                                           |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `lib/notes/root-spaces.ts`                     | Canonical mapping for `Raw`, `Memory`, `Workspace`, and `Wiki` path roots             |
-| Notes/folders queries and `/api/v1/os/notes/*` | Storage implementation behind a Pulse `files` provider                                |
-| `lib/gbrain/sharedos-source 2.ts`              | Revision-aware file projection; remove the duplicated root-prefix vocabulary          |
-| `lib/memory/queries.ts`                        | Context loader and derived index over authorized files                                |
-| `lib/ai/tools/notes-management.ts`             | Replace tool definitions with `createFileTools(...)` plus Pulse provider calls        |
-| `lib/ai/tools/memory-management.ts`            | Memory maintenance workflow using `files.read/replace/append`, not a memory authority |
-| Existing `agentPermissions` checks             | Pulse host ceiling and adapter to trusted `CapabilityGrant` records                   |
-| `lib/ai/shared-agent-core.ts` and agent-v04    | Model driver and host wrapper around one SharedOS turn                                |
-| `/api/v1/agent/message`                        | Authenticated transport into messaging plus target execution capabilities             |
-| Heartbeats and autonomous scheduling           | Remain Pulse-owned; each scheduled tick invokes one bounded turn                      |
+| Current Pulse seam                               | Target role                                                                           |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `lib/notes/root-spaces.ts`                       | Canonical mapping for `Raw`, `Memory`, `Workspace`, and `Wiki` path roots             |
+| Notes/folders queries and `/api/v1/os/notes/*`   | Storage implementation behind a Pulse `files` provider                                |
+| `lib/gbrain/sharedos-source 2.ts`                | Revision-aware file projection; remove the duplicated root-prefix vocabulary          |
+| `lib/memory/queries.ts`                          | Context loader and derived index over authorized files                                |
+| `lib/ai/tools/notes-management.ts`               | Replace tool definitions with `createFileTools(...)` plus Pulse provider calls        |
+| `lib/ai/tools/memory-management.ts`              | Memory maintenance workflow using `files.read/replace/append`, not a memory authority |
+| `lib/tools/types.ts` and `lib/tools/registry.ts` | SharedOS `ToolDefinition`, `ToolRegistry`, and namespace catalog contracts            |
+| `/api/v1/tools`                                  | Thin Pulse auth/usage adapter over kernel `listTools` and `invokeTool`                |
+| `/api/v1/tools/namespaces`                       | Pulse-backed `ToolNamespaceSettingsStore` plus SharedOS GET/PUT semantics             |
+| `lib/tools/mcp/bridge.ts`                        | Per-user `ContextToolProvider`; remove process-global MCP registry mutation           |
+| Existing `agentPermissions` checks               | Pulse host ceiling and adapter to trusted `CapabilityGrant` records                   |
+| `lib/ai/shared-agent-core.ts` and agent-v04      | Model driver and host wrapper around one SharedOS turn                                |
+| `/api/v1/agent/message`                          | Authenticated transport into messaging plus target execution capabilities             |
+| Heartbeats and autonomous scheduling             | Remain Pulse-owned; each scheduled tick invokes one bounded turn                      |
 
 ## Canonical file identity
 
@@ -74,6 +78,9 @@ lib/sharedos/
   file-path.ts
   files-provider.ts
   grant-adapter.ts
+  tool-definitions.ts
+  tool-namespace-settings.ts
+  mcp-tool-provider.ts
   audit-sink.ts
   agent-driver.ts
   conformance/
@@ -127,7 +134,29 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
 - Replace generic `write` permissions with exact actions. Do not expose legacy
   `memory.*` or `workspace.*` aliases.
 
-### 5. One-turn agent cutover
+### 5. Tool namespace control-plane cutover
+
+- Convert each native tool to a SharedOS handler with explicit `namespace`,
+  `source`, `readWrite`, argument parser, and exact `requiredCapability`.
+- Load Pulse's stored user namespace selection into
+  `AccessContext.enabledToolNamespaces`. Empty means all optional tool families
+  are off. Pulse may add mandatory built-in namespaces such as `files` only as
+  an explicit product ceiling decision.
+- Implement `ToolNamespaceSettingsStore` over Pulse's user settings. Apply
+  enable/disable patches atomically against a fresh database row and return the
+  effective selection after organization/product policy.
+- Keep `/api/v1/tools/namespaces` as the authenticated Pulse route or mount the
+  SharedOS HTTP adapter; either path must use the shared request/response
+  schemas and kernel methods.
+- Replace `loadMcpTools(userId)` plus `registry.clearPrefix("mcp_")` with a
+  `ContextToolProvider` that returns only that access context's MCP handlers.
+  A connected Notion server becomes `namespace: "notion"`, `source: "mcp"`;
+  Pulse still owns connection setup and credentials.
+- Route catalog discovery and every tool execution through the same kernel.
+  Namespace enablement is only a coarse switch; calendar read/create/update/
+  delete and account scope remain separate capabilities.
+
+### 6. One-turn agent cutover
 
 - Wrap agent-v04 and shared-agent core with a SharedOS model driver and
   `TurnExecutor`.
@@ -136,7 +165,7 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
 - Require a recipient-scoped execution grant before opening another agent and
   re-authorize every file/tool side effect during the turn.
 
-### 6. Network convergence
+### 7. Network convergence
 
 - Route agent messages through the SharedOS envelope and messaging capability.
 - Keep heartbeats, retries, fan-out limits, task completion, and cross-turn stop
@@ -163,6 +192,12 @@ never takes ownership of Pulse data.
 - Memory loaders and embeddings cannot retrieve a source file the actor could
   not read directly.
 - API routes and agent tools cannot bypass the same authorization decision.
+- Native and MCP tools use one SharedOS registry contract; disabled namespaces
+  are absent from discovery and rejected again during invocation.
+- User-specific MCP catalogs do not mutate process-global state, and a Notion
+  connection in one world cannot appear in another.
+- Pulse persists namespace choices and connector credentials while SharedOS
+  owns their portable control-plane semantics and execution gates.
 - File mutations are idempotent and outcome-audited durably.
 - Agent-v04 and shared-agent execution use one bounded-turn contract.
 - Heartbeat and benchmark/product completion policy remain outside SharedOS.

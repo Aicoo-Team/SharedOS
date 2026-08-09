@@ -35,6 +35,7 @@ function grant(overrides: Partial<CapabilityGrant> = {}): CapabilityGrant {
 function context(grants: CapabilityGrant[]): AccessContext {
   return {
     namespaceId: "world-alpha",
+    enabledToolNamespaces: [],
     actor: ACTOR,
     authority: AUTHORITY,
     owner: OWNER,

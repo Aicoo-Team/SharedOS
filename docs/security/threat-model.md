@@ -67,6 +67,8 @@ Authenticated callers remain untrusted for authorization.
 | Permission cross-product | Read scope from one grant combines with write action from another | Match a complete capability and constraints; never flatten grant dimensions      |
 | Prompt injection         | A note instructs the model to exfiltrate secrets                  | Treat content as data; expose only authorized tools; re-authorize every call     |
 | Tool substitution        | Model names a shadow tool with weaker permissions                 | Resolve definitions from a trusted registry and reject duplicate/ambiguous names |
+| Namespace bypass         | Caller invokes a guessed tool from a disabled family              | Filter discovery and recheck namespace enablement at invocation                  |
+| Cross-user MCP mutation  | One user's reload replaces another user's dynamic tools           | Resolve dynamic catalogs per trusted context; avoid shared mutable registration  |
 | Discovery leakage        | Tool list reveals a private connector or account                  | Permission-filter definitions and metadata before returning the catalog          |
 | Tenant/world escape      | Crafted path reaches another run or user                          | Bind namespace/world and owner in every provider call; use segment-safe paths    |
 | Replay                   | Captured request repeats a destructive call                       | Host-owned durable deduplication and freshness checks; release remains blocked   |
@@ -147,6 +149,24 @@ file, and moving a file between roots must not silently widen access.
 Connector registration is privileged. Hosts validate ownership, origin, tool
 names, schemas, destination scope, and credential binding. The model cannot
 replace the registered capability requirement or annotations.
+
+Tool namespace enablement is a coarse availability ceiling, not a capability.
+The host derives it from authenticated settings and product policy. SharedOS
+checks it during both discovery and invocation, while the exact operation still
+requires a matching grant. Settings writes go through a host-owned atomic port;
+that port must verify the actor is eligible to manage the selection and may
+narrow it with organization policy. OAuth and MCP connection lifecycle remain
+outside SharedOS.
+
+The unfiltered namespace catalog is intended for an authenticated management
+surface, not model context. Agent drivers receive only the namespace- and
+capability-filtered tool definitions. Hosts with separate human and agent API
+tokens must restrict the management route accordingly.
+
+Dynamic catalogs are resolved for one access context. A provider may use the
+context to load that user's MCP connections, but it must not mutate a singleton
+registry whose contents can be cleared or overwritten by another request. The
+kernel rejects duplicate tool names when merging static and dynamic handlers.
 
 Every registered tool supplies a runtime argument parser. The kernel validates
 once, freezes the parsed call, and uses that same call for authorization and

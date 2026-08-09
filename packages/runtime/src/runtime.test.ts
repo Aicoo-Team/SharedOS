@@ -23,6 +23,9 @@ const owner = { kind: "human", userId: "user-alice" } as const;
 const tool: ToolDefinition = {
   name: "files.search",
   description: "Authoritative registry definition",
+  namespace: "files",
+  source: "sharedos",
+  readWrite: "read",
   inputSchema: { type: "object" },
   requiredCapability: {
     resource: { namespace: "files", path: [] },
@@ -35,6 +38,7 @@ const context: AccessContext = {
   authority: owner,
   owner,
   namespaceId: "namespace-1",
+  enabledToolNamespaces: ["files"],
   purpose: "prepare-report",
   traceId: "trace-1",
   grants: [],
@@ -111,6 +115,7 @@ describe("TurnExecutor", () => {
     expect(openedRequest?.tools).toEqual([tool]);
     expect(openedRequest?.context).not.toHaveProperty("grants");
     expect(openedRequest?.context).not.toHaveProperty("authority");
+    expect(openedRequest?.context).not.toHaveProperty("enabledToolNamespaces");
   });
 
   it("feeds permission-checked tool results back into the driver", async () => {

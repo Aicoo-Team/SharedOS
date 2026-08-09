@@ -17,6 +17,7 @@ import type { ResourceProvider, SharedOSKernel, ToolHandler } from "@sharedos/co
 
 /** The canonical SharedOS resource plane. Memory is a role of files, not a second store. */
 export const FILES_NAMESPACE = "files";
+export const SHAREDOS_TOOL_SOURCE = "sharedos";
 
 export const FilePathSchema = z.array(PathSegmentSchema).max(64);
 export type FilePath = z.infer<typeof FilePathSchema>;
@@ -451,6 +452,9 @@ function definition(args: {
   return {
     name: args.name,
     description: args.description,
+    namespace: FILES_NAMESPACE,
+    source: SHAREDOS_TOOL_SOURCE,
+    readWrite: args.readOnly === true ? "read" : "write",
     inputSchema: args.inputSchema,
     requiredCapability: {
       resource: { namespace: FILES_NAMESPACE, path: [] },

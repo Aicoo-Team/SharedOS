@@ -9,12 +9,16 @@ import type {
   ResourceResult,
   ToolCall,
   ToolDefinition,
+  ToolNamespaceCatalog,
+  ToolNamespaceUpdate,
   ToolResult,
 } from "@sharedos/contracts";
 import {
+  EnabledToolNamespacesSchema,
   JsonObjectSchema,
   MessageDeliveryResultSchema,
   ResourceResultSchema,
+  ToolNamespaceUpdateSchema,
   ToolResultSchema,
 } from "@sharedos/contracts";
 
@@ -36,12 +40,16 @@ import {
   ResourceProviderRegistry,
   toResourceOperation,
 } from "./resource-registry.js";
-import { type ToolHandler, ToolRegistry } from "./tool-registry.js";
+import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
+import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
+import { DuplicateRegistrationError, MissingRegistrationError } from "./errors.js";
 
 export interface SharedOSKernelOptions {
   readonly authorizer?: CapabilityAuthorizer;
   readonly resources?: ResourceProviderRegistry;
   readonly tools?: ToolRegistry;
+  readonly toolProviders?: readonly ContextToolProvider[];
+  readonly toolNamespaceSettings?: ToolNamespaceSettingsStore;
   readonly messageTransport?: MessageTransport;
   readonly messageCapabilityResolver?: MessageCapabilityResolver;
   readonly audit?: AuditSink;
@@ -77,6 +85,8 @@ export class SharedOSKernel {
   readonly #authorizer: CapabilityAuthorizer;
   readonly #resources: ResourceProviderRegistry;
   readonly #tools: ToolRegistry;
+  readonly #toolProviders: Map<string, ContextToolProvider>;
+  readonly #toolNamespaceSettings: ToolNamespaceSettingsStore | undefined;
   readonly #messageTransport: MessageTransport | undefined;
   readonly #messageCapabilityResolver: MessageCapabilityResolver;
   readonly #audit: AuditSink;
@@ -86,6 +96,11 @@ export class SharedOSKernel {
     this.#authorizer = options.authorizer ?? new CapabilityAuthorizer();
     this.#resources = options.resources ?? new ResourceProviderRegistry();
     this.#tools = options.tools ?? new ToolRegistry();
+    this.#toolProviders = new Map();
+    for (const provider of options.toolProviders ?? []) {
+      this.registerToolProvider(provider);
+    }
+    this.#toolNamespaceSettings = options.toolNamespaceSettings;
     this.#messageTransport = options.messageTransport;
     this.#messageCapabilityResolver =
       options.messageCapabilityResolver ?? new RecipientScopedMessageCapabilityResolver();
@@ -99,6 +114,17 @@ export class SharedOSKernel {
 
   registerTool(handler: ToolHandler): void {
     this.#tools.register(handler);
+  }
+
+  registerToolProvider(provider: ContextToolProvider): void {
+    const id = provider.id.trim();
+    if (id.length === 0) {
+      throw new TypeError("tool provider id must not be empty");
+    }
+    if (this.#toolProviders.has(id)) {
+      throw new DuplicateRegistrationError("tool provider", id);
+    }
+    this.#toolProviders.set(id, provider);
   }
 
   async authorize(
@@ -142,9 +168,14 @@ export class SharedOSKernel {
     throwIfAborted(options.signal);
     context = structuredClone(context);
     const allowed: ToolDefinition[] = [];
+    const enabledNamespaces = new Set(context.enabledToolNamespaces);
+    const tools = await this.#resolveToolRegistry(context, options.signal);
 
-    for (const definition of this.#tools.definitions()) {
+    for (const definition of tools.definitions()) {
       throwIfAborted(options.signal);
+      if (!enabledNamespaces.has(definition.namespace)) {
+        continue;
+      }
       const decision = await this.#authorizer.canDiscover(context, {
         resource: definition.requiredCapability.resource,
         action: definition.requiredCapability.action,
@@ -163,6 +194,77 @@ export class SharedOSKernel {
     );
 
     return allowed;
+  }
+
+  async listToolNamespaces(
+    context: AccessContext,
+    options: KernelOperationOptions = {},
+  ): Promise<ToolNamespaceCatalog> {
+    throwIfAborted(options.signal);
+    context = structuredClone(context);
+    const tools = await this.#resolveToolRegistry(context, options.signal);
+    const catalog = tools.namespaceCatalog(context.enabledToolNamespaces);
+
+    await this.#audit.record(
+      auditEvent(context, {
+        type: "tool.namespace.catalog.listed",
+        outcome: "succeeded",
+        metadata: {
+          totalNamespaces: catalog.summary.total,
+          enabledNamespaces: catalog.summary.enabled,
+        },
+      }),
+    );
+
+    return catalog;
+  }
+
+  async updateToolNamespaces(
+    context: AccessContext,
+    update: ToolNamespaceUpdate,
+    options: KernelOperationOptions = {},
+  ): Promise<ToolNamespaceCatalog> {
+    throwIfAborted(options.signal);
+    context = structuredClone(context);
+    const parsedUpdate = ToolNamespaceUpdateSchema.safeParse(structuredClone(update));
+    if (!parsedUpdate.success) {
+      throw new TypeError("tool namespace update does not match the SharedOS contract");
+    }
+    if (this.#toolNamespaceSettings === undefined) {
+      throw new MissingRegistrationError("tool namespace settings", "default");
+    }
+
+    const candidate = await this.#toolNamespaceSettings.applyUpdate(
+      context,
+      parsedUpdate.data,
+      options.signal ?? neverAbortedSignal(),
+    );
+    throwIfAborted(options.signal);
+    const parsedEnabled = EnabledToolNamespacesSchema.safeParse([...candidate]);
+    if (!parsedEnabled.success) {
+      throw new TypeError("tool namespace settings returned an invalid selection");
+    }
+
+    const updatedContext: AccessContext = {
+      ...context,
+      enabledToolNamespaces: parsedEnabled.data,
+    };
+    const tools = await this.#resolveToolRegistry(updatedContext, options.signal);
+    const catalog = tools.namespaceCatalog(updatedContext.enabledToolNamespaces);
+
+    await this.#recordOutcome(
+      auditEvent(updatedContext, {
+        type: "tool.namespace.selection.updated",
+        outcome: "succeeded",
+        metadata: {
+          enabledNamespaces: catalog.namespaces
+            .filter((namespace) => namespace.enabled)
+            .map((namespace) => namespace.namespace),
+        },
+      }),
+    );
+
+    return catalog;
   }
 
   async invokeTool(
@@ -184,8 +286,36 @@ export class SharedOSKernel {
       return result;
     }
 
-    const handler = this.#tools.get(call.tool);
+    let tools: ToolRegistry;
+    try {
+      tools = await this.#resolveToolRegistry(context, options.signal);
+    } catch (error) {
+      if (options.signal?.aborted) {
+        throw options.signal.reason ?? error;
+      }
+      const result = failedToolResult(
+        call,
+        context.now,
+        "tool_catalog_unavailable",
+        "The tool catalog could not be resolved",
+      );
+      await this.#recordToolResult(context, call, result);
+      return result;
+    }
+
+    const handler = tools.get(call.tool);
     if (handler === undefined) {
+      const result = deniedToolResult(
+        call,
+        context.now,
+        "tool_unavailable",
+        "The requested tool is not available in this access context",
+      );
+      await this.#recordToolResult(context, call, result);
+      return result;
+    }
+
+    if (!context.enabledToolNamespaces.includes(handler.definition.namespace)) {
       const result = deniedToolResult(
         call,
         context.now,
@@ -391,6 +521,42 @@ export class SharedOSKernel {
 
     await this.#recordResourceResult(context, request, result, decision.matchedGrantId);
     return result;
+  }
+
+  async #resolveToolRegistry(
+    context: AccessContext,
+    signal: AbortSignal | undefined,
+  ): Promise<ToolRegistry> {
+    const resolved = new ToolRegistry();
+    for (const handler of this.#tools.handlers()) {
+      resolved.register(handler);
+    }
+
+    for (const provider of [...this.#toolProviders.values()].sort((left, right) =>
+      left.id.localeCompare(right.id),
+    )) {
+      throwIfAborted(signal);
+      let handlers: readonly ToolHandler[];
+      try {
+        handlers = await provider.listTools(
+          structuredClone(context),
+          signal ?? neverAbortedSignal(),
+        );
+      } catch (error) {
+        if (signal?.aborted) {
+          throw signal.reason ?? error;
+        }
+        throw new Error("A context tool provider failed to resolve its catalog");
+      }
+      if (!Array.isArray(handlers)) {
+        throw new TypeError("A context tool provider returned an invalid catalog");
+      }
+      for (const handler of handlers) {
+        resolved.register(handler);
+      }
+    }
+
+    return resolved;
   }
 
   async sendMessage(

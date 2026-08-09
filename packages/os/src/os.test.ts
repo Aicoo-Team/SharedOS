@@ -37,6 +37,7 @@ function contextFor(actions: string[], path = ["Memory", "Self"]): AccessContext
     authority: owner,
     owner,
     namespaceId: "world-1",
+    enabledToolNamespaces: [FILES_NAMESPACE],
     purpose: "prepare-report",
     traceId: "trace-1",
     grants: [grant],

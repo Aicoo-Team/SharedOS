@@ -16,6 +16,7 @@ const context: AccessContext = {
   authority: { kind: "human", userId: "user-alice" },
   owner: { kind: "human", userId: "user-alice" },
   namespaceId: "namespace-1",
+  enabledToolNamespaces: ["files"],
   purpose: "prepare-report",
   traceId: "trace-1",
   grants: [],
@@ -26,6 +27,14 @@ function createApi(): SharedOSApi {
   return {
     authorize: vi.fn(async () => ({ allowed: false, reasonCode: "no_matching_grant" })),
     listTools: vi.fn(async () => []),
+    listToolNamespaces: vi.fn(async () => ({
+      namespaces: [],
+      summary: { total: 0, enabled: 0, disabled: 0 },
+    })),
+    updateToolNamespaces: vi.fn(async () => ({
+      namespaces: [{ namespace: "calendar", sources: ["native"], toolCount: 5, enabled: true }],
+      summary: { total: 1, enabled: 1, disabled: 0 },
+    })),
     invokeTool: vi.fn(async (_context, call) => ({
       callId: call.id,
       tool: call.tool,
@@ -118,6 +127,49 @@ describe("createSharedOSHandler", () => {
 
     expect(response.status).toBe(200);
     expect(resolveContext).not.toHaveBeenCalled();
+  });
+
+  it("exposes the context-specific tool namespace catalog", async () => {
+    const api = createApi();
+    const handler = createSharedOSHandler({ api, resolveContext: async () => context });
+
+    const response = await handler(new Request("https://sharedos.test/v1/tools/namespaces"));
+
+    expect(response.status).toBe(200);
+    expect(api.listToolNamespaces).toHaveBeenCalledWith(
+      context,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it("applies namespace patches through the authenticated host context", async () => {
+    const api = createApi();
+    const handler = createSharedOSHandler({ api, resolveContext: async () => context });
+    const update = { enable: ["calendar"], disable: ["files"] };
+
+    const response = await handler(
+      new Request("https://sharedos.test/v1/tools/namespaces", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(update),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(api.updateToolNamespaces).toHaveBeenCalledWith(
+      context,
+      update,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+
+    const invalid = await handler(
+      new Request("https://sharedos.test/v1/tools/namespaces", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enable: ["calendar"], disable: ["calendar"] }),
+      }),
+    );
+    expect(invalid.status).toBe(400);
   });
 
   it("fails closed when a host returns an invalid access context", async () => {
@@ -250,5 +302,13 @@ describe("createSharedOSHandler", () => {
     });
 
     await expect(client.listTools()).resolves.toEqual([]);
+    await expect(client.listToolNamespaces()).resolves.toEqual({
+      namespaces: [],
+      summary: { total: 0, enabled: 0, disabled: 0 },
+    });
+    await expect(client.updateToolNamespaces({ enable: ["calendar"] })).resolves.toEqual({
+      namespaces: [{ namespace: "calendar", sources: ["native"], toolCount: 5, enabled: true }],
+      summary: { total: 1, enabled: 1, disabled: 0 },
+    });
   });
 });

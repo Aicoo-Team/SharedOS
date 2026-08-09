@@ -5,6 +5,7 @@ import {
   RemoteExecutionRequestSchema,
   RemoteResourceOperationSchema,
   ToolCallSchema,
+  ToolNamespaceUpdateSchema,
   type AccessContext,
   type AuthorizationDecision,
   type CapabilityRequirement,
@@ -16,6 +17,8 @@ import {
   type ResourceResult,
   type ToolCall,
   type ToolDefinition,
+  type ToolNamespaceCatalog,
+  type ToolNamespaceUpdate,
   type ToolResult,
 } from "@sharedos/contracts";
 import type { SharedOSKernel } from "@sharedos/core";
@@ -35,6 +38,15 @@ export interface SharedOSApi {
     context: AccessContext,
     options?: SharedOSApiCallOptions,
   ): Promise<readonly ToolDefinition[]>;
+  listToolNamespaces(
+    context: AccessContext,
+    options?: SharedOSApiCallOptions,
+  ): Promise<ToolNamespaceCatalog>;
+  updateToolNamespaces(
+    context: AccessContext,
+    update: ToolNamespaceUpdate,
+    options?: SharedOSApiCallOptions,
+  ): Promise<ToolNamespaceCatalog>;
   invokeTool(
     context: AccessContext,
     call: ToolCall,
@@ -68,6 +80,10 @@ export function createKernelSharedOSApi(options: KernelSharedOSApiOptions): Shar
     authorize: (context, requirement, callOptions) =>
       options.kernel.authorize(context, requirement, callOptions),
     listTools: (context, callOptions) => options.kernel.listTools(context, callOptions),
+    listToolNamespaces: (context, callOptions) =>
+      options.kernel.listToolNamespaces(context, callOptions),
+    updateToolNamespaces: (context, update, callOptions) =>
+      options.kernel.updateToolNamespaces(context, update, callOptions),
     invokeTool: (context, call, callOptions) =>
       options.kernel.invokeTool(context, call, callOptions),
     invokeResource: (context, operation, callOptions) =>
@@ -164,6 +180,21 @@ async function routeRequest(
   if (pathname === "/v1/tools") {
     requireMethod(request, "GET");
     return json(await options.api.listTools(context, callOptions), 200, requestId);
+  }
+
+  if (pathname === "/v1/tools/namespaces") {
+    if (request.method === "GET") {
+      return json(await options.api.listToolNamespaces(context, callOptions), 200, requestId);
+    }
+    if (request.method === "PUT") {
+      const body = await parseBody(request, ToolNamespaceUpdateSchema);
+      return json(
+        await options.api.updateToolNamespaces(context, body, callOptions),
+        200,
+        requestId,
+      );
+    }
+    throw new SharedOSHttpError(405, "method_not_allowed", "Use GET or PUT for this endpoint.");
   }
 
   if (pathname === "/v1/tools/invoke") {

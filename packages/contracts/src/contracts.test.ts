@@ -12,6 +12,9 @@ import {
   RemoteResourceOperationSchema,
   ResourceRefSchema,
   ResourceOperationSchema,
+  ToolDefinitionSchema,
+  ToolNamespaceCatalogSchema,
+  ToolNamespaceUpdateSchema,
   ToolResultSchema,
   type AccessContext,
   type JsonValue,
@@ -46,6 +49,7 @@ const grant = {
 
 const context = {
   namespaceId: "aicoo:alice",
+  enabledToolNamespaces: ["files"],
   actor,
   authority: owner,
   owner,
@@ -69,6 +73,56 @@ describe("JSON-safe protocol contracts", () => {
     expect(CapabilityGrantSchema.parse(grant)).toEqual(grant);
     expect(AccessContextSchema.parse(context)).toEqual(context);
     expectTypeOf(AccessContextSchema.parse(context)).toEqualTypeOf<AccessContext>();
+  });
+
+  it("requires an explicit, internally consistent tool namespace policy", () => {
+    const definition = {
+      name: "calendar.search",
+      description: "Search a calendar",
+      namespace: "calendar",
+      source: "native",
+      readWrite: "read",
+      inputSchema: { type: "object" },
+      requiredCapability: {
+        resource: { namespace: "calendar", path: ["primary"] },
+        action: "read",
+      },
+      annotations: { readOnly: true },
+    };
+
+    expect(ToolDefinitionSchema.safeParse(definition).success).toBe(true);
+    expect(ToolDefinitionSchema.safeParse({ ...definition, namespace: undefined }).success).toBe(
+      false,
+    );
+    expect(
+      ToolDefinitionSchema.safeParse({
+        ...definition,
+        annotations: { destructive: true },
+      }).success,
+    ).toBe(false);
+    expect(
+      AccessContextSchema.safeParse({ ...context, enabledToolNamespaces: ["files", "files"] })
+        .success,
+    ).toBe(false);
+    expect(
+      ToolNamespaceCatalogSchema.safeParse({
+        namespaces: [{ namespace: "calendar", sources: ["native"], toolCount: 5, enabled: true }],
+        summary: { total: 1, enabled: 1, disabled: 0 },
+      }).success,
+    ).toBe(true);
+    expect(
+      ToolNamespaceCatalogSchema.safeParse({
+        namespaces: [{ namespace: "calendar", sources: ["native"], toolCount: 5, enabled: true }],
+        summary: { total: 1, enabled: 0, disabled: 1 },
+      }).success,
+    ).toBe(false);
+    expect(ToolNamespaceUpdateSchema.parse({ enable: ["calendar"] })).toEqual({
+      enable: ["calendar"],
+    });
+    expect(ToolNamespaceUpdateSchema.safeParse({ enable: [], disable: [] }).success).toBe(false);
+    expect(
+      ToolNamespaceUpdateSchema.safeParse({ enable: ["calendar"], disable: ["calendar"] }).success,
+    ).toBe(false);
   });
 
   it("shares authorization decisions without leaking provider state", () => {
@@ -161,6 +215,9 @@ describe("JSON-safe protocol contracts", () => {
     const tool = {
       name: "files.search",
       description: "Search an authorized file path",
+      namespace: "files",
+      source: "sharedos",
+      readWrite: "read" as const,
       inputSchema: {
         type: "object",
         properties: { query: { type: "string" } },

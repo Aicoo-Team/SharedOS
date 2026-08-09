@@ -8,15 +8,19 @@ import type {
   MessageEnvelope,
   ResourceOperation,
   ResourceResult,
+  ToolNamespace,
+  ToolNamespaceUpdate,
 } from "@sharedos/contracts";
 import {
   CapabilityAuthorizer,
   InMemoryGrantUsageStore,
   SharedOSKernel,
+  applyToolNamespaceUpdate,
   type AuditEvent,
   type AuditSink,
   type MessageTransport,
   type ResourceProvider,
+  type ToolNamespaceSettingsStore,
 } from "@sharedos/core";
 
 export class InMemoryAuditSink implements AuditSink {
@@ -40,6 +44,33 @@ export class InMemoryMessageTransport implements MessageTransport {
       status: "accepted",
       timestamp: context.now,
     };
+  }
+}
+
+/** Namespace settings fixture keyed by the access-context namespace/world. */
+export class InMemoryToolNamespaceSettingsStore implements ToolNamespaceSettingsStore {
+  readonly #enabledByNamespace = new Map<string, ToolNamespace[]>();
+
+  constructor(initial: Readonly<Record<string, readonly ToolNamespace[]>> = {}) {
+    for (const [namespaceId, enabled] of Object.entries(initial)) {
+      this.#enabledByNamespace.set(namespaceId, [...enabled]);
+    }
+  }
+
+  async applyUpdate(
+    context: AccessContext,
+    update: ToolNamespaceUpdate,
+  ): Promise<readonly ToolNamespace[]> {
+    await Promise.resolve();
+    const current =
+      this.#enabledByNamespace.get(context.namespaceId) ?? context.enabledToolNamespaces;
+    const next = applyToolNamespaceUpdate(current, update);
+    this.#enabledByNamespace.set(context.namespaceId, next);
+    return [...next];
+  }
+
+  get(namespaceId: string): readonly ToolNamespace[] {
+    return [...(this.#enabledByNamespace.get(namespaceId) ?? [])];
   }
 }
 
@@ -87,6 +118,7 @@ export interface TestContextOptions {
   readonly authority?: Address;
   readonly owner?: Address;
   readonly namespaceId?: string;
+  readonly enabledToolNamespaces?: readonly string[];
   readonly purpose?: string;
   readonly traceId?: string;
   readonly grants?: readonly CapabilityGrant[];
@@ -100,6 +132,7 @@ export function createTestContext(options: TestContextOptions = {}): AccessConte
     authority: options.authority ?? owner,
     owner,
     namespaceId: options.namespaceId ?? "namespace-1",
+    enabledToolNamespaces: [...(options.enabledToolNamespaces ?? [])],
     purpose: options.purpose ?? "test",
     traceId: options.traceId ?? "trace-1",
     grants: [...(options.grants ?? [])],

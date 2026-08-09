@@ -36,6 +36,8 @@ npm release or a production security boundary. Every leaf package remains
 - Separate recipient-scoped grants for messaging and target-agent execution.
 - Server-derived remote authority; request bodies cannot supply grants or tools.
 - Permission-filtered tool discovery and exact per-call re-authorization.
+- Default-off tool namespaces, context-scoped dynamic providers, atomic
+  host-owned settings updates, and invocation-time namespace rechecks.
 - Mandatory tool argument parsing and immutable checked calls.
 - Sanitized model context without grants or issuing authority.
 - Bounded one-turn execution with cooperative cancellation and bounded cleanup.

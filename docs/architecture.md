@@ -23,7 +23,7 @@ or rejects it.
 | Messaging   | Envelopes, routing, dispatch, provenance                           | Product inbox, notifications, retention UX                     |
 | Files       | Paths, operations, authorization, result and audit contracts       | Notes, folders, storage, indexes, embeddings and deletion      |
 | Memory      | Rule that mounted/indexed context retains source file authority    | Selection, compaction, ranking and context assembly            |
-| Tools       | Registry contracts, permission-filtered discovery, invocation gate | OAuth, secrets, MCP connections, concrete tool implementations |
+| Tools       | Namespace/catalog contracts, filtered discovery, invocation gate   | Settings storage, OAuth, MCP connections, tool implementations |
 | Execution   | One bounded agent turn and its event stream                        | Model provider configuration and product policy                |
 | Audit       | Audit event shape and required provenance                          | Durable append-only storage, export and retention              |
 | Scheduling  | No product or benchmark scheduler                                  | Heartbeats, experiment ticks, retries, budgets and stopping    |
@@ -62,7 +62,8 @@ Contains JSON-safe, transport-neutral schemas. Important concepts include:
 - Structured `Address` values for humans, agents, groups, and services.
 - `MessageEnvelope`, including sender, receiver, intent, purpose, and trace.
 - `CapabilityGrant`, `CapabilityRequirement`, and `AuthorizationDecision`.
-- Resource and tool descriptors, execution inputs, results, and HTTP schemas.
+- Resource and tool descriptors, tool namespace control-plane requests,
+  execution inputs, results, and HTTP schemas.
 
 Contracts cannot contain database handles, framework request objects, model SDK
 instances, or product-specific types.
@@ -70,9 +71,9 @@ instances, or product-specific types.
 ### `@sharedos/core`
 
 Contains host-neutral policy and dispatch behavior. It evaluates complete grants
-against complete requests, filters capability discovery, and produces explicit
-allow or deny decisions. All network and persistence effects remain behind host
-provider ports.
+against complete requests, applies tool namespace selection, filters capability
+discovery, and produces explicit allow or deny decisions. All network and
+persistence effects remain behind host provider ports.
 
 ### `@sharedos/runtime`
 
@@ -103,7 +104,7 @@ transport logic and does not change the dependency direction.
 
 ## Domain model
 
-### Namespace and world
+### Execution namespace and world
 
 A namespace is the mandatory tenant and isolation boundary for identifiers,
 grants, messages, resources, and audit events. A world is the host-provided state
@@ -112,6 +113,18 @@ per run; Aicoo maps a namespace to durable product state.
 
 No unqualified identifier is globally resolvable. Provider calls receive the
 namespace explicitly.
+
+This execution namespace is distinct from two other identifiers:
+
+- `ResourceRef.namespace` selects an authority domain such as `files`,
+  `calendar`, or `sharedos.messaging`.
+- `ToolDefinition.namespace` groups a logical family of tools such as
+  `calendar`, `email`, or a user-connected `notion` MCP server.
+
+The three identifiers can contain the same string, but one never implies
+another. A world boundary prevents tenant crossover; a resource namespace
+scopes a capability; a tool namespace controls whether a family is present in
+the current tool surface.
 
 ### Structured addresses
 
@@ -179,6 +192,30 @@ connectors—are registered by a host. Both categories appear in one filtered
 registry and pass through one execution-time authorization gate. A tool is not
 trusted merely because it was registered.
 
+Every tool also declares a logical namespace, source, and conservative
+read/write classification. A trusted access context contains the effective
+enabled namespace selection. Registration, namespace enablement, and capability
+authority are independent requirements:
+
+```text
+usable tool = registered for this context
+              AND namespace enabled
+              AND capability allowed
+```
+
+Static tools use `ToolRegistry`. User-specific MCP or connector catalogs use a
+`ContextToolProvider`; the kernel builds an ephemeral registry per operation so
+one user's reload cannot mutate another user's catalog. `listToolNamespaces`
+aggregates the available context-specific namespaces and their enabled state.
+`updateToolNamespaces` applies an idempotent patch through a host-owned,
+atomic `ToolNamespaceSettingsStore` and returns the effective catalog.
+
+The host persists the setting and reconstructs it into future access contexts.
+It also owns adding or removing MCP connections and protecting credentials.
+SharedOS never connects a Notion server by itself; once a host supplies that
+user's Notion handlers, SharedOS applies the same namespace and capability gates
+as it does to native and `files` tools.
+
 ## One-turn execution
 
 ```mermaid
@@ -192,7 +229,7 @@ sequenceDiagram
   Host->>Runtime: execute one turn
   Runtime->>Kernel: authorize message / delegation
   Kernel-->>Runtime: decision + matched authority
-  Runtime->>Kernel: filter discoverable capabilities
+  Runtime->>Kernel: filter enabled namespaces and discoverable capabilities
   Runtime->>Agent: message + sanitized context + tools
   Agent-->>Runtime: response and requested calls
   loop every requested call

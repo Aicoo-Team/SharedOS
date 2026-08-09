@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import type { Capability } from "@sharedos/contracts";
 
-import { createTestContext, createTestGrant, createTestKernel } from "./index.js";
+import {
+  InMemoryToolNamespaceSettingsStore,
+  createTestContext,
+  createTestGrant,
+  createTestKernel,
+} from "./index.js";
 
 describe("testkit", () => {
   it("creates isolated, deny-by-default contexts", async () => {
@@ -33,5 +38,17 @@ describe("testkit", () => {
         action: "search",
       }),
     ).resolves.toEqual({ allowed: true, reasonCode: "allowed", matchedGrantId: "grant-1" });
+  });
+
+  it("provides isolated in-memory namespace settings for host adapter tests", async () => {
+    const store = new InMemoryToolNamespaceSettingsStore({
+      "namespace-1": ["files"],
+    });
+    const context = createTestContext();
+
+    await expect(
+      store.applyUpdate(context, { enable: ["calendar"], disable: ["files"] }),
+    ).resolves.toEqual(["calendar"]);
+    expect(store.get("namespace-1")).toEqual(["calendar"]);
   });
 });
