@@ -2,6 +2,8 @@
 
 ## Start here
 
+- [Host integration guide](host-integration.md): practical embedded and remote
+  setup for files, live tools, grants, one-turn execution, and production ports.
 - [Architecture](architecture.md): responsibilities, packages, execution flow,
   resource providers, and deployment shapes.
 - [Permission model](security/permission-model.md): normative authorization

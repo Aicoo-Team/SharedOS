@@ -106,7 +106,8 @@ SharedOS                    -X->  host product internals
 The SharedOS core must not import Next.js, Drizzle, Azure, Aicoo credits, or
 PACT tasks, gold data, runners, and evaluators.
 
-Read the complete [architecture](docs/architecture.md),
+Read the practical [host integration guide](docs/host-integration.md), the
+complete [architecture](docs/architecture.md),
 [permission model](docs/security/permission-model.md), and
 [threat model](docs/security/threat-model.md).
 
