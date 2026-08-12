@@ -41,7 +41,7 @@ receiving a correctly scoped request.
 
 - Message payloads, intent, purpose claims, and provenance metadata.
 - Model and agent output, including proposed tool calls.
-- Memory, notes, documents, web pages, and tool results that may contain prompt
+- Files, notes, documents, web pages, and tool results that may contain prompt
   injection.
 - HTTP bodies, headers, IDs, and timestamps from callers.
 - External services, MCP servers, connector metadata, and their responses.
@@ -53,7 +53,7 @@ Authenticated callers remain untrusted for authorization.
 
 - User and agent identities.
 - Capability grants and revocation state.
-- Private memory, workspace content, messages, and embeddings.
+- Private files, mounted memory views, messages, and embeddings.
 - OAuth tokens, API keys, MCP credentials, and model-provider secrets.
 - Tool side effects such as email, calendar, repository, and financial actions.
 - Audit history, provenance, experiment integrity, and availability budgets.
@@ -63,10 +63,12 @@ Authenticated callers remain untrusted for authorization.
 | Threat                   | Example                                                           | Required controls                                                                |
 | ------------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | Self-issued authority    | A message includes a fabricated grant                             | Keep grants outside envelopes; load from trusted storage or verify them          |
-| Confused deputy          | Agent asks a more privileged agent to read private memory         | Authorize the effective actor, owner, purpose, and resource at every operation   |
+| Confused deputy          | Agent asks a more privileged agent to read a private file         | Authorize the effective actor, owner, purpose, and resource at every operation   |
 | Permission cross-product | Read scope from one grant combines with write action from another | Match a complete capability and constraints; never flatten grant dimensions      |
 | Prompt injection         | A note instructs the model to exfiltrate secrets                  | Treat content as data; expose only authorized tools; re-authorize every call     |
 | Tool substitution        | Model names a shadow tool with weaker permissions                 | Resolve definitions from a trusted registry and reject duplicate/ambiguous names |
+| Namespace bypass         | Caller invokes a guessed tool from a disabled family              | Filter discovery and recheck namespace enablement at invocation                  |
+| Cross-user MCP mutation  | One user's reload replaces another user's dynamic tools           | Resolve dynamic catalogs per trusted context; avoid shared mutable registration  |
 | Discovery leakage        | Tool list reveals a private connector or account                  | Permission-filter definitions and metadata before returning the catalog          |
 | Tenant/world escape      | Crafted path reaches another run or user                          | Bind namespace/world and owner in every provider call; use segment-safe paths    |
 | Replay                   | Captured request repeats a destructive call                       | Host-owned durable deduplication and freshness checks; release remains blocked   |
@@ -119,7 +121,7 @@ Loops, fan-out, and recursive delegation can exhaust budgets. The one-turn
 runtime enforces maximum steps and timeout, while the host scheduler limits
 cross-turn behavior.
 
-### Memory and retrieval
+### Files, retrieval, and mounted memory
 
 Indexes, caches, embeddings, result counts, ranking, excerpts, and metadata can
 all leak information. Namespace and owner filtering occurs inside the provider's
@@ -130,8 +132,6 @@ remain visible.
 Retrieved content can contain prompt injection. It cannot change grants, tool
 definitions, system policy, or the actor identity.
 
-### Workspace paths
-
 Providers interpret paths as structured segments. Filesystem adapters reject
 absolute paths, traversal, symlink escapes, alternate separators, null bytes,
 and encoding tricks. Database-backed adapters apply equivalent owner and
@@ -140,11 +140,33 @@ namespace predicates to every query.
 Search and grep must not scan unauthorized content even if only authorized
 matches are returned.
 
+Memory and workspace are semantic roles or mounted roots over files. A memory
+index, cache, or embedding does not acquire authority independent of its source
+file, and moving a file between roots must not silently widen access.
+
 ### External and MCP tools
 
 Connector registration is privileged. Hosts validate ownership, origin, tool
 names, schemas, destination scope, and credential binding. The model cannot
 replace the registered capability requirement or annotations.
+
+Tool namespace enablement is a coarse availability ceiling, not a capability.
+The host derives it from authenticated settings and product policy. SharedOS
+checks it during both discovery and invocation, while the exact operation still
+requires a matching grant. Settings writes go through a host-owned atomic port;
+that port must verify the actor is eligible to manage the selection and may
+narrow it with organization policy. OAuth and MCP connection lifecycle remain
+outside SharedOS.
+
+The unfiltered namespace catalog is intended for an authenticated management
+surface, not model context. Agent drivers receive only the namespace- and
+capability-filtered tool definitions. Hosts with separate human and agent API
+tokens must restrict the management route accordingly.
+
+Dynamic catalogs are resolved for one access context. A provider may use the
+context to load that user's MCP connections, but it must not mutate a singleton
+registry whose contents can be cleared or overwritten by another request. The
+kernel rejects duplicate tool names when merging static and dynamic handlers.
 
 Every registered tool supplies a runtime argument parser. The kernel validates
 once, freezes the parsed call, and uses that same call for authorization and

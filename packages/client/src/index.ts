@@ -7,6 +7,8 @@ import type {
   ResourceResult,
   ToolCall,
   ToolDefinition,
+  ToolNamespaceCatalog,
+  ToolNamespaceUpdate,
   ToolResult,
 } from "@sharedos/contracts";
 import {
@@ -19,6 +21,8 @@ import {
   SharedOSApiErrorResponseSchema,
   SharedOSHealthSchema,
   ToolDefinitionSchema,
+  ToolNamespaceCatalogSchema,
+  ToolNamespaceUpdateSchema,
   ToolResultSchema,
   type RemoteExecutionRequest,
   type RemoteResourceOperation,
@@ -82,6 +86,28 @@ export class SharedOSClient {
     return this.#request("/v1/tools", { method: "GET" }, ToolDefinitionSchema.array(), options);
   }
 
+  listToolNamespaces(options?: SharedOSCallOptions): Promise<ToolNamespaceCatalog> {
+    return this.#request(
+      "/v1/tools/namespaces",
+      { method: "GET" },
+      ToolNamespaceCatalogSchema,
+      options,
+    );
+  }
+
+  updateToolNamespaces(
+    update: ToolNamespaceUpdate,
+    options?: SharedOSCallOptions,
+  ): Promise<ToolNamespaceCatalog> {
+    return this.#post(
+      "/v1/tools/namespaces",
+      ToolNamespaceUpdateSchema.parse(update),
+      ToolNamespaceCatalogSchema,
+      options,
+      "PUT",
+    );
+  }
+
   invokeTool(call: ToolCall, options?: SharedOSCallOptions): Promise<ToolResult> {
     return this.#post("/v1/tools/invoke", call, ToolResultSchema, options);
   }
@@ -122,11 +148,12 @@ export class SharedOSClient {
     body: unknown,
     schema: RuntimeSchema<T>,
     options?: SharedOSCallOptions,
+    method: "POST" | "PUT" = "POST",
   ): Promise<T> {
     return this.#request(
       path,
       {
-        method: "POST",
+        method,
         body: JSON.stringify(body),
       },
       schema,

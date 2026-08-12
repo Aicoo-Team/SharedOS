@@ -3,8 +3,8 @@
 ## Definition
 
 SharedOS is a host-neutral, permission-controlled runtime for agent-to-agent
-delegation. A delegation can include communication, access to memory or
-workspace resources, and invocation of built-in or external tools.
+delegation. A delegation can include communication, access to files, and
+invocation of built-in or external tools.
 
 The central rule is:
 
@@ -21,9 +21,9 @@ or rejects it.
 | Identity    | Structured human, agent, group, and service addresses              | Account login, sessions, identity proofing                     |
 | Permissions | Grant semantics, evaluation, revocation behavior, decision records | Grant persistence, consent UI, organizational policy ceiling   |
 | Messaging   | Envelopes, routing, dispatch, provenance                           | Product inbox, notifications, retention UX                     |
-| Memory      | Capability names, query contracts, authorization, context mounting | Records, database, embeddings, tenancy, deletion               |
-| Workspace   | Read/search/grep/write semantics and authorization                 | Files, notes, folders, sandbox or database implementation      |
-| Tools       | Registry contracts, permission-filtered discovery, invocation gate | OAuth, secrets, MCP connections, concrete tool implementations |
+| Files       | Paths, operations, authorization, result and audit contracts       | Notes, folders, storage, indexes, embeddings and deletion      |
+| Memory      | Rule that mounted/indexed context retains source file authority    | Selection, compaction, ranking and context assembly            |
+| Tools       | Namespace/catalog contracts, filtered discovery, invocation gate   | Settings storage, OAuth, MCP connections, tool implementations |
 | Execution   | One bounded agent turn and its event stream                        | Model provider configuration and product policy                |
 | Audit       | Audit event shape and required provenance                          | Durable append-only storage, export and retention              |
 | Scheduling  | No product or benchmark scheduler                                  | Heartbeats, experiment ticks, retries, budgets and stopping    |
@@ -45,6 +45,12 @@ flowchart TD
   HT --> CO
   HT --> CT
   CL["@sharedos/client"] --> CT
+  SDK["@sharedos/sdk"] --> CT
+  SDK --> CO
+  SDK --> OS
+  SDK --> RT
+  SDK --> HT
+  SDK --> CL
   TK["@sharedos/testkit"] --> CO
   TK --> CT
 ```
@@ -56,7 +62,8 @@ Contains JSON-safe, transport-neutral schemas. Important concepts include:
 - Structured `Address` values for humans, agents, groups, and services.
 - `MessageEnvelope`, including sender, receiver, intent, purpose, and trace.
 - `CapabilityGrant`, `CapabilityRequirement`, and `AuthorizationDecision`.
-- Resource and tool descriptors, execution inputs, results, and HTTP schemas.
+- Resource and tool descriptors, tool namespace control-plane requests,
+  execution inputs, results, and HTTP schemas.
 
 Contracts cannot contain database handles, framework request objects, model SDK
 instances, or product-specific types.
@@ -64,23 +71,23 @@ instances, or product-specific types.
 ### `@sharedos/core`
 
 Contains host-neutral policy and dispatch behavior. It evaluates complete grants
-against complete requests, filters capability discovery, and produces explicit
-allow or deny decisions. All network and persistence effects remain behind host
-provider ports.
+against complete requests, applies tool namespace selection, filters capability
+discovery, and produces explicit allow or deny decisions. All network and
+persistence effects remain behind host provider ports.
 
 ### `@sharedos/runtime`
 
-Coordinates one bounded agent turn. It uses provider ports for state, memory,
-workspace, tools, the responding agent, and audit persistence. Runtime owns the
+Coordinates one bounded agent turn. It uses provider ports for files, tools,
+the responding agent, and audit persistence. Runtime owns the
 order of security checks but not the host's data implementation.
 
 ### `@sharedos/os`
 
-Defines the portable memory and workspace vocabulary—including read, search,
-grep, append, write, and snapshot operations—and adapts those resources into
-permission-controlled agent tools. Hosts provide the storage implementation;
-the package provides schemas, exact per-call capability resolution, and stable
-tool definitions.
+Defines the portable `files` vocabulary—including list, stat, read, search,
+grep, create, replace, append, delete, and snapshot operations—and adapts those
+resources into permission-controlled agent tools. Hosts provide the storage
+implementation; the package provides schemas, exact per-call capability
+resolution, and stable tool definitions.
 
 ### Adapters
 
@@ -91,9 +98,13 @@ must not develop a second authorization model.
 `@sharedos/testkit` supplies deterministic in-memory providers and conformance
 fixtures. It is intended for unit tests and examples, not production storage.
 
+`@sharedos/sdk` is an ergonomic distribution layer that re-exports the
+production packages from one install. It contains no policy, storage, or
+transport logic and does not change the dependency direction.
+
 ## Domain model
 
-### Namespace and world
+### Execution namespace and world
 
 A namespace is the mandatory tenant and isolation boundary for identifiers,
 grants, messages, resources, and audit events. A world is the host-provided state
@@ -102,6 +113,18 @@ per run; Aicoo maps a namespace to durable product state.
 
 No unqualified identifier is globally resolvable. Provider calls receive the
 namespace explicitly.
+
+This execution namespace is distinct from two other identifiers:
+
+- `ResourceRef.namespace` selects an authority domain such as `files`,
+  `calendar`, or `sharedos.messaging`.
+- `ToolDefinition.namespace` groups a logical family of tools such as
+  `calendar`, `email`, or a user-connected `notion` MCP server.
+
+The three identifiers can contain the same string, but one never implies
+another. A world boundary prevents tenant crossover; a resource namespace
+scopes a capability; a tool namespace controls whether a family is present in
+the current tool surface.
 
 ### Structured addresses
 
@@ -135,17 +158,23 @@ SharedOS defines operations, authorization hooks, cancellation, and result
 shapes. Hosts implement the exported `ResourceProvider` port, for example:
 
 ```ts
-const memory: ResourceProvider = {
-  namespace: "memory",
+const files: ResourceProvider = {
+  namespace: "files",
   async invoke(operation, signal) {
     signal.throwIfAborted();
-    return searchHostMemory(operation);
+    return invokeHostFileOperation(operation);
   },
 };
 ```
 
-An Aicoo provider can use Postgres and an embedding service. A PACT provider can
-use an isolated in-memory world. The runtime sees only the provider contract.
+An Aicoo provider can map notes and folders to files while using its search
+index for `files.search`. A PACT provider can use an isolated in-memory world.
+The runtime sees only the provider contract.
+
+Memory, active work, raw evidence, and curated knowledge may be represented as
+different file roots. Indexes and context mounts are derived views: they must
+preserve the grants of their source files and cannot introduce a second
+resource identity.
 
 ### Built-in and external capabilities
 
@@ -154,15 +183,38 @@ names such as:
 
 - `sharedos.execution` + `invoke`, scoped to a target agent
 - `sharedos.messaging` + `send`, scoped to a recipient
-- `memory.search`, `memory.read`, `memory.append`
-- `workspace.list`, `workspace.read`, `workspace.search`, `workspace.grep`
-- `workspace.write`
-- `workspace.snapshot.create`, `workspace.snapshot.restore`
+- `files.list`, `files.stat`, `files.read`, `files.search`, `files.grep`
+- `files.create`, `files.replace`, `files.append`, `files.delete`
+- `files.snapshot.create`, `files.snapshot.list`, `files.snapshot.restore`
 
 External capabilities—calendar, email, GitHub, Notion, MCP servers, and similar
 connectors—are registered by a host. Both categories appear in one filtered
 registry and pass through one execution-time authorization gate. A tool is not
 trusted merely because it was registered.
+
+Every tool also declares a logical namespace, source, and conservative
+read/write classification. A trusted access context contains the effective
+enabled namespace selection. Registration, namespace enablement, and capability
+authority are independent requirements:
+
+```text
+usable tool = registered for this context
+              AND namespace enabled
+              AND capability allowed
+```
+
+Static tools use `ToolRegistry`. User-specific MCP or connector catalogs use a
+`ContextToolProvider`; the kernel builds an ephemeral registry per operation so
+one user's reload cannot mutate another user's catalog. `listToolNamespaces`
+aggregates the available context-specific namespaces and their enabled state.
+`updateToolNamespaces` applies an idempotent patch through a host-owned,
+atomic `ToolNamespaceSettingsStore` and returns the effective catalog.
+
+The host persists the setting and reconstructs it into future access contexts.
+It also owns adding or removing MCP connections and protecting credentials.
+SharedOS never connects a Notion server by itself; once a host supplies that
+user's Notion handlers, SharedOS applies the same namespace and capability gates
+as it does to native and `files` tools.
 
 ## One-turn execution
 
@@ -177,7 +229,7 @@ sequenceDiagram
   Host->>Runtime: execute one turn
   Runtime->>Kernel: authorize message / delegation
   Kernel-->>Runtime: decision + matched authority
-  Runtime->>Kernel: filter discoverable capabilities
+  Runtime->>Kernel: filter enabled namespaces and discoverable capabilities
   Runtime->>Agent: message + sanitized context + tools
   Agent-->>Runtime: response and requested calls
   loop every requested call

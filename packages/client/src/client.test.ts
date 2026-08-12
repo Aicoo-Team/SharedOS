@@ -54,7 +54,7 @@ describe("SharedOSClient", () => {
   it("rejects malformed success payloads instead of trusting a type cast", async () => {
     const client = new SharedOSClient({
       baseUrl: "https://sharedos.test",
-      fetch: async () => Response.json([{ name: "memory.search" }]),
+      fetch: async () => Response.json([{ name: "files.search" }]),
     });
 
     await expect(client.listTools()).rejects.toMatchObject({

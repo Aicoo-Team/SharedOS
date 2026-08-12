@@ -10,7 +10,11 @@ import {
   MessageEnvelopeSchema,
   RemoteExecutionRequestSchema,
   RemoteResourceOperationSchema,
+  ResourceRefSchema,
   ResourceOperationSchema,
+  ToolDefinitionSchema,
+  ToolNamespaceCatalogSchema,
+  ToolNamespaceUpdateSchema,
   ToolResultSchema,
   type AccessContext,
   type JsonValue,
@@ -28,8 +32,8 @@ const grant = {
   capabilities: [
     {
       resource: {
-        namespace: "memory",
-        path: ["project-x"],
+        namespace: "files",
+        path: ["Workspace", "project-x"],
         owner,
       },
       actions: ["search", "read"],
@@ -45,6 +49,7 @@ const grant = {
 
 const context = {
   namespaceId: "aicoo:alice",
+  enabledToolNamespaces: ["files"],
   actor,
   authority: owner,
   owner,
@@ -68,6 +73,56 @@ describe("JSON-safe protocol contracts", () => {
     expect(CapabilityGrantSchema.parse(grant)).toEqual(grant);
     expect(AccessContextSchema.parse(context)).toEqual(context);
     expectTypeOf(AccessContextSchema.parse(context)).toEqualTypeOf<AccessContext>();
+  });
+
+  it("requires an explicit, internally consistent tool namespace policy", () => {
+    const definition = {
+      name: "calendar.search",
+      description: "Search a calendar",
+      namespace: "calendar",
+      source: "native",
+      readWrite: "read",
+      inputSchema: { type: "object" },
+      requiredCapability: {
+        resource: { namespace: "calendar", path: ["primary"] },
+        action: "read",
+      },
+      annotations: { readOnly: true },
+    };
+
+    expect(ToolDefinitionSchema.safeParse(definition).success).toBe(true);
+    expect(ToolDefinitionSchema.safeParse({ ...definition, namespace: undefined }).success).toBe(
+      false,
+    );
+    expect(
+      ToolDefinitionSchema.safeParse({
+        ...definition,
+        annotations: { destructive: true },
+      }).success,
+    ).toBe(false);
+    expect(
+      AccessContextSchema.safeParse({ ...context, enabledToolNamespaces: ["files", "files"] })
+        .success,
+    ).toBe(false);
+    expect(
+      ToolNamespaceCatalogSchema.safeParse({
+        namespaces: [{ namespace: "calendar", sources: ["native"], toolCount: 5, enabled: true }],
+        summary: { total: 1, enabled: 1, disabled: 0 },
+      }).success,
+    ).toBe(true);
+    expect(
+      ToolNamespaceCatalogSchema.safeParse({
+        namespaces: [{ namespace: "calendar", sources: ["native"], toolCount: 5, enabled: true }],
+        summary: { total: 1, enabled: 0, disabled: 1 },
+      }).success,
+    ).toBe(false);
+    expect(ToolNamespaceUpdateSchema.parse({ enable: ["calendar"] })).toEqual({
+      enable: ["calendar"],
+    });
+    expect(ToolNamespaceUpdateSchema.safeParse({ enable: [], disable: [] }).success).toBe(false);
+    expect(
+      ToolNamespaceUpdateSchema.safeParse({ enable: ["calendar"], disable: ["calendar"] }).success,
+    ).toBe(false);
   });
 
   it("shares authorization decisions without leaking provider state", () => {
@@ -95,6 +150,13 @@ describe("JSON-safe protocol contracts", () => {
 
     expect(CapabilityGrantSchema.safeParse(invalid).success).toBe(false);
   });
+
+  it.each([["."], [".."], ["project/secret"], ["project\\secret"], ["nul\u0000byte"]])(
+    "rejects unsafe structured path segment %j",
+    (path) => {
+      expect(ResourceRefSchema.safeParse({ namespace: "files", path }).success).toBe(false);
+    },
+  );
 
   it("keeps authority out of message envelopes", () => {
     const message = {
@@ -144,21 +206,24 @@ describe("JSON-safe protocol contracts", () => {
       id: "message-1",
       sender: owner,
       receiver: actor,
-      intent: "search-memory",
+      intent: "search-files",
       purpose: context.purpose,
       payload: { query: "project status" },
       traceId: context.traceId,
       createdAt: now,
     };
     const tool = {
-      name: "memory.search",
-      description: "Search an authorized memory namespace",
+      name: "files.search",
+      description: "Search an authorized file path",
+      namespace: "files",
+      source: "sharedos",
+      readWrite: "read" as const,
       inputSchema: {
         type: "object",
         properties: { query: { type: "string" } },
       },
       requiredCapability: {
-        resource: { namespace: "memory", path: ["project-x"], owner },
+        resource: { namespace: "files", path: ["Workspace", "project-x"], owner },
         action: "search",
       },
       annotations: { readOnly: true },
@@ -190,7 +255,7 @@ describe("JSON-safe protocol contracts", () => {
     expect(
       ToolResultSchema.safeParse({
         callId: "call-1",
-        tool: "memory.search",
+        tool: "files.search",
         status: "failed",
         output: [],
         completedAt: now,
@@ -200,7 +265,7 @@ describe("JSON-safe protocol contracts", () => {
     expect(
       ToolResultSchema.safeParse({
         callId: "call-1",
-        tool: "memory.search",
+        tool: "files.search",
         status: "failed",
         error: { code: "provider_unavailable", message: "Try again" },
         completedAt: now,
@@ -212,14 +277,14 @@ describe("JSON-safe protocol contracts", () => {
     expect(
       RemoteResourceOperationSchema.safeParse({
         operationId: "operation-1",
-        resource: { namespace: "memory", path: ["project-x"] },
+        resource: { namespace: "files", path: ["Workspace", "project-x"] },
         action: "read",
       }).success,
     ).toBe(true);
     expect(
       RemoteResourceOperationSchema.safeParse({
         operationId: "operation-1",
-        resource: { namespace: "memory", path: ["project-x"] },
+        resource: { namespace: "files", path: ["Workspace", "project-x"] },
         action: "read",
         context,
       }).success,

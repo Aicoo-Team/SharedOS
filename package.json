@@ -1,8 +1,9 @@
 {
   "name": "sharedos",
-  "version": "0.0.0",
+  "version": "0.1.0-alpha.0",
   "description": "Permission-controlled agent-to-agent runtime",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "packageManager": "pnpm@9.15.0",
   "engines": {
@@ -17,6 +18,9 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "example:quickstart": "pnpm build && pnpm --filter @sharedos/example-quickstart start",
+    "example:network-studio": "pnpm --filter @sharedos/example-network-studio start",
+    "pack:preview": "node scripts/pack-preview.mjs",
+    "pack:check": "node scripts/pack-preview.mjs --check",
     "test:watch": "vitest",
     "check": "pnpm format:check && pnpm typecheck && pnpm test"
   },

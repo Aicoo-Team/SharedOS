@@ -1,17 +1,27 @@
 {
   "name": "@sharedos/runtime",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.0",
   "description": "Bounded one-turn execution runtime for SharedOS",
   "private": true,
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aicoo-Team/SharedOS.git",
+    "directory": "packages/runtime"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {
     "node": ">=20.11"
   },
   "files": [
-    "dist",
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "src/**/*.ts",
     "!dist/**/*.test.*",
-    "!dist/.tsbuildinfo"
+    "!src/**/*.test.ts"
   ],
   "exports": {
     ".": {

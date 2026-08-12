@@ -1,6 +1,6 @@
 import type { ExecutionRequest, ResourceResult } from "@sharedos/contracts";
 import { agentExecutionCapability } from "@sharedos/core";
-import { createMemoryTools } from "@sharedos/os";
+import { createFileTools } from "@sharedos/os";
 import { TurnExecutor, type AgentTurnDriver } from "@sharedos/runtime";
 import {
   InMemoryResourceProvider,
@@ -15,16 +15,13 @@ const alice = { kind: "agent", agentId: "agent-alice" } as const;
 const owner = { kind: "human", userId: "owner-1" } as const;
 const { kernel } = createTestKernel();
 
-const memory = new InMemoryResourceProvider(
-  "memory",
-  async (operation): Promise<ResourceResult> => ({
-    operationId: operation.operationId,
-    status: "succeeded",
-    output: { hits: [{ text: "SharedOS keeps authority outside the message." }] },
-    completedAt: operation.context.now,
-  }),
-);
-for (const handler of createMemoryTools(memory)) {
+const files = new InMemoryResourceProvider("files", async (operation): Promise<ResourceResult> => ({
+  operationId: operation.operationId,
+  status: "succeeded",
+  output: { hits: [{ text: "SharedOS keeps authority outside the message." }] },
+  completedAt: operation.context.now,
+}));
+for (const handler of createFileTools(files)) {
   kernel.registerTool(handler);
 }
 
@@ -37,12 +34,12 @@ const grants = [
     purposes: ["prepare-report"],
   }),
   createTestGrant({
-    id: "grant-search-memory",
+    id: "grant-search-files",
     subject: bob,
     issuer: owner,
     capabilities: [
       {
-        resource: { namespace: "memory", path: ["project-x"], owner },
+        resource: { namespace: "files", path: ["Workspace", "project-x"], owner },
         actions: ["search"],
         scope: "descendants",
       },
@@ -55,6 +52,7 @@ const context = createTestContext({
   authority: owner,
   owner,
   purpose: "prepare-report",
+  enabledToolNamespaces: ["files"],
   grants,
   now,
 });
@@ -67,9 +65,9 @@ const driver: AgentTurnDriver = {
           return {
             type: "tool_call",
             call: {
-              id: "call-search-memory",
-              tool: "memory.search",
-              arguments: { path: ["project-x"], query: "authority" },
+              id: "call-search-files",
+              tool: "files.search",
+              arguments: { path: ["Workspace", "project-x"], query: "authority" },
               traceId: context.traceId,
               requestedAt: now,
             },
@@ -77,8 +75,8 @@ const driver: AgentTurnDriver = {
         }
 
         return input.result.status === "succeeded"
-          ? { type: "complete", output: { memoryResult: input.result.output } }
-          : { type: "complete", output: { memoryError: input.result.error.code } };
+          ? { type: "complete", output: { fileResult: input.result.output } }
+          : { type: "complete", output: { fileError: input.result.error.code } };
       },
     };
   },

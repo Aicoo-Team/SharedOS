@@ -1,0 +1,40 @@
+{
+  "name": "@sharedos/sdk",
+  "version": "0.1.0-alpha.0",
+  "description": "Complete SDK entry point for the SharedOS agent runtime",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aicoo-Team/SharedOS.git",
+    "directory": "packages/sdk"
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "src/**/*.ts",
+    "!dist/**/*.test.*",
+    "!src/**/*.test.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@sharedos/client": "workspace:*",
+    "@sharedos/contracts": "workspace:*",
+    "@sharedos/core": "workspace:*",
+    "@sharedos/http": "workspace:*",
+    "@sharedos/os": "workspace:*",
+    "@sharedos/runtime": "workspace:*"
+  }
+}

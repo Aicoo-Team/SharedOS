@@ -21,11 +21,14 @@ const receiver = { kind: "agent", agentId: "agent-alice" } as const;
 const owner = { kind: "human", userId: "user-alice" } as const;
 
 const tool: ToolDefinition = {
-  name: "memory.search",
+  name: "files.search",
   description: "Authoritative registry definition",
+  namespace: "files",
+  source: "sharedos",
+  readWrite: "read",
   inputSchema: { type: "object" },
   requiredCapability: {
-    resource: { namespace: "memory", path: [] },
+    resource: { namespace: "files", path: [] },
     action: "search",
   },
 };
@@ -35,6 +38,7 @@ const context: AccessContext = {
   authority: owner,
   owner,
   namespaceId: "namespace-1",
+  enabledToolNamespaces: ["files"],
   purpose: "prepare-report",
   traceId: "trace-1",
   grants: [],
@@ -111,6 +115,7 @@ describe("TurnExecutor", () => {
     expect(openedRequest?.tools).toEqual([tool]);
     expect(openedRequest?.context).not.toHaveProperty("grants");
     expect(openedRequest?.context).not.toHaveProperty("authority");
+    expect(openedRequest?.context).not.toHaveProperty("enabledToolNamespaces");
   });
 
   it("feeds permission-checked tool results back into the driver", async () => {
@@ -190,7 +195,7 @@ describe("TurnExecutor", () => {
         type: "tool_call",
         call: {
           id: "call-hidden",
-          tool: "workspace.write",
+          tool: "files.delete",
           arguments: { path: ["secret"], content: "changed" },
           traceId: context.traceId,
           requestedAt: now,
@@ -212,7 +217,7 @@ describe("TurnExecutor", () => {
       {
         type: "tool_result",
         result: expect.objectContaining({
-          tool: "workspace.write",
+          tool: "files.delete",
           status: "denied",
           error: expect.objectContaining({ code: "tool_not_available" }),
         }),

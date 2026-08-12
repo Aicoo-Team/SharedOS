@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import {
   JsonValueSchema,
+  PathSegmentSchema,
   ResourceResultSchema,
   type AccessContext,
   type JsonObject,
@@ -14,47 +15,28 @@ import {
 } from "@sharedos/contracts";
 import type { ResourceProvider, SharedOSKernel, ToolHandler } from "@sharedos/core";
 
-export const MEMORY_NAMESPACE = "memory";
-export const WORKSPACE_NAMESPACE = "workspace";
+/** The canonical SharedOS resource plane. Memory is a role of files, not a second store. */
+export const FILES_NAMESPACE = "files";
+export const SHAREDOS_TOOL_SOURCE = "sharedos";
 
-const PathSchema = z.array(z.string().trim().min(1).max(256)).max(64);
+export const FilePathSchema = z.array(PathSegmentSchema).max(64);
+export type FilePath = z.infer<typeof FilePathSchema>;
 
-export const MemorySearchArgumentsSchema = z
+export const FilesPathArgumentsSchema = z.object({ path: FilePathSchema }).strict();
+export type FilesPathArguments = z.infer<typeof FilesPathArgumentsSchema>;
+
+export const FilesSearchArgumentsSchema = z
   .object({
-    path: PathSchema,
+    path: FilePathSchema,
     query: z.string().trim().min(1).max(8_192),
     limit: z.number().int().positive().max(100).optional(),
   })
   .strict();
-export type MemorySearchArguments = z.infer<typeof MemorySearchArgumentsSchema>;
+export type FilesSearchArguments = z.infer<typeof FilesSearchArgumentsSchema>;
 
-export const MemoryReadArgumentsSchema = z.object({ path: PathSchema.min(1) }).strict();
-export type MemoryReadArguments = z.infer<typeof MemoryReadArgumentsSchema>;
-
-export const MemoryAppendArgumentsSchema = z
+export const FilesGrepArgumentsSchema = z
   .object({
-    path: PathSchema,
-    value: JsonValueSchema,
-    metadata: z.record(JsonValueSchema).optional(),
-  })
-  .strict();
-export type MemoryAppendArguments = z.infer<typeof MemoryAppendArgumentsSchema>;
-
-export const WorkspacePathArgumentsSchema = z.object({ path: PathSchema }).strict();
-export type WorkspacePathArguments = z.infer<typeof WorkspacePathArgumentsSchema>;
-
-export const WorkspaceSearchArgumentsSchema = z
-  .object({
-    path: PathSchema,
-    query: z.string().trim().min(1).max(8_192),
-    limit: z.number().int().positive().max(100).optional(),
-  })
-  .strict();
-export type WorkspaceSearchArguments = z.infer<typeof WorkspaceSearchArgumentsSchema>;
-
-export const WorkspaceGrepArgumentsSchema = z
-  .object({
-    path: PathSchema,
+    path: FilePathSchema,
     pattern: z.string().min(1).max(8_192),
     mode: z.enum(["literal", "regex"]).default("literal"),
     caseSensitive: z.boolean().default(false),
@@ -62,26 +44,69 @@ export const WorkspaceGrepArgumentsSchema = z
     contextAfter: z.number().int().nonnegative().max(100).default(0),
   })
   .strict();
-export type WorkspaceGrepArguments = z.infer<typeof WorkspaceGrepArgumentsSchema>;
+export type FilesGrepArguments = z.infer<typeof FilesGrepArgumentsSchema>;
 
-export const WorkspaceWriteArgumentsSchema = z
+export const FilesCreateArgumentsSchema = z
   .object({
-    path: PathSchema.min(1),
+    path: FilePathSchema.min(1),
+    content: JsonValueSchema,
+    metadata: z.record(JsonValueSchema).optional(),
+  })
+  .strict();
+export type FilesCreateArguments = z.infer<typeof FilesCreateArgumentsSchema>;
+
+export const FilesReplaceArgumentsSchema = z
+  .object({
+    path: FilePathSchema.min(1),
     content: JsonValueSchema,
     expectedVersion: z.string().trim().min(1).max(256).optional(),
   })
   .strict();
-export type WorkspaceWriteArguments = z.infer<typeof WorkspaceWriteArgumentsSchema>;
+export type FilesReplaceArguments = z.infer<typeof FilesReplaceArgumentsSchema>;
 
-export const WorkspaceSnapshotRestoreArgumentsSchema = z
+export const FilesAppendArgumentsSchema = z
   .object({
-    path: PathSchema.min(1),
-    snapshotId: z.string().trim().min(1).max(256),
+    path: FilePathSchema.min(1),
+    content: JsonValueSchema,
+    expectedVersion: z.string().trim().min(1).max(256).optional(),
+    metadata: z.record(JsonValueSchema).optional(),
   })
   .strict();
-export type WorkspaceSnapshotRestoreArguments = z.infer<
-  typeof WorkspaceSnapshotRestoreArgumentsSchema
->;
+export type FilesAppendArguments = z.infer<typeof FilesAppendArgumentsSchema>;
+
+export const FilesDeleteArgumentsSchema = z
+  .object({
+    path: FilePathSchema.min(1),
+    expectedVersion: z.string().trim().min(1).max(256).optional(),
+    recursive: z.boolean().default(false),
+  })
+  .strict();
+export type FilesDeleteArguments = z.infer<typeof FilesDeleteArgumentsSchema>;
+
+export const FilesSnapshotCreateArgumentsSchema = z
+  .object({
+    path: FilePathSchema,
+    label: z.string().trim().min(1).max(256).optional(),
+  })
+  .strict();
+export type FilesSnapshotCreateArguments = z.infer<typeof FilesSnapshotCreateArgumentsSchema>;
+
+export const FilesSnapshotListArgumentsSchema = z
+  .object({
+    path: FilePathSchema,
+    limit: z.number().int().positive().max(100).optional(),
+  })
+  .strict();
+export type FilesSnapshotListArguments = z.infer<typeof FilesSnapshotListArgumentsSchema>;
+
+export const FilesSnapshotRestoreArgumentsSchema = z
+  .object({
+    path: FilePathSchema.min(1),
+    snapshotId: z.string().trim().min(1).max(256),
+    expectedVersion: z.string().trim().min(1).max(256).optional(),
+  })
+  .strict();
+export type FilesSnapshotRestoreArguments = z.infer<typeof FilesSnapshotRestoreArgumentsSchema>;
 
 interface ParsedResourceCall {
   readonly path: string[];
@@ -94,51 +119,37 @@ interface ResourceToolSpec {
 }
 
 export interface StandardOsProviders {
-  readonly memory?: ResourceProvider;
-  readonly workspace?: ResourceProvider;
+  readonly files?: ResourceProvider;
 }
 
 export function registerStandardOsTools(
   kernel: Pick<SharedOSKernel, "registerTool">,
   providers: StandardOsProviders,
 ): void {
-  if (providers.memory !== undefined) {
-    for (const handler of createMemoryTools(providers.memory)) {
-      kernel.registerTool(handler);
-    }
-  }
-
-  if (providers.workspace !== undefined) {
-    for (const handler of createWorkspaceTools(providers.workspace)) {
+  if (providers.files !== undefined) {
+    for (const handler of createFileTools(providers.files)) {
       kernel.registerTool(handler);
     }
   }
 }
 
-export function createMemoryTools(provider: ResourceProvider): readonly ToolHandler[] {
-  requireProviderNamespace(provider, MEMORY_NAMESPACE);
+/**
+ * Portable file tools over one host-owned provider.
+ *
+ * A host may expose roots such as Raw, Memory, Workspace, and Wiki, but they
+ * remain paths in this one resource plane. Search indexes and context mounts
+ * must preserve the same file grants; they are not independent authority.
+ */
+export function createFileTools(provider: ResourceProvider): readonly ToolHandler[] {
+  requireProviderNamespace(provider, FILES_NAMESPACE);
   return [
+    pathOnlyTool(provider, "files.list", "List entries inside a granted file path.", "list"),
+    pathOnlyTool(provider, "files.stat", "Read metadata for a granted file path.", "stat"),
+    pathOnlyTool(provider, "files.read", "Read content from a granted file path.", "read"),
     resourceTool(provider, {
       definition: definition({
-        name: "memory.read",
-        description: "Read a memory at an explicitly granted path.",
-        namespace: MEMORY_NAMESPACE,
-        action: "read",
-        inputSchema: {
-          type: "object",
-          additionalProperties: false,
-          required: ["path"],
-          properties: { path: pathJsonSchema(1) },
-        },
-        readOnly: true,
-      }),
-      parse: (arguments_) => ({ path: MemoryReadArgumentsSchema.parse(arguments_).path }),
-    }),
-    resourceTool(provider, {
-      definition: definition({
-        name: "memory.search",
-        description: "Search long-term memory inside an explicitly granted path.",
-        namespace: MEMORY_NAMESPACE,
+        name: "files.search",
+        description: "Semantically search files inside an explicitly granted path.",
         action: "search",
         inputSchema: {
           type: "object",
@@ -153,7 +164,7 @@ export function createMemoryTools(provider: ResourceProvider): readonly ToolHand
         readOnly: true,
       }),
       parse: (arguments_) => {
-        const args = MemorySearchArgumentsSchema.parse(arguments_);
+        const args = FilesSearchArgumentsSchema.parse(arguments_);
         return {
           path: args.path,
           input: compactObject({ query: args.query, limit: args.limit }),
@@ -162,73 +173,8 @@ export function createMemoryTools(provider: ResourceProvider): readonly ToolHand
     }),
     resourceTool(provider, {
       definition: definition({
-        name: "memory.append",
-        description: "Append a durable memory inside an explicitly granted path.",
-        namespace: MEMORY_NAMESPACE,
-        action: "append",
-        inputSchema: {
-          type: "object",
-          additionalProperties: false,
-          required: ["path", "value"],
-          properties: {
-            path: pathJsonSchema(),
-            value: {},
-            metadata: { type: "object" },
-          },
-        },
-      }),
-      parse: (arguments_) => {
-        const args = MemoryAppendArgumentsSchema.parse(arguments_);
-        return {
-          path: args.path,
-          input: compactObject({ value: args.value, metadata: args.metadata }),
-        };
-      },
-    }),
-  ];
-}
-
-export function createWorkspaceTools(provider: ResourceProvider): readonly ToolHandler[] {
-  requireProviderNamespace(provider, WORKSPACE_NAMESPACE);
-  return [
-    pathOnlyTool(
-      provider,
-      "workspace.list",
-      "List entries inside a granted workspace path.",
-      "list",
-    ),
-    pathOnlyTool(provider, "workspace.read", "Read content from a granted workspace path.", "read"),
-    resourceTool(provider, {
-      definition: definition({
-        name: "workspace.search",
-        description: "Semantically search content inside a granted workspace path.",
-        namespace: WORKSPACE_NAMESPACE,
-        action: "search",
-        inputSchema: {
-          type: "object",
-          additionalProperties: false,
-          required: ["path", "query"],
-          properties: {
-            path: pathJsonSchema(),
-            query: { type: "string" },
-            limit: { type: "integer", minimum: 1, maximum: 100 },
-          },
-        },
-        readOnly: true,
-      }),
-      parse: (arguments_) => {
-        const args = WorkspaceSearchArgumentsSchema.parse(arguments_);
-        return {
-          path: args.path,
-          input: compactObject({ query: args.query, limit: args.limit }),
-        };
-      },
-    }),
-    resourceTool(provider, {
-      definition: definition({
-        name: "workspace.grep",
+        name: "files.grep",
         description: "Run deterministic literal or regex search with line context.",
-        namespace: WORKSPACE_NAMESPACE,
         action: "grep",
         inputSchema: {
           type: "object",
@@ -246,16 +192,36 @@ export function createWorkspaceTools(provider: ResourceProvider): readonly ToolH
         readOnly: true,
       }),
       parse: (arguments_) => {
-        const { path, ...input } = WorkspaceGrepArgumentsSchema.parse(arguments_);
+        const { path, ...input } = FilesGrepArgumentsSchema.parse(arguments_);
         return { path, input };
       },
     }),
     resourceTool(provider, {
       definition: definition({
-        name: "workspace.write",
-        description: "Create or replace content at an explicitly granted workspace path.",
-        namespace: WORKSPACE_NAMESPACE,
-        action: "write",
+        name: "files.create",
+        description: "Create a file at an explicitly granted, previously absent path.",
+        action: "create",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["path", "content"],
+          properties: {
+            path: pathJsonSchema(1),
+            content: {},
+            metadata: { type: "object" },
+          },
+        },
+      }),
+      parse: (arguments_) => {
+        const { path, content, metadata } = FilesCreateArgumentsSchema.parse(arguments_);
+        return { path, input: compactObject({ content, metadata }) };
+      },
+    }),
+    resourceTool(provider, {
+      definition: definition({
+        name: "files.replace",
+        description: "Replace a file's complete content, optionally at an expected version.",
+        action: "replace",
         inputSchema: {
           type: "object",
           additionalProperties: false,
@@ -269,24 +235,97 @@ export function createWorkspaceTools(provider: ResourceProvider): readonly ToolH
         destructive: true,
       }),
       parse: (arguments_) => {
-        const { path, content, expectedVersion } = WorkspaceWriteArgumentsSchema.parse(arguments_);
-        return {
-          path,
-          input: compactObject({ content, expectedVersion }),
-        };
+        const { path, content, expectedVersion } = FilesReplaceArgumentsSchema.parse(arguments_);
+        return { path, input: compactObject({ content, expectedVersion }) };
       },
     }),
-    pathOnlyTool(
-      provider,
-      "workspace.snapshot.create",
-      "Create a restorable snapshot of a granted workspace resource.",
-      "snapshot:create",
-    ),
     resourceTool(provider, {
       definition: definition({
-        name: "workspace.snapshot.restore",
-        description: "Restore a granted workspace resource from a named snapshot.",
-        namespace: WORKSPACE_NAMESPACE,
+        name: "files.append",
+        description: "Append content to a file at an explicitly granted path.",
+        action: "append",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["path", "content"],
+          properties: {
+            path: pathJsonSchema(1),
+            content: {},
+            expectedVersion: { type: "string" },
+            metadata: { type: "object" },
+          },
+        },
+      }),
+      parse: (arguments_) => {
+        const { path, content, expectedVersion, metadata } =
+          FilesAppendArgumentsSchema.parse(arguments_);
+        return { path, input: compactObject({ content, expectedVersion, metadata }) };
+      },
+    }),
+    resourceTool(provider, {
+      definition: definition({
+        name: "files.delete",
+        description: "Delete a file path; recursive deletion must be requested explicitly.",
+        action: "delete",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["path"],
+          properties: {
+            path: pathJsonSchema(1),
+            expectedVersion: { type: "string" },
+            recursive: { type: "boolean", default: false },
+          },
+        },
+        destructive: true,
+      }),
+      parse: (arguments_) => {
+        const { path, expectedVersion, recursive } = FilesDeleteArgumentsSchema.parse(arguments_);
+        return { path, input: compactObject({ expectedVersion, recursive }) };
+      },
+    }),
+    resourceTool(provider, {
+      definition: definition({
+        name: "files.snapshot.create",
+        description: "Create a restorable snapshot of a granted file path.",
+        action: "snapshot:create",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["path"],
+          properties: { path: pathJsonSchema(), label: { type: "string" } },
+        },
+      }),
+      parse: (arguments_) => {
+        const { path, label } = FilesSnapshotCreateArgumentsSchema.parse(arguments_);
+        return label === undefined ? { path } : { path, input: { label } };
+      },
+    }),
+    resourceTool(provider, {
+      definition: definition({
+        name: "files.snapshot.list",
+        description: "List snapshots for a granted file path.",
+        action: "snapshot:list",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["path"],
+          properties: {
+            path: pathJsonSchema(),
+            limit: { type: "integer", minimum: 1, maximum: 100 },
+          },
+        },
+        readOnly: true,
+      }),
+      parse: (arguments_) => {
+        const { path, limit } = FilesSnapshotListArgumentsSchema.parse(arguments_);
+        return limit === undefined ? { path } : { path, input: { limit } };
+      },
+    }),
+    resourceTool(provider, {
+      definition: definition({
+        name: "files.snapshot.restore",
+        description: "Restore a granted file path from a named snapshot.",
         action: "snapshot:restore",
         inputSchema: {
           type: "object",
@@ -295,13 +334,15 @@ export function createWorkspaceTools(provider: ResourceProvider): readonly ToolH
           properties: {
             path: pathJsonSchema(1),
             snapshotId: { type: "string" },
+            expectedVersion: { type: "string" },
           },
         },
         destructive: true,
       }),
       parse: (arguments_) => {
-        const { path, snapshotId } = WorkspaceSnapshotRestoreArgumentsSchema.parse(arguments_);
-        return { path, input: { snapshotId } };
+        const { path, snapshotId, expectedVersion } =
+          FilesSnapshotRestoreArgumentsSchema.parse(arguments_);
+        return { path, input: compactObject({ snapshotId, expectedVersion }) };
       },
     }),
   ];
@@ -317,7 +358,6 @@ function pathOnlyTool(
     definition: definition({
       name,
       description,
-      namespace: WORKSPACE_NAMESPACE,
       action,
       inputSchema: {
         type: "object",
@@ -325,9 +365,9 @@ function pathOnlyTool(
         required: ["path"],
         properties: { path: pathJsonSchema() },
       },
-      readOnly: action === "list" || action === "read",
+      readOnly: true,
     }),
-    parse: (arguments_) => ({ path: WorkspacePathArgumentsSchema.parse(arguments_).path }),
+    parse: (arguments_) => ({ path: FilesPathArgumentsSchema.parse(arguments_).path }),
   });
 }
 
@@ -374,7 +414,7 @@ function toToolResult(
       completedAt: context.now,
       error: {
         code: "invalid_resource_result",
-        message: "The OS resource provider returned an invalid result.",
+        message: "The OS file provider returned an invalid result.",
       },
     };
   }
@@ -404,7 +444,6 @@ function toToolResult(
 function definition(args: {
   name: string;
   description: string;
-  namespace: string;
   action: string;
   inputSchema: JsonObject;
   readOnly?: boolean;
@@ -413,9 +452,12 @@ function definition(args: {
   return {
     name: args.name,
     description: args.description,
+    namespace: FILES_NAMESPACE,
+    source: SHAREDOS_TOOL_SOURCE,
+    readWrite: args.readOnly === true ? "read" : "write",
     inputSchema: args.inputSchema,
     requiredCapability: {
-      resource: { namespace: args.namespace, path: [] },
+      resource: { namespace: FILES_NAMESPACE, path: [] },
       action: args.action,
     },
     annotations: {

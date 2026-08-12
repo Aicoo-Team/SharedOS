@@ -4,6 +4,8 @@ export type AuditEventType =
   | "authorization.checked"
   | "resource.invoked"
   | "tool.catalog.listed"
+  | "tool.namespace.catalog.listed"
+  | "tool.namespace.selection.updated"
   | "tool.invoked"
   | "message.sent";
 

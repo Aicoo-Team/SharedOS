@@ -43,10 +43,11 @@ A capability binds these fields together:
 - one or more actions;
 - exact or descendant scope.
 
-Canonical resource namespaces include `memory`, `workspace`,
-`sharedos.messaging`, `sharedos.execution`, and host-registered external tool
-namespaces. Paths identify the smallest stable resource scope, such as
-`project-x`, a specific folder, or a structured recipient address.
+Canonical resource namespaces include `files`, `sharedos.messaging`,
+`sharedos.execution`, and host-registered external tool namespaces. A file path
+identifies the smallest stable resource scope, such as
+`["Memory", "project-x"]`, `["Workspace", "public", "summary.md"]`, or a
+single file. Messaging uses a structured recipient address instead.
 
 The execution namespace/world is a separate isolation boundary and must be
 bound to every resolution. A resource identifier from one world cannot resolve
@@ -103,21 +104,22 @@ Independent grant fields must not be unioned into a new synthetic authority.
 Suppose one grant allows:
 
 ```text
-memory/project-x: search, read
+files/Memory/project-x: search, read
 purpose: prepare-update
 ```
 
 and another allows:
 
 ```text
-workspace/public: write
+files/Workspace/public/summary.md: replace
 purpose: publish-summary
 ```
 
-They do not combine into permission to write `memory/project-x`, nor to write
-for `prepare-update`. The full requested tuple must match a complete capability
-under a compatible grant. A set of valid grants may provide a union of complete
-authorities, never a cross-product of their individual fields.
+They do not combine into permission to replace a file under
+`files/Memory/project-x`, nor to replace a file for `prepare-update`. The full
+requested tuple must match a complete capability under a compatible grant. A
+set of valid grants may provide a union of complete authorities, never a
+cross-product of their individual fields.
 
 ### Path scope
 
@@ -158,18 +160,26 @@ time, and provenance. It intentionally contains no grants.
 
 Sending or receiving a message and performing the requested work are separate
 authorization decisions. A recipient may accept the message yet be denied
-access to the memory or tool named inside it. Replying can also require its own
+access to the file or tool named inside it. Replying can also require its own
 `sharedos.messaging` + `send` capability. Opening a target agent turn requires a
 separate recipient-scoped `sharedos.execution` + `invoke` capability.
 
 ## Tools and MCP
 
-Tool security uses two gates:
+Tool usability requires three independent facts:
 
-1. **Discovery:** return only definitions whose required capability the actor
-   can currently exercise. Discovery does not consume `maxUses`.
-2. **Invocation:** authorize the exact registered definition and resource again
-   immediately before execution. Invocation atomically consumes a bounded use.
+1. the trusted registry or context-specific provider registered the tool;
+2. the trusted access context enables the tool's logical namespace;
+3. an active capability grant covers the required resource and action.
+
+The kernel enforces them in two phases:
+
+1. **Discovery:** return only definitions in enabled namespaces whose required
+   capability the actor can currently exercise. Discovery does not consume
+   `maxUses`.
+2. **Invocation:** recheck namespace enablement and authorize the exact
+   registered definition and resource immediately before execution. Invocation
+   atomically consumes a bounded use.
 
 Never trust a model-supplied tool name, required capability, annotations, or
 schema. Resolve the definition from the host registry, reject ambiguity, validate
@@ -177,14 +187,33 @@ arguments with the handler's mandatory runtime parser, then authorize and invoke
 the same immutable parsed call. A read-only annotation is descriptive metadata
 and cannot replace the capability action.
 
+Likewise, a tool's `namespace`, `source`, and `readWrite` fields are catalog
+metadata, not authority. Enabling `calendar` only makes qualifying calendar
+tools eligible for discovery; it does not grant read, create, update, or delete
+access to any calendar or event.
+
+Namespace settings come from the authenticated host, never from model output.
+An empty effective selection means all namespaces are disabled. Standard
+updates are idempotent enable/disable patches applied atomically by a host-owned
+settings store. The host may narrow the returned selection according to product
+or organization policy and must load that authoritative selection into future
+access contexts.
+
+The full namespace catalog is management-plane metadata. Hosts expose it only
+to an authenticated principal allowed to manage that selection and must not add
+disabled connector metadata to the model's turn context. The runtime gives the
+model only `listTools` output after namespace and capability filtering.
+
 External and MCP tools follow the same gates as built-in OS capabilities. The
 host additionally protects credentials, validates destinations, and prevents a
-connector from escaping its configured account or tenant.
+connector from escaping its configured account or tenant. Dynamic tools are
+resolved for one access context and must not be installed by mutating a
+process-global registry shared across users.
 
-## Memory and workspace
+## Files, indexes, and memory views
 
-Memory and workspace providers receive an already authorized context plus the
-exact operation. They must:
+The file provider receives an already authorized context plus the exact
+operation. It must:
 
 - resolve only within the bound namespace/world and owner;
 - return only the fields authorized by the operation;
@@ -194,9 +223,12 @@ exact operation. They must:
 - report actual affected resource identifiers for audit;
 - treat stored content as untrusted data, not policy instructions.
 
-Search indexes and embeddings are part of the same isolation boundary as source
-records. A filtered final result does not make a cross-tenant search safe if the
-search itself leaked ranking, counts, timing, or embeddings.
+Memory, workspace, raw material, and wiki content are file paths or mounted
+views over the same file plane; they are not independent stores of authority.
+Search indexes and embeddings are derived from files and remain inside the same
+isolation boundary as their sources. A filtered final result does not make a
+cross-tenant search safe if the search itself leaked ranking, counts, timing,
+or embeddings.
 
 ## Time, revocation, and bounded use
 

@@ -4,7 +4,22 @@ import { AddressSchema } from "./address.js";
 import { IdentifierSchema, TimestampSchema } from "./common.js";
 import { JsonObjectSchema } from "./json.js";
 
-const PathSegmentSchema = z.string().trim().min(1).max(256);
+/**
+ * One opaque resource-path segment.
+ *
+ * Separators, traversal markers, and control characters are rejected here so
+ * every host receives the same canonical path vocabulary. Filesystem-backed
+ * providers must still resolve beneath their configured root and reject
+ * symlink escapes.
+ */
+export const PathSegmentSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(256)
+  .regex(/^(?!\.{1,2}$)[^/\\\u0000-\u001f\u007f]+$/u, {
+    message: "path segments must not contain traversal markers, separators, or control characters",
+  });
 const ActionSchema = z.string().trim().min(1).max(128);
 const PurposeSchema = z.string().trim().min(1).max(512);
 

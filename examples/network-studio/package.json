@@ -1,0 +1,13 @@
+{
+  "name": "@sharedos/example-network-studio",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Interactive UI prototype for configuring SharedOS agent networks",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}

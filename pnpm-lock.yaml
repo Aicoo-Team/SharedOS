@@ -24,6 +24,8 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)
 
+  examples/network-studio: {}
+
   examples/quickstart:
     dependencies:
       '@sharedos/contracts':
@@ -100,6 +102,27 @@ importers:
       '@sharedos/core':
         specifier: workspace:*
         version: link:../core
+
+  packages/sdk:
+    dependencies:
+      '@sharedos/client':
+        specifier: workspace:*
+        version: link:../client
+      '@sharedos/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@sharedos/core':
+        specifier: workspace:*
+        version: link:../core
+      '@sharedos/http':
+        specifier: workspace:*
+        version: link:../http
+      '@sharedos/os':
+        specifier: workspace:*
+        version: link:../os
+      '@sharedos/runtime':
+        specifier: workspace:*
+        version: link:../runtime
 
   packages/testkit:
     dependencies:
