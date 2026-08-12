@@ -1,0 +1,348 @@
+# Host integration guide
+
+This guide is for a product or benchmark that wants to run agents through
+SharedOS. It describes the production boundary; the complete executable example
+is in [`examples/quickstart`](../examples/quickstart/src/index.ts).
+
+## What you are integrating
+
+SharedOS is the permission and one-turn execution layer between an agent and the
+state it wants to use. A host keeps its existing product, storage, model
+provider, credentials, and scheduler, then supplies those capabilities through
+SharedOS ports.
+
+```text
+host identity + policy + state
+             |
+             v
+     trusted AccessContext
+             |
+             v
+ SharedOS kernel + TurnExecutor
+      |                 |
+      v                 v
+ files / live tools   agent driver
+```
+
+SharedOS does not become the source of truth for users or data. It owns the
+portable contracts and the decision that a particular actor may perform a
+particular action for a particular purpose. The host owns the facts used to
+construct that decision.
+
+## Current package status
+
+The intended one-install entry point is `@sharedos/sdk`, with individual
+`@sharedos/*` packages available for hosts that need a smaller dependency
+surface. The packages are still private `0.x` prereleases and are not available
+from the public npm registry.
+
+For development, clone this repository and either use workspace dependencies or
+create verified local tarballs:
+
+```bash
+pnpm install
+pnpm pack:preview
+```
+
+The tarballs are written to `artifacts/npm/`. Public installation with
+`npm install @sharedos/sdk` becomes valid only after the release gates in
+[release readiness](release-readiness.md) are closed.
+
+## Choose an integration shape
+
+### Embedded runtime
+
+Use the packages in the host process. This is the preferred shape for Aicoo and
+other products that already own transactions, persistence, and model calls.
+There is no extra network hop, and the host can implement providers directly
+over its existing services.
+
+### Remote runtime
+
+Expose the same kernel through `@sharedos/http` and call it with
+`@sharedos/client`. Use this when process or language isolation matters more
+than the additional deployment boundary. Transport authentication identifies
+the caller; it does not replace SharedOS capability authorization.
+
+PACT uses a third, related shape: its runner owns the experiment loop and calls
+an embedded or remote SharedOS adapter once per tick. SharedOS still executes
+only one bounded turn.
+
+## Embedded integration, step by step
+
+### 1. Resolve a trusted access context
+
+For every request, the host resolves identity, grants, namespace settings, and
+time from trusted server-side state:
+
+```ts
+import type { AccessContext } from "@sharedos/sdk";
+
+const context: AccessContext = {
+  namespaceId: "tenant-acme",
+  actor: { kind: "agent", agentId: "researcher" },
+  authority: { kind: "human", userId: "owner-1" },
+  owner: { kind: "human", userId: "owner-1" },
+  purpose: "prepare-investor-update",
+  traceId: crypto.randomUUID(),
+  enabledToolNamespaces: ["files", "calendar"],
+  grants: await grantStore.resolveEffectiveGrants(/* trusted identity */),
+  now: new Date().toISOString(),
+};
+```
+
+Do not deserialize an `AccessContext` supplied by a model, message payload, or
+untrusted client and treat it as authority. In particular:
+
+- `actor` is the principal performing the operation;
+- `authority` is the issuer whose grants are being exercised;
+- `owner` scopes the target resources;
+- `namespaceId` isolates the tenant or benchmark world;
+- `purpose`, time, expiry, and usage limits participate in authorization;
+- `enabledToolNamespaces` comes from host-owned settings;
+- `grants` come from a trusted grant store and may require signature or
+  revocation verification.
+
+### 2. Adapt host state to the `files` resource plane
+
+SharedOS uses one canonical `files` namespace. Memory, workspace, identity,
+history, raw evidence, and curated knowledge are roles or roots inside that
+file tree—not separate permission systems.
+
+Implement `ResourceProvider` over the host's existing storage:
+
+```ts
+import type { ResourceProvider } from "@sharedos/sdk";
+
+const files: ResourceProvider = {
+  namespace: "files",
+  async invoke(operation, signal) {
+    signal.throwIfAborted();
+    return hostFiles.invoke({
+      namespaceId: operation.context.namespaceId,
+      owner: operation.resource.owner ?? operation.context.owner,
+      path: operation.resource.path,
+      action: operation.action,
+      input: operation.input,
+      signal,
+    });
+  },
+};
+```
+
+The provider maps SharedOS actions onto host behavior:
+
+| Read surface                             | Mutation surface                        | Recovery surface                                       |
+| ---------------------------------------- | --------------------------------------- | ------------------------------------------------------ |
+| `list`, `stat`, `read`, `search`, `grep` | `create`, `replace`, `append`, `delete` | `snapshot:create`, `snapshot:list`, `snapshot:restore` |
+
+The provider must preserve tenant isolation, canonicalize paths beneath its
+configured root, reject symlink or traversal escapes, implement version checks
+for concurrent writes, and return JSON-safe `ResourceResult` values. Search
+indexes and model context mounts must preserve the grants of their source files.
+
+### 3. Build the kernel and register file tools
+
+```ts
+import { CapabilityAuthorizer, SharedOSKernel, registerStandardOsTools } from "@sharedos/sdk";
+
+const kernel = new SharedOSKernel({
+  authorizer: new CapabilityAuthorizer({
+    usageStore: durableGrantUsageStore,
+    grantVerifier: durableGrantVerifier,
+  }),
+  audit: durableAuditSink,
+  toolNamespaceSettings,
+  toolProviders: [userMcpToolProvider],
+});
+
+kernel.registerResourceProvider(files);
+registerStandardOsTools(kernel, { files });
+```
+
+Registering the provider enables direct resource operations. Registering the
+standard tools exposes the same operations as model-callable tools such as
+`files.search` and `files.append`. Neither registration grants access.
+
+The in-memory stores from `@sharedos/testkit` are useful for tests and isolated
+PACT worlds. They are not production persistence.
+
+### 4. Grant the minimum authority
+
+A grant binds subject, issuer, namespace, purpose, time constraints, resource
+scope, and actions. For example, this capability allows semantic search below
+one project root, but does not allow reading another root or changing a file:
+
+```ts
+const projectSearch = {
+  resource: {
+    namespace: "files",
+    path: ["Work", "Projects", "sharedos"],
+    owner: { kind: "human", userId: "owner-1" },
+  },
+  actions: ["search"],
+  scope: "descendants",
+} as const;
+```
+
+Invoking the target agent is a separate capability. Use
+`agentExecutionCapability(targetAgent, owner)` when issuing that grant. A
+message addressed to the target agent is never sufficient by itself.
+
+### 5. Add native, connector, or MCP tools
+
+Live systems such as calendar, email, GitHub, and Notion remain tools because
+their state must be observed—or changed—at execution time. The host owns OAuth,
+credentials, MCP connections, and the implementation of each `ToolHandler`.
+
+Use `kernel.registerTool` for static, process-wide tools. Use a
+`ContextToolProvider` for user-specific or dynamically discovered catalogs so
+one user's MCP reload cannot mutate another user's tool registry.
+
+Every tool declares:
+
+- a globally stable tool name, such as `notion.search`;
+- a logical namespace, such as `notion`;
+- a source, such as `native` or `mcp`;
+- a conservative read/write classification;
+- an input schema;
+- a capability ceiling for discovery;
+- preferably, `resolveRequirement`, which derives the exact resource and action
+  from validated call arguments immediately before invocation.
+
+A Notion MCP connection can therefore be mounted safely, but connecting it and
+authorizing it are different operations. A typical search call is usable only
+when all of the following are true:
+
+```text
+the host registered this user's Notion handler
+AND the `notion` namespace is enabled
+AND a matching `notion` resource/action grant exists
+AND the exact argument-selected page or database is still authorized
+```
+
+For example, the host can grant search on one database without granting page
+updates. Similarly, a calendar namespace can expose free/busy reads while event
+details, event creation, and event deletion remain separately scoped actions.
+
+### 6. Execute exactly one bounded turn
+
+The host implements `AgentTurnDriver` for its model or agent provider and gives
+it to `TurnExecutor`:
+
+```ts
+import { TurnExecutor } from "@sharedos/sdk";
+
+const turns = new TurnExecutor(kernel, agentDriver, {
+  defaultMaxSteps: 16,
+  defaultTimeoutMs: 120_000,
+});
+
+const visibleTools = await kernel.listTools(context);
+const result = await turns.execute({
+  version: "1",
+  executionId: crypto.randomUUID(),
+  agent: targetAgent,
+  context,
+  message,
+  tools: [...visibleTools],
+});
+```
+
+The driver receives a sanitized context without grants or issuing authority.
+The runtime admits the target-agent invocation, filters discovery, and
+re-authorizes every exact tool call. A turn ends when the driver completes or
+fails, the step limit is reached, the deadline expires, or the host cancels it.
+
+SharedOS does not decide when an entire agent network is complete. Runtime
+coordination, adaptive routing, retries, budgets, and network-level stopping
+belong to the host scheduler, which may invoke another bounded turn after
+examining the result and events.
+
+## Why namespace enablement is not permission
+
+Tool availability has three independent gates:
+
+```text
+usable tool = registered for this context
+              AND namespace enabled
+              AND capability allowed
+```
+
+Namespace settings are the product control plane: they answer whether a family
+of tools should appear in this context. Capabilities are the authority plane:
+they answer which exact resources and actions the actor may use. SharedOS
+filters discovery and checks invocation again so neither a stale catalog nor a
+model-authored call can bypass the second gate.
+
+If the product allows users to change namespace settings, implement
+`ToolNamespaceSettingsStore.applyUpdate` as an atomic update over fresh state.
+The store may narrow a request according to organization policy, but must not
+widen it.
+
+## Remote integration
+
+On the server, wrap the same kernel and turn executor:
+
+```ts
+import { createKernelSharedOSApi, createSharedOSHandler } from "@sharedos/sdk";
+
+const api = createKernelSharedOSApi({ kernel, turns });
+const handle = createSharedOSHandler({
+  api,
+  resolveContext: async (request) => resolveTrustedContextFromSession(request),
+});
+```
+
+On the caller, use `SharedOSClient` for `/v1/tools`, namespace settings,
+resource and tool calls, messages, and `/v1/turns`:
+
+```ts
+import { SharedOSClient } from "@sharedos/sdk";
+
+const sharedos = new SharedOSClient({
+  baseUrl: "https://sharedos.internal.example",
+  token: () => serviceIdentityToken(),
+});
+```
+
+The HTTP server must derive `AccessContext` from authenticated server-side
+state. Never accept the authorization context from the remote JSON body.
+
+## Production responsibilities that remain in the host
+
+Before production use, the host must provide:
+
+- authenticated identity and tenant resolution;
+- durable grants, revocation verification, and atomic bounded-grant usage;
+- isolated file and tool providers with cancellation-safe side effects;
+- durable tool namespace settings and credential isolation;
+- durable, append-only audit storage and operational alerting;
+- replay and idempotency controls around externally visible mutations;
+- model-driver limits, product scheduling, retries, budgets, and stopping;
+- consent, policy administration, retention, deletion, and incident response.
+
+See the [permission model](security/permission-model.md) and
+[threat model](security/threat-model.md) before exposing writes or external
+tools.
+
+## Adoption checklist
+
+1. Select embedded or remote deployment and record the SharedOS version.
+2. Map product identities to structured addresses and choose the world or
+   tenant `namespaceId` boundary.
+3. Implement the trusted `AccessContext` resolver.
+4. Adapt existing knowledge and working state to one `files` provider.
+5. Register built-in, native, and context-specific MCP tools.
+6. Persist enabled tool namespaces independently from grants.
+7. Issue least-authority grants, including a separate target-agent invocation
+   grant.
+8. Implement a bounded `AgentTurnDriver` and keep network scheduling outside
+   SharedOS.
+9. Add allowed and denied conformance tests for every permission-bearing path.
+10. Run `pnpm check` and test cancellation, replay, revocation, audit failure,
+    and tenant isolation before enabling production writes.
+
+Product-specific mappings are documented in the [Aicoo integration guide](integrations/aicoo.md),
+the [Pulse migration plan](integrations/pulse-migration.md), and the
+[PACT integration guide](integrations/pact.md).
