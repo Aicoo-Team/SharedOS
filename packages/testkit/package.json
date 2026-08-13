@@ -4,6 +4,17 @@
   "description": "In-memory conformance helpers for SharedOS hosts",
   "private": true,
   "license": "UNLICENSED",
+  "keywords": [
+    "agents",
+    "authorization",
+    "capabilities",
+    "testing",
+    "runtime"
+  ],
+  "homepage": "https://github.com/Aicoo-Team/SharedOS#readme",
+  "bugs": {
+    "url": "https://github.com/Aicoo-Team/SharedOS/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Aicoo-Team/SharedOS.git",
@@ -11,6 +22,11 @@
   },
   "type": "module",
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "tag": "next",
+    "registry": "https://registry.npmjs.org"
+  },
   "engines": {
     "node": ">=20.11"
   },

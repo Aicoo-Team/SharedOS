@@ -16,18 +16,24 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
+    "test:release": "node --test scripts/*.test.mjs",
     "test:coverage": "vitest run --coverage",
     "example:quickstart": "pnpm build && pnpm --filter @sharedos/example-quickstart start",
     "example:network-studio": "pnpm --filter @sharedos/example-network-studio start",
     "pack:preview": "node scripts/pack-preview.mjs",
     "pack:check": "node scripts/pack-preview.mjs --check",
+    "pack:lint": "pnpm build && node scripts/package-lint.mjs",
+    "release:check": "node scripts/release.mjs check",
+    "release:check:private": "node scripts/release.mjs check --allow-private",
+    "release:publish": "node scripts/release.mjs publish",
     "test:watch": "vitest",
-    "check": "pnpm format:check && pnpm typecheck && pnpm test"
+    "check": "pnpm format:check && pnpm typecheck && pnpm test && pnpm test:release"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^2.1.8",
     "@types/node": "^22.10.2",
     "prettier": "^3.4.2",
+    "publint": "0.3.23",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }

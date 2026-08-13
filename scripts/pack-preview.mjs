@@ -1,21 +1,21 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { packageDirectories } from "./package-set.mjs";
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const checkOnly = process.argv.includes("--check");
-const packageDirectories = [
-  "contracts",
-  "core",
-  "os",
-  "runtime",
-  "http",
-  "client",
-  "sdk",
-  "testkit",
-];
 const outputDirectory = checkOnly
   ? mkdtempSync(join(tmpdir(), "sharedos-pack-check-"))
   : join(repositoryRoot, "artifacts", "npm");
@@ -73,6 +73,10 @@ function verifyArchive(archive) {
   }
   if (!entries.includes("package/README.md")) {
     throw new Error(`${manifest.name} does not include a package README.`);
+  }
+  const sourceLicense = join(repositoryRoot, "packages", manifest.name.split("/")[1], "LICENSE");
+  if (existsSync(sourceLicense) && !entries.includes("package/LICENSE")) {
+    throw new Error(`${manifest.name} does not include its declared license.`);
   }
   if (!entries.includes("package/dist/index.js") || !entries.includes("package/dist/index.d.ts")) {
     throw new Error(`${manifest.name} is missing its runtime or type entry point.`);
