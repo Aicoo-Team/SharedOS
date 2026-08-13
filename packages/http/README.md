@@ -3,7 +3,7 @@
 A Fetch-compatible HTTP adapter over the SharedOS kernel and turn runtime.
 
 ```bash
-npm install @sharedos/http
+npm install @sharedos/http@next
 ```
 
 The host-provided context resolver must authenticate the request and construct a

@@ -3,7 +3,7 @@
 Strict, JSON-safe SharedOS protocol schemas and TypeScript types.
 
 ```bash
-npm install @sharedos/contracts
+npm install @sharedos/contracts@next
 ```
 
 Use this package for addresses, capabilities, messages, resources, tools,

@@ -25,7 +25,8 @@ missing packages. It refuses to reuse a version when the contents differ.
 
 Before the first public release, a maintainer must:
 
-1. approve the repository license and security-reporting contact;
+1. approve the repository license and security-reporting contact (Apache-2.0
+   and `founders@aicoo.io` for the initial release);
 2. enable 2FA on an npm account;
 3. create or control the npm organization named `sharedos` and grant that
    account publish access;

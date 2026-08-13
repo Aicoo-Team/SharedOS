@@ -2,8 +2,7 @@
   "name": "@sharedos/testkit",
   "version": "0.1.0-alpha.0",
   "description": "In-memory conformance helpers for SharedOS hosts",
-  "private": true,
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "keywords": [
     "agents",
     "authorization",
@@ -11,9 +10,9 @@
     "testing",
     "runtime"
   ],
-  "homepage": "https://github.com/Aicoo-Team/SharedOS#readme",
+  "homepage": "https://www.aicoo.io",
   "bugs": {
-    "url": "https://github.com/Aicoo-Team/SharedOS/issues"
+    "email": "founders@aicoo.io"
   },
   "repository": {
     "type": "git",

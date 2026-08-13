@@ -9,8 +9,8 @@ and authorization layer beneath products such as Aicoo and experiment systems
 such as PACT.
 
 > **Project status:** initial architecture and contracts are under active
-> development. Every workspace package is intentionally private: the `0.x`
-> API is not published or production-ready yet.
+> development. SharedOS is distributed as a `0.x` prerelease under npm's
+> `next` tag; the API is not stable or production-hardened yet.
 
 ## Why SharedOS is more than messaging
 
@@ -158,10 +158,15 @@ authorization.
 8. The model sees a sanitized context, never grants or issuing authority.
 9. A host adapter cannot silently widen the authority evaluated by the core.
 
-## Local quickstart
+## Quickstart
 
-The packages are not available from npm yet. Run the workspace example from a
-local clone:
+Install the prerelease SDK from npm:
+
+```bash
+npm install @sharedos/sdk@next
+```
+
+To run the sender-to-receiver example from a local clone:
 
 ```bash
 pnpm install
@@ -185,10 +190,9 @@ run state. It is a front-end simulation and does not invoke real agents.
 
 ## Package preview
 
-The intended one-install entry point is `@sharedos/sdk`. Individual packages
-remain available for hosts that want a smaller dependency surface. Until a
-license and npm scope ownership are confirmed, packages remain private and are
-generated only as local prerelease tarballs.
+The one-install entry point is `@sharedos/sdk`. Individual packages remain
+available for hosts that want a smaller dependency surface. Release candidates
+use one synchronized version and the `next` dist-tag.
 
 ```bash
 pnpm pack:preview
@@ -212,11 +216,11 @@ The repository is a TypeScript workspace. Public contracts must stay JSON-safe,
 and permission changes require tests for both allowed and denied paths. See
 [CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change.
 
-Public release is deliberately gated on the items in
-[release readiness](docs/release-readiness.md), including a license decision,
-npm scope ownership, durable replay/idempotency, and security contact setup.
-The exact package order, validation commands, first-publication bootstrap, and
-trusted-publishing transition are documented in the
+The remaining production-hardening work is tracked in
+[release readiness](docs/release-readiness.md), including durable
+replay/idempotency and host-adapter requirements. The exact package order,
+validation commands, first-publication bootstrap, and trusted-publishing
+transition are documented in the
 [npm release runbook](docs/npm-release.md).
 
 ## Architecture decisions
@@ -230,6 +234,4 @@ trusted-publishing transition are documented in the
 
 ## License
 
-No license has been declared yet. Until one is added, no permission is granted
-to copy, modify, or redistribute this code outside the repository owner's
-authorization.
+SharedOS is licensed under the [Apache License 2.0](LICENSE).
