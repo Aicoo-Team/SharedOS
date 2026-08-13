@@ -215,6 +215,9 @@ and permission changes require tests for both allowed and denied paths. See
 Public release is deliberately gated on the items in
 [release readiness](docs/release-readiness.md), including a license decision,
 npm scope ownership, durable replay/idempotency, and security contact setup.
+The exact package order, validation commands, first-publication bootstrap, and
+trusted-publishing transition are documented in the
+[npm release runbook](docs/npm-release.md).
 
 ## Architecture decisions
 

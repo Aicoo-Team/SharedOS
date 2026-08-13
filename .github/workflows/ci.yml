@@ -27,5 +27,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm build
+      - run: pnpm pack:lint
       - run: pnpm --filter @sharedos/example-quickstart start
       - run: pnpm pack:check

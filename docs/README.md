@@ -11,6 +11,8 @@
 - [Threat model](security/threat-model.md): trust boundaries, attack surfaces,
   required controls, and non-goals.
 - [Release readiness](release-readiness.md): explicit npm and production gates.
+- [npm release runbook](npm-release.md): package validation, first publication,
+  trusted publishing, and registry verification.
 
 ## Host integrations
 

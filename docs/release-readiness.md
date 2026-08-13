@@ -45,5 +45,9 @@ npm release or a production security boundary. Every leaf package remains
 - Canonical resource path segments and explicit provider-facing owners.
 - Package-level READMEs, distributable source and source maps, exact packed
   dependency versions, and a fresh-consumer runtime/type smoke test.
+- A dependency-ordered, `next`-tagged release script with package lint, dry-run,
+  registry collision checks, canonical-content recovery, and a tag-triggered
+  trusted-publishing workflow. The private package flag remains the final code
+  gate until the public release decisions above are closed.
 - Private packages, Node 20/22 CI, type checks, tests, build, and executable
   sender-to-receiver quickstart.
