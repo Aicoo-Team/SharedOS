@@ -2,8 +2,7 @@
   "name": "@sharedos/contracts",
   "version": "0.1.0-alpha.0",
   "description": "JSON-safe protocol contracts for SharedOS",
-  "private": true,
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "keywords": [
     "agents",
     "authorization",
@@ -11,9 +10,9 @@
     "contracts",
     "runtime"
   ],
-  "homepage": "https://github.com/Aicoo-Team/SharedOS#readme",
+  "homepage": "https://www.aicoo.io",
   "bugs": {
-    "url": "https://github.com/Aicoo-Team/SharedOS/issues"
+    "email": "founders@aicoo.io"
   },
   "repository": {
     "type": "git",

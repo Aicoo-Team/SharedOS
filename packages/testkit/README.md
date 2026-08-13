@@ -3,7 +3,7 @@
 Deterministic in-memory fixtures and recording providers for SharedOS tests.
 
 ```bash
-npm install --save-dev @sharedos/testkit
+npm install --save-dev @sharedos/testkit@next
 ```
 
 This package is for tests, examples, and isolated experimental worlds. Its

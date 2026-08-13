@@ -3,7 +3,7 @@
 One bounded, permission-controlled SharedOS agent turn.
 
 ```bash
-npm install @sharedos/runtime @sharedos/core @sharedos/contracts
+npm install @sharedos/runtime@next
 ```
 
 The runtime admits the target agent, mounts a sanitized context, exposes only

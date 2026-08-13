@@ -23,9 +23,8 @@ release.
 
 Please do not open a public issue for a suspected vulnerability.
 
-During the private bootstrap, authorized collaborators should contact the
-Aicoo-Team repository owners through the team's existing private channel and
-request a dedicated secure thread. Include:
+Email [founders@aicoo.io](mailto:founders@aicoo.io) with the subject
+`SharedOS security report` to request a dedicated secure thread. Include:
 
 - the affected package, version or commit;
 - the security invariant that can be bypassed;
@@ -34,11 +33,9 @@ request a dedicated secure thread. Include:
 - any suggested mitigation;
 - whether the issue is already public or under active exploitation.
 
-GitHub private vulnerability reporting is not enabled for this repository yet.
-Enabling and verifying it—or publishing another concrete security contact—is a
-release gate before any external distribution. Do not include secrets,
-production user data, live credentials, or destructive payloads in the initial
-message.
+The source repository is private, so public npm users should use the email
+channel rather than a GitHub issue. Do not include secrets, production user
+data, live credentials, or destructive payloads in the initial message.
 
 Maintainers will acknowledge the report, validate impact, coordinate a fix and
 release, and agree on disclosure timing with the reporter. Response times may

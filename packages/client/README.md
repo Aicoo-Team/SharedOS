@@ -3,7 +3,7 @@
 Runtime-validated HTTP client for a SharedOS service.
 
 ```bash
-npm install @sharedos/client
+npm install @sharedos/client@next
 ```
 
 ```ts

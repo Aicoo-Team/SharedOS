@@ -1,16 +1,21 @@
 # Release readiness
 
-SharedOS is initialized as a private, testable workspace. It is not yet a public
-npm release or a production security boundary. Every leaf package remains
-`private: true` until all release gates below are closed deliberately.
+SharedOS is a private-source, publicly distributed prerelease. It is not yet a
+production security boundary. Prerelease packages use the `next` dist-tag and
+carry the Apache-2.0 license.
 
-## Public release gates
+## Distribution gates
 
-- Choose and add a repository license; propagate it into every package archive.
-- Verify Aicoo-Team ownership of the `@sharedos` npm scope and configure trusted
-  publishing/provenance.
-- Enable and verify a real private vulnerability-reporting channel.
+- Verify ownership of the `@sharedos` npm scope and perform the first manual
+  publication as `0.1.0-alpha.0`.
+- Configure GitHub trusted publishing for every package after its first
+  publication, then verify OIDC with the next prerelease.
 - Align PACT's Node.js floor with SharedOS (`>=20.11`) before integration.
+
+Completed distribution gates: Apache-2.0 is present in every package archive,
+the package set is fixed and package-linted, prereleases cannot become `latest`
+accidentally, and `founders@aicoo.io` is the private vulnerability-reporting
+contact.
 
 ## Production security gates
 
@@ -47,7 +52,6 @@ npm release or a production security boundary. Every leaf package remains
   dependency versions, and a fresh-consumer runtime/type smoke test.
 - A dependency-ordered, `next`-tagged release script with package lint, dry-run,
   registry collision checks, canonical-content recovery, and a tag-triggered
-  trusted-publishing workflow. The private package flag remains the final code
-  gate until the public release decisions above are closed.
-- Private packages, Node 20/22 CI, type checks, tests, build, and executable
-  sender-to-receiver quickstart.
+  trusted-publishing workflow.
+- Apache-2.0 public prerelease metadata, Node 20/22 CI, type checks, tests,
+  build, and executable sender-to-receiver quickstart.
