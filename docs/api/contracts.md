@@ -280,7 +280,7 @@ Defined in: [resource.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/pa
 
 > **RuntimeEvent** = `z.infer`\<_typeof_ [`RuntimeEventSchema`](#runtimeeventschema)>\>
 
-Defined in: runtime.ts:27
+Defined in: [runtime.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L27)
 
 ---
 
@@ -288,7 +288,7 @@ Defined in: runtime.ts:27
 
 > **RuntimeManifest** = `z.infer`\<_typeof_ [`RuntimeManifestSchema`](#runtimemanifestschema)>\>
 
-Defined in: runtime.ts:17
+Defined in: [runtime.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L17)
 
 ---
 
@@ -296,7 +296,7 @@ Defined in: runtime.ts:17
 
 > **RuntimeTurnOutcome** = `z.infer`\<_typeof_ [`RuntimeTurnOutcomeSchema`](#runtimeturnoutcomeschema)>\>
 
-Defined in: runtime.ts:45
+Defined in: [runtime.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L45)
 
 ---
 
@@ -727,7 +727,7 @@ Defined in: [resource.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/pa
 
 > `const` **RuntimeEventSchema**: `ZodObject`\<\{ `data`: `ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>\>; `type`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `data`: [`JsonValue`](#jsonvalue); `type`: `string`; \}, \{ `data`: [`JsonValue`](#jsonvalue); `type`: `string`; \}\>
 
-Defined in: runtime.ts:20
+Defined in: [runtime.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L20)
 
 A runtime-originated observation. The SharedOS envelope assigns its audit identity.
 
@@ -737,7 +737,7 @@ A runtime-originated observation. The SharedOS envelope assigns its audit identi
 
 > `const` **RuntimeManifestSchema**: `ZodObject`\<\{ `id`: `ZodString`; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `protocolVersion`: `ZodLiteral`\<`"1"`>\>; `version`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `protocolVersion`: `"1"`; `version`: `string`; \}, \{ `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `protocolVersion`: `"1"`; `version`: `string`; \}\>
 
-Defined in: runtime.ts:8
+Defined in: [runtime.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L8)
 
 Stable, JSON-safe provenance for one installed runtime implementation.
 
@@ -747,7 +747,7 @@ Stable, JSON-safe provenance for one installed runtime implementation.
 
 > `const` **RuntimeTurnOutcomeSchema**: `ZodDiscriminatedUnion`\<`"type"`, \[`ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `type`: `"complete"`; \}, \{ `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `type`: `"complete"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `type`: `"fail"`; \}, \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `type`: `"fail"`; \}\>\]\>
 
-Defined in: runtime.ts:34
+Defined in: [runtime.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L34)
 
 The only terminal outcomes a runtime plugin may return for one bounded turn.
 
