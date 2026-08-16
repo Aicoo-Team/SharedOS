@@ -20,9 +20,9 @@ import {
   type ToolNamespaceCatalog,
   type ToolNamespaceUpdate,
   type ToolResult,
-} from "@sharedos/contracts";
-import type { SharedOSKernel } from "@sharedos/core";
-import type { TurnExecutionPort } from "@sharedos/runtime";
+} from "@aicoo/sharedos-contracts";
+import type { SharedOSKernel } from "@aicoo/sharedos-core";
+import type { TurnExecutionPort } from "@aicoo/sharedos-runtime";
 
 export interface SharedOSApiCallOptions {
   readonly signal?: AbortSignal;

@@ -1,4 +1,4 @@
-import type { ProtocolError } from "@sharedos/contracts";
+import type { ProtocolError } from "@aicoo/sharedos-contracts";
 
 export function protocolError(code: string, message: string, retryable = false): ProtocolError {
   return { code, message, retryable };

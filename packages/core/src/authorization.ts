@@ -5,7 +5,7 @@ import type {
   Capability,
   CapabilityGrant,
   ResourceRef,
-} from "@sharedos/contracts";
+} from "@aicoo/sharedos-contracts";
 
 export interface AuthorizationRequest {
   readonly resource: ResourceRef;

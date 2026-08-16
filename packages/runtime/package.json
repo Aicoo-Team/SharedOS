@@ -1,5 +1,5 @@
 {
-  "name": "@sharedos/runtime",
+  "name": "@aicoo/sharedos-runtime",
   "version": "0.1.0-alpha.0",
   "description": "Fixed SharedOS security envelope with standard and pluggable one-turn runtimes",
   "license": "Apache-2.0",
@@ -45,7 +45,7 @@
     }
   },
   "dependencies": {
-    "@sharedos/contracts": "workspace:*",
-    "@sharedos/core": "workspace:*"
+    "@aicoo/sharedos-contracts": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*"
   }
 }

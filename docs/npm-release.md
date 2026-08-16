@@ -1,20 +1,25 @@
 # npm release runbook
 
 SharedOS publishes eight public ESM packages at one synchronized prerelease
-version. `@sharedos/sdk` is the recommended entry point; the other packages let
+version. `@aicoo/sharedos` is the recommended entry point; the other packages let
 hosts choose a smaller dependency surface. Prereleases use the `next` dist-tag,
 so an alpha never becomes `latest` accidentally.
 
+The initial public distribution lives under the existing `@aicoo` npm
+organization. A future move to another scope, such as `@systemind/sharedos`, is
+a new package identity rather than an in-place rename: publish the new package,
+deprecate the old one with a migration message, and support an overlap window.
+
 ## Package set and order
 
-1. `@sharedos/contracts`
-2. `@sharedos/core`
-3. `@sharedos/os`
-4. `@sharedos/runtime`
-5. `@sharedos/client`
-6. `@sharedos/http`
-7. `@sharedos/testkit`
-8. `@sharedos/sdk`
+1. `@aicoo/sharedos-contracts`
+2. `@aicoo/sharedos-core`
+3. `@aicoo/sharedos-os`
+4. `@aicoo/sharedos-runtime`
+5. `@aicoo/sharedos-client`
+6. `@aicoo/sharedos-http`
+7. `@aicoo/sharedos-testkit`
+8. `@aicoo/sharedos`
 
 The release script publishes in dependency order. If a run stops after only
 some packages reach npm, rerunning it verifies the registry archive's npm
@@ -28,8 +33,7 @@ Before the first public release, a maintainer must:
 1. approve the repository license and security-reporting contact (Apache-2.0
    and `founders@aicoo.io` for the initial release);
 2. enable 2FA on an npm account;
-3. create or control the npm organization named `sharedos` and grant that
-   account publish access;
+3. hold publish access in the npm organization named `aicoo`;
 4. merge the release metadata and workflow to `main`;
 5. perform the first publication from a clean, tagged `main` checkout, because
    npm trusted publishers can only be attached after each package exists;
@@ -63,7 +67,7 @@ It does not publish.
 ## First publication
 
 After the release PR is merged, tag that exact commit and authenticate using an
-npm account that controls `@sharedos`. Never paste an npm token or OTP into an
+npm account that controls `@aicoo`. Never paste an npm token or OTP into an
 issue, pull request, shell history, or chat.
 
 ```bash
@@ -95,8 +99,8 @@ Actions.
 ## Verify the registry
 
 ```bash
-npm view @sharedos/sdk@next version dist.integrity
-npm install @sharedos/sdk@next
+npm view @aicoo/sharedos@next version dist.integrity
+npm install @aicoo/sharedos@next
 npm audit signatures
 ```
 

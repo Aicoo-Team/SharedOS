@@ -33,7 +33,7 @@ In particular:
 - Tool registration and invocation gates belong to SharedOS.
 - OAuth credentials, MCP sessions, and concrete connectors belong to the host.
 
-`@sharedos/testkit` may provide in-memory implementations for tests and examples.
+`@aicoo/sharedos-testkit` may provide in-memory implementations for tests and examples.
 They are not a recommended production data layer.
 
 ## Consequences

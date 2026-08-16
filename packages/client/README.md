@@ -1,13 +1,13 @@
-# @sharedos/client
+# @aicoo/sharedos-client
 
 Runtime-validated HTTP client for a SharedOS service.
 
 ```bash
-npm install @sharedos/client@next
+npm install @aicoo/sharedos-client@next
 ```
 
 ```ts
-import { SharedOSClient } from "@sharedos/client";
+import { SharedOSClient } from "@aicoo/sharedos-client";
 
 const client = new SharedOSClient({ baseUrl: "https://sharedos.example" });
 const tools = await client.listTools();

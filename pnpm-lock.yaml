@@ -37,25 +37,25 @@ importers:
 
   examples/quickstart:
     dependencies:
-      '@sharedos/contracts':
+      '@aicoo/sharedos-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@sharedos/core':
+      '@aicoo/sharedos-core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@sharedos/os':
+      '@aicoo/sharedos-os':
         specifier: workspace:*
         version: link:../../packages/os
-      '@sharedos/runtime':
+      '@aicoo/sharedos-runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
-      '@sharedos/testkit':
+      '@aicoo/sharedos-testkit':
         specifier: workspace:*
         version: link:../../packages/testkit
 
   packages/client:
     dependencies:
-      '@sharedos/contracts':
+      '@aicoo/sharedos-contracts':
         specifier: workspace:*
         version: link:../contracts
 
@@ -71,32 +71,32 @@ importers:
 
   packages/core:
     dependencies:
-      '@sharedos/contracts':
+      '@aicoo/sharedos-contracts':
         specifier: workspace:*
         version: link:../contracts
 
   packages/http:
     dependencies:
-      '@sharedos/contracts':
+      '@aicoo/sharedos-contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@sharedos/core':
+      '@aicoo/sharedos-core':
         specifier: workspace:*
         version: link:../core
-      '@sharedos/runtime':
+      '@aicoo/sharedos-runtime':
         specifier: workspace:*
         version: link:../runtime
     devDependencies:
-      '@sharedos/client':
+      '@aicoo/sharedos-client':
         specifier: workspace:*
         version: link:../client
 
   packages/os:
     dependencies:
-      '@sharedos/contracts':
+      '@aicoo/sharedos-contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@sharedos/core':
+      '@aicoo/sharedos-core':
         specifier: workspace:*
         version: link:../core
       zod:
@@ -105,40 +105,40 @@ importers:
 
   packages/runtime:
     dependencies:
-      '@sharedos/contracts':
+      '@aicoo/sharedos-contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@sharedos/core':
+      '@aicoo/sharedos-core':
         specifier: workspace:*
         version: link:../core
 
   packages/sdk:
     dependencies:
-      '@sharedos/client':
+      '@aicoo/sharedos-client':
         specifier: workspace:*
         version: link:../client
-      '@sharedos/contracts':
+      '@aicoo/sharedos-contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@sharedos/core':
+      '@aicoo/sharedos-core':
         specifier: workspace:*
         version: link:../core
-      '@sharedos/http':
+      '@aicoo/sharedos-http':
         specifier: workspace:*
         version: link:../http
-      '@sharedos/os':
+      '@aicoo/sharedos-os':
         specifier: workspace:*
         version: link:../os
-      '@sharedos/runtime':
+      '@aicoo/sharedos-runtime':
         specifier: workspace:*
         version: link:../runtime
 
   packages/testkit:
     dependencies:
-      '@sharedos/contracts':
+      '@aicoo/sharedos-contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@sharedos/core':
+      '@aicoo/sharedos-core':
         specifier: workspace:*
         version: link:../core
 

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import type { AccessContext, Address, CapabilityGrant, ResourceRef } from "@sharedos/contracts";
+import type {
+  AccessContext,
+  Address,
+  CapabilityGrant,
+  ResourceRef,
+} from "@aicoo/sharedos-contracts";
 
 import {
   type CapabilityGrantVerifier,

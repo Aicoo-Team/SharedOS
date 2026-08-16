@@ -3,7 +3,7 @@ import type {
   ResourceOperation,
   ResourceRef,
   ResourceResult,
-} from "@sharedos/contracts";
+} from "@aicoo/sharedos-contracts";
 
 import { DuplicateRegistrationError } from "./errors.js";
 

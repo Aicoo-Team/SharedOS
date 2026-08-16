@@ -1,5 +1,5 @@
 {
-  "name": "@sharedos/core",
+  "name": "@aicoo/sharedos-core",
   "version": "0.1.0-alpha.0",
   "description": "Deny-by-default capability kernel for SharedOS",
   "license": "Apache-2.0",
@@ -45,6 +45,6 @@
     }
   },
   "dependencies": {
-    "@sharedos/contracts": "workspace:*"
+    "@aicoo/sharedos-contracts": "workspace:*"
   }
 }

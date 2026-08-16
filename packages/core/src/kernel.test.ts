@@ -7,7 +7,7 @@ import type {
   ResourceRef,
   ToolCall,
   ToolDefinition,
-} from "@sharedos/contracts";
+} from "@aicoo/sharedos-contracts";
 
 import type { AuditEvent, AuditSink } from "./audit.js";
 import { CapabilityAuthorizer, InMemoryGrantUsageStore } from "./authorization.js";

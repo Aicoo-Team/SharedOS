@@ -1,9 +1,9 @@
-# @sharedos/os
+# @aicoo/sharedos-os
 
 Standard permission-controlled file tool adapters for SharedOS.
 
 ```bash
-npm install @sharedos/os@next
+npm install @aicoo/sharedos-os@next
 ```
 
 Hosts provide storage implementations; this package provides one canonical

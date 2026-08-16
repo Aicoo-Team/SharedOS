@@ -1,5 +1,5 @@
 {
-  "name": "@sharedos/http",
+  "name": "@aicoo/sharedos-http",
   "version": "0.1.0-alpha.0",
   "description": "Fetch-compatible HTTP adapter for SharedOS",
   "license": "Apache-2.0",
@@ -45,11 +45,11 @@
     }
   },
   "dependencies": {
-    "@sharedos/contracts": "workspace:*",
-    "@sharedos/core": "workspace:*",
-    "@sharedos/runtime": "workspace:*"
+    "@aicoo/sharedos-contracts": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*",
+    "@aicoo/sharedos-runtime": "workspace:*"
   },
   "devDependencies": {
-    "@sharedos/client": "workspace:*"
+    "@aicoo/sharedos-client": "workspace:*"
   }
 }

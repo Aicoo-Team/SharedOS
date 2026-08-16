@@ -1,9 +1,9 @@
-# @sharedos/http
+# @aicoo/sharedos-http
 
 A Fetch-compatible HTTP adapter over the SharedOS kernel and turn runtime.
 
 ```bash
-npm install @sharedos/http@next
+npm install @aicoo/sharedos-http@next
 ```
 
 The host-provided context resolver must authenticate the request and construct a

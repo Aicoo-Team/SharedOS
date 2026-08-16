@@ -1,13 +1,13 @@
-import type { ExecutionRequest, ResourceResult } from "@sharedos/contracts";
-import { agentExecutionCapability } from "@sharedos/core";
-import { createFileTools } from "@sharedos/os";
-import { SharedOSExecutor, StandardRuntime, type AgentTurnDriver } from "@sharedos/runtime";
+import type { ExecutionRequest, ResourceResult } from "@aicoo/sharedos-contracts";
+import { agentExecutionCapability } from "@aicoo/sharedos-core";
+import { createFileTools } from "@aicoo/sharedos-os";
+import { SharedOSExecutor, StandardRuntime, type AgentTurnDriver } from "@aicoo/sharedos-runtime";
 import {
   InMemoryResourceProvider,
   createTestContext,
   createTestGrant,
   createTestKernel,
-} from "@sharedos/testkit";
+} from "@aicoo/sharedos-testkit";
 
 const now = "2026-08-03T00:00:00.000Z";
 const bob = { kind: "agent", agentId: "agent-bob" } as const;

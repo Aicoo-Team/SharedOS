@@ -11,7 +11,7 @@ import {
   type RuntimeTurnOutcome,
   type ToolCall,
   type ToolResult,
-} from "@sharedos/contracts";
+} from "@aicoo/sharedos-contracts";
 
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
 import type {
@@ -57,7 +57,7 @@ export const STANDARD_RUNTIME_MANIFEST: RuntimeManifest = deepFreeze({
   version: STANDARD_RUNTIME_VERSION,
   protocolVersion: "1",
   metadata: {
-    package: "@sharedos/runtime",
+    package: "@aicoo/sharedos-runtime",
     executionModel: "bounded-driver-loop",
   },
 });

@@ -2,15 +2,15 @@
 
 ---
 
-[SharedOS API](README.md) / @sharedos/sdk
+[SharedOS API](README.md) / @aicoo/sharedos
 
-# @sharedos/sdk
+# @aicoo/sharedos
 
 The complete SharedOS SDK entry point. Install this package when one dependency
 is more convenient than selecting individual SharedOS layers.
 
 ```bash
-npm install @sharedos/sdk@next
+npm install @aicoo/sharedos@next
 ```
 
 ```ts
@@ -20,7 +20,7 @@ import {
   SharedOSExecutor,
   SharedOSKernel,
   StandardRuntime,
-} from "@sharedos/sdk";
+} from "@aicoo/sharedos";
 ```
 
 `StandardRuntime` is the included bounded driver loop. Hosts can install a
@@ -28,9 +28,9 @@ complete alternative harness through `RuntimePlugin`; `SharedOSExecutor` keeps
 admission, filtered tool discovery, exact-call authorization, cancellation, and
 runtime provenance outside the replaceable plugin.
 
-`@sharedos/sdk` adds no independent API symbols. It re-exports the production
-surface of `@sharedos/contracts`, `@sharedos/core`, `@sharedos/http`,
-`@sharedos/os`, and `@sharedos/runtime`, plus the client classes and options.
+`@aicoo/sharedos` adds no independent API symbols. It re-exports the production
+surface of `@aicoo/sharedos-contracts`, `@aicoo/sharedos-core`, `@aicoo/sharedos-http`,
+`@aicoo/sharedos-os`, and `@aicoo/sharedos-runtime`, plus the client classes and options.
 The generated reference documents those symbols on their owning package pages
 instead of duplicating their definitions on the SDK page.
 

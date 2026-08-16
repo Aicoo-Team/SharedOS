@@ -11,14 +11,14 @@ test("package content digest ignores JSON object key order", () => {
   const temporaryDirectory = mkdtempSync(join(tmpdir(), "sharedos-package-digest-"));
   try {
     const first = createArchive(temporaryDirectory, "first", {
-      name: "@sharedos/example",
+      name: "@aicoo/sharedos-example",
       version: "0.1.0-alpha.0",
       dependencies: { alpha: "1.0.0", beta: "2.0.0" },
     });
     const second = createArchive(temporaryDirectory, "second", {
       dependencies: { beta: "2.0.0", alpha: "1.0.0" },
       version: "0.1.0-alpha.0",
-      name: "@sharedos/example",
+      name: "@aicoo/sharedos-example",
     });
 
     assert.equal(
@@ -33,8 +33,18 @@ test("package content digest ignores JSON object key order", () => {
 test("package content digest detects file changes", () => {
   const temporaryDirectory = mkdtempSync(join(tmpdir(), "sharedos-package-digest-"));
   try {
-    const first = createArchive(temporaryDirectory, "first", { name: "@sharedos/example" }, "a");
-    const second = createArchive(temporaryDirectory, "second", { name: "@sharedos/example" }, "b");
+    const first = createArchive(
+      temporaryDirectory,
+      "first",
+      { name: "@aicoo/sharedos-example" },
+      "a",
+    );
+    const second = createArchive(
+      temporaryDirectory,
+      "second",
+      { name: "@aicoo/sharedos-example" },
+      "b",
+    );
 
     assert.notEqual(
       packageContentDigest(first, temporaryDirectory),

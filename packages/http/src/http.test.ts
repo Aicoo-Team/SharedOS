@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { AccessContext } from "@sharedos/contracts";
-import { SharedOSClient } from "@sharedos/client";
-import { SharedOSKernel } from "@sharedos/core";
+import type { AccessContext } from "@aicoo/sharedos-contracts";
+import { SharedOSClient } from "@aicoo/sharedos-client";
+import { SharedOSKernel } from "@aicoo/sharedos-core";
 
 import {
   SharedOSHttpError,

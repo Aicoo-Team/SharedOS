@@ -1,5 +1,5 @@
-import type { AccessContext, ToolNamespace, ToolNamespaceUpdate } from "@sharedos/contracts";
-import { EnabledToolNamespacesSchema, ToolNamespaceUpdateSchema } from "@sharedos/contracts";
+import type { AccessContext, ToolNamespace, ToolNamespaceUpdate } from "@aicoo/sharedos-contracts";
+import { EnabledToolNamespacesSchema, ToolNamespaceUpdateSchema } from "@aicoo/sharedos-contracts";
 
 /**
  * Host-owned persistence and product-policy boundary for namespace settings.

@@ -20,8 +20,8 @@ import {
   type ToolCall,
   type ToolDefinition,
   type ToolResult,
-} from "@sharedos/contracts";
-import type { SharedOSKernel } from "@sharedos/core";
+} from "@aicoo/sharedos-contracts";
+import type { SharedOSKernel } from "@aicoo/sharedos-core";
 
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
 import type {

@@ -1,9 +1,9 @@
-# @sharedos/core
+# @aicoo/sharedos-core
 
 The deny-by-default SharedOS authorization and dispatch kernel.
 
 ```bash
-npm install @sharedos/core@next
+npm install @aicoo/sharedos-core@next
 ```
 
 The kernel filters tool discovery, re-authorizes exact invocations, binds

@@ -62,7 +62,7 @@ hidden expected actions, or another run's namespace. Starting a fresh process is
 not sufficient isolation if both processes still share a database or external
 file plane.
 
-The in-memory implementations in `@sharedos/testkit` can seed early integration
+The in-memory implementations in `@aicoo/sharedos-testkit` can seed early integration
 tests. Official PACT execution should use an explicitly versioned PACT world
 adapter so fixtures, snapshot semantics, and persistence guarantees remain
 under PACT control.
