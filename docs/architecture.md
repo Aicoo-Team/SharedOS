@@ -2,9 +2,9 @@
 
 ## Definition
 
-SharedOS is a host-neutral, permission-controlled runtime for agent-to-agent
-delegation. A delegation can include communication, access to files, and
-invocation of built-in or external tools.
+SharedOS is a host-neutral, permission-controlled kernel with a pluggable
+execution layer for agent-to-agent delegation. A delegation can include
+communication, access to files, and invocation of built-in or external tools.
 
 The central rule is:
 
@@ -24,7 +24,7 @@ or rejects it.
 | Files       | Paths, operations, authorization, result and audit contracts       | Notes, folders, storage, indexes, embeddings and deletion      |
 | Memory      | Rule that mounted/indexed context retains source file authority    | Selection, compaction, ranking and context assembly            |
 | Tools       | Namespace/catalog contracts, filtered discovery, invocation gate   | Settings storage, OAuth, MCP connections, tool implementations |
-| Execution   | One bounded agent turn and its event stream                        | Model provider configuration and product policy                |
+| Execution   | Security envelope, runtime contract, standard loop and provenance  | Runtime selection, model configuration and product policy      |
 | Audit       | Audit event shape and required provenance                          | Durable append-only storage, export and retention              |
 | Scheduling  | No product or benchmark scheduler                                  | Heartbeats, experiment ticks, retries, budgets and stopping    |
 
@@ -77,9 +77,10 @@ persistence effects remain behind host provider ports.
 
 ### `@sharedos/runtime`
 
-Coordinates one bounded agent turn. It uses provider ports for files, tools,
-the responding agent, and audit persistence. Runtime owns the
-order of security checks but not the host's data implementation.
+Provides the fixed `SharedOSExecutor` security envelope, the replaceable
+`RuntimePlugin` contract, and `StandardRuntime`, the reference bounded driver
+loop. The envelope owns security-check ordering; plugins own harness behavior;
+neither owns the host's data implementation.
 
 ### `@sharedos/os`
 
@@ -221,35 +222,53 @@ as it does to native and `files` tools.
 ```mermaid
 sequenceDiagram
   participant Host
-  participant Runtime
+  participant Envelope as SharedOSExecutor
   participant Kernel
+  participant Runtime as RuntimePlugin
   participant Providers
-  participant Agent
 
-  Host->>Runtime: execute one turn
-  Runtime->>Kernel: authorize message / delegation
-  Kernel-->>Runtime: decision + matched authority
-  Runtime->>Kernel: filter enabled namespaces and discoverable capabilities
-  Runtime->>Agent: message + sanitized context + tools
-  Agent-->>Runtime: response and requested calls
+  Host->>Envelope: execute one turn with trusted runtime selection
+  Envelope->>Kernel: authorize message / delegation
+  Kernel-->>Envelope: decision + matched authority
+  Envelope->>Kernel: filter enabled namespaces and discoverable capabilities
+  Envelope->>Runtime: sanitized request + effective tools + broker
+  Runtime-->>Envelope: runtime events and requested calls
   loop every requested call
-    Runtime->>Kernel: re-authorize exact invocation
-    Kernel-->>Runtime: allow or deny
-    Runtime->>Providers: invoke only when allowed
+    Envelope->>Kernel: re-authorize exact invocation
+    Kernel->>Providers: invoke only when allowed
+    Kernel-->>Envelope: allowed, denied, or failed result
+    Envelope-->>Runtime: typed tool result
   end
-  Runtime->>Providers: append audit events
-  Runtime-->>Host: result + events + state changes
+  Runtime-->>Envelope: complete or fail
+  Envelope-->>Host: result + events + runtime provenance
 ```
 
-The runtime must preserve deny decisions as observable, machine-readable events.
-It must not turn a denied write into a best-effort write or silently retry with a
-wider identity.
+The security envelope preserves deny decisions as observable, machine-readable
+events. A runtime cannot turn a denied write into a best-effort write, silently
+retry with a wider identity, enumerate a hidden registry, or retain the broker
+after the turn closes.
 
-The agent driver never receives grants or issuing authority. Turn timeouts are
-bounded and their `AbortSignal` is propagated through drivers, tools, resources,
-and HTTP requests. JavaScript cancellation is cooperative, so production
-providers are trusted components and must stop before committing a side effect
-when their signal aborts.
+`StandardRuntime` uses `AgentTurnDriver` as its model/provider seam. A complete
+alternative harness implements `RuntimePlugin` instead. Both receive frozen,
+sanitized input without grants or issuing authority. Turn timeouts are bounded
+and their `AbortSignal` is propagated through plugins, drivers, tools,
+resources, and HTTP requests. Every plugin receives the effective step budget
+and must honor it; the envelope independently imposes a hard tool-call ceiling
+on the effect broker.
+
+`RuntimeRegistry` is instance-scoped and populated by trusted host
+configuration. The model-visible request does not contain a runtime selector.
+Every result includes an authoritative runtime id, implementation version, and
+SharedOS protocol version. Model, runtime, and execution backend are separate
+dimensions: for example, a Codex runtime may execute locally or in a Vercel
+sandbox, and a DeepSeek model may run inside the standard loop or DeepSeek's own
+harness.
+
+JavaScript cancellation is cooperative. In-process runtime plugins and
+production providers are trusted components and must stop before committing a
+side effect when their signal aborts. Untrusted harnesses require process,
+container, microVM, or remote isolation around the same capability-broker
+boundary.
 
 ## Scheduler boundary
 

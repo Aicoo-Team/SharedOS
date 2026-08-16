@@ -225,16 +225,18 @@ For example, the host can grant search on one database without granting page
 updates. Similarly, a calendar namespace can expose free/busy reads while event
 details, event creation, and event deletion remain separately scoped actions.
 
-### 6. Execute exactly one bounded turn
+### 6. Select a runtime and execute exactly one bounded turn
 
-The host implements `AgentTurnDriver` for its model or agent provider and gives
-it to `TurnExecutor`:
+For the reference loop, the host implements `AgentTurnDriver`, wraps it in
+`StandardRuntime`, and places that plugin inside `SharedOSExecutor`:
 
 ```ts
-import { TurnExecutor } from "@sharedos/sdk";
+import { SharedOSExecutor, StandardRuntime } from "@sharedos/sdk";
 
-const turns = new TurnExecutor(kernel, agentDriver, {
+const runtime = new StandardRuntime(agentDriver);
+const turns = new SharedOSExecutor(kernel, runtime, {
   defaultMaxSteps: 16,
+  defaultMaxToolCalls: 16,
   defaultTimeoutMs: 120_000,
 });
 
@@ -249,10 +251,26 @@ const result = await turns.execute({
 });
 ```
 
-The driver receives a sanitized context without grants or issuing authority.
-The runtime admits the target-agent invocation, filters discovery, and
-re-authorizes every exact tool call. A turn ends when the driver completes or
-fails, the step limit is reached, the deadline expires, or the host cancels it.
+`TurnExecutor(kernel, agentDriver)` remains a compatibility shorthand for this
+standard composition.
+
+To install a complete Codex, DeepSeek, or private harness, implement
+`RuntimePlugin` and register it from trusted host configuration:
+
+```ts
+import { RuntimeRegistry, SharedOSExecutor } from "@sharedos/sdk";
+
+const runtimes = new RuntimeRegistry([standardRuntime, codexRuntime, deepseekRuntime]);
+const runtime = runtimes.resolve(serverPolicy.runtimeId);
+const turns = new SharedOSExecutor(kernel, runtime);
+```
+
+Do not resolve `runtimeId` directly from a message, model output, or unverified
+request metadata. A runtime receives a frozen, sanitized context without grants
+or issuing authority. The envelope admits the target-agent invocation, filters
+discovery, and re-authorizes every exact tool call through `RuntimeHost`. A turn
+ends when the runtime completes or fails, the deadline expires, or the host
+cancels it. The standard runtime additionally enforces its driver step limit.
 
 SharedOS does not decide when an entire agent network is complete. Runtime
 coordination, adaptive routing, retries, budgets, and network-level stopping
@@ -337,11 +355,13 @@ tools.
 6. Persist enabled tool namespaces independently from grants.
 7. Issue least-authority grants, including a separate target-agent invocation
    grant.
-8. Implement a bounded `AgentTurnDriver` and keep network scheduling outside
-   SharedOS.
+8. Select a trusted `RuntimePlugin`; use `StandardRuntime` with a bounded
+   `AgentTurnDriver` when the reference loop is sufficient.
 9. Add allowed and denied conformance tests for every permission-bearing path.
-10. Run `pnpm check` and test cancellation, replay, revocation, audit failure,
-    and tenant isolation before enabling production writes.
+10. Record runtime id/version separately from model and execution backend, and
+    keep network scheduling outside SharedOS.
+11. Run `pnpm check` and test cancellation, replay, revocation, audit failure,
+    broker closure, and tenant isolation before enabling production writes.
 
 Product-specific mappings are documented in the [Aicoo integration guide](integrations/aicoo.md),
 the [Pulse migration plan](integrations/pulse-migration.md), and the

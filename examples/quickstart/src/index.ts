@@ -1,7 +1,7 @@
 import type { ExecutionRequest, ResourceResult } from "@sharedos/contracts";
 import { agentExecutionCapability } from "@sharedos/core";
 import { createFileTools } from "@sharedos/os";
-import { TurnExecutor, type AgentTurnDriver } from "@sharedos/runtime";
+import { SharedOSExecutor, StandardRuntime, type AgentTurnDriver } from "@sharedos/runtime";
 import {
   InMemoryResourceProvider,
   createTestContext,
@@ -103,7 +103,7 @@ const request: ExecutionRequest = {
 };
 
 let eventSequence = 0;
-const result = await new TurnExecutor(kernel, driver, {
+const result = await new SharedOSExecutor(kernel, new StandardRuntime(driver), {
   clock: () => now,
   createId: () => `event-${(eventSequence += 1)}`,
 }).execute(request);

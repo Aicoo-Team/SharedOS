@@ -26,6 +26,7 @@ until a real process boundary is required.
 | `lib/tools/mcp/bridge.ts`                        | Per-user `ContextToolProvider`; remove process-global MCP registry mutation           |
 | Existing `agentPermissions` checks               | Pulse host ceiling and adapter to trusted `CapabilityGrant` records                   |
 | `lib/ai/shared-agent-core.ts` and agent-v04      | Model driver and host wrapper around one SharedOS turn                                |
+| `packages/codex-cloud-runtime` and agent-v05     | Codex `RuntimePlugin`; keep sandbox/backend details outside SharedOS core             |
 | `/api/v1/agent/message`                          | Authenticated transport into messaging plus target execution capabilities             |
 | Heartbeats and autonomous scheduling             | Remain Pulse-owned; each scheduled tick invokes one bounded turn                      |
 
@@ -83,6 +84,8 @@ lib/sharedos/
   mcp-tool-provider.ts
   audit-sink.ts
   agent-driver.ts
+  runtime-registry.ts
+  runtimes/codex.ts
   conformance/
 ```
 
@@ -156,14 +159,25 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
   Namespace enablement is only a coarse switch; calendar read/create/update/
   delete and account scope remain separate capabilities.
 
-### 6. One-turn agent cutover
+### 6. Runtime and one-turn agent cutover
 
-- Wrap agent-v04 and shared-agent core with a SharedOS model driver and
-  `TurnExecutor`.
-- Keep model selection, billing, product limits, conversation rendering, and
-  stop/scheduling policy in Pulse.
+- Wrap agent-v04's model/provider path in `StandardRuntime` rather than moving
+  its prompt, billing, or provider configuration into SharedOS.
 - Require a recipient-scoped execution grant before opening another agent and
   re-authorize every file/tool side effect during the turn.
+- Adapt `packages/codex-cloud-runtime` to `RuntimePlugin`. Preserve its Codex
+  harness, Vercel Sandbox, OIDC, network policy, and streaming translation as
+  Pulse-owned implementation details.
+- Translate the plugin's model-facing SharedOS tools from the sanitized
+  `RuntimeTurnRequest.tools` catalog. Route every actual file, connector, or MCP
+  effect through `RuntimeHost.invokeTool`; do not use a harness-local
+  `allow-all` decision as SharedOS authority.
+- Resolve `standard`, `codex`, and future runtime ids from authenticated Pulse
+  policy. Do not accept a model- or message-selected runtime id.
+- Record runtime manifest, model id, backend id, sandbox version, and SharedOS
+  protocol version independently in execution and experiment artifacts.
+- Keep model selection, billing, product limits, conversation rendering, and
+  stop/scheduling policy in Pulse.
 
 ### 7. Network convergence
 
@@ -199,7 +213,10 @@ never takes ownership of Pulse data.
 - Pulse persists namespace choices and connector credentials while SharedOS
   owns their portable control-plane semantics and execution gates.
 - File mutations are idempotent and outcome-audited durably.
-- Agent-v04 and shared-agent execution use one bounded-turn contract.
+- Agent-v04 and shared-agent execution use `StandardRuntime` inside the same
+  bounded-turn envelope.
+- Agent-v05 Codex implements `RuntimePlugin`, routes SharedOS effects through
+  `RuntimeHost`, and records runtime/backend/model provenance separately.
 - Heartbeat and benchmark/product completion policy remain outside SharedOS.
 - Move/copy are either covered by multi-resource authorization or remain
   explicitly outside the standard SharedOS tool set.

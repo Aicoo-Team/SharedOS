@@ -1,0 +1,46 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "SharedOS API",
+  "entryPointStrategy": "packages",
+  "entryPoints": [
+    "packages/contracts",
+    "packages/core",
+    "packages/os",
+    "packages/runtime",
+    "packages/http",
+    "packages/client",
+    "packages/sdk",
+    "packages/testkit"
+  ],
+  "packageOptions": {
+    "entryPoints": ["src/index.ts"],
+    "tsconfig": "tsconfig.json",
+    "readme": "README.md",
+    "excludeInternal": true,
+    "excludePrivate": true,
+    "excludeProtected": true,
+    "gitRevision": "main"
+  },
+  "plugin": ["typedoc-plugin-markdown"],
+  "readme": "docs/api-introduction.md",
+  "out": "docs/api",
+  "router": "module",
+  "entryFileName": "README",
+  "excludeScopesInPaths": true,
+  "mergeReadme": true,
+  "formatWithPrettier": true,
+  "indexFormat": "table",
+  "interfacePropertiesFormat": "table",
+  "classPropertiesFormat": "table",
+  "enumMembersFormat": "table",
+  "parametersFormat": "table",
+  "cleanOutputDir": true,
+  "includeVersion": true,
+  "sort": ["kind", "alphabetical"],
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "invalidPath": true
+  },
+  "treatValidationWarningsAsErrors": true
+}

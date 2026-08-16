@@ -1,3 +1,9 @@
+[**SharedOS API v0.1.0-alpha.0**](README.md)
+
+---
+
+[SharedOS API](README.md) / @sharedos/sdk
+
 # @sharedos/sdk
 
 The complete SharedOS SDK entry point. Install this package when one dependency

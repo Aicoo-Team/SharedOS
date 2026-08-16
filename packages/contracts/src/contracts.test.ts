@@ -6,11 +6,15 @@ import {
   CapabilityGrantSchema,
   ExecutionRequestSchema,
   JsonValueSchema,
+  MAX_EXECUTION_TIMEOUT_MS,
   MessageDeliveryResultSchema,
   MessageEnvelopeSchema,
   RemoteExecutionRequestSchema,
   RemoteResourceOperationSchema,
   ResourceRefSchema,
+  RuntimeEventSchema,
+  RuntimeManifestSchema,
+  RuntimeTurnOutcomeSchema,
   ResourceOperationSchema,
   ToolDefinitionSchema,
   ToolNamespaceCatalogSchema,
@@ -249,6 +253,50 @@ describe("JSON-safe protocol contracts", () => {
         tools: [tool],
       }).success,
     ).toBe(true);
+    expect(
+      ExecutionRequestSchema.safeParse({
+        version: "1",
+        executionId: "execution-1",
+        agent: actor,
+        context,
+        message,
+        tools: [tool],
+        options: { maxToolCalls: 10_001 },
+      }).success,
+    ).toBe(false);
+    expect(
+      ExecutionRequestSchema.safeParse({
+        version: "1",
+        executionId: "execution-long-lived",
+        agent: actor,
+        context,
+        message,
+        tools: [tool],
+        options: { timeoutMs: MAX_EXECUTION_TIMEOUT_MS },
+      }).success,
+    ).toBe(true);
+    expect(
+      ExecutionRequestSchema.safeParse({
+        version: "1",
+        executionId: "execution-too-long",
+        agent: actor,
+        context,
+        message,
+        tools: [tool],
+        options: { timeoutMs: MAX_EXECUTION_TIMEOUT_MS + 1 },
+      }).success,
+    ).toBe(false);
+    expect(
+      ExecutionRequestSchema.safeParse({
+        version: "1",
+        executionId: "execution-1",
+        agent: actor,
+        context,
+        message,
+        tools: [tool],
+        runtimeId: "message-selected-runtime",
+      }).success,
+    ).toBe(false);
   });
 
   it("uses discriminated results so failures cannot masquerade as output", () => {
@@ -271,6 +319,40 @@ describe("JSON-safe protocol contracts", () => {
         completedAt: now,
       }).success,
     ).toBe(true);
+  });
+
+  it("keeps runtime manifests, events, and outcomes JSON-safe", () => {
+    expect(
+      RuntimeManifestSchema.parse({
+        id: "sharedos.standard",
+        version: "0.1.0-alpha.0",
+        protocolVersion: "1",
+        metadata: { executionModel: "bounded-driver-loop" },
+      }),
+    ).toMatchObject({ id: "sharedos.standard", protocolVersion: "1" });
+    expect(
+      RuntimeManifestSchema.safeParse({
+        id: "broken",
+        version: "1",
+        protocolVersion: "1",
+        load: () => undefined,
+      }).success,
+    ).toBe(false);
+    expect(RuntimeEventSchema.safeParse({ type: "progress", data: { step: 1 } }).success).toBe(
+      true,
+    );
+    expect(
+      RuntimeTurnOutcomeSchema.safeParse({ type: "complete", output: { ok: true } }).success,
+    ).toBe(true);
+    expect(
+      RuntimeTurnOutcomeSchema.safeParse({
+        type: "fail",
+        error: { code: "runtime_failed", message: "Failed" },
+      }).success,
+    ).toBe(true);
+    expect(
+      RuntimeTurnOutcomeSchema.safeParse({ type: "complete", output: undefined }).success,
+    ).toBe(false);
   });
 
   it("keeps authority out of remote HTTP request contracts", () => {

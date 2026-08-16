@@ -34,6 +34,9 @@ contact.
 - Run Aicoo and PACT adapter conformance suites covering allow, deny, expiry,
   revocation, bounded-use races, cross-world isolation, replay, cancellation,
   and malformed provider responses.
+- Require every non-standard runtime adapter to prove broker-only tool effects,
+  step/tool-call/deadline handling, concurrent-run isolation, cancellation, and
+  stable manifest provenance. Run untrusted adapters outside the host process.
 
 ## Already enforced in this bootstrap
 
@@ -45,7 +48,10 @@ contact.
   host-owned settings updates, and invocation-time namespace rechecks.
 - Mandatory tool argument parsing and immutable checked calls.
 - Sanitized model context without grants or issuing authority.
-- Bounded one-turn execution with cooperative cancellation and bounded cleanup.
+- Fixed runtime security envelope, trusted runtime selection, wrapped plugin
+  events, authoritative manifest provenance, and a closed per-turn broker.
+- Bounded one-turn execution with step/tool-call/deadline limits, cooperative
+  cancellation, and bounded cleanup.
 - Runtime-validated HTTP client responses and shared wire schemas.
 - Canonical resource path segments and explicit provider-facing owners.
 - Package-level READMEs, distributable source and source maps, exact packed

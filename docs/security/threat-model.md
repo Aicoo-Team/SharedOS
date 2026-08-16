@@ -27,10 +27,13 @@ SharedOS aims to ensure that:
 
 ### Trusted computing base
 
-- SharedOS contract validation, core authorization, and runtime ordering.
+- SharedOS contract validation, core authorization, and the fixed runtime
+  security envelope.
 - The host component that establishes authenticated identity.
 - Host grant, usage, resource, tool, and audit providers, to the extent required
   by their contracts.
+- In-process runtime plugins, because they share the host process's ambient
+  filesystem, network, environment, and module privileges.
 - Deployment configuration and secrets management.
 
 Provider implementations are security-sensitive. SharedOS cannot prevent a
@@ -60,25 +63,26 @@ Authenticated callers remain untrusted for authorization.
 
 ## Threats and required controls
 
-| Threat                   | Example                                                           | Required controls                                                                |
-| ------------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Self-issued authority    | A message includes a fabricated grant                             | Keep grants outside envelopes; load from trusted storage or verify them          |
-| Confused deputy          | Agent asks a more privileged agent to read a private file         | Authorize the effective actor, owner, purpose, and resource at every operation   |
-| Permission cross-product | Read scope from one grant combines with write action from another | Match a complete capability and constraints; never flatten grant dimensions      |
-| Prompt injection         | A note instructs the model to exfiltrate secrets                  | Treat content as data; expose only authorized tools; re-authorize every call     |
-| Tool substitution        | Model names a shadow tool with weaker permissions                 | Resolve definitions from a trusted registry and reject duplicate/ambiguous names |
-| Namespace bypass         | Caller invokes a guessed tool from a disabled family              | Filter discovery and recheck namespace enablement at invocation                  |
-| Cross-user MCP mutation  | One user's reload replaces another user's dynamic tools           | Resolve dynamic catalogs per trusted context; avoid shared mutable registration  |
-| Discovery leakage        | Tool list reveals a private connector or account                  | Permission-filter definitions and metadata before returning the catalog          |
-| Tenant/world escape      | Crafted path reaches another run or user                          | Bind namespace/world and owner in every provider call; use segment-safe paths    |
-| Replay                   | Captured request repeats a destructive call                       | Host-owned durable deduplication and freshness checks; release remains blocked   |
-| Revocation race          | Grant is revoked after context loading                            | Re-check immediately before side effects; define transaction semantics           |
-| Bounded-use race         | Two workers consume the last use                                  | Durable atomic compare-and-set; deny when the usage store is unavailable         |
-| SSRF / connector escape  | MCP tool fetches metadata endpoints                               | Destination allowlists, DNS/IP validation, redirects policy, egress controls     |
-| Secret disclosure        | Provider output or logs contain OAuth tokens                      | Never place secrets in contracts, model context, errors, or audit payloads       |
-| Resource exhaustion      | Large schema, loop, payload, or tool call consumes resources      | Contract limits, timeouts, step budgets, rate limits, cancellation               |
-| Audit tampering          | Operator removes denied calls                                     | Append-only/tamper-evident host storage, sequence checks, restricted access      |
-| Evaluation leakage       | PACT runtime sees hidden gold                                     | Separate execution and evaluation channels; fresh world per run                  |
+| Threat                   | Example                                                           | Required controls                                                                    |
+| ------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Self-issued authority    | A message includes a fabricated grant                             | Keep grants outside envelopes; load from trusted storage or verify them              |
+| Confused deputy          | Agent asks a more privileged agent to read a private file         | Authorize the effective actor, owner, purpose, and resource at every operation       |
+| Permission cross-product | Read scope from one grant combines with write action from another | Match a complete capability and constraints; never flatten grant dimensions          |
+| Prompt injection         | A note instructs the model to exfiltrate secrets                  | Treat content as data; expose only authorized tools; re-authorize every call         |
+| Tool substitution        | Model names a shadow tool with weaker permissions                 | Resolve definitions from a trusted registry and reject duplicate/ambiguous names     |
+| Namespace bypass         | Caller invokes a guessed tool from a disabled family              | Filter discovery and recheck namespace enablement at invocation                      |
+| Cross-user MCP mutation  | One user's reload replaces another user's dynamic tools           | Resolve dynamic catalogs per trusted context; avoid shared mutable registration      |
+| Discovery leakage        | Tool list reveals a private connector or account                  | Permission-filter definitions and metadata before returning the catalog              |
+| Tenant/world escape      | Crafted path reaches another run or user                          | Bind namespace/world and owner in every provider call; use segment-safe paths        |
+| Replay                   | Captured request repeats a destructive call                       | Host-owned durable deduplication and freshness checks; release remains blocked       |
+| Revocation race          | Grant is revoked after context loading                            | Re-check immediately before side effects; define transaction semantics               |
+| Bounded-use race         | Two workers consume the last use                                  | Durable atomic compare-and-set; deny when the usage store is unavailable             |
+| SSRF / connector escape  | MCP tool fetches metadata endpoints                               | Destination allowlists, DNS/IP validation, redirects policy, egress controls         |
+| Secret disclosure        | Provider output or logs contain OAuth tokens                      | Never place secrets in contracts, model context, errors, or audit payloads           |
+| Resource exhaustion      | Large schema, loop, payload, or tool call consumes resources      | Contract limits, timeouts, step budgets, rate limits, cancellation                   |
+| Audit tampering          | Operator removes denied calls                                     | Append-only/tamper-evident host storage, sequence checks, restricted access          |
+| Evaluation leakage       | PACT runtime sees hidden gold                                     | Separate execution and evaluation channels; fresh world per run                      |
+| Runtime escape           | A third-party harness bypasses the broker or keeps calling later  | Give plugins only the scoped broker; close it after the turn; isolate untrusted code |
 
 ## Detailed attack surfaces
 
@@ -120,6 +124,30 @@ opened. The driver receives sanitized context without grants or issuer identity.
 Loops, fan-out, and recursive delegation can exhaust budgets. The one-turn
 runtime enforces maximum steps and timeout, while the host scheduler limits
 cross-turn behavior.
+
+### Runtime plugins
+
+`RuntimePlugin` is an execution seam, not an authorization seam. The fixed
+`SharedOSExecutor` admits the target agent before opening a plugin, constructs a
+frozen context without grants or issuing authority, intersects the requested
+and authorized tool catalogs, and exposes effects only through `RuntimeHost`.
+The broker re-authorizes every exact tool call and is closed when the turn
+finishes. Runtime observations are wrapped as `runtime.event`, so a plugin
+cannot forge authoritative `turn.*` or `tool.*` lifecycle events.
+
+Runtime selection is trusted host policy. A message, retrieved file, model
+output, or unverified request metadata cannot select a weaker harness. The
+runtime manifest is snapshotted before execution and recorded in result
+metadata; hosts and benchmarks separately retain model, runtime, backend, and
+protocol versions.
+
+The TypeScript interface does not sandbox code. An in-process plugin can use
+ambient Node.js APIs independently of `RuntimeHost` and is therefore in the
+trusted computing base. Third-party or otherwise untrusted runtimes must run in
+a process, container, microVM, or remote service whose only SharedOS effect path
+is an equivalent scoped broker. Aborting the turn closes the broker, but
+providers and isolated adapters must still honor cancellation before committing
+side effects.
 
 ### Files, retrieval, and mounted memory
 
@@ -219,12 +247,13 @@ pooled.
 
 ## Availability
 
-SharedOS limits schema sizes, tool catalogs, steps, and turn duration. Cancellation
-is propagated with `AbortSignal`, but JavaScript cannot forcibly stop arbitrary
-provider code; providers in the trusted computing base must honor it before
-committing side effects. Hosts add request rate limits, concurrency limits,
-provider circuit breakers, and model or tool budgets. A timeout or provider
-outage is not an invitation to retry with broader authority.
+SharedOS limits schema sizes, tool catalogs, standard-runtime steps, and turn
+duration. Cancellation is propagated with `AbortSignal`, but JavaScript cannot
+forcibly stop arbitrary plugin or provider code; components in the trusted
+computing base must honor it before committing side effects. Hosts add request
+rate limits, concurrency limits, provider circuit breakers, and model or tool
+budgets. A timeout or provider outage is not an invitation to retry with
+broader authority.
 
 ## Non-goals
 

@@ -10,8 +10,9 @@ once per tick while keeping benchmark policy outside the runtime.
 flowchart LR
   TASK["PACT task and policy matrix"] --> RUN["PACT scheduler"]
   RUN --> AD["SharedOS execution adapter"]
-  AD --> RT["SharedOS one-turn runtime"]
-  RT --> WORLD["PACT isolated world providers"]
+  AD --> SE["SharedOS security envelope"]
+  SE --> RT["Versioned RuntimePlugin"]
+  SE --> WORLD["PACT isolated world providers"]
   RUN --> SNAP["Snapshots and artifacts"]
   SNAP --> JUDGE["Judges, gold, and metrics"]
 ```
@@ -39,9 +40,10 @@ Recommended execution adapter identifiers include:
 - `sharedos-http` for a separately deployed runtime;
 - `pact-public-runner` for the current standalone reference runner.
 
-Results should always retain the adapter identifier and protocol version.
-Absolute outcome rates from different execution adapters should not be combined
-unless equivalence has been demonstrated.
+Results should always retain the adapter identifier, runtime manifest, model,
+backend, and protocol version as separate fields. Absolute outcome rates from
+different execution adapters or runtime manifests should not be combined unless
+equivalence has been demonstrated.
 
 ## World isolation
 
@@ -97,13 +99,15 @@ For each experiment run, PACT should:
 1. Parse and validate the public task and policy configuration.
 2. Allocate a fresh namespace and seed an isolated world without exposing gold
    state.
-3. Create the SharedOS execution adapter and record its version.
+3. Create the SharedOS execution adapter, resolve its runtime from the frozen
+   experiment spec, and record both versions.
 4. For each scheduled tick, issue one bounded execution request.
 5. Consume execution and audit events into the run transcript.
 6. Apply PACT's stop, retry, and budget policy.
 7. Freeze the final world and transcript.
 8. Run evaluators only after the execution channel is closed.
-9. Write artifacts containing the SharedOS protocol and adapter versions.
+9. Write artifacts containing the SharedOS protocol, adapter, runtime, model,
+   and backend versions.
 
 The SharedOS HTTP and embedded adapters must receive equivalent request objects.
 Transport differences cannot alter grants or inject hidden authority.
@@ -136,4 +140,7 @@ A PACT integration is ready when:
 - the responder never receives gold or evaluator-only state;
 - one PACT tick maps to one bounded SharedOS turn;
 - audit events are sufficient to reconstruct authorization decisions;
-- public runner and SharedOS adapter results remain separately identified.
+- public runner and SharedOS adapter results remain separately identified;
+- runtime selection is frozen before execution and cannot be changed by either
+  benchmark participant;
+- the authoritative runtime manifest is retained in every run artifact.

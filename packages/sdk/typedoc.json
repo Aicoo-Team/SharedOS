@@ -1,0 +1,5 @@
+{
+  "$schema": "../../node_modules/typedoc/typedoc-config.schema.json",
+  "excludeExternals": true,
+  "externalPattern": ["**/packages/*/dist/**", "../*/dist/**"]
+}

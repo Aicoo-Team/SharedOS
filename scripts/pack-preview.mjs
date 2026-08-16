@@ -111,10 +111,10 @@ function verifyFreshConsumer(archives) {
     writeFileSync(
       join(consumerDirectory, "smoke.mjs"),
       [
-        'import { AccessContextSchema, CapabilityAuthorizer, SharedOSClient, SharedOSKernel, TurnExecutor } from "@sharedos/sdk";',
+        'import { AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, StandardRuntime, TurnExecutor } from "@sharedos/sdk";',
         'import { createTestContext } from "@sharedos/testkit";',
         "",
-        "const values = [AccessContextSchema, CapabilityAuthorizer, SharedOSClient, SharedOSKernel, TurnExecutor, createTestContext];",
+        "const values = [AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, StandardRuntime, TurnExecutor, createTestContext];",
         'if (values.some((value) => value === undefined)) throw new Error("SharedOS export missing");',
         'console.log("SharedOS fresh-consumer runtime import passed.");',
         "",
@@ -125,13 +125,17 @@ function verifyFreshConsumer(archives) {
     writeFileSync(
       join(consumerDirectory, "smoke.ts"),
       [
-        'import { SharedOSKernel, type AccessContext } from "@sharedos/sdk";',
+        'import { RuntimeRegistry, SharedOSExecutor, SharedOSKernel, type AccessContext, type RuntimePlugin } from "@sharedos/sdk";',
         'import { createTestContext } from "@sharedos/testkit";',
         "",
         "const kernel: SharedOSKernel = new SharedOSKernel();",
         "const context: AccessContext = createTestContext();",
+        'const runtime: RuntimePlugin = { manifest: { id: "smoke.runtime", version: "1", protocolVersion: "1" }, run: async () => ({ type: "complete", output: null }) };',
+        "const runtimes = new RuntimeRegistry([runtime]);",
+        'const turns = new SharedOSExecutor(kernel, runtimes.resolve("smoke.runtime"));',
         "void kernel;",
         "void context;",
+        "void turns;",
         "",
       ].join("\n"),
     );

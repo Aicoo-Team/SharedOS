@@ -8,11 +8,13 @@ import { MessageEnvelopeSchema } from "./message.js";
 import { ProtocolErrorSchema } from "./protocol-error.js";
 import { ToolDefinitionSchema } from "./tool.js";
 
-export const MAX_EXECUTION_TIMEOUT_MS = 300_000;
+export const MAX_EXECUTION_TIMEOUT_MS = 600_000;
+export const MAX_EXECUTION_TOOL_CALLS = 10_000;
 
 export const ExecutionOptionsSchema = z
   .object({
     maxSteps: z.number().int().positive().max(1_000).optional(),
+    maxToolCalls: z.number().int().positive().max(MAX_EXECUTION_TOOL_CALLS).optional(),
     timeoutMs: z.number().int().positive().max(MAX_EXECUTION_TIMEOUT_MS).optional(),
   })
   .strict();

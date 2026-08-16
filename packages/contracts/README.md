@@ -7,8 +7,9 @@ npm install @sharedos/contracts@next
 ```
 
 Use this package for addresses, capabilities, messages, resources, tools,
-execution results, and HTTP wire contracts. External boundaries should parse
-untrusted values with the exported schemas rather than relying on type casts.
+runtime manifests/events/outcomes, execution results, and HTTP wire contracts.
+External boundaries should parse untrusted values with the exported schemas
+rather than relying on type casts.
 
 Tool definitions include a logical namespace, source, read/write catalog class,
 and exact capability requirement. Access contexts carry the trusted effective

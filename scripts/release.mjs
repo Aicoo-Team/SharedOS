@@ -30,6 +30,7 @@ if (typeof version !== "string" || !/^0\.\d+\.\d+-[0-9A-Za-z.-]+$/.test(version)
 }
 
 verifyReleaseMetadata(packages, allowPrivate);
+verifyStandardRuntimeVersion(version);
 
 run("pnpm", ["check"], repositoryRoot);
 run("pnpm", ["pack:preview"], repositoryRoot);
@@ -138,6 +139,19 @@ function verifyReleaseMetadata(packageEntries, allowPrivatePackages) {
     if (!allowPrivatePackages && readFileSync(packageLicense, "utf8") !== expectedLicense) {
       throw new Error(`${manifest.name} does not contain the canonical repository license.`);
     }
+  }
+}
+
+function verifyStandardRuntimeVersion(version_) {
+  const source = readFileSync(
+    join(repositoryRoot, "packages", "runtime", "src", "standard-runtime.ts"),
+    "utf8",
+  );
+  const declared = source.match(/export const STANDARD_RUNTIME_VERSION = "([^"]+)";/)?.[1];
+  if (declared !== version_) {
+    throw new Error(
+      `STANDARD_RUNTIME_VERSION must match the synchronized package version ${version_}; found ${String(declared)}.`,
+    );
   }
 }
 

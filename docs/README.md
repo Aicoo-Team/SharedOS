@@ -1,11 +1,13 @@
 # SharedOS documentation
 
+- [API reference](api/README.md) — generated reference for every public package
+
 ## Start here
 
 - [Host integration guide](host-integration.md): practical embedded and remote
   setup for files, live tools, grants, one-turn execution, and production ports.
-- [Architecture](architecture.md): responsibilities, packages, execution flow,
-  resource providers, and deployment shapes.
+- [Architecture](architecture.md): responsibilities, packages, fixed security
+  envelope, pluggable runtimes, resource providers, and deployment shapes.
 - [Permission model](security/permission-model.md): normative authorization
   invariants and grant evaluation.
 - [Threat model](security/threat-model.md): trust boundaries, attack surfaces,
@@ -30,6 +32,7 @@
 - [ADR 0004: Canonical resource path segments](adr/0004-canonical-resource-path-segments.md)
 - [ADR 0005: Files are the canonical resource plane](adr/0005-files-resource-plane.md)
 - [ADR 0006: Tool namespace control plane](adr/0006-tool-namespace-control-plane.md)
+- [ADR 0007: Pluggable runtimes inside a fixed security envelope](adr/0007-pluggable-runtime-security-envelope.md)
 
 ## Project governance
 

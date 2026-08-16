@@ -1,8 +1,9 @@
 # SharedOS
 
-SharedOS is a **permission-controlled state and delegation runtime for agents**.
-It lets agents communicate, access files, and invoke built-in or external tools
-without allowing a message—or a model—to grant itself authority.
+SharedOS is a **permission-controlled state and delegation kernel with a
+pluggable execution layer for agents**. It lets agents communicate, access
+files, and invoke built-in or external tools without allowing a message—or a
+model—to grant itself authority.
 
 SharedOS is more than a messaging protocol. It provides the reusable execution
 and authorization layer beneath products such as Aicoo and experiment systems
@@ -68,7 +69,8 @@ of access.
   tools.
 - A default-off tool namespace control plane with context-specific catalogs,
   host-owned settings, and discovery/invocation enforcement.
-- One permission-controlled agent turn, with provenance and audit events.
+- One permission-controlled agent turn, with a standard runtime, a replaceable
+  runtime-plugin contract, provenance, and audit events.
 - Equivalent embedded-library and HTTP client boundaries over the same
   contracts.
 
@@ -88,10 +90,14 @@ flowchart LR
   P["PACT control plane"] --> X["SharedOS execution adapter"]
   X --> E
   H["HTTP client / service"] --> E
-  E --> K["Permission kernel"]
-  E --> R["One-turn execution"]
-  K --> C["Capability contracts"]
-  R --> C
+  E --> K["Fixed security envelope"]
+  K --> R["RuntimePlugin"]
+  R --> RS["Standard runtime"]
+  R --> RC["Codex runtime"]
+  R --> RD["DeepSeek / custom runtime"]
+  K --> PK["Permission kernel"]
+  PK --> C["Capability contracts"]
+  K --> C
   E --> HP["Host provider ports"]
   HP --> D["Host-owned files, indexes, tools, models, and audit store"]
 ```
@@ -107,7 +113,8 @@ The SharedOS core must not import Next.js, Drizzle, Azure, Aicoo credits, or
 PACT tasks, gold data, runners, and evaluators.
 
 Read the practical [host integration guide](docs/host-integration.md), the
-complete [architecture](docs/architecture.md),
+generated [package API reference](docs/api/README.md), the complete
+[architecture](docs/architecture.md),
 [permission model](docs/security/permission-model.md), and
 [threat model](docs/security/threat-model.md).
 
@@ -118,7 +125,7 @@ complete [architecture](docs/architecture.md),
 | `@sharedos/contracts` | JSON-safe protocol types, schemas, and stable identifiers    |
 | `@sharedos/core`      | Deterministic authorization, routing, and dispatch decisions |
 | `@sharedos/os`        | Standard `files` operations and guarded OS tools             |
-| `@sharedos/runtime`   | One permission-controlled agent turn over host providers     |
+| `@sharedos/runtime`   | Fixed turn envelope, standard runtime, and plugin contract   |
 | `@sharedos/client`    | Typed client for a remote SharedOS HTTP boundary             |
 | `@sharedos/http`      | Transport adapter over the same runtime and contracts        |
 | `@sharedos/sdk`       | One-install entry point re-exporting the production packages |
@@ -126,6 +133,25 @@ complete [architecture](docs/architecture.md),
 
 `testkit` is not a production persistence layer. Production state remains in
 the host.
+
+## Pluggable runtimes
+
+SharedOS is runtime-agnostic, not runtime-less. `@sharedos/runtime` ships
+`StandardRuntime`, a bounded reference loop over `AgentTurnDriver`, while
+`RuntimePlugin` allows a host to install a complete Codex, DeepSeek, or custom
+harness.
+
+Everything above the security kernel may vary: model/provider adapters, agent
+loops, prompt and context strategy, stopping logic, session implementation, and
+execution backend. The security envelope does not vary. It admits the target
+agent, exposes only the effective tool catalog, withholds grants and issuing
+authority, re-authorizes every exact tool call, wraps runtime events, applies
+the deadline, and records the runtime id and version in the result.
+
+Runtime selection comes from trusted host configuration, never from a message
+or model-authored request field. An in-process plugin is trusted host code; an
+untrusted harness belongs in a sandbox or remote process connected through the
+same capability-broker boundary.
 
 ## Integration modes
 
@@ -188,6 +214,12 @@ The prototype compares fixed-entry runtime coordination with an adaptive,
 trainable network and visualizes entry agents, completion policy, topology, and
 run state. It is a front-end simulation and does not invoke real agents.
 
+Task-level self-organization, recursive delegation, recovery policy, and
+cross-task experience belong to the separate
+[Runtime Agent Coordination](https://github.com/Aicoo-Team/runtime-agent-coordination)
+host project. SharedOS deliberately stops at authorization, messaging, brokered
+tools, and one bounded runtime turn.
+
 ## Package preview
 
 The one-install entry point is `@sharedos/sdk`. Individual packages remain
@@ -231,6 +263,7 @@ transition are documented in the
 - [ADR 0004: Canonical resource path segments](docs/adr/0004-canonical-resource-path-segments.md)
 - [ADR 0005: Files are the canonical resource plane](docs/adr/0005-files-resource-plane.md)
 - [ADR 0006: Tool namespace control plane](docs/adr/0006-tool-namespace-control-plane.md)
+- [ADR 0007: Pluggable runtimes inside a fixed security envelope](docs/adr/0007-pluggable-runtime-security-envelope.md)
 
 ## License
 

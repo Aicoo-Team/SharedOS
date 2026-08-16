@@ -22,7 +22,7 @@ import {
   type ToolResult,
 } from "@sharedos/contracts";
 import type { SharedOSKernel } from "@sharedos/core";
-import type { TurnExecutor } from "@sharedos/runtime";
+import type { TurnExecutionPort } from "@sharedos/runtime";
 
 export interface SharedOSApiCallOptions {
   readonly signal?: AbortSignal;
@@ -71,7 +71,7 @@ export interface SharedOSApi {
 
 export interface KernelSharedOSApiOptions {
   kernel: SharedOSKernel;
-  turns: Pick<TurnExecutor, "execute">;
+  turns: TurnExecutionPort;
 }
 
 /** Builds the HTTP application surface from the same kernel used by embedded consumers. */

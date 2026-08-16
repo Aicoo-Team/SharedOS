@@ -9,12 +9,15 @@ database, routes, scheduling, product policy, and model integrations.
 ```mermaid
 flowchart LR
   UI["Pulse UI and API"] --> HOST["Pulse auth, billing, and policy"]
-  HOST --> RT["SharedOS runtime and kernel"]
-  RT --> FP["Pulse files provider"]
+  HOST --> SE["SharedOS security envelope"]
+  SE --> SR["StandardRuntime"]
+  SE --> CR["Codex RuntimePlugin"]
+  SE --> FP["Pulse files provider"]
   FP --> NOTES["notes and noteFolders"]
   NOTES --> ROOTS["Raw · Memory · Workspace · Wiki"]
-  RT --> TOOLS["Pulse tools, OAuth, and MCP"]
-  RT --> MODEL["Pulse model providers"]
+  SE --> TOOLS["Pulse tools, OAuth, and MCP"]
+  SR --> MODEL["Pulse model providers"]
+  CR --> CODEX["Codex harness / sandbox backend"]
 ```
 
 The dependency remains one-way: Pulse imports SharedOS; SharedOS never imports
@@ -35,7 +38,8 @@ semantic role, and retrieval view over files.
 | Tool namespace preferences    | Host store behind SharedOS namespace control port    |
 | Per-user MCP tool catalog     | SharedOS context-specific tool provider              |
 | Agent permission rows         | Host ceiling plus trusted capability grants          |
-| Agent v04 response path       | Host driver around one SharedOS turn                 |
+| Agent v04 response path       | `AgentTurnDriver` inside `StandardRuntime`           |
+| Agent v05 Codex path          | Pulse adapter implementing SharedOS `RuntimePlugin`  |
 | Heartbeats and recurring work | Pulse-owned scheduling outside one-turn runtime      |
 
 A source note such as `/Memory/Self/MEMORY.md` is authorized as the structured
@@ -68,8 +72,13 @@ database or copying `/api/v1/os` into this repository:
 4. Route file reads/search through SharedOS, then file mutations.
 5. Move native and per-user MCP tools behind the SharedOS namespace control
    plane and capability gate.
-6. Put the agent-v04 and shared-agent execution paths behind one SharedOS turn.
-7. Converge network messaging and tool dispatch after file parity is proven.
+6. Put agent-v04 and shared-agent execution behind `StandardRuntime`.
+7. Adapt the existing Codex cloud package to `RuntimePlugin`; route every
+   SharedOS-visible effect through `RuntimeHost` while retaining its sandbox and
+   backend implementation.
+8. Register runtime ids from trusted Pulse policy and record runtime, backend,
+   model, and protocol versions independently.
+9. Converge network messaging and tool dispatch after file parity is proven.
 
 The detailed cutover, code seams, rollout gates, and acceptance criteria are in
 [Pulse migration plan](./pulse-migration.md).
