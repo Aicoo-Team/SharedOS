@@ -10,7 +10,7 @@ import type {
   ToolNamespaceCatalog,
   ToolNamespaceUpdate,
   ToolResult,
-} from "@sharedos/contracts";
+} from "@aicoo/sharedos-contracts";
 import {
   AuthorizationDecisionSchema,
   ExecutionResultSchema,
@@ -27,7 +27,7 @@ import {
   type RemoteExecutionRequest,
   type RemoteResourceOperation,
   type SharedOSHealth,
-} from "@sharedos/contracts";
+} from "@aicoo/sharedos-contracts";
 
 export interface SharedOSClientOptions {
   baseUrl: string;

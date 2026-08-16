@@ -12,7 +12,7 @@ import type {
   ToolNamespaceCatalog,
   ToolNamespaceUpdate,
   ToolResult,
-} from "@sharedos/contracts";
+} from "@aicoo/sharedos-contracts";
 import {
   EnabledToolNamespacesSchema,
   JsonObjectSchema,
@@ -20,7 +20,7 @@ import {
   ResourceResultSchema,
   ToolNamespaceUpdateSchema,
   ToolResultSchema,
-} from "@sharedos/contracts";
+} from "@aicoo/sharedos-contracts";
 
 import { type AuditEvent, type AuditSink, NoopAuditSink, auditEvent } from "./audit.js";
 import {

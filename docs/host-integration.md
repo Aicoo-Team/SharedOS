@@ -31,10 +31,10 @@ construct that decision.
 
 ## Current package status
 
-The intended one-install entry point is `@sharedos/sdk`, with individual
-`@sharedos/*` packages available for hosts that need a smaller dependency
-surface. The packages are still private `0.x` prereleases and are not available
-from the public npm registry.
+The intended one-install entry point is `@aicoo/sharedos`, with individual
+`@aicoo/sharedos-*` packages available for hosts that need a smaller dependency
+surface. The packages are public `0.x` prereleases under npm's `next` dist-tag;
+the contracts are not yet stable or production-hardened.
 
 For development, clone this repository and either use workspace dependencies or
 create verified local tarballs:
@@ -44,9 +44,9 @@ pnpm install
 pnpm pack:preview
 ```
 
-The tarballs are written to `artifacts/npm/`. Public installation with
-`npm install @sharedos/sdk` becomes valid only after the release gates in
-[release readiness](release-readiness.md) are closed.
+The tarballs are written to `artifacts/npm/`. Public consumers install the
+explicit prerelease tag with `npm install @aicoo/sharedos@next`; the remaining
+production gates are tracked in [release readiness](release-readiness.md).
 
 ## Choose an integration shape
 
@@ -59,8 +59,8 @@ over its existing services.
 
 ### Remote runtime
 
-Expose the same kernel through `@sharedos/http` and call it with
-`@sharedos/client`. Use this when process or language isolation matters more
+Expose the same kernel through `@aicoo/sharedos-http` and call it with
+`@aicoo/sharedos-client`. Use this when process or language isolation matters more
 than the additional deployment boundary. Transport authentication identifies
 the caller; it does not replace SharedOS capability authorization.
 
@@ -76,7 +76,7 @@ For every request, the host resolves identity, grants, namespace settings, and
 time from trusted server-side state:
 
 ```ts
-import type { AccessContext } from "@sharedos/sdk";
+import type { AccessContext } from "@aicoo/sharedos";
 
 const context: AccessContext = {
   namespaceId: "tenant-acme",
@@ -112,7 +112,7 @@ file tree—not separate permission systems.
 Implement `ResourceProvider` over the host's existing storage:
 
 ```ts
-import type { ResourceProvider } from "@sharedos/sdk";
+import type { ResourceProvider } from "@aicoo/sharedos";
 
 const files: ResourceProvider = {
   namespace: "files",
@@ -144,7 +144,7 @@ indexes and model context mounts must preserve the grants of their source files.
 ### 3. Build the kernel and register file tools
 
 ```ts
-import { CapabilityAuthorizer, SharedOSKernel, registerStandardOsTools } from "@sharedos/sdk";
+import { CapabilityAuthorizer, SharedOSKernel, registerStandardOsTools } from "@aicoo/sharedos";
 
 const kernel = new SharedOSKernel({
   authorizer: new CapabilityAuthorizer({
@@ -164,7 +164,7 @@ Registering the provider enables direct resource operations. Registering the
 standard tools exposes the same operations as model-callable tools such as
 `files.search` and `files.append`. Neither registration grants access.
 
-The in-memory stores from `@sharedos/testkit` are useful for tests and isolated
+The in-memory stores from `@aicoo/sharedos-testkit` are useful for tests and isolated
 PACT worlds. They are not production persistence.
 
 ### 4. Grant the minimum authority
@@ -231,7 +231,7 @@ For the reference loop, the host implements `AgentTurnDriver`, wraps it in
 `StandardRuntime`, and places that plugin inside `SharedOSExecutor`:
 
 ```ts
-import { SharedOSExecutor, StandardRuntime } from "@sharedos/sdk";
+import { SharedOSExecutor, StandardRuntime } from "@aicoo/sharedos";
 
 const runtime = new StandardRuntime(agentDriver);
 const turns = new SharedOSExecutor(kernel, runtime, {
@@ -258,7 +258,7 @@ To install a complete Codex, DeepSeek, or private harness, implement
 `RuntimePlugin` and register it from trusted host configuration:
 
 ```ts
-import { RuntimeRegistry, SharedOSExecutor } from "@sharedos/sdk";
+import { RuntimeRegistry, SharedOSExecutor } from "@aicoo/sharedos";
 
 const runtimes = new RuntimeRegistry([standardRuntime, codexRuntime, deepseekRuntime]);
 const runtime = runtimes.resolve(serverPolicy.runtimeId);
@@ -303,7 +303,7 @@ widen it.
 On the server, wrap the same kernel and turn executor:
 
 ```ts
-import { createKernelSharedOSApi, createSharedOSHandler } from "@sharedos/sdk";
+import { createKernelSharedOSApi, createSharedOSHandler } from "@aicoo/sharedos";
 
 const api = createKernelSharedOSApi({ kernel, turns });
 const handle = createSharedOSHandler({
@@ -316,7 +316,7 @@ On the caller, use `SharedOSClient` for `/v1/tools`, namespace settings,
 resource and tool calls, messages, and `/v1/turns`:
 
 ```ts
-import { SharedOSClient } from "@sharedos/sdk";
+import { SharedOSClient } from "@aicoo/sharedos";
 
 const sharedos = new SharedOSClient({
   baseUrl: "https://sharedos.internal.example",

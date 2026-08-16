@@ -1,7 +1,7 @@
 {
-  "name": "@sharedos/sdk",
+  "name": "@aicoo/sharedos",
   "version": "0.1.0-alpha.0",
-  "description": "Complete SDK entry point for the SharedOS agent runtime",
+  "description": "Permission-controlled state and delegation SDK with pluggable agent runtimes",
   "license": "Apache-2.0",
   "keywords": [
     "agents",
@@ -45,11 +45,11 @@
     }
   },
   "dependencies": {
-    "@sharedos/client": "workspace:*",
-    "@sharedos/contracts": "workspace:*",
-    "@sharedos/core": "workspace:*",
-    "@sharedos/http": "workspace:*",
-    "@sharedos/os": "workspace:*",
-    "@sharedos/runtime": "workspace:*"
+    "@aicoo/sharedos-client": "workspace:*",
+    "@aicoo/sharedos-contracts": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*",
+    "@aicoo/sharedos-http": "workspace:*",
+    "@aicoo/sharedos-os": "workspace:*",
+    "@aicoo/sharedos-runtime": "workspace:*"
   }
 }

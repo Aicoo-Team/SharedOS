@@ -5,7 +5,7 @@ import type {
   MessageDeliveryResult,
   MessageEnvelope,
   ResourceRef,
-} from "@sharedos/contracts";
+} from "@aicoo/sharedos-contracts";
 
 import type { AuthorizationRequest } from "./authorization.js";
 

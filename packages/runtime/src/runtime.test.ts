@@ -5,8 +5,8 @@ import type {
   ExecutionRequest,
   ToolDefinition,
   ToolResult,
-} from "@sharedos/contracts";
-import type { SharedOSKernel } from "@sharedos/core";
+} from "@aicoo/sharedos-contracts";
+import type { SharedOSKernel } from "@aicoo/sharedos-core";
 
 import {
   TurnExecutor,

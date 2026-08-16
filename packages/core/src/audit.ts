@@ -1,4 +1,4 @@
-import type { AccessContext, Address, JsonObject, ResourceRef } from "@sharedos/contracts";
+import type { AccessContext, Address, JsonObject, ResourceRef } from "@aicoo/sharedos-contracts";
 
 export type AuditEventType =
   | "authorization.checked"

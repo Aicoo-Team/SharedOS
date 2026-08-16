@@ -101,7 +101,7 @@ capability decision.
 ### Grant injection and tampering
 
 `ExecutionRequest` carries an access context for embedded portability.
-`@sharedos/client` deliberately uses a narrower remote request that omits the
+`@aicoo/sharedos-client` deliberately uses a narrower remote request that omits the
 context and visible tools. At an HTTP boundary, any grants or tool definitions
 inside caller-controlled JSON are untrusted. The host must reconstruct context
 from trusted grant storage or verify grant authenticity and bind the grant to

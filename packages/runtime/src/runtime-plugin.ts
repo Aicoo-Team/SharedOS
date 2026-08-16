@@ -7,7 +7,7 @@ import {
   type RuntimeTurnOutcome,
   type ToolCall,
   type ToolResult,
-} from "@sharedos/contracts";
+} from "@aicoo/sharedos-contracts";
 
 import { deepFreeze } from "./internal.js";
 

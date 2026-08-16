@@ -184,7 +184,7 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
 - Route agent messages through the SharedOS envelope and messaging capability.
 - Keep heartbeats, retries, fan-out limits, task completion, and cross-turn stop
   policy in Pulse's scheduler.
-- Expose `@sharedos/http` only when an external runtime actually needs a process
+- Expose `@aicoo/sharedos-http` only when an external runtime actually needs a process
   boundary; embedded and HTTP modes must pass the same conformance suite.
 
 ## Observability and rollback

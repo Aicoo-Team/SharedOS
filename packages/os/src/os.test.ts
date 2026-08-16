@@ -7,8 +7,8 @@ import type {
   ResourceOperation,
   ResourceResult,
   ToolCall,
-} from "@sharedos/contracts";
-import { SharedOSKernel, type ResourceProvider } from "@sharedos/core";
+} from "@aicoo/sharedos-contracts";
+import { SharedOSKernel, type ResourceProvider } from "@aicoo/sharedos-core";
 
 import { createFileTools, FILES_NAMESPACE } from "./index.js";
 

@@ -1,5 +1,5 @@
 {
-  "name": "@sharedos/testkit",
+  "name": "@aicoo/sharedos-testkit",
   "version": "0.1.0-alpha.0",
   "description": "In-memory conformance helpers for SharedOS hosts",
   "license": "Apache-2.0",
@@ -45,7 +45,7 @@
     }
   },
   "dependencies": {
-    "@sharedos/contracts": "workspace:*",
-    "@sharedos/core": "workspace:*"
+    "@aicoo/sharedos-contracts": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*"
   }
 }

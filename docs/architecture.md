@@ -35,27 +35,27 @@ responsible for satisfying the provider contracts and security requirements.
 
 ```mermaid
 flowchart TD
-  CT["@sharedos/contracts"]
-  CO["@sharedos/core"] --> CT
-  OS["@sharedos/os"] --> CO
+  CT["@aicoo/sharedos-contracts"]
+  CO["@aicoo/sharedos-core"] --> CT
+  OS["@aicoo/sharedos-os"] --> CO
   OS --> CT
-  RT["@sharedos/runtime"] --> CO
+  RT["@aicoo/sharedos-runtime"] --> CO
   RT --> CT
-  HT["@sharedos/http"] --> RT
+  HT["@aicoo/sharedos-http"] --> RT
   HT --> CO
   HT --> CT
-  CL["@sharedos/client"] --> CT
-  SDK["@sharedos/sdk"] --> CT
+  CL["@aicoo/sharedos-client"] --> CT
+  SDK["@aicoo/sharedos"] --> CT
   SDK --> CO
   SDK --> OS
   SDK --> RT
   SDK --> HT
   SDK --> CL
-  TK["@sharedos/testkit"] --> CO
+  TK["@aicoo/sharedos-testkit"] --> CO
   TK --> CT
 ```
 
-### `@sharedos/contracts`
+### `@aicoo/sharedos-contracts`
 
 Contains JSON-safe, transport-neutral schemas. Important concepts include:
 
@@ -68,21 +68,21 @@ Contains JSON-safe, transport-neutral schemas. Important concepts include:
 Contracts cannot contain database handles, framework request objects, model SDK
 instances, or product-specific types.
 
-### `@sharedos/core`
+### `@aicoo/sharedos-core`
 
 Contains host-neutral policy and dispatch behavior. It evaluates complete grants
 against complete requests, applies tool namespace selection, filters capability
 discovery, and produces explicit allow or deny decisions. All network and
 persistence effects remain behind host provider ports.
 
-### `@sharedos/runtime`
+### `@aicoo/sharedos-runtime`
 
 Provides the fixed `SharedOSExecutor` security envelope, the replaceable
 `RuntimePlugin` contract, and `StandardRuntime`, the reference bounded driver
 loop. The envelope owns security-check ordering; plugins own harness behavior;
 neither owns the host's data implementation.
 
-### `@sharedos/os`
+### `@aicoo/sharedos-os`
 
 Defines the portable `files` vocabulary—including list, stat, read, search,
 grep, create, replace, append, delete, and snapshot operations—and adapts those
@@ -92,14 +92,14 @@ resolution, and stable tool definitions.
 
 ### Adapters
 
-`@sharedos/http` exposes the runtime at a process boundary.
-`@sharedos/client` consumes that boundary. Both must preserve the contracts and
+`@aicoo/sharedos-http` exposes the runtime at a process boundary.
+`@aicoo/sharedos-client` consumes that boundary. Both must preserve the contracts and
 must not develop a second authorization model.
 
-`@sharedos/testkit` supplies deterministic in-memory providers and conformance
+`@aicoo/sharedos-testkit` supplies deterministic in-memory providers and conformance
 fixtures. It is intended for unit tests and examples, not production storage.
 
-`@sharedos/sdk` is an ergonomic distribution layer that re-exports the
+`@aicoo/sharedos` is an ergonomic distribution layer that re-exports the
 production packages from one install. It contains no policy, storage, or
 transport logic and does not change the dependency direction.
 
@@ -294,8 +294,8 @@ hop and lets the existing product own transactions.
 
 ### Remote
 
-A service wraps the same runtime through `@sharedos/http`; callers use
-`@sharedos/client`. Authentication verifies the transport caller, while the
+A service wraps the same runtime through `@aicoo/sharedos-http`; callers use
+`@aicoo/sharedos-client`. Authentication verifies the transport caller, while the
 kernel separately evaluates capability authority. Remote deployment does not
 change permission semantics.
 

@@ -65,7 +65,7 @@ The normative project expectations are documented in the
 
 - Test only against repositories, fixtures, and deployments you are authorized
   to use.
-- Prefer `@sharedos/testkit` and synthetic data.
+- Prefer `@aicoo/sharedos-testkit` and synthetic data.
 - Do not access, modify, retain, or disclose another user's data.
 - Do not disrupt availability or trigger real external side effects.
 - Stop testing and report privately if you encounter secrets or production data.

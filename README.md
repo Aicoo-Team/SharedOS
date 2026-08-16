@@ -120,23 +120,23 @@ generated [package API reference](docs/api/README.md), the complete
 
 ## Packages
 
-| Package               | Responsibility                                               |
-| --------------------- | ------------------------------------------------------------ |
-| `@sharedos/contracts` | JSON-safe protocol types, schemas, and stable identifiers    |
-| `@sharedos/core`      | Deterministic authorization, routing, and dispatch decisions |
-| `@sharedos/os`        | Standard `files` operations and guarded OS tools             |
-| `@sharedos/runtime`   | Fixed turn envelope, standard runtime, and plugin contract   |
-| `@sharedos/client`    | Typed client for a remote SharedOS HTTP boundary             |
-| `@sharedos/http`      | Transport adapter over the same runtime and contracts        |
-| `@sharedos/sdk`       | One-install entry point re-exporting the production packages |
-| `@sharedos/testkit`   | In-memory providers and conformance helpers for tests        |
+| Package                     | Responsibility                                               |
+| --------------------------- | ------------------------------------------------------------ |
+| `@aicoo/sharedos-contracts` | JSON-safe protocol types, schemas, and stable identifiers    |
+| `@aicoo/sharedos-core`      | Deterministic authorization, routing, and dispatch decisions |
+| `@aicoo/sharedos-os`        | Standard `files` operations and guarded OS tools             |
+| `@aicoo/sharedos-runtime`   | Fixed turn envelope, standard runtime, and plugin contract   |
+| `@aicoo/sharedos-client`    | Typed client for a remote SharedOS HTTP boundary             |
+| `@aicoo/sharedos-http`      | Transport adapter over the same runtime and contracts        |
+| `@aicoo/sharedos`           | One-install entry point re-exporting the production packages |
+| `@aicoo/sharedos-testkit`   | In-memory providers and conformance helpers for tests        |
 
 `testkit` is not a production persistence layer. Production state remains in
 the host.
 
 ## Pluggable runtimes
 
-SharedOS is runtime-agnostic, not runtime-less. `@sharedos/runtime` ships
+SharedOS is runtime-agnostic, not runtime-less. `@aicoo/sharedos-runtime` ships
 `StandardRuntime`, a bounded reference loop over `AgentTurnDriver`, while
 `RuntimePlugin` allows a host to install a complete Codex, DeepSeek, or custom
 harness.
@@ -167,7 +167,7 @@ order, budgets, stopping, snapshots, judges, metrics, and artifacts. See the
 [PACT integration guide](docs/integrations/pact.md).
 
 **HTTP boundary.** Deployments that cannot embed the runtime can expose the same
-contracts through `@sharedos/http` and consume them with `@sharedos/client`.
+contracts through `@aicoo/sharedos-http` and consume them with `@aicoo/sharedos-client`.
 Transport authentication establishes the caller; it does not replace capability
 authorization.
 
@@ -189,7 +189,7 @@ authorization.
 Install the prerelease SDK from npm:
 
 ```bash
-npm install @sharedos/sdk@next
+npm install @aicoo/sharedos@next
 ```
 
 To run the sender-to-receiver example from a local clone:
@@ -222,7 +222,7 @@ tools, and one bounded runtime turn.
 
 ## Package preview
 
-The one-install entry point is `@sharedos/sdk`. Individual packages remain
+The one-install entry point is `@aicoo/sharedos`. Individual packages remain
 available for hosts that want a smaller dependency surface. Release candidates
 use one synchronized version and the `next` dist-tag.
 

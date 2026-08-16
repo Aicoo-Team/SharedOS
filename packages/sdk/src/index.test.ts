@@ -10,7 +10,7 @@ import {
   StandardRuntime,
 } from "./index.js";
 
-describe("@sharedos/sdk", () => {
+describe("@aicoo/sharedos", () => {
   it("exposes contracts, the kernel, and the remote client from one entry point", () => {
     expect(AccessContextSchema).toBeDefined();
     expect(CapabilityAuthorizer).toBeTypeOf("function");

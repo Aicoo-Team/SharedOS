@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Capability } from "@sharedos/contracts";
+import type { Capability } from "@aicoo/sharedos-contracts";
 
 import {
   InMemoryToolNamespaceSettingsStore,

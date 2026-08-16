@@ -12,8 +12,8 @@ import {
   type ToolCall,
   type ToolDefinition,
   type ToolResult,
-} from "@sharedos/contracts";
-import type { ResourceProvider, SharedOSKernel, ToolHandler } from "@sharedos/core";
+} from "@aicoo/sharedos-contracts";
+import type { ResourceProvider, SharedOSKernel, ToolHandler } from "@aicoo/sharedos-core";
 
 /** The canonical SharedOS resource plane. Memory is a role of files, not a second store. */
 export const FILES_NAMESPACE = "files";

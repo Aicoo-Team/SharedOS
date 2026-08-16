@@ -10,7 +10,7 @@ import type {
   ResourceResult,
   ToolNamespace,
   ToolNamespaceUpdate,
-} from "@sharedos/contracts";
+} from "@aicoo/sharedos-contracts";
 import {
   CapabilityAuthorizer,
   InMemoryGrantUsageStore,
@@ -21,7 +21,7 @@ import {
   type MessageTransport,
   type ResourceProvider,
   type ToolNamespaceSettingsStore,
-} from "@sharedos/core";
+} from "@aicoo/sharedos-core";
 
 export class InMemoryAuditSink implements AuditSink {
   readonly events: AuditEvent[] = [];

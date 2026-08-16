@@ -1,10 +1,10 @@
-# @sharedos/runtime
+# @aicoo/sharedos-runtime
 
 A fixed permission envelope with standard and replaceable one-turn agent
 runtimes.
 
 ```bash
-npm install @sharedos/runtime@next
+npm install @aicoo/sharedos-runtime@next
 ```
 
 SharedOS is runtime-agnostic, not runtime-less. The package exports two layers:
@@ -18,7 +18,7 @@ SharedOS is runtime-agnostic, not runtime-less. The package exports two layers:
 ## Standard runtime
 
 ```ts
-import { SharedOSExecutor, StandardRuntime } from "@sharedos/runtime";
+import { SharedOSExecutor, StandardRuntime } from "@aicoo/sharedos-runtime";
 
 const runtime = new StandardRuntime(agentDriver);
 const turns = new SharedOSExecutor(kernel, runtime, {
@@ -33,7 +33,7 @@ const result = await turns.execute(executionRequest);
 The original API remains available as a compatibility shorthand:
 
 ```ts
-import { TurnExecutor } from "@sharedos/runtime";
+import { TurnExecutor } from "@aicoo/sharedos-runtime";
 
 const turns = new TurnExecutor(kernel, agentDriver);
 ```
@@ -41,7 +41,7 @@ const turns = new TurnExecutor(kernel, agentDriver);
 ## Custom runtime
 
 ```ts
-import type { RuntimePlugin } from "@sharedos/runtime";
+import type { RuntimePlugin } from "@aicoo/sharedos-runtime";
 
 const codexRuntime: RuntimePlugin = {
   manifest: {

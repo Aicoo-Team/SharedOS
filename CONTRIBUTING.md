@@ -111,7 +111,7 @@ Keep tests next to the source they exercise using `*.test.ts`. Prefer explicit
 fixtures with fixed timestamps and IDs. Tests should be deterministic and must
 not call live model, database, OAuth, or MCP services.
 
-Use `@sharedos/testkit` for portable fixtures and provider conformance where it
+Use `@aicoo/sharedos-testkit` for portable fixtures and provider conformance where it
 improves consistency. A provider-specific integration suite can live with that
 provider in its host repository.
 

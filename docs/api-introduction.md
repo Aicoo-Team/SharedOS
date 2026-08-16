@@ -7,16 +7,16 @@ not included.
 
 ## Choose a package
 
-| Package               | Use it for                                                     |
-| --------------------- | -------------------------------------------------------------- |
-| `@sharedos/contracts` | JSON-safe protocol types and runtime-validation schemas        |
-| `@sharedos/core`      | Deny-by-default authorization, registries, dispatch, and audit |
-| `@sharedos/os`        | Standard permission-controlled `files` tools and adapters      |
-| `@sharedos/runtime`   | One-turn execution, runtime plugins, and the standard runtime  |
-| `@sharedos/http`      | Fetch-compatible HTTP service adapter                          |
-| `@sharedos/client`    | Runtime-validated HTTP client                                  |
-| `@sharedos/sdk`       | Convenience re-export of the production packages               |
-| `@sharedos/testkit`   | Deterministic in-memory fixtures for tests and examples        |
+| Package                     | Use it for                                                     |
+| --------------------------- | -------------------------------------------------------------- |
+| `@aicoo/sharedos-contracts` | JSON-safe protocol types and runtime-validation schemas        |
+| `@aicoo/sharedos-core`      | Deny-by-default authorization, registries, dispatch, and audit |
+| `@aicoo/sharedos-os`        | Standard permission-controlled `files` tools and adapters      |
+| `@aicoo/sharedos-runtime`   | One-turn execution, runtime plugins, and the standard runtime  |
+| `@aicoo/sharedos-http`      | Fetch-compatible HTTP service adapter                          |
+| `@aicoo/sharedos-client`    | Runtime-validated HTTP client                                  |
+| `@aicoo/sharedos`           | Convenience re-export of the production packages               |
+| `@aicoo/sharedos-testkit`   | Deterministic in-memory fixtures for tests and examples        |
 
 The SDK adds no independent symbols, so re-exported definitions appear once on
 their owning package pages rather than being duplicated on the SDK page.

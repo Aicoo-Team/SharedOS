@@ -1,5 +1,5 @@
 {
-  "name": "@sharedos/example-quickstart",
+  "name": "@aicoo/sharedos-example-quickstart",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -7,10 +7,10 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@sharedos/contracts": "workspace:*",
-    "@sharedos/core": "workspace:*",
-    "@sharedos/os": "workspace:*",
-    "@sharedos/runtime": "workspace:*",
-    "@sharedos/testkit": "workspace:*"
+    "@aicoo/sharedos-contracts": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*",
+    "@aicoo/sharedos-os": "workspace:*",
+    "@aicoo/sharedos-runtime": "workspace:*",
+    "@aicoo/sharedos-testkit": "workspace:*"
   }
 }

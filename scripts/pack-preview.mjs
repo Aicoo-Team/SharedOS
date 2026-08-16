@@ -111,8 +111,8 @@ function verifyFreshConsumer(archives) {
     writeFileSync(
       join(consumerDirectory, "smoke.mjs"),
       [
-        'import { AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, StandardRuntime, TurnExecutor } from "@sharedos/sdk";',
-        'import { createTestContext } from "@sharedos/testkit";',
+        'import { AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, StandardRuntime, TurnExecutor } from "@aicoo/sharedos";',
+        'import { createTestContext } from "@aicoo/sharedos-testkit";',
         "",
         "const values = [AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, StandardRuntime, TurnExecutor, createTestContext];",
         'if (values.some((value) => value === undefined)) throw new Error("SharedOS export missing");',
@@ -125,8 +125,8 @@ function verifyFreshConsumer(archives) {
     writeFileSync(
       join(consumerDirectory, "smoke.ts"),
       [
-        'import { RuntimeRegistry, SharedOSExecutor, SharedOSKernel, type AccessContext, type RuntimePlugin } from "@sharedos/sdk";',
-        'import { createTestContext } from "@sharedos/testkit";',
+        'import { RuntimeRegistry, SharedOSExecutor, SharedOSKernel, type AccessContext, type RuntimePlugin } from "@aicoo/sharedos";',
+        'import { createTestContext } from "@aicoo/sharedos-testkit";',
         "",
         "const kernel: SharedOSKernel = new SharedOSKernel();",
         "const context: AccessContext = createTestContext();",

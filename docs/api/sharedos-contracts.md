@@ -2,14 +2,14 @@
 
 ---
 
-[SharedOS API](README.md) / @sharedos/contracts
+[SharedOS API](README.md) / @aicoo/sharedos-contracts
 
-# @sharedos/contracts
+# @aicoo/sharedos-contracts
 
 Strict, JSON-safe SharedOS protocol schemas and TypeScript types.
 
 ```bash
-npm install @sharedos/contracts@next
+npm install @aicoo/sharedos-contracts@next
 ```
 
 Use this package for addresses, capabilities, messages, resources, tools,

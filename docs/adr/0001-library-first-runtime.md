@@ -19,11 +19,11 @@ and remote execution can drift into different authorization systems.
 
 SharedOS is library-first:
 
-1. JSON-safe contracts live in `@sharedos/contracts`.
-2. Deterministic authorization and routing live in `@sharedos/core`.
-3. One-turn orchestration lives in `@sharedos/runtime`.
-4. `@sharedos/http` is an adapter over that runtime, not a second runtime.
-5. `@sharedos/client` is a typed transport client over the same contracts.
+1. JSON-safe contracts live in `@aicoo/sharedos-contracts`.
+2. Deterministic authorization and routing live in `@aicoo/sharedos-core`.
+3. One-turn orchestration lives in `@aicoo/sharedos-runtime`.
+4. `@aicoo/sharedos-http` is an adapter over that runtime, not a second runtime.
+5. `@aicoo/sharedos-client` is a typed transport client over the same contracts.
 
 Aicoo should initially embed the runtime and supply host adapters. Hosts that
 need process isolation can expose the HTTP adapter without changing core

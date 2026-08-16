@@ -2,14 +2,14 @@
 
 ---
 
-[SharedOS API](README.md) / @sharedos/os
+[SharedOS API](README.md) / @aicoo/sharedos-os
 
-# @sharedos/os
+# @aicoo/sharedos-os
 
 Standard permission-controlled file tool adapters for SharedOS.
 
 ```bash
-npm install @sharedos/os@next
+npm install @aicoo/sharedos-os@next
 ```
 
 Hosts provide storage implementations; this package provides one canonical
@@ -33,9 +33,9 @@ Defined in: [index.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 #### Properties
 
-| Property                             | Modifier   | Type                                           | Defined in                                                                                     |
-| ------------------------------------ | ---------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| <a id="property-files"></a> `files?` | `readonly` | [`ResourceProvider`](core.md#resourceprovider) | [index.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L122) |
+| Property                             | Modifier   | Type                                                    | Defined in                                                                                     |
+| ------------------------------------ | ---------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| <a id="property-files"></a> `files?` | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L122) |
 
 ## Type Aliases
 
@@ -147,7 +147,7 @@ The canonical SharedOS resource plane. Memory is a role of files, not a second s
 
 ### FilesAppendArgumentsSchema
 
-> `const` **FilesAppendArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodString`>\>; `metadata`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodType`\<[`JsonValue`](contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](contracts.md#jsonvalue)>>>\>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](contracts.md#jsonvalue)>\>; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](contracts.md#jsonvalue)>\>; `path`: `string`[]; \}\>
+> `const` **FilesAppendArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodString`>\>; `metadata`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>>>\>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}\>
 
 Defined in: [index.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L67)
 
@@ -155,7 +155,7 @@ Defined in: [index.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 ### FilesCreateArgumentsSchema
 
-> `const` **FilesCreateArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](contracts.md#jsonvalue)>\>; `metadata`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodType`\<[`JsonValue`](contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](contracts.md#jsonvalue)>>>\>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](contracts.md#jsonvalue); `metadata?`: `Record`\<`string`, [`JsonValue`](contracts.md#jsonvalue)>\>; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](contracts.md#jsonvalue); `metadata?`: `Record`\<`string`, [`JsonValue`](contracts.md#jsonvalue)>\>; `path`: `string`[]; \}\>
+> `const` **FilesCreateArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `metadata`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>>>\>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}\>
 
 Defined in: [index.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L49)
 
@@ -187,7 +187,7 @@ Defined in: [index.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 ### FilesReplaceArgumentsSchema
 
-> `const` **FilesReplaceArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodString`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}\>
+> `const` **FilesReplaceArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodString`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}\>
 
 Defined in: [index.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L58)
 
@@ -235,7 +235,7 @@ Defined in: [index.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 ### createFileTools()
 
-> **createFileTools**(`provider`): readonly [`ToolHandler`](core.md#toolhandler)[]
+> **createFileTools**(`provider`): readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
 Defined in: [index.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L143)
 
@@ -247,13 +247,13 @@ must preserve the same file grants; they are not independent authority.
 
 #### Parameters
 
-| Parameter  | Type                                           |
-| ---------- | ---------------------------------------------- |
-| `provider` | [`ResourceProvider`](core.md#resourceprovider) |
+| Parameter  | Type                                                    |
+| ---------- | ------------------------------------------------------- |
+| `provider` | [`ResourceProvider`](sharedos-core.md#resourceprovider) |
 
 #### Returns
 
-readonly [`ToolHandler`](core.md#toolhandler)[]
+readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
 ---
 
@@ -265,10 +265,10 @@ Defined in: [index.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 #### Parameters
 
-| Parameter   | Type                                                                   |
-| ----------- | ---------------------------------------------------------------------- |
-| `kernel`    | `Pick`\<[`SharedOSKernel`](core.md#sharedoskernel), `"registerTool"`\> |
-| `providers` | [`StandardOsProviders`](#standardosproviders)                          |
+| Parameter   | Type                                                                            |
+| ----------- | ------------------------------------------------------------------------------- |
+| `kernel`    | `Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"registerTool"`\> |
+| `providers` | [`StandardOsProviders`](#standardosproviders)                                   |
 
 #### Returns
 

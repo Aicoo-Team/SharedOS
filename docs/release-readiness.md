@@ -6,7 +6,7 @@ carry the Apache-2.0 license.
 
 ## Distribution gates
 
-- Verify ownership of the `@sharedos` npm scope and perform the first manual
+- Verify publish access to the `@aicoo` npm scope and perform the first manual
   publication as `0.1.0-alpha.0`.
 - Configure GitHub trusted publishing for every package after its first
   publication, then verify OIDC with the next prerelease.

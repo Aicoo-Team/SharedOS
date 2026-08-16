@@ -5,8 +5,8 @@ import type {
   ToolDefinition,
   ToolNamespaceCatalog,
   ToolResult,
-} from "@sharedos/contracts";
-import { ToolDefinitionSchema } from "@sharedos/contracts";
+} from "@aicoo/sharedos-contracts";
+import { ToolDefinitionSchema } from "@aicoo/sharedos-contracts";
 
 import type { AuthorizationRequest } from "./authorization.js";
 import { DuplicateRegistrationError } from "./errors.js";

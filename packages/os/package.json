@@ -1,5 +1,5 @@
 {
-  "name": "@sharedos/os",
+  "name": "@aicoo/sharedos-os",
   "version": "0.1.0-alpha.0",
   "description": "Standard permission-controlled file capabilities for SharedOS",
   "license": "Apache-2.0",
@@ -45,8 +45,8 @@
     }
   },
   "dependencies": {
-    "@sharedos/contracts": "workspace:*",
-    "@sharedos/core": "workspace:*",
+    "@aicoo/sharedos-contracts": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*",
     "zod": "^3.24.1"
   }
 }
