@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { assertSafePackageEntries } from "./package-archive.mjs";
 import { packageDirectories } from "./package-set.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -65,6 +66,7 @@ try {
 
 function verifyArchive(archive) {
   const entries = capture("tar", ["-tf", archive], repositoryRoot).trim().split("\n");
+  assertSafePackageEntries(entries, archive);
   const manifestText = capture("tar", ["-xOf", archive, "package/package.json"], repositoryRoot);
   const manifest = JSON.parse(manifestText);
 

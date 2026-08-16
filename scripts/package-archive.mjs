@@ -45,20 +45,7 @@ export function packageContentDigest(archive, cwd) {
     .split("\n")
     .filter((entry) => entry && !entry.endsWith("/"))
     .sort();
-  if (new Set(entries).size !== entries.length) {
-    throw new Error(`${archive} contains duplicate archive entries.`);
-  }
-  if (
-    entries.some(
-      (entry) =>
-        !entry.startsWith("package/") ||
-        entry.includes("/../") ||
-        entry.endsWith("/..") ||
-        entry.includes("\\"),
-    )
-  ) {
-    throw new Error(`${archive} contains an unsafe archive path.`);
-  }
+  assertSafePackageEntries(entries, archive);
 
   const digest = createHash("sha512");
   for (const entry of entries) {
@@ -74,6 +61,26 @@ export function packageContentDigest(archive, cwd) {
   }
 
   return digest.digest("base64");
+}
+
+export function assertSafePackageEntries(entries, archive) {
+  if (new Set(entries).size !== entries.length) {
+    throw new Error(`${archive} contains duplicate archive entries.`);
+  }
+  if (
+    entries.some(
+      (entry) =>
+        !entry.startsWith("package/") ||
+        entry.includes("/../") ||
+        entry.endsWith("/..") ||
+        entry.includes("\\"),
+    )
+  ) {
+    throw new Error(`${archive} contains an unsafe archive path.`);
+  }
+  if (entries.some((entry) => /\s/.test(entry))) {
+    throw new Error(`${archive} contains a conflict-copy archive path.`);
+  }
 }
 
 function sortJson(value) {
