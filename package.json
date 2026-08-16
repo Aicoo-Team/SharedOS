@@ -10,8 +10,8 @@
     "node": ">=20.11"
   },
   "scripts": {
-    "build": "tsc -b",
-    "clean": "tsc -b --clean",
+    "build": "node scripts/clean-generated.mjs && tsc -b --force && node scripts/check-generated.mjs",
+    "clean": "node scripts/clean-generated.mjs",
     "docs:api": "pnpm build && typedoc",
     "docs:api:check": "node scripts/check-api-docs.mjs",
     "format": "prettier --write .",

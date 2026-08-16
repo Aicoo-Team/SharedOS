@@ -68,12 +68,32 @@ test("package content digest rejects unsafe archive paths", () => {
   }
 });
 
-function createArchive(root, name, manifest, source = "export {};\n") {
+test("package content digest rejects conflict-copy archive paths", () => {
+  const temporaryDirectory = mkdtempSync(join(tmpdir(), "sharedos-package-digest-"));
+  try {
+    const archive = createArchive(
+      temporaryDirectory,
+      "conflict-copy",
+      { name: "@aicoo/sharedos-example" },
+      "export {};\n",
+      "index 2.js",
+    );
+
+    assert.throws(
+      () => packageContentDigest(archive, temporaryDirectory),
+      /conflict-copy archive path/,
+    );
+  } finally {
+    rmSync(temporaryDirectory, { recursive: true, force: true });
+  }
+});
+
+function createArchive(root, name, manifest, source = "export {};\n", sourceName = "index.js") {
   const fixtureRoot = join(root, name);
   const packageRoot = join(fixtureRoot, "package");
   mkdirSync(packageRoot, { recursive: true });
   writeFileSync(join(packageRoot, "package.json"), JSON.stringify(manifest));
-  writeFileSync(join(packageRoot, "index.js"), source);
+  writeFileSync(join(packageRoot, sourceName), source);
 
   const archive = join(root, `${name}.tgz`);
   execFileSync("tar", ["-czf", archive, "package"], { cwd: fixtureRoot });
