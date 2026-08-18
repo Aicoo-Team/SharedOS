@@ -107,7 +107,7 @@ spawning a CLI and reading `PATH` are host concerns rather than protocol ones.
 
 ### HarnessDriver
 
-Defined in: adapters/src/driver.ts:50
+Defined in: [adapters/src/driver.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L50)
 
 One vendor harness, driven as a SharedOS agent turn.
 
@@ -132,7 +132,7 @@ recorded.
 
 > **new HarnessDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: adapters/src/driver.ts:57
+Defined in: [adapters/src/driver.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L57)
 
 ###### Parameters
 
@@ -146,13 +146,13 @@ Defined in: adapters/src/driver.ts:57
 
 #### Properties
 
-| Property                                  | Modifier   | Type                                             | Defined in                     |
-| ----------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------ |
-| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | adapters/src/driver.ts:51      |
-| `manifest.id`                             | `public`   | `string`                                         | contracts/dist/runtime.d.ts:9  |
-| `manifest.metadata?`                      | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | contracts/dist/runtime.d.ts:12 |
-| `manifest.protocolVersion`                | `public`   | `"1"`                                            | contracts/dist/runtime.d.ts:11 |
-| `manifest.version`                        | `public`   | `string`                                         | contracts/dist/runtime.d.ts:10 |
+| Property                                  | Modifier   | Type                                             | Defined in                                                                                                        |
+| ----------------------------------------- | ---------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | [adapters/src/driver.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L51) |
+| `manifest.id`                             | `public`   | `string`                                         | contracts/dist/runtime.d.ts:9                                                                                     |
+| `manifest.metadata?`                      | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | contracts/dist/runtime.d.ts:12                                                                                    |
+| `manifest.protocolVersion`                | `public`   | `"1"`                                            | contracts/dist/runtime.d.ts:11                                                                                    |
+| `manifest.version`                        | `public`   | `string`                                         | contracts/dist/runtime.d.ts:10                                                                                    |
 
 #### Methods
 
@@ -160,7 +160,7 @@ Defined in: adapters/src/driver.ts:57
 
 > **open**(`request`, `signal`): `Promise`\<[`AgentTurnSession`](sharedos-runtime.md#agentturnsession)>\>
 
-Defined in: adapters/src/driver.ts:68
+Defined in: [adapters/src/driver.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L68)
 
 ###### Parameters
 
@@ -181,7 +181,7 @@ Defined in: adapters/src/driver.ts:68
 
 ### TranscriptTransport
 
-Defined in: adapters/src/transcript.ts:27
+Defined in: [adapters/src/transcript.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L27)
 
 Replays a recorded conversation through the real protocol translation.
 
@@ -199,7 +199,7 @@ only thing left unexercised is the transport that would have carried them.
 
 > **new TranscriptTransport**(`transcript`): [`TranscriptTransport`](#transcripttransport)
 
-Defined in: adapters/src/transcript.ts:32
+Defined in: [adapters/src/transcript.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L32)
 
 ###### Parameters
 
@@ -213,10 +213,10 @@ Defined in: adapters/src/transcript.ts:32
 
 #### Properties
 
-| Property                                | Modifier   | Type                                               | Default value | Defined in                    |
-| --------------------------------------- | ---------- | -------------------------------------------------- | ------------- | ----------------------------- |
-| <a id="property-opened"></a> `opened`   | `readonly` | [`HarnessTurnRequest`](#harnessturnrequest)[]      | `[]`          | adapters/src/transcript.ts:28 |
-| <a id="property-written"></a> `written` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)[] | `[]`          | adapters/src/transcript.ts:29 |
+| Property                                | Modifier   | Type                                               | Default value | Defined in                                                                                                                |
+| --------------------------------------- | ---------- | -------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-opened"></a> `opened`   | `readonly` | [`HarnessTurnRequest`](#harnessturnrequest)[]      | `[]`          | [adapters/src/transcript.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L28) |
+| <a id="property-written"></a> `written` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)[] | `[]`          | [adapters/src/transcript.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L29) |
 
 #### Methods
 
@@ -224,7 +224,7 @@ Defined in: adapters/src/transcript.ts:32
 
 > **open**(`request`): `Promise`\<[`HarnessChannel`](#harnesschannel)>\>
 
-Defined in: adapters/src/transcript.ts:39
+Defined in: [adapters/src/transcript.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L39)
 
 ###### Parameters
 
@@ -244,24 +244,24 @@ Defined in: adapters/src/transcript.ts:39
 
 ### HarnessAvailability
 
-Defined in: adapters/src/harness.ts:80
+Defined in: [adapters/src/harness.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L80)
 
 Whether a harness can actually be run here, and if not, why not.
 
 #### Properties
 
-| Property                                    | Modifier   | Type                                             | Defined in                 |
-| ------------------------------------------- | ---------- | ------------------------------------------------ | -------------------------- |
-| <a id="property-available"></a> `available` | `readonly` | `boolean`                                        | adapters/src/harness.ts:82 |
-| <a id="property-detail"></a> `detail?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | adapters/src/harness.ts:84 |
-| <a id="property-harness"></a> `harness`     | `readonly` | `string`                                         | adapters/src/harness.ts:81 |
-| <a id="property-reason"></a> `reason?`      | `readonly` | `string`                                         | adapters/src/harness.ts:83 |
+| Property                                    | Modifier   | Type                                             | Defined in                                                                                                          |
+| ------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-available"></a> `available` | `readonly` | `boolean`                                        | [adapters/src/harness.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L82) |
+| <a id="property-detail"></a> `detail?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [adapters/src/harness.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L84) |
+| <a id="property-harness"></a> `harness`     | `readonly` | `string`                                         | [adapters/src/harness.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L81) |
+| <a id="property-reason"></a> `reason?`      | `readonly` | `string`                                         | [adapters/src/harness.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L83) |
 
 ---
 
 ### HarnessChannel
 
-Defined in: adapters/src/harness.ts:42
+Defined in: [adapters/src/harness.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L42)
 
 One open harness turn. Reads and writes are frames, never SharedOS types.
 
@@ -271,7 +271,7 @@ One open harness turn. Reads and writes are frames, never SharedOS types.
 
 > **close**(): `Promise`\<`void`>\>
 
-Defined in: adapters/src/harness.ts:46
+Defined in: [adapters/src/harness.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L46)
 
 ###### Returns
 
@@ -281,7 +281,7 @@ Defined in: adapters/src/harness.ts:46
 
 > **read**(`signal`): `Promise`\<[`JsonObject`](sharedos-contracts.md#jsonobject) \| `undefined`>\>
 
-Defined in: adapters/src/harness.ts:44
+Defined in: [adapters/src/harness.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L44)
 
 The next frame, or `undefined` once the harness has finished speaking.
 
@@ -299,7 +299,7 @@ The next frame, or `undefined` once the harness has finished speaking.
 
 > **write**(`frame`, `signal`): `Promise`\<`void`>\>
 
-Defined in: adapters/src/harness.ts:45
+Defined in: [adapters/src/harness.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L45)
 
 ###### Parameters
 
@@ -316,27 +316,27 @@ Defined in: adapters/src/harness.ts:45
 
 ### HarnessDriverOptions
 
-Defined in: adapters/src/driver.ts:24
+Defined in: [adapters/src/driver.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L24)
 
 #### Properties
 
-| Property                                                   | Modifier   | Type                                             | Description                                                        | Defined in                     |
-| ---------------------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------ |
-| <a id="property-manifest-1"></a> `manifest`                | `readonly` | `object`                                         | -                                                                  | adapters/src/driver.ts:25      |
-| `manifest.id`                                              | `public`   | `string`                                         | -                                                                  | contracts/dist/runtime.d.ts:9  |
-| `manifest.metadata?`                                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                  | contracts/dist/runtime.d.ts:12 |
-| `manifest.protocolVersion`                                 | `public`   | `"1"`                                            | -                                                                  | contracts/dist/runtime.d.ts:11 |
-| `manifest.version`                                         | `public`   | `string`                                         | -                                                                  | contracts/dist/runtime.d.ts:10 |
-| <a id="property-maxignoredframes"></a> `maxIgnoredFrames?` | `readonly` | `number`                                         | Guard against a harness that streams unrelated frames without end. | adapters/src/driver.ts:31      |
-| <a id="property-prompt"></a> `prompt?`                     | `readonly` | (`request`) => `string`                          | Overrides how the turn message becomes the harness prompt.         | adapters/src/driver.ts:29      |
-| <a id="property-protocol"></a> `protocol`                  | `readonly` | [`HarnessProtocol`](#harnessprotocol)            | -                                                                  | adapters/src/driver.ts:26      |
-| <a id="property-transport"></a> `transport`                | `readonly` | [`HarnessTransport`](#harnesstransport)          | -                                                                  | adapters/src/driver.ts:27      |
+| Property                                                   | Modifier   | Type                                             | Description                                                        | Defined in                                                                                                        |
+| ---------------------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| <a id="property-manifest-1"></a> `manifest`                | `readonly` | `object`                                         | -                                                                  | [adapters/src/driver.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L25) |
+| `manifest.id`                                              | `public`   | `string`                                         | -                                                                  | contracts/dist/runtime.d.ts:9                                                                                     |
+| `manifest.metadata?`                                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                  | contracts/dist/runtime.d.ts:12                                                                                    |
+| `manifest.protocolVersion`                                 | `public`   | `"1"`                                            | -                                                                  | contracts/dist/runtime.d.ts:11                                                                                    |
+| `manifest.version`                                         | `public`   | `string`                                         | -                                                                  | contracts/dist/runtime.d.ts:10                                                                                    |
+| <a id="property-maxignoredframes"></a> `maxIgnoredFrames?` | `readonly` | `number`                                         | Guard against a harness that streams unrelated frames without end. | [adapters/src/driver.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L31) |
+| <a id="property-prompt"></a> `prompt?`                     | `readonly` | (`request`) => `string`                          | Overrides how the turn message becomes the harness prompt.         | [adapters/src/driver.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L29) |
+| <a id="property-protocol"></a> `protocol`                  | `readonly` | [`HarnessProtocol`](#harnessprotocol)            | -                                                                  | [adapters/src/driver.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L26) |
+| <a id="property-transport"></a> `transport`                | `readonly` | [`HarnessTransport`](#harnesstransport)          | -                                                                  | [adapters/src/driver.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L27) |
 
 ---
 
 ### HarnessProtocol
 
-Defined in: adapters/src/harness.ts:66
+Defined in: [adapters/src/harness.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L66)
 
 The translation between SharedOS and one vendor's wire shapes.
 
@@ -346,9 +346,9 @@ the SharedOS execution envelope and is not reimplemented per vendor.
 
 #### Properties
 
-| Property                      | Modifier   | Type     | Defined in                 |
-| ----------------------------- | ---------- | -------- | -------------------------- |
-| <a id="property-id"></a> `id` | `readonly` | `string` | adapters/src/harness.ts:67 |
+| Property                      | Modifier   | Type     | Defined in                                                                                                          |
+| ----------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-id"></a> `id` | `readonly` | `string` | [adapters/src/harness.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L67) |
 
 #### Methods
 
@@ -356,7 +356,7 @@ the SharedOS execution envelope and is not reimplemented per vendor.
 
 > **describeTools**(`tools`): [`JsonValue`](sharedos-contracts.md#jsonvalue)
 
-Defined in: adapters/src/harness.ts:69
+Defined in: [adapters/src/harness.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L69)
 
 Render the permission-filtered catalogue in the harness's own tool shape.
 
@@ -374,7 +374,7 @@ Render the permission-filtered catalogue in the harness's own tool shape.
 
 > **encodeToolResult**(`result`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: adapters/src/harness.ts:76
+Defined in: [adapters/src/harness.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L76)
 
 ###### Parameters
 
@@ -390,7 +390,7 @@ Defined in: adapters/src/harness.ts:76
 
 > **interpret**(`frame`): readonly [`HarnessStep`](#harnessstep)[]
 
-Defined in: adapters/src/harness.ts:75
+Defined in: [adapters/src/harness.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L75)
 
 Everything one frame means, in order. Frames carrying nothing relevant --
 progress notices, token counts, thinking blocks -- yield an empty array,
@@ -410,24 +410,24 @@ readonly [`HarnessStep`](#harnessstep)[]
 
 ### HarnessRequirements
 
-Defined in: adapters/src/harness.ts:88
+Defined in: [adapters/src/harness.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L88)
 
 What a harness needs before it can run: an executable, credentials, or both.
 
 #### Properties
 
-| Property                                                        | Modifier   | Type                | Description                                                            | Defined in                 |
-| --------------------------------------------------------------- | ---------- | ------------------- | ---------------------------------------------------------------------- | -------------------------- |
-| <a id="property-credentialsoptional"></a> `credentialsOptional` | `readonly` | `boolean`           | True when the harness can authenticate from a stored session instead.  | adapters/src/harness.ts:95 |
-| <a id="property-credentialvariables"></a> `credentialVariables` | `readonly` | readonly `string`[] | Environment variables, any one of which satisfies the credential need. | adapters/src/harness.ts:93 |
-| <a id="property-executable"></a> `executable`                   | `readonly` | `string`            | Executable expected on PATH.                                           | adapters/src/harness.ts:91 |
-| <a id="property-harness-1"></a> `harness`                       | `readonly` | `string`            | -                                                                      | adapters/src/harness.ts:89 |
+| Property                                                        | Modifier   | Type                | Description                                                            | Defined in                                                                                                          |
+| --------------------------------------------------------------- | ---------- | ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-credentialsoptional"></a> `credentialsOptional` | `readonly` | `boolean`           | True when the harness can authenticate from a stored session instead.  | [adapters/src/harness.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L95) |
+| <a id="property-credentialvariables"></a> `credentialVariables` | `readonly` | readonly `string`[] | Environment variables, any one of which satisfies the credential need. | [adapters/src/harness.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L93) |
+| <a id="property-executable"></a> `executable`                   | `readonly` | `string`            | Executable expected on PATH.                                           | [adapters/src/harness.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L91) |
+| <a id="property-harness-1"></a> `harness`                       | `readonly` | `string`            | -                                                                      | [adapters/src/harness.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L89) |
 
 ---
 
 ### HarnessTranscript
 
-Defined in: adapters/src/transcript.ts:16
+Defined in: [adapters/src/transcript.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L16)
 
 A recorded harness conversation.
 
@@ -438,15 +438,15 @@ exercises the same code path a live session does.
 
 #### Properties
 
-| Property                                | Modifier   | Type                                                                   | Defined in                    |
-| --------------------------------------- | ---------- | ---------------------------------------------------------------------- | ----------------------------- |
-| <a id="property-batches"></a> `batches` | `readonly` | readonly readonly [`JsonObject`](sharedos-contracts.md#jsonobject)[][] | adapters/src/transcript.ts:17 |
+| Property                                | Modifier   | Type                                                                   | Defined in                                                                                                                |
+| --------------------------------------- | ---------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-batches"></a> `batches` | `readonly` | readonly readonly [`JsonObject`](sharedos-contracts.md#jsonobject)[][] | [adapters/src/transcript.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L17) |
 
 ---
 
 ### HarnessTransport
 
-Defined in: adapters/src/harness.ts:55
+Defined in: [adapters/src/harness.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L55)
 
 How a harness is reached: a subprocess, an HTTP session, or a recorded
 transcript. Keeping this separate from the protocol is what lets one adapter
@@ -459,7 +459,7 @@ translation code under test.
 
 > **open**(`request`, `signal`): `Promise`\<[`HarnessChannel`](#harnesschannel)>\>
 
-Defined in: adapters/src/harness.ts:56
+Defined in: [adapters/src/harness.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L56)
 
 ###### Parameters
 
@@ -476,19 +476,19 @@ Defined in: adapters/src/harness.ts:56
 
 ### HarnessTurnRequest
 
-Defined in: adapters/src/harness.ts:31
+Defined in: [adapters/src/harness.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L31)
 
 Everything a harness needs to start one turn.
 
 #### Properties
 
-| Property                                        | Modifier   | Type                                                                 | Description                                                            | Defined in                 |
-| ----------------------------------------------- | ---------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------- |
-| <a id="property-context"></a> `context`         | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | The sanitised context. It carries no grants and no issuing authority.  | adapters/src/harness.ts:37 |
-| <a id="property-executionid"></a> `executionId` | `readonly` | `string`                                                             | -                                                                      | adapters/src/harness.ts:32 |
-| <a id="property-metadata"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                     | -                                                                      | adapters/src/harness.ts:38 |
-| <a id="property-prompt-1"></a> `prompt`         | `readonly` | `string`                                                             | -                                                                      | adapters/src/harness.ts:33 |
-| <a id="property-tools"></a> `tools`             | `readonly` | [`JsonValue`](sharedos-contracts.md#jsonvalue)                       | The permission-filtered catalogue, already in the harness's own shape. | adapters/src/harness.ts:35 |
+| Property                                        | Modifier   | Type                                                                 | Description                                                            | Defined in                                                                                                          |
+| ----------------------------------------------- | ---------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-context"></a> `context`         | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | The sanitised context. It carries no grants and no issuing authority.  | [adapters/src/harness.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L37) |
+| <a id="property-executionid"></a> `executionId` | `readonly` | `string`                                                             | -                                                                      | [adapters/src/harness.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L32) |
+| <a id="property-metadata"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                     | -                                                                      | [adapters/src/harness.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L38) |
+| <a id="property-prompt-1"></a> `prompt`         | `readonly` | `string`                                                             | -                                                                      | [adapters/src/harness.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L33) |
+| <a id="property-tools"></a> `tools`             | `readonly` | [`JsonValue`](sharedos-contracts.md#jsonvalue)                       | The permission-filtered catalogue, already in the harness's own shape. | [adapters/src/harness.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L35) |
 
 ## Type Aliases
 
@@ -496,7 +496,7 @@ Everything a harness needs to start one turn.
 
 > **ClaudeCodeDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: adapters/src/claude-code/index.ts:32
+Defined in: [adapters/src/claude-code/index.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L32)
 
 #### Type Declaration
 
@@ -514,7 +514,7 @@ Defined in: adapters/src/claude-code/index.ts:32
 
 > **CodexDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: adapters/src/codex/index.ts:32
+Defined in: [adapters/src/codex/index.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L32)
 
 #### Type Declaration
 
@@ -532,7 +532,7 @@ Defined in: adapters/src/codex/index.ts:32
 
 > **HarnessFrame** = [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: adapters/src/harness.ts:11
+Defined in: [adapters/src/harness.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L11)
 
 One raw protocol frame, in whatever shape the harness speaks.
 
@@ -542,7 +542,7 @@ One raw protocol frame, in whatever shape the harness speaks.
 
 > **HarnessStep** = \{ `arguments`: [`JsonObject`](sharedos-contracts.md#jsonobject); `callId`: `string`; `tool`: `string`; `type`: `"tool_call"`; \} \| \{ `text`: `string`; `type`: `"message"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output?`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: [`ProtocolError`](sharedos-contracts.md#protocolerror); `type`: `"failed"`; \}
 
-Defined in: adapters/src/harness.ts:19
+Defined in: [adapters/src/harness.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L19)
 
 What one frame means once the vendor protocol has interpreted it.
 
@@ -555,7 +555,7 @@ whose terminal frame carries no text still produces a turn output.
 
 > `const` **CLAUDE\_CODE\_ADAPTER\_VERSION**: `"0.1.0-alpha.0"` = `"0.1.0-alpha.0"`
 
-Defined in: adapters/src/claude-code/index.ts:9
+Defined in: [adapters/src/claude-code/index.ts:9](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L9)
 
 ---
 
@@ -563,7 +563,7 @@ Defined in: adapters/src/claude-code/index.ts:9
 
 > `const` **CLAUDE\_CODE\_PROTOCOL\_ID**: `"anthropic.messages.stream-json"` = `"anthropic.messages.stream-json"`
 
-Defined in: adapters/src/claude-code/protocol.ts:15
+Defined in: [adapters/src/claude-code/protocol.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L15)
 
 Claude Code speaks Anthropic message content blocks inside a stream-json
 envelope.
@@ -578,7 +578,7 @@ part and are what this module translates. The `{type:"assistant"|"user"|
 
 > `const` **CLAUDE\_CODE\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: adapters/src/claude-code/index.ts:24
+Defined in: [adapters/src/claude-code/index.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L24)
 
 What a live Claude Code session needs before it can run.
 
@@ -588,7 +588,7 @@ What a live Claude Code session needs before it can run.
 
 > `const` **CLAUDE\_CODE\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: adapters/src/claude-code/index.ts:11
+Defined in: [adapters/src/claude-code/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L11)
 
 ---
 
@@ -596,7 +596,7 @@ Defined in: adapters/src/claude-code/index.ts:11
 
 > `const` **claudeCodeProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: adapters/src/claude-code/protocol.ts:48
+Defined in: [adapters/src/claude-code/protocol.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L48)
 
 ---
 
@@ -604,7 +604,7 @@ Defined in: adapters/src/claude-code/protocol.ts:48
 
 > `const` **CODEX\_ADAPTER\_VERSION**: `"0.1.0-alpha.0"` = `"0.1.0-alpha.0"`
 
-Defined in: adapters/src/codex/index.ts:9
+Defined in: [adapters/src/codex/index.ts:9](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L9)
 
 ---
 
@@ -612,7 +612,7 @@ Defined in: adapters/src/codex/index.ts:9
 
 > `const` **CODEX\_PROTOCOL\_ID**: `"openai.responses.function-calling"` = `"openai.responses.function-calling"`
 
-Defined in: adapters/src/codex/protocol.ts:15
+Defined in: [adapters/src/codex/protocol.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L15)
 
 Codex speaks the OpenAI Responses function-calling shape.
 
@@ -628,7 +628,7 @@ Responses call -- is the transport's problem, not the protocol's.
 
 > `const` **CODEX\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: adapters/src/codex/index.ts:24
+Defined in: [adapters/src/codex/index.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L24)
 
 What a live Codex session needs before it can run.
 
@@ -638,7 +638,7 @@ What a live Codex session needs before it can run.
 
 > `const` **CODEX\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: adapters/src/codex/index.ts:11
+Defined in: [adapters/src/codex/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L11)
 
 ---
 
@@ -646,7 +646,7 @@ Defined in: adapters/src/codex/index.ts:11
 
 > `const` **codexProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: adapters/src/codex/protocol.ts:53
+Defined in: [adapters/src/codex/protocol.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L53)
 
 ## Functions
 
@@ -654,7 +654,7 @@ Defined in: adapters/src/codex/protocol.ts:53
 
 > **createClaudeCodeDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: adapters/src/claude-code/index.ts:44
+Defined in: [adapters/src/claude-code/index.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L44)
 
 Claude Code as a SharedOS agent turn driver.
 
@@ -678,7 +678,7 @@ and adds no second permission path.
 
 > **createCodexDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: adapters/src/codex/index.ts:44
+Defined in: [adapters/src/codex/index.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L44)
 
 Codex as a SharedOS agent turn driver.
 
