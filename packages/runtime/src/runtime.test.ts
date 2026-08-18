@@ -41,7 +41,6 @@ const context: AccessContext = {
   enabledToolNamespaces: ["files"],
   purpose: "prepare-report",
   traceId: "trace-1",
-  grants: [],
   now,
 };
 

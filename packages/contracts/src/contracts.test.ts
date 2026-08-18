@@ -59,7 +59,6 @@ const context = {
   owner,
   purpose: "prepare-investor-update",
   traceId: "trace-1",
-  grants: [grant],
   now,
 };
 
@@ -77,6 +76,10 @@ describe("JSON-safe protocol contracts", () => {
     expect(CapabilityGrantSchema.parse(grant)).toEqual(grant);
     expect(AccessContextSchema.parse(context)).toEqual(context);
     expectTypeOf(AccessContextSchema.parse(context)).toEqualTypeOf<AccessContext>();
+  });
+
+  it("keeps authority out of an access context", () => {
+    expect(AccessContextSchema.safeParse({ ...context, grants: [grant] }).success).toBe(false);
   });
 
   it("requires an explicit, internally consistent tool namespace policy", () => {

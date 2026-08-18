@@ -87,7 +87,13 @@ export const CapabilityRequestSchema = z
 
 export type CapabilityRequest = z.infer<typeof CapabilityRequestSchema>;
 
-/** Authority issued to one subject and bounded by explicit constraints. */
+/**
+ * Authority issued to one subject and bounded by explicit constraints.
+ *
+ * A grant that was derived from another grant names its immediate ancestor in
+ * `parentGrantId`. The link is a claim, not proof: SharedOS resolves and
+ * validates the complete chain before the grant may authorize anything.
+ */
 export const CapabilityGrantSchema = z
   .object({
     id: IdentifierSchema,
@@ -98,9 +104,19 @@ export const CapabilityGrantSchema = z
     constraints: CapabilityConstraintsSchema,
     issuedAt: TimestampSchema,
     revokedAt: TimestampSchema.optional(),
+    parentGrantId: IdentifierSchema.optional(),
     metadata: JsonObjectSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((grant, context) => {
+    if (grant.parentGrantId === grant.id) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "a grant must not name itself as its delegation parent",
+        path: ["parentGrantId"],
+      });
+    }
+  });
 
 export type CapabilityGrant = z.infer<typeof CapabilityGrantSchema>;
 

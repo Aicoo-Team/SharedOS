@@ -79,23 +79,59 @@ by attaching an arbitrary grant object to its payload.
 `CapabilityRequest` expresses requested authority for a consent workflow. It is
 not usable authority until an eligible issuer turns it into a trusted grant.
 
+## Where authority comes from
+
+An `AccessContext` carries identity, purpose, trace, enabled tool namespaces,
+and time. It carries no grants. Authority is loaded by the kernel from a
+required `GrantSource`, once per operation, and is held beside the context in a
+`ResolvedAuthority` that no provider, tool handler, transport, or runtime can
+receive.
+
+A `GrantSource` must answer from the issuing store with exactly the grants
+issued to the context's actor by the context's authority inside the context's
+namespace. Material outside that scope, material that fails the grant contract,
+and an unreachable store are all the same outcome: authority is unavailable and
+the operation is denied before any provider runs.
+
+```text
+Need authority
+     |
+     v
+Trusted grant source
+     |
+     +-- available ------> evaluate grants
+     |
+     +-- unavailable ----> DENY (authority_unavailable, failClosed)
+```
+
 ## Authorization algorithm
 
 For each concrete resource or tool operation, the kernel evaluates:
 
 1. Validate the protocol object and namespace/world binding.
 2. Establish the authenticated actor independently from untrusted payload.
-3. Ensure the request owner matches the access context owner.
-4. Ignore grants whose subject or issuer does not match the access context.
-5. Ignore grants that are not active, have expired, or have been revoked.
-6. Match the declared purpose when the grant restricts purposes.
-7. Match resource namespace, owner, path scope, and exact action together.
-8. Apply the host ceiling and any non-grant policy constraints.
-9. Atomically consume a bounded grant only for execution, not discovery.
-10. Return an explicit decision and append an audit event.
+3. Load authority from the trusted grant source, or deny.
+4. Ensure the request owner matches the access context owner.
+5. Ignore grants whose subject or issuer does not match the access context.
+6. Ignore grants that are not active, have expired, or have been revoked.
+7. Match the declared purpose when the grant restricts purposes.
+8. Match resource namespace, owner, path scope, and exact action together.
+9. Validate the delegation chain of a derived grant, or deny.
+10. Apply the host ceiling and any non-grant policy constraints.
+11. Atomically consume a bounded grant only for execution, not discovery.
+12. Return an explicit decision and append an audit event.
 
-If no complete grant matches, deny. If trusted grant state or an atomic usage
-store is unavailable, fail closed.
+If no complete grant matches, deny. If trusted grant state, a delegation
+ancestor, or an atomic usage store is unavailable, fail closed.
+
+### Denials SharedOS caused
+
+Fail-closed behaviour makes an infrastructure failure look like a denial at the
+call site. The reason codes listed in `INFRASTRUCTURE_DENIAL_REASONS`
+(`authority_unavailable`, `delegation_chain_unverified`,
+`usage_store_unavailable`) mark that case, and their audit records carry
+`failClosed: true`. A measurement must separate them from policy denials before
+computing any rate.
 
 ### No permission cross-products
 
@@ -141,17 +177,27 @@ They must not silently substitute a broader purpose after a denial.
 ## Delegation
 
 Delegation is explicit and bounded. A subject cannot mint authority merely by
-forwarding a message or copying a grant. When delegation is supported:
+forwarding a message or copying a grant. A derived grant names its immediate
+ancestor in `parentGrantId`, and SharedOS validates the complete chain before
+the grant authorizes anything:
 
 - every link has a verifiable issuer-to-subject relationship;
 - each derived grant is no broader in resource, action, purpose, time, uses, or
   namespace than its parent;
-- delegation depth decreases at each link;
+- delegation depth decreases at each link, and a parent without delegation
+  budget cannot be reissued at all;
 - revocation and expiry of an ancestor invalidate the usable chain;
 - the full chain or a tamper-evident reference is retained in provenance.
 
-Until chain validation is implemented and tested, `delegationDepth` must not be
-interpreted as automatic permission to reissue a grant.
+Ancestors are loaded from a trusted `DelegationChainResolver`, never from the
+presented grant or the access context. A chain that cannot be established is
+denied as `delegation_chain_unverified`; a chain that resolves and breaks a rule
+above is denied as `delegation_chain_invalid`. Both carry the failing link into
+the audit record. A host that issues delegated grants must install a resolver;
+without one, `parentGrantId` authorizes nothing.
+
+`delegationDepth` is therefore a ceiling on reissue, not a permission to reissue
+without a validated parent. See `docs/adr/0008-delegation-chain-validation.md`.
 
 ## Messaging
 
@@ -240,6 +286,11 @@ trusted clock or trusted timestamp policy.
 instances. The kernel has no implicit process-local fallback: a bounded grant
 fails closed unless the host explicitly supplies a store. The exported in-memory
 store is suitable only for tests or a guaranteed single-process host.
+
+Because authority is re-loaded from the trusted source for every kernel
+operation, a revocation recorded mid-turn takes effect at the next decision in
+that same turn. A host that caches inside its `GrantSource` owns the resulting
+staleness window and must keep it inside its revocation SLA.
 
 ## Audit requirements
 

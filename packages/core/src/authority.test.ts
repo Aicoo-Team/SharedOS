@@ -1,0 +1,257 @@
+import { describe, expect, it, vi } from "vitest";
+
+import type { AccessContext, CapabilityGrant, ResourceRef } from "@aicoo/sharedos-contracts";
+
+import type { AuditEvent } from "./audit.js";
+import { type GrantSource, MAX_RESOLVED_GRANTS, TrustedAuthorityResolver } from "./authority.js";
+import { isInfrastructureDenial } from "./authorization.js";
+import { SharedOSKernel } from "./kernel.js";
+import type { ResourceInvocationRequest, ResourceProvider } from "./resource-registry.js";
+
+const NOW = "2026-08-03T09:00:00.000Z";
+const ACTOR = { kind: "agent", agentId: "agent-bob" } as const;
+const AUTHORITY = { kind: "human", userId: "user-alice" } as const;
+const OWNER = AUTHORITY;
+const RESOURCE: ResourceRef = { namespace: "files", path: ["Workspace", "report.md"] };
+
+function context(): AccessContext {
+  return {
+    namespaceId: "world-alpha",
+    enabledToolNamespaces: ["files"],
+    actor: ACTOR,
+    authority: AUTHORITY,
+    owner: OWNER,
+    purpose: "prepare-update",
+    traceId: "trace-1",
+    now: NOW,
+  };
+}
+
+function grant(overrides: Partial<CapabilityGrant> = {}): CapabilityGrant {
+  return {
+    id: "grant-read",
+    namespaceId: "world-alpha",
+    subject: ACTOR,
+    issuer: AUTHORITY,
+    capabilities: [{ resource: RESOURCE, actions: ["read"], scope: "exact" }],
+    constraints: { purposes: ["prepare-update"] },
+    issuedAt: "2026-08-03T08:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function sourceOf(load: GrantSource["load"]): GrantSource {
+  return { load };
+}
+
+function staticSource(grants: readonly CapabilityGrant[]): GrantSource {
+  return sourceOf(async () => grants);
+}
+
+const READ_REQUEST = { resource: RESOURCE, action: "read" } as const;
+
+describe("TrustedAuthorityResolver", () => {
+  const resolve = (source: GrantSource): Promise<unknown> =>
+    new TrustedAuthorityResolver(source).resolve(context(), new AbortController().signal);
+
+  it("returns the grants a trusted source loaded", async () => {
+    await expect(resolve(staticSource([grant()]))).resolves.toEqual({
+      status: "resolved",
+      authority: { context: context(), grants: [grant()] },
+    });
+  });
+
+  it("requires a source that can actually be called", () => {
+    expect(() => new TrustedAuthorityResolver(undefined as unknown as GrantSource)).toThrow(
+      "requires a grant source",
+    );
+  });
+
+  it("fails closed when the source throws", async () => {
+    await expect(
+      resolve(
+        sourceOf(async () => {
+          throw new Error("grant store is unreachable");
+        }),
+      ),
+    ).resolves.toEqual({ status: "unavailable", code: "grant_source_failed" });
+  });
+
+  it("fails closed on material that is not a valid grant", async () => {
+    await expect(
+      resolve(sourceOf(async () => [{ id: "grant-read" } as unknown as CapabilityGrant])),
+    ).resolves.toEqual({ status: "unavailable", code: "invalid_grant_material" });
+
+    await expect(
+      resolve(sourceOf(async () => ({}) as unknown as readonly CapabilityGrant[])),
+    ).resolves.toEqual({ status: "unavailable", code: "invalid_grant_material" });
+  });
+
+  it("fails closed instead of quietly filtering out-of-scope authority", async () => {
+    for (const outOfScope of [
+      grant({ namespaceId: "world-beta" }),
+      grant({ subject: { kind: "agent", agentId: "agent-other" } }),
+      grant({ issuer: { kind: "human", userId: "user-mallory" } }),
+    ]) {
+      await expect(resolve(staticSource([grant(), outOfScope]))).resolves.toEqual({
+        status: "unavailable",
+        code: "grant_scope_mismatch",
+      });
+    }
+  });
+
+  it("fails closed when a source answers with an unbounded set", async () => {
+    const oversized = Array.from({ length: MAX_RESOLVED_GRANTS + 1 }, (_value, index) =>
+      grant({ id: `grant-${index}` }),
+    );
+
+    await expect(resolve(staticSource(oversized))).resolves.toEqual({
+      status: "unavailable",
+      code: "grant_limit_exceeded",
+    });
+  });
+
+  it("does not hand the source a mutable view of the caller's context", async () => {
+    const seen: AccessContext[] = [];
+    await resolve(
+      sourceOf(async (access) => {
+        seen.push(access);
+        (access as { purpose: string }).purpose = "exfiltrate";
+        return [];
+      }),
+    );
+
+    expect(seen[0]?.purpose).toBe("exfiltrate");
+    expect(context().purpose).toBe("prepare-update");
+  });
+});
+
+describe("SharedOSKernel authority boundary", () => {
+  function kernelWith(
+    source: GrantSource,
+    events: AuditEvent[] = [],
+    provider?: ResourceProvider,
+  ): SharedOSKernel {
+    const kernel = new SharedOSKernel({
+      grantSource: source,
+      audit: { record: async (event) => void events.push(event) },
+    });
+    if (provider !== undefined) {
+      kernel.registerResourceProvider(provider);
+    }
+    return kernel;
+  }
+
+  it("authorizes only what the trusted source served", async () => {
+    await expect(
+      kernelWith(staticSource([grant()])).authorize(context(), READ_REQUEST),
+    ).resolves.toEqual({ allowed: true, reasonCode: "allowed", matchedGrantId: "grant-read" });
+    await expect(kernelWith(staticSource([])).authorize(context(), READ_REQUEST)).resolves.toEqual({
+      allowed: false,
+      reasonCode: "no_matching_grant",
+    });
+  });
+
+  it("denies and audits every operation when authority cannot be loaded", async () => {
+    const events: AuditEvent[] = [];
+    const unavailable = sourceOf(async () => {
+      throw new Error("grant store is unreachable");
+    });
+    const kernel = kernelWith(unavailable, events);
+
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toEqual({
+      allowed: false,
+      reasonCode: "authority_unavailable",
+      metadata: { authority: { code: "grant_source_failed" } },
+    });
+    await expect(kernel.admitTurn(context(), ACTOR)).resolves.toMatchObject({
+      allowed: false,
+      reasonCode: "authority_unavailable",
+    });
+    expect(events).toHaveLength(2);
+    expect(events.every((event) => event.metadata?.["failClosed"] === true)).toBe(true);
+    expect(isInfrastructureDenial("authority_unavailable")).toBe(true);
+  });
+
+  it("never reaches a resource provider when authority is unavailable", async () => {
+    const invoke = vi.fn<ResourceProvider["invoke"]>();
+    const request: ResourceInvocationRequest = {
+      operationId: "operation-1",
+      resource: RESOURCE,
+      action: "read",
+    };
+    const kernel = kernelWith(
+      sourceOf(async () => {
+        throw new Error("grant store is unreachable");
+      }),
+      [],
+      { namespace: "files", invoke },
+    );
+
+    await expect(kernel.invokeResource(context(), request)).resolves.toMatchObject({
+      status: "denied",
+      error: { code: "authority_unavailable" },
+    });
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it("exposes no tools when authority is unavailable", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith(
+      sourceOf(async () => {
+        throw new Error("grant store is unreachable");
+      }),
+      events,
+    );
+    kernel.registerTool({
+      definition: {
+        name: "files.read",
+        description: "Read one authorized file",
+        namespace: "files",
+        source: "sharedos",
+        readWrite: "read",
+        inputSchema: { type: "object" },
+        requiredCapability: { resource: RESOURCE, action: "read" },
+        annotations: { readOnly: true },
+      },
+      parseArguments: (arguments_) => arguments_,
+      invoke: async (_access, call) => ({
+        callId: call.id,
+        tool: call.tool,
+        status: "succeeded",
+        output: null,
+        completedAt: NOW,
+      }),
+    });
+
+    await expect(kernel.listTools(context())).resolves.toEqual([]);
+    await expect(
+      kernel.invokeTool(context(), {
+        id: "call-1",
+        tool: "files.read",
+        arguments: {},
+        traceId: "trace-1",
+        requestedAt: NOW,
+      }),
+    ).resolves.toMatchObject({ status: "denied", error: { code: "authority_unavailable" } });
+    expect(events[0]).toMatchObject({
+      type: "tool.catalog.listed",
+      outcome: "denied",
+      reason: "authority_unavailable",
+    });
+  });
+
+  it("sees a revocation recorded during a turn at the next decision", async () => {
+    let revoked = false;
+    const kernel = kernelWith(sourceOf(async () => (revoked ? [] : [grant()])));
+
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: true,
+    });
+    revoked = true;
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: false,
+      reasonCode: "no_matching_grant",
+    });
+  });
+});

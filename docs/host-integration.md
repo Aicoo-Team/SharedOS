@@ -72,8 +72,8 @@ only one bounded turn.
 
 ### 1. Resolve a trusted access context
 
-For every request, the host resolves identity, grants, namespace settings, and
-time from trusted server-side state:
+For every request, the host resolves identity, namespace settings, and time from
+trusted server-side state. An access context carries no authority:
 
 ```ts
 import type { AccessContext } from "@aicoo/sharedos";
@@ -86,22 +86,57 @@ const context: AccessContext = {
   purpose: "prepare-investor-update",
   traceId: crypto.randomUUID(),
   enabledToolNamespaces: ["files", "calendar"],
-  grants: await grantStore.resolveEffectiveGrants(/* trusted identity */),
   now: new Date().toISOString(),
 };
 ```
 
 Do not deserialize an `AccessContext` supplied by a model, message payload, or
-untrusted client and treat it as authority. In particular:
+untrusted client and treat it as trusted identity. In particular:
 
 - `actor` is the principal performing the operation;
 - `authority` is the issuer whose grants are being exercised;
 - `owner` scopes the target resources;
 - `namespaceId` isolates the tenant or benchmark world;
 - `purpose`, time, expiry, and usage limits participate in authorization;
-- `enabledToolNamespaces` comes from host-owned settings;
-- `grants` come from a trusted grant store and may require signature or
-  revocation verification.
+- `enabledToolNamespaces` comes from host-owned settings.
+
+### 1b. Implement the trusted grant source
+
+Authority enters SharedOS only through a `GrantSource`, which every kernel
+requires. The kernel calls it once per operation, so a revocation takes effect
+at the next decision rather than at the next turn:
+
+```ts
+import type { GrantSource } from "@aicoo/sharedos";
+
+const grantSource: GrantSource = {
+  async load(access, signal) {
+    // Answer from the issuing store, never from anything the caller supplied.
+    return grantStore.activeGrantsFor(
+      {
+        namespaceId: access.namespaceId,
+        subject: access.actor,
+        issuer: access.authority,
+      },
+      { signal },
+    );
+  },
+};
+```
+
+The contract is narrow on purpose:
+
+- return only grants issued to `access.actor` by `access.authority` inside
+  `access.namespaceId`; anything else is treated as an unavailable source, not
+  as partial authority;
+- return material that satisfies `CapabilityGrantSchema`, including signature or
+  revocation verification the host requires;
+- throw when the store is unreachable. SharedOS converts that into a fail-closed
+  `authority_unavailable` denial and never falls back to a cached set.
+
+A host that issues delegated grants also installs a `DelegationChainResolver`
+so ancestors can be re-resolved; see
+`docs/adr/0008-delegation-chain-validation.md`.
 
 ### 2. Adapt host state to the `files` resource plane
 
@@ -332,7 +367,8 @@ state. Never accept the authorization context from the remote JSON body.
 Before production use, the host must provide:
 
 - authenticated identity and tenant resolution;
-- durable grants, revocation verification, and atomic bounded-grant usage;
+- a durable `GrantSource`, revocation verification, and atomic bounded-grant
+  usage;
 - isolated file and tool providers with cancellation-safe side effects;
 - durable tool namespace settings and credential isolation;
 - durable, append-only audit storage and operational alerting;

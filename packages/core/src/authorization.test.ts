@@ -7,6 +7,7 @@ import type {
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
 
+import type { ResolvedAuthority } from "./authority.js";
 import {
   type CapabilityGrantVerifier,
   CapabilityAuthorizer,
@@ -37,18 +38,22 @@ function grant(overrides: Partial<CapabilityGrant> = {}): CapabilityGrant {
   };
 }
 
-function context(grants: CapabilityGrant[]): AccessContext {
+function accessContext(namespaceId = "world-alpha"): AccessContext {
   return {
-    namespaceId: "world-alpha",
+    namespaceId,
     enabledToolNamespaces: [],
     actor: ACTOR,
     authority: AUTHORITY,
     owner: OWNER,
     purpose: "prepare-update",
     traceId: "trace-1",
-    grants,
     now: NOW,
   };
+}
+
+/** Authority as the kernel would have resolved it from a trusted source. */
+function context(grants: CapabilityGrant[]): ResolvedAuthority {
+  return { context: accessContext(), grants };
 }
 
 describe("CapabilityAuthorizer", () => {
@@ -175,9 +180,9 @@ describe("CapabilityAuthorizer", () => {
       namespaceId: "world-beta",
       constraints: { maxUses: 1 },
     });
-    const betaContext: AccessContext = {
-      ...context([betaGrant]),
-      namespaceId: "world-beta",
+    const betaContext: ResolvedAuthority = {
+      context: accessContext("world-beta"),
+      grants: [betaGrant],
     };
 
     await expect(

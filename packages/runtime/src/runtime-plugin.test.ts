@@ -44,7 +44,6 @@ const context: AccessContext = {
   enabledToolNamespaces: ["files"],
   purpose: "prepare-report",
   traceId: "trace-1",
-  grants: [],
   now,
 };
 
@@ -232,11 +231,12 @@ describe("RuntimePlugin security envelope", () => {
       expect.objectContaining({
         actor: sender,
         authority: owner,
-        grants: context.grants,
+        namespaceId: context.namespaceId,
       }),
       expect.objectContaining({ id: "call-allowed", tool: tool.name }),
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
+    expect(vi.mocked(runtimeKernel.invokeTool).mock.calls[0]?.[0]).not.toHaveProperty("grants");
     if (result.status === "succeeded") {
       expect(result.output).toEqual({ status: "denied", code: "no_matching_grant" });
     }

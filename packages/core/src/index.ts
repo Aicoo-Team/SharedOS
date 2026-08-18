@@ -1,5 +1,7 @@
 export * from "./audit.js";
+export * from "./authority.js";
 export * from "./authorization.js";
+export * from "./delegation.js";
 export * from "./errors.js";
 export * from "./kernel.js";
 export * from "./message-service.js";

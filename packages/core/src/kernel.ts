@@ -24,9 +24,17 @@ import {
 
 import { type AuditEvent, type AuditSink, NoopAuditSink, auditEvent } from "./audit.js";
 import {
+  type AuthorityResolution,
+  type AuthorityUnavailableCode,
+  type GrantSource,
+  type ResolvedAuthority,
+  TrustedAuthorityResolver,
+} from "./authority.js";
+import {
   type AuthorizationRequest,
   CapabilityAuthorizer,
   addressesEqual,
+  isInfrastructureDenial,
 } from "./authorization.js";
 import {
   type MessageCapabilityResolver,
@@ -45,6 +53,11 @@ import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
 import { DuplicateRegistrationError, MissingRegistrationError } from "./errors.js";
 
 export interface SharedOSKernelOptions {
+  /**
+   * The trusted boundary that loads authority. It is required: a kernel with
+   * no authoritative grant source can only fail closed.
+   */
+  readonly grantSource: GrantSource;
   readonly authorizer?: CapabilityAuthorizer;
   readonly resources?: ResourceProviderRegistry;
   readonly tools?: ToolRegistry;
@@ -82,6 +95,7 @@ export function agentExecutionCapability(agent: Address, owner: Address): Capabi
  * unverified request body.
  */
 export class SharedOSKernel {
+  readonly #authority: TrustedAuthorityResolver;
   readonly #authorizer: CapabilityAuthorizer;
   readonly #resources: ResourceProviderRegistry;
   readonly #tools: ToolRegistry;
@@ -92,7 +106,8 @@ export class SharedOSKernel {
   readonly #audit: AuditSink;
   readonly #onAuditError: ((error: unknown, event: AuditEvent) => void | Promise<void>) | undefined;
 
-  constructor(options: SharedOSKernelOptions = {}) {
+  constructor(options: SharedOSKernelOptions) {
+    this.#authority = new TrustedAuthorityResolver(options?.grantSource);
     this.#authorizer = options.authorizer ?? new CapabilityAuthorizer();
     this.#resources = options.resources ?? new ResourceProviderRegistry();
     this.#tools = options.tools ?? new ToolRegistry();
@@ -135,7 +150,11 @@ export class SharedOSKernel {
     throwIfAborted(options.signal);
     context = structuredClone(context);
     request = structuredClone(request);
-    return this.#authorize(context, request, false);
+    const authority = await this.#resolveAuthority(context, options.signal);
+    if (authority.status !== "resolved") {
+      return this.#denyUnavailableAuthority(context, request, authority.code, false);
+    }
+    return this.#authorize(authority.authority, request, false);
   }
 
   /** Consume permission to invoke exactly one target agent turn. */
@@ -147,18 +166,19 @@ export class SharedOSKernel {
     throwIfAborted(options.signal);
     context = structuredClone(context);
     agent = structuredClone(agent);
-    return this.#authorize(
-      context,
-      {
-        resource: {
-          namespace: EXECUTION_NAMESPACE,
-          path: addressPath(agent),
-          owner: context.owner,
-        },
-        action: AGENT_INVOKE_ACTION,
+    const request: AuthorizationRequest = {
+      resource: {
+        namespace: EXECUTION_NAMESPACE,
+        path: addressPath(agent),
+        owner: context.owner,
       },
-      true,
-    );
+      action: AGENT_INVOKE_ACTION,
+    };
+    const authority = await this.#resolveAuthority(context, options.signal);
+    if (authority.status !== "resolved") {
+      return this.#denyUnavailableAuthority(context, request, authority.code, true);
+    }
+    return this.#authorize(authority.authority, request, true);
   }
 
   async listTools(
@@ -167,6 +187,19 @@ export class SharedOSKernel {
   ): Promise<readonly ToolDefinition[]> {
     throwIfAborted(options.signal);
     context = structuredClone(context);
+    const authority = await this.#resolveAuthority(context, options.signal);
+    if (authority.status !== "resolved") {
+      await this.#audit.record(
+        auditEvent(context, {
+          type: "tool.catalog.listed",
+          outcome: "denied",
+          reason: "authority_unavailable",
+          metadata: { visibleTools: [], failClosed: true, authority: authority.code },
+        }),
+      );
+      return [];
+    }
+
     const allowed: ToolDefinition[] = [];
     const enabledNamespaces = new Set(context.enabledToolNamespaces);
     const tools = await this.#resolveToolRegistry(context, options.signal);
@@ -176,7 +209,7 @@ export class SharedOSKernel {
       if (!enabledNamespaces.has(definition.namespace)) {
         continue;
       }
-      const decision = await this.#authorizer.canDiscover(context, {
+      const decision = await this.#authorizer.canDiscover(authority.authority, {
         resource: definition.requiredCapability.resource,
         action: definition.requiredCapability.action,
       });
@@ -286,6 +319,18 @@ export class SharedOSKernel {
       return result;
     }
 
+    const authority = await this.#resolveAuthority(context, options.signal);
+    if (authority.status !== "resolved") {
+      const result = deniedToolResult(
+        call,
+        context.now,
+        "authority_unavailable",
+        "Authority could not be loaded from its trusted source",
+      );
+      await this.#recordToolResult(context, call, result);
+      return result;
+    }
+
     let tools: ToolRegistry;
     try {
       tools = await this.#resolveToolRegistry(context, options.signal);
@@ -326,7 +371,7 @@ export class SharedOSKernel {
       return result;
     }
 
-    const discoverable = await this.#authorizer.canDiscover(context, {
+    const discoverable = await this.#authorizer.canDiscover(authority.authority, {
       resource: handler.definition.requiredCapability.resource,
       action: handler.definition.requiredCapability.action,
     });
@@ -400,7 +445,7 @@ export class SharedOSKernel {
     }
 
     const decision = await this.#authorize(
-      context,
+      authority.authority,
       { resource: requirement.resource, action: requirement.action },
       true,
     );
@@ -464,8 +509,20 @@ export class SharedOSKernel {
         owner: request.resource.owner ?? context.owner,
       },
     };
+    const authority = await this.#resolveAuthority(context, options.signal);
+    if (authority.status !== "resolved") {
+      const result = deniedResourceResult(
+        request,
+        context.now,
+        "authority_unavailable",
+        "Authority could not be loaded from its trusted source",
+      );
+      await this.#recordResourceResult(context, request, result);
+      return result;
+    }
+
     const decision = await this.#authorize(
-      context,
+      authority.authority,
       { resource: request.resource, action: request.action },
       true,
     );
@@ -595,7 +652,19 @@ export class SharedOSKernel {
       await this.#recordMessageResult(context, envelope, result);
       return result;
     }
-    const decision = await this.#authorize(context, requirement, true);
+    const authority = await this.#resolveAuthority(context, options.signal);
+    if (authority.status !== "resolved") {
+      const result = deniedMessageResult(
+        envelope,
+        context.now,
+        "authority_unavailable",
+        "Authority could not be loaded from its trusted source",
+      );
+      await this.#recordMessageResult(context, envelope, result);
+      return result;
+    }
+
+    const decision = await this.#authorize(authority.authority, requirement, true);
     if (!decision.allowed) {
       const result = deniedMessageResult(
         envelope,
@@ -653,16 +722,45 @@ export class SharedOSKernel {
   }
 
   async #authorize(
-    context: AccessContext,
+    authority: ResolvedAuthority,
     request: AuthorizationRequest,
     consume: boolean,
   ): Promise<AuthorizationDecision> {
-    const decision = await this.#authorizer.authorize(context, request, {
+    const decision = await this.#authorizer.authorize(authority, request, {
       consume,
     });
 
-    await this.#recordAuthorizationDecision(context, request, decision, consume);
+    await this.#recordAuthorizationDecision(authority.context, request, decision, consume);
 
+    return decision;
+  }
+
+  /**
+   * Loads authority for one operation.
+   *
+   * Every kernel operation resolves separately, so revoking a grant takes
+   * effect at the next decision inside a running turn rather than at the next
+   * turn.
+   */
+  async #resolveAuthority(
+    context: AccessContext,
+    signal: AbortSignal | undefined,
+  ): Promise<AuthorityResolution> {
+    return this.#authority.resolve(context, signal ?? neverAbortedSignal());
+  }
+
+  async #denyUnavailableAuthority(
+    context: AccessContext,
+    request: AuthorizationRequest,
+    code: AuthorityUnavailableCode,
+    consume: boolean,
+  ): Promise<AuthorizationDecision> {
+    const decision: AuthorizationDecision = {
+      allowed: false,
+      reasonCode: "authority_unavailable",
+      metadata: { authority: { code } },
+    };
+    await this.#recordAuthorizationDecision(context, request, decision, consume);
     return decision;
   }
 
@@ -680,7 +778,10 @@ export class SharedOSKernel {
         action: request.action,
         ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
         ...(!decision.allowed ? { reason: decision.reasonCode } : {}),
-        metadata: { consumed: consume },
+        metadata: {
+          consumed: consume,
+          ...(isInfrastructureDenial(decision.reasonCode) ? { failClosed: true } : {}),
+        },
       }),
     );
   }
@@ -706,6 +807,9 @@ export class SharedOSKernel {
             }),
         ...(grantId === undefined ? {} : { grantId }),
         ...(result.status === "succeeded" ? {} : { reason: result.error.code }),
+        ...(result.status !== "succeeded" && isInfrastructureDenial(result.error.code)
+          ? { metadata: { failClosed: true } }
+          : {}),
       }),
     );
   }

@@ -8,7 +8,7 @@ import type {
   ResourceResult,
   ToolCall,
 } from "@aicoo/sharedos-contracts";
-import { SharedOSKernel, type ResourceProvider } from "@aicoo/sharedos-core";
+import { SharedOSKernel, type GrantSource, type ResourceProvider } from "@aicoo/sharedos-core";
 
 import { createFileTools, FILES_NAMESPACE } from "./index.js";
 
@@ -16,8 +16,8 @@ const now = "2026-08-03T00:00:00.000Z";
 const actor = { kind: "agent", agentId: "agent-bob" } as const;
 const owner = { kind: "human", userId: "user-alice" } as const;
 
-function contextFor(actions: string[], path = ["Memory", "Self"]): AccessContext {
-  const grant: CapabilityGrant = {
+function grantFor(actions: string[], path = ["Memory", "Self"]): CapabilityGrant {
+  return {
     id: "grant-1",
     namespaceId: "world-1",
     subject: actor,
@@ -32,6 +32,9 @@ function contextFor(actions: string[], path = ["Memory", "Self"]): AccessContext
     constraints: { purposes: ["prepare-report"] },
     issuedAt: now,
   };
+}
+
+function contextFor(): AccessContext {
   return {
     actor,
     authority: owner,
@@ -40,8 +43,17 @@ function contextFor(actions: string[], path = ["Memory", "Self"]): AccessContext
     enabledToolNamespaces: [FILES_NAMESPACE],
     purpose: "prepare-report",
     traceId: "trace-1",
-    grants: [grant],
     now,
+  };
+}
+
+/** The trusted store the kernel loads authority from. */
+function grantSource(grants: readonly CapabilityGrant[]): GrantSource {
+  return {
+    async load() {
+      await Promise.resolve();
+      return grants;
+    },
   };
 }
 
@@ -74,9 +86,9 @@ describe("standard OS file tools", () => {
       output: { hits: [] },
       completedAt: now,
     }));
-    const kernel = new SharedOSKernel();
+    const kernel = new SharedOSKernel({ grantSource: grantSource([grantFor(["search"])]) });
     for (const handler of createFileTools(provider(invoke))) kernel.registerTool(handler);
-    const context = contextFor(["search"]);
+    const context = contextFor();
 
     await expect(kernel.listTools(context)).resolves.toEqual([
       expect.objectContaining({ name: "files.search" }),
@@ -135,9 +147,11 @@ describe("standard OS file tools", () => {
       output: { action: operation.action },
       completedAt: now,
     }));
-    const kernel = new SharedOSKernel();
+    const kernel = new SharedOSKernel({
+      grantSource: grantSource([grantFor(["create", "replace", "append", "delete"])]),
+    });
     for (const handler of createFileTools(provider(invoke))) kernel.registerTool(handler);
-    const context = contextFor(["create", "replace", "append", "delete"]);
+    const context = contextFor();
     const path = ["Memory", "Self", "MEMORY.md"];
 
     await kernel.invokeTool(context, call("files.create", { path, content: "# Memory" }));
@@ -167,9 +181,11 @@ describe("standard OS file tools", () => {
       output: { action: operation.action },
       completedAt: now,
     }));
-    const kernel = new SharedOSKernel();
+    const kernel = new SharedOSKernel({
+      grantSource: grantSource([grantFor(["append"], ["Memory", "Self", "Logs"])]),
+    });
     for (const handler of createFileTools(provider(invoke))) kernel.registerTool(handler);
-    const context = contextFor(["append"], ["Memory", "Self", "Logs"]);
+    const context = contextFor();
     const path = ["Memory", "Self", "Logs", "2026-08-07.md"];
 
     const appended = await kernel.invokeTool(

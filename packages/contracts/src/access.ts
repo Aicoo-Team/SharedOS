@@ -1,12 +1,18 @@
 import { z } from "zod";
 
 import { AddressSchema } from "./address.js";
-import { CapabilityGrantSchema } from "./capability.js";
 import { IdentifierSchema, TimestampSchema } from "./common.js";
 import { JsonObjectSchema } from "./json.js";
 import { EnabledToolNamespacesSchema } from "./tool.js";
 
-/** All inputs needed for a deterministic permission decision. */
+/**
+ * The identity, purpose, time, and tool-namespace inputs to a permission
+ * decision.
+ *
+ * An access context deliberately carries no authority. Grants are loaded by the
+ * kernel from a trusted `GrantSource` at the moment of the decision, so a
+ * caller cannot present, extend, or replay authority by constructing a context.
+ */
 export const AccessContextSchema = z
   .object({
     namespaceId: IdentifierSchema,
@@ -16,7 +22,6 @@ export const AccessContextSchema = z
     purpose: z.string().trim().min(1).max(512),
     traceId: IdentifierSchema,
     enabledToolNamespaces: EnabledToolNamespacesSchema,
-    grants: z.array(CapabilityGrantSchema).max(256),
     now: TimestampSchema,
   })
   .strict();

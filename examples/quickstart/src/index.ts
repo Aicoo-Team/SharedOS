@@ -13,7 +13,6 @@ const now = "2026-08-03T00:00:00.000Z";
 const bob = { kind: "agent", agentId: "agent-bob" } as const;
 const alice = { kind: "agent", agentId: "agent-alice" } as const;
 const owner = { kind: "human", userId: "owner-1" } as const;
-const { kernel } = createTestKernel();
 
 const files = new InMemoryResourceProvider("files", async (operation): Promise<ResourceResult> => ({
   operationId: operation.operationId,
@@ -21,9 +20,6 @@ const files = new InMemoryResourceProvider("files", async (operation): Promise<R
   output: { hits: [{ text: "SharedOS keeps authority outside the message." }] },
   completedAt: operation.context.now,
 }));
-for (const handler of createFileTools(files)) {
-  kernel.registerTool(handler);
-}
 
 const grants = [
   createTestGrant({
@@ -47,13 +43,19 @@ const grants = [
     purposes: ["prepare-report"],
   }),
 ];
+
+// Authority reaches the kernel only through its trusted grant source.
+const { kernel } = createTestKernel({ grants });
+for (const handler of createFileTools(files)) {
+  kernel.registerTool(handler);
+}
+
 const context = createTestContext({
   actor: bob,
   authority: owner,
   owner,
   purpose: "prepare-report",
   enabledToolNamespaces: ["files"],
-  grants,
   now,
 });
 
