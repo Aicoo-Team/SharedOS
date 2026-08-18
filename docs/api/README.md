@@ -59,6 +59,7 @@ below provide the complete generated signatures and member-level reference.
 | Package                                                | Description                                                                     |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------- |
 | [@aicoo/sharedos](sharedos.md)                         | Permission-controlled state and delegation SDK with pluggable agent runtimes    |
+| [@aicoo/sharedos-adapters](sharedos-adapters.md)       | Codex and Claude Code runtime adapters for SharedOS                             |
 | [@aicoo/sharedos-client](sharedos-client.md)           | Runtime-validated HTTP client for SharedOS                                      |
 | [@aicoo/sharedos-conformance](sharedos-conformance.md) | Standard execution records and infrastructure conformance evidence for SharedOS |
 | [@aicoo/sharedos-contracts](sharedos-contracts.md)     | JSON-safe protocol contracts for SharedOS                                       |

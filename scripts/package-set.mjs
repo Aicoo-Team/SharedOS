@@ -10,5 +10,6 @@ export const packageDirectories = [
   "http",
   "testkit",
   "conformance",
+  "adapters",
   "sdk",
 ];

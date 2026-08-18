@@ -596,33 +596,33 @@ Defined in: [conformance/src/assemble.ts:36](https://github.com/Aicoo-Team/Share
 
 ### AttemptOutcome
 
-Defined in: conformance/src/judge.ts:18
+Defined in: [conformance/src/judge.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L18)
 
 #### Properties
 
-| Property                                       | Modifier   | Type                                      | Defined in                  |
-| ---------------------------------------------- | ---------- | ----------------------------------------- | --------------------------- |
-| <a id="property-attempted"></a> `attempted`    | `readonly` | `boolean`                                 | conformance/src/judge.ts:22 |
-| <a id="property-attemptid"></a> `attemptId`    | `readonly` | `string`                                  | conformance/src/judge.ts:19 |
-| <a id="property-detail"></a> `detail?`         | `readonly` | `string`                                  | conformance/src/judge.ts:26 |
-| <a id="property-observed"></a> `observed?`     | `readonly` | `"succeeded"` \| `"denied"` \| `"failed"` | conformance/src/judge.ts:23 |
-| <a id="property-reasoncode"></a> `reasonCode?` | `readonly` | `string`                                  | conformance/src/judge.ts:24 |
-| <a id="property-refusedby"></a> `refusedBy?`   | `readonly` | [`EnforcementPoint`](#enforcementpoint)   | conformance/src/judge.ts:25 |
-| <a id="property-role"></a> `role`              | `readonly` | `"attack"` \| `"probe"` \| `"control"`    | conformance/src/judge.ts:20 |
-| <a id="property-status"></a> `status`          | `readonly` | [`ConformanceStatus`](#conformancestatus) | conformance/src/judge.ts:21 |
+| Property                                       | Modifier   | Type                                      | Defined in                                                                                                            |
+| ---------------------------------------------- | ---------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-attempted"></a> `attempted`    | `readonly` | `boolean`                                 | [conformance/src/judge.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L22) |
+| <a id="property-attemptid"></a> `attemptId`    | `readonly` | `string`                                  | [conformance/src/judge.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L19) |
+| <a id="property-detail"></a> `detail?`         | `readonly` | `string`                                  | [conformance/src/judge.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L26) |
+| <a id="property-observed"></a> `observed?`     | `readonly` | `"succeeded"` \| `"denied"` \| `"failed"` | [conformance/src/judge.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L23) |
+| <a id="property-reasoncode"></a> `reasonCode?` | `readonly` | `string`                                  | [conformance/src/judge.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L24) |
+| <a id="property-refusedby"></a> `refusedBy?`   | `readonly` | [`EnforcementPoint`](#enforcementpoint)   | [conformance/src/judge.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L25) |
+| <a id="property-role"></a> `role`              | `readonly` | `"attack"` \| `"probe"` \| `"control"`    | [conformance/src/judge.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L20) |
+| <a id="property-status"></a> `status`          | `readonly` | [`ConformanceStatus`](#conformancestatus) | [conformance/src/judge.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L21) |
 
 ---
 
 ### CaseEvidence
 
-Defined in: conformance/src/judge.ts:43
+Defined in: [conformance/src/judge.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L43)
 
 #### Properties
 
 | Property                                  | Modifier   | Type                                                                                                                                                                                                       | Description                                                             | Defined in                                                                                                                |
 | ----------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-receipts"></a> `receipts` | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                                       | conformance/src/judge.ts:44                                                                                               |
-| <a id="property-record"></a> `record`     | `readonly` | `object`                                                                                                                                                                                                   | -                                                                       | conformance/src/judge.ts:45                                                                                               |
+| <a id="property-receipts"></a> `receipts` | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                                       | [conformance/src/judge.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L44)     |
+| <a id="property-record"></a> `record`     | `readonly` | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/judge.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L45)     |
 | `record.authority`                        | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L225) |
 | `record.authority.actor`                  | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                       | [conformance/src/record.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L83)   |
 | `record.authority.namespaceId`            | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L85)   |
@@ -700,21 +700,21 @@ Defined in: conformance/src/judge.ts:43
 
 ### CaseJudgement
 
-Defined in: conformance/src/judge.ts:29
+Defined in: [conformance/src/judge.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L29)
 
 #### Properties
 
-| Property                                          | Modifier   | Type                                               | Description                                                                 | Defined in                  |
-| ------------------------------------------------- | ---------- | -------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------- |
-| <a id="property-attempted-1"></a> `attempted`     | `readonly` | `number`                                           | -                                                                           | conformance/src/judge.ts:36 |
-| <a id="property-attempts"></a> `attempts`         | `readonly` | readonly [`AttemptOutcome`](#attemptoutcome)[]     | -                                                                           | conformance/src/judge.ts:31 |
-| <a id="property-declared"></a> `declared`         | `readonly` | `number`                                           | -                                                                           | conformance/src/judge.ts:35 |
-| <a id="property-detail-1"></a> `detail?`          | `readonly` | `string`                                           | -                                                                           | conformance/src/judge.ts:40 |
-| <a id="property-reasoncodes"></a> `reasonCodes`   | `readonly` | readonly `string`[]                                | Refusal codes observed across the move, sorted and de-duplicated.           | conformance/src/judge.ts:33 |
-| <a id="property-recordgaps"></a> `recordGaps`     | `readonly` | readonly `string`[]                                | Field paths of the record's required gaps; empty when the record is usable. | conformance/src/judge.ts:39 |
-| <a id="property-recordusable"></a> `recordUsable` | `readonly` | `boolean`                                          | -                                                                           | conformance/src/judge.ts:37 |
-| <a id="property-refusedby-1"></a> `refusedBy`     | `readonly` | readonly [`EnforcementPoint`](#enforcementpoint)[] | -                                                                           | conformance/src/judge.ts:34 |
-| <a id="property-status-1"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus)          | -                                                                           | conformance/src/judge.ts:30 |
+| Property                                          | Modifier   | Type                                               | Description                                                                 | Defined in                                                                                                            |
+| ------------------------------------------------- | ---------- | -------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-attempted-1"></a> `attempted`     | `readonly` | `number`                                           | -                                                                           | [conformance/src/judge.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L36) |
+| <a id="property-attempts"></a> `attempts`         | `readonly` | readonly [`AttemptOutcome`](#attemptoutcome)[]     | -                                                                           | [conformance/src/judge.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L31) |
+| <a id="property-declared"></a> `declared`         | `readonly` | `number`                                           | -                                                                           | [conformance/src/judge.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L35) |
+| <a id="property-detail-1"></a> `detail?`          | `readonly` | `string`                                           | -                                                                           | [conformance/src/judge.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L40) |
+| <a id="property-reasoncodes"></a> `reasonCodes`   | `readonly` | readonly `string`[]                                | Refusal codes observed across the move, sorted and de-duplicated.           | [conformance/src/judge.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L33) |
+| <a id="property-recordgaps"></a> `recordGaps`     | `readonly` | readonly `string`[]                                | Field paths of the record's required gaps; empty when the record is usable. | [conformance/src/judge.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L39) |
+| <a id="property-recordusable"></a> `recordUsable` | `readonly` | `boolean`                                          | -                                                                           | [conformance/src/judge.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L37) |
+| <a id="property-refusedby-1"></a> `refusedBy`     | `readonly` | readonly [`EnforcementPoint`](#enforcementpoint)[] | -                                                                           | [conformance/src/judge.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L34) |
+| <a id="property-status-1"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus)          | -                                                                           | [conformance/src/judge.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L30) |
 
 ---
 
@@ -734,7 +734,7 @@ Defined in: [conformance/src/completeness.ts:5](https://github.com/Aicoo-Team/Sh
 
 ### ConformanceCase
 
-Defined in: conformance/src/suite.ts:25
+Defined in: [conformance/src/suite.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L25)
 
 One row of the kernel conformance manifest.
 
@@ -747,9 +747,9 @@ reporting one clause as though it covered both would overstate the result.
 
 | Property                                      | Modifier   | Type                                                                                                                                                                | Description                                                         | Defined in                                                                                                                      |
 | --------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-conditions"></a> `conditions` | `readonly` | readonly [`ConformanceCondition`](#conformancecondition)[]                                                                                                          | -                                                                   | conformance/src/suite.ts:28                                                                                                     |
-| <a id="property-id"></a> `id`                 | `readonly` | `string`                                                                                                                                                            | -                                                                   | conformance/src/suite.ts:26                                                                                                     |
-| <a id="property-move"></a> `move`             | `readonly` | `object`                                                                                                                                                            | -                                                                   | conformance/src/suite.ts:27                                                                                                     |
+| <a id="property-conditions"></a> `conditions` | `readonly` | readonly [`ConformanceCondition`](#conformancecondition)[]                                                                                                          | -                                                                   | [conformance/src/suite.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L28)           |
+| <a id="property-id"></a> `id`                 | `readonly` | `string`                                                                                                                                                            | -                                                                   | [conformance/src/suite.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L26)           |
+| <a id="property-move"></a> `move`             | `readonly` | `object`                                                                                                                                                            | -                                                                   | [conformance/src/suite.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L27)           |
 | `move.attempts`                               | `public`   | `object`[]                                                                                                                                                          | -                                                                   | [conformance/src/adversary.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L119) |
 | `move.expectedOutcome`                        | `public`   | `string`                                                                                                                                                            | The kernel outcome the manifest expects, verbatim.                  | [conformance/src/adversary.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L118) |
 | `move.id`                                     | `public`   | `string`                                                                                                                                                            | -                                                                   | [conformance/src/adversary.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L113) |
@@ -760,7 +760,7 @@ reporting one clause as though it covered both would overstate the result.
 
 ### ConformanceCell
 
-Defined in: conformance/src/runner.ts:57
+Defined in: [conformance/src/runner.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L57)
 
 One cell of the manifest.
 
@@ -770,24 +770,24 @@ so a committed manifest diffs only when enforcement behaviour changes.
 
 #### Properties
 
-| Property                                            | Modifier   | Type                                               | Description                                                                | Defined in                   |
-| --------------------------------------------------- | ---------- | -------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------- |
-| <a id="property-attempted-2"></a> `attempted`       | `readonly` | `number`                                           | -                                                                          | conformance/src/runner.ts:63 |
-| <a id="property-columnid"></a> `columnId`           | `readonly` | `string`                                           | -                                                                          | conformance/src/runner.ts:58 |
-| <a id="property-declared-1"></a> `declared`         | `readonly` | `number`                                           | -                                                                          | conformance/src/runner.ts:62 |
-| <a id="property-detail-3"></a> `detail?`            | `readonly` | `string`                                           | -                                                                          | conformance/src/runner.ts:68 |
-| <a id="property-notapplicable"></a> `notApplicable` | `readonly` | `number`                                           | Attempts a runtime structurally cannot make, declared rather than omitted. | conformance/src/runner.ts:65 |
-| <a id="property-reasoncodes-1"></a> `reasonCodes`   | `readonly` | readonly `string`[]                                | -                                                                          | conformance/src/runner.ts:61 |
-| <a id="property-recordgaps-1"></a> `recordGaps`     | `readonly` | readonly `string`[]                                | -                                                                          | conformance/src/runner.ts:67 |
-| <a id="property-recordusable-1"></a> `recordUsable` | `readonly` | `boolean`                                          | -                                                                          | conformance/src/runner.ts:66 |
-| <a id="property-refusedby-2"></a> `refusedBy`       | `readonly` | readonly [`EnforcementPoint`](#enforcementpoint)[] | -                                                                          | conformance/src/runner.ts:60 |
-| <a id="property-status-2"></a> `status`             | `readonly` | [`ConformanceStatus`](#conformancestatus)          | -                                                                          | conformance/src/runner.ts:59 |
+| Property                                            | Modifier   | Type                                               | Description                                                                | Defined in                                                                                                              |
+| --------------------------------------------------- | ---------- | -------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-attempted-2"></a> `attempted`       | `readonly` | `number`                                           | -                                                                          | [conformance/src/runner.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L63) |
+| <a id="property-columnid"></a> `columnId`           | `readonly` | `string`                                           | -                                                                          | [conformance/src/runner.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L58) |
+| <a id="property-declared-1"></a> `declared`         | `readonly` | `number`                                           | -                                                                          | [conformance/src/runner.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L62) |
+| <a id="property-detail-3"></a> `detail?`            | `readonly` | `string`                                           | -                                                                          | [conformance/src/runner.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L68) |
+| <a id="property-notapplicable"></a> `notApplicable` | `readonly` | `number`                                           | Attempts a runtime structurally cannot make, declared rather than omitted. | [conformance/src/runner.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L65) |
+| <a id="property-reasoncodes-1"></a> `reasonCodes`   | `readonly` | readonly `string`[]                                | -                                                                          | [conformance/src/runner.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L61) |
+| <a id="property-recordgaps-1"></a> `recordGaps`     | `readonly` | readonly `string`[]                                | -                                                                          | [conformance/src/runner.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L67) |
+| <a id="property-recordusable-1"></a> `recordUsable` | `readonly` | `boolean`                                          | -                                                                          | [conformance/src/runner.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L66) |
+| <a id="property-refusedby-2"></a> `refusedBy`       | `readonly` | readonly [`EnforcementPoint`](#enforcementpoint)[] | -                                                                          | [conformance/src/runner.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L60) |
+| <a id="property-status-2"></a> `status`             | `readonly` | [`ConformanceStatus`](#conformancestatus)          | -                                                                          | [conformance/src/runner.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L59) |
 
 ---
 
 ### ConformanceCondition
 
-Defined in: conformance/src/suite.ts:11
+Defined in: [conformance/src/suite.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L11)
 
 A dangerous world state, armed by trusted setup before the turn begins.
 
@@ -796,17 +796,17 @@ and so no part of it is reachable from the runtime that will be attacking.
 
 #### Properties
 
-| Property                                        | Modifier   | Type                                                  | Defined in                  |
-| ----------------------------------------------- | ---------- | ----------------------------------------------------- | --------------------------- |
-| <a id="property-description"></a> `description` | `readonly` | `string`                                              | conformance/src/suite.ts:13 |
-| <a id="property-id-1"></a> `id`                 | `readonly` | `string`                                              | conformance/src/suite.ts:12 |
-| <a id="property-world"></a> `world`             | `readonly` | [`ConformanceWorldOptions`](#conformanceworldoptions) | conformance/src/suite.ts:14 |
+| Property                                        | Modifier   | Type                                                  | Defined in                                                                                                            |
+| ----------------------------------------------- | ---------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-description"></a> `description` | `readonly` | `string`                                              | [conformance/src/suite.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L13) |
+| <a id="property-id-1"></a> `id`                 | `readonly` | `string`                                              | [conformance/src/suite.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L12) |
+| <a id="property-world"></a> `world`             | `readonly` | [`ConformanceWorldOptions`](#conformanceworldoptions) | [conformance/src/suite.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L14) |
 
 ---
 
 ### ConformanceEvidence
 
-Defined in: conformance/src/runner.ts:91
+Defined in: [conformance/src/runner.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L91)
 
 Everything behind one cell. Large, and expected to churn on runtime metadata.
 
@@ -814,10 +814,10 @@ Everything behind one cell. Large, and expected to churn on runtime metadata.
 
 | Property                                        | Modifier   | Type                                                                                                                                                                                                       | Description                                                             | Defined in                                                                                                                |
 | ----------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-caseid"></a> `caseId`           | `readonly` | `string`                                                                                                                                                                                                   | -                                                                       | conformance/src/runner.ts:92                                                                                              |
-| <a id="property-columnid-1"></a> `columnId`     | `readonly` | `string`                                                                                                                                                                                                   | -                                                                       | conformance/src/runner.ts:94                                                                                              |
-| <a id="property-conditionid"></a> `conditionId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                       | conformance/src/runner.ts:93                                                                                              |
-| <a id="property-record-1"></a> `record`         | `readonly` | `object`                                                                                                                                                                                                   | -                                                                       | conformance/src/runner.ts:96                                                                                              |
+| <a id="property-caseid"></a> `caseId`           | `readonly` | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/runner.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L92)   |
+| <a id="property-columnid-1"></a> `columnId`     | `readonly` | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/runner.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L94)   |
+| <a id="property-conditionid"></a> `conditionId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/runner.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L93)   |
+| <a id="property-record-1"></a> `record`         | `readonly` | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/runner.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L96)   |
 | `record.authority`                              | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L225) |
 | `record.authority.actor`                        | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                       | [conformance/src/record.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L83)   |
 | `record.authority.namespaceId`                  | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L85)   |
@@ -890,8 +890,8 @@ Everything behind one cell. Large, and expected to churn on runtime metadata.
 | `record.system.runtime.version`                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | contracts/dist/runtime.d.ts:10                                                                                            |
 | `record.system.sharedOsVersion`                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L47)   |
 | `record.version`                                | `public`   | `"1"`                                                                                                                                                                                                      | -                                                                       | [conformance/src/record.ts:221](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L221) |
-| <a id="property-report"></a> `report`           | `readonly` | \{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \} \| `undefined`                     | -                                                                       | conformance/src/runner.ts:97                                                                                              |
-| <a id="property-runtime"></a> `runtime`         | `readonly` | `object`                                                                                                                                                                                                   | -                                                                       | conformance/src/runner.ts:95                                                                                              |
+| <a id="property-report"></a> `report`           | `readonly` | \{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \} \| `undefined`                     | -                                                                       | [conformance/src/runner.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L97)   |
+| <a id="property-runtime"></a> `runtime`         | `readonly` | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/runner.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L95)   |
 | `runtime.id`                                    | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | contracts/dist/runtime.d.ts:9                                                                                             |
 | `runtime.metadata?`                             | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                       | contracts/dist/runtime.d.ts:12                                                                                            |
 | `runtime.protocolVersion`                       | `public`   | `"1"`                                                                                                                                                                                                      | -                                                                       | contracts/dist/runtime.d.ts:11                                                                                            |
@@ -901,48 +901,48 @@ Everything behind one cell. Large, and expected to churn on runtime metadata.
 
 ### ConformanceManifest
 
-Defined in: conformance/src/runner.ts:81
+Defined in: [conformance/src/runner.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L81)
 
 #### Properties
 
-| Property                                          | Modifier   | Type                                           | Description                                                   | Defined in                   |
-| ------------------------------------------------- | ---------- | ---------------------------------------------- | ------------------------------------------------------------- | ---------------------------- |
-| <a id="property-casesethash"></a> `caseSetHash`   | `readonly` | `string`                                       | Hash of the case definitions this manifest was produced from. | conformance/src/runner.ts:85 |
-| <a id="property-columns"></a> `columns`           | `readonly` | readonly `object`[]                            | -                                                             | conformance/src/runner.ts:86 |
-| <a id="property-judgeversion"></a> `judgeVersion` | `readonly` | `string`                                       | -                                                             | conformance/src/runner.ts:83 |
-| <a id="property-rows"></a> `rows`                 | `readonly` | readonly [`ConformanceRow`](#conformancerow)[] | -                                                             | conformance/src/runner.ts:87 |
-| <a id="property-version"></a> `version`           | `readonly` | `"1"`                                          | -                                                             | conformance/src/runner.ts:82 |
+| Property                                          | Modifier   | Type                                           | Description                                                   | Defined in                                                                                                              |
+| ------------------------------------------------- | ---------- | ---------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-casesethash"></a> `caseSetHash`   | `readonly` | `string`                                       | Hash of the case definitions this manifest was produced from. | [conformance/src/runner.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L85) |
+| <a id="property-columns"></a> `columns`           | `readonly` | readonly `object`[]                            | -                                                             | [conformance/src/runner.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L86) |
+| <a id="property-judgeversion"></a> `judgeVersion` | `readonly` | `string`                                       | -                                                             | [conformance/src/runner.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L83) |
+| <a id="property-rows"></a> `rows`                 | `readonly` | readonly [`ConformanceRow`](#conformancerow)[] | -                                                             | [conformance/src/runner.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L87) |
+| <a id="property-version"></a> `version`           | `readonly` | `"1"`                                          | -                                                             | [conformance/src/runner.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L82) |
 
 ---
 
 ### ConformanceRow
 
-Defined in: conformance/src/runner.ts:71
+Defined in: [conformance/src/runner.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L71)
 
 #### Properties
 
-| Property                                                | Modifier   | Type                                                                                                                                                                | Defined in                   |
-| ------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| <a id="property-caseid-1"></a> `caseId`                 | `readonly` | `string`                                                                                                                                                            | conformance/src/runner.ts:72 |
-| <a id="property-cells"></a> `cells`                     | `readonly` | readonly [`ConformanceCell`](#conformancecell)[]                                                                                                                    | conformance/src/runner.ts:78 |
-| <a id="property-condition"></a> `condition`             | `readonly` | `string`                                                                                                                                                            | conformance/src/runner.ts:77 |
-| <a id="property-conditionid-1"></a> `conditionId`       | `readonly` | `string`                                                                                                                                                            | conformance/src/runner.ts:73 |
-| <a id="property-expectedoutcome"></a> `expectedOutcome` | `readonly` | `string`                                                                                                                                                            | conformance/src/runner.ts:76 |
-| <a id="property-invariant"></a> `invariant`             | `readonly` | `string`                                                                                                                                                            | conformance/src/runner.ts:75 |
-| <a id="property-kind"></a> `kind`                       | `readonly` | `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"replayed_grant"` \| `"namespace_crossing"` \| `"authority_unavailable"` \| `"record_completeness"` | conformance/src/runner.ts:74 |
+| Property                                                | Modifier   | Type                                                                                                                                                                | Defined in                                                                                                              |
+| ------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-caseid-1"></a> `caseId`                 | `readonly` | `string`                                                                                                                                                            | [conformance/src/runner.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L72) |
+| <a id="property-cells"></a> `cells`                     | `readonly` | readonly [`ConformanceCell`](#conformancecell)[]                                                                                                                    | [conformance/src/runner.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L78) |
+| <a id="property-condition"></a> `condition`             | `readonly` | `string`                                                                                                                                                            | [conformance/src/runner.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L77) |
+| <a id="property-conditionid-1"></a> `conditionId`       | `readonly` | `string`                                                                                                                                                            | [conformance/src/runner.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L73) |
+| <a id="property-expectedoutcome"></a> `expectedOutcome` | `readonly` | `string`                                                                                                                                                            | [conformance/src/runner.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L76) |
+| <a id="property-invariant"></a> `invariant`             | `readonly` | `string`                                                                                                                                                            | [conformance/src/runner.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L75) |
+| <a id="property-kind"></a> `kind`                       | `readonly` | `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"replayed_grant"` \| `"namespace_crossing"` \| `"authority_unavailable"` \| `"record_completeness"` | [conformance/src/runner.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L74) |
 
 ---
 
 ### ConformanceRun
 
-Defined in: conformance/src/runner.ts:100
+Defined in: [conformance/src/runner.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L100)
 
 #### Properties
 
-| Property                                    | Modifier   | Type                                                     | Defined in                    |
-| ------------------------------------------- | ---------- | -------------------------------------------------------- | ----------------------------- |
-| <a id="property-evidence"></a> `evidence`   | `readonly` | readonly [`ConformanceEvidence`](#conformanceevidence)[] | conformance/src/runner.ts:102 |
-| <a id="property-manifest-1"></a> `manifest` | `readonly` | [`ConformanceManifest`](#conformancemanifest)            | conformance/src/runner.ts:101 |
+| Property                                    | Modifier   | Type                                                     | Defined in                                                                                                                |
+| ------------------------------------------- | ---------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-evidence"></a> `evidence`   | `readonly` | readonly [`ConformanceEvidence`](#conformanceevidence)[] | [conformance/src/runner.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L102) |
+| <a id="property-manifest-1"></a> `manifest` | `readonly` | [`ConformanceManifest`](#conformancemanifest)            | [conformance/src/runner.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L101) |
 
 ---
 
@@ -1287,20 +1287,20 @@ Defined in: [conformance/src/hashing.ts:49](https://github.com/Aicoo-Team/Shared
 
 ### RunConformanceSuiteOptions
 
-Defined in: conformance/src/runner.ts:105
+Defined in: [conformance/src/runner.ts:105](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L105)
 
 #### Properties
 
-| Property                                   | Modifier   | Type                                             | Defined in                    |
-| ------------------------------------------ | ---------- | ------------------------------------------------ | ----------------------------- |
-| <a id="property-cases"></a> `cases?`       | `readonly` | readonly [`ConformanceCase`](#conformancecase)[] | conformance/src/runner.ts:106 |
-| <a id="property-columns-1"></a> `columns?` | `readonly` | readonly [`RuntimeColumn`](#runtimecolumn)[]     | conformance/src/runner.ts:107 |
+| Property                                   | Modifier   | Type                                             | Defined in                                                                                                                |
+| ------------------------------------------ | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-cases"></a> `cases?`       | `readonly` | readonly [`ConformanceCase`](#conformancecase)[] | [conformance/src/runner.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L106) |
+| <a id="property-columns-1"></a> `columns?` | `readonly` | readonly [`RuntimeColumn`](#runtimecolumn)[]     | [conformance/src/runner.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L107) |
 
 ---
 
 ### RuntimeColumn
 
-Defined in: conformance/src/runner.ts:37
+Defined in: [conformance/src/runner.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L37)
 
 One column of the manifest: an adapter occupying the delegate seat.
 
@@ -1310,10 +1310,10 @@ the kernel's guarantees should not depend on which driver is in the seat.
 
 #### Properties
 
-| Property                            | Modifier   | Type     | Defined in                   |
-| ----------------------------------- | ---------- | -------- | ---------------------------- |
-| <a id="property-id-2"></a> `id`     | `readonly` | `string` | conformance/src/runner.ts:38 |
-| <a id="property-label"></a> `label` | `readonly` | `string` | conformance/src/runner.ts:39 |
+| Property                            | Modifier   | Type     | Defined in                                                                                                              |
+| ----------------------------------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-id-2"></a> `id`     | `readonly` | `string` | [conformance/src/runner.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L38) |
+| <a id="property-label"></a> `label` | `readonly` | `string` | [conformance/src/runner.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L39) |
 
 #### Methods
 
@@ -1321,7 +1321,7 @@ the kernel's guarantees should not depend on which driver is in the seat.
 
 > **create**(`moves`): [`RuntimePlugin`](sharedos-runtime.md#runtimeplugin)
 
-Defined in: conformance/src/runner.ts:40
+Defined in: [conformance/src/runner.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L40)
 
 ###### Parameters
 
@@ -1337,17 +1337,17 @@ Defined in: conformance/src/runner.ts:40
 
 ### StrictFailure
 
-Defined in: conformance/src/runner.ts:241
+Defined in: [conformance/src/runner.ts:241](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L241)
 
 #### Properties
 
-| Property                                          | Modifier   | Type                                      | Defined in                    |
-| ------------------------------------------------- | ---------- | ----------------------------------------- | ----------------------------- |
-| <a id="property-caseid-2"></a> `caseId`           | `readonly` | `string`                                  | conformance/src/runner.ts:242 |
-| <a id="property-columnid-2"></a> `columnId`       | `readonly` | `string`                                  | conformance/src/runner.ts:244 |
-| <a id="property-conditionid-2"></a> `conditionId` | `readonly` | `string`                                  | conformance/src/runner.ts:243 |
-| <a id="property-detail-5"></a> `detail`           | `readonly` | `string`                                  | conformance/src/runner.ts:246 |
-| <a id="property-status-4"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus) | conformance/src/runner.ts:245 |
+| Property                                          | Modifier   | Type                                      | Defined in                                                                                                                |
+| ------------------------------------------------- | ---------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-caseid-2"></a> `caseId`           | `readonly` | `string`                                  | [conformance/src/runner.ts:242](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L242) |
+| <a id="property-columnid-2"></a> `columnId`       | `readonly` | `string`                                  | [conformance/src/runner.ts:244](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L244) |
+| <a id="property-conditionid-2"></a> `conditionId` | `readonly` | `string`                                  | [conformance/src/runner.ts:243](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L243) |
+| <a id="property-detail-5"></a> `detail`           | `readonly` | `string`                                  | [conformance/src/runner.ts:246](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L246) |
+| <a id="property-status-4"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus) | [conformance/src/runner.ts:245](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L245) |
 
 ## Type Aliases
 
@@ -1443,7 +1443,7 @@ Defined in: [conformance/src/completeness.ts:3](https://github.com/Aicoo-Team/Sh
 
 > **ConformanceStatus** = `"pass"` \| `"fail"` \| `"not_exercised"` \| `"not_applicable"`
 
-Defined in: conformance/src/judge.ts:13
+Defined in: [conformance/src/judge.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L13)
 
 What a manifest cell may report.
 
@@ -1482,7 +1482,7 @@ Defined in: [conformance/src/record.ts:112](https://github.com/Aicoo-Team/Shared
 
 > **EnforcementPoint** = `"kernel"` \| `"envelope"`
 
-Defined in: conformance/src/judge.ts:16
+Defined in: [conformance/src/judge.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L16)
 
 The boundary that refused an attempt.
 
@@ -1722,7 +1722,7 @@ by the adversary.
 
 > `const` **CANONICAL\_CONFORMANCE\_CASES**: readonly [`ConformanceCase`](#conformancecase)[]
 
-Defined in: conformance/src/suite.ts:37
+Defined in: [conformance/src/suite.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L37)
 
 ---
 
@@ -1840,7 +1840,7 @@ One authorization decision, with the authority state it was made against.
 
 > `const` **EMBEDDED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: conformance/src/runner.ts:44
+Defined in: [conformance/src/runner.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L44)
 
 The in-process column: the SharedOS executor driving the scripted adversary.
 
@@ -1927,7 +1927,7 @@ here; everything else is filled in from what the runtime legitimately knows.
 
 > `const` **JUDGE\_VERSION**: `"1"` = `"1"`
 
-Defined in: conformance/src/runner.ts:28
+Defined in: [conformance/src/runner.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L28)
 
 Version of the grading rules, so a manifest names what produced it.
 
@@ -2866,7 +2866,7 @@ rather than `node:crypto` so the kernel stays host-neutral.
 
 > **judgeCase**(`move`, `evidence`): [`CaseJudgement`](#casejudgement)
 
-Defined in: conformance/src/judge.ts:55
+Defined in: [conformance/src/judge.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L55)
 
 Grade one move against the evidence its turn produced.
 
@@ -2979,7 +2979,7 @@ readonly `object`[]
 
 > **renderConformanceSummary**(`manifest`): `string`
 
-Defined in: conformance/src/runner.ts:275
+Defined in: [conformance/src/runner.ts:275](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L275)
 
 Render the manifest as a stable Markdown document.
 
@@ -3018,7 +3018,7 @@ readonly `object`[]
 
 > **runConformanceSuite**(`options?`): `Promise`\<[`ConformanceRun`](#conformancerun)>\>
 
-Defined in: conformance/src/runner.ts:117
+Defined in: [conformance/src/runner.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L117)
 
 Run every case under every column and grade the result.
 
@@ -3060,7 +3060,7 @@ Defined in: core/dist/hashing.d.ts:11
 
 > **strictFailures**(`manifest`): readonly [`StrictFailure`](#strictfailure)[]
 
-Defined in: conformance/src/runner.ts:256
+Defined in: [conformance/src/runner.ts:256](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L256)
 
 Cells that must break a build.
 

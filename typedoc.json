@@ -11,7 +11,8 @@
     "packages/client",
     "packages/sdk",
     "packages/testkit",
-    "packages/conformance"
+    "packages/conformance",
+    "packages/adapters"
   ],
   "packageOptions": {
     "entryPoints": ["src/index.ts"],

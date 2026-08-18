@@ -53,6 +53,25 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testkit
 
+  packages/adapters:
+    dependencies:
+      '@aicoo/sharedos-contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@aicoo/sharedos-runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@aicoo/sharedos-core':
+        specifier: workspace:*
+        version: link:../core
+      '@aicoo/sharedos-testkit':
+        specifier: workspace:*
+        version: link:../testkit
+
   packages/client:
     dependencies:
       '@aicoo/sharedos-contracts':
