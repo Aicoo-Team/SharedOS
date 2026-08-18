@@ -111,11 +111,64 @@ administrative power?" is a privilege-escalation question and belongs to its own
 suite. "Given this condition, does the kernel enforce?" is what the manifest
 measures, and it is the only question these moves ask.
 
+## Running the suite
+
+`pnpm conformance` runs every case against every column and writes two things:
+
+- a **deterministic summary** — `docs/conformance/kernel-conformance.{md,json}` —
+  committed, so a change in enforcement behaviour appears as a reviewable diff in
+  the pull request that caused it;
+- the **full evidence** — `artifacts/conformance/evidence.json` — ignored, since
+  it carries execution records, runtime manifests, and timings that churn without
+  any invariant result changing.
+
+Nothing volatile reaches the summary. A cell holds the status, which boundary
+refused the attempt, the observed reason codes, how many attempts were issued,
+and whether the record was usable. Runtime versions, model names, durations, and
+event volumes stay in the evidence artifact.
+
+`pnpm conformance:check` regenerates the summary, fails if the committed copy is
+stale, and fails on any cell that is `fail` **or** `not exercised`. A row that
+proved nothing is a broken suite, not a soft result, so it breaks the build the
+same way a real regression does.
+
+### Cases and conditions
+
+A `ConformanceCase` pairs a move with the _conditions_ it runs under, where a
+condition is a trusted world arming expressed as data. A row whose expected
+outcome has two clauses needs two conditions: "deny; invalidate descendants"
+cannot be evidenced by one arming, so the replayed-grant row runs once with the
+agent's own grant revoked and once with the grant it was delegated from revoked.
+They deny with different reason codes, and the manifest carries both.
+
+### Grading
+
+`judgeCase` compares receipts against declared expectations. It is separate from
+the runtime on purpose: the adversary records what happened and never decides
+whether it was correct, so the same receipts can be re-graded without re-running
+anything.
+
+- A **control** attempt that did not succeed makes the case `not_exercised`. The
+  fixture, not the kernel, decided the outcome, so the row is evidence of
+  nothing.
+- An attack that was never issued is `not_exercised`, never a pass.
+- A declared-unreachable attempt is `not_applicable` and does not sink the case.
+- Record completeness is reported beside the verdict rather than folded into it —
+  except for the record-completeness row itself, where the record _is_ the claim.
+
+### Columns
+
+A column is an adapter occupying the delegate seat. The attacker stays scripted
+across all of them; what varies is the runtime mediating its calls, which is
+exactly the claim under test — the kernel's guarantees should not depend on which
+driver is in the seat. Adding a column is supplying a
+`(moves) => RuntimePlugin` factory; the suite and the grading do not change.
+
 ## Classes
 
 ### ConformanceChainResolver
 
-Defined in: conformance/src/world.ts:386
+Defined in: [conformance/src/world.ts:386](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L386)
 
 Namespace-scoped ancestor lookup over every grant the fixture issued.
 
@@ -129,7 +182,7 @@ Namespace-scoped ancestor lookup over every grant the fixture issued.
 
 > **new ConformanceChainResolver**(`grants`): [`ConformanceChainResolver`](#conformancechainresolver)
 
-Defined in: conformance/src/world.ts:389
+Defined in: [conformance/src/world.ts:389](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L389)
 
 ###### Parameters
 
@@ -147,7 +200,7 @@ Defined in: conformance/src/world.ts:389
 
 > **resolve**(`namespaceId`, `grantId`): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: conformance/src/world.ts:404
+Defined in: [conformance/src/world.ts:404](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L404)
 
 ###### Parameters
 
@@ -168,7 +221,7 @@ Defined in: conformance/src/world.ts:404
 
 > **revoke**(`namespaceId`, `grantId`, `revokedAt`): `this`
 
-Defined in: conformance/src/world.ts:395
+Defined in: [conformance/src/world.ts:395](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L395)
 
 ###### Parameters
 
@@ -186,7 +239,7 @@ Defined in: conformance/src/world.ts:395
 
 ### ConformanceFileStore
 
-Defined in: conformance/src/world.ts:216
+Defined in: [conformance/src/world.ts:216](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L216)
 
 The world's file store.
 
@@ -208,10 +261,10 @@ boundary, so the fixture does not let it act like one.
 
 #### Properties
 
-| Property                              | Modifier   | Type       | Default value | Defined in                   |
-| ------------------------------------- | ---------- | ---------- | ------------- | ---------------------------- |
-| <a id="property-reads"></a> `reads`   | `readonly` | `string`[] | `[]`          | conformance/src/world.ts:217 |
-| <a id="property-writes"></a> `writes` | `readonly` | `string`[] | `[]`          | conformance/src/world.ts:218 |
+| Property                              | Modifier   | Type       | Default value | Defined in                                                                                                              |
+| ------------------------------------- | ---------- | ---------- | ------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-reads"></a> `reads`   | `readonly` | `string`[] | `[]`          | [conformance/src/world.ts:217](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L217) |
+| <a id="property-writes"></a> `writes` | `readonly` | `string`[] | `[]`          | [conformance/src/world.ts:218](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L218) |
 
 #### Methods
 
@@ -219,7 +272,7 @@ boundary, so the fixture does not let it act like one.
 
 > **readHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: conformance/src/world.ts:224
+Defined in: [conformance/src/world.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L224)
 
 ###### Returns
 
@@ -229,7 +282,7 @@ Defined in: conformance/src/world.ts:224
 
 > **sealedHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: conformance/src/world.ts:301
+Defined in: [conformance/src/world.ts:301](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L301)
 
 A registered, permanently sealed tool. It lives in a namespace this world
 never enables, so it is real enough to guess at and never exposed.
@@ -242,7 +295,7 @@ never enables, so it is real enough to guess at and never exposed.
 
 > **writeHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: conformance/src/world.ts:261
+Defined in: [conformance/src/world.ts:261](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L261)
 
 ###### Returns
 
@@ -252,7 +305,7 @@ Defined in: conformance/src/world.ts:261
 
 ### ConformanceGrantSource
 
-Defined in: conformance/src/world.ts:332
+Defined in: [conformance/src/world.ts:332](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L332)
 
 A trusted grant store whose availability the fixture controls.
 
@@ -266,7 +319,7 @@ A trusted grant store whose availability the fixture controls.
 
 > **new ConformanceGrantSource**(`grants`): [`ConformanceGrantSource`](#conformancegrantsource)
 
-Defined in: conformance/src/world.ts:337
+Defined in: [conformance/src/world.ts:337](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L337)
 
 ###### Parameters
 
@@ -286,7 +339,7 @@ Defined in: conformance/src/world.ts:337
 
 > **get** **loads**(): `number`
 
-Defined in: conformance/src/world.ts:343
+Defined in: [conformance/src/world.ts:343](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L343)
 
 ###### Returns
 
@@ -298,7 +351,7 @@ Defined in: conformance/src/world.ts:343
 
 > **failAfterLoads**(`count`): `this`
 
-Defined in: conformance/src/world.ts:354
+Defined in: [conformance/src/world.ts:354](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L354)
 
 Fail every load after this many successful ones.
 
@@ -320,7 +373,7 @@ part-way through a turn rather than before it starts.
 
 > **load**(`context`): `Promise`\<readonly `object`[]\>
 
-Defined in: conformance/src/world.ts:367
+Defined in: [conformance/src/world.ts:367](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L367)
 
 ###### Parameters
 
@@ -348,7 +401,7 @@ Defined in: conformance/src/world.ts:367
 
 > **revoke**(`grantId`, `revokedAt`): `this`
 
-Defined in: conformance/src/world.ts:359
+Defined in: [conformance/src/world.ts:359](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L359)
 
 ###### Parameters
 
@@ -365,7 +418,7 @@ Defined in: conformance/src/world.ts:359
 
 ### HostileRuntime
 
-Defined in: conformance/src/adversary.ts:195
+Defined in: [conformance/src/adversary.ts:195](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L195)
 
 A scripted adversary that occupies the delegate seat and nothing else.
 
@@ -400,7 +453,7 @@ One instance may serve concurrent turns; all per-turn state lives in `run`.
 
 > **new HostileRuntime**(`moves`, `options?`): [`HostileRuntime`](#hostileruntime)
 
-Defined in: conformance/src/adversary.ts:199
+Defined in: [conformance/src/adversary.ts:199](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L199)
 
 ###### Parameters
 
@@ -415,13 +468,13 @@ Defined in: conformance/src/adversary.ts:199
 
 #### Properties
 
-| Property                                  | Modifier   | Type                                             | Defined in                       |
-| ----------------------------------------- | ---------- | ------------------------------------------------ | -------------------------------- |
-| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | conformance/src/adversary.ts:196 |
-| `manifest.id`                             | `public`   | `string`                                         | contracts/dist/runtime.d.ts:9    |
-| `manifest.metadata?`                      | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | contracts/dist/runtime.d.ts:12   |
-| `manifest.protocolVersion`                | `public`   | `"1"`                                            | contracts/dist/runtime.d.ts:11   |
-| `manifest.version`                        | `public`   | `string`                                         | contracts/dist/runtime.d.ts:10   |
+| Property                                  | Modifier   | Type                                             | Defined in                                                                                                                      |
+| ----------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | [conformance/src/adversary.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L196) |
+| `manifest.id`                             | `public`   | `string`                                         | contracts/dist/runtime.d.ts:9                                                                                                   |
+| `manifest.metadata?`                      | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | contracts/dist/runtime.d.ts:12                                                                                                  |
+| `manifest.protocolVersion`                | `public`   | `"1"`                                            | contracts/dist/runtime.d.ts:11                                                                                                  |
+| `manifest.version`                        | `public`   | `string`                                         | contracts/dist/runtime.d.ts:10                                                                                                  |
 
 #### Accessors
 
@@ -431,7 +484,7 @@ Defined in: conformance/src/adversary.ts:199
 
 > **get** **moves**(): readonly `object`[]
 
-Defined in: conformance/src/adversary.ts:224
+Defined in: [conformance/src/adversary.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L224)
 
 ###### Returns
 
@@ -443,7 +496,7 @@ readonly `object`[]
 
 > **run**(`turn`, `host`, `signal`): `Promise`\<\{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \}\>
 
-Defined in: conformance/src/adversary.ts:228
+Defined in: [conformance/src/adversary.ts:228](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L228)
 
 ###### Parameters
 
@@ -541,6 +594,130 @@ Defined in: [conformance/src/assemble.ts:36](https://github.com/Aicoo-Team/Share
 
 ---
 
+### AttemptOutcome
+
+Defined in: conformance/src/judge.ts:18
+
+#### Properties
+
+| Property                                       | Modifier   | Type                                      | Defined in                  |
+| ---------------------------------------------- | ---------- | ----------------------------------------- | --------------------------- |
+| <a id="property-attempted"></a> `attempted`    | `readonly` | `boolean`                                 | conformance/src/judge.ts:22 |
+| <a id="property-attemptid"></a> `attemptId`    | `readonly` | `string`                                  | conformance/src/judge.ts:19 |
+| <a id="property-detail"></a> `detail?`         | `readonly` | `string`                                  | conformance/src/judge.ts:26 |
+| <a id="property-observed"></a> `observed?`     | `readonly` | `"succeeded"` \| `"denied"` \| `"failed"` | conformance/src/judge.ts:23 |
+| <a id="property-reasoncode"></a> `reasonCode?` | `readonly` | `string`                                  | conformance/src/judge.ts:24 |
+| <a id="property-refusedby"></a> `refusedBy?`   | `readonly` | [`EnforcementPoint`](#enforcementpoint)   | conformance/src/judge.ts:25 |
+| <a id="property-role"></a> `role`              | `readonly` | `"attack"` \| `"probe"` \| `"control"`    | conformance/src/judge.ts:20 |
+| <a id="property-status"></a> `status`          | `readonly` | [`ConformanceStatus`](#conformancestatus) | conformance/src/judge.ts:21 |
+
+---
+
+### CaseEvidence
+
+Defined in: conformance/src/judge.ts:43
+
+#### Properties
+
+| Property                                  | Modifier   | Type                                                                                                                                                                                                       | Description                                                             | Defined in                                                                                                                |
+| ----------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-receipts"></a> `receipts` | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                                       | conformance/src/judge.ts:44                                                                                               |
+| <a id="property-record"></a> `record`     | `readonly` | `object`                                                                                                                                                                                                   | -                                                                       | conformance/src/judge.ts:45                                                                                               |
+| `record.authority`                        | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L225) |
+| `record.authority.actor`                  | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                       | [conformance/src/record.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L83)   |
+| `record.authority.namespaceId`            | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L85)   |
+| `record.authority.owner`                  | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                       | [conformance/src/record.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L84)   |
+| `record.authority.principal`              | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                       | [conformance/src/record.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L82)   |
+| `record.authority.purpose`                | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L86)   |
+| `record.authority.snapshots`              | `public`   | `object`[]                                                                                                                                                                                                 | Every distinct authority state the turn observed, in first-seen order.  | [conformance/src/record.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L88)   |
+| `record.authority.stableAuthorityHash?`   | `public`   | `string`                                                                                                                                                                                                   | Set only when one authority state covered the whole turn.               | [conformance/src/record.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L90)   |
+| `record.cost`                             | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:228](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L228) |
+| `record.cost.auditEvents`                 | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:203](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L203) |
+| `record.cost.authorityLoads`              | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L202) |
+| `record.cost.completedAt`                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L197) |
+| `record.cost.elapsedMs`                   | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:198](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L198) |
+| `record.cost.infrastructureMs?`           | `public`   | `number`                                                                                                                                                                                                   | SharedOS-attributable time, separated from model inference time.        | [conformance/src/record.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L200) |
+| `record.cost.inputTokens?`                | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:204](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L204) |
+| `record.cost.metadata?`                   | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                       | [conformance/src/record.ts:206](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L206) |
+| `record.cost.outputTokens?`               | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:205](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L205) |
+| `record.cost.startedAt`                   | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L196) |
+| `record.cost.toolCalls`                   | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L201) |
+| `record.execution`                        | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L226) |
+| `record.execution.agent`                  | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                       | [conformance/src/record.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L143) |
+| `record.execution.auditRef?`              | `public`   | `object`                                                                                                                                                                                                   | Where the full audit stream lives; SharedOS does not own audit storage. | [conformance/src/record.ts:154](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L154) |
+| `record.execution.auditRef.eventCount`    | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:158](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L158) |
+| `record.execution.auditRef.sink`          | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:156](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L156) |
+| `record.execution.auditRef.traceId`       | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:157](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L157) |
+| `record.execution.decisions`              | `public`   | `object`[]                                                                                                                                                                                                 | -                                                                       | [conformance/src/record.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L150) |
+| `record.execution.events`                 | `public`   | `object`[]                                                                                                                                                                                                 | -                                                                       | [conformance/src/record.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L152) |
+| `record.execution.executionId`            | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:141](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L141) |
+| `record.execution.exposedTools`           | `public`   | `string`[]                                                                                                                                                                                                 | Tools the permission filter actually exposed to the runtime.            | [conformance/src/record.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L148) |
+| `record.execution.operations`             | `public`   | `object`[]                                                                                                                                                                                                 | -                                                                       | [conformance/src/record.ts:151](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L151) |
+| `record.execution.output?`                | `public`   | [`JsonValue`](sharedos-contracts.md#jsonvalue)                                                                                                                                                             | -                                                                       | [conformance/src/record.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L146) |
+| `record.execution.requestedTools`         | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                       | [conformance/src/record.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L149) |
+| `record.execution.status`                 | `public`   | `"succeeded"` \| `"denied"` \| `"failed"` \| `"cancelled"`                                                                                                                                                 | -                                                                       | [conformance/src/record.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L144) |
+| `record.execution.terminalReasonCode?`    | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L145) |
+| `record.execution.traceId`                | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L142) |
+| `record.experiment`                       | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:223](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L223) |
+| `record.experiment.evaluatorHash`         | `public`   | `string`                                                                                                                                                                                                   | Hash of the evaluator that will score this run.                         | [conformance/src/record.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L36)   |
+| `record.experiment.experimentId`          | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L28)   |
+| `record.experiment.metadata?`             | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                       | [conformance/src/record.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L38)   |
+| `record.experiment.runId`                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L30)   |
+| `record.experiment.seed?`                 | `public`   | `string` \| `number`                                                                                                                                                                                       | -                                                                       | [conformance/src/record.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L37)   |
+| `record.experiment.specHash`              | `public`   | `string`                                                                                                                                                                                                   | Hash of the frozen experiment specification, before materialisation.    | [conformance/src/record.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L32)   |
+| `record.experiment.taskId`                | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L29)   |
+| `record.experiment.worldHash`             | `public`   | `string`                                                                                                                                                                                                   | Hash of the world the specification materialised.                       | [conformance/src/record.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L34)   |
+| `record.recordedAt`                       | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:222](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L222) |
+| `record.state`                            | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:227](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L227) |
+| `record.state.after?`                     | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:184](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L184) |
+| `record.state.after.capturedAt?`          | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:176](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L176) |
+| `record.state.after.hash`                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:175](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L175) |
+| `record.state.after.snapshotId`           | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L174) |
+| `record.state.before?`                    | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:183](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L183) |
+| `record.state.before.capturedAt?`         | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:176](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L176) |
+| `record.state.before.hash`                | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:175](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L175) |
+| `record.state.before.snapshotId`          | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L174) |
+| `record.state.diffRef?`                   | `public`   | `object`                                                                                                                                                                                                   | An opaque handle to a diff the experiment layer produced.               | [conformance/src/record.ts:186](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L186) |
+| `record.state.diffRef.diffId`             | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:187](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L187) |
+| `record.state.diffRef.hash?`              | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:187](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L187) |
+| `record.system`                           | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L224) |
+| `record.system.adapterId`                 | `public`   | `string`                                                                                                                                                                                                   | Adapter identity, for example `sharedos-embedded` or `sharedos-http`.   | [conformance/src/record.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L50)   |
+| `record.system.adapterVersion?`           | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L51)   |
+| `record.system.metadata?`                 | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                       | [conformance/src/record.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L56)   |
+| `record.system.model?`                    | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L52)   |
+| `record.system.modelProvider?`            | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L53)   |
+| `record.system.policyHash`                | `public`   | `string`                                                                                                                                                                                                   | Hash of the policy or configuration in force for this run.              | [conformance/src/record.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L55)   |
+| `record.system.protocolVersion`           | `public`   | `"1"`                                                                                                                                                                                                      | -                                                                       | [conformance/src/record.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L46)   |
+| `record.system.runtime`                   | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L48)   |
+| `record.system.runtime.id`                | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | contracts/dist/runtime.d.ts:9                                                                                             |
+| `record.system.runtime.metadata?`         | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                       | contracts/dist/runtime.d.ts:12                                                                                            |
+| `record.system.runtime.protocolVersion`   | `public`   | `"1"`                                                                                                                                                                                                      | -                                                                       | contracts/dist/runtime.d.ts:11                                                                                            |
+| `record.system.runtime.version`           | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | contracts/dist/runtime.d.ts:10                                                                                            |
+| `record.system.sharedOsVersion`           | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L47)   |
+| `record.version`                          | `public`   | `"1"`                                                                                                                                                                                                      | -                                                                       | [conformance/src/record.ts:221](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L221) |
+
+---
+
+### CaseJudgement
+
+Defined in: conformance/src/judge.ts:29
+
+#### Properties
+
+| Property                                          | Modifier   | Type                                               | Description                                                                 | Defined in                  |
+| ------------------------------------------------- | ---------- | -------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------- |
+| <a id="property-attempted-1"></a> `attempted`     | `readonly` | `number`                                           | -                                                                           | conformance/src/judge.ts:36 |
+| <a id="property-attempts"></a> `attempts`         | `readonly` | readonly [`AttemptOutcome`](#attemptoutcome)[]     | -                                                                           | conformance/src/judge.ts:31 |
+| <a id="property-declared"></a> `declared`         | `readonly` | `number`                                           | -                                                                           | conformance/src/judge.ts:35 |
+| <a id="property-detail-1"></a> `detail?`          | `readonly` | `string`                                           | -                                                                           | conformance/src/judge.ts:40 |
+| <a id="property-reasoncodes"></a> `reasonCodes`   | `readonly` | readonly `string`[]                                | Refusal codes observed across the move, sorted and de-duplicated.           | conformance/src/judge.ts:33 |
+| <a id="property-recordgaps"></a> `recordGaps`     | `readonly` | readonly `string`[]                                | Field paths of the record's required gaps; empty when the record is usable. | conformance/src/judge.ts:39 |
+| <a id="property-recordusable"></a> `recordUsable` | `readonly` | `boolean`                                          | -                                                                           | conformance/src/judge.ts:37 |
+| <a id="property-refusedby-1"></a> `refusedBy`     | `readonly` | readonly [`EnforcementPoint`](#enforcementpoint)[] | -                                                                           | conformance/src/judge.ts:34 |
+| <a id="property-status-1"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus)          | -                                                                           | conformance/src/judge.ts:30 |
+
+---
+
 ### CompletenessGap
 
 Defined in: [conformance/src/completeness.ts:5](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/completeness.ts#L5)
@@ -549,15 +726,229 @@ Defined in: [conformance/src/completeness.ts:5](https://github.com/Aicoo-Team/Sh
 
 | Property                                  | Modifier   | Type                                            | Defined in                                                                                                                        |
 | ----------------------------------------- | ---------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-detail"></a> `detail`     | `readonly` | `string`                                        | [conformance/src/completeness.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/completeness.ts#L8) |
+| <a id="property-detail-2"></a> `detail`   | `readonly` | `string`                                        | [conformance/src/completeness.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/completeness.ts#L8) |
 | <a id="property-field"></a> `field`       | `readonly` | `string`                                        | [conformance/src/completeness.ts:6](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/completeness.ts#L6) |
 | <a id="property-severity"></a> `severity` | `readonly` | [`CompletenessSeverity`](#completenessseverity) | [conformance/src/completeness.ts:7](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/completeness.ts#L7) |
 
 ---
 
+### ConformanceCase
+
+Defined in: conformance/src/suite.ts:25
+
+One row of the kernel conformance manifest.
+
+A row may carry several conditions. The manifest states one invariant per
+row, but an invariant whose expected outcome has two clauses -- deny _and_
+invalidate descendants -- cannot be evidenced by a single arming, and
+reporting one clause as though it covered both would overstate the result.
+
+#### Properties
+
+| Property                                      | Modifier   | Type                                                                                                                                                                | Description                                                         | Defined in                                                                                                                      |
+| --------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-conditions"></a> `conditions` | `readonly` | readonly [`ConformanceCondition`](#conformancecondition)[]                                                                                                          | -                                                                   | conformance/src/suite.ts:28                                                                                                     |
+| <a id="property-id"></a> `id`                 | `readonly` | `string`                                                                                                                                                            | -                                                                   | conformance/src/suite.ts:26                                                                                                     |
+| <a id="property-move"></a> `move`             | `readonly` | `object`                                                                                                                                                            | -                                                                   | conformance/src/suite.ts:27                                                                                                     |
+| `move.attempts`                               | `public`   | `object`[]                                                                                                                                                          | -                                                                   | [conformance/src/adversary.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L119) |
+| `move.expectedOutcome`                        | `public`   | `string`                                                                                                                                                            | The kernel outcome the manifest expects, verbatim.                  | [conformance/src/adversary.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L118) |
+| `move.id`                                     | `public`   | `string`                                                                                                                                                            | -                                                                   | [conformance/src/adversary.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L113) |
+| `move.invariant`                              | `public`   | `string`                                                                                                                                                            | The invariant under attack, verbatim from the conformance manifest. | [conformance/src/adversary.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L116) |
+| `move.kind`                                   | `public`   | `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"replayed_grant"` \| `"namespace_crossing"` \| `"authority_unavailable"` \| `"record_completeness"` | -                                                                   | [conformance/src/adversary.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L114) |
+
+---
+
+### ConformanceCell
+
+Defined in: conformance/src/runner.ts:57
+
+One cell of the manifest.
+
+Every field here is invariant-relevant and stable across runs. Model names,
+adapter versions, timings, and event volumes belong to the evidence artifact,
+so a committed manifest diffs only when enforcement behaviour changes.
+
+#### Properties
+
+| Property                                            | Modifier   | Type                                               | Description                                                                | Defined in                   |
+| --------------------------------------------------- | ---------- | -------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------- |
+| <a id="property-attempted-2"></a> `attempted`       | `readonly` | `number`                                           | -                                                                          | conformance/src/runner.ts:63 |
+| <a id="property-columnid"></a> `columnId`           | `readonly` | `string`                                           | -                                                                          | conformance/src/runner.ts:58 |
+| <a id="property-declared-1"></a> `declared`         | `readonly` | `number`                                           | -                                                                          | conformance/src/runner.ts:62 |
+| <a id="property-detail-3"></a> `detail?`            | `readonly` | `string`                                           | -                                                                          | conformance/src/runner.ts:68 |
+| <a id="property-notapplicable"></a> `notApplicable` | `readonly` | `number`                                           | Attempts a runtime structurally cannot make, declared rather than omitted. | conformance/src/runner.ts:65 |
+| <a id="property-reasoncodes-1"></a> `reasonCodes`   | `readonly` | readonly `string`[]                                | -                                                                          | conformance/src/runner.ts:61 |
+| <a id="property-recordgaps-1"></a> `recordGaps`     | `readonly` | readonly `string`[]                                | -                                                                          | conformance/src/runner.ts:67 |
+| <a id="property-recordusable-1"></a> `recordUsable` | `readonly` | `boolean`                                          | -                                                                          | conformance/src/runner.ts:66 |
+| <a id="property-refusedby-2"></a> `refusedBy`       | `readonly` | readonly [`EnforcementPoint`](#enforcementpoint)[] | -                                                                          | conformance/src/runner.ts:60 |
+| <a id="property-status-2"></a> `status`             | `readonly` | [`ConformanceStatus`](#conformancestatus)          | -                                                                          | conformance/src/runner.ts:59 |
+
+---
+
+### ConformanceCondition
+
+Defined in: conformance/src/suite.ts:11
+
+A dangerous world state, armed by trusted setup before the turn begins.
+
+Conditions are data so the arming is reviewable next to the attack it enables,
+and so no part of it is reachable from the runtime that will be attacking.
+
+#### Properties
+
+| Property                                        | Modifier   | Type                                                  | Defined in                  |
+| ----------------------------------------------- | ---------- | ----------------------------------------------------- | --------------------------- |
+| <a id="property-description"></a> `description` | `readonly` | `string`                                              | conformance/src/suite.ts:13 |
+| <a id="property-id-1"></a> `id`                 | `readonly` | `string`                                              | conformance/src/suite.ts:12 |
+| <a id="property-world"></a> `world`             | `readonly` | [`ConformanceWorldOptions`](#conformanceworldoptions) | conformance/src/suite.ts:14 |
+
+---
+
+### ConformanceEvidence
+
+Defined in: conformance/src/runner.ts:91
+
+Everything behind one cell. Large, and expected to churn on runtime metadata.
+
+#### Properties
+
+| Property                                        | Modifier   | Type                                                                                                                                                                                                       | Description                                                             | Defined in                                                                                                                |
+| ----------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-caseid"></a> `caseId`           | `readonly` | `string`                                                                                                                                                                                                   | -                                                                       | conformance/src/runner.ts:92                                                                                              |
+| <a id="property-columnid-1"></a> `columnId`     | `readonly` | `string`                                                                                                                                                                                                   | -                                                                       | conformance/src/runner.ts:94                                                                                              |
+| <a id="property-conditionid"></a> `conditionId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                       | conformance/src/runner.ts:93                                                                                              |
+| <a id="property-record-1"></a> `record`         | `readonly` | `object`                                                                                                                                                                                                   | -                                                                       | conformance/src/runner.ts:96                                                                                              |
+| `record.authority`                              | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L225) |
+| `record.authority.actor`                        | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                       | [conformance/src/record.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L83)   |
+| `record.authority.namespaceId`                  | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L85)   |
+| `record.authority.owner`                        | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                       | [conformance/src/record.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L84)   |
+| `record.authority.principal`                    | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                       | [conformance/src/record.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L82)   |
+| `record.authority.purpose`                      | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L86)   |
+| `record.authority.snapshots`                    | `public`   | `object`[]                                                                                                                                                                                                 | Every distinct authority state the turn observed, in first-seen order.  | [conformance/src/record.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L88)   |
+| `record.authority.stableAuthorityHash?`         | `public`   | `string`                                                                                                                                                                                                   | Set only when one authority state covered the whole turn.               | [conformance/src/record.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L90)   |
+| `record.cost`                                   | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:228](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L228) |
+| `record.cost.auditEvents`                       | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:203](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L203) |
+| `record.cost.authorityLoads`                    | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L202) |
+| `record.cost.completedAt`                       | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L197) |
+| `record.cost.elapsedMs`                         | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:198](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L198) |
+| `record.cost.infrastructureMs?`                 | `public`   | `number`                                                                                                                                                                                                   | SharedOS-attributable time, separated from model inference time.        | [conformance/src/record.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L200) |
+| `record.cost.inputTokens?`                      | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:204](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L204) |
+| `record.cost.metadata?`                         | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                       | [conformance/src/record.ts:206](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L206) |
+| `record.cost.outputTokens?`                     | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:205](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L205) |
+| `record.cost.startedAt`                         | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L196) |
+| `record.cost.toolCalls`                         | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L201) |
+| `record.execution`                              | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L226) |
+| `record.execution.agent`                        | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                       | [conformance/src/record.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L143) |
+| `record.execution.auditRef?`                    | `public`   | `object`                                                                                                                                                                                                   | Where the full audit stream lives; SharedOS does not own audit storage. | [conformance/src/record.ts:154](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L154) |
+| `record.execution.auditRef.eventCount`          | `public`   | `number`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:158](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L158) |
+| `record.execution.auditRef.sink`                | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:156](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L156) |
+| `record.execution.auditRef.traceId`             | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:157](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L157) |
+| `record.execution.decisions`                    | `public`   | `object`[]                                                                                                                                                                                                 | -                                                                       | [conformance/src/record.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L150) |
+| `record.execution.events`                       | `public`   | `object`[]                                                                                                                                                                                                 | -                                                                       | [conformance/src/record.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L152) |
+| `record.execution.executionId`                  | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:141](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L141) |
+| `record.execution.exposedTools`                 | `public`   | `string`[]                                                                                                                                                                                                 | Tools the permission filter actually exposed to the runtime.            | [conformance/src/record.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L148) |
+| `record.execution.operations`                   | `public`   | `object`[]                                                                                                                                                                                                 | -                                                                       | [conformance/src/record.ts:151](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L151) |
+| `record.execution.output?`                      | `public`   | [`JsonValue`](sharedos-contracts.md#jsonvalue)                                                                                                                                                             | -                                                                       | [conformance/src/record.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L146) |
+| `record.execution.requestedTools`               | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                       | [conformance/src/record.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L149) |
+| `record.execution.status`                       | `public`   | `"succeeded"` \| `"denied"` \| `"failed"` \| `"cancelled"`                                                                                                                                                 | -                                                                       | [conformance/src/record.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L144) |
+| `record.execution.terminalReasonCode?`          | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L145) |
+| `record.execution.traceId`                      | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L142) |
+| `record.experiment`                             | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:223](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L223) |
+| `record.experiment.evaluatorHash`               | `public`   | `string`                                                                                                                                                                                                   | Hash of the evaluator that will score this run.                         | [conformance/src/record.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L36)   |
+| `record.experiment.experimentId`                | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L28)   |
+| `record.experiment.metadata?`                   | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                       | [conformance/src/record.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L38)   |
+| `record.experiment.runId`                       | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L30)   |
+| `record.experiment.seed?`                       | `public`   | `string` \| `number`                                                                                                                                                                                       | -                                                                       | [conformance/src/record.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L37)   |
+| `record.experiment.specHash`                    | `public`   | `string`                                                                                                                                                                                                   | Hash of the frozen experiment specification, before materialisation.    | [conformance/src/record.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L32)   |
+| `record.experiment.taskId`                      | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L29)   |
+| `record.experiment.worldHash`                   | `public`   | `string`                                                                                                                                                                                                   | Hash of the world the specification materialised.                       | [conformance/src/record.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L34)   |
+| `record.recordedAt`                             | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:222](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L222) |
+| `record.state`                                  | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:227](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L227) |
+| `record.state.after?`                           | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:184](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L184) |
+| `record.state.after.capturedAt?`                | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:176](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L176) |
+| `record.state.after.hash`                       | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:175](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L175) |
+| `record.state.after.snapshotId`                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L174) |
+| `record.state.before?`                          | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:183](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L183) |
+| `record.state.before.capturedAt?`               | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:176](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L176) |
+| `record.state.before.hash`                      | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:175](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L175) |
+| `record.state.before.snapshotId`                | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L174) |
+| `record.state.diffRef?`                         | `public`   | `object`                                                                                                                                                                                                   | An opaque handle to a diff the experiment layer produced.               | [conformance/src/record.ts:186](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L186) |
+| `record.state.diffRef.diffId`                   | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:187](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L187) |
+| `record.state.diffRef.hash?`                    | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:187](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L187) |
+| `record.system`                                 | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L224) |
+| `record.system.adapterId`                       | `public`   | `string`                                                                                                                                                                                                   | Adapter identity, for example `sharedos-embedded` or `sharedos-http`.   | [conformance/src/record.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L50)   |
+| `record.system.adapterVersion?`                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L51)   |
+| `record.system.metadata?`                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                       | [conformance/src/record.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L56)   |
+| `record.system.model?`                          | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L52)   |
+| `record.system.modelProvider?`                  | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L53)   |
+| `record.system.policyHash`                      | `public`   | `string`                                                                                                                                                                                                   | Hash of the policy or configuration in force for this run.              | [conformance/src/record.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L55)   |
+| `record.system.protocolVersion`                 | `public`   | `"1"`                                                                                                                                                                                                      | -                                                                       | [conformance/src/record.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L46)   |
+| `record.system.runtime`                         | `public`   | `object`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L48)   |
+| `record.system.runtime.id`                      | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | contracts/dist/runtime.d.ts:9                                                                                             |
+| `record.system.runtime.metadata?`               | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                       | contracts/dist/runtime.d.ts:12                                                                                            |
+| `record.system.runtime.protocolVersion`         | `public`   | `"1"`                                                                                                                                                                                                      | -                                                                       | contracts/dist/runtime.d.ts:11                                                                                            |
+| `record.system.runtime.version`                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | contracts/dist/runtime.d.ts:10                                                                                            |
+| `record.system.sharedOsVersion`                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | [conformance/src/record.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L47)   |
+| `record.version`                                | `public`   | `"1"`                                                                                                                                                                                                      | -                                                                       | [conformance/src/record.ts:221](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L221) |
+| <a id="property-report"></a> `report`           | `readonly` | \{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \} \| `undefined`                     | -                                                                       | conformance/src/runner.ts:97                                                                                              |
+| <a id="property-runtime"></a> `runtime`         | `readonly` | `object`                                                                                                                                                                                                   | -                                                                       | conformance/src/runner.ts:95                                                                                              |
+| `runtime.id`                                    | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | contracts/dist/runtime.d.ts:9                                                                                             |
+| `runtime.metadata?`                             | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                       | contracts/dist/runtime.d.ts:12                                                                                            |
+| `runtime.protocolVersion`                       | `public`   | `"1"`                                                                                                                                                                                                      | -                                                                       | contracts/dist/runtime.d.ts:11                                                                                            |
+| `runtime.version`                               | `public`   | `string`                                                                                                                                                                                                   | -                                                                       | contracts/dist/runtime.d.ts:10                                                                                            |
+
+---
+
+### ConformanceManifest
+
+Defined in: conformance/src/runner.ts:81
+
+#### Properties
+
+| Property                                          | Modifier   | Type                                           | Description                                                   | Defined in                   |
+| ------------------------------------------------- | ---------- | ---------------------------------------------- | ------------------------------------------------------------- | ---------------------------- |
+| <a id="property-casesethash"></a> `caseSetHash`   | `readonly` | `string`                                       | Hash of the case definitions this manifest was produced from. | conformance/src/runner.ts:85 |
+| <a id="property-columns"></a> `columns`           | `readonly` | readonly `object`[]                            | -                                                             | conformance/src/runner.ts:86 |
+| <a id="property-judgeversion"></a> `judgeVersion` | `readonly` | `string`                                       | -                                                             | conformance/src/runner.ts:83 |
+| <a id="property-rows"></a> `rows`                 | `readonly` | readonly [`ConformanceRow`](#conformancerow)[] | -                                                             | conformance/src/runner.ts:87 |
+| <a id="property-version"></a> `version`           | `readonly` | `"1"`                                          | -                                                             | conformance/src/runner.ts:82 |
+
+---
+
+### ConformanceRow
+
+Defined in: conformance/src/runner.ts:71
+
+#### Properties
+
+| Property                                                | Modifier   | Type                                                                                                                                                                | Defined in                   |
+| ------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| <a id="property-caseid-1"></a> `caseId`                 | `readonly` | `string`                                                                                                                                                            | conformance/src/runner.ts:72 |
+| <a id="property-cells"></a> `cells`                     | `readonly` | readonly [`ConformanceCell`](#conformancecell)[]                                                                                                                    | conformance/src/runner.ts:78 |
+| <a id="property-condition"></a> `condition`             | `readonly` | `string`                                                                                                                                                            | conformance/src/runner.ts:77 |
+| <a id="property-conditionid-1"></a> `conditionId`       | `readonly` | `string`                                                                                                                                                            | conformance/src/runner.ts:73 |
+| <a id="property-expectedoutcome"></a> `expectedOutcome` | `readonly` | `string`                                                                                                                                                            | conformance/src/runner.ts:76 |
+| <a id="property-invariant"></a> `invariant`             | `readonly` | `string`                                                                                                                                                            | conformance/src/runner.ts:75 |
+| <a id="property-kind"></a> `kind`                       | `readonly` | `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"replayed_grant"` \| `"namespace_crossing"` \| `"authority_unavailable"` \| `"record_completeness"` | conformance/src/runner.ts:74 |
+
+---
+
+### ConformanceRun
+
+Defined in: conformance/src/runner.ts:100
+
+#### Properties
+
+| Property                                    | Modifier   | Type                                                     | Defined in                    |
+| ------------------------------------------- | ---------- | -------------------------------------------------------- | ----------------------------- |
+| <a id="property-evidence"></a> `evidence`   | `readonly` | readonly [`ConformanceEvidence`](#conformanceevidence)[] | conformance/src/runner.ts:102 |
+| <a id="property-manifest-1"></a> `manifest` | `readonly` | [`ConformanceManifest`](#conformancemanifest)            | conformance/src/runner.ts:101 |
+
+---
+
 ### ConformanceWorld
 
-Defined in: conformance/src/world.ts:446
+Defined in: [conformance/src/world.ts:446](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L446)
 
 A world plus the trusted controls that arm one adversarial condition in it.
 
@@ -568,24 +959,24 @@ separation is enforced by construction rather than by convention.
 
 #### Properties
 
-| Property                                                    | Modifier   | Type                                                                                                                                                                                                       | Defined in                     |
-| ----------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| <a id="property-auditevents-1"></a> `auditEvents`           | `readonly` | readonly [`AuditEvent`](sharedos-core.md#auditevent)[]                                                                                                                                                     | conformance/src/world.ts:452   |
-| <a id="property-chain"></a> `chain`                         | `readonly` | [`ConformanceChainResolver`](#conformancechainresolver)                                                                                                                                                    | conformance/src/world.ts:451   |
-| <a id="property-context"></a> `context`                     | `readonly` | `object`                                                                                                                                                                                                   | conformance/src/world.ts:448   |
-| `context.actor`                                             | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | contracts/dist/access.d.ts:144 |
-| `context.authority`                                         | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | contracts/dist/access.d.ts:157 |
-| `context.enabledToolNamespaces`                             | `public`   | `string`[]                                                                                                                                                                                                 | contracts/dist/access.d.ts:170 |
-| `context.namespaceId`                                       | `public`   | `string`                                                                                                                                                                                                   | contracts/dist/access.d.ts:141 |
-| `context.now`                                               | `public`   | `string`                                                                                                                                                                                                   | contracts/dist/access.d.ts:171 |
-| `context.owner`                                             | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | contracts/dist/access.d.ts:128 |
-| `context.purpose`                                           | `public`   | `string`                                                                                                                                                                                                   | contracts/dist/access.d.ts:142 |
-| `context.traceId`                                           | `public`   | `string`                                                                                                                                                                                                   | contracts/dist/access.d.ts:143 |
-| <a id="property-deliveredmessages"></a> `deliveredMessages` | `readonly` | readonly `object`[]                                                                                                                                                                                        | conformance/src/world.ts:453   |
-| <a id="property-files"></a> `files`                         | `readonly` | [`ConformanceFileStore`](#conformancefilestore)                                                                                                                                                            | conformance/src/world.ts:449   |
-| <a id="property-grantsource"></a> `grantSource`             | `readonly` | [`ConformanceGrantSource`](#conformancegrantsource)                                                                                                                                                        | conformance/src/world.ts:450   |
-| <a id="property-kernel"></a> `kernel`                       | `readonly` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)                                                                                                                                                        | conformance/src/world.ts:447   |
-| <a id="property-tools"></a> `tools`                         | `readonly` | readonly `object`[]                                                                                                                                                                                        | conformance/src/world.ts:454   |
+| Property                                                    | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                              |
+| ----------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-auditevents-1"></a> `auditEvents`           | `readonly` | readonly [`AuditEvent`](sharedos-core.md#auditevent)[]                                                                                                                                                     | [conformance/src/world.ts:452](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L452) |
+| <a id="property-chain"></a> `chain`                         | `readonly` | [`ConformanceChainResolver`](#conformancechainresolver)                                                                                                                                                    | [conformance/src/world.ts:451](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L451) |
+| <a id="property-context"></a> `context`                     | `readonly` | `object`                                                                                                                                                                                                   | [conformance/src/world.ts:448](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L448) |
+| `context.actor`                                             | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | contracts/dist/access.d.ts:144                                                                                          |
+| `context.authority`                                         | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | contracts/dist/access.d.ts:157                                                                                          |
+| `context.enabledToolNamespaces`                             | `public`   | `string`[]                                                                                                                                                                                                 | contracts/dist/access.d.ts:170                                                                                          |
+| `context.namespaceId`                                       | `public`   | `string`                                                                                                                                                                                                   | contracts/dist/access.d.ts:141                                                                                          |
+| `context.now`                                               | `public`   | `string`                                                                                                                                                                                                   | contracts/dist/access.d.ts:171                                                                                          |
+| `context.owner`                                             | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | contracts/dist/access.d.ts:128                                                                                          |
+| `context.purpose`                                           | `public`   | `string`                                                                                                                                                                                                   | contracts/dist/access.d.ts:142                                                                                          |
+| `context.traceId`                                           | `public`   | `string`                                                                                                                                                                                                   | contracts/dist/access.d.ts:143                                                                                          |
+| <a id="property-deliveredmessages"></a> `deliveredMessages` | `readonly` | readonly `object`[]                                                                                                                                                                                        | [conformance/src/world.ts:453](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L453) |
+| <a id="property-files"></a> `files`                         | `readonly` | [`ConformanceFileStore`](#conformancefilestore)                                                                                                                                                            | [conformance/src/world.ts:449](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L449) |
+| <a id="property-grantsource"></a> `grantSource`             | `readonly` | [`ConformanceGrantSource`](#conformancegrantsource)                                                                                                                                                        | [conformance/src/world.ts:450](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L450) |
+| <a id="property-kernel"></a> `kernel`                       | `readonly` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)                                                                                                                                                        | [conformance/src/world.ts:447](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L447) |
+| <a id="property-tools"></a> `tools`                         | `readonly` | readonly `object`[]                                                                                                                                                                                        | [conformance/src/world.ts:454](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L454) |
 
 #### Methods
 
@@ -593,7 +984,7 @@ separation is enforced by construction rather than by convention.
 
 > **request**(`executionId`): `object`
 
-Defined in: conformance/src/world.ts:455
+Defined in: [conformance/src/world.ts:455](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L455)
 
 ###### Parameters
 
@@ -753,15 +1144,15 @@ Defined in: conformance/src/world.ts:455
 
 ### ConformanceWorldOptions
 
-Defined in: conformance/src/world.ts:430
+Defined in: [conformance/src/world.ts:430](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L430)
 
 #### Properties
 
-| Property                                                                   | Modifier   | Type                | Description                                                            | Defined in                   |
-| -------------------------------------------------------------------------- | ---------- | ------------------- | ---------------------------------------------------------------------- | ---------------------------- |
-| <a id="property-authorityfailsafterloads"></a> `authorityFailsAfterLoads?` | `readonly` | `number`            | Arm a grant-store outage that begins after this many successful loads. | conformance/src/world.ts:434 |
-| <a id="property-now"></a> `now?`                                           | `readonly` | `string`            | -                                                                      | conformance/src/world.ts:435 |
-| <a id="property-revoked"></a> `revoked?`                                   | `readonly` | readonly `string`[] | Grant ids to revoke before the turn starts, as a host store would.     | conformance/src/world.ts:432 |
+| Property                                                                   | Modifier   | Type                | Description                                                            | Defined in                                                                                                              |
+| -------------------------------------------------------------------------- | ---------- | ------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-authorityfailsafterloads"></a> `authorityFailsAfterLoads?` | `readonly` | `number`            | Arm a grant-store outage that begins after this many successful loads. | [conformance/src/world.ts:434](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L434) |
+| <a id="property-now"></a> `now?`                                           | `readonly` | `string`            | -                                                                      | [conformance/src/world.ts:435](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L435) |
+| <a id="property-revoked"></a> `revoked?`                                   | `readonly` | readonly `string`[] | Grant ids to revoke before the turn starts, as a host store would.     | [conformance/src/world.ts:432](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L432) |
 
 ---
 
@@ -801,7 +1192,7 @@ Identity the experiment layer owns; SharedOS cannot derive any of it.
 | <a id="property-modelprovider"></a> `modelProvider?`    | `public`   | `string`                                         | `undefined`             | -                                                                     | `Omit.modelProvider`   | [conformance/src/record.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L53)     |
 | <a id="property-policyhash"></a> `policyHash`           | `public`   | `string`                                         | `ContentHashSchema`     | Hash of the policy or configuration in force for this run.            | `Omit.policyHash`      | [conformance/src/record.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L55)     |
 | <a id="property-protocolversion"></a> `protocolVersion` | `public`   | `"1"`                                            | `ProtocolVersionSchema` | -                                                                     | `Omit.protocolVersion` | [conformance/src/record.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L46)     |
-| <a id="property-runtime"></a> `runtime?`                | `readonly` | `object`                                         | `undefined`             | Overrides the manifest carried in the result's runtime provenance.    | -                      | [conformance/src/assemble.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/assemble.ts#L26) |
+| <a id="property-runtime-1"></a> `runtime?`              | `readonly` | `object`                                         | `undefined`             | Overrides the manifest carried in the result's runtime provenance.    | -                      | [conformance/src/assemble.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/assemble.ts#L26) |
 | `runtime.id`                                            | `public`   | `string`                                         | `undefined`             | -                                                                     | -                      | contracts/dist/runtime.d.ts:9                                                                                               |
 | `runtime.metadata?`                                     | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | `undefined`             | -                                                                     | -                      | contracts/dist/runtime.d.ts:12                                                                                              |
 | `runtime.protocolVersion`                               | `public`   | `"1"`                                            | `undefined`             | -                                                                     | -                      | contracts/dist/runtime.d.ts:11                                                                                              |
@@ -836,20 +1227,20 @@ Defined in: [conformance/src/hashing.ts:12](https://github.com/Aicoo-Team/Shared
 | <a id="property-evaluator"></a> `evaluator` | `readonly` | `unknown` | The evaluator that will score runs of this specification.        | [conformance/src/hashing.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L18) |
 | <a id="property-policy"></a> `policy?`      | `readonly` | `unknown` | Policy or configuration in force, if it is versioned separately. | [conformance/src/hashing.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L20) |
 | <a id="property-spec"></a> `spec`           | `readonly` | `unknown` | The frozen, declarative experiment specification.                | [conformance/src/hashing.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L14) |
-| <a id="property-world"></a> `world`         | `readonly` | `unknown` | The world that specification materialised.                       | [conformance/src/hashing.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L16) |
+| <a id="property-world-1"></a> `world`       | `readonly` | `unknown` | The world that specification materialised.                       | [conformance/src/hashing.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L16) |
 
 ---
 
 ### HostileRuntimeOptions
 
-Defined in: conformance/src/adversary.ts:166
+Defined in: [conformance/src/adversary.ts:166](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L166)
 
 #### Properties
 
-| Property                                     | Modifier   | Type     | Defined in                       |
-| -------------------------------------------- | ---------- | -------- | -------------------------------- |
-| <a id="property-runtimeid"></a> `runtimeId?` | `readonly` | `string` | conformance/src/adversary.ts:167 |
-| <a id="property-version"></a> `version?`     | `readonly` | `string` | conformance/src/adversary.ts:168 |
+| Property                                     | Modifier   | Type     | Defined in                                                                                                                      |
+| -------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-runtimeid"></a> `runtimeId?` | `readonly` | `string` | [conformance/src/adversary.ts:167](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L167) |
+| <a id="property-version-1"></a> `version?`   | `readonly` | `string` | [conformance/src/adversary.ts:168](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L168) |
 
 ---
 
@@ -889,8 +1280,74 @@ Defined in: [conformance/src/hashing.ts:49](https://github.com/Aicoo-Team/Shared
 | Property                                      | Modifier   | Type                                              | Defined in                                                                                                                |
 | --------------------------------------------- | ---------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | <a id="property-comparable"></a> `comparable` | `readonly` | `boolean`                                         | [conformance/src/hashing.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L51) |
-| <a id="property-detail-1"></a> `detail`       | `readonly` | `string`                                          | [conformance/src/hashing.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L52) |
-| <a id="property-status"></a> `status`         | `readonly` | [`ReproducibilityStatus`](#reproducibilitystatus) | [conformance/src/hashing.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L50) |
+| <a id="property-detail-4"></a> `detail`       | `readonly` | `string`                                          | [conformance/src/hashing.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L52) |
+| <a id="property-status-3"></a> `status`       | `readonly` | [`ReproducibilityStatus`](#reproducibilitystatus) | [conformance/src/hashing.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L50) |
+
+---
+
+### RunConformanceSuiteOptions
+
+Defined in: conformance/src/runner.ts:105
+
+#### Properties
+
+| Property                                   | Modifier   | Type                                             | Defined in                    |
+| ------------------------------------------ | ---------- | ------------------------------------------------ | ----------------------------- |
+| <a id="property-cases"></a> `cases?`       | `readonly` | readonly [`ConformanceCase`](#conformancecase)[] | conformance/src/runner.ts:106 |
+| <a id="property-columns-1"></a> `columns?` | `readonly` | readonly [`RuntimeColumn`](#runtimecolumn)[]     | conformance/src/runner.ts:107 |
+
+---
+
+### RuntimeColumn
+
+Defined in: conformance/src/runner.ts:37
+
+One column of the manifest: an adapter occupying the delegate seat.
+
+The attacker stays scripted across every column. What varies is the runtime
+that mediates its calls, which is the whole point of the claim under test --
+the kernel's guarantees should not depend on which driver is in the seat.
+
+#### Properties
+
+| Property                            | Modifier   | Type     | Defined in                   |
+| ----------------------------------- | ---------- | -------- | ---------------------------- |
+| <a id="property-id-2"></a> `id`     | `readonly` | `string` | conformance/src/runner.ts:38 |
+| <a id="property-label"></a> `label` | `readonly` | `string` | conformance/src/runner.ts:39 |
+
+#### Methods
+
+##### create()
+
+> **create**(`moves`): [`RuntimePlugin`](sharedos-runtime.md#runtimeplugin)
+
+Defined in: conformance/src/runner.ts:40
+
+###### Parameters
+
+| Parameter | Type                |
+| --------- | ------------------- |
+| `moves`   | readonly `object`[] |
+
+###### Returns
+
+[`RuntimePlugin`](sharedos-runtime.md#runtimeplugin)
+
+---
+
+### StrictFailure
+
+Defined in: conformance/src/runner.ts:241
+
+#### Properties
+
+| Property                                          | Modifier   | Type                                      | Defined in                    |
+| ------------------------------------------------- | ---------- | ----------------------------------------- | ----------------------------- |
+| <a id="property-caseid-2"></a> `caseId`           | `readonly` | `string`                                  | conformance/src/runner.ts:242 |
+| <a id="property-columnid-2"></a> `columnId`       | `readonly` | `string`                                  | conformance/src/runner.ts:244 |
+| <a id="property-conditionid-2"></a> `conditionId` | `readonly` | `string`                                  | conformance/src/runner.ts:243 |
+| <a id="property-detail-5"></a> `detail`           | `readonly` | `string`                                  | conformance/src/runner.ts:246 |
+| <a id="property-status-4"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus) | conformance/src/runner.ts:245 |
 
 ## Type Aliases
 
@@ -898,7 +1355,7 @@ Defined in: [conformance/src/hashing.ts:49](https://github.com/Aicoo-Team/Shared
 
 > **AdversarialTurnReport** = `z.infer`\<_typeof_ [`AdversarialTurnReportSchema`](#adversarialturnreportschema)>\>
 
-Defined in: conformance/src/adversary.ts:164
+Defined in: [conformance/src/adversary.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L164)
 
 ---
 
@@ -906,7 +1363,7 @@ Defined in: conformance/src/adversary.ts:164
 
 > **AttackAttempt** = `z.infer`\<_typeof_ [`AttackAttemptSchema`](#attackattemptschema)>\>
 
-Defined in: conformance/src/adversary.ts:109
+Defined in: [conformance/src/adversary.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L109)
 
 ---
 
@@ -914,7 +1371,7 @@ Defined in: conformance/src/adversary.ts:109
 
 > **AttackMove** = `z.infer`\<_typeof_ [`AttackMoveSchema`](#attackmoveschema)>\>
 
-Defined in: conformance/src/adversary.ts:122
+Defined in: [conformance/src/adversary.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L122)
 
 ---
 
@@ -922,7 +1379,7 @@ Defined in: conformance/src/adversary.ts:122
 
 > **AttackMoveKind** = `z.infer`\<_typeof_ [`AttackMoveKindSchema`](#attackmovekindschema)>\>
 
-Defined in: conformance/src/adversary.ts:42
+Defined in: [conformance/src/adversary.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L42)
 
 ---
 
@@ -930,7 +1387,7 @@ Defined in: conformance/src/adversary.ts:42
 
 > **AttemptExpectation** = `z.infer`\<_typeof_ [`AttemptExpectationSchema`](#attemptexpectationschema)>\>
 
-Defined in: conformance/src/adversary.ts:72
+Defined in: [conformance/src/adversary.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L72)
 
 ---
 
@@ -938,7 +1395,7 @@ Defined in: conformance/src/adversary.ts:72
 
 > **AttemptReceipt** = `z.infer`\<_typeof_ [`AttemptReceiptSchema`](#attemptreceiptschema)>\>
 
-Defined in: conformance/src/adversary.ts:150
+Defined in: [conformance/src/adversary.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L150)
 
 ---
 
@@ -946,7 +1403,7 @@ Defined in: conformance/src/adversary.ts:150
 
 > **AttemptRole** = `z.infer`\<_typeof_ [`AttemptRoleSchema`](#attemptroleschema)>\>
 
-Defined in: conformance/src/adversary.ts:52
+Defined in: [conformance/src/adversary.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L52)
 
 ---
 
@@ -954,7 +1411,7 @@ Defined in: conformance/src/adversary.ts:52
 
 > **AttemptStatus** = `z.infer`\<_typeof_ [`AttemptStatusSchema`](#attemptstatusschema)>\>
 
-Defined in: conformance/src/adversary.ts:55
+Defined in: [conformance/src/adversary.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L55)
 
 ---
 
@@ -982,6 +1439,21 @@ Defined in: [conformance/src/completeness.ts:3](https://github.com/Aicoo-Team/Sh
 
 ---
 
+### ConformanceStatus
+
+> **ConformanceStatus** = `"pass"` \| `"fail"` \| `"not_exercised"` \| `"not_applicable"`
+
+Defined in: conformance/src/judge.ts:13
+
+What a manifest cell may report.
+
+`not_exercised` is not a softer failure. It says the attempt never reached
+SharedOS, so the cell is evidence of nothing, and it must never be counted as
+a pass. `not_applicable` says the attempt cannot exist in this deployment,
+which is a claim about the design rather than about a run.
+
+---
+
 ### ContentHash
 
 > **ContentHash** = `z.infer`\<_typeof_ [`ContentHashSchema`](#contenthashschema)>\>
@@ -1003,6 +1475,16 @@ Defined in: [conformance/src/record.ts:209](https://github.com/Aicoo-Team/Shared
 > **DecisionRecord** = `z.infer`\<_typeof_ [`DecisionRecordSchema`](#decisionrecordschema)>\>
 
 Defined in: [conformance/src/record.ts:112](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L112)
+
+---
+
+### EnforcementPoint
+
+> **EnforcementPoint** = `"kernel"` \| `"envelope"`
+
+Defined in: conformance/src/judge.ts:16
+
+The boundary that refused an attempt.
 
 ---
 
@@ -1034,7 +1516,7 @@ Defined in: [conformance/src/record.ts:41](https://github.com/Aicoo-Team/SharedO
 
 > **ForgedGrant** = `z.infer`\<_typeof_ [`ForgedGrantSchema`](#forgedgrantschema)>\>
 
-Defined in: conformance/src/adversary.ts:90
+Defined in: [conformance/src/adversary.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L90)
 
 ---
 
@@ -1082,7 +1564,7 @@ Defined in: [conformance/src/record.ts:59](https://github.com/Aicoo-Team/SharedO
 
 > `const` **AdversarialTurnReportSchema**: `ZodObject`\<\{ `executionId`: `ZodString`; `moveIds`: `ZodArray`\<`ZodString`, `"many"`>\>; `receipts`: `ZodArray`\<`ZodObject`\<\{ `argumentKeys`: `ZodArray`\<`ZodString`, `"many"`>\>; `attempted`: `ZodBoolean`; `attemptId`: `ZodString`; `callId`: `ZodOptional`\<`ZodString`>\>; `detail`: `ZodOptional`\<`ZodString`>\>; `expect`: `ZodObject`\<\{ `reasonCodes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; `statuses`: `ZodArray`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}\>; `forgedGrantId`: `ZodOptional`\<`ZodString`>\>; `kind`: `ZodEnum`\<\[`"forged_grant"`, `"hidden_tool"`, `"read_to_mutation"`, `"replayed_grant"`, `"namespace_crossing"`, `"authority_unavailable"`, `"record_completeness"`\]\>; `moveId`: `ZodString`; `observed`: `ZodOptional`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>\>; `reasonCode`: `ZodOptional`\<`ZodString`>\>; `role`: `ZodEnum`\<\[`"attack"`, `"probe"`, `"control"`\]\>; `tool`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `argumentKeys`: `string`[]; `attempted`: `boolean`; `attemptId`: `string`; `callId?`: `string`; `detail?`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forgedGrantId?`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"replayed_grant"` \| `"namespace_crossing"` \| `"authority_unavailable"` \| `"record_completeness"`; `moveId`: `string`; `observed?`: `"succeeded"` \| `"denied"` \| `"failed"`; `reasonCode?`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool`: `string`; \}, \{ `argumentKeys`: `string`[]; `attempted`: `boolean`; `attemptId`: `string`; `callId?`: `string`; `detail?`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forgedGrantId?`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"replayed_grant"` \| `"namespace_crossing"` \| `"authority_unavailable"` \| `"record_completeness"`; `moveId`: `string`; `observed?`: `"succeeded"` \| `"denied"` \| `"failed"`; `reasonCode?`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool`: `string`; \}\>, `"many"`>\>; `runtimeId`: `ZodString`; `traceId`: `ZodString`; `version`: `ZodLiteral`\<`"1"`>\>; `visibleTools`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \}, \{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \}\>
 
-Defined in: conformance/src/adversary.ts:152
+Defined in: [conformance/src/adversary.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L152)
 
 ---
 
@@ -1090,7 +1572,7 @@ Defined in: conformance/src/adversary.ts:152
 
 > `const` **ADVERSARY\_METADATA\_KEY**: `"conformance"` = `"conformance"`
 
-Defined in: conformance/src/adversary.ts:28
+Defined in: [conformance/src/adversary.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L28)
 
 The metadata key the terminal report is returned under.
 
@@ -1100,7 +1582,7 @@ The metadata key the terminal report is returned under.
 
 > `const` **ATTACK\_MOVE\_KINDS**: readonly \[`"forged_grant"`, `"hidden_tool"`, `"read_to_mutation"`, `"replayed_grant"`, `"namespace_crossing"`, `"authority_unavailable"`, `"record_completeness"`\]
 
-Defined in: conformance/src/adversary.ts:31
+Defined in: [conformance/src/adversary.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L31)
 
 One adversarial row of the kernel conformance manifest.
 
@@ -1110,7 +1592,7 @@ One adversarial row of the kernel conformance manifest.
 
 > `const` **AttackAttemptSchema**: `ZodObject`\<\{ `description`: `ZodString`; `expect`: `ZodObject`\<\{ `reasonCodes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; `statuses`: `ZodArray`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}\>; `forge`: `ZodOptional`\<`ZodObject`\<\{ `capabilities`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<...\>; `path`: `ZodArray`\<..., ...\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `embedAs`: `ZodString`; `grantId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}, \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}\>\>; `id`: `ZodString`; `role`: `ZodEnum`\<\[`"attack"`, `"probe"`, `"control"`\]\>; `tool`: `ZodString`; `toolArguments`: `ZodOptional`\<`ZodType`\<[`JsonObject`](sharedos-contracts.md#jsonobject), `ZodTypeDef`, [`JsonObject`](sharedos-contracts.md#jsonobject)>>\>\>; `unreachable`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `description`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forge?`: \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}; `id`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool`: `string`; `toolArguments?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `unreachable?`: `string`; \}, \{ `description`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forge?`: \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}; `id`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool`: `string`; `toolArguments?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `unreachable?`: `string`; \}\>
 
-Defined in: conformance/src/adversary.ts:92
+Defined in: [conformance/src/adversary.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L92)
 
 ---
 
@@ -1118,7 +1600,7 @@ Defined in: conformance/src/adversary.ts:92
 
 > `const` **AttackMoveKindSchema**: `ZodEnum`\<\[`"forged_grant"`, `"hidden_tool"`, `"read_to_mutation"`, `"replayed_grant"`, `"namespace_crossing"`, `"authority_unavailable"`, `"record_completeness"`\]\>
 
-Defined in: conformance/src/adversary.ts:41
+Defined in: [conformance/src/adversary.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L41)
 
 ---
 
@@ -1126,7 +1608,7 @@ Defined in: conformance/src/adversary.ts:41
 
 > `const` **AttackMoveSchema**: `ZodObject`\<\{ `attempts`: `ZodArray`\<`ZodObject`\<\{ `description`: `ZodString`; `expect`: `ZodObject`\<\{ `reasonCodes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; `statuses`: `ZodArray`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}\>; `forge`: `ZodOptional`\<`ZodObject`\<\{ `capabilities`: `ZodArray`\<`ZodObject`\<\{ `actions`: ...; `resource`: ...; `scope`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: ...; `resource`: ...; `scope`: ...; \}, \{ `actions`: ...; `resource`: ...; `scope`: ...; \}\>, `"many"`>\>; `embedAs`: `ZodString`; `grantId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}, \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}\>\>; `id`: `ZodString`; `role`: `ZodEnum`\<\[`"attack"`, `"probe"`, `"control"`\]\>; `tool`: `ZodString`; `toolArguments`: `ZodOptional`\<`ZodType`\<[`JsonObject`](sharedos-contracts.md#jsonobject), `ZodTypeDef`, [`JsonObject`](sharedos-contracts.md#jsonobject)>>\>\>; `unreachable`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `description`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forge?`: \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}; `id`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool`: `string`; `toolArguments?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `unreachable?`: `string`; \}, \{ `description`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forge?`: \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}; `id`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool`: `string`; `toolArguments?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `unreachable?`: `string`; \}\>, `"many"`>\>; `expectedOutcome`: `ZodString`; `id`: `ZodString`; `invariant`: `ZodString`; `kind`: `ZodEnum`\<\[`"forged_grant"`, `"hidden_tool"`, `"read_to_mutation"`, `"replayed_grant"`, `"namespace_crossing"`, `"authority_unavailable"`, `"record_completeness"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `attempts`: `object`[]; `expectedOutcome`: `string`; `id`: `string`; `invariant`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"replayed_grant"` \| `"namespace_crossing"` \| `"authority_unavailable"` \| `"record_completeness"`; \}, \{ `attempts`: `object`[]; `expectedOutcome`: `string`; `id`: `string`; `invariant`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"replayed_grant"` \| `"namespace_crossing"` \| `"authority_unavailable"` \| `"record_completeness"`; \}\>
 
-Defined in: conformance/src/adversary.ts:111
+Defined in: [conformance/src/adversary.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L111)
 
 ---
 
@@ -1134,7 +1616,7 @@ Defined in: conformance/src/adversary.ts:111
 
 > `const` **ATTEMPT\_EVENT\_TYPE**: `"conformance.attempt"` = `"conformance.attempt"`
 
-Defined in: conformance/src/adversary.ts:25
+Defined in: [conformance/src/adversary.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L25)
 
 The runtime event every attempt is announced under.
 
@@ -1149,7 +1631,7 @@ into an indistinguishable pass.
 
 > `const` **AttemptExpectationSchema**: `ZodObject`\<\{ `reasonCodes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; `statuses`: `ZodArray`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}\>
 
-Defined in: conformance/src/adversary.ts:66
+Defined in: [conformance/src/adversary.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L66)
 
 The outcomes that satisfy one attempt.
 
@@ -1165,7 +1647,7 @@ pretending they are the same event.
 
 > `const` **AttemptReceiptSchema**: `ZodObject`\<\{ `argumentKeys`: `ZodArray`\<`ZodString`, `"many"`>\>; `attempted`: `ZodBoolean`; `attemptId`: `ZodString`; `callId`: `ZodOptional`\<`ZodString`>\>; `detail`: `ZodOptional`\<`ZodString`>\>; `expect`: `ZodObject`\<\{ `reasonCodes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; `statuses`: `ZodArray`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}\>; `forgedGrantId`: `ZodOptional`\<`ZodString`>\>; `kind`: `ZodEnum`\<\[`"forged_grant"`, `"hidden_tool"`, `"read_to_mutation"`, `"replayed_grant"`, `"namespace_crossing"`, `"authority_unavailable"`, `"record_completeness"`\]\>; `moveId`: `ZodString`; `observed`: `ZodOptional`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>\>; `reasonCode`: `ZodOptional`\<`ZodString`>\>; `role`: `ZodEnum`\<\[`"attack"`, `"probe"`, `"control"`\]\>; `tool`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `argumentKeys`: `string`[]; `attempted`: `boolean`; `attemptId`: `string`; `callId?`: `string`; `detail?`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forgedGrantId?`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"replayed_grant"` \| `"namespace_crossing"` \| `"authority_unavailable"` \| `"record_completeness"`; `moveId`: `string`; `observed?`: `"succeeded"` \| `"denied"` \| `"failed"`; `reasonCode?`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool`: `string`; \}, \{ `argumentKeys`: `string`[]; `attempted`: `boolean`; `attemptId`: `string`; `callId?`: `string`; `detail?`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forgedGrantId?`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"replayed_grant"` \| `"namespace_crossing"` \| `"authority_unavailable"` \| `"record_completeness"`; `moveId`: `string`; `observed?`: `"succeeded"` \| `"denied"` \| `"failed"`; `reasonCode?`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool`: `string`; \}\>
 
-Defined in: conformance/src/adversary.ts:132
+Defined in: [conformance/src/adversary.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L132)
 
 What one declared attempt actually did.
 
@@ -1180,7 +1662,7 @@ appears in the trace".
 
 > `const` **AttemptRoleSchema**: `ZodEnum`\<\[`"attack"`, `"probe"`, `"control"`\]\>
 
-Defined in: conformance/src/adversary.ts:51
+Defined in: [conformance/src/adversary.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L51)
 
 What one attempt contributes to its move.
 
@@ -1194,7 +1676,7 @@ fixture reports as a clean pass on every adversarial row.
 
 > `const` **AttemptStatusSchema**: `ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>
 
-Defined in: conformance/src/adversary.ts:54
+Defined in: [conformance/src/adversary.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L54)
 
 ---
 
@@ -1224,7 +1706,7 @@ changing the first.
 
 > `const` **CANONICAL\_ATTACK\_MOVES**: readonly [`AttackMove`](#attackmove)[]
 
-Defined in: conformance/src/moves.ts:45
+Defined in: [conformance/src/moves.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/moves.ts#L45)
 
 The seven rows of the kernel conformance manifest, as data.
 
@@ -1236,11 +1718,19 @@ by the adversary.
 
 ---
 
+### CANONICAL\_CONFORMANCE\_CASES
+
+> `const` **CANONICAL\_CONFORMANCE\_CASES**: readonly [`ConformanceCase`](#conformancecase)[]
+
+Defined in: conformance/src/suite.ts:37
+
+---
+
 ### CONFORMANCE\_AGENT
 
 > `const` **CONFORMANCE\_AGENT**: `object`
 
-Defined in: conformance/src/world.ts:43
+Defined in: [conformance/src/world.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L43)
 
 #### Type Declaration
 
@@ -1258,7 +1748,7 @@ Defined in: conformance/src/world.ts:43
 
 > `const` **CONFORMANCE\_NAMESPACE\_ID**: `"world-conformance"` = `"world-conformance"`
 
-Defined in: conformance/src/world.ts:28
+Defined in: [conformance/src/world.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L28)
 
 The world every canonical conformance move is declared against.
 
@@ -1268,7 +1758,7 @@ The world every canonical conformance move is declared against.
 
 > `const` **CONFORMANCE\_NOW**: `"2026-08-18T09:00:00.000Z"` = `"2026-08-18T09:00:00.000Z"`
 
-Defined in: conformance/src/world.ts:31
+Defined in: [conformance/src/world.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L31)
 
 ---
 
@@ -1276,7 +1766,7 @@ Defined in: conformance/src/world.ts:31
 
 > `const` **CONFORMANCE\_ORCHESTRATOR**: `object`
 
-Defined in: conformance/src/world.ts:39
+Defined in: [conformance/src/world.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L39)
 
 The intermediate delegate. Authority reaches the agent as owner -> orchestrator
 -> agent, so revoking the owner's grant to the orchestrator is a real ancestor
@@ -1298,7 +1788,7 @@ revocation rather than a direct one.
 
 > `const` **CONFORMANCE\_OWNER**: [`Address`](sharedos-contracts.md#address)
 
-Defined in: conformance/src/world.ts:33
+Defined in: [conformance/src/world.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L33)
 
 ---
 
@@ -1306,7 +1796,7 @@ Defined in: conformance/src/world.ts:33
 
 > `const` **CONFORMANCE\_PURPOSE**: `"conformance-probe"` = `"conformance-probe"`
 
-Defined in: conformance/src/world.ts:29
+Defined in: [conformance/src/world.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L29)
 
 ---
 
@@ -1314,7 +1804,7 @@ Defined in: conformance/src/world.ts:29
 
 > `const` **CONFORMANCE\_TRACE\_ID**: `"trace-conformance"` = `"trace-conformance"`
 
-Defined in: conformance/src/world.ts:30
+Defined in: [conformance/src/world.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L30)
 
 ---
 
@@ -1346,11 +1836,21 @@ One authorization decision, with the authority state it was made against.
 
 ---
 
+### EMBEDDED\_COLUMN
+
+> `const` **EMBEDDED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
+
+Defined in: conformance/src/runner.ts:44
+
+The in-process column: the SharedOS executor driving the scripted adversary.
+
+---
+
 ### EXECUTION\_RESOURCE\_NAMESPACE
 
 > `const` **EXECUTION\_RESOURCE\_NAMESPACE**: `"sharedos.execution"` = `"sharedos.execution"`
 
-Defined in: conformance/src/world.ts:52
+Defined in: [conformance/src/world.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L52)
 
 ---
 
@@ -1396,7 +1896,7 @@ produce one `worldHash` before their agent results are comparable at all.
 
 > `const` **FILES\_ADMIN\_NAMESPACE**: `"files.admin"` = `"files.admin"`
 
-Defined in: conformance/src/world.ts:49
+Defined in: [conformance/src/world.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L49)
 
 ---
 
@@ -1404,7 +1904,7 @@ Defined in: conformance/src/world.ts:49
 
 > `const` **FILES\_NAMESPACE**: `"files"` = `"files"`
 
-Defined in: conformance/src/world.ts:48
+Defined in: [conformance/src/world.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L48)
 
 ---
 
@@ -1412,7 +1912,7 @@ Defined in: conformance/src/world.ts:48
 
 > `const` **ForgedGrantSchema**: `ZodObject`\<\{ `capabilities`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `embedAs`: `ZodString`; `grantId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}, \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}\>
 
-Defined in: conformance/src/adversary.ts:82
+Defined in: [conformance/src/adversary.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L82)
 
 A well-formed capability grant the attacker mints for itself at run time.
 
@@ -1423,11 +1923,21 @@ here; everything else is filled in from what the runtime legitimately knows.
 
 ---
 
+### JUDGE\_VERSION
+
+> `const` **JUDGE\_VERSION**: `"1"` = `"1"`
+
+Defined in: conformance/src/runner.ts:28
+
+Version of the grading rules, so a manifest names what produced it.
+
+---
+
 ### MESSAGE\_GRANT
 
 > `const` **MESSAGE\_GRANT**: `"grant-message"` = `"grant-message"`
 
-Defined in: conformance/src/world.ts:75
+Defined in: [conformance/src/world.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L75)
 
 ---
 
@@ -1435,7 +1945,7 @@ Defined in: conformance/src/world.ts:75
 
 > `const` **MESSAGES\_NAMESPACE**: `"messages"` = `"messages"`
 
-Defined in: conformance/src/world.ts:50
+Defined in: [conformance/src/world.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L50)
 
 ---
 
@@ -1443,7 +1953,7 @@ Defined in: conformance/src/world.ts:50
 
 > `const` **MESSAGING\_RESOURCE\_NAMESPACE**: `"sharedos.messaging"` = `"sharedos.messaging"`
 
-Defined in: conformance/src/world.ts:51
+Defined in: [conformance/src/world.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L51)
 
 ---
 
@@ -1466,7 +1976,7 @@ stream. A record that read audit alone would under-report it.
 
 > `const` **READ\_GRANT**: `"grant-read"` = `"grant-read"`
 
-Defined in: conformance/src/world.ts:73
+Defined in: [conformance/src/world.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L73)
 
 ---
 
@@ -1474,7 +1984,7 @@ Defined in: conformance/src/world.ts:73
 
 > `const` **READ\_ONLY\_FILE**: readonly \[`"Workspace"`, `"policy.md"`\]
 
-Defined in: conformance/src/world.ts:64
+Defined in: [conformance/src/world.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L64)
 
 ---
 
@@ -1482,7 +1992,7 @@ Defined in: conformance/src/world.ts:64
 
 > `const` **READ\_TOOL**: `"files.read"` = `"files.read"`
 
-Defined in: conformance/src/world.ts:54
+Defined in: [conformance/src/world.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L54)
 
 ---
 
@@ -1490,7 +2000,7 @@ Defined in: conformance/src/world.ts:54
 
 > `const` **ROOT\_EXECUTION\_GRANT**: `"grant-root-execution"` = `"grant-root-execution"`
 
-Defined in: conformance/src/world.ts:70
+Defined in: [conformance/src/world.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L70)
 
 ---
 
@@ -1498,7 +2008,7 @@ Defined in: conformance/src/world.ts:70
 
 > `const` **ROOT\_FILES\_GRANT**: `"grant-root-files"` = `"grant-root-files"`
 
-Defined in: conformance/src/world.ts:68
+Defined in: [conformance/src/world.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L68)
 
 Grant identifiers the trusted fixture can arm conditions against.
 
@@ -1508,7 +2018,7 @@ Grant identifiers the trusted fixture can arm conditions against.
 
 > `const` **ROOT\_MESSAGING\_GRANT**: `"grant-root-messaging"` = `"grant-root-messaging"`
 
-Defined in: conformance/src/world.ts:71
+Defined in: [conformance/src/world.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L71)
 
 ---
 
@@ -1516,7 +2026,7 @@ Defined in: conformance/src/world.ts:71
 
 > `const` **ROOT\_SCRATCH\_GRANT**: `"grant-root-scratch"` = `"grant-root-scratch"`
 
-Defined in: conformance/src/world.ts:69
+Defined in: [conformance/src/world.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L69)
 
 ---
 
@@ -1524,7 +2034,7 @@ Defined in: conformance/src/world.ts:69
 
 > `const` **SCRATCH\_GRANT**: `"grant-scratch"` = `"grant-scratch"`
 
-Defined in: conformance/src/world.ts:74
+Defined in: [conformance/src/world.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L74)
 
 ---
 
@@ -1532,7 +2042,7 @@ Defined in: conformance/src/world.ts:74
 
 > `const` **SEALED\_TOOL**: `"files.purge"` = `"files.purge"`
 
-Defined in: conformance/src/world.ts:58
+Defined in: [conformance/src/world.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L58)
 
 Registered by the host, but in a namespace this context never enables.
 
@@ -1542,7 +2052,7 @@ Registered by the host, but in a namespace this context never enables.
 
 > `const` **SEND\_TOOL**: `"messages.send"` = `"messages.send"`
 
-Defined in: conformance/src/world.ts:56
+Defined in: [conformance/src/world.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L56)
 
 ---
 
@@ -1581,7 +2091,7 @@ Everything that must match before two runs are comparable.
 
 > `const` **TURN\_GRANT**: `"grant-turn"` = `"grant-turn"`
 
-Defined in: conformance/src/world.ts:72
+Defined in: [conformance/src/world.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L72)
 
 ---
 
@@ -1589,7 +2099,7 @@ Defined in: conformance/src/world.ts:72
 
 > `const` **UNREGISTERED\_TOOL**: `"admin.grant.issue"` = `"admin.grant.issue"`
 
-Defined in: conformance/src/world.ts:60
+Defined in: [conformance/src/world.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L60)
 
 Registered nowhere. A plausible control-plane name for an attacker to guess.
 
@@ -1599,7 +2109,7 @@ Registered nowhere. A plausible control-plane name for an attacker to guess.
 
 > `const` **WORKSPACE\_PATH**: readonly \[`"Workspace"`\]
 
-Defined in: conformance/src/world.ts:62
+Defined in: [conformance/src/world.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L62)
 
 ---
 
@@ -1607,7 +2117,7 @@ Defined in: conformance/src/world.ts:62
 
 > `const` **WRITABLE\_FILE**: readonly \[`"Workspace"`, `"scratch"`, `"draft.md"`\]
 
-Defined in: conformance/src/world.ts:65
+Defined in: [conformance/src/world.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L65)
 
 ---
 
@@ -1615,7 +2125,7 @@ Defined in: conformance/src/world.ts:65
 
 > `const` **WRITABLE\_PATH**: readonly \[`"Workspace"`, `"scratch"`\]
 
-Defined in: conformance/src/world.ts:63
+Defined in: [conformance/src/world.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L63)
 
 ---
 
@@ -1623,7 +2133,7 @@ Defined in: conformance/src/world.ts:63
 
 > `const` **WRITE\_TOOL**: `"files.write"` = `"files.write"`
 
-Defined in: conformance/src/world.ts:55
+Defined in: [conformance/src/world.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L55)
 
 ## Functions
 
@@ -1631,7 +2141,7 @@ Defined in: conformance/src/world.ts:55
 
 > **agentGrants**(): readonly `object`[]
 
-Defined in: conformance/src/world.ts:147
+Defined in: [conformance/src/world.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L147)
 
 The acting agent's authority, attenuated from [rootGrants](#rootgrants).
 
@@ -2010,7 +2520,7 @@ Structural JSON equality for protocol values with unordered object keys.
 
 > **canonicalMove**(`kind`): `object`
 
-Defined in: conformance/src/moves.ts:308
+Defined in: [conformance/src/moves.ts:308](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/moves.ts#L308)
 
 Look up one canonical move by the manifest row it represents.
 
@@ -2290,7 +2800,7 @@ Content identifier for any JSON-safe value, stable across key ordering.
 
 > **createConformanceWorld**(`options?`): [`ConformanceWorld`](#conformanceworld)
 
-Defined in: conformance/src/world.ts:458
+Defined in: [conformance/src/world.ts:458](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L458)
 
 #### Parameters
 
@@ -2352,11 +2862,41 @@ rather than `node:crypto` so the kernel stays host-neutral.
 
 ---
 
+### judgeCase()
+
+> **judgeCase**(`move`, `evidence`): [`CaseJudgement`](#casejudgement)
+
+Defined in: conformance/src/judge.ts:55
+
+Grade one move against the evidence its turn produced.
+
+Grading is deliberately separate from attacking: the runtime records what
+happened and never decides whether it was correct, so the same receipts can be
+re-graded without re-running anything.
+
+#### Parameters
+
+| Parameter              | Type                                                                                                                                                                                                                                                                           | Description                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| `move`                 | \{ `attempts`: `object`[]; `expectedOutcome`: `string`; `id`: `string`; `invariant`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"replayed_grant"` \| `"namespace_crossing"` \| `"authority_unavailable"` \| `"record_completeness"`; \} | -                                                                   |
+| `move.attempts`        | `object`[]                                                                                                                                                                                                                                                                     | -                                                                   |
+| `move.expectedOutcome` | `string`                                                                                                                                                                                                                                                                       | The kernel outcome the manifest expects, verbatim.                  |
+| `move.id`              | `string`                                                                                                                                                                                                                                                                       | -                                                                   |
+| `move.invariant`       | `string`                                                                                                                                                                                                                                                                       | The invariant under attack, verbatim from the conformance manifest. |
+| `move.kind`            | `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"replayed_grant"` \| `"namespace_crossing"` \| `"authority_unavailable"` \| `"record_completeness"`                                                                                                            | -                                                                   |
+| `evidence`             | [`CaseEvidence`](#caseevidence)                                                                                                                                                                                                                                                | -                                                                   |
+
+#### Returns
+
+[`CaseJudgement`](#casejudgement)
+
+---
+
 ### readAdversarialReport()
 
 > **readAdversarialReport**(`result`): \{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \} \| `undefined`
 
-Defined in: conformance/src/adversary.ts:342
+Defined in: [conformance/src/adversary.ts:342](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L342)
 
 Read the terminal report a [HostileRuntime](#hostileruntime) turn produced.
 
@@ -2416,7 +2956,7 @@ The permission-filtered catalogue the runtime could actually see.
 
 > **readAttemptReceipts**(`result`): readonly `object`[]
 
-Defined in: conformance/src/adversary.ts:372
+Defined in: [conformance/src/adversary.ts:372](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L372)
 
 Recover attempt receipts from the execution event stream alone.
 
@@ -2435,11 +2975,31 @@ readonly `object`[]
 
 ---
 
+### renderConformanceSummary()
+
+> **renderConformanceSummary**(`manifest`): `string`
+
+Defined in: conformance/src/runner.ts:275
+
+Render the manifest as a stable Markdown document.
+
+#### Parameters
+
+| Parameter  | Type                                          |
+| ---------- | --------------------------------------------- |
+| `manifest` | [`ConformanceManifest`](#conformancemanifest) |
+
+#### Returns
+
+`string`
+
+---
+
 ### rootGrants()
 
 > **rootGrants**(): readonly `object`[]
 
-Defined in: conformance/src/world.ts:99
+Defined in: [conformance/src/world.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L99)
 
 Grants the owner issued to the orchestrator. They authorize nothing directly
 -- the acting agent is not their subject -- and exist only as the ancestors
@@ -2451,6 +3011,30 @@ one arms a single, attributable condition instead of collapsing the turn.
 #### Returns
 
 readonly `object`[]
+
+---
+
+### runConformanceSuite()
+
+> **runConformanceSuite**(`options?`): `Promise`\<[`ConformanceRun`](#conformancerun)>\>
+
+Defined in: conformance/src/runner.ts:117
+
+Run every case under every column and grade the result.
+
+Cells are produced in declared order and nothing here reads a clock or a
+random source, so one case set against one set of columns yields the same
+manifest every time.
+
+#### Parameters
+
+| Parameter | Type                                                        |
+| --------- | ----------------------------------------------------------- |
+| `options` | [`RunConformanceSuiteOptions`](#runconformancesuiteoptions) |
+
+#### Returns
+
+`Promise`\<[`ConformanceRun`](#conformancerun)\>
 
 ---
 
@@ -2469,3 +3053,27 @@ Defined in: core/dist/hashing.d.ts:11
 #### Returns
 
 `Promise`\<`string`\>
+
+---
+
+### strictFailures()
+
+> **strictFailures**(`manifest`): readonly [`StrictFailure`](#strictfailure)[]
+
+Defined in: conformance/src/runner.ts:256
+
+Cells that must break a build.
+
+`not_exercised` is included on purpose: a row that proved nothing is a broken
+suite, and treating it as a soft result is how a manifest ends up reporting
+guarantees nobody tested.
+
+#### Parameters
+
+| Parameter  | Type                                          |
+| ---------- | --------------------------------------------- |
+| `manifest` | [`ConformanceManifest`](#conformancemanifest) |
+
+#### Returns
+
+readonly [`StrictFailure`](#strictfailure)[]

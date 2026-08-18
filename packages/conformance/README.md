@@ -104,3 +104,56 @@ Keeping it that way keeps two questions apart. "Can an attacker obtain
 administrative power?" is a privilege-escalation question and belongs to its own
 suite. "Given this condition, does the kernel enforce?" is what the manifest
 measures, and it is the only question these moves ask.
+
+## Running the suite
+
+`pnpm conformance` runs every case against every column and writes two things:
+
+- a **deterministic summary** — `docs/conformance/kernel-conformance.{md,json}` —
+  committed, so a change in enforcement behaviour appears as a reviewable diff in
+  the pull request that caused it;
+- the **full evidence** — `artifacts/conformance/evidence.json` — ignored, since
+  it carries execution records, runtime manifests, and timings that churn without
+  any invariant result changing.
+
+Nothing volatile reaches the summary. A cell holds the status, which boundary
+refused the attempt, the observed reason codes, how many attempts were issued,
+and whether the record was usable. Runtime versions, model names, durations, and
+event volumes stay in the evidence artifact.
+
+`pnpm conformance:check` regenerates the summary, fails if the committed copy is
+stale, and fails on any cell that is `fail` **or** `not exercised`. A row that
+proved nothing is a broken suite, not a soft result, so it breaks the build the
+same way a real regression does.
+
+### Cases and conditions
+
+A `ConformanceCase` pairs a move with the _conditions_ it runs under, where a
+condition is a trusted world arming expressed as data. A row whose expected
+outcome has two clauses needs two conditions: "deny; invalidate descendants"
+cannot be evidenced by one arming, so the replayed-grant row runs once with the
+agent's own grant revoked and once with the grant it was delegated from revoked.
+They deny with different reason codes, and the manifest carries both.
+
+### Grading
+
+`judgeCase` compares receipts against declared expectations. It is separate from
+the runtime on purpose: the adversary records what happened and never decides
+whether it was correct, so the same receipts can be re-graded without re-running
+anything.
+
+- A **control** attempt that did not succeed makes the case `not_exercised`. The
+  fixture, not the kernel, decided the outcome, so the row is evidence of
+  nothing.
+- An attack that was never issued is `not_exercised`, never a pass.
+- A declared-unreachable attempt is `not_applicable` and does not sink the case.
+- Record completeness is reported beside the verdict rather than folded into it —
+  except for the record-completeness row itself, where the record _is_ the claim.
+
+### Columns
+
+A column is an adapter occupying the delegate seat. The attacker stays scripted
+across all of them; what varies is the runtime mediating its calls, which is
+exactly the claim under test — the kernel's guarantees should not depend on which
+driver is in the seat. Adding a column is supplying a
+`(moves) => RuntimePlugin` factory; the suite and the grading do not change.

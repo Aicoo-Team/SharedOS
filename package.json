@@ -14,6 +14,8 @@
     "clean": "node scripts/clean-generated.mjs",
     "docs:api": "pnpm build && typedoc",
     "docs:api:check": "node scripts/check-api-docs.mjs",
+    "conformance": "node scripts/conformance.mjs",
+    "conformance:check": "node scripts/conformance.mjs --check --strict",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc -b --pretty false",
@@ -29,7 +31,7 @@
     "release:check:private": "node scripts/release.mjs check --allow-private",
     "release:publish": "node scripts/release.mjs publish",
     "test:watch": "vitest",
-    "check": "pnpm format:check && pnpm typecheck && pnpm test && pnpm test:release && pnpm docs:api:check"
+    "check": "pnpm format:check && pnpm typecheck && pnpm test && pnpm test:release && pnpm docs:api:check && pnpm conformance:check"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
