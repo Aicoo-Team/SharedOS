@@ -53,6 +53,11 @@ flowchart TD
   SDK --> CL
   TK["@aicoo/sharedos-testkit"] --> CO
   TK --> CT
+  CF["@aicoo/sharedos-conformance"] --> RT
+  CF --> CO
+  CF --> CT
+  AD["@aicoo/sharedos-adapters"] --> RT
+  AD --> CT
 ```
 
 ### `@aicoo/sharedos-contracts`
@@ -98,6 +103,16 @@ must not develop a second authorization model.
 
 `@aicoo/sharedos-testkit` supplies deterministic in-memory providers and conformance
 fixtures. It is intended for unit tests and examples, not production storage.
+
+`@aicoo/sharedos-conformance` turns a turn's evidence into one comparable
+execution record, and runs the adversarial conformance suite that reports what
+the kernel refused and where. It holds no tasks, gold labels, or scores:
+SharedOS states what happened and never whether it was correct.
+
+`@aicoo/sharedos-adapters` installs Codex and Claude Code as agent turn drivers.
+An adapter is translation only. The turn loop, permission-filtered catalogue,
+per-call re-authorization, and audit all come from the execution envelope, so a
+new harness changes no kernel code and adds no second permission path.
 
 `@aicoo/sharedos` is an ergonomic distribution layer that re-exports the
 production packages from one install. It contains no policy, storage, or

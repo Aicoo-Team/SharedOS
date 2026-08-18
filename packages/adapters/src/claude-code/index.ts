@@ -1,7 +1,9 @@
 import type { RuntimeManifest } from "@aicoo/sharedos-contracts";
 
 import { HarnessDriver, type HarnessDriverOptions } from "../driver.js";
+import { HarnessRuntime } from "../runtime.js";
 import type { HarnessRequirements, HarnessTransport } from "../harness.js";
+import type { StandardRuntimeOptions } from "@aicoo/sharedos-runtime";
 import { CLAUDE_CODE_PROTOCOL_ID, claudeCodeProtocol } from "./protocol.js";
 
 export { CLAUDE_CODE_PROTOCOL_ID, claudeCodeProtocol } from "./protocol.js";
@@ -47,4 +49,18 @@ export function createClaudeCodeDriver(options: ClaudeCodeDriverOptions): Harnes
     manifest: options.manifest ?? CLAUDE_CODE_RUNTIME_MANIFEST,
     protocol: claudeCodeProtocol,
   });
+}
+
+/**
+ * Claude Code as an installable runtime, reporting its own manifest.
+ *
+ * Prefer this over wrapping the driver in `StandardRuntime` directly: the
+ * executor stamps the plugin's manifest onto every execution record, so only
+ * this form files a turn's evidence under the harness that produced it.
+ */
+export function createClaudeCodeRuntime(
+  options: ClaudeCodeDriverOptions,
+  runtimeOptions: StandardRuntimeOptions = {},
+): HarnessRuntime {
+  return new HarnessRuntime(createClaudeCodeDriver(options), runtimeOptions);
 }

@@ -14,18 +14,25 @@ come from the SharedOS execution envelope, so installing a second harness
 changes no kernel code and adds no second permission path.
 
 ```ts
-import { StandardRuntime, SharedOSExecutor } from "@aicoo/sharedos-runtime";
-import { createCodexDriver } from "@aicoo/sharedos-adapters";
+import { SharedOSExecutor } from "@aicoo/sharedos-runtime";
+import { createCodexRuntime } from "@aicoo/sharedos-adapters";
 import { ChildProcessTransport } from "@aicoo/sharedos-adapters/node";
 
-const driver = createCodexDriver({
+const codex = createCodexRuntime({
   transport: new ChildProcessTransport({
     command: "codex",
     args: ["exec", "--json"],
   }),
 });
-const turns = new SharedOSExecutor(kernel, new StandardRuntime(driver));
+const turns = new SharedOSExecutor(kernel, codex);
 ```
+
+Use `createCodexRuntime` rather than wrapping `createCodexDriver` in
+`StandardRuntime` yourself. The executor stamps the installed plugin's manifest
+onto every execution record, and `StandardRuntime` reports itself as
+`sharedos.standard`, so the driver-only form files a Codex turn's evidence under
+the reference loop. Comparing harnesses depends on each column's evidence naming
+the harness that produced it.
 
 ## The three pieces
 
@@ -179,6 +186,83 @@ Defined in: [adapters/src/driver.ts:68](https://github.com/Aicoo-Team/SharedOS/b
 
 ---
 
+### HarnessRuntime
+
+Defined in: [adapters/src/runtime.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/runtime.ts#L27)
+
+A harness driver installed as a runtime under its own identity.
+
+`StandardRuntime` is the reference turn loop and reports itself as
+`sharedos.standard`, which is correct for the driver it was built for and
+wrong for a vendor harness: the executor stamps the _plugin's_ manifest onto
+every execution record, so a Codex turn wrapped in `StandardRuntime` alone
+would file its evidence under the standard runtime.
+
+That matters beyond tidiness. Comparing harnesses depends on each column's
+evidence naming the harness that produced it; a column that misattributes
+itself is worse than a column that is absent, because it looks like data.
+
+This keeps the loop and replaces only the identity.
+
+#### Implements
+
+- [`RuntimePlugin`](sharedos-runtime.md#runtimeplugin)
+
+#### Constructors
+
+##### Constructor
+
+> **new HarnessRuntime**(`driver`, `options?`): [`HarnessRuntime`](#harnessruntime)
+
+Defined in: [adapters/src/runtime.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/runtime.ts#L31)
+
+###### Parameters
+
+| Parameter | Type                                                                   |
+| --------- | ---------------------------------------------------------------------- |
+| `driver`  | [`HarnessDriver`](#harnessdriver)                                      |
+| `options` | [`StandardRuntimeOptions`](sharedos-runtime.md#standardruntimeoptions) |
+
+###### Returns
+
+[`HarnessRuntime`](#harnessruntime)
+
+#### Properties
+
+| Property                                    | Modifier   | Type                                             | Defined in                                                                                                          |
+| ------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-manifest-1"></a> `manifest` | `readonly` | `object`                                         | [adapters/src/runtime.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/runtime.ts#L28) |
+| `manifest.id`                               | `public`   | `string`                                         | contracts/dist/runtime.d.ts:9                                                                                       |
+| `manifest.metadata?`                        | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | contracts/dist/runtime.d.ts:12                                                                                      |
+| `manifest.protocolVersion`                  | `public`   | `"1"`                                            | contracts/dist/runtime.d.ts:11                                                                                      |
+| `manifest.version`                          | `public`   | `string`                                         | contracts/dist/runtime.d.ts:10                                                                                      |
+
+#### Methods
+
+##### run()
+
+> **run**(`request`, `host`, `signal`): `Promise`\<\{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \}\>
+
+Defined in: [adapters/src/runtime.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/runtime.ts#L36)
+
+###### Parameters
+
+| Parameter | Type                                                           |
+| --------- | -------------------------------------------------------------- |
+| `request` | [`RuntimeTurnRequest`](sharedos-runtime.md#runtimeturnrequest) |
+| `host`    | [`RuntimeHost`](sharedos-runtime.md#runtimehost)               |
+| `signal`  | `AbortSignal`                                                  |
+
+###### Returns
+
+`Promise`\<\{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \}\>
+
+###### Implementation of
+
+[`RuntimePlugin`](sharedos-runtime.md#runtimeplugin).[`run`](sharedos-runtime.md#run-1)
+
+---
+
 ### TranscriptTransport
 
 Defined in: [adapters/src/transcript.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L27)
@@ -322,7 +406,7 @@ Defined in: [adapters/src/driver.ts:24](https://github.com/Aicoo-Team/SharedOS/b
 
 | Property                                                   | Modifier   | Type                                             | Description                                                        | Defined in                                                                                                        |
 | ---------------------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest-1"></a> `manifest`                | `readonly` | `object`                                         | -                                                                  | [adapters/src/driver.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L25) |
+| <a id="property-manifest-2"></a> `manifest`                | `readonly` | `object`                                         | -                                                                  | [adapters/src/driver.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L25) |
 | `manifest.id`                                              | `public`   | `string`                                         | -                                                                  | contracts/dist/runtime.d.ts:9                                                                                     |
 | `manifest.metadata?`                                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                  | contracts/dist/runtime.d.ts:12                                                                                    |
 | `manifest.protocolVersion`                                 | `public`   | `"1"`                                            | -                                                                  | contracts/dist/runtime.d.ts:11                                                                                    |
@@ -496,7 +580,7 @@ Everything a harness needs to start one turn.
 
 > **ClaudeCodeDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [adapters/src/claude-code/index.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L32)
+Defined in: [adapters/src/claude-code/index.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L34)
 
 #### Type Declaration
 
@@ -514,7 +598,7 @@ Defined in: [adapters/src/claude-code/index.ts:32](https://github.com/Aicoo-Team
 
 > **CodexDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [adapters/src/codex/index.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L32)
+Defined in: [adapters/src/codex/index.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L34)
 
 #### Type Declaration
 
@@ -555,7 +639,7 @@ whose terminal frame carries no text still produces a turn output.
 
 > `const` **CLAUDE\_CODE\_ADAPTER\_VERSION**: `"0.1.0-alpha.0"` = `"0.1.0-alpha.0"`
 
-Defined in: [adapters/src/claude-code/index.ts:9](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L9)
+Defined in: [adapters/src/claude-code/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L11)
 
 ---
 
@@ -578,7 +662,7 @@ part and are what this module translates. The `{type:"assistant"|"user"|
 
 > `const` **CLAUDE\_CODE\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: [adapters/src/claude-code/index.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L24)
+Defined in: [adapters/src/claude-code/index.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L26)
 
 What a live Claude Code session needs before it can run.
 
@@ -588,7 +672,7 @@ What a live Claude Code session needs before it can run.
 
 > `const` **CLAUDE\_CODE\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [adapters/src/claude-code/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L11)
+Defined in: [adapters/src/claude-code/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L13)
 
 ---
 
@@ -604,7 +688,7 @@ Defined in: [adapters/src/claude-code/protocol.ts:48](https://github.com/Aicoo-T
 
 > `const` **CODEX\_ADAPTER\_VERSION**: `"0.1.0-alpha.0"` = `"0.1.0-alpha.0"`
 
-Defined in: [adapters/src/codex/index.ts:9](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L9)
+Defined in: [adapters/src/codex/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L11)
 
 ---
 
@@ -628,7 +712,7 @@ Responses call -- is the transport's problem, not the protocol's.
 
 > `const` **CODEX\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: [adapters/src/codex/index.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L24)
+Defined in: [adapters/src/codex/index.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L26)
 
 What a live Codex session needs before it can run.
 
@@ -638,7 +722,7 @@ What a live Codex session needs before it can run.
 
 > `const` **CODEX\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [adapters/src/codex/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L11)
+Defined in: [adapters/src/codex/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L13)
 
 ---
 
@@ -654,7 +738,7 @@ Defined in: [adapters/src/codex/protocol.ts:53](https://github.com/Aicoo-Team/Sh
 
 > **createClaudeCodeDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [adapters/src/claude-code/index.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L44)
+Defined in: [adapters/src/claude-code/index.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L46)
 
 Claude Code as a SharedOS agent turn driver.
 
@@ -674,11 +758,36 @@ and adds no second permission path.
 
 ---
 
+### createClaudeCodeRuntime()
+
+> **createClaudeCodeRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
+
+Defined in: [adapters/src/claude-code/index.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L61)
+
+Claude Code as an installable runtime, reporting its own manifest.
+
+Prefer this over wrapping the driver in `StandardRuntime` directly: the
+executor stamps the plugin's manifest onto every execution record, so only
+this form files a turn's evidence under the harness that produced it.
+
+#### Parameters
+
+| Parameter        | Type                                                                   |
+| ---------------- | ---------------------------------------------------------------------- |
+| `options`        | [`ClaudeCodeDriverOptions`](#claudecodedriveroptions)                  |
+| `runtimeOptions` | [`StandardRuntimeOptions`](sharedos-runtime.md#standardruntimeoptions) |
+
+#### Returns
+
+[`HarnessRuntime`](#harnessruntime)
+
+---
+
 ### createCodexDriver()
 
 > **createCodexDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [adapters/src/codex/index.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L44)
+Defined in: [adapters/src/codex/index.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L46)
 
 Codex as a SharedOS agent turn driver.
 
@@ -695,3 +804,28 @@ audit all come from the SharedOS execution envelope unchanged.
 #### Returns
 
 [`HarnessDriver`](#harnessdriver)
+
+---
+
+### createCodexRuntime()
+
+> **createCodexRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
+
+Defined in: [adapters/src/codex/index.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L61)
+
+Codex as an installable runtime, reporting its own manifest.
+
+Prefer this over wrapping the driver in `StandardRuntime` directly: the
+executor stamps the plugin's manifest onto every execution record, so only
+this form files a turn's evidence under the harness that produced it.
+
+#### Parameters
+
+| Parameter        | Type                                                                   |
+| ---------------- | ---------------------------------------------------------------------- |
+| `options`        | [`CodexDriverOptions`](#codexdriveroptions)                            |
+| `runtimeOptions` | [`StandardRuntimeOptions`](sharedos-runtime.md#standardruntimeoptions) |
+
+#### Returns
+
+[`HarnessRuntime`](#harnessruntime)

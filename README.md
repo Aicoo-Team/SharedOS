@@ -120,16 +120,18 @@ generated [package API reference](docs/api/README.md), the complete
 
 ## Packages
 
-| Package                     | Responsibility                                               |
-| --------------------------- | ------------------------------------------------------------ |
-| `@aicoo/sharedos-contracts` | JSON-safe protocol types, schemas, and stable identifiers    |
-| `@aicoo/sharedos-core`      | Deterministic authorization, routing, and dispatch decisions |
-| `@aicoo/sharedos-os`        | Standard `files` operations and guarded OS tools             |
-| `@aicoo/sharedos-runtime`   | Fixed turn envelope, standard runtime, and plugin contract   |
-| `@aicoo/sharedos-client`    | Typed client for a remote SharedOS HTTP boundary             |
-| `@aicoo/sharedos-http`      | Transport adapter over the same runtime and contracts        |
-| `@aicoo/sharedos`           | One-install entry point re-exporting the production packages |
-| `@aicoo/sharedos-testkit`   | In-memory providers and conformance helpers for tests        |
+| Package                       | Responsibility                                                  |
+| ----------------------------- | --------------------------------------------------------------- |
+| `@aicoo/sharedos-contracts`   | JSON-safe protocol types, schemas, and stable identifiers       |
+| `@aicoo/sharedos-core`        | Deterministic authorization, routing, and dispatch decisions    |
+| `@aicoo/sharedos-os`          | Standard `files` operations and guarded OS tools                |
+| `@aicoo/sharedos-runtime`     | Fixed turn envelope, standard runtime, and plugin contract      |
+| `@aicoo/sharedos-client`      | Typed client for a remote SharedOS HTTP boundary                |
+| `@aicoo/sharedos-http`        | Transport adapter over the same runtime and contracts           |
+| `@aicoo/sharedos`             | One-install entry point re-exporting the production packages    |
+| `@aicoo/sharedos-testkit`     | In-memory providers and conformance helpers for tests           |
+| `@aicoo/sharedos-conformance` | Standard execution records and adversarial conformance evidence |
+| `@aicoo/sharedos-adapters`    | Codex and Claude Code runtime adapters                          |
 
 `testkit` is not a production persistence layer. Production state remains in
 the host.

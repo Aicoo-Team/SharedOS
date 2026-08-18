@@ -28,6 +28,15 @@ import {
 export const JUDGE_VERSION = "1";
 
 /**
+ * The SharedOS build an execution record was produced by.
+ *
+ * Pinned to the synchronized workspace version by the release gate, because a
+ * record that names the wrong build is evidence attributed to code that never
+ * ran.
+ */
+export const SHAREDOS_VERSION = "0.1.0-alpha.0";
+
+/**
  * One column of the manifest: an adapter occupying the delegate seat.
  *
  * The attacker stays scripted across every column. What varies is the runtime
@@ -194,7 +203,7 @@ async function runCell(
     },
     system: {
       protocolVersion: "1",
-      sharedOsVersion: "0.1.0-alpha.0",
+      sharedOsVersion: SHAREDOS_VERSION,
       adapterId: column.id,
       policyHash: hashes.policyHash,
     },

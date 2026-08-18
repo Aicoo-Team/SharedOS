@@ -8,15 +8,22 @@ come from the SharedOS execution envelope, so installing a second harness
 changes no kernel code and adds no second permission path.
 
 ```ts
-import { StandardRuntime, SharedOSExecutor } from "@aicoo/sharedos-runtime";
-import { createCodexDriver } from "@aicoo/sharedos-adapters";
+import { SharedOSExecutor } from "@aicoo/sharedos-runtime";
+import { createCodexRuntime } from "@aicoo/sharedos-adapters";
 import { ChildProcessTransport } from "@aicoo/sharedos-adapters/node";
 
-const driver = createCodexDriver({
+const codex = createCodexRuntime({
   transport: new ChildProcessTransport({ command: "codex", args: ["exec", "--json"] }),
 });
-const turns = new SharedOSExecutor(kernel, new StandardRuntime(driver));
+const turns = new SharedOSExecutor(kernel, codex);
 ```
+
+Use `createCodexRuntime` rather than wrapping `createCodexDriver` in
+`StandardRuntime` yourself. The executor stamps the installed plugin's manifest
+onto every execution record, and `StandardRuntime` reports itself as
+`sharedos.standard`, so the driver-only form files a Codex turn's evidence under
+the reference loop. Comparing harnesses depends on each column's evidence naming
+the harness that produced it.
 
 ## The three pieces
 

@@ -7,10 +7,18 @@ import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
 
 import {
   CLAUDE_CODE_REQUIREMENTS,
+  CLAUDE_CODE_RUNTIME_MANIFEST,
   claudeCodeProtocol,
   createClaudeCodeDriver,
+  createClaudeCodeRuntime,
 } from "./claude-code/index.js";
-import { CODEX_REQUIREMENTS, codexProtocol, createCodexDriver } from "./codex/index.js";
+import {
+  CODEX_REQUIREMENTS,
+  CODEX_RUNTIME_MANIFEST,
+  codexProtocol,
+  createCodexDriver,
+  createCodexRuntime,
+} from "./codex/index.js";
 import { probeHarness } from "./node.js";
 import { TranscriptTransport, type HarnessTranscript } from "./transcript.js";
 
@@ -304,6 +312,39 @@ describe("a harness driven as a SharedOS turn", () => {
     // so parallel requests are serialised rather than admitted as a batch.
     expect(audit.events.filter(({ type }) => type === "tool.invoked")).toHaveLength(2);
     expect(transport.written).toHaveLength(2);
+  });
+
+  it("files a turn's evidence under the harness that produced it", async () => {
+    // The executor stamps the plugin's manifest onto the execution record. A
+    // driver wrapped in StandardRuntime alone reports sharedos.standard, which
+    // would attribute every harness column to the reference loop.
+    const transport = new TranscriptTransport(codexTranscript);
+    const codex = createCodexRuntime({ transport });
+    const claude = createClaudeCodeRuntime({ transport: new TranscriptTransport(codexTranscript) });
+
+    expect(codex.manifest.id).toBe(CODEX_RUNTIME_MANIFEST.id);
+    expect(claude.manifest.id).toBe(CLAUDE_CODE_RUNTIME_MANIFEST.id);
+    expect(new StandardRuntime(createCodexDriver({ transport })).manifest.id).toBe(
+      "sharedos.standard",
+    );
+
+    const { kernel } = createTestKernel({ grants: grants() });
+    kernel.registerTool({
+      definition: READ_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      invoke: async (context, call) => ({
+        callId: call.id,
+        tool: call.tool,
+        status: "succeeded",
+        output: { text: "file body" },
+        completedAt: context.now,
+      }),
+    });
+    const result = await new SharedOSExecutor(kernel, codex, { clock: () => NOW }).execute(
+      request(),
+    );
+
+    expect(result.metadata).toMatchObject({ runtime: { id: "sharedos.codex" } });
   });
 
   it("fails the turn when the harness stops without an outcome", async () => {
