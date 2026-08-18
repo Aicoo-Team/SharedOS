@@ -18,10 +18,10 @@ export interface RecordCompleteness {
 /**
  * Report what an execution record is missing, field by field.
  *
- * The Section 4 manifest asks whether allowed, denied, and escalated turns emit
- * a *complete* execution record. A boolean cannot be acted on, so this names
- * every gap and separates evidence that must be present from evidence that is
- * only expected when the run produced it.
+ * The kernel conformance manifest asks whether allowed, denied, and escalated
+ * turns emit a *complete* execution record. A boolean cannot be acted on, so
+ * this names every gap and separates evidence that must be present from
+ * evidence that is only expected when the run produced it.
  */
 export function checkRecordCompleteness(record: ExecutionRecord): RecordCompleteness {
   const parsed = ExecutionRecordSchema.safeParse(record);

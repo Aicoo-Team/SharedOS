@@ -21,7 +21,7 @@ grant itself revoked  ──►  denied            (already enforced)
 parent grant revoked  ──►  child still works (not enforced)
 ```
 
-The paper's Section 4 conformance manifest expects "Replay an expired or revoked
+The kernel conformance manifest expects "Replay an expired or revoked
 grant → Deny; invalidate descendants" to be a reportable pass or fail, and a
 guarantee that is only described in prose cannot be reported at all.
 
@@ -84,7 +84,7 @@ one so an infrastructure failure is never presented as a policy decision.
 ## Rejected alternatives
 
 **Carry the parent link in `metadata`.** Rejected because metadata is opaque
-host data. A guarantee that Section 4 must report needs a validated contract
+host data. A guarantee the conformance manifest must report needs a validated contract
 field.
 
 **Embed the whole ancestor chain in the child grant.** Rejected because the

@@ -2193,7 +2193,7 @@ Defined in: [packages/core/src/authorization.ts:308](https://github.com/Aicoo-Te
 
 > **hashJson**(`value`): `Promise`\<`string`>\>
 
-Defined in: packages/core/src/hashing.ts:12
+Defined in: [packages/core/src/hashing.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/hashing.ts#L12)
 
 A stable content identifier for any JSON-safe value.
 
@@ -2278,7 +2278,7 @@ Defined in: [packages/core/src/message-service.ts:15](https://github.com/Aicoo-T
 
 > **sha256Hex**(`value`): `Promise`\<`string`>\>
 
-Defined in: packages/core/src/hashing.ts:16
+Defined in: [packages/core/src/hashing.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/hashing.ts#L16)
 
 #### Parameters
 

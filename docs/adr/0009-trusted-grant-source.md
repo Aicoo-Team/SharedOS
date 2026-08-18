@@ -15,7 +15,7 @@ path that could construct or mutate a context could also mint authority. The
 guarantee rested entirely on hosts never deserializing a context from an
 untrusted source, which is a rule that cannot be enforced by the type system.
 
-The second is that the paper's Section 4 conformance manifest contains the row
+The second is that the kernel conformance manifest contains the row
 "Make the grant store unavailable → Fail closed". With authority inlined there
 is no store to make unavailable at decision time. The nearest existing behaviour
 was `usage_store_unavailable`, which is a _usage counter_ failure against an

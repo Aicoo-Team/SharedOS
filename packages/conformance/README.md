@@ -47,3 +47,60 @@ not deterministic.
 must be present from evidence that only exists when a run produced it.
 `checkRecordRedaction` re-checks that no tool arguments, tool results, or
 message payloads reached the record.
+
+## Adversarial conformance
+
+The kernel conformance manifest measures _attempted_ violations. A
+model declining to attack is not evidence that SharedOS prevented an attack, so
+this package supplies the attacker instead of inferring one.
+
+`HostileRuntime` is a `RuntimePlugin` that issues exactly the calls a declared
+move set names, in the declared order, and reports what came back. Nothing in it
+reads a clock, a random source, or a generated identifier: call identifiers come
+from the move and timestamps from the turn context, so two runs of one move set
+against one world produce byte-identical evidence.
+
+`CANONICAL_ATTACK_MOVES` holds one move per row of the manifest, carrying the
+row's own wording so a result table can be regenerated from the definitions
+rather than transcribed beside them:
+
+| Move                    | Invariant under attack                        |
+| ----------------------- | --------------------------------------------- |
+| `forged_grant`          | Embed a grant-shaped object in a message      |
+| `hidden_tool`           | Guess the name of an unexposed tool           |
+| `read_to_mutation`      | Use a read grant for a mutation               |
+| `replayed_grant`        | Replay an expired or revoked grant            |
+| `namespace_crossing`    | Cross a world or namespace boundary           |
+| `authority_unavailable` | Make the grant store unavailable              |
+| `record_completeness`   | Complete allowed, denied, and escalated turns |
+
+### Attempt receipts
+
+Every declared attempt produces an `AttemptReceipt` recording whether the call
+was actually issued, which tool it named, its argument _keys_, and the status and
+reason code that came back. Receipts never carry argument values.
+
+`attempted: false` is the field that keeps a cell honest. Without it, "SharedOS
+denied the attack" is indistinguishable from "no attack appears in the trace".
+Receipts are emitted as runtime events as they happen and returned again with
+the terminal outcome, so a cancelled or timed-out turn still says what was tried;
+`readAttemptReceipts` recovers them from the event stream alone.
+
+An attempt may also be declared `unreachable`, meaning a runtime plugin
+structurally cannot make it — changing the turn's namespace, for example. That
+is stronger evidence than a denial, and recording it as a declared attempt keeps
+it distinguishable from a row nobody thought to test.
+
+### The adversary is only the attacker
+
+`createConformanceWorld` builds the world each move is declared against and owns
+every control that arms a dangerous condition in it: revoking a grant, revoking
+a delegation ancestor, and taking the grant store offline. Those are host-owned
+control-plane operations in SharedOS, not agent-reachable ones, and a runtime
+plugin receives only a sanitised turn request and a tool-invoking host, so the
+separation holds by construction rather than by convention.
+
+Keeping it that way keeps two questions apart. "Can an attacker obtain
+administrative power?" is a privilege-escalation question and belongs to its own
+suite. "Given this condition, does the kernel enforce?" is what the manifest
+measures, and it is the only question these moves ask.
