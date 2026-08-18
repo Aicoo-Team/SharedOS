@@ -1,7 +1,8 @@
 import type { AccessContext, CapabilityGrant } from "@aicoo/sharedos-contracts";
 import { CapabilityGrantSchema } from "@aicoo/sharedos-contracts";
 
-import { addressesEqual } from "./internal.js";
+import { sha256Hex } from "./hashing.js";
+import { addressesEqual, canonicalJson } from "./internal.js";
 
 /** The largest authority set SharedOS will evaluate for one decision. */
 export const MAX_RESOLVED_GRANTS = 256;
@@ -31,6 +32,21 @@ export type AuthorityUnavailableCode =
   | "grant_limit_exceeded";
 
 /**
+ * A content identifier for exactly the authority one decision was made against.
+ *
+ * Authority is re-loaded per operation, so a turn can span several distinct
+ * authority states. A snapshot lets an execution record name the state a single
+ * decision saw instead of assuming one grant set covered the whole turn.
+ */
+export interface AuthoritySnapshot {
+  /** SHA-256 over the canonical, order-independent form of the grant set. */
+  readonly hash: string;
+  readonly grantIds: readonly string[];
+  readonly grantCount: number;
+  readonly loadedAt: string;
+}
+
+/**
  * An access context together with the authority a trusted source produced for
  * it.
  *
@@ -41,6 +57,7 @@ export type AuthorityUnavailableCode =
 export interface ResolvedAuthority {
   readonly context: AccessContext;
   readonly grants: readonly CapabilityGrant[];
+  readonly snapshot: AuthoritySnapshot;
 }
 
 export type AuthorityResolution =
@@ -54,7 +71,9 @@ export type AuthorityResolution =
  * against a partially trusted authority set.
  */
 export class TrustedAuthorityResolver {
+  static readonly #maxCachedSnapshots = 64;
   readonly #source: GrantSource;
+  readonly #snapshotHashes = new Map<string, string>();
 
   constructor(source: GrantSource) {
     if (source === null || typeof source !== "object" || typeof source.load !== "function") {
@@ -93,7 +112,36 @@ export class TrustedAuthorityResolver {
       grants.push(parsed.data);
     }
 
-    return { status: "resolved", authority: { context, grants } };
+    return {
+      status: "resolved",
+      authority: { context, grants, snapshot: await this.#snapshot(grants, context.now) },
+    };
+  }
+
+  /**
+   * Hashing is memoized by canonical form, so a turn that keeps reading the
+   * same unchanged authority pays for one digest rather than one per call.
+   */
+  async #snapshot(
+    grants: readonly CapabilityGrant[],
+    loadedAt: string,
+  ): Promise<AuthoritySnapshot> {
+    const canonical = canonicalJson([...grants.map(canonicalJson)].sort());
+    let hash = this.#snapshotHashes.get(canonical);
+    if (hash === undefined) {
+      hash = await sha256Hex(canonical);
+      if (this.#snapshotHashes.size >= TrustedAuthorityResolver.#maxCachedSnapshots) {
+        this.#snapshotHashes.clear();
+      }
+      this.#snapshotHashes.set(canonical, hash);
+    }
+
+    return {
+      hash,
+      grantIds: [...grants.map(({ id }) => id)].sort(),
+      grantCount: grants.length,
+      loadedAt,
+    };
   }
 }
 

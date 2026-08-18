@@ -1,6 +1,7 @@
 import type { AccessContext, Address, JsonObject, ResourceRef } from "@aicoo/sharedos-contracts";
 
 export type AuditEventType =
+  | "authority.resolved"
   | "authorization.checked"
   | "resource.invoked"
   | "tool.catalog.listed"
@@ -25,6 +26,13 @@ export interface AuditEvent {
   readonly resource?: ResourceRef;
   readonly action?: string;
   readonly grantId?: string;
+  /**
+   * Content identifier of the exact authority set the decision was made
+   * against. Authority is re-loaded per operation, so one turn can span several
+   * distinct values; an `authority.resolved` event carries the grant ids behind
+   * each one.
+   */
+  readonly authorityHash?: string;
   readonly operationId?: string;
   readonly tool?: string;
   readonly messageId?: string;

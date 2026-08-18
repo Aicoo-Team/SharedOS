@@ -222,6 +222,7 @@ export class SharedOSKernel {
       auditEvent(context, {
         type: "tool.catalog.listed",
         outcome: "succeeded",
+        authorityHash: authority.authority.snapshot.hash,
         metadata: { visibleTools: allowed.map(({ name }) => name) },
       }),
     );
@@ -384,6 +385,7 @@ export class SharedOSKernel {
         },
         discoverable,
         false,
+        authority.authority.snapshot.hash,
       );
       const result = deniedToolResult(
         call,
@@ -730,7 +732,13 @@ export class SharedOSKernel {
       consume,
     });
 
-    await this.#recordAuthorizationDecision(authority.context, request, decision, consume);
+    await this.#recordAuthorizationDecision(
+      authority.context,
+      request,
+      decision,
+      consume,
+      authority.snapshot.hash,
+    );
 
     return decision;
   }
@@ -746,7 +754,29 @@ export class SharedOSKernel {
     context: AccessContext,
     signal: AbortSignal | undefined,
   ): Promise<AuthorityResolution> {
-    return this.#authority.resolve(context, signal ?? neverAbortedSignal());
+    const resolution = await this.#authority.resolve(context, signal ?? neverAbortedSignal());
+    await this.#audit.record(
+      auditEvent(
+        context,
+        resolution.status === "resolved"
+          ? {
+              type: "authority.resolved",
+              outcome: "succeeded",
+              authorityHash: resolution.authority.snapshot.hash,
+              metadata: {
+                grantIds: [...resolution.authority.snapshot.grantIds],
+                grantCount: resolution.authority.snapshot.grantCount,
+              },
+            }
+          : {
+              type: "authority.resolved",
+              outcome: "failed",
+              reason: "authority_unavailable",
+              metadata: { failClosed: true, authority: resolution.code },
+            },
+      ),
+    );
+    return resolution;
   }
 
   async #denyUnavailableAuthority(
@@ -769,6 +799,7 @@ export class SharedOSKernel {
     request: AuthorizationRequest,
     decision: AuthorizationDecision,
     consume: boolean,
+    authorityHash?: string,
   ): Promise<void> {
     await this.#audit.record(
       auditEvent(context, {
@@ -776,6 +807,7 @@ export class SharedOSKernel {
         outcome: decision.allowed ? "allowed" : "denied",
         resource: request.resource,
         action: request.action,
+        ...(authorityHash === undefined ? {} : { authorityHash }),
         ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
         ...(!decision.allowed ? { reason: decision.reasonCode } : {}),
         metadata: {

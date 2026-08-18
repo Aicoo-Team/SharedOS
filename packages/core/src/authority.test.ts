@@ -54,11 +54,38 @@ describe("TrustedAuthorityResolver", () => {
   const resolve = (source: GrantSource): Promise<unknown> =>
     new TrustedAuthorityResolver(source).resolve(context(), new AbortController().signal);
 
-  it("returns the grants a trusted source loaded", async () => {
-    await expect(resolve(staticSource([grant()]))).resolves.toEqual({
+  it("returns the grants a trusted source loaded, with a snapshot naming them", async () => {
+    await expect(resolve(staticSource([grant()]))).resolves.toMatchObject({
       status: "resolved",
-      authority: { context: context(), grants: [grant()] },
+      authority: {
+        context: context(),
+        grants: [grant()],
+        snapshot: {
+          hash: expect.stringMatching(/^[0-9a-f]{64}$/),
+          grantIds: ["grant-read"],
+          grantCount: 1,
+          loadedAt: NOW,
+        },
+      },
     });
+  });
+
+  it("hashes authority by content, independently of the order a source returns it", async () => {
+    const first = grant({ id: "grant-a" });
+    const second = grant({ id: "grant-b" });
+    const hashOf = async (grants: readonly CapabilityGrant[]): Promise<string> => {
+      const resolution = await new TrustedAuthorityResolver(staticSource(grants)).resolve(
+        context(),
+        new AbortController().signal,
+      );
+      return resolution.status === "resolved" ? resolution.authority.snapshot.hash : "";
+    };
+
+    expect(await hashOf([first, second])).toBe(await hashOf([second, first]));
+    expect(await hashOf([first])).not.toBe(await hashOf([first, second]));
+    expect(await hashOf([grant({ constraints: { purposes: ["other"] } })])).not.toBe(
+      await hashOf([grant()]),
+    );
   });
 
   it("requires a source that can actually be called", () => {
@@ -142,6 +169,26 @@ describe("SharedOSKernel authority boundary", () => {
     return kernel;
   }
 
+  it("names the authority every decision was made against", async () => {
+    const events: AuditEvent[] = [];
+    let revoked = false;
+    const kernel = kernelWith(
+      sourceOf(async () => (revoked ? [] : [grant()])),
+      events,
+    );
+
+    await kernel.authorize(context(), READ_REQUEST);
+    revoked = true;
+    await kernel.authorize(context(), READ_REQUEST);
+
+    const [firstResolved, firstDecision, secondResolved, secondDecision] = events;
+    expect(firstDecision?.authorityHash).toBe(firstResolved?.authorityHash);
+    expect(secondDecision?.authorityHash).toBe(secondResolved?.authorityHash);
+    expect(firstDecision?.authorityHash).not.toBe(secondDecision?.authorityHash);
+    expect(firstResolved?.metadata).toEqual({ grantIds: ["grant-read"], grantCount: 1 });
+    expect(secondResolved?.metadata).toEqual({ grantIds: [], grantCount: 0 });
+  });
+
   it("authorizes only what the trusted source served", async () => {
     await expect(
       kernelWith(staticSource([grant()])).authorize(context(), READ_REQUEST),
@@ -168,7 +215,12 @@ describe("SharedOSKernel authority boundary", () => {
       allowed: false,
       reasonCode: "authority_unavailable",
     });
-    expect(events).toHaveLength(2);
+    expect(events.map(({ type }) => type)).toEqual([
+      "authority.resolved",
+      "authorization.checked",
+      "authority.resolved",
+      "authorization.checked",
+    ]);
     expect(events.every((event) => event.metadata?.["failClosed"] === true)).toBe(true);
     expect(isInfrastructureDenial("authority_unavailable")).toBe(true);
   });
@@ -234,8 +286,7 @@ describe("SharedOSKernel authority boundary", () => {
         requestedAt: NOW,
       }),
     ).resolves.toMatchObject({ status: "denied", error: { code: "authority_unavailable" } });
-    expect(events[0]).toMatchObject({
-      type: "tool.catalog.listed",
+    expect(events.find(({ type }) => type === "tool.catalog.listed")).toMatchObject({
       outcome: "denied",
       reason: "authority_unavailable",
     });

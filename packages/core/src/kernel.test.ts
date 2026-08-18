@@ -742,8 +742,12 @@ describe("SharedOSKernel messaging and audit", () => {
 
     await kernel.invokeTool(access, toolCall());
 
-    expect(events.map(({ type }) => type)).toEqual(["authorization.checked", "tool.invoked"]);
-    expect(events[0]).toMatchObject({
+    expect(events.map(({ type }) => type)).toEqual([
+      "authority.resolved",
+      "authorization.checked",
+      "tool.invoked",
+    ]);
+    expect(events[1]).toMatchObject({
       namespaceId: "world-alpha",
       traceId: "trace-1",
       purpose: "prepare-update",
@@ -755,11 +759,9 @@ describe("SharedOSKernel messaging and audit", () => {
   });
 
   it("does not turn a completed side effect into a retry when outcome audit fails", async () => {
-    let records = 0;
     const audit: AuditSink = {
-      async record() {
-        records += 1;
-        if (records === 2) {
+      async record(event) {
+        if (event.type === "tool.invoked") {
           throw new Error("audit store unavailable after execution");
         }
       },

@@ -9,6 +9,7 @@
     { "path": "./packages/client" },
     { "path": "./packages/sdk" },
     { "path": "./packages/testkit" },
+    { "path": "./packages/conformance" },
     { "path": "./examples/quickstart" }
   ]
 }

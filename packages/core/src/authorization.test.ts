@@ -53,7 +53,20 @@ function accessContext(namespaceId = "world-alpha"): AccessContext {
 
 /** Authority as the kernel would have resolved it from a trusted source. */
 function context(grants: CapabilityGrant[]): ResolvedAuthority {
-  return { context: accessContext(), grants };
+  return authorityFor(accessContext(), grants);
+}
+
+function authorityFor(access: AccessContext, grants: CapabilityGrant[]): ResolvedAuthority {
+  return {
+    context: access,
+    grants,
+    snapshot: {
+      hash: `snapshot-${grants.map(({ id }) => id).join("+")}`,
+      grantIds: grants.map(({ id }) => id),
+      grantCount: grants.length,
+      loadedAt: access.now,
+    },
+  };
 }
 
 describe("CapabilityAuthorizer", () => {
@@ -180,10 +193,7 @@ describe("CapabilityAuthorizer", () => {
       namespaceId: "world-beta",
       constraints: { maxUses: 1 },
     });
-    const betaContext: ResolvedAuthority = {
-      context: accessContext("world-beta"),
-      grants: [betaGrant],
-    };
+    const betaContext = authorityFor(accessContext("world-beta"), [betaGrant]);
 
     await expect(
       authorizer.authorize(context([alphaGrant]), request, { consume: true }),

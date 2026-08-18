@@ -59,6 +59,21 @@ importers:
         specifier: workspace:*
         version: link:../contracts
 
+  packages/conformance:
+    dependencies:
+      '@aicoo/sharedos-contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@aicoo/sharedos-core':
+        specifier: workspace:*
+        version: link:../core
+      '@aicoo/sharedos-runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+
   packages/contracts:
     dependencies:
       zod:

@@ -79,7 +79,16 @@ function context(): AccessContext {
 
 /** Authority as the kernel would have resolved it from a trusted source. */
 function authorityOf(grants: readonly CapabilityGrant[]): ResolvedAuthority {
-  return { context: context(), grants: [...grants] };
+  return {
+    context: context(),
+    grants: [...grants],
+    snapshot: {
+      hash: `snapshot-${grants.map(({ id }) => id).join("+")}`,
+      grantIds: grants.map(({ id }) => id),
+      grantCount: grants.length,
+      loadedAt: NOW,
+    },
+  };
 }
 
 function resolverFor(...grants: readonly CapabilityGrant[]): DelegationChainResolver {

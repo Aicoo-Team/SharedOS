@@ -3,6 +3,7 @@ export * from "./authority.js";
 export * from "./authorization.js";
 export * from "./delegation.js";
 export * from "./errors.js";
+export * from "./hashing.js";
 export * from "./kernel.js";
 export * from "./message-service.js";
 export * from "./resource-registry.js";
