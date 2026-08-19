@@ -6,8 +6,8 @@ files, and invoke built-in or external tools without allowing a message—or a
 model—to grant itself authority.
 
 SharedOS is more than a messaging protocol. It provides the reusable execution
-and authorization layer beneath products such as Aicoo and experiment systems
-such as PACT.
+and authorization layer beneath agent products and agent evaluation systems
+alike.
 
 > **Project status:** initial architecture and contracts are under active
 > development. SharedOS is distributed as a `0.x` prerelease under npm's
@@ -86,8 +86,8 @@ tasks, gold labels, evaluators, or multi-tick experiment scheduling.
 
 ```mermaid
 flowchart LR
-  A["Aicoo product host"] --> E["Embedded SharedOS runtime"]
-  P["PACT control plane"] --> X["SharedOS execution adapter"]
+  A["Product host"] --> E["Embedded SharedOS runtime"]
+  P["Evaluation control plane"] --> X["SharedOS execution adapter"]
   X --> E
   H["HTTP client / service"] --> E
   E --> K["Fixed security envelope"]
@@ -105,12 +105,12 @@ flowchart LR
 The dependency direction is always:
 
 ```text
-Aicoo / PACT / another host  ->  SharedOS contracts and runtime
+Any host product or harness  ->  SharedOS contracts and runtime
 SharedOS                    -X->  host product internals
 ```
 
-The SharedOS core must not import Next.js, Drizzle, Azure, Aicoo credits, or
-PACT tasks, gold data, runners, and evaluators.
+The SharedOS core must not import a host's web framework, ORM, cloud SDK, credit
+accounting, benchmark tasks, gold data, runners, or evaluators.
 
 Read the practical [host integration guide](docs/host-integration.md), the
 generated [package API reference](docs/api/README.md), the complete
@@ -155,16 +155,14 @@ same capability-broker boundary.
 
 ## Integration modes
 
-**Embedded library — recommended for Aicoo.** Aicoo keeps authentication,
+**Embedded library — recommended for products.** The host keeps authentication,
 billing, UI, and its existing persistence. It implements SharedOS provider
-ports, then calls the runtime in-process. See the
-[Aicoo integration guide](docs/integrations/aicoo.md) and the concrete
-[Pulse migration plan](docs/integrations/pulse-migration.md).
+ports, then calls the runtime in-process.
 
-**Execution adapter — recommended for PACT.** PACT creates an isolated world and
-asks SharedOS to execute one turn at a time. PACT remains responsible for tick
-order, budgets, stopping, snapshots, judges, metrics, and artifacts. See the
-[PACT integration guide](docs/integrations/pact.md).
+**Execution adapter — recommended for evaluation harnesses.** The harness
+creates an isolated world and asks SharedOS to execute one turn at a time. It
+remains responsible for tick order, budgets, stopping, snapshots, judges,
+metrics, and artifacts.
 
 **HTTP boundary.** Deployments that cannot embed the runtime can expose the same
 contracts through `@aicoo/sharedos-http` and consume them with `@aicoo/sharedos-client`.

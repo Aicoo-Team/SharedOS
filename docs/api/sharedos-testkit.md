@@ -145,7 +145,7 @@ Defined in: [testkit/src/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blo
 
 Defined in: [testkit/src/index.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L80)
 
-A host-neutral recording provider for examples, conformance tests, and PACT worlds.
+A host-neutral recording provider for examples, conformance tests, and isolated experiment worlds.
 
 #### Implements
 

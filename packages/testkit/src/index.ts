@@ -76,7 +76,7 @@ export class InMemoryToolNamespaceSettingsStore implements ToolNamespaceSettings
 
 export type ResourceHandler = (operation: ResourceOperation) => Promise<ResourceResult>;
 
-/** A host-neutral recording provider for examples, conformance tests, and PACT worlds. */
+/** A host-neutral recording provider for examples, conformance tests, and isolated experiment worlds. */
 export class InMemoryResourceProvider implements ResourceProvider {
   readonly namespace: string;
   readonly operations: ResourceOperation[] = [];

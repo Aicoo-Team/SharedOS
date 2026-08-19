@@ -10,7 +10,6 @@ carry the Apache-2.0 license.
   publication as `0.1.0-alpha.0`.
 - Configure GitHub trusted publishing for every package after its first
   publication, then verify OIDC with the next prerelease.
-- Align PACT's Node.js floor with SharedOS (`>=20.11`) before integration.
 
 Completed distribution gates: Apache-2.0 is present in every package archive,
 the package set is fixed and package-linted, prereleases cannot become `latest`
@@ -20,8 +19,8 @@ contact.
 ## Production security gates
 
 - Define a durable replay/freshness port for execution IDs, message IDs, tool
-  call IDs, and resource operation IDs. Implement atomic Aicoo and isolated PACT
-  adapters and reject same-key/different-input replays.
+  call IDs, and resource operation IDs. Implement atomic production and isolated
+  test adapters and reject same-key/different-input replays.
 - Use a trusted grant store or verifier and a durable compare-and-set usage store
   for bounded grants. The kernel intentionally fails bounded grants closed when
   no usage store is supplied.
@@ -31,7 +30,7 @@ contact.
   effects and enforces namespace/owner filtering inside its query.
 - Add authentication, payload/rate limits, connector egress controls, secret
   handling, and host-specific policy ceilings at deployment boundaries.
-- Run Aicoo and PACT adapter conformance suites covering allow, deny, expiry,
+- Run host adapter conformance suites covering allow, deny, expiry,
   revocation, bounded-use races, cross-world isolation, replay, cancellation,
   and malformed provider responses.
 - Require every non-standard runtime adapter to prove broker-only tool effects,

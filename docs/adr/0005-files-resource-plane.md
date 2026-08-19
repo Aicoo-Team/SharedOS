@@ -9,10 +9,10 @@ The initial SharedOS bootstrap exposed `memory.*` and `workspace.*` as separate
 resource namespaces. That model assumes memory is a separate database beside a
 mutable workspace.
 
-The host model SharedOS must support is file-as-memory. Aicoo stores Raw,
-Memory, Workspace, and Wiki content in one notes-and-folders file plane.
-`Memory/Self/MEMORY.md`, identity files, relationship shards, and daily logs are
-ordinary files. Search indexes, embeddings, compaction, and context mounting
+The host model SharedOS must support is file-as-memory. A representative host
+stores raw capture, memory, workspace, and curated wiki content in one
+notes-and-folders file plane. `Memory/Self/MEMORY.md`, identity files,
+relationship shards, and daily logs are ordinary files. Search indexes, embeddings, compaction, and context mounting
 are derived behavior over those files.
 
 Separate resource namespaces create two identities for the same content. They

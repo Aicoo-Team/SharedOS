@@ -46,7 +46,6 @@ pnpm docs:api
 The command reads each package's `src/index.ts`, so the reference follows the
 actual public export surface. Generated files live in `docs/api`. To verify that
 the committed reference is current without modifying it, run:
-
 ```bash
 pnpm docs:api:check
 ```

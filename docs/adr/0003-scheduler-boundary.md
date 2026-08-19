@@ -5,14 +5,14 @@
 
 ## Context
 
-The legacy `experiment_v2.ts` flow combines several different concerns: it
-creates experimental state, runs autonomous ticks, starts fresh processes,
-captures transcripts, evaluates results, performs rollback, and writes
-artifacts. Aicoo also has production heartbeat behavior, but its scheduling is
+An experiment harness combines several different concerns: it creates
+experimental state, runs autonomous ticks, starts fresh processes, captures
+transcripts, evaluates results, performs rollback, and writes artifacts. A
+product host has recurring background behavior of its own, but its scheduling is
 tied to product delivery, user policy, and billing.
 
-Putting those loops into SharedOS would make the runtime depend on either PACT
-experiment concepts or Aicoo product policy. It would also make one execution
+Putting those loops into SharedOS would make the runtime depend on either
+experiment concepts or product policy. It would also make one execution
 request ambiguous: a caller could not tell whether it starts a bounded action or
 an autonomous scheduler.
 
@@ -22,28 +22,29 @@ SharedOS owns one bounded, permission-controlled agent turn. The turn can emit
 events and request authorized provider operations, but it does not decide when
 the next turn begins.
 
-PACT owns:
+An evaluation host owns:
 
 - the number and order of ticks;
 - run budgets, retries, resume behavior, and stopping conditions;
 - snapshots, judges, gold labels, metrics, statistics, and artifacts.
 
-Aicoo owns:
+A product host owns:
 
-- production heartbeat and cron scheduling;
+- recurring background and cron scheduling;
 - delivery and retry policy;
 - product billing and user-facing lifecycle.
 
 The useful single-turn logic in experimental scripts may be extracted into
-SharedOS. The surrounding scheduler and evaluation loop stays in PACT.
+SharedOS. The surrounding scheduler and evaluation loop stays in the host.
 
 ## Consequences
 
 ### Positive
 
 - Every SharedOS call has a bounded lifecycle.
-- PACT can reproduce and compare explicit scheduler policies.
-- Aicoo can evolve production heartbeats without changing the shared runtime.
+- An evaluation host can reproduce and compare explicit scheduler policies.
+- A product host can evolve its background scheduling without changing the
+  shared runtime.
 - SharedOS workers remain passive command executors rather than hidden autonomous
   processes.
 
