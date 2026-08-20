@@ -33,6 +33,15 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)
 
+  examples/fleet-delegation:
+    dependencies:
+      '@aicoo/sharedos-contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@aicoo/sharedos-core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/network-studio: {}
 
   examples/quickstart:

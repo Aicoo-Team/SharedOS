@@ -9,6 +9,7 @@
     { "path": "./packages/client" },
     { "path": "./packages/sdk" },
     { "path": "./packages/testkit" },
-    { "path": "./examples/quickstart" }
+    { "path": "./examples/quickstart" },
+    { "path": "./examples/fleet-delegation" }
   ]
 }
