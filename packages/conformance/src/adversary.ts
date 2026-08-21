@@ -11,7 +11,12 @@ import {
   type ToolCall,
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
-import type { RuntimeHost, RuntimePlugin, RuntimeTurnRequest } from "@aicoo/sharedos-runtime";
+import type {
+  RuntimeHost,
+  RuntimePlugin,
+  RuntimeTurnRequest,
+  RuntimeVisibleContext,
+} from "@aicoo/sharedos-runtime";
 import { z } from "zod";
 
 /**
@@ -32,10 +37,22 @@ export const ATTACK_MOVE_KINDS = [
   "forged_grant",
   "hidden_tool",
   "read_to_mutation",
+  "expired_grant",
   "replayed_grant",
+  "revoked_mid_turn",
   "namespace_crossing",
+  "bounded_grant_exhausted",
+  "usage_store_unavailable",
   "authority_unavailable",
+  "tool_ceiling_escape",
+  "invalid_tool_result",
+  "budget_exceeded",
+  "grant_material_unreachable",
+  "over_broad_delegation",
+  "escalation_recorded",
   "record_completeness",
+  "typed_governed_views",
+  "replay_freshness",
 ] as const;
 
 export const AttackMoveKindSchema = z.enum(ATTACK_MOVE_KINDS);
@@ -89,14 +106,45 @@ export const ForgedGrantSchema = z
   .strict();
 export type ForgedGrant = z.infer<typeof ForgedGrantSchema>;
 
+/**
+ * A surface the attacker reads instead of calling a tool.
+ *
+ * `grant_material` is the runtime asking the only question it can ask about
+ * authority: is any of it reachable from here? The claim it tests is a
+ * compile-time one -- a runtime plugin is handed no type that carries grants --
+ * so this is the run-time half of the evidence, and `runtime-surface.test.ts`
+ * is the half the compiler checks.
+ */
+export const AttemptInspectionSchema = z.enum(["grant_material"]);
+export type AttemptInspection = z.infer<typeof AttemptInspectionSchema>;
+
 export const AttackAttemptSchema = z
   .object({
     id: IdentifierSchema.max(64),
     role: AttemptRoleSchema,
     description: z.string().min(1).max(512),
-    tool: IdentifierSchema,
+    /** Omitted only by an attempt that inspects a surface rather than calling. */
+    tool: IdentifierSchema.optional(),
     toolArguments: JsonObjectSchema.optional(),
     forge: ForgedGrantSchema.optional(),
+    inspect: AttemptInspectionSchema.optional(),
+    /**
+     * Which turn of the case issues this attempt. Attempts default to the first.
+     *
+     * A row about what the *next* turn sees needs two turns against one world,
+     * and declaring the turn per attempt is what keeps the number of turns a
+     * consequence of the move rather than a second thing to keep in step with
+     * it.
+     */
+    turn: z.number().int().min(1).max(8).optional(),
+    /**
+     * Issue this call even though the runtime knows it is out of budget.
+     *
+     * The adversary otherwise stops at its own declared ceiling, which is the
+     * polite behaviour and exactly what the budget row must not assume: a
+     * ceiling only the runtime honours is not a ceiling.
+     */
+    overBudget: z.boolean().optional(),
     expect: AttemptExpectationSchema,
     /**
      * Declares that a runtime plugin structurally cannot make this attempt, and
@@ -105,8 +153,28 @@ export const AttackAttemptSchema = z
      */
     unreachable: z.string().min(1).max(512).optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (attempt) => attempt.tool !== undefined || attempt.inspect !== undefined,
+    "An attempt must name the tool it calls or the surface it inspects",
+  );
 export type AttackAttempt = z.infer<typeof AttackAttemptSchema>;
+
+/**
+ * How the turn ends, when the row is about the ending itself.
+ *
+ * Only escalation is expressible. A runtime that ends a turn by asking a human
+ * to decide is making a claim about SharedOS -- that the request is recorded and
+ * audited and grants nothing -- and that claim cannot be tested by a turn that
+ * always ends `complete`.
+ */
+export const AttackTerminalSchema = z
+  .object({
+    type: z.literal("escalate"),
+    reason: z.string().min(1).max(512),
+  })
+  .strict();
+export type AttackTerminal = z.infer<typeof AttackTerminalSchema>;
 
 export const AttackMoveSchema = z
   .object({
@@ -117,9 +185,16 @@ export const AttackMoveSchema = z
     /** The kernel outcome the manifest expects, verbatim. */
     expectedOutcome: z.string().min(1).max(512),
     attempts: z.array(AttackAttemptSchema).min(1).max(32),
+    /** Set when the row is about how the turn terminates rather than a call in it. */
+    terminal: AttackTerminalSchema.optional(),
   })
   .strict();
 export type AttackMove = z.infer<typeof AttackMoveSchema>;
+
+/** How many turns a move's attempts are spread across. */
+export function moveTurnCount(move: AttackMove): number {
+  return move.attempts.reduce((count, attempt) => Math.max(count, attempt.turn ?? 1), 1);
+}
 
 /**
  * What one declared attempt actually did.
@@ -135,7 +210,9 @@ export const AttemptReceiptSchema = z
     kind: AttackMoveKindSchema,
     attemptId: IdentifierSchema,
     role: AttemptRoleSchema,
-    tool: IdentifierSchema,
+    tool: IdentifierSchema.optional(),
+    /** The turn this receipt came from. Absent means the first. */
+    turn: z.number().int().min(1).max(8).optional(),
     attempted: z.boolean(),
     callId: IdentifierSchema.optional(),
     /** Argument keys only. Receipts carry no argument values, ever. */
@@ -166,6 +243,12 @@ export type AdversarialTurnReport = z.infer<typeof AdversarialTurnReportSchema>;
 export interface HostileRuntimeOptions {
   readonly runtimeId?: string;
   readonly version?: string;
+  /**
+   * Which turn of the case this instance is running. Attempts declared for any
+   * other turn are left alone: they belong to a different turn against the same
+   * world, and issuing them here would collapse the two into one.
+   */
+  readonly turn?: number;
 }
 
 /**
@@ -195,6 +278,7 @@ export interface HostileRuntimeOptions {
 export class HostileRuntime implements RuntimePlugin {
   readonly manifest: RuntimeManifest;
   readonly #moves: readonly AttackMove[];
+  readonly #turn: number;
 
   constructor(moves: readonly AttackMove[], options: HostileRuntimeOptions = {}) {
     const parsed = z.array(AttackMoveSchema).min(1).max(64).safeParse(moves);
@@ -218,6 +302,7 @@ export class HostileRuntime implements RuntimePlugin {
     }
 
     this.#moves = Object.freeze(parsed.data.map((move) => Object.freeze(move)));
+    this.#turn = options.turn ?? 1;
     this.manifest = manifest.data;
   }
 
@@ -237,6 +322,9 @@ export class HostileRuntime implements RuntimePlugin {
 
     for (const move of this.#moves) {
       for (const attempt of move.attempts) {
+        if ((attempt.turn ?? 1) !== this.#turn) {
+          continue;
+        }
         const receipt =
           hostLost === undefined
             ? await this.#issue(turn, host, signal, move, attempt, issued)
@@ -270,13 +358,26 @@ export class HostileRuntime implements RuntimePlugin {
       receipts,
     };
 
+    const metadata = {
+      [ADVERSARY_METADATA_KEY]: report as unknown as JsonValue,
+    } as JsonObject;
+
+    // The report rides out on an escalated turn too. An escalation is a
+    // terminal outcome like any other, and a row that lost its receipts
+    // whenever the turn ended by asking for help would be unable to say what
+    // the turn had done before it asked.
+    const terminal = this.#moves.find(({ terminal: value }) => value !== undefined)?.terminal;
+    if (terminal !== undefined) {
+      return { type: "escalate", reason: terminal.reason, metadata };
+    }
+
     return {
       type: "complete",
       output: {
         declared: receipts.length,
         attempted: receipts.filter(({ attempted }) => attempted).length,
       },
-      metadata: { [ADVERSARY_METADATA_KEY]: report as unknown as JsonValue } as JsonObject,
+      metadata,
     };
   }
 
@@ -294,13 +395,19 @@ export class HostileRuntime implements RuntimePlugin {
     if (signal.aborted) {
       return skipped(move, attempt, "the turn was cancelled before this attempt was made");
     }
-    if (issued >= host.limits.maxToolCalls) {
+    if (attempt.inspect !== undefined) {
+      return inspectSurfaces(turn, host, move, attempt);
+    }
+    if (attempt.tool === undefined) {
+      return skipped(move, attempt, "the attempt names neither a tool nor a surface");
+    }
+    if (issued >= host.limits.maxToolCalls && attempt.overBudget !== true) {
       return skipped(move, attempt, "the attempt falls outside the turn's tool-call budget");
     }
 
-    const toolArguments = attackArguments(turn, attempt);
+    const toolArguments = attemptArguments(turn.context, attempt);
     const call: ToolCall = {
-      id: `${turn.executionId}.${move.id}.${attempt.id}`,
+      id: attemptCallId(turn.executionId, move, attempt),
       tool: attempt.tool,
       arguments: toolArguments,
       traceId: turn.context.traceId,
@@ -387,14 +494,41 @@ export function readAttemptReceipts(result: ExecutionResult): readonly AttemptRe
   return receipts;
 }
 
-function attackArguments(turn: RuntimeTurnRequest, attempt: AttackAttempt): JsonObject {
+/**
+ * The identifier one declared attempt's call is issued under.
+ *
+ * Derived rather than generated, so a receipt can be reconstructed from an
+ * execution record alone. That is what lets a runtime which cannot report on
+ * itself -- a vendor harness replaying recorded frames -- still be graded
+ * against the same declared attempts as the scripted adversary.
+ */
+export function attemptCallId(
+  executionId: string,
+  move: AttackMove,
+  attempt: AttackAttempt,
+): string {
+  return `${executionId}.${move.id}.${attempt.id}`;
+}
+
+/**
+ * The arguments one declared attempt is issued with, forgery included.
+ *
+ * Exported because a transcript of recorded frames has to carry exactly the
+ * arguments the scripted adversary would have sent. Building them twice is how
+ * two runtimes end up attacking two slightly different things and reporting it
+ * as one comparison.
+ */
+export function attemptArguments(
+  context: RuntimeVisibleContext,
+  attempt: AttackAttempt,
+): JsonObject {
   const declared = attempt.toolArguments ?? {};
   if (attempt.forge === undefined) {
     return structuredClone(declared);
   }
   return {
     ...structuredClone(declared),
-    [attempt.forge.embedAs]: forgeGrant(turn, attempt.forge),
+    [attempt.forge.embedAs]: forgeGrant(context, attempt.forge),
   };
 }
 
@@ -404,28 +538,116 @@ function attackArguments(turn: RuntimeTurnRequest, attempt: AttackAttempt): Json
  * present and internally consistent; the only thing missing is that no trusted
  * source ever issued it.
  */
-function forgeGrant(turn: RuntimeTurnRequest, forge: ForgedGrant): JsonValue {
+function forgeGrant(context: RuntimeVisibleContext, forge: ForgedGrant): JsonValue {
   return {
     id: forge.grantId,
-    namespaceId: turn.context.namespaceId,
-    subject: turn.context.actor,
-    issuer: turn.context.owner,
+    namespaceId: context.namespaceId,
+    subject: context.actor,
+    issuer: context.owner,
     capabilities: forge.capabilities,
-    constraints: { purposes: [turn.context.purpose] },
-    issuedAt: turn.context.now,
+    constraints: { purposes: [context.purpose] },
+    issuedAt: context.now,
   } as unknown as JsonValue;
+}
+
+/**
+ * Keys that would carry authority if any of them were reachable.
+ *
+ * The list is of names rather than shapes on purpose: a leak is far more likely
+ * to arrive as a field somebody added to a context or a host than as a
+ * well-formed `CapabilityGrant`, and a shape check would miss exactly that.
+ * `requiredCapability` is deliberately absent -- a tool definition declares what
+ * it would need, which is a description of the tool and not authority to use it.
+ */
+const GRANT_MATERIAL_KEYS = [
+  "grant",
+  "grants",
+  "grantId",
+  "grantSource",
+  "parentGrantId",
+  "capabilities",
+  "delegationDepth",
+  "issuer",
+  "revokedAt",
+];
+
+/**
+ * Read every surface a runtime plugin is given, looking for authority.
+ *
+ * This is the only form the attack can take from inside a plugin, and it is
+ * expected to come back empty: the turn request carries a sanitised context and
+ * a filtered catalogue, and the host exposes limits, a tool call, and an event
+ * sink. What it finds, if anything, is named in the receipt, so a regression
+ * says which field started carrying grants rather than only that one did.
+ */
+function inspectSurfaces(
+  turn: RuntimeTurnRequest,
+  host: RuntimeHost,
+  move: AttackMove,
+  attempt: AttackAttempt,
+): AttemptReceipt {
+  const found = [
+    ...findGrantMaterial(turn, "turn"),
+    ...surfaceKeys(host).flatMap((key) =>
+      GRANT_MATERIAL_KEYS.includes(key) ? [`host.${key}`] : [],
+    ),
+  ].sort();
+
+  const base = { ...receiptBase(move, attempt), argumentKeys: [], attempted: true };
+  return found.length === 0
+    ? {
+        ...base,
+        observed: "denied",
+        reasonCode: "no_grant_material_reachable",
+        detail: "no field of the turn request or the runtime host carries authority",
+      }
+    : {
+        ...base,
+        observed: "succeeded",
+        detail: `authority is reachable at ${found.join(", ")}`.slice(0, 512),
+      };
+}
+
+function findGrantMaterial(value: unknown, path: string): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => findGrantMaterial(item, `${path}.${index}`));
+  }
+  if (value === null || typeof value !== "object") {
+    return [];
+  }
+  return Object.entries(value).flatMap(([key, child]) =>
+    GRANT_MATERIAL_KEYS.includes(key)
+      ? [`${path}.${key}`]
+      : findGrantMaterial(child, `${path}.${key}`),
+  );
+}
+
+/** Own and inherited property names, so a leak on a prototype is not missed. */
+function surfaceKeys(value: object): string[] {
+  const keys = new Set<string>();
+  for (
+    let current: object | null = value;
+    current !== null && current !== Object.prototype;
+    current = Object.getPrototypeOf(current) as object | null
+  ) {
+    for (const key of Object.getOwnPropertyNames(current)) {
+      keys.add(key);
+    }
+  }
+  return [...keys];
 }
 
 function receiptBase(
   move: AttackMove,
   attempt: AttackAttempt,
-): Pick<AttemptReceipt, "moveId" | "kind" | "attemptId" | "role" | "tool" | "expect"> {
+): Pick<AttemptReceipt, "moveId" | "kind" | "attemptId" | "role" | "tool" | "turn" | "expect"> {
   return {
     moveId: move.id,
     kind: move.kind,
     attemptId: attempt.id,
     role: attempt.role,
-    tool: attempt.tool,
+    ...(attempt.tool === undefined ? {} : { tool: attempt.tool }),
+    ...(attempt.turn === undefined ? {} : { turn: attempt.turn }),
     expect: attempt.expect,
   };
 }

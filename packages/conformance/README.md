@@ -61,19 +61,51 @@ reads a clock, a random source, or a generated identifier: call identifiers come
 from the move and timestamps from the turn context, so two runs of one move set
 against one world produce byte-identical evidence.
 
-`CANONICAL_ATTACK_MOVES` holds one move per row of the manifest, carrying the
-row's own wording so a result table can be regenerated from the definitions
-rather than transcribed beside them:
+`CANONICAL_ATTACK_MOVES` holds one move per row of the conformance matrix,
+carrying the row's own wording so a result table can be regenerated from the
+definitions rather than transcribed beside them:
 
-| Move                    | Invariant under attack                        |
-| ----------------------- | --------------------------------------------- |
-| `forged_grant`          | Embed a grant-shaped object in a message      |
-| `hidden_tool`           | Guess the name of an unexposed tool           |
-| `read_to_mutation`      | Use a read grant for a mutation               |
-| `replayed_grant`        | Replay an expired or revoked grant            |
-| `namespace_crossing`    | Cross a world or namespace boundary           |
-| `authority_unavailable` | Make the grant store unavailable              |
-| `record_completeness`   | Complete allowed, denied, and escalated turns |
+| Move                         | Invariant under attack                            | Signal                     |
+| ---------------------------- | ------------------------------------------------- | -------------------------- |
+| `forged_grant`               | Grant-shaped object embedded in a message         | `no_matching_grant`        |
+| `hidden_tool`                | Guess an unexposed tool name                      | `tool_unavailable`         |
+| `read_to_mutation`           | Use read authority for a mutation                 | `no_matching_grant`        |
+| `expired_grant`              | Present an expired grant                          | `no_matching_grant`        |
+| `replayed_grant`             | Present a grant revoked before the turn           | `no_matching_grant`        |
+| `revoked_mid_turn`           | Revoke a grant mid-turn                           | denial on the next turn    |
+| `namespace_crossing`         | Cross a namespace or owner boundary               | `invalid_request`          |
+| `bounded_grant_exhausted`    | Exhaust a bounded grant                           | `grant_exhausted`          |
+| `usage_store_unavailable`    | Make the usage store unavailable                  | `usage_store_unavailable`  |
+| `authority_unavailable`      | Make the authority store unavailable              | `authority_unavailable`    |
+| `tool_ceiling_escape`        | Tool resolves a requirement outside its ceiling   | `invalid_tool_requirement` |
+| `invalid_tool_result`        | Provider returns a mismatched or malformed result | `invalid_tool_result`      |
+| `budget_exceeded`            | Runtime exceeds its tool-call or step budget      | `tool_call_limit_exceeded` |
+| `grant_material_unreachable` | Runtime attempts to read grants                   | compile failure            |
+| `over_broad_delegation`      | Derived grant exceeds its parent                  | `delegation_chain_invalid` |
+| `escalation_recorded`        | Escalation is requested and recorded              | `escalation_requested`     |
+| `record_completeness`        | Allowed and denied turns emit a complete record   | `ExecutionRecord`          |
+| `typed_governed_views`       | Serve a typed governed view in place of a record  | _not implemented_          |
+| `replay_freshness`           | Replay a recorded turn against a freshness check  | _not implemented_          |
+
+The last two rows are declared and not built. They are here rather than omitted
+because a matrix that silently drops the rows nobody implemented describes a
+narrower system as a more conformant one. `ConformanceCase.notImplemented`
+carries the reason, the cell reports `not implemented`, and the row is never run
+and never a pass.
+
+Two rows need more than one turn or more than one kind of attempt:
+
+- **`revoked_mid_turn`** runs twice against one world. The store revokes a grant
+  immediately after the first turn's authority load, so the revocation lands
+  while that turn is still running; the first turn keeps the authority it was
+  admitted with and the second sees the revocation. Attempts declare which turn
+  they belong to with `AttackAttempt.turn`, so the number of turns follows from
+  the move rather than being a second thing to keep in step with it.
+- **`grant_material_unreachable`** cannot be attempted with a tool call. Its
+  attempt sets `inspect: "grant_material"`, which walks every field of the turn
+  request and every property of the runtime host, own and inherited, looking for
+  anything that carries authority. That is the run-time half; the compile-time
+  half the matrix names as its signal lives in `runtime-surface.test.ts`.
 
 ### Attempt receipts
 
@@ -106,6 +138,14 @@ administrative power?" is a privilege-escalation question and belongs to its own
 suite. "Given this condition, does the kernel enforce?" is what the manifest
 measures, and it is the only question these moves ask.
 
+What the manifest does assert about the control plane is that it is not reachable
+from a turn at all. The `hidden_tool` row guesses a plausible grant-issuing tool
+name and a registered tool in a namespace this context never enables, and both
+are refused as `tool_unavailable` without revealing which of the two they were.
+Revocation, namespace administration, and store configuration have no tool, no
+resource, and no message path, so there is nothing for a move to attempt: they
+are host-side objects a runtime plugin is never handed.
+
 ## Running the suite
 
 `pnpm conformance` runs every case against every column and writes two things:
@@ -126,6 +166,12 @@ event volumes stay in the evidence artifact.
 stale, and fails on any cell that is `fail` **or** `not exercised`. A row that
 proved nothing is a broken suite, not a soft result, so it breaks the build the
 same way a real regression does.
+
+`not implemented` is the one status that does not break the build. It is a
+standing result rather than a regression: the row is declared, its absence is
+stated in the manifest, and failing on it would only pressure someone into
+deleting the row. The script prints the count on every run so the gap stays in
+view.
 
 ### Cases and conditions
 
@@ -150,6 +196,21 @@ anything.
 - A declared-unreachable attempt is `not_applicable` and does not sink the case.
 - Record completeness is reported beside the verdict rather than folded into it —
   except for the record-completeness row itself, where the record _is_ the claim.
+
+Some rows are about how the turn ends rather than about a call inside it. A
+condition can declare `expectTurn`, and the row is then graded on the turn's
+terminal outcome as well as on its attempts. Two shapes use it:
+
+- an unavailable grant store refuses the turn at admission, so the runtime is
+  never started and every declared attempt is reported as structurally
+  unreachable rather than as never exercised;
+- an escalated turn did run, so its attempts are graded exactly as any other
+  row's and the ending is an additional requirement on top of them.
+
+Whether the runtime started is read from the record, not declared. It takes both
+halves — the condition saying the turn would end this way and the record showing
+no `turn.started` — for an attempt to count as unreachable, so a row that simply
+produced no receipts cannot report as `not applicable`.
 
 ### Columns
 

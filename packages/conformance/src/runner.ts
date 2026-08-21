@@ -3,9 +3,11 @@ import { SharedOSExecutor, type RuntimePlugin } from "@aicoo/sharedos-runtime";
 
 import {
   HostileRuntime,
+  moveTurnCount,
   readAdversarialReport,
   type AdversarialTurnReport,
   type AttackMove,
+  type AttemptReceipt,
 } from "./adversary.js";
 import { assembleExecutionRecord } from "./assemble.js";
 import { hashExperimentInputs, hashJson } from "./hashing.js";
@@ -16,13 +18,7 @@ import {
   type ConformanceCase,
   type ConformanceCondition,
 } from "./suite.js";
-import {
-  agentGrants,
-  CONFORMANCE_NOW,
-  createConformanceWorld,
-  rootGrants,
-  type ConformanceWorld,
-} from "./world.js";
+import { CONFORMANCE_NOW, createConformanceWorld, type ConformanceWorld } from "./world.js";
 
 /** Version of the grading rules, so a manifest names what produced it. */
 export const JUDGE_VERSION = "1";
@@ -35,26 +31,6 @@ export const JUDGE_VERSION = "1";
  * ran.
  */
 export const SHAREDOS_VERSION = "0.1.0-alpha.0";
-
-/**
- * One column of the manifest: an adapter occupying the delegate seat.
- *
- * The attacker stays scripted across every column. What varies is the runtime
- * that mediates its calls, which is the whole point of the claim under test --
- * the kernel's guarantees should not depend on which driver is in the seat.
- */
-export interface RuntimeColumn {
-  readonly id: string;
-  readonly label: string;
-  create(moves: readonly AttackMove[]): RuntimePlugin;
-}
-
-/** The in-process column: the SharedOS executor driving the scripted adversary. */
-export const EMBEDDED_COLUMN: RuntimeColumn = Object.freeze({
-  id: "sharedos-embedded",
-  label: "Standard",
-  create: (moves: readonly AttackMove[]) => new HostileRuntime(moves),
-});
 
 /**
  * One cell of the manifest.
@@ -74,6 +50,8 @@ export interface ConformanceCell {
   readonly notApplicable: number;
   readonly recordUsable: boolean;
   readonly recordGaps: readonly string[];
+  /** Turns run against one world for this cell. One unless the move spans more. */
+  readonly turns: number;
   readonly detail?: string;
 }
 
@@ -102,14 +80,45 @@ export interface ConformanceEvidence {
   readonly conditionId: string;
   readonly columnId: string;
   readonly runtime: RuntimeManifest;
-  readonly record: ExecutionRecord;
-  readonly report: AdversarialTurnReport | undefined;
+  /**
+   * One record per turn, in order. A row about what the next turn sees produces
+   * two, and keeping both is what lets the claim be re-checked without re-running
+   * anything.
+   */
+  readonly records: readonly ExecutionRecord[];
+  readonly reports: readonly (AdversarialTurnReport | undefined)[];
 }
 
 export interface ConformanceRun {
   readonly manifest: ConformanceManifest;
   readonly evidence: readonly ConformanceEvidence[];
 }
+
+/**
+ * One column of the manifest: an adapter occupying the delegate seat.
+ *
+ * The attacker stays scripted across every column. What varies is the runtime
+ * that mediates its calls, which is the whole point of the claim under test --
+ * the kernel's guarantees should not depend on which driver is in the seat.
+ */
+export interface RuntimeColumnOptions {
+  /** Which turn of the case this plugin instance is running. */
+  readonly turn: number;
+}
+
+export interface RuntimeColumn {
+  readonly id: string;
+  readonly label: string;
+  create(moves: readonly AttackMove[], options: RuntimeColumnOptions): RuntimePlugin;
+}
+
+/** The in-process column: the SharedOS executor driving the scripted adversary. */
+export const EMBEDDED_COLUMN: RuntimeColumn = Object.freeze({
+  id: "sharedos-embedded",
+  label: "Standard",
+  create: (moves: readonly AttackMove[], options: RuntimeColumnOptions) =>
+    new HostileRuntime(moves, { turn: options.turn }),
+});
 
 export interface RunConformanceSuiteOptions {
   readonly cases?: readonly ConformanceCase[];
@@ -137,6 +146,10 @@ export async function runConformanceSuite(
     for (const condition of kase.conditions) {
       const cells: ConformanceCell[] = [];
       for (const column of columns) {
+        if (kase.notImplemented !== undefined) {
+          cells.push(declaredCell(column, kase.move, "not_implemented", kase.notImplemented));
+          continue;
+        }
         const cell = await runCell(kase, condition, column);
         cells.push(cell.cell);
         evidence.push(cell.evidence);
@@ -165,6 +178,47 @@ export async function runConformanceSuite(
   };
 }
 
+/**
+ * A cell that was decided without running anything.
+ *
+ * Two things are reported this way: a row SharedOS does not implement, and a
+ * row this column structurally cannot run. Neither is a result about
+ * enforcement, and running a turn to produce one would only manufacture
+ * evidence for a claim nobody made. The cell still carries the move's declared
+ * attempt count, so the manifest says how much of the row went unmeasured
+ * rather than only that some of it did.
+ */
+function declaredCell(
+  column: RuntimeColumn,
+  move: AttackMove,
+  status: "not_implemented" | "not_applicable",
+  reason: string,
+): ConformanceCell {
+  return {
+    columnId: column.id,
+    status,
+    refusedBy: [],
+    reasonCodes: [],
+    declared: move.attempts.length,
+    attempted: 0,
+    notApplicable: status === "not_applicable" ? move.attempts.length : 0,
+    recordUsable: false,
+    recordGaps: [],
+    turns: 0,
+    detail: reason,
+  };
+}
+
+/**
+ * Run one cell: the move, under one condition, against one column.
+ *
+ * A move whose attempts name more than one turn is run once per turn against a
+ * single world, so a claim about what the *next* turn sees is evidenced by an
+ * actual next turn rather than by a second fixture. Receipts are merged across
+ * turns -- attempt ids are unique within a move -- and every turn's record is
+ * kept. The last turn's record is what the row is graded against, because that
+ * is the turn the claim is about.
+ */
 async function runCell(
   kase: ConformanceCase,
   condition: ConformanceCondition,
@@ -172,7 +226,7 @@ async function runCell(
 ): Promise<{ cell: ConformanceCell; evidence: ConformanceEvidence }> {
   const world = createConformanceWorld(condition.world);
   const executionId = `${kase.id}.${condition.id}.${column.id}`;
-  const request = world.request(executionId);
+  const turns = moveTurnCount(kase.move);
   const hashes = await hashExperimentInputs({
     spec: { case: kase.id, move: kase.move, condition: condition.id },
     world: worldDescription(world, condition),
@@ -183,36 +237,51 @@ async function runCell(
     },
   });
 
-  let sequence = 0;
-  const result = await new SharedOSExecutor(world.kernel, column.create([kase.move]), {
-    clock: () => CONFORMANCE_NOW,
-    createId: () => `${executionId}.event-${(sequence += 1)}`,
-  }).execute(request);
+  const records: ExecutionRecord[] = [];
+  const reports: (AdversarialTurnReport | undefined)[] = [];
+  const receipts: AttemptReceipt[] = [];
 
-  const record = assembleExecutionRecord({
-    request,
-    result,
-    auditEvents: world.auditEvents,
-    experiment: {
-      experimentId: "kernel-conformance",
-      taskId: kase.id,
-      runId: `${condition.id}.${column.id}`,
-      specHash: hashes.specHash,
-      worldHash: hashes.worldHash,
-      evaluatorHash: hashes.evaluatorHash,
-    },
-    system: {
-      protocolVersion: "1",
-      sharedOsVersion: SHAREDOS_VERSION,
-      adapterId: column.id,
-      policyHash: hashes.policyHash,
-    },
-  });
+  for (let turn = 1; turn <= turns; turn += 1) {
+    const turnId = turns === 1 ? executionId : `${executionId}.turn-${turn}`;
+    const request = world.request(turnId, turn);
 
-  const report = readAdversarialReport(result);
+    let sequence = 0;
+    const result = await new SharedOSExecutor(world.kernel, column.create([kase.move], { turn }), {
+      clock: () => CONFORMANCE_NOW,
+      createId: () => `${turnId}.event-${(sequence += 1)}`,
+    }).execute(request);
+
+    const record = assembleExecutionRecord({
+      request,
+      result,
+      auditEvents: world.auditEvents,
+      experiment: {
+        experimentId: "kernel-conformance",
+        taskId: kase.id,
+        runId:
+          turns === 1 ? `${condition.id}.${column.id}` : `${condition.id}.${column.id}.${turn}`,
+        specHash: hashes.specHash,
+        worldHash: hashes.worldHash,
+        evaluatorHash: hashes.evaluatorHash,
+      },
+      system: {
+        protocolVersion: "1",
+        sharedOsVersion: SHAREDOS_VERSION,
+        adapterId: column.id,
+        policyHash: hashes.policyHash,
+      },
+    });
+
+    const report = readAdversarialReport(result);
+    records.push(record);
+    reports.push(report);
+    receipts.push(...(report?.receipts ?? []));
+  }
+
+  const record = records[records.length - 1] as ExecutionRecord;
   const judgement = judgeCase(
     kase.move,
-    { receipts: report?.receipts ?? [], record },
+    { receipts, record },
     condition.expectTurn === undefined ? {} : { expectTurn: condition.expectTurn },
   );
 
@@ -227,6 +296,7 @@ async function runCell(
       notApplicable: judgement.attempts.filter(({ status }) => status === "not_applicable").length,
       recordUsable: judgement.recordUsable,
       recordGaps: judgement.recordGaps,
+      turns,
       ...(judgement.detail === undefined ? {} : { detail: judgement.detail }),
     },
     evidence: {
@@ -234,8 +304,8 @@ async function runCell(
       conditionId: condition.id,
       columnId: column.id,
       runtime: record.system.runtime,
-      record,
-      report,
+      records,
+      reports,
     },
   };
 }
@@ -246,7 +316,11 @@ function worldDescription(world: ConformanceWorld, condition: ConformanceConditi
     condition: condition.world,
     namespaceId: world.context.namespaceId,
     enabledToolNamespaces: world.context.enabledToolNamespaces,
-    grants: [...rootGrants(), ...agentGrants()],
+    // The grants the condition actually issued, not the ones the baseline
+    // world would have. A condition that adds authority has a different world,
+    // and a world hash that could not tell them apart would let two different
+    // worlds claim to be reproductions of each other.
+    grants: world.grants,
     tools: world.tools.map(({ name }) => name),
   };
 }
@@ -265,6 +339,12 @@ export interface StrictFailure {
  * `not_exercised` is included on purpose: a row that proved nothing is a broken
  * suite, and treating it as a soft result is how a manifest ends up reporting
  * guarantees nobody tested.
+ *
+ * `not_implemented` is excluded, and is the one status that is a standing
+ * result rather than a regression: the row is declared, its absence is stated
+ * in the manifest, and a build that failed on it would only pressure someone
+ * into deleting the row. It is counted and printed by the conformance script
+ * so the gap stays in view.
  */
 export function strictFailures(manifest: ConformanceManifest): readonly StrictFailure[] {
   const failures: StrictFailure[] = [];
@@ -299,13 +379,22 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
     "Generated by `pnpm conformance`. Every row is an attempted violation, run by a",
     "scripted adversary against a world armed by trusted setup.",
     "",
+    "Vendor columns replay recorded frames in that vendor's own wire shape through",
+    "the adapter's real protocol translation, against the real kernel and envelope.",
+    "The transport that would carry those frames from a live CLI is the one part",
+    "left out, so these columns say nothing about a live session. Live-run columns",
+    "are a separate claim and are not made here.",
+    "",
     `- Case set: \`${manifest.caseSetHash}\``,
     `- Grading rules: version \`${manifest.judgeVersion}\``,
+    `- Columns: ${manifest.columns.map(({ label }) => `\`${label}\``).join(", ")}`,
     "",
     "A cell is `pass` only when every declared attempt met its expected outcome and",
     "every control attempt succeeded. `not exercised` means the attempt never reached",
     "SharedOS, and is never a pass. `not applicable` means a runtime structurally",
-    "cannot make the attempt.",
+    "cannot make the attempt. `not implemented` means SharedOS does not do this:",
+    "the row is declared so the gap is stated rather than omitted, and it is never",
+    "run and never a pass.",
     "",
     `| ${header.join(" | ")} |`,
     `| ${header.map(() => "---").join(" | ")} |`,
@@ -325,15 +414,24 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
   for (const row of manifest.rows) {
     lines.push(`### ${row.invariant} — \`${row.conditionId}\``, "", row.condition, "");
     for (const cell of row.cells) {
-      const column = columns.find(({ id }) => id === cell.columnId);
+      const label = columns.find(({ id }) => id === cell.columnId)?.label ?? cell.columnId;
       lines.push(
-        `- **${column?.label ?? cell.columnId}** — ${statusLabel(cell.status)}; ` +
-          `${cell.attempted} of ${cell.declared} attempts issued` +
-          `${cell.notApplicable === 0 ? "" : `, ${cell.notApplicable} structurally unreachable`}; ` +
-          `refused by ${list(cell.refusedBy, "nothing")}; ` +
-          `reason ${list(cell.reasonCodes, "none")}; ` +
-          `record ${cell.recordUsable ? "usable" : `unusable (${list(cell.recordGaps, "unknown")})`}` +
-          `${cell.detail === undefined ? "" : `; ${cell.detail}`}`,
+        cell.status === "not_implemented"
+          ? `- **${label}** — ${statusLabel(cell.status)}; ${cell.declared} ` +
+              `${cell.declared === 1 ? "attempt" : "attempts"} declared, none runnable; ` +
+              `${cell.detail ?? "no reason given"}`
+          : cell.turns === 0
+            ? `- **${label}** — ${statusLabel(cell.status)}; ${cell.declared} ` +
+              `${cell.declared === 1 ? "attempt" : "attempts"} declared, none issued; ` +
+              `${cell.detail ?? "no reason given"}`
+            : `- **${label}** — ${statusLabel(cell.status)}; ` +
+              `${cell.attempted} of ${cell.declared} attempts issued` +
+              `${cell.notApplicable === 0 ? "" : `, ${cell.notApplicable} structurally unreachable`}` +
+              `${cell.turns <= 1 ? "" : ` over ${cell.turns} turns`}; ` +
+              `refused by ${list(cell.refusedBy, "nothing")}; ` +
+              `reason ${list(cell.reasonCodes, "none")}; ` +
+              `record ${cell.recordUsable ? "usable" : `unusable (${list(cell.recordGaps, "unknown")})`}` +
+              `${cell.detail === undefined ? "" : `; ${cell.detail}`}`,
       );
     }
     lines.push("");
@@ -343,7 +441,7 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
 }
 
 function statusLabel(status: ConformanceStatus): string {
-  return status.replace("_", " ");
+  return status.replaceAll("_", " ");
 }
 
 function list(values: readonly string[], empty: string): string {

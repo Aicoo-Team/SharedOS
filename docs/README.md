@@ -38,6 +38,7 @@
 - [ADR 0010: Resolve authority once per turn](adr/0010-per-turn-authority.md)
 - [ADR 0011: Escalation is a terminal outcome, not a denial](adr/0011-escalation-terminal-outcome.md)
 - [ADR 0012: One refusal vocabulary at both enforcement boundaries](adr/0012-one-refusal-vocabulary.md)
+- [ADR 0013: The conformance matrix is the case set](adr/0013-matrix-is-the-case-set.md)
 
 ## Project governance
 

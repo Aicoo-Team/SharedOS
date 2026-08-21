@@ -18,6 +18,8 @@ import {
   createConformanceWorld,
   type ConformanceWorld,
   type ConformanceWorldOptions,
+  ESCAPING_TOOL,
+  MISMATCHED_TOOL,
   READ_GRANT,
   READ_TOOL,
   ROOT_FILES_GRANT,
@@ -104,15 +106,26 @@ function satisfiesExpectation(receipt: AttemptReceipt): boolean {
 
 describe("the hostile runtime", () => {
   it("declares one move per row of the kernel conformance manifest", () => {
-    expect(CANONICAL_ATTACK_MOVES).toHaveLength(7);
     expect(CANONICAL_ATTACK_MOVES.map(({ kind }) => kind)).toEqual([
       "forged_grant",
       "hidden_tool",
       "read_to_mutation",
+      "expired_grant",
       "replayed_grant",
+      "revoked_mid_turn",
       "namespace_crossing",
+      "bounded_grant_exhausted",
+      "usage_store_unavailable",
       "authority_unavailable",
+      "tool_ceiling_escape",
+      "invalid_tool_result",
+      "budget_exceeded",
+      "grant_material_unreachable",
+      "over_broad_delegation",
+      "escalation_recorded",
       "record_completeness",
+      "typed_governed_views",
+      "replay_freshness",
     ]);
   });
 
@@ -182,7 +195,13 @@ describe("manifest rows under the canonical world", () => {
     const run = await runMove("hidden_tool");
     const report = readAdversarialReport(run.result);
 
-    expect(report?.visibleTools).toEqual([READ_TOOL, WRITE_TOOL, "messages.send"]);
+    expect(report?.visibleTools).toEqual([
+      ESCAPING_TOOL,
+      READ_TOOL,
+      MISMATCHED_TOOL,
+      WRITE_TOOL,
+      "messages.send",
+    ]);
     expect(report?.visibleTools).not.toContain(SEALED_TOOL);
     expect(report?.visibleTools).not.toContain(UNREGISTERED_TOOL);
 

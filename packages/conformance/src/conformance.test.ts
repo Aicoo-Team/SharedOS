@@ -221,7 +221,7 @@ describe("execution record assembly", () => {
     });
   });
 
-  it("keeps one snapshot per authority state when grants change mid-turn", () => {
+  it("keeps one snapshot per authority state when a turn observes more than one", () => {
     const record = assembleExecutionRecord({
       request: request(),
       result: result(),

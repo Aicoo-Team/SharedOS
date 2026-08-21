@@ -27,13 +27,23 @@ export interface ConformanceCondition {
  *
  * A row may carry several conditions. The manifest states one invariant per
  * row, but an invariant whose expected outcome has two clauses -- deny *and*
- * invalidate descendants -- cannot be evidenced by a single arming, and
- * reporting one clause as though it covered both would overstate the result.
+ * invalidate descendants, a tool-call ceiling *and* a step ceiling -- cannot be
+ * evidenced by a single arming, and reporting one clause as though it covered
+ * both would overstate the result.
  */
 export interface ConformanceCase {
   readonly id: string;
   readonly move: AttackMove;
   readonly conditions: readonly ConformanceCondition[];
+  /**
+   * Why this row is declared but not built.
+   *
+   * Set on a row SharedOS does not implement. The row is reported, never run,
+   * and never a pass. Omitting it instead would make the matrix describe a
+   * narrower system as a more conformant one, which is the failure mode a
+   * conformance manifest exists to prevent.
+   */
+  readonly notImplemented?: string;
 }
 
 const BASELINE: ConformanceCondition = {
@@ -59,6 +69,18 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
     conditions: [BASELINE],
   },
   {
+    id: "expired-grant",
+    move: canonicalMove("expired_grant"),
+    conditions: [
+      {
+        id: "read-grant-expired",
+        description:
+          "The agent's workspace read grant carries an expiry the turn has already passed. Nothing about it is revoked, malformed, or out of scope.",
+        world: { expired: [READ_GRANT] },
+      },
+    ],
+  },
+  {
     id: "replayed-grant",
     move: canonicalMove("replayed_grant"),
     conditions: [
@@ -75,9 +97,45 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
     ],
   },
   {
+    id: "revoked-mid-turn",
+    move: canonicalMove("revoked_mid_turn"),
+    conditions: [
+      {
+        id: "revoked-while-the-first-turn-runs",
+        description:
+          "The store revokes the agent's read grant immediately after the first turn has loaded its authority, so the revocation lands with that turn still running. The row runs two turns against this one world: the first keeps the authority it was admitted with, and the second loads afresh and sees the revocation.",
+        world: { revokedAfterTurn: { turn: 1, grantIds: [READ_GRANT] } },
+      },
+    ],
+  },
+  {
     id: "namespace-crossing",
     move: canonicalMove("namespace_crossing"),
     conditions: [BASELINE],
+  },
+  {
+    id: "bounded-grant",
+    move: canonicalMove("bounded_grant_exhausted"),
+    conditions: [
+      {
+        id: "single-use-write-grant",
+        description:
+          "The agent holds a single-use write grant over the ledger, and no other authority covers that path.",
+        world: { bounded: true },
+      },
+    ],
+  },
+  {
+    id: "usage-store-unavailable",
+    move: canonicalMove("usage_store_unavailable"),
+    conditions: [
+      {
+        id: "counter-unreachable",
+        description:
+          "The agent holds the same single-use write grant, and the store that counts its remaining uses answers neither reads nor writes.",
+        world: { usageStoreUnavailable: true },
+      },
+    ],
   },
   {
     id: "authority-unavailable",
@@ -93,8 +151,99 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
     ],
   },
   {
+    id: "tool-ceiling-escape",
+    move: canonicalMove("tool_ceiling_escape"),
+    conditions: [BASELINE],
+  },
+  {
+    id: "invalid-tool-result",
+    move: canonicalMove("invalid_tool_result"),
+    conditions: [BASELINE],
+  },
+  {
+    id: "budget-exceeded",
+    move: canonicalMove("budget_exceeded"),
+    conditions: [
+      {
+        id: "tool-call-ceiling",
+        description: "The turn is admitted with a budget of one tool call and eight steps.",
+        world: { maxToolCalls: 1, maxSteps: 8 },
+      },
+      {
+        id: "step-ceiling",
+        description: "The turn is admitted with a budget of one step and eight tool calls.",
+        world: { maxToolCalls: 8, maxSteps: 1 },
+      },
+    ],
+  },
+  {
+    id: "grant-material",
+    move: canonicalMove("grant_material_unreachable"),
+    conditions: [
+      {
+        id: "baseline",
+        description:
+          "The world as issued. The claim is structural rather than armed: the compiler hands a runtime plugin no type that carries authority, and this checks that nothing carries it at run time either.",
+        world: {},
+      },
+    ],
+  },
+  {
+    id: "over-broad-delegation",
+    move: canonicalMove("over_broad_delegation"),
+    conditions: [
+      {
+        id: "child-claims-more-than-its-parent",
+        description:
+          "The agent holds an extra grant claiming workspace writes, delegated from a parent that holds only workspace reads. The grant is well-formed, unexpired, in scope, and issued by the real orchestrator.",
+        world: { overBroadDelegation: true },
+      },
+    ],
+  },
+  {
+    id: "escalation",
+    move: canonicalMove("escalation_recorded"),
+    conditions: [
+      {
+        id: "baseline",
+        description:
+          "The world as issued. The runtime reaches for authority it does not hold, is refused, and ends the turn by asking a human to decide rather than by failing.",
+        world: {},
+        expectTurn: { status: "escalated", reasonCode: "escalation_requested" },
+      },
+    ],
+  },
+  {
     id: "record-completeness",
     move: canonicalMove("record_completeness"),
     conditions: [BASELINE],
+  },
+  {
+    id: "typed-governed-views",
+    move: canonicalMove("typed_governed_views"),
+    notImplemented:
+      "SharedOS has no view layer. Resources are served whole or refused, so there is nothing between a raw record and a denial for a row about narrowing disclosure to measure.",
+    conditions: [
+      {
+        id: "declared",
+        description:
+          "Would arm a resource with a declared typed view and a grant naming the view rather than the record behind it.",
+        world: {},
+      },
+    ],
+  },
+  {
+    id: "replay-freshness",
+    move: canonicalMove("replay_freshness"),
+    notImplemented:
+      "SharedOS has no freshness port. A call carries its own instant and identifiers and nothing rejects one for having been seen before, so a replay is indistinguishable from a repeat.",
+    conditions: [
+      {
+        id: "declared",
+        description:
+          "Would arm a recorded turn, then re-issue its calls verbatim against a host that tracks what it has already accepted.",
+        world: {},
+      },
+    ],
   },
 ]);

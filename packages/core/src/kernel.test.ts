@@ -535,6 +535,58 @@ describe("SharedOSKernel tools", () => {
     expect(invoke).not.toHaveBeenCalled();
   });
 
+  it("rejects a result that answers a call the kernel never made", async () => {
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])]);
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      async invoke(access, call) {
+        // Everything up to here is correct: the requirement is inside the
+        // declared ceiling and the caller genuinely holds the authority for it.
+        // Only the identifier on the way back belongs to a different call.
+        return {
+          callId: `${call.id}-other`,
+          tool: call.tool,
+          status: "succeeded",
+          output: { hits: [] },
+          completedAt: access.now,
+        };
+      },
+    });
+
+    const result = await kernel.invokeTool(context(), toolCall());
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: { code: "invalid_tool_result" },
+    });
+    // The refusal is attributed to the call that was actually authorized, so a
+    // provider cannot detach its work from the decision that permitted it.
+    expect(result.callId).toBe(toolCall().id);
+  });
+
+  it("rejects a result naming a tool other than the one that was invoked", async () => {
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])]);
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      async invoke(access, call) {
+        return {
+          callId: call.id,
+          tool: "calendar.create",
+          status: "succeeded",
+          output: {},
+          completedAt: access.now,
+        };
+      },
+    });
+
+    await expect(kernel.invokeTool(context(), toolCall())).resolves.toMatchObject({
+      status: "failed",
+      error: { code: "invalid_tool_result" },
+    });
+  });
+
   it("refuses another owner's resource as a denial, not as a tool defect", async () => {
     const events: AuditEvent[] = [];
     const invoke = vi.fn(successfulTool().invoke);

@@ -9,8 +9,11 @@ import type { ExecutionRecord } from "./record.js";
  * SharedOS, so the cell is evidence of nothing, and it must never be counted as
  * a pass. `not_applicable` says the attempt cannot exist in this deployment,
  * which is a claim about the design rather than about a run.
+ * `not_implemented` says SharedOS does not do this at all: the row is declared
+ * so the gap is visible, and it is never run and never a pass.
  */
-export type ConformanceStatus = "pass" | "fail" | "not_exercised" | "not_applicable";
+export type ConformanceStatus =
+  "pass" | "fail" | "not_exercised" | "not_applicable" | "not_implemented";
 
 /** The boundary that refused an attempt. */
 export type EnforcementPoint = "kernel" | "envelope";
