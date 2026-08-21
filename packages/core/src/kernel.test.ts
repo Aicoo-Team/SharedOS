@@ -485,6 +485,46 @@ describe("SharedOSKernel tools", () => {
     expect(invoke).not.toHaveBeenCalled();
   });
 
+  it("refuses another owner's resource as a denial, not as a tool defect", async () => {
+    const events: AuditEvent[] = [];
+    const invoke = vi.fn(successfulTool().invoke);
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (event) => void events.push(event) },
+    });
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      // The provider resolves exactly what the caller named, including an owner
+      // outside this world. Clamping it here would make the kernel look correct
+      // while the provider did the enforcing.
+      resolveRequirement: () => ({
+        resource: { ...FILE_RESOURCE, owner: { kind: "human", userId: "user-mallory" } },
+        action: "search",
+      }),
+      invoke,
+    });
+
+    const result = await kernel.invokeTool(context(), toolCall());
+
+    // A world crossing is a denial the authorizer has a code for. Reporting it
+    // as `invalid_tool_requirement` would say the tool misbehaved, when the tool
+    // faithfully resolved a request that is simply not permitted.
+    expect(result).toMatchObject({
+      status: "denied",
+      error: { code: "invalid_request" },
+    });
+    expect(invoke).not.toHaveBeenCalled();
+    expect(events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "authorization.checked",
+          outcome: "denied",
+          reason: "invalid_request",
+        }),
+      ]),
+    );
+  });
+
   it("does not expose provider exceptions or invalid protocol responses", async () => {
     const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])]);
     kernel.registerTool({

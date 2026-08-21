@@ -190,7 +190,7 @@ describe("manifest rows under the canonical world", () => {
       const receipt = run.receipt(attemptId);
       expect(receipt.attempted).toBe(true);
       expect(receipt.observed).toBe("denied");
-      expect(receipt.reasonCode).toBe("tool_not_available");
+      expect(receipt.reasonCode).toBe("tool_unavailable");
     }
     expect(run.world.files.writes).toEqual([]);
     expect(run.receipt("use-visible-tool").observed).toBe("succeeded");

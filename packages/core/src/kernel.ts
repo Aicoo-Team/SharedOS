@@ -435,6 +435,29 @@ export class SharedOSKernel {
       return result;
     }
 
+    // The world boundary is checked before the tool's own ceiling. A requirement
+    // naming another owner is a request to act outside this world, which is a
+    // denial the authorizer already has a code for -- `invalid_request` -- and
+    // it is answered there so the refusal carries a recorded authorization
+    // decision like every other denial. Deciding it here first would report a
+    // boundary crossing as `invalid_tool_requirement`, which means something
+    // else: a tool that resolved a capability outside the boundary it declared.
+    if (!requirementBelongsToContext(requirement, context)) {
+      const crossing = await this.#authorize(
+        authority.authority,
+        { resource: requirement.resource, action: requirement.action },
+        false,
+      );
+      const result = deniedToolResult(
+        call,
+        context.now,
+        crossing.reasonCode,
+        "The requested resource lies outside this access context's world",
+      );
+      await this.#recordToolResult(context, call, result, undefined, requirement);
+      return result;
+    }
+
     if (!requirementIsWithinDefinition(handler.definition, requirement, context)) {
       const result = failedToolResult(
         call,
@@ -991,6 +1014,31 @@ function protocolError(code: string, message: string): ProtocolError {
   return { code, message, retryable: false };
 }
 
+/**
+ * Whether a resolved requirement stays inside the caller's own world.
+ *
+ * An omitted owner is the context's own owner, so only an explicitly named
+ * foreign owner crosses the boundary. This is the same rule
+ * `CapabilityAuthorizer` applies; it is asked here only to decide *which*
+ * refusal a crossing is, never to perform the refusal itself.
+ */
+function requirementBelongsToContext(
+  requirement: AuthorizationRequest,
+  context: AccessContext,
+): boolean {
+  return (
+    requirement.resource.owner === undefined ||
+    addressesEqual(requirement.resource.owner, context.owner)
+  );
+}
+
+/**
+ * Whether a resolved requirement stays inside the ceiling the tool declared.
+ *
+ * By the time this runs the requirement is known to name the context's own
+ * owner, so the owner comparison here catches the remaining case: a tool whose
+ * declared capability names some *other* owner outright.
+ */
 function requirementIsWithinDefinition(
   definition: ToolDefinition,
   requirement: AuthorizationRequest,

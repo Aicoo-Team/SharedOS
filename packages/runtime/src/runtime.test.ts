@@ -218,7 +218,7 @@ describe("TurnExecutor", () => {
         result: expect.objectContaining({
           tool: "files.delete",
           status: "denied",
-          error: expect.objectContaining({ code: "tool_not_available" }),
+          error: expect.objectContaining({ code: "tool_unavailable" }),
         }),
       },
       expect.anything(),

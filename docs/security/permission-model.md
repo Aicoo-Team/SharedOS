@@ -133,6 +133,25 @@ call site. The reason codes listed in `INFRASTRUCTURE_DENIAL_REASONS`
 `failClosed: true`. A measurement must separate them from policy denials before
 computing any rate.
 
+### One refusal, one code
+
+The execution envelope and the kernel both refuse, and they use the same
+vocabulary for the same refusal: a tool outside the permission-filtered
+catalogue is `tool_unavailable` at either boundary. Which one refused is
+recorded separately, as `OperationRecord.source`, because a code says what was
+refused and a source says who refused it.
+
+Two codes that are easy to confuse are kept apart deliberately:
+
+- `invalid_request` -- the request names a resource outside this world. This is
+  a denial, checked before the tool's own ceiling and answered by the
+  authorizer, so it carries a recorded authorization decision.
+- `invalid_tool_requirement` -- the tool resolved a capability outside the
+  ceiling it declared. This says the tool misbehaved, not that the request was
+  impermissible.
+
+See `docs/adr/0012-one-refusal-vocabulary.md`.
+
 ### No permission cross-products
 
 Independent grant fields must not be unioned into a new synthetic authority.

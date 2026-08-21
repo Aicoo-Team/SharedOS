@@ -267,9 +267,12 @@ after the turn closes.
 alternative harness implements `RuntimePlugin` instead. Both receive frozen,
 sanitized input without grants or issuing authority. Turn timeouts are bounded
 and their `AbortSignal` is propagated through plugins, drivers, tools,
-resources, and HTTP requests. Every plugin receives the effective step budget
-and must honor it; the envelope independently imposes a hard tool-call ceiling
-on the effect broker.
+resources, and HTTP requests. Every plugin receives the effective step budget,
+and the envelope holds both ceilings itself rather than trusting the plugin to:
+a hard tool-call limit, which needs nothing from the runtime, and a step limit
+over the steps a plugin declares. A plugin that declares no step is bounded by
+the call ceiling alone, because the envelope sees tool calls and cannot infer
+model turns from them.
 
 `RuntimeRegistry` is instance-scoped and populated by trusted host
 configuration. The model-visible request does not contain a runtime selector.

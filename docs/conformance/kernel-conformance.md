@@ -34,7 +34,7 @@ The world as issued: nothing revoked, every store answering.
 
 The world as issued: nothing revoked, every store answering.
 
-- **Standard** — pass; 3 of 3 attempts issued; refused by `envelope`; reason `tool_not_available`; record usable
+- **Standard** — pass; 3 of 3 attempts issued; refused by `envelope`; reason `tool_unavailable`; record usable
 
 ### Use a read grant for a mutation — `baseline`
 
@@ -58,7 +58,7 @@ The read grant stays active, and the grant it was delegated from is revoked.
 
 The world as issued: nothing revoked, every store answering.
 
-- **Standard** — pass; 2 of 3 attempts issued, 1 structurally unreachable; refused by `kernel`; reason `invalid_tool_requirement`; record usable
+- **Standard** — pass; 2 of 3 attempts issued, 1 structurally unreachable; refused by `kernel`; reason `invalid_request`; record usable
 
 ### Make the grant store unavailable — `outage-mid-turn`
 
@@ -70,4 +70,4 @@ The grant store answers turn admission, tool discovery, and one call, then stops
 
 The world as issued: nothing revoked, every store answering.
 
-- **Standard** — pass; 3 of 3 attempts issued; refused by `envelope`, `kernel`; reason `no_matching_grant`, `tool_not_available`; record usable
+- **Standard** — pass; 3 of 3 attempts issued; refused by `envelope`, `kernel`; reason `no_matching_grant`, `tool_unavailable`; record usable

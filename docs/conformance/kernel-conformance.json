@@ -49,7 +49,7 @@
             "envelope"
           ],
           "reasonCodes": [
-            "tool_not_available"
+            "tool_unavailable"
           ],
           "declared": 3,
           "attempted": 3,
@@ -149,7 +149,7 @@
             "kernel"
           ],
           "reasonCodes": [
-            "invalid_tool_requirement"
+            "invalid_request"
           ],
           "declared": 3,
           "attempted": 2,
@@ -201,7 +201,7 @@
           ],
           "reasonCodes": [
             "no_matching_grant",
-            "tool_not_available"
+            "tool_unavailable"
           ],
           "declared": 3,
           "attempted": 3,

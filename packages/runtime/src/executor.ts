@@ -173,6 +173,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
     const abort = createAbortController(options.signal, timeoutMs);
     let runtimeHostActive = true;
     let toolCallCount = 0;
+    const steps = new Set<number>();
 
     try {
       if (abort.signal.aborted) {
@@ -222,6 +223,20 @@ export class SharedOSExecutor implements TurnExecutionPort {
           const step = parseRuntimeStep(invocationOptions.step);
           const eventData = toolEventData(parsedCall.data, step);
           emit("tool.requested", eventData);
+
+          if (step !== undefined && !stepIsWithinBudget(step, steps, limits.maxSteps)) {
+            const result = deniedToolResult(
+              parsedCall.data,
+              this.#clock(),
+              "step_limit_exceeded",
+              "The runtime reached its maximum number of steps.",
+            );
+            emit("tool.completed", completedToolEventData(result, step));
+            return result;
+          }
+          if (step !== undefined) {
+            steps.add(step);
+          }
 
           if (toolCallCount >= limits.maxToolCalls) {
             const result = deniedToolResult(
@@ -392,6 +407,24 @@ function toRuntimeTurnRequest(
   );
 }
 
+/**
+ * Whether one declared step is inside the turn's step budget.
+ *
+ * `StandardRuntime` bounds its own loop, but a replacement plugin is a
+ * replacement for exactly that loop, so a limit only the reference
+ * implementation honours is not a limit. The envelope holds the ceiling from
+ * outside: a step at or past `maxSteps` is refused, and so is a new step once
+ * `maxSteps` distinct ones have been seen -- which is what stops a plugin from
+ * renumbering its way around the first rule.
+ *
+ * A plugin that declares no step at all is not step-bounded, because the
+ * envelope sees tool calls and cannot infer model turns from them. That plugin
+ * is still bounded by `maxToolCalls`, which needs nothing from the runtime.
+ */
+function stepIsWithinBudget(step: number, seen: ReadonlySet<number>, maxSteps: number): boolean {
+  return step < maxSteps && (seen.has(step) || seen.size < maxSteps);
+}
+
 function parseRuntimeStep(step: number | undefined): number | undefined {
   if (step === undefined) {
     return undefined;
@@ -410,12 +443,25 @@ function toolEventData(call: ToolCall, step: number | undefined): JsonObject {
   };
 }
 
+/**
+ * What a completed call contributes to the durable event stream.
+ *
+ * The refusal code is included because a call the envelope terminated never
+ * reaches the kernel and so never reaches audit: the event stream is the only
+ * place it is recorded at all. Without the code, an execution record could say
+ * that an envelope refusal happened but not whether it was a guess at an
+ * unexposed tool or a blown call budget, and the distinction had to be taken on
+ * trust from whatever the runtime chose to report about itself.
+ *
+ * Arguments, results, and payloads stay out, exactly as they do in audit.
+ */
 function completedToolEventData(result: ToolResult, step: number | undefined): JsonObject {
   return {
     callId: result.callId,
     status: result.status,
     tool: result.tool,
     ...(step === undefined ? {} : { step }),
+    ...(result.status === "succeeded" ? {} : { code: result.error.code }),
   };
 }
 
@@ -494,11 +540,21 @@ function cancelledResult(
   );
 }
 
+/**
+ * The envelope's refusal for a tool outside the permission-filtered catalogue.
+ *
+ * It carries `tool_unavailable`, the same code `SharedOSKernel` uses when the
+ * tool is absent, sealed, or undiscoverable. The two boundaries refuse the same
+ * attempt for the same reason, and emitting two codes for it made the
+ * conformance matrix's declared signal depend on which boundary happened to get
+ * there first. The boundary that refused is still distinguishable: it is
+ * `OperationRecord.source`, which is where that distinction belongs.
+ */
 function unavailableToolResult(call: ToolCall, completedAt: string): ToolResult {
   return deniedToolResult(
     call,
     completedAt,
-    "tool_not_available",
+    "tool_unavailable",
     "The tool is not available in this permission-filtered turn.",
   );
 }

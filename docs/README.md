@@ -33,6 +33,7 @@
 - [ADR 0005: Files are the canonical resource plane](adr/0005-files-resource-plane.md)
 - [ADR 0006: Tool namespace control plane](adr/0006-tool-namespace-control-plane.md)
 - [ADR 0007: Pluggable runtimes inside a fixed security envelope](adr/0007-pluggable-runtime-security-envelope.md)
+- [ADR 0012: One refusal vocabulary at both enforcement boundaries](adr/0012-one-refusal-vocabulary.md)
 
 ## Project governance
 

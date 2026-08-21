@@ -216,6 +216,13 @@ describe("execution records from a real turn", () => {
     // The envelope refuses an unexposed tool before the kernel is consulted, so
     // this attempt appears in no audit event at all.
     expect(record.execution.operations.every(({ source }) => source === "envelope")).toBe(true);
+    // And it still says which refusal it was. Without the code the record could
+    // report that an envelope refusal happened but not whether it was a guess at
+    // an unexposed tool or a blown budget, and the distinction would have to be
+    // taken on trust from whatever the runtime said about itself.
+    expect(record.execution.operations).toContainEqual(
+      expect.objectContaining({ source: "envelope", reasonCode: "tool_unavailable" }),
+    );
   });
 
   it("fails closed and marks it, when authority cannot be loaded", async () => {

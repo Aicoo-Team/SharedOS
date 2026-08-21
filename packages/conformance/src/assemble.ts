@@ -237,8 +237,13 @@ function operations(
  * Tool calls the envelope terminated before the kernel saw them.
  *
  * A runtime that guesses an unexposed tool name, or exceeds the hard tool-call
- * ceiling, never reaches `SharedOSKernel.invokeTool`. Those attempts are real
- * attempted violations and belong in the record.
+ * or step ceiling, never reaches `SharedOSKernel.invokeTool`. Those attempts are
+ * real attempted violations and belong in the record.
+ *
+ * The refusal code comes from the `tool.completed` event, which is the only
+ * record of a call audit never saw. It is read rather than inferred so the
+ * record itself separates a guessed tool from a blown budget, without depending
+ * on the runtime to report honestly about its own refusals.
  */
 function envelopeOperations(
   mediated: readonly OperationRecord[],
@@ -257,6 +262,7 @@ function envelopeOperations(
     const callId = event.data["callId"];
     const tool = event.data["tool"];
     const status = event.data["status"];
+    const code = event.data["code"];
     if (typeof callId !== "string" || mediatedCallIds.has(callId) || status === "succeeded") {
       continue;
     }
@@ -268,7 +274,8 @@ function envelopeOperations(
       outcome: status === "failed" ? "failed" : "denied",
       operationId: callId,
       ...(typeof tool === "string" ? { tool } : {}),
-      failClosed: false,
+      ...(typeof code === "string" ? { reasonCode: code } : {}),
+      failClosed: typeof code === "string" && isInfrastructureDenial(code),
     });
   }
 
