@@ -45,6 +45,7 @@
     }
   },
   "dependencies": {
+    "@aicoo/sharedos-adapters": "workspace:*",
     "@aicoo/sharedos-contracts": "workspace:*",
     "@aicoo/sharedos-core": "workspace:*",
     "@aicoo/sharedos-runtime": "workspace:*",

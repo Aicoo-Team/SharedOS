@@ -2,17 +2,25 @@ import { describe, expect, it } from "vitest";
 
 import { HostileRuntime, type AttackMove } from "./adversary.js";
 import { judgeCase } from "./judge.js";
+import {
+  claudeCodeFrameWriter,
+  claudeCodeProtocol,
+  codexFrameWriter,
+  codexProtocol,
+} from "@aicoo/sharedos-adapters";
+
+import { movesToTranscript } from "./columns.js";
 import { CANONICAL_ATTACK_MOVES, canonicalMove } from "./moves.js";
 import {
+  CLAUDE_CODE_TRANSCRIPT_COLUMN,
+  CODEX_TRANSCRIPT_COLUMN,
   EMBEDDED_COLUMN,
-  renderConformanceSummary,
-  runConformanceSuite,
-  strictFailures,
   type RuntimeColumn,
   type RuntimeColumnOptions,
-} from "./runner.js";
+} from "./columns.js";
+import { renderConformanceSummary, runConformanceSuite, strictFailures } from "./runner.js";
 import { CANONICAL_CONFORMANCE_CASES, type ConformanceCase } from "./suite.js";
-import { READ_ONLY_FILE, READ_TOOL, WRITE_TOOL } from "./world.js";
+import { conformanceRuntimeContext, READ_ONLY_FILE, READ_TOOL, WRITE_TOOL } from "./world.js";
 
 /** A move whose control attempt cannot succeed, standing in for a broken fixture. */
 const BROKEN_CONTROL: AttackMove = {
@@ -99,7 +107,10 @@ describe("the conformance suite", () => {
     );
     expect(declared.map(({ id }) => id)).toEqual(["typed-governed-views", "replay-freshness"]);
 
-    const { manifest } = await runConformanceSuite({ cases: declared });
+    const { manifest } = await runConformanceSuite({
+      cases: declared,
+      columns: [EMBEDDED_COLUMN],
+    });
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
 
     expect(cells.map(({ status }) => status)).toEqual(["not_implemented", "not_implemented"]);
@@ -116,14 +127,19 @@ describe("the conformance suite", () => {
     const { manifest, evidence } = await runConformanceSuite();
 
     expect(manifest.rows).toHaveLength(21);
+    expect(manifest.columns).toHaveLength(3);
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
-    // Every implemented row passes. The two that are not implemented are stated
-    // rather than omitted.
-    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(19);
-    expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(2);
+    expect(cells).toHaveLength(63);
+    // Every implemented row passes in every column that can run it. The rest are
+    // stated: two rows SharedOS does not implement, and four vendor cells whose
+    // attempts a harness structurally cannot make.
+    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(51);
+    expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(6);
+    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(6);
     expect(strictFailures(manifest)).toEqual([]);
-    // Evidence exists for every row that ran a turn, and for no row that did not.
-    expect(evidence).toHaveLength(19);
+    // Evidence exists for every cell that ran a turn, and for no cell that did
+    // not: two unimplemented rows and one row no vendor column supports.
+    expect(evidence).toHaveLength(55);
 
     const byCase = (caseId: string, conditionId = "baseline") =>
       manifest.rows.find((row) => row.caseId === caseId && row.conditionId === conditionId)
@@ -198,7 +214,10 @@ describe("the conformance suite", () => {
   });
 
   it("reports a broken fixture as not exercised rather than as a pass", async () => {
-    const { manifest } = await runConformanceSuite({ cases: [caseOf(BROKEN_CONTROL)] });
+    const { manifest } = await runConformanceSuite({
+      cases: [caseOf(BROKEN_CONTROL)],
+      columns: [EMBEDDED_COLUMN],
+    });
     const cell = manifest.rows[0]?.cells[0];
 
     expect(cell?.status).toBe("not_exercised");
@@ -207,10 +226,89 @@ describe("the conformance suite", () => {
   });
 
   it("fails a row whose attempt did not meet its declared outcome", async () => {
-    const { manifest } = await runConformanceSuite({ cases: [caseOf(WRONG_EXPECTATION)] });
+    const { manifest } = await runConformanceSuite({
+      cases: [caseOf(WRONG_EXPECTATION)],
+      columns: [EMBEDDED_COLUMN],
+    });
 
     expect(manifest.rows[0]?.cells[0]?.status).toBe("fail");
     expect(strictFailures(manifest)[0]?.status).toBe("fail");
+  });
+
+  it("puts a vendor adapter in the delegate seat and grades it the same way", async () => {
+    const readToMutation = CANONICAL_CONFORMANCE_CASES.find(
+      ({ id }) => id === "read-to-mutation",
+    ) as ConformanceCase;
+    const { manifest } = await runConformanceSuite({
+      cases: [readToMutation],
+      columns: [EMBEDDED_COLUMN, CODEX_TRANSCRIPT_COLUMN, CLAUDE_CODE_TRANSCRIPT_COLUMN],
+    });
+    const cells = manifest.rows[0]?.cells ?? [];
+
+    expect(manifest.columns.map(({ label }) => label)).toEqual([
+      "Standard",
+      "Codex",
+      "Claude Code",
+    ]);
+    // The attacker is the same, the world is the same, and the kernel is the
+    // same. Only the runtime mediating the calls differs, which is the claim.
+    expect(cells.map(({ status }) => status)).toEqual(["pass", "pass", "pass"]);
+    expect(cells.map(({ reasonCodes }) => reasonCodes)).toEqual([
+      ["no_matching_grant"],
+      ["no_matching_grant"],
+      ["no_matching_grant"],
+    ]);
+  });
+
+  it("reports what a vendor column cannot do instead of failing it", async () => {
+    const byId = (id: string) =>
+      CANONICAL_CONFORMANCE_CASES.find((kase) => kase.id === id) as ConformanceCase;
+    const { manifest } = await runConformanceSuite({
+      cases: [byId("grant-material"), byId("escalation")],
+      columns: [EMBEDDED_COLUMN, CODEX_TRANSCRIPT_COLUMN],
+    });
+
+    const [inspection, escalation] = manifest.rows;
+    expect(inspection?.cells.map(({ status }) => status)).toEqual(["pass", "not_applicable"]);
+    expect(escalation?.cells.map(({ status }) => status)).toEqual(["pass", "not_applicable"]);
+    // Both say why, because "not applicable" with no reason is
+    // indistinguishable from a row nobody bothered to run.
+    expect(inspection?.cells[1]?.detail).toMatch(/never handed the runtime surfaces/u);
+    expect(escalation?.cells[1]?.detail).toMatch(/escalation is a host decision/u);
+    expect(strictFailures(manifest)).toEqual([]);
+  });
+
+  it("builds transcripts in the vendor's own wire shape", () => {
+    const move = canonicalMove("read_to_mutation");
+    const context = conformanceRuntimeContext();
+    const codex = movesToTranscript(codexFrameWriter, [move], {
+      executionId: "run-1",
+      turn: 1,
+      context,
+    });
+    const claude = movesToTranscript(claudeCodeFrameWriter, [move], {
+      executionId: "run-1",
+      turn: 1,
+      context,
+    });
+
+    // One batch per call plus a terminal batch: a harness sends a call and
+    // waits for its result before speaking again.
+    expect(codex.batches).toHaveLength(move.attempts.length + 1);
+    expect(claude.batches).toHaveLength(move.attempts.length + 1);
+
+    // The frames are the vendor's, and the adapter's own parser is what reads
+    // them back. A fixture written by hand is how the two drift apart.
+    const codexSteps = (codex.batches[0] ?? []).flatMap((frame) => codexProtocol.interpret(frame));
+    const claudeSteps = (claude.batches[0] ?? []).flatMap((frame) =>
+      claudeCodeProtocol.interpret(frame),
+    );
+    expect(codexSteps).toEqual(claudeSteps);
+    expect(codexSteps[0]).toMatchObject({
+      type: "tool_call",
+      callId: "run-1.kernel.read-to-mutation.read-the-target",
+      tool: READ_TOOL,
+    });
   });
 
   it("runs one case set across several columns", async () => {

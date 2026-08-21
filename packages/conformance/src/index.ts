@@ -1,5 +1,6 @@
 export * from "./adversary.js";
 export * from "./assemble.js";
+export * from "./columns.js";
 export * from "./completeness.js";
 export * from "./hashing.js";
 export * from "./judge.js";

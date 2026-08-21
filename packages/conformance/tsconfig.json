@@ -6,5 +6,10 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
   "include": ["src/**/*.ts"],
-  "references": [{ "path": "../contracts" }, { "path": "../core" }, { "path": "../runtime" }]
+  "references": [
+    { "path": "../adapters" },
+    { "path": "../contracts" },
+    { "path": "../core" },
+    { "path": "../runtime" }
+  ]
 }

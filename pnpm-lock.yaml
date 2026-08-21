@@ -80,6 +80,9 @@ importers:
 
   packages/conformance:
     dependencies:
+      '@aicoo/sharedos-adapters':
+        specifier: workspace:*
+        version: link:../adapters
       '@aicoo/sharedos-contracts':
         specifier: workspace:*
         version: link:../contracts

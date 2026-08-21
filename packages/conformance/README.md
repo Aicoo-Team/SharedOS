@@ -194,6 +194,10 @@ anything.
   nothing.
 - An attack that was never issued is `not_exercised`, never a pass.
 - A declared-unreachable attempt is `not_applicable` and does not sink the case.
+  Unreachability is declared by the move when no runtime can make the attempt,
+  and by the **column** when this runtime cannot — which is what keeps a row a
+  comparison across columns rather than a penalty for the columns that cannot
+  reach every part of it.
 - Record completeness is reported beside the verdict rather than folded into it —
   except for the record-completeness row itself, where the record _is_ the claim.
 
@@ -218,4 +222,31 @@ A column is an adapter occupying the delegate seat. The attacker stays scripted
 across all of them; what varies is the runtime mediating its calls, which is
 exactly the claim under test — the kernel's guarantees should not depend on which
 driver is in the seat. Adding a column is supplying a
-`(moves) => RuntimePlugin` factory; the suite and the grading do not change.
+`(moves, options) => RuntimePlugin` factory; the suite and the grading do not
+change.
+
+Three columns are committed. `EMBEDDED_COLUMN` puts `HostileRuntime` in the seat
+directly. `CODEX_TRANSCRIPT_COLUMN` and `CLAUDE_CODE_TRANSCRIPT_COLUMN` put the
+Codex and Claude Code adapters there, driven by frames built from the same move:
+`movesToTranscript` renders each declared attempt into that vendor's own wire
+shape, and the adapter's real protocol translation reads them back. The kernel
+and the envelope are the real ones. What is left out is the transport that would
+carry those frames from a live CLI — **live-run columns are a separate claim and
+are not yet made.**
+
+A vendor column cannot report on itself: a harness does not know it is in a
+conformance run. Its attempts are recovered from the execution record instead,
+by `receiptsFromRecord`, which is the stricter source — a runtime that quietly
+skipped a call leaves no operation behind to be mistaken for a denial. This
+works only because the envelope records a refusal code on the `tool.completed`
+event: a call refused before the kernel reaches no audit sink, so without that
+code the record could say an envelope refusal happened but not which one.
+
+`RuntimeColumn.limits` is how a column states what it structurally cannot do,
+per row and per condition. The vendor columns declare three things: they cannot
+enumerate the runtime surfaces they were never handed, they cannot escalate
+because no vendor frame means "ask a human to decide", and they cannot outrun a
+step budget because `StandardRuntime` — the loop every harness driver runs
+inside — stops at its own step ceiling first. Each one becomes a `not applicable`
+cell carrying its reason, rather than a failure blaming the kernel for a limit
+something else honoured.

@@ -67,6 +67,17 @@ export interface TurnExpectation {
 export interface JudgeCaseOptions {
   /** Set when the condition is expected to refuse the turn before it runs. */
   readonly expectTurn?: TurnExpectation;
+  /**
+   * Attempt ids the runtime under test structurally cannot issue, mapped to why.
+   *
+   * Declared by the column rather than by the move, because the same attempt is
+   * reachable from one runtime and not from another. It is what keeps a row a
+   * comparison across columns instead of a penalty for the columns that cannot
+   * reach every part of it, and it is only ever a claim about the runtime -- an
+   * attempt declared unreachable that a receipt shows was issued is graded on
+   * the receipt.
+   */
+  readonly unreachable?: ReadonlyMap<string, string>;
 }
 
 /**
@@ -95,13 +106,16 @@ export function judgeCase(
   const turnEndedBeforeTheRuntime = turn !== undefined && !runtimeStarted;
   const attempts = move.attempts.map((attempt) => {
     const receipt = evidence.receipts.find((candidate) => candidate.attemptId === attempt.id);
+    const columnReason = options.unreachable?.get(attempt.id);
     return outcomeFor(
       attempt.id,
       attempt.role,
-      attempt.unreachable !== undefined || turnEndedBeforeTheRuntime,
+      attempt.unreachable !== undefined || columnReason !== undefined || turnEndedBeforeTheRuntime,
       receipt,
       refusalPoints,
-      turnEndedBeforeTheRuntime ? "the turn was refused before the runtime was started" : undefined,
+      turnEndedBeforeTheRuntime
+        ? "the turn was refused before the runtime was started"
+        : columnReason,
     );
   });
 
@@ -270,6 +284,14 @@ function statusDetail(
       return `the attempt ${failed.attemptId} did not meet its declared outcome`;
     }
     return recordUsable ? undefined : "the turn's execution record is not usable";
+  }
+  if (status === "not_applicable") {
+    // Say which attempt could not be made and why. "Not applicable" with no
+    // reason is indistinguishable from a row nobody bothered to run.
+    const unreachable = adversarial.find(({ detail }) => detail !== undefined);
+    return unreachable === undefined
+      ? undefined
+      : `the attempt ${unreachable.attemptId} could not be made: ${unreachable.detail}`;
   }
   return undefined;
 }

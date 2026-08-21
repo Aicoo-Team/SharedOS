@@ -418,6 +418,82 @@ Defined in: [adapters/src/driver.ts:24](https://github.com/Aicoo-Team/SharedOS/b
 
 ---
 
+### HarnessFrameWriter
+
+Defined in: [adapters/src/writer.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L20)
+
+The inverse of [HarnessProtocol.interpret](#interpret): frames a harness would send.
+
+A `HarnessProtocol` only ever reads. That is correct for production, where
+the frames come from the vendor, and it leaves no way to _build_ a recorded
+conversation for a harness to be replayed against. Writing those frames by
+hand per test is how a fixture drifts from the shape the parser expects, so
+the two live side by side and are exercised against each other.
+
+A writer is deliberately not part of `HarnessProtocol`. Requiring every
+adapter to implement an encoder that production never calls would put dead
+code in the security-relevant path.
+
+#### Properties
+
+| Property                                      | Modifier   | Type     | Description                                                                | Defined in                                                                                                        |
+| --------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| <a id="property-protocolid"></a> `protocolId` | `readonly` | `string` | The protocol these frames belong to; must match the reading protocol's id. | [adapters/src/writer.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L22) |
+
+#### Methods
+
+##### complete()
+
+> **complete**(`output?`): [`JsonObject`](sharedos-contracts.md#jsonobject)
+
+Defined in: [adapters/src/writer.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L25)
+
+###### Parameters
+
+| Parameter | Type                                           |
+| --------- | ---------------------------------------------- |
+| `output?` | [`JsonValue`](sharedos-contracts.md#jsonvalue) |
+
+###### Returns
+
+[`JsonObject`](sharedos-contracts.md#jsonobject)
+
+##### message()
+
+> **message**(`text`): [`JsonObject`](sharedos-contracts.md#jsonobject)
+
+Defined in: [adapters/src/writer.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L24)
+
+###### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `text`    | `string` |
+
+###### Returns
+
+[`JsonObject`](sharedos-contracts.md#jsonobject)
+
+##### toolCall()
+
+> **toolCall**(`callId`, `tool`, `arguments_`): [`JsonObject`](sharedos-contracts.md#jsonobject)
+
+Defined in: [adapters/src/writer.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L23)
+
+###### Parameters
+
+| Parameter    | Type                                             |
+| ------------ | ------------------------------------------------ |
+| `callId`     | `string`                                         |
+| `tool`       | `string`                                         |
+| `arguments_` | [`JsonObject`](sharedos-contracts.md#jsonobject) |
+
+###### Returns
+
+[`JsonObject`](sharedos-contracts.md#jsonobject)
+
+---
+
 ### HarnessProtocol
 
 Defined in: [adapters/src/harness.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L66)
@@ -676,6 +752,16 @@ Defined in: [adapters/src/claude-code/index.ts:13](https://github.com/Aicoo-Team
 
 ---
 
+### claudeCodeFrameWriter
+
+> `const` **claudeCodeFrameWriter**: [`HarnessFrameWriter`](#harnessframewriter)
+
+Defined in: [adapters/src/writer.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L56)
+
+Frames in the Anthropic content-block shape Claude Code speaks.
+
+---
+
 ### claudeCodeProtocol
 
 > `const` **claudeCodeProtocol**: [`HarnessProtocol`](#harnessprotocol)
@@ -723,6 +809,16 @@ What a live Codex session needs before it can run.
 > `const` **CODEX\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
 Defined in: [adapters/src/codex/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L13)
+
+---
+
+### codexFrameWriter
+
+> `const` **codexFrameWriter**: [`HarnessFrameWriter`](#harnessframewriter)
+
+Defined in: [adapters/src/writer.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L29)
+
+Frames in the OpenAI Responses function-calling shape Codex speaks.
 
 ---
 

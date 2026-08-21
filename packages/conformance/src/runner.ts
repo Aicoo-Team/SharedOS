@@ -1,14 +1,20 @@
 import type { RuntimeManifest } from "@aicoo/sharedos-contracts";
-import { SharedOSExecutor, type RuntimePlugin } from "@aicoo/sharedos-runtime";
+import { SharedOSExecutor } from "@aicoo/sharedos-runtime";
 
 import {
-  HostileRuntime,
   moveTurnCount,
   readAdversarialReport,
   type AdversarialTurnReport,
   type AttackMove,
   type AttemptReceipt,
 } from "./adversary.js";
+import {
+  CLAUDE_CODE_TRANSCRIPT_COLUMN,
+  CODEX_TRANSCRIPT_COLUMN,
+  EMBEDDED_COLUMN,
+  type ColumnLimits,
+  type RuntimeColumn,
+} from "./columns.js";
 import { assembleExecutionRecord } from "./assemble.js";
 import { hashExperimentInputs, hashJson } from "./hashing.js";
 import { judgeCase, type ConformanceStatus, type EnforcementPoint } from "./judge.js";
@@ -95,30 +101,19 @@ export interface ConformanceRun {
 }
 
 /**
- * One column of the manifest: an adapter occupying the delegate seat.
+ * The columns a committed manifest is produced from.
  *
- * The attacker stays scripted across every column. What varies is the runtime
- * that mediates its calls, which is the whole point of the claim under test --
- * the kernel's guarantees should not depend on which driver is in the seat.
+ * The scripted adversary in the SharedOS executor, plus each vendor adapter
+ * driven by recorded frames. The vendor columns exercise the adapter's own
+ * protocol translation against the real kernel and envelope; the transport that
+ * would carry the frames from a live CLI is the one part left out, so a live
+ * column is a separate claim and is not made here.
  */
-export interface RuntimeColumnOptions {
-  /** Which turn of the case this plugin instance is running. */
-  readonly turn: number;
-}
-
-export interface RuntimeColumn {
-  readonly id: string;
-  readonly label: string;
-  create(moves: readonly AttackMove[], options: RuntimeColumnOptions): RuntimePlugin;
-}
-
-/** The in-process column: the SharedOS executor driving the scripted adversary. */
-export const EMBEDDED_COLUMN: RuntimeColumn = Object.freeze({
-  id: "sharedos-embedded",
-  label: "Standard",
-  create: (moves: readonly AttackMove[], options: RuntimeColumnOptions) =>
-    new HostileRuntime(moves, { turn: options.turn }),
-});
+export const DEFAULT_COLUMNS: readonly RuntimeColumn[] = Object.freeze([
+  EMBEDDED_COLUMN,
+  CODEX_TRANSCRIPT_COLUMN,
+  CLAUDE_CODE_TRANSCRIPT_COLUMN,
+]);
 
 export interface RunConformanceSuiteOptions {
   readonly cases?: readonly ConformanceCase[];
@@ -136,7 +131,7 @@ export async function runConformanceSuite(
   options: RunConformanceSuiteOptions = {},
 ): Promise<ConformanceRun> {
   const cases = options.cases ?? CANONICAL_CONFORMANCE_CASES;
-  const columns = options.columns ?? [EMBEDDED_COLUMN];
+  const columns = options.columns ?? DEFAULT_COLUMNS;
   const caseSetHash = await hashJson(cases);
 
   const rows: ConformanceRow[] = [];
@@ -148,6 +143,11 @@ export async function runConformanceSuite(
       for (const column of columns) {
         if (kase.notImplemented !== undefined) {
           cells.push(declaredCell(column, kase.move, "not_implemented", kase.notImplemented));
+          continue;
+        }
+        const unsupported = column.limits?.(kase.move, condition)?.unsupported;
+        if (unsupported !== undefined) {
+          cells.push(declaredCell(column, kase.move, "not_applicable", unsupported));
           continue;
         }
         const cell = await runCell(kase, condition, column);
@@ -227,6 +227,7 @@ async function runCell(
   const world = createConformanceWorld(condition.world);
   const executionId = `${kase.id}.${condition.id}.${column.id}`;
   const turns = moveTurnCount(kase.move);
+  const limits: ColumnLimits = column.limits?.(kase.move, condition) ?? {};
   const hashes = await hashExperimentInputs({
     spec: { case: kase.id, move: kase.move, condition: condition.id },
     world: worldDescription(world, condition),
@@ -246,10 +247,14 @@ async function runCell(
     const request = world.request(turnId, turn);
 
     let sequence = 0;
-    const result = await new SharedOSExecutor(world.kernel, column.create([kase.move], { turn }), {
-      clock: () => CONFORMANCE_NOW,
-      createId: () => `${turnId}.event-${(sequence += 1)}`,
-    }).execute(request);
+    const result = await new SharedOSExecutor(
+      world.kernel,
+      column.create([kase.move], { turn, executionId: turnId }),
+      {
+        clock: () => CONFORMANCE_NOW,
+        createId: () => `${turnId}.event-${(sequence += 1)}`,
+      },
+    ).execute(request);
 
     const record = assembleExecutionRecord({
       request,
@@ -275,14 +280,24 @@ async function runCell(
     const report = readAdversarialReport(result);
     records.push(record);
     reports.push(report);
-    receipts.push(...(report?.receipts ?? []));
+    // A column that cannot report on itself has its attempts recovered from the
+    // record, which is the stricter source: a runtime that quietly skipped a
+    // call leaves no operation behind to be mistaken for a denial.
+    receipts.push(
+      ...(column.receipts === undefined
+        ? (report?.receipts ?? [])
+        : column.receipts(kase.move, { executionId: turnId, turn, record })),
+    );
   }
 
   const record = records[records.length - 1] as ExecutionRecord;
   const judgement = judgeCase(
     kase.move,
     { receipts, record },
-    condition.expectTurn === undefined ? {} : { expectTurn: condition.expectTurn },
+    {
+      ...(condition.expectTurn === undefined ? {} : { expectTurn: condition.expectTurn }),
+      ...(limits.unreachable === undefined ? {} : { unreachable: limits.unreachable }),
+    },
   );
 
   return {
