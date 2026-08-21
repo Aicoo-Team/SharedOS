@@ -1,0 +1,239 @@
+import type { JsonObject, JsonValue, ToolDefinition, ToolResult } from "@aicoo/sharedos-contracts";
+import { z } from "zod";
+
+import { toolResultBody } from "../codex/protocol.js";
+import type { HarnessFrame, HarnessProtocol, HarnessStep } from "../harness.js";
+
+/**
+ * DeepSeek Harness speaks its own session-log vocabulary over a
+ * newline-delimited JSON-RPC 2.0 stdio transport.
+ *
+ * That vocabulary is the layer this module targets: `tool/call` carrying the
+ * model's raw argument string, `assistant/message` carrying assembled content
+ * blocks, and `turn/end` carrying a structured reason. It is deliberately not
+ * the `dsh` CLI's command-line surface, which is a plugin composition that
+ * varies per deployment. What carries these frames -- the SDK runtime server,
+ * the ACP bridge, or a recorded log -- is the transport's problem.
+ *
+ * One asymmetry is worth stating plainly, because it is a property of the
+ * harness rather than of this adapter. DeepSeek Harness executes its own tools:
+ * its wire has no frame meaning "here is your catalogue". A host that wants the
+ * catalogue to be the permission-filtered one must deliver it out of band, and
+ * the harness's own path for that is an MCP server (`dsh-mcp-client`). So
+ * {@link HarnessProtocol.describeTools} renders the harness's `ToolSchema` shape, which is what
+ * that out-of-band channel carries, and no frame is emitted for it.
+ */
+export const DEEPSEEK_PROTOCOL_ID = "deepseek.harness.session-events";
+
+/** Content blocks a DeepSeek Harness assistant message can carry. */
+const TextBlockSchema = z.object({ type: z.literal("text"), text: z.string() });
+
+const ToolCallBlockSchema = z.object({
+  type: z.literal("tool-call"),
+  id: z.string().min(1),
+  name: z.string().min(1),
+  /** The harness carries model arguments as a raw JSON string, unparsed. */
+  arguments: z.string(),
+});
+
+const UnknownBlockSchema = z.object({ type: z.string() }).passthrough();
+
+/**
+ * A session-log event, either bare or inside its `session.event` notification.
+ *
+ * The SDK runtime wraps every event in a JSON-RPC notification; a recorded log
+ * holds the bare envelopes. Both are accepted because they carry the identical
+ * event and refusing one would make a replayed log and a live session speak
+ * different protocols.
+ */
+const EventEnvelopeSchema = z
+  .object({
+    type: z.string().min(1),
+    data: z.record(z.unknown()),
+  })
+  .passthrough();
+
+const NotificationSchema = z
+  .object({
+    method: z.literal("session.event"),
+    params: z.object({ event: EventEnvelopeSchema }).passthrough(),
+  })
+  .passthrough();
+
+const ToolCallEventSchema = z
+  .object({ callId: z.string().min(1), name: z.string().min(1), arguments: z.string() })
+  .passthrough();
+
+const AssistantMessageEventSchema = z
+  .object({
+    message: z
+      .object({
+        content: z.array(z.union([TextBlockSchema, ToolCallBlockSchema, UnknownBlockSchema])),
+      })
+      .passthrough(),
+  })
+  .passthrough();
+
+const TurnEndEventSchema = z
+  .object({
+    reason: z
+      .object({
+        kind: z.string().min(1),
+        error: z
+          .object({ code: z.string().optional(), message: z.string().optional() })
+          .passthrough()
+          .optional(),
+      })
+      .passthrough(),
+  })
+  .passthrough();
+
+/**
+ * Turn endings that are not a completed turn.
+ *
+ * A turn the harness abandoned is reported as a failed turn rather than as a
+ * quiet completion, so a harness that gave up cannot be mistaken for one that
+ * answered. `completed` is the only ending that produces an outcome.
+ */
+const TURN_END_FAILURES: Readonly<Record<string, string>> = Object.freeze({
+  aborted: "The DeepSeek Harness turn was cancelled before it completed.",
+  blocked: "The DeepSeek Harness turn was blocked before it completed.",
+  error: "The DeepSeek Harness turn ended in an error.",
+  "max-tokens": "The DeepSeek Harness turn reached its output-token ceiling.",
+  interrupted: "The DeepSeek Harness turn was interrupted and never completed.",
+});
+
+export const deepseekProtocol: HarnessProtocol = {
+  id: DEEPSEEK_PROTOCOL_ID,
+
+  describeTools(tools: readonly ToolDefinition[]): JsonValue {
+    return tools.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.inputSchema,
+    })) as unknown as JsonValue;
+  },
+
+  interpret(frame: HarnessFrame): readonly HarnessStep[] {
+    const event = readEvent(frame);
+    if (event === undefined) {
+      return [];
+    }
+
+    if (event.type === "tool/call") {
+      const call = ToolCallEventSchema.safeParse(event.data);
+      if (!call.success) {
+        return [];
+      }
+      const parsed = parseArguments(call.data.arguments);
+      return parsed === undefined
+        ? [
+            {
+              type: "failed",
+              error: {
+                code: "harness_arguments_unparseable",
+                message: "DeepSeek Harness sent tool arguments that are not a JSON object.",
+              },
+            },
+          ]
+        : [
+            {
+              type: "tool_call",
+              callId: call.data.callId,
+              tool: call.data.name,
+              arguments: parsed,
+            },
+          ];
+    }
+
+    if (event.type === "assistant/message") {
+      const assistant = AssistantMessageEventSchema.safeParse(event.data);
+      if (!assistant.success) {
+        return [];
+      }
+      const steps: HarnessStep[] = [];
+      for (const block of assistant.data.message.content) {
+        if (block.type === "text" && typeof (block as { text?: unknown }).text === "string") {
+          steps.push({ type: "message", text: (block as { text: string }).text });
+          continue;
+        }
+        // A tool call reaches the turn through `tool/call`, which is the event
+        // the harness pairs with its result. Reading it here as well would
+        // issue every call twice.
+      }
+      return steps;
+    }
+
+    if (event.type === "turn/end") {
+      const end = TurnEndEventSchema.safeParse(event.data);
+      if (!end.success) {
+        return [];
+      }
+      const kind = end.data.reason.kind;
+      const failure = TURN_END_FAILURES[kind];
+      if (failure === undefined) {
+        return [{ type: "complete" }];
+      }
+      return [
+        {
+          type: "failed",
+          error: {
+            code: end.data.reason.error?.code ?? `harness_turn_${kind.replaceAll("-", "_")}`,
+            message: end.data.reason.error?.message ?? failure,
+            retryable: true,
+          },
+        },
+      ];
+    }
+
+    return [];
+  },
+
+  /**
+   * A tool result goes back as a prompt carrying one `tool-result` block, which
+   * is how this harness represents a result returning to the model. A denial is
+   * reported with `isError`, so the harness learns it was refused rather than
+   * being told the call crashed.
+   *
+   * `sessionId` is stamped by the transport, which owns session identity; the
+   * protocol translates content and nothing else.
+   */
+  encodeToolResult(result: ToolResult): HarnessFrame {
+    return {
+      jsonrpc: "2.0",
+      method: "session/prompt",
+      params: {
+        contentBlocks: [
+          {
+            type: "tool-result",
+            toolCallId: result.callId,
+            content: [{ type: "text", text: JSON.stringify(toolResultBody(result)) }],
+            isError: result.status !== "succeeded",
+          },
+        ],
+      },
+    };
+  },
+};
+
+/** The session-log event a frame carries, wrapped or bare. */
+function readEvent(frame: HarnessFrame): { type: string; data: JsonObject } | undefined {
+  const notification = NotificationSchema.safeParse(frame);
+  if (notification.success) {
+    const event = notification.data.params.event;
+    return { type: event.type, data: event.data as JsonObject };
+  }
+  const bare = EventEnvelopeSchema.safeParse(frame);
+  return bare.success ? { type: bare.data.type, data: bare.data.data as JsonObject } : undefined;
+}
+
+function parseArguments(raw: string): JsonObject | undefined {
+  try {
+    const parsed: unknown = JSON.parse(raw === "" ? "{}" : raw);
+    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as JsonObject)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}

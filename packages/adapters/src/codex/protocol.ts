@@ -40,9 +40,19 @@ const CompletedSchema = z
   })
   .passthrough();
 
+/**
+ * A failure, in either of the two shapes Codex reports one in.
+ *
+ * The Responses protocol nests it under `error`. The CLI's JSON mode puts the
+ * text at the top level instead, and an adapter that only read the nested form
+ * would report every live CLI failure under a generic message -- turning "401
+ * Unauthorized" into "the harness reported a failure", which is the one detail
+ * an operator needs.
+ */
 const ErrorSchema = z
   .object({
     type: z.enum(["error", "response.failed"]),
+    message: z.string().optional(),
     error: z
       .object({ code: z.string().optional(), message: z.string().optional() })
       .passthrough()
@@ -89,7 +99,10 @@ export const codexProtocol: HarnessProtocol = {
           type: "failed",
           error: {
             code: failure.data.error?.code ?? "harness_failed",
-            message: failure.data.error?.message ?? "The Codex harness reported a failure.",
+            message:
+              failure.data.error?.message ??
+              failure.data.message ??
+              "The Codex harness reported a failure.",
             retryable: true,
           },
         },

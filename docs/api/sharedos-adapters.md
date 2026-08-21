@@ -6,11 +6,11 @@
 
 # @aicoo/sharedos-adapters
 
-Codex and Claude Code runtime adapters for SharedOS.
+Codex, Claude Code, DeepSeek Harness, and Pi runtime adapters for SharedOS.
 
 An adapter is translation and nothing else. The turn loop, the
 permission-filtered tool catalogue, per-call re-authorization, and audit all
-come from the SharedOS execution envelope, so installing a second harness
+come from the SharedOS execution envelope, so installing another harness
 changes no kernel code and adds no second permission path.
 
 ```ts
@@ -73,23 +73,50 @@ tool-using harness.
 
 What a transcript cannot cover is the transport binding: the exact command-line
 flags each CLI wants, and the outer envelope it wraps its frames in.
+`scripts/live-conformance.mjs` covers exactly that gap by spawning the installed
+CLI and parsing what the binary actually emits.
 
-| Layer                                      | Status                                                 |
-| ------------------------------------------ | ------------------------------------------------------ |
-| SharedOS side of the translation           | Verified by tests                                      |
-| Codex function-call shapes                 | Targets the OpenAI Responses function-calling protocol |
-| Claude Code content blocks                 | Targets Anthropic message content blocks               |
-| Claude Code stream-json envelope           | **Verify against a live CLI**                          |
-| CLI invocation flags and startup handshake | **Verify against a live CLI**                          |
+| Layer                            | Status                                                       |
+| -------------------------------- | ------------------------------------------------------------ |
+| SharedOS side of the translation | Verified by tests                                            |
+| Codex function-call shapes       | Targets the OpenAI Responses function-calling protocol       |
+| Claude Code content blocks       | Targets Anthropic message content blocks                     |
+| DeepSeek session-log events      | Targets the harness's `tool/call` + `turn/end` vocabulary    |
+| Pi RPC messages                  | Targets Pi's assembled `AssistantMessage` content            |
+| Claude Code stream-json envelope | Verified live against `claude` 2.1.238                       |
+| Pi RPC envelope                  | Verified live against `pi` 0.84.2                            |
+| Codex / DeepSeek CLI invocation  | **Verify against a live CLI** — neither was installable here |
 
-The two rows marked for verification are confined to `codex/protocol.ts`,
-`claude-code/protocol.ts`, and the `ChildProcessTransport` options a host
-supplies. Nothing else changes when they are corrected.
+## Who executes the tools
+
+The four harnesses do not agree on this, and the difference decides how much a
+column can claim.
+
+| Harness     | Catalogue reaches the harness by     | Tool executed by      |
+| ----------- | ------------------------------------ | --------------------- |
+| Codex       | `function` declarations, on the wire | The host              |
+| Claude Code | `input_schema` tools, on the wire    | The host              |
+| DeepSeek    | Out of band — an MCP server          | The host, via MCP     |
+| Pi          | Out of band — `defineTool`, no MCP   | The host, via the SDK |
+
+Codex and Claude Code carry a tool catalogue in the protocol itself. DeepSeek
+Harness and Pi run their own tools and have no wire frame that means "here is
+your catalogue", so a host that wants the permission-filtered one delivered must
+use the harness's own out-of-band path. Both adapters therefore stamp
+`catalogueDelivery: "out-of-band"` onto every execution record they produce: a
+column whose catalogue arrived out of band is making a narrower claim than one
+whose catalogue was on the wire, and that belongs in the evidence rather than in
+a footnote.
+
+This is also why a live conformance run needs more than a live transport. The
+transport is verified; delivering the catalogue to a live `claude` or `dsh`
+session needs an MCP bridge that does not exist yet, and until it does a live
+column's rows are `not exercised` rather than passing.
 
 ## Availability
 
-`probeCodex` and `probeClaudeCode` report whether a harness can run here, and
-say why not when it cannot:
+`probeCodex`, `probeClaudeCode`, `probeDeepseek`, and `probePi` report whether a
+harness can run here, and say why not when it cannot:
 
 ```ts
 import { probeClaudeCode } from "@aicoo/sharedos-adapters/node";
@@ -98,9 +125,9 @@ const availability = await probeClaudeCode();
 // { harness: "claude-code", available: false, reason: "The claude executable is not on PATH." }
 ```
 
-Both harnesses can authenticate from a stored login as well as from an
-environment variable, so a probe treats credentials as optional and reports which
-one it found. Conformance runs should use this to mark a column as not
+Every one of these harnesses can authenticate from a stored login as well as from
+an environment variable, so a probe treats credentials as optional and reports
+which one it found. Conformance runs should use this to mark a column as not
 exercised rather than as failing: an absent harness is not evidence about
 SharedOS.
 
@@ -420,7 +447,7 @@ Defined in: [adapters/src/driver.ts:24](https://github.com/Aicoo-Team/SharedOS/b
 
 ### HarnessFrameWriter
 
-Defined in: [adapters/src/writer.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L20)
+Defined in: [adapters/src/writer.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L22)
 
 The inverse of [HarnessProtocol.interpret](#interpret): frames a harness would send.
 
@@ -438,7 +465,7 @@ code in the security-relevant path.
 
 | Property                                      | Modifier   | Type     | Description                                                                | Defined in                                                                                                        |
 | --------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| <a id="property-protocolid"></a> `protocolId` | `readonly` | `string` | The protocol these frames belong to; must match the reading protocol's id. | [adapters/src/writer.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L22) |
+| <a id="property-protocolid"></a> `protocolId` | `readonly` | `string` | The protocol these frames belong to; must match the reading protocol's id. | [adapters/src/writer.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L24) |
 
 #### Methods
 
@@ -446,7 +473,7 @@ code in the security-relevant path.
 
 > **complete**(`output?`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [adapters/src/writer.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L25)
+Defined in: [adapters/src/writer.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L27)
 
 ###### Parameters
 
@@ -462,7 +489,7 @@ Defined in: [adapters/src/writer.ts:25](https://github.com/Aicoo-Team/SharedOS/b
 
 > **message**(`text`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [adapters/src/writer.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L24)
+Defined in: [adapters/src/writer.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L26)
 
 ###### Parameters
 
@@ -478,7 +505,7 @@ Defined in: [adapters/src/writer.ts:24](https://github.com/Aicoo-Team/SharedOS/b
 
 > **toolCall**(`callId`, `tool`, `arguments_`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [adapters/src/writer.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L23)
+Defined in: [adapters/src/writer.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L25)
 
 ###### Parameters
 
@@ -688,6 +715,24 @@ Defined in: [adapters/src/codex/index.ts:34](https://github.com/Aicoo-Team/Share
 
 ---
 
+### DeepseekDriverOptions
+
+> **DeepseekDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
+
+Defined in: adapters/src/deepseek/index.ts:41
+
+#### Type Declaration
+
+##### manifest?
+
+> `readonly` `optional` **manifest?**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
+
+##### transport
+
+> `readonly` **transport**: [`HarnessTransport`](#harnesstransport)
+
+---
+
 ### HarnessFrame
 
 > **HarnessFrame** = [`JsonObject`](sharedos-contracts.md#jsonobject)
@@ -708,6 +753,24 @@ What one frame means once the vendor protocol has interpreted it.
 
 `message` is assistant prose. It is kept rather than discarded so a harness
 whose terminal frame carries no text still produces a turn output.
+
+---
+
+### PiDriverOptions
+
+> **PiDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
+
+Defined in: adapters/src/pi/index.ts:45
+
+#### Type Declaration
+
+##### manifest?
+
+> `readonly` `optional` **manifest?**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
+
+##### transport
+
+> `readonly` **transport**: [`HarnessTransport`](#harnesstransport)
 
 ## Variables
 
@@ -756,7 +819,7 @@ Defined in: [adapters/src/claude-code/index.ts:13](https://github.com/Aicoo-Team
 
 > `const` **claudeCodeFrameWriter**: [`HarnessFrameWriter`](#harnessframewriter)
 
-Defined in: [adapters/src/writer.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L56)
+Defined in: [adapters/src/writer.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L58)
 
 Frames in the Anthropic content-block shape Claude Code speaks.
 
@@ -816,7 +879,7 @@ Defined in: [adapters/src/codex/index.ts:13](https://github.com/Aicoo-Team/Share
 
 > `const` **codexFrameWriter**: [`HarnessFrameWriter`](#harnessframewriter)
 
-Defined in: [adapters/src/writer.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L29)
+Defined in: [adapters/src/writer.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L31)
 
 Frames in the OpenAI Responses function-calling shape Codex speaks.
 
@@ -826,7 +889,154 @@ Frames in the OpenAI Responses function-calling shape Codex speaks.
 
 > `const` **codexProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [adapters/src/codex/protocol.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L53)
+Defined in: [adapters/src/codex/protocol.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L63)
+
+---
+
+### DEEPSEEK\_ADAPTER\_VERSION
+
+> `const` **DEEPSEEK\_ADAPTER\_VERSION**: `"0.1.0-alpha.0"` = `"0.1.0-alpha.0"`
+
+Defined in: adapters/src/deepseek/index.ts:11
+
+---
+
+### DEEPSEEK\_PROTOCOL\_ID
+
+> `const` **DEEPSEEK\_PROTOCOL\_ID**: `"deepseek.harness.session-events"` = `"deepseek.harness.session-events"`
+
+Defined in: adapters/src/deepseek/protocol.ts:26
+
+DeepSeek Harness speaks its own session-log vocabulary over a
+newline-delimited JSON-RPC 2.0 stdio transport.
+
+That vocabulary is the layer this module targets: `tool/call` carrying the
+model's raw argument string, `assistant/message` carrying assembled content
+blocks, and `turn/end` carrying a structured reason. It is deliberately not
+the `dsh` CLI's command-line surface, which is a plugin composition that
+varies per deployment. What carries these frames -- the SDK runtime server,
+the ACP bridge, or a recorded log -- is the transport's problem.
+
+One asymmetry is worth stating plainly, because it is a property of the
+harness rather than of this adapter. DeepSeek Harness executes its own tools:
+its wire has no frame meaning "here is your catalogue". A host that wants the
+catalogue to be the permission-filtered one must deliver it out of band, and
+the harness's own path for that is an MCP server (`dsh-mcp-client`). So
+[HarnessProtocol.describeTools](#describetools) renders the harness's `ToolSchema` shape, which is what
+that out-of-band channel carries, and no frame is emitted for it.
+
+---
+
+### DEEPSEEK\_REQUIREMENTS
+
+> `const` **DEEPSEEK\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
+
+Defined in: adapters/src/deepseek/index.ts:33
+
+What a live DeepSeek Harness session needs before it can run.
+
+---
+
+### DEEPSEEK\_RUNTIME\_MANIFEST
+
+> `const` **DEEPSEEK\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
+
+Defined in: adapters/src/deepseek/index.ts:13
+
+---
+
+### deepseekFrameWriter
+
+> `const` **deepseekFrameWriter**: [`HarnessFrameWriter`](#harnessframewriter)
+
+Defined in: [adapters/src/writer.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L92)
+
+Frames in the session-log shape DeepSeek Harness streams.
+
+Wrapped in their `session.event` notification rather than left bare, because
+that is the shape a live SDK runtime emits and a fixture that skipped the
+envelope would exercise only half of what the parser has to accept.
+
+---
+
+### deepseekProtocol
+
+> `const` **deepseekProtocol**: [`HarnessProtocol`](#harnessprotocol)
+
+Defined in: adapters/src/deepseek/protocol.ts:106
+
+---
+
+### PI\_ADAPTER\_VERSION
+
+> `const` **PI\_ADAPTER\_VERSION**: `"0.1.0-alpha.0"` = `"0.1.0-alpha.0"`
+
+Defined in: adapters/src/pi/index.ts:11
+
+---
+
+### PI\_PROTOCOL\_ID
+
+> `const` **PI\_PROTOCOL\_ID**: `"pi.rpc.jsonl"` = `"pi.rpc.jsonl"`
+
+Defined in: adapters/src/pi/protocol.ts:29
+
+Pi speaks newline-delimited JSON events in its RPC mode (`pi --mode rpc`).
+
+The message vocabulary is the layer this module targets: an `AssistantMessage`
+whose content carries `toolCall` blocks, a `ToolResultMessage` carrying the
+result back, and the `agent_end` / `response` frames that end a turn. It is
+deliberately not Pi's streaming delta events, which restate the same content
+token by token; Pi's own guidance is to treat the assembled message as
+authoritative, and reading both would issue every call twice.
+
+Two asymmetries are worth stating plainly, because both are properties of the
+harness rather than of this adapter:
+
+- Pi does not declare tools on the RPC wire, and has no MCP support at all.
+  Its path for a host-supplied tool is `defineTool` through the SDK or an
+  extension, so [HarnessProtocol.describeTools](#describetools) renders that shape and no frame is
+  emitted for it.
+- Pi executes its own tools. `tool_execution_start` announces a call Pi is
+  already running, not a request for the host to run one, so it is not read
+  as a tool call. The `toolCall` content block -- the model's actual request
+  -- is.
+
+---
+
+### PI\_REQUIREMENTS
+
+> `const` **PI\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
+
+Defined in: adapters/src/pi/index.ts:33
+
+What a live Pi session needs before it can run.
+
+---
+
+### PI\_RUNTIME\_MANIFEST
+
+> `const` **PI\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
+
+Defined in: adapters/src/pi/index.ts:13
+
+---
+
+### piFrameWriter
+
+> `const` **piFrameWriter**: [`HarnessFrameWriter`](#harnessframewriter)
+
+Defined in: [adapters/src/writer.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L135)
+
+Frames in the RPC message shape Pi speaks.
+
+---
+
+### piProtocol
+
+> `const` **piProtocol**: [`HarnessProtocol`](#harnessprotocol)
+
+Defined in: adapters/src/pi/protocol.ts:85
 
 ## Functions
 
@@ -920,6 +1130,104 @@ this form files a turn's evidence under the harness that produced it.
 | Parameter        | Type                                                                   |
 | ---------------- | ---------------------------------------------------------------------- |
 | `options`        | [`CodexDriverOptions`](#codexdriveroptions)                            |
+| `runtimeOptions` | [`StandardRuntimeOptions`](sharedos-runtime.md#standardruntimeoptions) |
+
+#### Returns
+
+[`HarnessRuntime`](#harnessruntime)
+
+---
+
+### createDeepseekDriver()
+
+> **createDeepseekDriver**(`options`): [`HarnessDriver`](#harnessdriver)
+
+Defined in: adapters/src/deepseek/index.ts:53
+
+DeepSeek Harness as a SharedOS agent turn driver.
+
+As with Codex and Claude Code, the adapter translates and nothing else.
+Enforcement stays in the execution envelope, so installing a third harness
+changes no kernel code and adds no second permission path.
+
+#### Parameters
+
+| Parameter | Type                                              |
+| --------- | ------------------------------------------------- |
+| `options` | [`DeepseekDriverOptions`](#deepseekdriveroptions) |
+
+#### Returns
+
+[`HarnessDriver`](#harnessdriver)
+
+---
+
+### createDeepseekRuntime()
+
+> **createDeepseekRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
+
+Defined in: adapters/src/deepseek/index.ts:68
+
+DeepSeek Harness as an installable runtime, reporting its own manifest.
+
+Prefer this over wrapping the driver in `StandardRuntime` directly: the
+executor stamps the plugin's manifest onto every execution record, so only
+this form files a turn's evidence under the harness that produced it.
+
+#### Parameters
+
+| Parameter        | Type                                                                   |
+| ---------------- | ---------------------------------------------------------------------- |
+| `options`        | [`DeepseekDriverOptions`](#deepseekdriveroptions)                      |
+| `runtimeOptions` | [`StandardRuntimeOptions`](sharedos-runtime.md#standardruntimeoptions) |
+
+#### Returns
+
+[`HarnessRuntime`](#harnessruntime)
+
+---
+
+### createPiDriver()
+
+> **createPiDriver**(`options`): [`HarnessDriver`](#harnessdriver)
+
+Defined in: adapters/src/pi/index.ts:57
+
+Pi as a SharedOS agent turn driver.
+
+As with every other harness here, the adapter translates and nothing else.
+Enforcement stays in the execution envelope, so installing a fourth harness
+changes no kernel code and adds no second permission path.
+
+#### Parameters
+
+| Parameter | Type                                  |
+| --------- | ------------------------------------- |
+| `options` | [`PiDriverOptions`](#pidriveroptions) |
+
+#### Returns
+
+[`HarnessDriver`](#harnessdriver)
+
+---
+
+### createPiRuntime()
+
+> **createPiRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
+
+Defined in: adapters/src/pi/index.ts:72
+
+Pi as an installable runtime, reporting its own manifest.
+
+Prefer this over wrapping the driver in `StandardRuntime` directly: the
+executor stamps the plugin's manifest onto every execution record, so only
+this form files a turn's evidence under the harness that produced it.
+
+#### Parameters
+
+| Parameter        | Type                                                                   |
+| ---------------- | ---------------------------------------------------------------------- |
+| `options`        | [`PiDriverOptions`](#pidriveroptions)                                  |
 | `runtimeOptions` | [`StandardRuntimeOptions`](sharedos-runtime.md#standardruntimeoptions) |
 
 #### Returns

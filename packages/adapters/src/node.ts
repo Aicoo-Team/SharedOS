@@ -6,6 +6,8 @@ import { createInterface, type Interface } from "node:readline";
 
 import { CLAUDE_CODE_REQUIREMENTS } from "./claude-code/index.js";
 import { CODEX_REQUIREMENTS } from "./codex/index.js";
+import { DEEPSEEK_REQUIREMENTS } from "./deepseek/index.js";
+import { PI_REQUIREMENTS } from "./pi/index.js";
 import type {
   HarnessAvailability,
   HarnessChannel,
@@ -21,13 +23,21 @@ export interface ChildProcessTransportOptions {
   readonly cwd?: string;
   readonly env?: Readonly<Record<string, string>>;
   /**
-   * Builds the opening frame written to the harness's stdin.
+   * Builds the opening frames written to the harness's stdin.
    *
    * The turn's prompt, tool catalogue, and sanitised context all arrive through
    * here, so a vendor whose CLI takes them as arguments instead supplies its own
    * `args` and returns `undefined`.
+   *
+   * Several frames may be returned, in order, for a harness that needs a
+   * handshake before it will accept a prompt. DeepSeek Harness is one: its
+   * JSON-RPC runtime answers `initialize` before any `session/prompt`, and a
+   * transport that could only write one frame would have to fold the handshake
+   * into the protocol, where it does not belong.
    */
-  readonly openingFrame?: (request: HarnessTurnRequest) => HarnessFrame | undefined;
+  readonly openingFrame?: (
+    request: HarnessTurnRequest,
+  ) => HarnessFrame | readonly HarnessFrame[] | undefined;
 }
 
 /**
@@ -60,11 +70,15 @@ export class ChildProcessTransport implements HarnessTransport {
 
     const channel = new ChildProcessChannel(child);
     const opening = this.#options.openingFrame?.(request);
-    if (opening !== undefined) {
-      await channel.write(opening);
+    for (const frame of opening === undefined ? [] : toFrames(opening)) {
+      await channel.write(frame);
     }
     return channel;
   }
+}
+
+function toFrames(opening: HarnessFrame | readonly HarnessFrame[]): readonly HarnessFrame[] {
+  return Array.isArray(opening) ? opening : [opening as HarnessFrame];
 }
 
 class ChildProcessChannel implements HarnessChannel {
@@ -222,6 +236,18 @@ export function probeClaudeCode(
   environment?: Readonly<Record<string, string | undefined>>,
 ): Promise<HarnessAvailability> {
   return probeHarness(CLAUDE_CODE_REQUIREMENTS, environment);
+}
+
+export function probeDeepseek(
+  environment?: Readonly<Record<string, string | undefined>>,
+): Promise<HarnessAvailability> {
+  return probeHarness(DEEPSEEK_REQUIREMENTS, environment);
+}
+
+export function probePi(
+  environment?: Readonly<Record<string, string | undefined>>,
+): Promise<HarnessAvailability> {
+  return probeHarness(PI_REQUIREMENTS, environment);
 }
 
 async function findExecutable(name: string, path: string | undefined): Promise<string | undefined> {

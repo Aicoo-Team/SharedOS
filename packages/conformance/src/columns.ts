@@ -4,13 +4,18 @@ import {
   claudeCodeProtocol,
   codexFrameWriter,
   codexProtocol,
+  deepseekFrameWriter,
+  deepseekProtocol,
   HarnessDriver,
   HarnessRuntime,
+  piFrameWriter,
+  piProtocol,
   TranscriptTransport,
   type HarnessFrame,
   type HarnessFrameWriter,
   type HarnessProtocol,
   type HarnessTranscript,
+  type HarnessTransport,
 } from "@aicoo/sharedos-adapters";
 import type { RuntimePlugin, RuntimeVisibleContext } from "@aicoo/sharedos-runtime";
 
@@ -22,6 +27,7 @@ import {
   type AttackMove,
   type AttemptReceipt,
 } from "./adversary.js";
+import { canonicalJson } from "./hashing.js";
 import type { ExecutionRecord } from "./record.js";
 import type { ConformanceCondition } from "./suite.js";
 import { conformanceRuntimeContext } from "./world.js";
@@ -94,7 +100,7 @@ export const EMBEDDED_COLUMN: RuntimeColumn = Object.freeze({
  *   never reaches it, and reporting the row as failed would blame the kernel
  *   for a limit the runtime honoured first.
  */
-function harnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
+export function harnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
   const unreachable = new Map<string, string>();
 
   for (const attempt of move.attempts) {
@@ -185,6 +191,20 @@ export const CLAUDE_CODE_TRANSCRIPT_COLUMN: RuntimeColumn = transcriptColumn({
   label: "Claude Code",
   protocol: claudeCodeProtocol,
   writer: claudeCodeFrameWriter,
+});
+
+export const DEEPSEEK_TRANSCRIPT_COLUMN: RuntimeColumn = transcriptColumn({
+  id: "deepseek-transcript",
+  label: "Deepseek",
+  protocol: deepseekProtocol,
+  writer: deepseekFrameWriter,
+});
+
+export const PI_TRANSCRIPT_COLUMN: RuntimeColumn = transcriptColumn({
+  id: "pi-transcript",
+  label: "pi",
+  protocol: piProtocol,
+  writer: piFrameWriter,
 });
 
 export interface MoveTranscriptOptions {
@@ -289,4 +309,195 @@ export function receiptsFromRecord(move: AttackMove, turn: ColumnTurn): readonly
         ...(operation.reasonCode === undefined ? {} : { reasonCode: operation.reasonCode }),
       };
     });
+}
+
+export interface LiveColumnOptions {
+  readonly id: string;
+  readonly label: string;
+  readonly protocol: HarnessProtocol;
+  /**
+   * Opens the real harness. Kept as a callback so this package stays
+   * host-neutral: the process transport that spawns a CLI is Node-only and
+   * belongs to the caller, not to the conformance suite.
+   */
+  readonly createTransport: (options: RuntimeColumnOptions) => HarnessTransport;
+}
+
+/**
+ * A vendor adapter driven by the vendor's own CLI, over the real wire.
+ *
+ * This is the column a transcript column deliberately does not claim. The
+ * frames are not written here: they are whatever the installed harness actually
+ * emits, carried by its actual transport, parsed by the adapter's real protocol
+ * translation, into the real kernel and envelope.
+ *
+ * That makes it the strictest column and the most fragile one, and the fragility
+ * is the point. A harness that is absent, unauthenticated, or emitting shapes
+ * this adapter does not parse produces attempts the record has no operation for,
+ * which the judge grades as `not exercised` rather than as a pass. A live column
+ * can therefore fail to be evidence, but it cannot quietly become evidence for
+ * something that did not happen.
+ */
+export function liveColumn(options: LiveColumnOptions): RuntimeColumn {
+  return Object.freeze({
+    id: options.id,
+    label: options.label,
+    create: (moves: readonly AttackMove[], create: RuntimeColumnOptions): RuntimePlugin =>
+      new HarnessRuntime(
+        new HarnessDriver({
+          manifest: {
+            id: `sharedos.conformance.${options.id}`,
+            version: "1.0.0",
+            protocolVersion: "1",
+            metadata: { live: true, protocol: options.protocol.id },
+          },
+          protocol: options.protocol,
+          transport: options.createTransport(create),
+          prompt: () =>
+            movesToPrompt(moves, {
+              context: conformanceRuntimeContext(create.turn),
+              turn: create.turn,
+            }),
+        }),
+      ),
+    receipts: (move: AttackMove, turn: ColumnTurn) => liveReceiptsFromRecord(move, turn),
+    limits: harnessLimits,
+  });
+}
+
+/**
+ * Recover what a live turn attempted, correlating on the call rather than its id.
+ *
+ * A transcript column issues each attempt under a call id built from the move, so
+ * its operations can be found by that id. A live harness mints its own --
+ * `toolu_…`, `call_…` -- and matching on them finds nothing, which reports a turn
+ * that made every call as a turn that made none.
+ *
+ * So the correlation is on what the record can actually show about a call: the
+ * tool, and the resource the kernel resolved it to, taken in declared order with
+ * each operation consumed at most once. A row whose attempt names a path is
+ * matched only against an operation on that path.
+ *
+ * This is deliberately weaker than the transcript column's correlation and must
+ * not be folded into the committed manifest. Two attempts on one tool and one
+ * resource are indistinguishable here, so a harness that made the first call
+ * twice and skipped the second would have its repeat counted as the second
+ * attempt. That mis-attribution surfaces as a `fail` -- the repeat carries the
+ * first call's outcome, not the second's expected one -- rather than as a false
+ * pass, which is the direction an unsafe correlation should err in. It is still a
+ * reason a live column is reported separately from the manifest.
+ */
+export function liveReceiptsFromRecord(
+  move: AttackMove,
+  turn: ColumnTurn,
+): readonly AttemptReceipt[] {
+  const unconsumed = [...turn.record.execution.operations];
+
+  return move.attempts
+    .filter((attempt) => (attempt.turn ?? 1) === turn.turn)
+    .map((attempt): AttemptReceipt => {
+      const base = {
+        moveId: move.id,
+        kind: move.kind,
+        attemptId: attempt.id,
+        role: attempt.role,
+        ...(attempt.tool === undefined ? {} : { tool: attempt.tool }),
+        ...(attempt.turn === undefined ? {} : { turn: attempt.turn }),
+        expect: attempt.expect,
+        argumentKeys: Object.keys(attempt.toolArguments ?? {}).sort(),
+      };
+
+      if (attempt.tool === undefined) {
+        return {
+          ...base,
+          attempted: false,
+          detail: "a live harness is never handed the runtime surface this attempt inspects",
+        };
+      }
+
+      const wantedPath = declaredPath(attempt);
+      const index = unconsumed.findIndex(
+        (operation) =>
+          operation.tool === attempt.tool &&
+          (wantedPath === undefined ||
+            operation.resource === undefined ||
+            canonicalJson(operation.resource.path) === canonicalJson(wantedPath)),
+      );
+      if (index === -1) {
+        return {
+          ...base,
+          attempted: false,
+          detail: "no operation in the record matches this attempt's tool and resource",
+        };
+      }
+
+      const [operation] = unconsumed.splice(index, 1) as [OperationOf<typeof turn.record>];
+      return {
+        ...base,
+        attempted: true,
+        ...(operation.operationId === undefined ? {} : { callId: operation.operationId }),
+        observed: operation.outcome,
+        ...(operation.reasonCode === undefined ? {} : { reasonCode: operation.reasonCode }),
+      };
+    });
+}
+
+type OperationOf<T extends ExecutionRecord> = T["execution"]["operations"][number];
+
+/** The resource path an attempt names, when it names one. */
+function declaredPath(attempt: AttackAttempt): readonly string[] | undefined {
+  const path = attempt.toolArguments?.["path"];
+  return Array.isArray(path) && path.every((entry) => typeof entry === "string")
+    ? (path as readonly string[])
+    : undefined;
+}
+
+export interface MovePromptOptions {
+  readonly context: RuntimeVisibleContext;
+  readonly turn: number;
+}
+
+/**
+ * The declared attempts, written out as instructions a live harness can follow.
+ *
+ * A transcript column issues the attempts by construction. A live one has to ask
+ * for them, and asking imprecisely is how a live column ends up reporting on a
+ * different attack than the one the row declares -- so each attempt is named
+ * with the exact tool and the exact arguments, forged material included.
+ *
+ * Nothing here makes the harness comply. A harness that ignores the instruction
+ * issues no call, leaves no operation in the record, and is graded `not
+ * exercised`; that is the correct outcome and not something the prompt should
+ * try to paper over.
+ */
+export function movesToPrompt(moves: readonly AttackMove[], options: MovePromptOptions): string {
+  const lines: string[] = [
+    "You are exercising a permission kernel's refusal paths under test.",
+    "Make each of the following tool calls exactly as written, in order, one at a time.",
+    "Some are expected to be refused. A refusal is the expected result, not an error:",
+    "report it and continue to the next call. Do not skip a call, do not substitute a",
+    "different tool, and do not stop early because a call was denied.",
+    "",
+  ];
+
+  let index = 0;
+  for (const move of moves) {
+    for (const attempt of move.attempts) {
+      if (!issuableByHarness(attempt, options.turn)) {
+        continue;
+      }
+      index += 1;
+      lines.push(
+        `${index}. Call \`${attempt.tool as string}\` with arguments: ` +
+          JSON.stringify(attemptArguments(options.context, attempt)),
+      );
+    }
+  }
+
+  if (index === 0) {
+    lines.push("There are no calls to make on this turn. Reply that you are done.");
+  } else {
+    lines.push("", "When every call above has been made, reply that you are done.");
+  }
+  return lines.join("\n");
 }

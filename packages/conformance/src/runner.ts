@@ -11,7 +11,9 @@ import {
 import {
   CLAUDE_CODE_TRANSCRIPT_COLUMN,
   CODEX_TRANSCRIPT_COLUMN,
+  DEEPSEEK_TRANSCRIPT_COLUMN,
   EMBEDDED_COLUMN,
+  PI_TRANSCRIPT_COLUMN,
   type ColumnLimits,
   type RuntimeColumn,
 } from "./columns.js";
@@ -113,6 +115,8 @@ export const DEFAULT_COLUMNS: readonly RuntimeColumn[] = Object.freeze([
   EMBEDDED_COLUMN,
   CODEX_TRANSCRIPT_COLUMN,
   CLAUDE_CODE_TRANSCRIPT_COLUMN,
+  DEEPSEEK_TRANSCRIPT_COLUMN,
+  PI_TRANSCRIPT_COLUMN,
 ]);
 
 export interface RunConformanceSuiteOptions {

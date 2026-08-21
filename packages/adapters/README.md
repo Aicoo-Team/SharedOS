@@ -1,10 +1,10 @@
 # @aicoo/sharedos-adapters
 
-Codex and Claude Code runtime adapters for SharedOS.
+Codex, Claude Code, DeepSeek Harness, and Pi runtime adapters for SharedOS.
 
 An adapter is translation and nothing else. The turn loop, the
 permission-filtered tool catalogue, per-call re-authorization, and audit all
-come from the SharedOS execution envelope, so installing a second harness
+come from the SharedOS execution envelope, so installing another harness
 changes no kernel code and adds no second permission path.
 
 ```ts
@@ -64,23 +64,50 @@ tool-using harness.
 
 What a transcript cannot cover is the transport binding: the exact command-line
 flags each CLI wants, and the outer envelope it wraps its frames in.
+`scripts/live-conformance.mjs` covers exactly that gap by spawning the installed
+CLI and parsing what the binary actually emits.
 
-| Layer                                      | Status                                                 |
-| ------------------------------------------ | ------------------------------------------------------ |
-| SharedOS side of the translation           | Verified by tests                                      |
-| Codex function-call shapes                 | Targets the OpenAI Responses function-calling protocol |
-| Claude Code content blocks                 | Targets Anthropic message content blocks               |
-| Claude Code stream-json envelope           | **Verify against a live CLI**                          |
-| CLI invocation flags and startup handshake | **Verify against a live CLI**                          |
+| Layer                            | Status                                                       |
+| -------------------------------- | ------------------------------------------------------------ |
+| SharedOS side of the translation | Verified by tests                                            |
+| Codex function-call shapes       | Targets the OpenAI Responses function-calling protocol       |
+| Claude Code content blocks       | Targets Anthropic message content blocks                     |
+| DeepSeek session-log events      | Targets the harness's `tool/call` + `turn/end` vocabulary    |
+| Pi RPC messages                  | Targets Pi's assembled `AssistantMessage` content            |
+| Claude Code stream-json envelope | Verified live against `claude` 2.1.238                       |
+| Pi RPC envelope                  | Verified live against `pi` 0.84.2                            |
+| Codex / DeepSeek CLI invocation  | **Verify against a live CLI** — neither was installable here |
 
-The two rows marked for verification are confined to `codex/protocol.ts`,
-`claude-code/protocol.ts`, and the `ChildProcessTransport` options a host
-supplies. Nothing else changes when they are corrected.
+## Who executes the tools
+
+The four harnesses do not agree on this, and the difference decides how much a
+column can claim.
+
+| Harness     | Catalogue reaches the harness by     | Tool executed by      |
+| ----------- | ------------------------------------ | --------------------- |
+| Codex       | `function` declarations, on the wire | The host              |
+| Claude Code | `input_schema` tools, on the wire    | The host              |
+| DeepSeek    | Out of band — an MCP server          | The host, via MCP     |
+| Pi          | Out of band — `defineTool`, no MCP   | The host, via the SDK |
+
+Codex and Claude Code carry a tool catalogue in the protocol itself. DeepSeek
+Harness and Pi run their own tools and have no wire frame that means "here is
+your catalogue", so a host that wants the permission-filtered one delivered must
+use the harness's own out-of-band path. Both adapters therefore stamp
+`catalogueDelivery: "out-of-band"` onto every execution record they produce: a
+column whose catalogue arrived out of band is making a narrower claim than one
+whose catalogue was on the wire, and that belongs in the evidence rather than in
+a footnote.
+
+This is also why a live conformance run needs more than a live transport. The
+transport is verified; delivering the catalogue to a live `claude` or `dsh`
+session needs an MCP bridge that does not exist yet, and until it does a live
+column's rows are `not exercised` rather than passing.
 
 ## Availability
 
-`probeCodex` and `probeClaudeCode` report whether a harness can run here, and
-say why not when it cannot:
+`probeCodex`, `probeClaudeCode`, `probeDeepseek`, and `probePi` report whether a
+harness can run here, and say why not when it cannot:
 
 ```ts
 import { probeClaudeCode } from "@aicoo/sharedos-adapters/node";
@@ -89,9 +116,9 @@ const availability = await probeClaudeCode();
 // { harness: "claude-code", available: false, reason: "The claude executable is not on PATH." }
 ```
 
-Both harnesses can authenticate from a stored login as well as from an
-environment variable, so a probe treats credentials as optional and reports which
-one it found. Conformance runs should use this to mark a column as not
+Every one of these harnesses can authenticate from a stored login as well as from
+an environment variable, so a probe treats credentials as optional and reports
+which one it found. Conformance runs should use this to mark a column as not
 exercised rather than as failing: an absent harness is not evidence about
 SharedOS.
 

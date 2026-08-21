@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import type { ExecutionRequest, ToolDefinition, ToolResult } from "@aicoo/sharedos-contracts";
+import type {
+  ExecutionRequest,
+  JsonObject,
+  ToolDefinition,
+  ToolResult,
+} from "@aicoo/sharedos-contracts";
 import { agentExecutionCapability } from "@aicoo/sharedos-core";
 import { SharedOSExecutor, StandardRuntime } from "@aicoo/sharedos-runtime";
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
@@ -19,7 +24,22 @@ import {
   createCodexDriver,
   createCodexRuntime,
 } from "./codex/index.js";
+import {
+  DEEPSEEK_REQUIREMENTS,
+  DEEPSEEK_RUNTIME_MANIFEST,
+  createDeepseekDriver,
+  createDeepseekRuntime,
+  deepseekProtocol,
+} from "./deepseek/index.js";
+import {
+  PI_REQUIREMENTS,
+  PI_RUNTIME_MANIFEST,
+  createPiDriver,
+  createPiRuntime,
+  piProtocol,
+} from "./pi/index.js";
 import { probeHarness } from "./node.js";
+import { deepseekFrameWriter, piFrameWriter } from "./writer.js";
 import { TranscriptTransport, type HarnessTranscript } from "./transcript.js";
 
 const NOW = "2026-08-18T09:00:00.000Z";
@@ -170,6 +190,29 @@ describe("the Codex protocol", () => {
 
   it("ignores frames that carry nothing relevant to the turn", () => {
     expect(codexProtocol.interpret({ type: "response.output_item.added" })).toEqual([]);
+  });
+
+  it("keeps the failure text whichever shape Codex reports it in", () => {
+    // The Responses protocol nests the message under `error`; the CLI's JSON
+    // mode puts it at the top level. Reading only the nested form reported every
+    // live CLI failure as a generic one, which loses the only useful detail.
+    const nested = codexProtocol.interpret({
+      type: "response.failed",
+      error: { code: "rate_limit", message: "slow down" },
+    });
+    const flat = codexProtocol.interpret({
+      type: "error",
+      message: "unexpected status 401 Unauthorized",
+    });
+
+    expect(nested[0]).toMatchObject({
+      type: "failed",
+      error: { code: "rate_limit", message: "slow down" },
+    });
+    expect(flat[0]).toMatchObject({
+      type: "failed",
+      error: { message: "unexpected status 401 Unauthorized" },
+    });
   });
 });
 
@@ -385,5 +428,295 @@ describe("harness availability", () => {
 
     expect(strict.available).toBe(false);
     expect(lenient.available).toBe(true);
+  });
+});
+
+describe("the DeepSeek Harness protocol", () => {
+  /** One session-log event as the SDK runtime notification that carries it. */
+  function event(type: string, data: JsonObject): JsonObject {
+    return {
+      jsonrpc: "2.0",
+      method: "session.event",
+      params: { sessionId: "session-1", event: { type, seq: 1, time: 0, data } },
+    };
+  }
+
+  it("declares the permission-filtered catalogue as harness tool schemas", () => {
+    expect(deepseekProtocol.describeTools([READ_TOOL])).toEqual([
+      {
+        name: "files.read",
+        description: READ_TOOL.description,
+        parameters: READ_TOOL.inputSchema,
+      },
+    ]);
+  });
+
+  it("parses a tool call, whose arguments arrive as a JSON string", () => {
+    expect(
+      deepseekProtocol.interpret(
+        event("tool/call", {
+          turn: 1,
+          step: 1,
+          callId: "call-1",
+          name: "files.read",
+          arguments: '{"path":["Workspace"]}',
+        }),
+      ),
+    ).toEqual([
+      {
+        type: "tool_call",
+        callId: "call-1",
+        tool: "files.read",
+        arguments: { path: ["Workspace"] },
+      },
+    ]);
+  });
+
+  it("reads a bare session-log envelope the same as a wrapped one", () => {
+    // A recorded log holds bare envelopes and a live runtime wraps them. If the
+    // two parsed differently, replaying a log would not exercise the live path.
+    const data = { turn: 1, step: 1, callId: "call-1", name: "files.read", arguments: "{}" };
+
+    expect(deepseekProtocol.interpret({ type: "tool/call", seq: 1, time: 0, data })).toEqual(
+      deepseekProtocol.interpret(event("tool/call", data)),
+    );
+  });
+
+  it("fails the turn rather than guessing when arguments will not parse", () => {
+    const steps = deepseekProtocol.interpret(
+      event("tool/call", { callId: "call-1", name: "files.read", arguments: "{not json" }),
+    );
+
+    expect(steps[0]).toMatchObject({ type: "failed" });
+  });
+
+  it("does not re-issue a call it already read from tool/call", () => {
+    // The harness records the same call in its assistant message and in
+    // tool/call. Reading both would execute every call twice.
+    expect(
+      deepseekProtocol.interpret(
+        event("assistant/message", {
+          turn: 1,
+          step: 1,
+          message: {
+            role: "assistant",
+            content: [
+              { type: "text", text: "looking" },
+              { type: "tool-call", id: "call-1", name: "files.read", arguments: "{}" },
+            ],
+          },
+        }),
+      ),
+    ).toEqual([{ type: "message", text: "looking" }]);
+  });
+
+  it("treats only a completed turn as an outcome", () => {
+    expect(
+      deepseekProtocol.interpret(event("turn/end", { reason: { kind: "completed" } })),
+    ).toEqual([{ type: "complete" }]);
+    for (const kind of ["aborted", "blocked", "error", "max-tokens", "interrupted"]) {
+      expect(deepseekProtocol.interpret(event("turn/end", { reason: { kind } }))[0]).toMatchObject({
+        type: "failed",
+      });
+    }
+  });
+
+  it("marks a refused call so the harness knows it was refused", () => {
+    const frame = deepseekProtocol.encodeToolResult({
+      callId: "call-1",
+      tool: "files.read",
+      status: "denied",
+      error: { code: "no_matching_grant", message: "denied" },
+      completedAt: NOW,
+    });
+
+    expect(frame).toMatchObject({
+      method: "session/prompt",
+      params: {
+        contentBlocks: [{ type: "tool-result", toolCallId: "call-1", isError: true }],
+      },
+    });
+  });
+
+  it("ignores frames that carry nothing relevant to the turn", () => {
+    expect(deepseekProtocol.interpret(event("step/start", { turn: 1, step: 1 }))).toEqual([]);
+    expect(deepseekProtocol.interpret({ jsonrpc: "2.0", id: 1, result: {} })).toEqual([]);
+  });
+});
+
+describe("the Pi protocol", () => {
+  it("declares the permission-filtered catalogue as Pi tool definitions", () => {
+    expect(piProtocol.describeTools([READ_TOOL])).toEqual([
+      {
+        name: "files.read",
+        label: "files.read",
+        description: READ_TOOL.description,
+        parameters: READ_TOOL.inputSchema,
+      },
+    ]);
+  });
+
+  it("reads every content block of one assembled message, in order", () => {
+    expect(
+      piProtocol.interpret({
+        type: "message_end",
+        message: {
+          role: "assistant",
+          content: [
+            { type: "text", text: "looking" },
+            { type: "toolCall", id: "t1", name: "files.read", arguments: { path: ["Workspace"] } },
+            { type: "thinking", thinking: "hidden" },
+            { type: "toolCall", id: "t2", name: "files.write", arguments: {} },
+          ],
+        },
+      }),
+    ).toEqual([
+      { type: "message", text: "looking" },
+      { type: "tool_call", callId: "t1", tool: "files.read", arguments: { path: ["Workspace"] } },
+      { type: "tool_call", callId: "t2", tool: "files.write", arguments: {} },
+    ]);
+  });
+
+  it("does not read Pi's own tool execution as a call to make", () => {
+    // tool_execution_start announces a tool Pi is already running itself. It is
+    // not a request for the host, and reading it as one would both double-issue
+    // every call and misreport who executed it.
+    expect(
+      piProtocol.interpret({
+        type: "tool_execution_start",
+        toolCallId: "t1",
+        toolName: "files.read",
+        args: { path: ["Workspace"] },
+      }),
+    ).toEqual([]);
+  });
+
+  it("waits for a retrying run rather than reporting an outcome it has not reached", () => {
+    expect(piProtocol.interpret({ type: "agent_end", willRetry: true })).toEqual([]);
+    expect(piProtocol.interpret({ type: "agent_end", willRetry: false })).toEqual([
+      { type: "complete" },
+    ]);
+  });
+
+  it("fails the turn when the harness rejects the command outright", () => {
+    expect(
+      piProtocol.interpret({
+        type: "response",
+        command: "prompt",
+        success: false,
+        error: "no model configured",
+      })[0],
+    ).toMatchObject({ type: "failed", error: { message: "no model configured" } });
+    expect(piProtocol.interpret({ type: "response", command: "prompt", success: true })).toEqual(
+      [],
+    );
+  });
+
+  it("marks a refused call so the harness knows it was refused", () => {
+    const frame = piProtocol.encodeToolResult({
+      callId: "t1",
+      tool: "files.read",
+      status: "denied",
+      error: { code: "no_matching_grant", message: "denied" },
+      completedAt: NOW,
+    });
+
+    expect(frame).toMatchObject({
+      role: "toolResult",
+      toolCallId: "t1",
+      toolName: "files.read",
+      isError: true,
+    });
+  });
+});
+
+describe("the DeepSeek and Pi harnesses driven as SharedOS turns", () => {
+  const cases = [
+    {
+      label: "DeepSeek",
+      writer: deepseekFrameWriter,
+      driver: createDeepseekDriver,
+      runtime: createDeepseekRuntime,
+      manifest: DEEPSEEK_RUNTIME_MANIFEST,
+    },
+    {
+      label: "Pi",
+      writer: piFrameWriter,
+      driver: createPiDriver,
+      runtime: createPiRuntime,
+      manifest: PI_RUNTIME_MANIFEST,
+    },
+  ] as const;
+
+  for (const harness of cases) {
+    it(`routes every ${harness.label} tool call through the security envelope`, async () => {
+      const transport = new TranscriptTransport({
+        batches: [
+          [harness.writer.toolCall("call-1", "files.read", { path: ["Workspace", "notes.md"] })],
+          [harness.writer.message("read it"), harness.writer.complete()],
+        ],
+      });
+      const { result, audit } = await runWith(harness.driver({ transport }));
+
+      expect(result.status).toBe("succeeded");
+      expect(audit.events.some(({ type }) => type === "tool.invoked")).toBe(true);
+      expect(transport.written).toHaveLength(1);
+    });
+
+    it(`passes an unexposed tool name through instead of filtering it (${harness.label})`, async () => {
+      const transport = new TranscriptTransport({
+        batches: [
+          [harness.writer.toolCall("call-1", "admin.grant.issue", {})],
+          [harness.writer.complete()],
+        ],
+      });
+      const { result } = await runWith(harness.driver({ transport }));
+
+      expect(result.status).toBe("succeeded");
+      const completed = result.events.filter(({ type }) => type === "tool.completed");
+      expect(completed[0]?.data).toMatchObject({ status: "denied", tool: "admin.grant.issue" });
+    });
+
+    it(`files a ${harness.label} turn's evidence under the harness that produced it`, () => {
+      const transport = new TranscriptTransport({ batches: [[harness.writer.complete()]] });
+
+      expect(harness.runtime({ transport }).manifest.id).toBe(harness.manifest.id);
+    });
+
+    it(`shows the ${harness.label} harness the sanitised context and nothing else`, async () => {
+      const transport = new TranscriptTransport({ batches: [[harness.writer.complete()]] });
+      await runWith(harness.driver({ transport }));
+
+      expect(Object.keys(transport.opened[0]?.context ?? {}).sort()).toEqual([
+        "actor",
+        "namespaceId",
+        "now",
+        "owner",
+        "purpose",
+        "traceId",
+      ]);
+      expect(JSON.stringify(transport.opened)).not.toContain("grant-files");
+    });
+
+    it(`declares that the ${harness.label} catalogue is delivered out of band`, () => {
+      // Neither harness has a wire frame for a tool catalogue: both run their
+      // own tools. The claim a column makes is narrower as a result, so the
+      // record says so rather than leaving it to be inferred.
+      expect(harness.manifest.metadata).toMatchObject({ catalogueDelivery: "out-of-band" });
+    });
+  }
+
+  it("pairs each writer with the protocol that reads it", () => {
+    expect(deepseekFrameWriter.protocolId).toBe(deepseekProtocol.id);
+    expect(piFrameWriter.protocolId).toBe(piProtocol.id);
+  });
+
+  it("reports a missing harness rather than failing a run", async () => {
+    for (const requirements of [DEEPSEEK_REQUIREMENTS, PI_REQUIREMENTS]) {
+      const availability = await probeHarness(requirements, { PATH: "/nonexistent" });
+
+      expect(availability).toMatchObject({ harness: requirements.harness, available: false });
+      expect(availability.reason).toMatch(/not on PATH/u);
+    }
   });
 });

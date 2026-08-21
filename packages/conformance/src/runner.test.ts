@@ -9,12 +9,16 @@ import {
   codexProtocol,
 } from "@aicoo/sharedos-adapters";
 
-import { movesToTranscript } from "./columns.js";
+import { liveReceiptsFromRecord, movesToPrompt, movesToTranscript } from "./columns.js";
 import { CANONICAL_ATTACK_MOVES, canonicalMove } from "./moves.js";
 import {
   CLAUDE_CODE_TRANSCRIPT_COLUMN,
   CODEX_TRANSCRIPT_COLUMN,
+  DEEPSEEK_TRANSCRIPT_COLUMN,
   EMBEDDED_COLUMN,
+  PI_TRANSCRIPT_COLUMN,
+  receiptsFromRecord,
+  type ColumnTurn,
   type RuntimeColumn,
   type RuntimeColumnOptions,
 } from "./columns.js";
@@ -127,19 +131,31 @@ describe("the conformance suite", () => {
     const { manifest, evidence } = await runConformanceSuite();
 
     expect(manifest.rows).toHaveLength(21);
-    expect(manifest.columns).toHaveLength(3);
+    expect(manifest.columns).toHaveLength(5);
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
-    expect(cells).toHaveLength(63);
+    expect(cells).toHaveLength(105);
     // Every implemented row passes in every column that can run it. The rest are
-    // stated: two rows SharedOS does not implement, and four vendor cells whose
-    // attempts a harness structurally cannot make.
-    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(51);
-    expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(6);
-    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(6);
+    // stated: two rows SharedOS does not implement, counted once per column, and
+    // three rows per vendor column whose attempts a harness structurally cannot
+    // make.
+    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(83);
+    expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(10);
+    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(12);
     expect(strictFailures(manifest)).toEqual([]);
     // Evidence exists for every cell that ran a turn, and for no cell that did
-    // not: two unimplemented rows and one row no vendor column supports.
-    expect(evidence).toHaveLength(55);
+    // not: the two unimplemented rows in every column, and the escalation row in
+    // each of the four vendor columns, which no harness can declare.
+    expect(evidence).toHaveLength(91);
+
+    // Every vendor column lands on the same counts. That is the portability
+    // claim in its smallest form: adding a harness adds a column, not an
+    // exception.
+    for (const column of manifest.columns.filter(({ id }) => id !== "sharedos-embedded")) {
+      const columnCells = cells.filter((cell) => cell.columnId === column.id);
+      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(16);
+      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(3);
+      expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(2);
+    }
 
     const byCase = (caseId: string, conditionId = "baseline") =>
       manifest.rows.find((row) => row.caseId === caseId && row.conditionId === conditionId)
@@ -404,3 +420,135 @@ function emptyRecord(): Parameters<typeof judgeCase>[1]["record"] {
     },
   };
 }
+
+describe("a live column's receipts", () => {
+  const move = canonicalMove("read_to_mutation");
+
+  /**
+   * One turn's record as a live harness would leave it: the calls were made,
+   * but under identifiers the harness minted rather than ones the move declared.
+   */
+  function liveTurn(): ColumnTurn {
+    const attempts = move.attempts.filter((attempt) => attempt.tool !== undefined);
+    return {
+      executionId: "live-1",
+      turn: 1,
+      record: {
+        execution: {
+          operations: attempts.map((attempt, index) => ({
+            at: "2026-08-18T09:00:00.000Z",
+            kind: "tool" as const,
+            source: "kernel" as const,
+            outcome: attempt.role === "control" ? ("succeeded" as const) : ("denied" as const),
+            operationId: `toolu_live_${index}`,
+            tool: attempt.tool as string,
+            ...(Array.isArray(attempt.toolArguments?.["path"])
+              ? {
+                  resource: {
+                    namespace: "files",
+                    path: attempt.toolArguments["path"] as string[],
+                  },
+                }
+              : {}),
+            ...(attempt.role === "control" ? {} : { reasonCode: "no_matching_grant" }),
+            failClosed: false,
+          })),
+        },
+      },
+    } as unknown as ColumnTurn;
+  }
+
+  it("finds nothing when correlating a live harness's calls by declared id", () => {
+    // The transcript column's correlation is by an id built from the move. A
+    // live harness never mints that id, so every attempt reads as unreached --
+    // which is what made a turn that issued every call report as issuing none.
+    const receipts = receiptsFromRecord(move, liveTurn());
+
+    expect(receipts.every(({ attempted }) => !attempted)).toBe(true);
+  });
+
+  it("finds them by the tool and resource the record actually names", () => {
+    const receipts = liveReceiptsFromRecord(move, liveTurn());
+
+    expect(receipts.every(({ attempted }) => attempted)).toBe(true);
+    expect(receipts.filter(({ role }) => role === "control")[0]).toMatchObject({
+      observed: "succeeded",
+    });
+    expect(receipts.filter(({ role }) => role === "attack")[0]).toMatchObject({
+      observed: "denied",
+      reasonCode: "no_matching_grant",
+    });
+  });
+
+  it("consumes each operation once, so one call cannot answer two attempts", () => {
+    const turn = liveTurn();
+    const single = {
+      ...turn,
+      record: {
+        execution: { operations: [turn.record.execution.operations[0]] },
+      },
+    } as unknown as ColumnTurn;
+    const receipts = liveReceiptsFromRecord(move, single);
+
+    expect(receipts.filter(({ attempted }) => attempted)).toHaveLength(1);
+  });
+
+  it("leaves an inspection attempt unreached rather than guessing at it", () => {
+    // An inspection reads a runtime surface rather than calling a tool, and a
+    // live harness is never handed one. There is no operation that could stand
+    // in for it, so it must stay unreached rather than borrow a nearby call.
+    const receipts = liveReceiptsFromRecord(
+      canonicalMove("grant_material_unreachable"),
+      liveTurn(),
+    );
+    const inspections = receipts.filter(({ tool }) => tool === undefined);
+
+    expect(inspections.length).toBeGreaterThan(0);
+    expect(inspections.every(({ attempted }) => !attempted)).toBe(true);
+  });
+});
+
+describe("the prompt a live column issues", () => {
+  it("names every issuable attempt with its exact tool and arguments", () => {
+    const move = canonicalMove("read_to_mutation");
+    const prompt = movesToPrompt([move], { context: conformanceRuntimeContext(1), turn: 1 });
+
+    for (const attempt of move.attempts) {
+      if (attempt.tool === undefined) {
+        continue;
+      }
+      expect(prompt).toContain(attempt.tool);
+    }
+    // A refusal is the expected result on most rows, so the instruction has to
+    // say so: a harness that stopped at the first denial would leave the rest of
+    // the row unreached and report as a broken column.
+    expect(prompt).toMatch(/refusal is the expected result/u);
+  });
+});
+
+describe("every transcript column", () => {
+  it("grades identically, which is the portability claim in its smallest form", async () => {
+    const columns = [
+      CODEX_TRANSCRIPT_COLUMN,
+      CLAUDE_CODE_TRANSCRIPT_COLUMN,
+      DEEPSEEK_TRANSCRIPT_COLUMN,
+      PI_TRANSCRIPT_COLUMN,
+    ];
+    const { manifest } = await runConformanceSuite({ columns: [EMBEDDED_COLUMN, ...columns] });
+
+    const shape = (columnId: string) =>
+      manifest.rows.map((row) => {
+        const cell = row.cells.find((candidate) => candidate.columnId === columnId);
+        return `${cell?.status}:${[...(cell?.refusedBy ?? [])].sort().join(",")}:${[
+          ...(cell?.reasonCodes ?? []),
+        ]
+          .sort()
+          .join(",")}`;
+      });
+
+    const codex = shape(CODEX_TRANSCRIPT_COLUMN.id);
+    for (const column of columns) {
+      expect(shape(column.id)).toEqual(codex);
+    }
+  });
+});
