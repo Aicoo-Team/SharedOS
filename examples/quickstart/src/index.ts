@@ -113,5 +113,10 @@ const result = await new SharedOSExecutor(kernel, new StandardRuntime(driver), {
 console.log({
   visibleTools: tools.map(({ name }) => name),
   status: result.status,
-  output: result.status === "succeeded" ? result.output : result.error,
+  output:
+    result.status === "succeeded"
+      ? result.output
+      : result.status === "escalated"
+        ? result.escalation
+        : result.error,
 });

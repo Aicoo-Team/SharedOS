@@ -13,6 +13,7 @@ import {
   type ContentHash,
   type DecisionRecord,
   type ExecutionRecord,
+  type ExecutionRecordExecution,
   ExecutionRecordSchema,
   type ExperimentIdentity,
   type OperationRecord,
@@ -82,11 +83,7 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
       traceId: result.traceId,
       agent: request.agent,
       status: result.status,
-      ...(result.status === "succeeded"
-        ? { output: result.output }
-        : result.error === undefined
-          ? {}
-          : { terminalReasonCode: result.error.code }),
+      ...terminalOutcome(result),
       exposedTools: exposedTools(result.events),
       requestedTools: request.tools.map(({ name }) => name),
       decisions: decisions(audit),
@@ -116,6 +113,25 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
     throw new TypeError(`Assembled execution record is not valid: ${parsed.error.message}`);
   }
   return parsed.data;
+}
+
+/**
+ * What the turn ended as, in the record's own vocabulary.
+ *
+ * An escalated turn has no protocol error, because nothing refused it: it
+ * stopped and asked. It is given a terminal reason code anyway so a row can be
+ * graded on it like any other terminal outcome, and the escalation stub is
+ * carried through so the record names the reviewer as well as the fact.
+ */
+function terminalOutcome(result: ExecutionResult): Partial<ExecutionRecordExecution> {
+  switch (result.status) {
+    case "succeeded":
+      return { output: result.output };
+    case "escalated":
+      return { terminalReasonCode: "escalation_requested", escalation: result.escalation };
+    default:
+      return result.error === undefined ? {} : { terminalReasonCode: result.error.code };
+  }
 }
 
 function runtimeManifestOf(result: ExecutionResult): RuntimeManifest {

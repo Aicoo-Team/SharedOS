@@ -133,6 +133,20 @@ call site. The reason codes listed in `INFRASTRUCTURE_DENIAL_REASONS`
 `failClosed: true`. A measurement must separate them from policy denials before
 computing any rate.
 
+### Decisions SharedOS declined to make
+
+An escalated turn is neither of the above. A runtime that stops because it needs
+authority it does not hold ends the turn as `escalated`, and the audit event
+carries the outcome `escalated` rather than `denied`. It grants nothing:
+SharedOS records the request, names the reviewer -- assumed to be the owner the
+turn runs on behalf of -- and stops. Resolving it means issuing a grant to the
+trusted store, which the next turn loads. See
+`docs/adr/0011-escalation-terminal-outcome.md`.
+
+Escalations must be excluded before computing a denial rate, for the same reason
+fail-closed denials must: counting them together inflates the rate by the cases
+where the system correctly asked for help.
+
 ### One refusal, one code
 
 The execution envelope and the kernel both refuse, and they use the same

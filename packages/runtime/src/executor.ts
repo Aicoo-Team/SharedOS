@@ -64,7 +64,13 @@ export interface TurnExecutorOptions extends SharedOSExecutorOptions, StandardRu
  * permits narrow test doubles without granting a runtime direct access to
  * registries, namespace settings, or other host policy state.
  */
-export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool">;
+export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> &
+  /**
+   * Optional so a narrow test double stays viable. A kernel that does not offer
+   * `recordEscalation` still ends an escalated turn as escalated, but without an
+   * audit trail for it. `SharedOSKernel` offers it.
+   */
+  Partial<Pick<SharedOSKernel, "recordEscalation">>;
 
 /**
  * The non-replaceable security envelope around one replaceable RuntimePlugin.
@@ -306,6 +312,41 @@ export class SharedOSExecutor implements TurnExecutionPort {
           traceId: request.context.traceId,
           status: "succeeded",
           output: outcome.data.output,
+          events,
+          startedAt,
+          completedAt: this.#clock(),
+          metadata: runtimeResultMetadata(this.#manifest, outcome.data),
+        };
+      }
+
+      if (outcome.data.type === "escalate") {
+        // The escalation is recorded through the kernel, which owns audit, and
+        // then the turn ends. Nothing here waits for a reviewer: resolving an
+        // escalation means issuing a grant to the trusted store, which the next
+        // turn loads. A kernel that offers no escalation port still terminates
+        // the turn as escalated -- the outcome is the runtime's to declare, and
+        // dropping it because audit is unavailable would lose the one fact this
+        // path exists to record.
+        const escalation = (await raceWithAbort(
+          this.#kernel.recordEscalation?.(
+            contextAt(executionContext, this.#clock()),
+            outcome.data.reason,
+            { signal: abort.signal },
+          ) ?? Promise.resolve(undefined),
+          abort.signal,
+        )) ?? {
+          reason: outcome.data.reason,
+          reviewer: request.context.owner,
+          requestedAt: this.#clock(),
+          status: "pending" as const,
+        };
+        emit("turn.escalated", { reason: escalation.reason, reviewer: escalation.reviewer });
+        return {
+          version: "1",
+          executionId: request.executionId,
+          traceId: request.context.traceId,
+          status: "escalated",
+          escalation,
           events,
           startedAt,
           completedAt: this.#clock(),

@@ -470,6 +470,54 @@ describe("RuntimePlugin security envelope", () => {
     );
   });
 
+  it("ends a turn that asked a human to decide as escalated, and records it", async () => {
+    const recordEscalation = vi.fn(async (access: AccessContext, reason: string) => ({
+      reason,
+      reviewer: access.owner,
+      requestedAt: access.now,
+      status: "pending" as const,
+    }));
+    const plugin = runtime(async () => ({
+      type: "escalate",
+      reason: "issuing a grant is outside this agent's authority",
+    }));
+
+    const result = await new SharedOSExecutor({ ...kernel(), recordEscalation }, plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+
+    // Not a failure and not a denial: a third terminal state, so "the agent
+    // asked for help" stays recoverable from the result.
+    expect(result.status).toBe("escalated");
+    if (result.status === "escalated") {
+      expect(result.escalation).toEqual({
+        reason: "issuing a grant is outside this agent's authority",
+        reviewer: owner,
+        requestedAt: now,
+        status: "pending",
+      });
+    }
+    expect(recordEscalation).toHaveBeenCalledOnce();
+    expect(result.events.map(({ type }) => type)).toContain("turn.escalated");
+  });
+
+  it("still ends the turn as escalated when the kernel offers no escalation port", async () => {
+    const plugin = runtime(async () => ({ type: "escalate", reason: "needs a human" }));
+
+    const result = await new SharedOSExecutor(kernel(), plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+
+    // Losing the audit trail is bad; losing the fact that the turn stopped to
+    // ask would be worse, so the outcome survives an unavailable port.
+    expect(result.status).toBe("escalated");
+    if (result.status === "escalated") {
+      expect(result.escalation.reviewer).toEqual(owner);
+    }
+  });
+
   it("does not let an observational event sink replace the turn outcome", async () => {
     const result = await new SharedOSExecutor(kernel(), runtime(), {
       clock: () => now,

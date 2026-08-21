@@ -3,6 +3,7 @@ import type {
   Address,
   AuthorizationDecision,
   Capability,
+  Escalation,
   MessageDeliveryResult,
   MessageEnvelope,
   ProtocolError,
@@ -15,6 +16,7 @@ import type {
 } from "@aicoo/sharedos-contracts";
 import {
   EnabledToolNamespacesSchema,
+  EscalationSchema,
   JsonObjectSchema,
   MessageDeliveryResultSchema,
   ResourceResultSchema,
@@ -179,6 +181,53 @@ export class SharedOSKernel {
       return this.#denyUnavailableAuthority(context, request, authority.code, true);
     }
     return this.#authorize(authority.authority, request, true);
+  }
+
+  /**
+   * Record that a turn stopped and asked a human to decide.
+   *
+   * This mints nothing and unblocks nothing. It writes one audit event and
+   * returns the stub the turn terminates with, so an escalation is visible in
+   * the same stream as the decisions around it rather than surviving only as
+   * runtime prose. The reviewer is the owner the turn already runs on behalf
+   * of; SharedOS has no review roster and does not invent one.
+   *
+   * Resolving an escalation is host-owned control-plane work: it ends in a new
+   * grant issued to the trusted store, which the *next* turn loads. There is
+   * deliberately no path from here back into the running turn.
+   */
+  async recordEscalation(
+    context: AccessContext,
+    reason: string,
+    options: KernelOperationOptions = {},
+  ): Promise<Escalation> {
+    throwIfAborted(options.signal);
+    context = structuredClone(context);
+    const parsed = EscalationSchema.safeParse({
+      reason,
+      reviewer: context.owner,
+      requestedAt: context.now,
+      status: "pending",
+    });
+    if (!parsed.success) {
+      throw new TypeError("escalation does not match the SharedOS v1 contract");
+    }
+
+    await this.#audit.record(
+      auditEvent(context, {
+        type: "escalation.requested",
+        outcome: "escalated",
+        reason: "escalation_requested",
+        metadata: {
+          detail: parsed.data.reason,
+          reviewer: parsed.data.reviewer,
+          reviewerAssumed: true,
+          resolution: "pending",
+        },
+      }),
+    );
+
+    return parsed.data;
   }
 
   async listTools(

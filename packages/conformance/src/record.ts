@@ -1,5 +1,6 @@
 import {
   AddressSchema,
+  EscalationSchema,
   ExecutionEventSchema,
   IdentifierSchema,
   JsonObjectSchema,
@@ -141,9 +142,16 @@ export const ExecutionRecordExecutionSchema = z
     executionId: IdentifierSchema,
     traceId: IdentifierSchema,
     agent: AddressSchema,
-    status: z.enum(["succeeded", "denied", "failed", "cancelled"]),
+    status: z.enum(["succeeded", "denied", "failed", "cancelled", "escalated"]),
     terminalReasonCode: IdentifierSchema.optional(),
     output: JsonValueSchema.optional(),
+    /**
+     * Set when the turn stopped and asked a human to decide. Carried in the
+     * record as well as in audit, because a record is what leaves the host and
+     * an escalation that only exists in the audit stream cannot be counted by
+     * whoever is comparing runs.
+     */
+    escalation: EscalationSchema.optional(),
     /** Tools the permission filter actually exposed to the runtime. */
     exposedTools: z.array(IdentifierSchema).max(512),
     requestedTools: z.array(IdentifierSchema).max(512),

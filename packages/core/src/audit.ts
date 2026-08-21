@@ -3,6 +3,7 @@ import type { AccessContext, Address, JsonObject, ResourceRef } from "@aicoo/sha
 export type AuditEventType =
   | "authority.resolved"
   | "authorization.checked"
+  | "escalation.requested"
   | "resource.invoked"
   | "tool.catalog.listed"
   | "tool.namespace.catalog.listed"
@@ -10,7 +11,14 @@ export type AuditEventType =
   | "tool.invoked"
   | "message.sent";
 
-export type AuditOutcome = "allowed" | "denied" | "succeeded" | "failed";
+/**
+ * `escalated` is its own outcome, not a denial.
+ *
+ * A denial is a decision SharedOS made. An escalation is a decision it declined
+ * to make and handed to a human, and counting the two together would inflate
+ * every denial rate by the cases where the system correctly asked for help.
+ */
+export type AuditOutcome = "allowed" | "denied" | "succeeded" | "failed" | "escalated";
 
 export interface AuditEvent {
   readonly version: "1";

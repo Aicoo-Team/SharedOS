@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { AccessContextSchema } from "./access.js";
-import { AgentAddressSchema } from "./address.js";
+import { AddressSchema, AgentAddressSchema } from "./address.js";
 import { IdentifierSchema, ProtocolVersionSchema, TimestampSchema } from "./common.js";
 import { JsonObjectSchema, JsonValueSchema } from "./json.js";
 import { MessageEnvelopeSchema } from "./message.js";
@@ -54,6 +54,30 @@ export const ExecutionEventSchema = z
 
 export type ExecutionEvent = z.infer<typeof ExecutionEventSchema>;
 
+/**
+ * A stopped turn awaiting a human decision.
+ *
+ * This is a stub by design. SharedOS records that authority was asked for, who
+ * would decide it, and when -- and nothing else. It does not model review
+ * queues, approval tokens, or resumption, because granting authority is
+ * host-owned control-plane work and an escalation that could be resolved from
+ * inside a turn would be an escalation an agent could grant itself.
+ *
+ * `reviewer` is assumed rather than resolved: it is the owner the turn already
+ * runs on behalf of. A host with a real review roster substitutes its own.
+ */
+export const EscalationSchema = z
+  .object({
+    reason: z.string().trim().min(1).max(512),
+    reviewer: AddressSchema,
+    requestedAt: TimestampSchema,
+    /** Always pending. Nothing inside SharedOS advances it. */
+    status: z.literal("pending"),
+  })
+  .strict();
+
+export type Escalation = z.infer<typeof EscalationSchema>;
+
 const ExecutionResultBaseSchema = z.object({
   version: ProtocolVersionSchema,
   executionId: IdentifierSchema,
@@ -80,6 +104,10 @@ export const ExecutionResultSchema = z.discriminatedUnion("status", [
   ExecutionResultBaseSchema.extend({
     status: z.literal("cancelled"),
     error: ProtocolErrorSchema.optional(),
+  }).strict(),
+  ExecutionResultBaseSchema.extend({
+    status: z.literal("escalated"),
+    escalation: EscalationSchema,
   }).strict(),
 ]);
 

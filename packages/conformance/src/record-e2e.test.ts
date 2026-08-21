@@ -253,6 +253,45 @@ describe("execution records from a real turn", () => {
     expect(record.execution.decisions.some(({ failClosed }) => failClosed)).toBe(true);
   });
 
+  it("emits a usable record for a turn that stopped to ask a human", async () => {
+    const escalating: RuntimePlugin = {
+      manifest: runtime.manifest,
+      async run() {
+        return { type: "escalate", reason: "issuing a grant is outside this agent's authority" };
+      },
+    };
+    const audit: AuditEvent[] = [];
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        async load() {
+          return allowed;
+        },
+      },
+      audit: { record: async (event) => void audit.push(event) },
+    });
+    kernel.registerTool(readHandler);
+
+    const result = await new SharedOSExecutor(kernel, escalating, { clock: () => NOW }).execute(
+      request(),
+    );
+    const record = assembleExecutionRecord({
+      request: request(),
+      result,
+      auditEvents: audit,
+      experiment,
+      system,
+    });
+
+    // An escalated turn is neither a success nor a denial, and the record keeps
+    // it separable from both so a denial rate is not inflated by the turns
+    // where the system correctly asked for help.
+    expect(record.execution.status).toBe("escalated");
+    expect(record.execution.terminalReasonCode).toBe("escalation_requested");
+    expect(record.execution.escalation).toMatchObject({ status: "pending" });
+    expect(checkRecordCompleteness(record).usable).toBe(true);
+    expect(checkRecordRedaction(record).clean).toBe(true);
+  });
+
   it("carries no message payload, tool arguments, or tool output", async () => {
     const { record } = await runTurn(allowed);
     const serialized = JSON.stringify(record);

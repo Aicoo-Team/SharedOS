@@ -154,6 +154,56 @@ function successfulTool(definition = FILE_TOOL): ToolHandler {
   };
 }
 
+describe("SharedOSKernel escalation", () => {
+  it("records an escalation as its own outcome and grants nothing", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (event) => void events.push(event) } });
+
+    const escalation = await kernel.recordEscalation(
+      context(),
+      "issuing a grant is outside this agent's authority",
+    );
+
+    expect(escalation).toEqual({
+      reason: "issuing a grant is outside this agent's authority",
+      // Assumed, not resolved: the owner the turn already runs on behalf of.
+      reviewer: OWNER,
+      requestedAt: NOW,
+      status: "pending",
+    });
+    expect(events).toEqual([
+      expect.objectContaining({
+        type: "escalation.requested",
+        // Not a denial. SharedOS did not decide this; it declined to.
+        outcome: "escalated",
+        reason: "escalation_requested",
+        actor: ACTOR,
+        metadata: expect.objectContaining({ reviewer: OWNER, reviewerAssumed: true }),
+      }),
+    ]);
+  });
+
+  it("does not let an escalation change what the actor may do", async () => {
+    const kernel = kernelWith([]);
+    kernel.registerTool(successfulTool());
+
+    await kernel.recordEscalation(context(), "needs a human");
+
+    // The store is the only thing that grants authority, and recording a
+    // request against it changed nothing there.
+    await expect(kernel.invokeTool(context(), toolCall())).resolves.toMatchObject({
+      status: "denied",
+      error: { code: "tool_unavailable" },
+    });
+  });
+
+  it("refuses an escalation with no stated reason", async () => {
+    const kernel = kernelWith([]);
+
+    await expect(kernel.recordEscalation(context(), "   ")).rejects.toThrow(TypeError);
+  });
+});
+
 describe("SharedOSKernel tools", () => {
   it("requires namespace enablement and capability authority independently", async () => {
     const invoke = vi.fn(successfulTool().invoke);

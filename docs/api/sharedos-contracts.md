@@ -116,6 +116,14 @@ Defined in: [tool.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 ---
 
+### Escalation
+
+> **Escalation** = `z.infer`\<_typeof_ [`EscalationSchema`](#escalationschema)>\>
+
+Defined in: [execution.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L79)
+
+---
+
 ### ExecutionEvent
 
 > **ExecutionEvent** = `z.infer`\<_typeof_ [`ExecutionEventSchema`](#executioneventschema)>\>
@@ -144,7 +152,7 @@ Defined in: [execution.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/p
 
 > **ExecutionResult** = `z.infer`\<_typeof_ [`ExecutionResultSchema`](#executionresultschema)>\>
 
-Defined in: [execution.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L86)
+Defined in: [execution.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L114)
 
 ---
 
@@ -296,7 +304,7 @@ Defined in: [runtime.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > **RuntimeTurnOutcome** = `z.infer`\<_typeof_ [`RuntimeTurnOutcomeSchema`](#runtimeturnoutcomeschema)>\>
 
-Defined in: [runtime.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L45)
+Defined in: [runtime.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L59)
 
 ---
 
@@ -515,6 +523,25 @@ Defined in: [tool.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 ---
 
+### EscalationSchema
+
+> `const` **EscalationSchema**: `ZodObject`\<\{ `reason`: `ZodString`; `requestedAt`: `ZodString`; `reviewer`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `status`: `ZodLiteral`\<`"pending"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}, \{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}\>
+
+Defined in: [execution.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L69)
+
+A stopped turn awaiting a human decision.
+
+This is a stub by design. SharedOS records that authority was asked for, who
+would decide it, and when -- and nothing else. It does not model review
+queues, approval tokens, or resumption, because granting authority is
+host-owned control-plane work and an escalation that could be resolved from
+inside a turn would be an escalation an agent could grant itself.
+
+`reviewer` is assumed rather than resolved: it is the owner the turn already
+runs on behalf of. A host with a real review roster substitutes its own.
+
+---
+
 ### ExecutionEventSchema
 
 > `const` **ExecutionEventSchema**: `ZodObject`\<\{ `data`: `ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>\>; `eventId`: `ZodString`; `executionId`: `ZodString`; `occurredAt`: `ZodString`; `sequence`: `ZodNumber`; `traceId`: `ZodString`; `type`: `ZodString`; `version`: `ZodLiteral`\<`"1"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `data`: [`JsonValue`](#jsonvalue); `eventId`: `string`; `executionId`: `string`; `occurredAt`: `string`; `sequence`: `number`; `traceId`: `string`; `type`: `string`; `version`: `"1"`; \}, \{ `data`: [`JsonValue`](#jsonvalue); `eventId`: `string`; `executionId`: `string`; `occurredAt`: `string`; `sequence`: `number`; `traceId`: `string`; `type`: `string`; `version`: `"1"`; \}\>
@@ -545,9 +572,9 @@ One permission-controlled agent turn. Tick scheduling stays with the host.
 
 ### ExecutionResultSchema
 
-> `const` **ExecutionResultSchema**: `ZodDiscriminatedUnion`\<`"status"`, \[`ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \}, \{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \}, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \}, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \}, \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \}\>\]\>
+> `const` **ExecutionResultSchema**: `ZodDiscriminatedUnion`\<`"status"`, \[`ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \}, \{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \}, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \}, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \}, \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}, \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>\]\>
 
-Defined in: [execution.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L67)
+Defined in: [execution.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L91)
 
 ---
 
@@ -754,11 +781,18 @@ Stable, JSON-safe provenance for one installed runtime implementation.
 
 ### RuntimeTurnOutcomeSchema
 
-> `const` **RuntimeTurnOutcomeSchema**: `ZodDiscriminatedUnion`\<`"type"`, \[`ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `type`: `"complete"`; \}, \{ `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `type`: `"complete"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `type`: `"fail"`; \}, \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `type`: `"fail"`; \}\>\]\>
+> `const` **RuntimeTurnOutcomeSchema**: `ZodDiscriminatedUnion`\<`"type"`, \[`ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `type`: `"complete"`; \}, \{ `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `type`: `"complete"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `type`: `"fail"`; \}, \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `type`: `"fail"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `metadata?`: [`JsonObject`](#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}, \{ `metadata?`: [`JsonObject`](#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}\>\]\>
 
-Defined in: [runtime.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L34)
+Defined in: [runtime.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L43)
 
 The only terminal outcomes a runtime plugin may return for one bounded turn.
+
+`escalate` is a third terminal state rather than a flavour of `fail`. A turn
+that stopped because it needed authority it does not hold is a different
+event from one that was refused and from one that erred, and collapsing it
+into either would make "the agent asked for help" unrecoverable from the
+record. It grants nothing: SharedOS records the request, names the reviewer
+the host would route it to, and stops.
 
 ---
 
