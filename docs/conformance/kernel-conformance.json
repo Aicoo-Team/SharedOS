@@ -1,7 +1,7 @@
 {
   "version": "1",
   "judgeVersion": "1",
-  "caseSetHash": "b33e92c1209ad6ab357f450f9c02a4a93d8e8626b4902d44621709e3a9586057",
+  "caseSetHash": "a39a06b6b0b97698fbf8e3d5f94350becfaaa4e50551e37cef8cddb866d729c2",
   "columns": [
     {
       "id": "sharedos-embedded",
@@ -161,11 +161,11 @@
     },
     {
       "caseId": "authority-unavailable",
-      "conditionId": "outage-mid-turn",
+      "conditionId": "outage-at-turn-boundary",
       "kind": "authority_unavailable",
       "invariant": "Make the grant store unavailable",
       "expectedOutcome": "Fail closed",
-      "condition": "The grant store answers turn admission, tool discovery, and one call, then stops. An outage that begins before the turn denies admission, so the runtime never attempts anything.",
+      "condition": "The grant store is unavailable when the turn asks for its authority. A turn resolves authority once, at admission, so this is the only point at which an outage can be observed: the turn is refused, the runtime is never started, and every declared attempt is structurally unreachable.",
       "cells": [
         {
           "columnId": "sharedos-embedded",
@@ -177,10 +177,11 @@
             "authority_unavailable"
           ],
           "declared": 3,
-          "attempted": 3,
-          "notApplicable": 0,
+          "attempted": 0,
+          "notApplicable": 3,
           "recordUsable": true,
-          "recordGaps": []
+          "recordGaps": [],
+          "detail": "the turn itself ended as `denied` with `authority_unavailable`, before the runtime was started"
         }
       ]
     },

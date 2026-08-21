@@ -210,7 +210,11 @@ async function runCell(
   });
 
   const report = readAdversarialReport(result);
-  const judgement = judgeCase(kase.move, { receipts: report?.receipts ?? [], record });
+  const judgement = judgeCase(
+    kase.move,
+    { receipts: report?.receipts ?? [], record },
+    condition.expectTurn === undefined ? {} : { expectTurn: condition.expectTurn },
+  );
 
   return {
     cell: {

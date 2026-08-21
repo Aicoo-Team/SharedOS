@@ -348,7 +348,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:118](https://github.com/Aico
 
 ### SharedOSExecutor
 
-Defined in: [packages/runtime/src/executor.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L79)
+Defined in: [packages/runtime/src/executor.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L81)
 
 The non-replaceable security envelope around one replaceable RuntimePlugin.
 Scheduling, retries, and network-level stopping remain host responsibilities.
@@ -363,7 +363,7 @@ Scheduling, retries, and network-level stopping remain host responsibilities.
 
 > **new SharedOSExecutor**(`kernel`, `runtime`, `options?`): [`SharedOSExecutor`](#sharedosexecutor)
 
-Defined in: [packages/runtime/src/executor.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L89)
+Defined in: [packages/runtime/src/executor.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L91)
 
 ###### Parameters
 
@@ -385,7 +385,7 @@ Defined in: [packages/runtime/src/executor.ts:89](https://github.com/Aicoo-Team/
 
 > **get** **runtimeManifest**(): `object`
 
-Defined in: [packages/runtime/src/executor.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L130)
+Defined in: [packages/runtime/src/executor.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L132)
 
 ###### Returns
 
@@ -413,7 +413,7 @@ Defined in: [packages/runtime/src/executor.ts:130](https://github.com/Aicoo-Team
 
 > **execute**(`input`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/runtime/src/executor.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L134)
+Defined in: [packages/runtime/src/executor.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L136)
 
 ###### Parameters
 
@@ -535,7 +535,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:79](https://github.com/Aic
 
 ### TurnExecutor
 
-Defined in: [packages/runtime/src/executor.ts:388](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L388)
+Defined in: [packages/runtime/src/executor.ts:411](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L411)
 
 Compatibility facade for the original driver-based API. New harnesses should
 implement RuntimePlugin and use SharedOSExecutor directly.
@@ -550,7 +550,7 @@ implement RuntimePlugin and use SharedOSExecutor directly.
 
 > **new TurnExecutor**(`kernel`, `driver`, `options?`): [`TurnExecutor`](#turnexecutor)
 
-Defined in: [packages/runtime/src/executor.ts:391](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L391)
+Defined in: [packages/runtime/src/executor.ts:414](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L414)
 
 ###### Parameters
 
@@ -572,7 +572,7 @@ Defined in: [packages/runtime/src/executor.ts:391](https://github.com/Aicoo-Team
 
 > **get** **runtimeManifest**(): `object`
 
-Defined in: [packages/runtime/src/executor.ts:415](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L415)
+Defined in: [packages/runtime/src/executor.ts:438](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L438)
 
 ###### Returns
 
@@ -600,7 +600,7 @@ Defined in: [packages/runtime/src/executor.ts:415](https://github.com/Aicoo-Team
 
 > **execute**(`input`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/runtime/src/executor.ts:419](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L419)
+Defined in: [packages/runtime/src/executor.ts:442](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L442)
 
 ###### Parameters
 
@@ -1050,7 +1050,7 @@ issuing authority, or namespace-management state.
 
 ### TurnKernel
 
-> **TurnKernel** = `Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"admitTurn"` \| `"listTools"` \| `"invokeTool"`> \> & `Partial`\<`Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"recordEscalation"`>>\>\>
+> **TurnKernel** = `Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"admitTurn"` \| `"listTools"` \| `"invokeTool"`> \> & `Partial`\<`Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"openTurnAuthority"` \| `"recordEscalation"`>>\>\>
 
 Defined in: [packages/runtime/src/executor.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L67)
 

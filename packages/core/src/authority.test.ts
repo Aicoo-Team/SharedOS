@@ -292,7 +292,7 @@ describe("SharedOSKernel authority boundary", () => {
     });
   });
 
-  it("sees a revocation recorded during a turn at the next decision", async () => {
+  it("resolves authority per operation when no turn is open", async () => {
     let revoked = false;
     const kernel = kernelWith(sourceOf(async () => (revoked ? [] : [grant()])));
 
@@ -304,5 +304,115 @@ describe("SharedOSKernel authority boundary", () => {
       allowed: false,
       reasonCode: "no_matching_grant",
     });
+  });
+});
+
+describe("SharedOSKernel turn-scoped authority", () => {
+  const kernelWith = (source: GrantSource, loads?: { count: number }): SharedOSKernel =>
+    new SharedOSKernel({
+      grantSource: {
+        load: async (accessContext, signal) => {
+          if (loads !== undefined) {
+            loads.count += 1;
+          }
+          return source.load(accessContext, signal);
+        },
+      },
+    });
+
+  it("holds one authority state for the whole turn, however many decisions it makes", async () => {
+    const loads = { count: 0 };
+    const kernel = kernelWith(staticSource([grant()]), loads);
+
+    const turn = await kernel.openTurnAuthority(context());
+    for (let index = 0; index < 4; index += 1) {
+      await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+        allowed: true,
+      });
+    }
+    turn.close();
+
+    expect(turn.status).toBe("resolved");
+    expect(loads.count).toBe(1);
+  });
+
+  it("does not observe a revocation recorded while the turn is running", async () => {
+    let revoked = false;
+    const kernel = kernelWith(sourceOf(async () => (revoked ? [] : [grant()])));
+
+    const turn = await kernel.openTurnAuthority(context());
+    revoked = true;
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: true,
+    });
+    turn.close();
+
+    // The next turn loads again, and the revocation lands there.
+    const next = await kernel.openTurnAuthority(context());
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: false,
+      reasonCode: "no_matching_grant",
+    });
+    next.close();
+  });
+
+  it("freezes expiry with revocation, because both are the same removal check", async () => {
+    const expiring = grant({ constraints: { purposes: ["prepare-update"], expiresAt: NOW } });
+    const kernel = kernelWith(staticSource([expiring]));
+    const beforeExpiry = { ...context(), now: "2026-08-03T08:59:00.000Z" };
+
+    const turn = await kernel.openTurnAuthority(beforeExpiry);
+    // The operation's own clock has passed the expiry; the turn's has not.
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: true,
+    });
+    turn.close();
+
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: false,
+      reasonCode: "no_matching_grant",
+    });
+  });
+
+  it("never answers one turn's operation from another turn's authority", async () => {
+    const kernel = kernelWith(staticSource([grant()]));
+
+    const turn = await kernel.openTurnAuthority(context());
+    // Same actor and namespace, different purpose: a different decision, and one
+    // this grant does not permit.
+    await expect(
+      kernel.authorize({ ...context(), purpose: "publish-summary" }, READ_REQUEST),
+    ).resolves.toMatchObject({ allowed: false, reasonCode: "no_matching_grant" });
+    turn.close();
+  });
+
+  it("stops answering from a closed turn", async () => {
+    const loads = { count: 0 };
+    const kernel = kernelWith(staticSource([grant()]), loads);
+
+    (await kernel.openTurnAuthority(context())).close();
+    await kernel.authorize(context(), READ_REQUEST);
+
+    expect(loads.count).toBe(2);
+  });
+
+  it("keeps a turn fail-closed without re-reading an unavailable store", async () => {
+    const loads = { count: 0 };
+    const kernel = kernelWith(
+      sourceOf(async () => {
+        throw new Error("grant store is unreachable");
+      }),
+      loads,
+    );
+
+    const turn = await kernel.openTurnAuthority(context());
+    expect(turn).toMatchObject({ status: "unavailable", code: "grant_source_failed" });
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: false,
+      reasonCode: "authority_unavailable",
+    });
+    turn.close();
+
+    expect(loads.count).toBe(1);
   });
 });

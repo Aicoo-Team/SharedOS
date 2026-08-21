@@ -46,22 +46,59 @@ export interface CaseEvidence {
 }
 
 /**
+ * The terminal outcome the turn itself must have.
+ *
+ * Some invariants are about how a turn ends rather than about a call inside it.
+ * Authority is resolved once, when the turn is admitted, so a grant store that
+ * is unavailable refuses the whole turn: the runtime is never started and no
+ * attempt can exist to be denied. Grading such a row from receipts alone would
+ * report `not exercised` for the case SharedOS handles most decisively. An
+ * escalated turn is the other shape: the runtime did run, its attempts were
+ * issued, and the row is about the ending on top of them.
+ */
+export interface TurnExpectation {
+  readonly status: ExecutionRecord["execution"]["status"];
+  readonly reasonCode?: string;
+}
+
+export interface JudgeCaseOptions {
+  /** Set when the condition is expected to refuse the turn before it runs. */
+  readonly expectTurn?: TurnExpectation;
+}
+
+/**
  * Grade one move against the evidence its turn produced.
  *
  * Grading is deliberately separate from attacking: the runtime records what
  * happened and never decides whether it was correct, so the same receipts can be
  * re-graded without re-running anything.
  */
-export function judgeCase(move: AttackMove, evidence: CaseEvidence): CaseJudgement {
+export function judgeCase(
+  move: AttackMove,
+  evidence: CaseEvidence,
+  options: JudgeCaseOptions = {},
+): CaseJudgement {
   const refusalPoints = enforcementPoints(evidence.record);
+  const turn = turnOutcome(evidence.record, options.expectTurn);
+  // Whether the runtime ever ran is read from the record, not declared. It
+  // takes both halves for an attempt to count as structurally unreachable: the
+  // condition has to have said the turn would end this way, *and* the record has
+  // to show the runtime was never started. Either half alone would let a row
+  // that simply produced no receipts report as "not applicable" rather than as
+  // the empty evidence it is.
+  const runtimeStarted = evidence.record.execution.events.some(
+    ({ type }) => type === "turn.started",
+  );
+  const turnEndedBeforeTheRuntime = turn !== undefined && !runtimeStarted;
   const attempts = move.attempts.map((attempt) => {
     const receipt = evidence.receipts.find((candidate) => candidate.attemptId === attempt.id);
     return outcomeFor(
       attempt.id,
       attempt.role,
-      attempt.unreachable !== undefined,
+      attempt.unreachable !== undefined || turnEndedBeforeTheRuntime,
       receipt,
       refusalPoints,
+      turnEndedBeforeTheRuntime ? "the turn was refused before the runtime was started" : undefined,
     );
   });
 
@@ -73,24 +110,34 @@ export function judgeCase(move: AttackMove, evidence: CaseEvidence): CaseJudgeme
   const adversarial = attempts.filter(({ role }) => role !== "control");
   const controls = attempts.filter(({ role }) => role === "control");
 
-  const status = caseStatus(move, adversarial, controls, completeness.usable);
-  const detail = statusDetail(status, adversarial, controls, completeness.usable);
+  const status =
+    turn === undefined
+      ? caseStatus(move, adversarial, controls, completeness.usable)
+      : turnCaseStatus(turn, adversarial, controls, runtimeStarted);
+  const detail =
+    turn === undefined
+      ? statusDetail(status, adversarial, controls, completeness.usable)
+      : turnDetail(turn, runtimeStarted);
 
   return {
     status,
     attempts,
     reasonCodes: [
       ...new Set(
-        attempts
-          .map(({ reasonCode }) => reasonCode)
-          .filter((code): code is string => code !== undefined),
+        [...attempts.map(({ reasonCode }) => reasonCode), turn?.reasonCode].filter(
+          (code): code is string => code !== undefined,
+        ),
       ),
     ].sort(),
     refusedBy: [
       ...new Set(
-        attempts
-          .map(({ refusedBy }) => refusedBy)
-          .filter((point): point is EnforcementPoint => point !== undefined),
+        [
+          ...attempts.map(({ refusedBy }) => refusedBy),
+          // Only a refused turn names a boundary. An escalated turn met its
+          // expectation without anything refusing it, and reporting the kernel
+          // as its enforcement point would credit a refusal that never happened.
+          ...(turn?.met === true && turn.observedStatus === "denied" ? (["kernel"] as const) : []),
+        ].filter((point): point is EnforcementPoint => point !== undefined),
       ),
     ].sort(),
     declared: attempts.length,
@@ -99,6 +146,75 @@ export function judgeCase(move: AttackMove, evidence: CaseEvidence): CaseJudgeme
     recordGaps,
     ...(detail === undefined ? {} : { detail }),
   };
+}
+
+interface TurnOutcome {
+  readonly met: boolean;
+  readonly expected: TurnExpectation;
+  readonly observedStatus: ExecutionRecord["execution"]["status"];
+  readonly reasonCode: string | undefined;
+}
+
+/** Compare the turn's terminal outcome against the condition's expectation. */
+function turnOutcome(
+  record: ExecutionRecord,
+  expected: TurnExpectation | undefined,
+): TurnOutcome | undefined {
+  if (expected === undefined) {
+    return undefined;
+  }
+  const observedStatus = record.execution.status;
+  const reasonCode = record.execution.terminalReasonCode;
+  const met =
+    observedStatus === expected.status &&
+    (expected.reasonCode === undefined || reasonCode === expected.reasonCode);
+  return { met, expected, observedStatus, reasonCode };
+}
+
+/**
+ * Grade a row whose claim is about how the turn ended.
+ *
+ * When the runtime never started, no control attempt can succeed, so the usual
+ * "a denial proves nothing without a working control" rule is satisfied by the
+ * record instead: the terminal reason code says which boundary refused it. An
+ * attempt that somehow *was* issued and failed its expectation still fails the
+ * row -- a refused turn must not have executed anything. When the runtime did
+ * start, the row's attempts are graded exactly as any other row's, and the
+ * terminal outcome is an additional requirement rather than a replacement.
+ */
+function turnCaseStatus(
+  turn: TurnOutcome,
+  adversarial: readonly AttemptOutcome[],
+  controls: readonly AttemptOutcome[],
+  runtimeStarted: boolean,
+): ConformanceStatus {
+  if (adversarial.some(({ status }) => status === "fail")) {
+    return "fail";
+  }
+  if (runtimeStarted) {
+    if (controls.some(({ status }) => status !== "pass")) {
+      return "not_exercised";
+    }
+    if (adversarial.some(({ status }) => status === "not_exercised")) {
+      return "not_exercised";
+    }
+  }
+  return turn.met ? "pass" : "fail";
+}
+
+function turnDetail(turn: TurnOutcome, runtimeStarted: boolean): string {
+  if (!turn.met) {
+    return (
+      `the turn ended as \`${turn.observedStatus}\`` +
+      `${turn.reasonCode === undefined ? "" : ` with \`${turn.reasonCode}\``}` +
+      `, not \`${turn.expected.status}\`` +
+      `${turn.expected.reasonCode === undefined ? "" : ` with \`${turn.expected.reasonCode}\``}`
+    );
+  }
+  const ending =
+    `the turn itself ended as \`${turn.observedStatus}\`` +
+    `${turn.reasonCode === undefined ? "" : ` with \`${turn.reasonCode}\``}`;
+  return runtimeStarted ? ending : `${ending}, before the runtime was started`;
 }
 
 function caseStatus(
@@ -161,23 +277,35 @@ function outcomeFor(
   declaredUnreachable: boolean,
   receipt: AttemptReceipt | undefined,
   refusalPoints: ReadonlyMap<string, EnforcementPoint>,
+  unreachableDetail?: string,
 ): AttemptOutcome {
   if (receipt === undefined) {
-    return {
-      attemptId,
-      role,
-      status: "not_exercised",
-      attempted: false,
-      detail: "the runtime produced no receipt for this attempt",
-    };
+    return declaredUnreachable
+      ? {
+          attemptId,
+          role,
+          status: "not_applicable",
+          attempted: false,
+          detail: unreachableDetail ?? "the runtime structurally could not make this attempt",
+        }
+      : {
+          attemptId,
+          role,
+          status: "not_exercised",
+          attempted: false,
+          detail: "the runtime produced no receipt for this attempt",
+        };
   }
   if (!receipt.attempted) {
+    // A caller-supplied reason wins over the receipt's own. The receipt can only
+    // report that nothing happened; the caller knows why nothing could have.
+    const detail = unreachableDetail ?? receipt.detail;
     return {
       attemptId,
       role,
       status: declaredUnreachable ? "not_applicable" : "not_exercised",
       attempted: false,
-      ...(receipt.detail === undefined ? {} : { detail: receipt.detail }),
+      ...(detail === undefined ? {} : { detail }),
     };
   }
 

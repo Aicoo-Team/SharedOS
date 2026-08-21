@@ -1,6 +1,7 @@
 # ADR 0009: Load authority from a trusted grant source, never from a context
 
-- Status: Accepted
+- Status: Accepted; per-operation resolution superseded by
+  `docs/adr/0010-per-turn-authority.md`
 - Date: 2026-08-18
 
 ## Context
@@ -35,8 +36,10 @@ interface GrantSource {
 }
 ```
 
-`SharedOSKernel` requires a `GrantSource` and resolves authority itself, once
-per kernel operation, through `TrustedAuthorityResolver`. The resolver validates
+`SharedOSKernel` requires a `GrantSource` and resolves authority itself, through
+`TrustedAuthorityResolver`. This ADR resolved once per kernel operation; ADR 0010
+moved that to once per turn. Everything below about _what_ the boundary is, and
+what it rejects, is unchanged — only _how often_ it is crossed. The resolver validates
 what the source returned and collapses every failure mode to one outcome:
 
 | Situation                                               | Code                     |
@@ -66,13 +69,14 @@ rates: they are SharedOS failing to establish a fact, not a policy decision.
 - Authority is re-resolved for every kernel operation, so revoking a grant takes
   effect at the next decision inside a running turn. Hosts that need caching
   implement it inside their `GrantSource` and own the staleness window.
+  **Superseded by ADR 0010:** authority is resolved once per turn and a
+  revocation lands at the next turn. The per-operation path is retained behind
+  `MID_TURN_AUTHORITY_REFRESH`.
 - A grant source that answers with a superset (for example, every grant in a
   namespace) fails closed rather than being silently filtered. Pre-filtering is
   part of the contract.
 - The kernel performs one authority load per operation, so a turn with N tool
-  calls performs N + 2 loads. This is deliberate: correctness under mid-turn
-  revocation is worth more than a cached decision, and the cost is measurable in
-  the systems-cost benchmarks.
+  calls performs N + 2 loads. **Superseded by ADR 0010:** one load per turn.
 - Breaking change for every embedder: `new SharedOSKernel()` no longer compiles,
   and a context literal with `grants` no longer parses. The repository is
   pre-1.0 and the alpha packages absorb it.
@@ -92,7 +96,9 @@ that authority _always_ comes from the trusted source.
 
 **Resolve authority once per turn in the executor.** Rejected because it puts
 the boundary above the kernel, leaves direct kernel callers unprotected, and
-makes mid-turn revocation unobservable.
+makes mid-turn revocation unobservable. ADR 0010 later adopted per-turn
+resolution _inside the kernel_, which answers the first two objections; the
+third became the accepted trade-off.
 
 **Report an authority outage as a provider failure.** Rejected because no
 provider ran. It is a denial; what makes it distinguishable from a policy denial

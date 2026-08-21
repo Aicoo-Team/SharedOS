@@ -83,7 +83,7 @@ not usable authority until an eligible issuer turns it into a trusted grant.
 
 An `AccessContext` carries identity, purpose, trace, enabled tool namespaces,
 and time. It carries no grants. Authority is loaded by the kernel from a
-required `GrantSource`, once per operation, and is held beside the context in a
+required `GrantSource`, once per turn, and is held beside the context in a
 `ResolvedAuthority` that no provider, tool handler, transport, or runtime can
 receive.
 
@@ -132,6 +132,10 @@ call site. The reason codes listed in `INFRASTRUCTURE_DENIAL_REASONS`
 `usage_store_unavailable`) mark that case, and their audit records carry
 `failClosed: true`. A measurement must separate them from policy denials before
 computing any rate.
+
+A turn that could not establish authority at all has no authority state to name,
+so record completeness does not require one from a decision that failed closed.
+Demanding it would report every correct fail-closed turn as unusable evidence.
 
 ### Decisions SharedOS declined to make
 
@@ -311,19 +315,30 @@ or embeddings.
 
 ## Time, revocation, and bounded use
 
-Expiry and revocation are checked at point of use, not only when a turn begins.
-Long-running turns must re-authorize each external side effect. Hosts supply a
-trusted clock or trusted timestamp policy.
+Every external side effect is authorized separately, against the authority the
+turn was admitted with. Hosts supply a trusted clock or trusted timestamp
+policy.
 
 `maxUses` requires an atomic compare-and-set store shared by all executing
 instances. The kernel has no implicit process-local fallback: a bounded grant
 fails closed unless the host explicitly supplies a store. The exported in-memory
 store is suitable only for tests or a guaranteed single-process host.
 
-Because authority is re-loaded from the trusted source for every kernel
-operation, a revocation recorded mid-turn takes effect at the next decision in
-that same turn. A host that caches inside its `GrantSource` owns the resulting
-staleness window and must keep it inside its revocation SLA.
+Authority is loaded from the trusted source once, when a turn is admitted, and
+held for that turn. Every way a grant leaves an actor's authority -- not yet
+active, expired, revoked, or withdrawn from the requested purpose -- runs through
+one check evaluated against the instant the turn was admitted, so all four are
+observed by the **next** turn. A turn therefore carries the authority it was
+admitted with, rather than having authority resolved underneath it while it runs.
+
+A host whose revocation SLA is shorter than its longest turn must bound turn
+length; the kernel will not cut a turn short. A host that additionally caches
+inside its `GrantSource` owns that staleness window on top.
+
+The per-operation path is retained behind `MID_TURN_AUTHORITY_REFRESH`, together
+with the open question of whether expiry -- unlike revocation, a property the
+grant already carried at admission -- should still be refused mid-turn. See
+`docs/adr/0010-per-turn-authority.md`.
 
 ## Audit requirements
 

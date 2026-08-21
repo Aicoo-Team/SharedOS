@@ -6,7 +6,8 @@ import type {
   ToolDefinition,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
-import type { SharedOSKernel } from "@aicoo/sharedos-core";
+import { SharedOSKernel } from "@aicoo/sharedos-core";
+import type { CapabilityGrant } from "@aicoo/sharedos-contracts";
 
 import {
   TurnExecutor,
@@ -333,5 +334,67 @@ describe("TurnExecutor", () => {
     }).execute(request());
 
     expect(result.status).toBe("succeeded");
+  });
+});
+
+describe("turn-scoped authority", () => {
+  const agentGrant: CapabilityGrant = {
+    id: "grant-turn",
+    namespaceId: "world-1",
+    subject: receiver,
+    issuer: owner,
+    capabilities: [
+      {
+        resource: { namespace: "sharedos.execution", path: ["agent", "agent-alice"], owner },
+        actions: ["invoke"],
+        scope: "exact",
+      },
+    ],
+    constraints: {},
+    issuedAt: "2026-08-02T00:00:00.000Z",
+  };
+
+  const completingDriver: AgentTurnDriver = {
+    open: async () => ({ next: async () => ({ type: "complete", output: { ok: true } }) }),
+  };
+
+  it("releases the turn's authority when the turn is cancelled while it is being resolved", async () => {
+    let loads = 0;
+    let revoked = false;
+    let releaseLoad: (() => void) | undefined;
+
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        async load() {
+          loads += 1;
+          if (loads === 1) {
+            await new Promise<void>((resolve) => {
+              releaseLoad = resolve;
+            });
+          }
+          return revoked ? [] : [agentGrant];
+        },
+      },
+    });
+    const executor = new TurnExecutor(kernel, completingDriver, { clock: () => now });
+
+    const controller = new AbortController();
+    const cancelled = executor.execute(request(), { signal: controller.signal });
+    // Abort while the very first authority load is still in flight.
+    await Promise.resolve();
+    controller.abort();
+    await expect(cancelled).resolves.toMatchObject({ status: "cancelled" });
+
+    // Let the abandoned load finish, and revoke before the next turn opens.
+    releaseLoad?.();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    revoked = true;
+
+    // The abandoned lease must not answer this turn.
+    await expect(executor.execute(request())).resolves.toMatchObject({
+      status: "denied",
+      error: { code: "no_matching_grant" },
+    });
+    expect(loads).toBe(2);
   });
 });

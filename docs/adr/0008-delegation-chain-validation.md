@@ -68,8 +68,10 @@ one so an infrastructure failure is never presented as a policy decision.
 
 ## Consequences
 
-- Revoking a parent grant now invalidates its descendants at the next decision,
-  with no rewrite of the descendants.
+- Revoking a parent grant now invalidates its descendants, with no rewrite of
+  the descendants. Ancestors are resolved on the authorization path, so the
+  invalidation is observed at the next decision that resolves the chain -- which,
+  since ADR 0010, is the next decision in the next turn.
 - A host that issues delegated grants must install a `DelegationChainResolver`.
   Without one, delegated grants authorize nothing; grants without a parent are
   unaffected.
@@ -91,9 +93,11 @@ field.
 presented chain is exactly the thing an attacker controls. Only re-resolution
 against the issuing store makes revocation meaningful.
 
-**Read ancestors from `AccessContext.grants`.** Rejected because that array
-holds the actor's own grants; a parent belongs to the delegator, so the chain
-would usually be unresolvable and, when present, attacker-influenced.
+**Read ancestors from the actor's own resolved authority.** Rejected because
+that set holds the grants issued _to_ the actor; a parent belongs to the
+delegator, so the chain would usually be unresolvable and, when present,
+attacker-influenced. (`AccessContext` carried the actor's grants inline when this
+ADR was written; ADR 0009 removed the field.)
 
 **Treat a missing resolver as "no delegation configured, allow".** Rejected
 because it converts an unenforced guarantee into a silent bypass. Deny-by-default

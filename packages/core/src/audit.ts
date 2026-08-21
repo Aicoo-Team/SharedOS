@@ -36,9 +36,9 @@ export interface AuditEvent {
   readonly grantId?: string;
   /**
    * Content identifier of the exact authority set the decision was made
-   * against. Authority is re-loaded per operation, so one turn can span several
-   * distinct values; an `authority.resolved` event carries the grant ids behind
-   * each one.
+   * against. A turn resolves authority once, so every decision in it carries the
+   * same value; the `authority.resolved` event that opened the turn carries the
+   * grant ids behind it.
    */
   readonly authorityHash?: string;
   readonly operationId?: string;

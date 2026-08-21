@@ -93,9 +93,13 @@ describe("the conformance suite", () => {
     expect(byCase("replayed-grant", "ancestor-revoked")?.reasonCodes).toEqual([
       "delegation_chain_invalid",
     ]);
-    expect(byCase("authority-unavailable", "outage-mid-turn")?.reasonCodes).toEqual([
-      "authority_unavailable",
-    ]);
+    const outage = byCase("authority-unavailable", "outage-at-turn-boundary");
+    expect(outage?.reasonCodes).toEqual(["authority_unavailable"]);
+    // The turn is refused before the runtime runs, so every declared attempt is
+    // reported as structurally unreachable rather than as never exercised.
+    expect(outage?.attempted).toBe(0);
+    expect(outage?.notApplicable).toBe(outage?.declared);
+    expect(outage?.detail).toMatch(/before the runtime was started/u);
     expect(byCase("namespace-crossing")?.notApplicable).toBe(1);
   });
 

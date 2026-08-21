@@ -374,6 +374,35 @@ describe("record completeness", () => {
     expect(report.gaps.map(({ field }) => field)).toContain("execution.decisions.0.authorityHash");
   });
 
+  it("does not demand an authority state from a turn that never established one", () => {
+    const record = assembleExecutionRecord({
+      request: request(),
+      result: result(),
+      auditEvents: [
+        auditEvent({
+          type: "authorization.checked",
+          outcome: "denied",
+          reason: "authority_unavailable",
+          metadata: { failClosed: true },
+        }),
+      ],
+      experiment,
+      system,
+    });
+    const report = checkRecordCompleteness(record);
+
+    // The turn could not reach its grant store, so there is no authority state
+    // for it to name. Requiring one would report every correct fail-closed turn
+    // as unusable evidence -- which is the opposite of what the row is for.
+    expect(report.usable).toBe(true);
+    expect(report.gaps).toContainEqual(
+      expect.objectContaining({ field: "authority.snapshots", severity: "expected" }),
+    );
+    expect(report.gaps.map(({ field }) => field)).not.toContain(
+      "execution.decisions.0.authorityHash",
+    );
+  });
+
   it("rejects a decision naming an authority state with no snapshot", () => {
     const record = assembleExecutionRecord({
       request: request(),

@@ -33,6 +33,9 @@
 - [ADR 0005: Files are the canonical resource plane](adr/0005-files-resource-plane.md)
 - [ADR 0006: Tool namespace control plane](adr/0006-tool-namespace-control-plane.md)
 - [ADR 0007: Pluggable runtimes inside a fixed security envelope](adr/0007-pluggable-runtime-security-envelope.md)
+- [ADR 0008: Validate the complete delegation chain before use](adr/0008-delegation-chain-validation.md)
+- [ADR 0009: Load authority from a trusted grant source, never from a context](adr/0009-trusted-grant-source.md)
+- [ADR 0010: Resolve authority once per turn](adr/0010-per-turn-authority.md)
 - [ADR 0011: Escalation is a terminal outcome, not a denial](adr/0011-escalation-terminal-outcome.md)
 - [ADR 0012: One refusal vocabulary at both enforcement boundaries](adr/0012-one-refusal-vocabulary.md)
 

@@ -40,12 +40,18 @@ export function checkRecordCompleteness(record: ExecutionRecord): RecordComplete
   const gaps: CompletenessGap[] = [];
   const value = parsed.data;
 
+  // A turn that never established authority has no state to name, and demanding
+  // one would make every correct fail-closed turn report as unusable evidence.
+  // The distinction is whether any decision was actually a policy decision.
+  const decidedOnAuthority = value.execution.decisions.some(({ failClosed }) => !failClosed);
+
   if (value.authority.snapshots.length === 0) {
     gaps.push({
       field: "authority.snapshots",
-      severity: "required",
-      detail:
-        "No authority snapshot was observed, so no decision can be tied to the grants behind it.",
+      severity: decidedOnAuthority ? "required" : "expected",
+      detail: decidedOnAuthority
+        ? "No authority snapshot was observed, so no decision can be tied to the grants behind it."
+        : "Authority was never established; every decision in this turn failed closed.",
     });
   }
 
@@ -59,11 +65,13 @@ export function checkRecordCompleteness(record: ExecutionRecord): RecordComplete
 
   for (const [index, decision] of value.execution.decisions.entries()) {
     if (decision.authorityHash === undefined) {
-      gaps.push({
-        field: `execution.decisions.${index}.authorityHash`,
-        severity: "required",
-        detail: "A decision does not name the authority state it was made against.",
-      });
+      if (!decision.failClosed) {
+        gaps.push({
+          field: `execution.decisions.${index}.authorityHash`,
+          severity: "required",
+          detail: "A decision does not name the authority state it was made against.",
+        });
+      }
       continue;
     }
     if (!value.authority.snapshots.some(({ hash }) => hash === decision.authorityHash)) {

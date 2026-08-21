@@ -1,4 +1,5 @@
 import type { AttackMove } from "./adversary.js";
+import type { TurnExpectation } from "./judge.js";
 import { canonicalMove } from "./moves.js";
 import { READ_GRANT, ROOT_FILES_GRANT, type ConformanceWorldOptions } from "./world.js";
 
@@ -12,6 +13,13 @@ export interface ConformanceCondition {
   readonly id: string;
   readonly description: string;
   readonly world: ConformanceWorldOptions;
+  /**
+   * Set when the row's claim is about how the turn itself ends: refused at the
+   * boundary before the runtime starts, or terminated by the runtime asking a
+   * human to decide. The row is then graded on the turn's terminal outcome as
+   * well as on its attempts.
+   */
+  readonly expectTurn?: TurnExpectation;
 }
 
 /**
@@ -76,10 +84,11 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
     move: canonicalMove("authority_unavailable"),
     conditions: [
       {
-        id: "outage-mid-turn",
+        id: "outage-at-turn-boundary",
         description:
-          "The grant store answers turn admission, tool discovery, and one call, then stops. An outage that begins before the turn denies admission, so the runtime never attempts anything.",
-        world: { authorityFailsAfterLoads: 3 },
+          "The grant store is unavailable when the turn asks for its authority. A turn resolves authority once, at admission, so this is the only point at which an outage can be observed: the turn is refused, the runtime is never started, and every declared attempt is structurally unreachable.",
+        world: { authorityFailsAfterLoads: 0 },
+        expectTurn: { status: "denied", reasonCode: "authority_unavailable" },
       },
     ],
   },

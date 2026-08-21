@@ -347,9 +347,12 @@ export class ConformanceGrantSource implements GrantSource {
   /**
    * Fail every load after this many successful ones.
    *
-   * Loads occur once for turn admission, once for tool discovery, and once per
-   * tool call that reaches the kernel, so a case can arm an outage that begins
-   * part-way through a turn rather than before it starts.
+   * A turn loads authority exactly once, when it is admitted, and every decision
+   * it makes afterwards is answered from that one load. `0` therefore arms an
+   * outage the turn cannot survive, and any value of `1` or more leaves the turn
+   * entirely unaffected: there is no second load for a later failure to catch.
+   * Restoring `MID_TURN_AUTHORITY_REFRESH` in `@aicoo/sharedos-core` makes the
+   * higher values meaningful again.
    */
   failAfterLoads(count: number): this {
     this.#failAfterLoads = count;

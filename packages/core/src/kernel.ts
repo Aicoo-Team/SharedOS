@@ -29,8 +29,11 @@ import {
   type AuthorityResolution,
   type AuthorityUnavailableCode,
   type GrantSource,
+  MID_TURN_AUTHORITY_REFRESH,
   type ResolvedAuthority,
   TrustedAuthorityResolver,
+  type TurnAuthorityScope,
+  turnAuthorityKey,
 } from "./authority.js";
 import {
   type AuthorizationRequest,
@@ -91,6 +94,12 @@ export function agentExecutionCapability(agent: Address, owner: Address): Capabi
   };
 }
 
+/** One turn's frozen authority, and the number of open handles on it. */
+interface AuthorityLease {
+  refs: number;
+  readonly resolution: AuthorityResolution;
+}
+
 /**
  * Host-neutral facade for every permission-controlled SharedOS operation.
  * AccessContext is a trusted host-created boundary; never construct it from an
@@ -98,6 +107,7 @@ export function agentExecutionCapability(agent: Address, owner: Address): Capabi
  */
 export class SharedOSKernel {
   readonly #authority: TrustedAuthorityResolver;
+  readonly #leases = new Map<string, AuthorityLease>();
   readonly #authorizer: CapabilityAuthorizer;
   readonly #resources: ResourceProviderRegistry;
   readonly #tools: ToolRegistry;
@@ -144,6 +154,59 @@ export class SharedOSKernel {
     this.#toolProviders.set(id, provider);
   }
 
+  /**
+   * Resolve the authority one turn will be decided against, and hold it.
+   *
+   * A turn must decide against a single authority state. This loads that state
+   * once, at the turn boundary, and every kernel operation presenting the same
+   * turn identity is then answered from it -- including operations a tool
+   * handler makes back into the kernel, which never receive a handle and would
+   * otherwise re-read the store.
+   *
+   * An unavailable source is held too, so a turn that could not establish
+   * authority stays fail-closed for its whole length instead of retrying the
+   * store on every call and possibly changing its mind.
+   *
+   * Callers must `close` the returned scope on every exit path. Hosts that call
+   * kernel operations outside any turn need not open one: an operation with no
+   * lease resolves its own authority, which is a turn of one operation.
+   */
+  async openTurnAuthority(
+    context: AccessContext,
+    options: KernelOperationOptions = {},
+  ): Promise<TurnAuthorityScope> {
+    throwIfAborted(options.signal);
+    context = structuredClone(context);
+
+    if (MID_TURN_AUTHORITY_REFRESH) {
+      // The fuse is in. Report the boundary outcome so admission is unchanged,
+      // but hold nothing: every later operation resolves its own authority.
+      return scopeFor(await this.#loadAuthority(context, options.signal), () => undefined);
+    }
+
+    const key = turnAuthorityKey(context);
+    const existing = this.#leases.get(key);
+    if (existing !== undefined) {
+      existing.refs += 1;
+      return scopeFor(existing.resolution, () => this.#releaseTurnAuthority(key));
+    }
+
+    const resolution = await this.#loadAuthority(context, options.signal);
+    this.#leases.set(key, { refs: 1, resolution });
+    return scopeFor(resolution, () => this.#releaseTurnAuthority(key));
+  }
+
+  #releaseTurnAuthority(key: string): void {
+    const lease = this.#leases.get(key);
+    if (lease === undefined) {
+      return;
+    }
+    lease.refs -= 1;
+    if (lease.refs <= 0) {
+      this.#leases.delete(key);
+    }
+  }
+
   async authorize(
     context: AccessContext,
     request: AuthorizationRequest,
@@ -156,7 +219,7 @@ export class SharedOSKernel {
     if (authority.status !== "resolved") {
       return this.#denyUnavailableAuthority(context, request, authority.code, false);
     }
-    return this.#authorize(authority.authority, request, false);
+    return this.#authorize(context, authority.authority, request, false);
   }
 
   /** Consume permission to invoke exactly one target agent turn. */
@@ -180,7 +243,7 @@ export class SharedOSKernel {
     if (authority.status !== "resolved") {
       return this.#denyUnavailableAuthority(context, request, authority.code, true);
     }
-    return this.#authorize(authority.authority, request, true);
+    return this.#authorize(context, authority.authority, request, true);
   }
 
   /**
@@ -493,6 +556,7 @@ export class SharedOSKernel {
     // else: a tool that resolved a capability outside the boundary it declared.
     if (!requirementBelongsToContext(requirement, context)) {
       const crossing = await this.#authorize(
+        context,
         authority.authority,
         { resource: requirement.resource, action: requirement.action },
         false,
@@ -519,6 +583,7 @@ export class SharedOSKernel {
     }
 
     const decision = await this.#authorize(
+      context,
       authority.authority,
       { resource: requirement.resource, action: requirement.action },
       true,
@@ -596,6 +661,7 @@ export class SharedOSKernel {
     }
 
     const decision = await this.#authorize(
+      context,
       authority.authority,
       { resource: request.resource, action: request.action },
       true,
@@ -738,7 +804,7 @@ export class SharedOSKernel {
       return result;
     }
 
-    const decision = await this.#authorize(authority.authority, requirement, true);
+    const decision = await this.#authorize(context, authority.authority, requirement, true);
     if (!decision.allowed) {
       const result = deniedMessageResult(
         envelope,
@@ -795,7 +861,16 @@ export class SharedOSKernel {
     return result;
   }
 
+  /**
+   * Decide and audit one request.
+   *
+   * The decision is made against `authority`, whose context carries the instant
+   * the turn's authority was resolved. The audit event is written against the
+   * live `context`, so a record still states when each decision happened rather
+   * than restamping every one of them with the turn's opening instant.
+   */
   async #authorize(
+    context: AccessContext,
     authority: ResolvedAuthority,
     request: AuthorizationRequest,
     consume: boolean,
@@ -805,7 +880,7 @@ export class SharedOSKernel {
     });
 
     await this.#recordAuthorizationDecision(
-      authority.context,
+      context,
       request,
       decision,
       consume,
@@ -816,13 +891,33 @@ export class SharedOSKernel {
   }
 
   /**
-   * Loads authority for one operation.
+   * The authority one operation is decided against.
    *
-   * Every kernel operation resolves separately, so revoking a grant takes
-   * effect at the next decision inside a running turn rather than at the next
-   * turn.
+   * A turn that opened a lease is answered from it, with no store read and no
+   * second `authority.resolved` event: the turn loaded its authority once and
+   * every decision in it names that one state. An operation outside any turn
+   * resolves its own.
+   *
+   * Setting `MID_TURN_AUTHORITY_REFRESH` skips the lease entirely and restores
+   * per-operation resolution, in which a grant removed from the store mid-turn
+   * is refused at the next decision inside that turn. See the constant for why
+   * that is off and what is still open about it.
    */
   async #resolveAuthority(
+    context: AccessContext,
+    signal: AbortSignal | undefined,
+  ): Promise<AuthorityResolution> {
+    if (!MID_TURN_AUTHORITY_REFRESH) {
+      const lease = this.#leases.get(turnAuthorityKey(context));
+      if (lease !== undefined) {
+        return lease.resolution;
+      }
+    }
+    return this.#loadAuthority(context, signal);
+  }
+
+  /** Read authority from the trusted source once, and audit the attempt. */
+  async #loadAuthority(
     context: AccessContext,
     signal: AbortSignal | undefined,
   ): Promise<AuthorityResolution> {
@@ -971,6 +1066,29 @@ export class SharedOSKernel {
       }
     }
   }
+}
+
+/**
+ * Wrap one resolution as a turn handle whose `close` runs at most once.
+ *
+ * Double-closing would release a lease another turn still holds, so the guard
+ * is here rather than in every caller's cleanup path.
+ */
+function scopeFor(resolution: AuthorityResolution, release: () => void): TurnAuthorityScope {
+  let closed = false;
+  return {
+    status: resolution.status,
+    ...(resolution.status === "resolved"
+      ? { snapshot: resolution.authority.snapshot }
+      : { code: resolution.code }),
+    close: (): void => {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      release();
+    },
+  };
 }
 
 function deniedToolResult(

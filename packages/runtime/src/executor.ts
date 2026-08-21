@@ -21,7 +21,7 @@ import {
   type ToolDefinition,
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
-import type { SharedOSKernel } from "@aicoo/sharedos-core";
+import type { SharedOSKernel, TurnAuthorityScope } from "@aicoo/sharedos-core";
 
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
 import type {
@@ -67,10 +67,12 @@ export interface TurnExecutorOptions extends SharedOSExecutorOptions, StandardRu
 export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> &
   /**
    * Optional so a narrow test double stays viable. A kernel that does not offer
-   * `recordEscalation` still ends an escalated turn as escalated, but without an
-   * audit trail for it. `SharedOSKernel` offers it.
+   * `openTurnAuthority` resolves authority per operation, which is the older and
+   * stricter behaviour; one that does not offer `recordEscalation` still ends an
+   * escalated turn as escalated, but without an audit trail for it.
+   * `SharedOSKernel` offers both.
    */
-  Partial<Pick<SharedOSKernel, "recordEscalation">>;
+  Partial<Pick<SharedOSKernel, "openTurnAuthority" | "recordEscalation">>;
 
 /**
  * The non-replaceable security envelope around one replaceable RuntimePlugin.
@@ -180,6 +182,8 @@ export class SharedOSExecutor implements TurnExecutionPort {
     let runtimeHostActive = true;
     let toolCallCount = 0;
     const steps = new Set<number>();
+    let authority: TurnAuthorityScope | undefined;
+    let opening: Promise<TurnAuthorityScope> | undefined;
 
     try {
       if (abort.signal.aborted) {
@@ -187,6 +191,16 @@ export class SharedOSExecutor implements TurnExecutionPort {
       }
 
       const executionContext = structuredClone(contextAt(request.context, this.#clock()));
+
+      // The turn boundary. Authority is resolved once here and held for every
+      // decision the turn goes on to make, so a grant removed from the store
+      // while this turn runs is observed by the next turn rather than part-way
+      // through this one. The promise is kept as well as the handle, because a
+      // turn cancelled while this is still in flight never receives the handle
+      // and would leave the lease answering for a turn that has ended.
+      opening = this.#kernel.openTurnAuthority?.(executionContext, { signal: abort.signal });
+      authority = await raceWithAbort(opening ?? Promise.resolve(undefined), abort.signal);
+
       const admission = await raceWithAbort(
         this.#kernel.admitTurn(executionContext, request.agent, { signal: abort.signal }),
         abort.signal,
@@ -375,6 +389,15 @@ export class SharedOSExecutor implements TurnExecutionPort {
       return resultFor(request, events, startedAt, this.#clock(), "failed", error, metadata);
     } finally {
       runtimeHostActive = false;
+      // Released on every path out, including cancellation: an unclosed lease
+      // would keep answering for a turn that has already ended. Closing is
+      // idempotent, so covering both the handle and the promise it came from is
+      // safe and covers the abandoned-while-opening case too.
+      authority?.close();
+      void opening?.then(
+        (scope) => scope.close(),
+        () => undefined,
+      );
       abort.abort(new Error("turn closed"));
       abort.dispose();
     }

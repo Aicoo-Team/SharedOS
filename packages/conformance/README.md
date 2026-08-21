@@ -28,10 +28,11 @@ and the turn's `AuditEvent`s into an `ExecutionRecord`:
 - **cost** — elapsed time, tool calls, authority loads, audit volume, and tokens
   when a runtime reports them.
 
-Authority is recorded per decision rather than per turn. SharedOS re-loads
-authority for every kernel operation, so a grant revoked mid-turn produces a
-second snapshot instead of silently changing the first, and every decision names
-the state it was made against.
+Authority is recorded per decision rather than per turn. A turn resolves
+authority once, at admission, so its decisions all name one snapshot; the
+per-decision field is kept because a host may still call the kernel outside any
+turn, and because restoring `MID_TURN_AUTHORITY_REFRESH` must not change the
+shape of the evidence.
 
 ## Reproducibility
 

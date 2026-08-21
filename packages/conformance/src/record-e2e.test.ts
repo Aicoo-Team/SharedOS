@@ -251,6 +251,10 @@ describe("execution records from a real turn", () => {
     expect(record.execution.status).toBe("denied");
     expect(record.execution.terminalReasonCode).toBe("authority_unavailable");
     expect(record.execution.decisions.some(({ failClosed }) => failClosed)).toBe(true);
+    // And the record it produced is still usable evidence. A fail-closed turn
+    // has no authority state to name, so demanding one would make the turns
+    // SharedOS handles most decisively the ones it cannot report on.
+    expect(checkRecordCompleteness(record).usable).toBe(true);
   });
 
   it("emits a usable record for a turn that stopped to ask a human", async () => {

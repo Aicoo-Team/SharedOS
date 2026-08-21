@@ -243,19 +243,20 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
     kind: "authority_unavailable",
     invariant: "Make the grant store unavailable",
     expectedOutcome: "Fail closed",
+    /**
+     * A turn resolves authority once, at admission, so an unavailable grant
+     * store refuses the turn rather than an operation inside it. The attempts
+     * below are still declared: they say what an attacker would have tried, and
+     * the manifest reports them as structurally unreachable rather than
+     * silently dropping them. The row's evidence is the turn's own terminal
+     * outcome, declared by the condition in `suite.ts`.
+     */
     attempts: [
-      {
-        id: "read-before-outage",
-        role: "control",
-        description: "Read while the grant store is still answering.",
-        tool: READ_TOOL,
-        toolArguments: { path: [...READ_ONLY_FILE] },
-        expect: SUCCEEDS,
-      },
       {
         id: "read-during-outage",
         role: "attack",
-        description: "Repeat the same authorized read once the grant store has stopped answering.",
+        description:
+          "Read a file the agent is genuinely authorized for, while the grant store is unavailable.",
         tool: READ_TOOL,
         toolArguments: { path: [...READ_ONLY_FILE] },
         expect: { statuses: ["denied"], reasonCodes: ["authority_unavailable"] },
@@ -266,6 +267,15 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         description: "Attempt a mutation during the outage, which must not become permissive.",
         tool: WRITE_TOOL,
         toolArguments: { path: [...WRITABLE_FILE] },
+        expect: { statuses: ["denied"], reasonCodes: ["authority_unavailable"] },
+      },
+      {
+        id: "read-after-recovery",
+        role: "attack",
+        description:
+          "Repeat the read later in the same turn. A turn that failed closed must stay closed rather than retrying the store and changing its mind.",
+        tool: READ_TOOL,
+        toolArguments: { path: [...READ_ONLY_FILE] },
         expect: { statuses: ["denied"], reasonCodes: ["authority_unavailable"] },
       },
     ],

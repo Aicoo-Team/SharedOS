@@ -262,21 +262,38 @@ describe("manifest rows under the canonical world", () => {
     expect(structural.detail).toMatch(/no channel to change it/u);
   });
 
-  it("fails closed and stays closed once the grant store stops answering", async () => {
-    // One load admits the turn, one lists tools, one serves the control read.
-    const run = await runMove("authority_unavailable", { authorityFailsAfterLoads: 3 });
+  it("refuses the whole turn when the grant store cannot answer", async () => {
+    // A turn resolves authority once, at admission, so an unavailable store is
+    // observed at the turn boundary: the runtime is never started at all.
+    const run = await runMove("authority_unavailable", { authorityFailsAfterLoads: 0 });
 
-    expect(run.receipt("read-before-outage").observed).toBe("succeeded");
-    for (const attemptId of ["read-during-outage", "write-during-outage"]) {
-      const receipt = run.receipt(attemptId);
-      expect(receipt.attempted).toBe(true);
-      expect(receipt.observed).toBe("denied");
-      expect(receipt.reasonCode).toBe("authority_unavailable");
-    }
+    expect(run.result.status).toBe("denied");
+    expect(run.record.execution.terminalReasonCode).toBe("authority_unavailable");
+    expect(run.record.execution.decisions).toContainEqual(
+      expect.objectContaining({ reasonCode: "authority_unavailable", failClosed: true }),
+    );
+    expect(run.receipts).toEqual([]);
+    expect(run.world.files.reads).toEqual([]);
     expect(run.world.files.writes).toEqual([]);
-    expect(
-      run.record.execution.operations.filter(({ failClosed }) => failClosed).length,
-    ).toBeGreaterThanOrEqual(2);
+    // Nothing executed, so there is no authority state to name, and the record
+    // must still be usable evidence of the refusal.
+    expect(run.record.authority.snapshots).toEqual([]);
+    expect(checkRecordCompleteness(run.record).usable).toBe(true);
+  });
+
+  it("keeps one authority state for a whole turn, and one load behind it", async () => {
+    // This move also sends a message, which reaches the kernel a second time
+    // from inside a tool handler. A nested call receives only an AccessContext,
+    // so it would re-read the store if the turn's authority were not held.
+    const run = await runMove("forged_grant");
+
+    expect(run.record.authority.snapshots).toHaveLength(1);
+    expect(run.record.authority.stableAuthorityHash).toBe(run.record.authority.snapshots[0]?.hash);
+    expect(run.record.cost.authorityLoads).toBe(1);
+    // Every decision the turn made names that one state.
+    for (const decision of run.record.execution.decisions) {
+      expect(decision.authorityHash).toBe(run.record.authority.stableAuthorityHash);
+    }
   });
 
   it("emits a usable record for a turn holding allowed, denied, and escalated attempts", async () => {

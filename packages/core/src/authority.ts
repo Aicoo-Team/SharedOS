@@ -8,6 +8,75 @@ import { addressesEqual, canonicalJson } from "./internal.js";
 export const MAX_RESOLVED_GRANTS = 256;
 
 /**
+ * The fuse over per-operation authority resolution. Off.
+ *
+ * SharedOS originally re-loaded authority from the trusted source for every
+ * kernel operation, so a grant removed from the store part-way through a turn
+ * was refused at the next decision inside that same turn. That path is retained
+ * in {@link SharedOSKernel} and is re-enabled by setting this to `true`.
+ *
+ * It is off because a turn must decide against one authority state. Authority
+ * is now resolved once, at the turn boundary, and every grant removal --
+ * revocation, expiry, purpose withdrawal -- is observed by the *next* turn. A
+ * request therefore carries the authority it was admitted with, rather than
+ * having authority resolved underneath it while it runs.
+ *
+ * TBD Expiry with mid-turn grant refusal.
+ *
+ * Expiry is the open question this fuse exists for. A revocation is a store-side
+ * edit and is naturally a next-turn event: SharedOS cannot see it without
+ * re-reading the store. An expiry is different -- it is a property the grant
+ * already carried when the turn began, so refusing it mid-turn costs no store
+ * read and leaks no store state. The two are frozen together today only because
+ * they share one removal check -- `grantIsActive` in `internal.ts` -- which is
+ * evaluated against the instant the turn's authority was resolved. Splitting them is a
+ * semantic decision about what a turn is, not a mechanical one, and is deferred.
+ */
+export const MID_TURN_AUTHORITY_REFRESH = false;
+
+/**
+ * The identity a turn's frozen authority is held against.
+ *
+ * `now` is excluded because the turn instant is precisely what a lease freezes,
+ * and `enabledToolNamespaces` is excluded because namespace enablement is host
+ * state that stays live per operation and is never read by an authorization
+ * decision. Every other field an authorization decision reads is in the key, so
+ * a lease can never answer for a context it was not resolved for.
+ */
+export function turnAuthorityKey(context: AccessContext): string {
+  return canonicalJson({
+    namespaceId: context.namespaceId,
+    actor: context.actor,
+    authority: context.authority,
+    owner: context.owner,
+    purpose: context.purpose,
+    traceId: context.traceId,
+  });
+}
+
+/**
+ * A handle on one turn's frozen authority.
+ *
+ * The handle reports whether authority could be established at the turn
+ * boundary so a caller can refuse admission, and carries the snapshot the whole
+ * turn will be decided against. It deliberately exposes no grants: like
+ * {@link ResolvedAuthority}, it is not assignable to an `AccessContext`, so it
+ * cannot reach a provider, tool handler, transport, or runtime.
+ *
+ * `close` is idempotent and must run on every path out of the turn, including
+ * cancellation. An unclosed lease keeps a stale authority state answering for
+ * any later operation that presents the same turn identity.
+ */
+export type TurnAuthorityScope = {
+  readonly status: "resolved" | "unavailable";
+  /** Present when authority was established. */
+  readonly snapshot?: AuthoritySnapshot;
+  /** Present when it was not. */
+  readonly code?: AuthorityUnavailableCode;
+  close(): void;
+};
+
+/**
  * The trusted boundary that loads authoritative grants.
  *
  * This is the only way authority enters SharedOS. An implementation must answer
@@ -34,9 +103,11 @@ export type AuthorityUnavailableCode =
 /**
  * A content identifier for exactly the authority one decision was made against.
  *
- * Authority is re-loaded per operation, so a turn can span several distinct
- * authority states. A snapshot lets an execution record name the state a single
- * decision saw instead of assuming one grant set covered the whole turn.
+ * With {@link MID_TURN_AUTHORITY_REFRESH} off, a turn resolves authority once
+ * and every decision in it names the same snapshot. The per-decision field is
+ * kept rather than collapsed to a per-turn one because a host may still make
+ * kernel calls outside any turn, and because re-enabling the fuse must not
+ * change the shape of the evidence.
  */
 export interface AuthoritySnapshot {
   /** SHA-256 over the canonical, order-independent form of the grant set. */

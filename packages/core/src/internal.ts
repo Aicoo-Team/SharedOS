@@ -43,6 +43,19 @@ export function pathIsWithin(parent: readonly string[], candidate: readonly stri
 /**
  * Time, revocation, and purpose eligibility for one grant considered alone.
  *
+ * Every way a grant leaves an actor's authority funnels through here: not yet
+ * active, expired, revoked, or withdrawn from the requested purpose. That makes
+ * this the single point where "when is a removal observed?" is decided, and the
+ * answer is `now`.
+ *
+ * `now` is the instant the *turn's* authority was resolved, not the instant of
+ * the operation being authorized, because `SharedOSKernel` freezes a resolved
+ * authority -- grants and the context that carries `now` together -- for the
+ * whole turn. A removal recorded while a turn is running is therefore observed
+ * by the next turn. See `MID_TURN_AUTHORITY_REFRESH` in `authority.ts` for the
+ * fuse that restores per-operation resolution, and for why expiry and
+ * revocation are frozen together today.
+ *
  * An unparsable declared timestamp is treated as inactive so a malformed grant
  * can never outlive a well-formed one.
  */

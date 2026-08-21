@@ -62,9 +62,10 @@ export type SystemIdentity = z.infer<typeof SystemIdentitySchema>;
 /**
  * One authority state observed during the turn.
  *
- * A turn can span several: SharedOS re-loads authority per kernel operation, so
- * a grant revoked mid-turn produces a second snapshot rather than silently
- * changing the first.
+ * A turn resolves authority once, when it is admitted, so a turn normally
+ * records exactly one and `stableAuthorityHash` is always set. This stays a list
+ * because a host may make kernel calls outside any turn, and because restoring
+ * `MID_TURN_AUTHORITY_REFRESH` must not change the shape of the evidence.
  */
 export const AuthoritySnapshotRecordSchema = z
   .object({
