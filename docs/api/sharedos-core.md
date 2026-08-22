@@ -1323,24 +1323,24 @@ Defined in: [packages/core/src/tool-registry.ts:31](https://github.com/Aicoo-Tea
 
 ### DeriveGrantRequest
 
-Defined in: packages/core/src/delegation.ts:25
+Defined in: [packages/core/src/delegation.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L25)
 
 #### Properties
 
-| Property                                          | Modifier   | Type                                                                                                                                                                                                       | Description                                                                      | Defined in                         |
-| ------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------- |
-| <a id="property-capabilities"></a> `capabilities` | `readonly` | readonly `object`[]                                                                                                                                                                                        | The subset being passed on. Must be within the parent, capability by capability. | packages/core/src/delegation.ts:31 |
-| <a id="property-constraints"></a> `constraints?`  | `readonly` | `Omit`\<\{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, `"delegationDepth"`\> & `object`                               | -                                                                                | packages/core/src/delegation.ts:32 |
-| <a id="property-id-1"></a> `id`                   | `readonly` | `string`                                                                                                                                                                                                   | Identifier for the derived grant. Must be unique within the namespace.           | packages/core/src/delegation.ts:27 |
-| <a id="property-issuedat"></a> `issuedAt`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                | packages/core/src/delegation.ts:35 |
-| <a id="property-metadata-1"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                | packages/core/src/delegation.ts:36 |
-| <a id="property-subject"></a> `subject`           | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Who receives the derived authority.                                              | packages/core/src/delegation.ts:29 |
+| Property                                          | Modifier   | Type                                                                                                                                                                                                       | Description                                                                      | Defined in                                                                                                                 |
+| ------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-capabilities"></a> `capabilities` | `readonly` | readonly `object`[]                                                                                                                                                                                        | The subset being passed on. Must be within the parent, capability by capability. | [packages/core/src/delegation.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L31) |
+| <a id="property-constraints"></a> `constraints?`  | `readonly` | `Omit`\<\{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, `"delegationDepth"`\> & `object`                               | -                                                                                | [packages/core/src/delegation.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L32) |
+| <a id="property-id-1"></a> `id`                   | `readonly` | `string`                                                                                                                                                                                                   | Identifier for the derived grant. Must be unique within the namespace.           | [packages/core/src/delegation.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L27) |
+| <a id="property-issuedat"></a> `issuedAt`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                | [packages/core/src/delegation.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L35) |
+| <a id="property-metadata-1"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                | [packages/core/src/delegation.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L36) |
+| <a id="property-subject"></a> `subject`           | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Who receives the derived authority.                                              | [packages/core/src/delegation.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L29) |
 
 ---
 
 ### GrantChainResolver
 
-Defined in: packages/core/src/delegation.ts:234
+Defined in: [packages/core/src/delegation.ts:234](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L234)
 
 Resolves an ancestor grant so its revocation and expiry still bind.
 
@@ -1350,7 +1350,7 @@ Resolves an ancestor grant so its revocation and expiry still bind.
 
 > **get**(`namespaceId`, `grantId`): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `delegation?`: \{ `chain`: `string`[]; `depth`: `number`; `parentGrantId`: `string`; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: packages/core/src/delegation.ts:235
+Defined in: [packages/core/src/delegation.ts:235](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L235)
 
 ###### Parameters
 
@@ -1742,7 +1742,7 @@ Defined in: [packages/core/src/authorization.ts:17](https://github.com/Aicoo-Tea
 
 > **DelegationRefusal** = `"namespace_mismatch"` \| `"issuer_is_not_the_holder"` \| `"parent_not_delegable"` \| `"depth_exhausted"` \| `"capability_not_within_parent"` \| `"purpose_not_within_parent"` \| `"window_not_within_parent"` \| `"bounded_parent_not_delegable"` \| `"empty_capabilities"`
 
-Defined in: packages/core/src/delegation.ts:10
+Defined in: [packages/core/src/delegation.ts:10](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L10)
 
 ---
 
@@ -1750,7 +1750,7 @@ Defined in: packages/core/src/delegation.ts:10
 
 > **DeriveGrantResult** = \{ `grant`: [`CapabilityGrant`](sharedos-contracts.md#capabilitygrant); `ok`: `true`; \} \| \{ `ok`: `false`; `reason`: [`DelegationRefusal`](#delegationrefusal); \}
 
-Defined in: packages/core/src/delegation.ts:21
+Defined in: [packages/core/src/delegation.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L21)
 
 ## Variables
 
@@ -1993,7 +1993,7 @@ Defined in: [packages/core/src/authorization.ts:259](https://github.com/Aicoo-Te
 
 > **delegationChainIsConsistent**(`grant`): `boolean`
 
-Defined in: packages/core/src/delegation.ts:242
+Defined in: [packages/core/src/delegation.ts:242](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L242)
 
 Delegating who may delegate is separate from delegating what they may do:
 a holder must not be able to hand on a longer chain than it received.
@@ -2032,7 +2032,7 @@ a holder must not be able to hand on a longer chain than it received.
 
 > **deriveGrant**(`parent`, `request`): [`DeriveGrantResult`](#derivegrantresult)
 
-Defined in: packages/core/src/delegation.ts:156
+Defined in: [packages/core/src/delegation.ts:156](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L156)
 
 Derive a narrower grant from one the delegator already holds.
 
