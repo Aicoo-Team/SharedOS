@@ -207,9 +207,16 @@ export class CapabilityAuthorizer {
   /**
    * A derived grant is only as alive as every grant above it.
    *
-   * Narrowing is settled at derivation, so nothing here re-checks scope. What
-   * cannot be settled in advance is what happens later: revoking the root must
-   * stop everything derived from it, immediately and without rewriting the
+   * Narrowing is settled at derivation, so nothing here re-checks scope. That
+   * is safe only because `AccessContext` is a trusted host-created boundary
+   * (see kernel.ts): a grant reaching this point was either issued by the host
+   * or produced by `deriveGrant`, which refuses anything outside its parent. A
+   * host that rebuilds grants from untrusted storage must re-validate them
+   * before assembling the context — this function will not catch a forged
+   * capability set, only a forged or dead chain.
+   *
+   * What cannot be settled in advance is what happens later: revoking the root
+   * must stop everything derived from it, immediately and without rewriting the
    * children. That is why revocation is checked here, at the point of use.
    */
   async #chainIsUsable(

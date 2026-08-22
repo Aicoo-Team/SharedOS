@@ -1790,7 +1790,7 @@ Defined in: [packages/core/src/message-service.ts:12](https://github.com/Aicoo-T
 
 > **addressesEqual**(`left`, `right`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:255](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L255)
+Defined in: [packages/core/src/authorization.ts:262](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L262)
 
 #### Parameters
 
@@ -1923,7 +1923,7 @@ Defined in: [packages/core/src/audit.ts:60](https://github.com/Aicoo-Team/Shared
 
 > **capabilityIntersectsCeiling**(`capability`, `ceiling`, `context`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:287](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L287)
+Defined in: [packages/core/src/authorization.ts:294](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L294)
 
 #### Parameters
 
@@ -1958,7 +1958,7 @@ Defined in: [packages/core/src/authorization.ts:287](https://github.com/Aicoo-Te
 
 > **capabilityMatches**(`capability`, `request`, `context`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:259](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L259)
+Defined in: [packages/core/src/authorization.ts:266](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L266)
 
 #### Parameters
 
