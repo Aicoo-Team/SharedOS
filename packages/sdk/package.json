@@ -1,6 +1,6 @@
 {
   "name": "@aicoo/sharedos",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Permission-controlled state and delegation SDK with pluggable agent runtimes",
   "license": "Apache-2.0",
   "keywords": [

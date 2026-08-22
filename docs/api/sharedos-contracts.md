@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.0**](README.md)
+[**SharedOS API v0.1.0-alpha.1**](README.md)
 
 ---
 
@@ -105,6 +105,54 @@ Defined in: [capability.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/
 > **CapabilityRequirement** = `z.infer`\<_typeof_ [`CapabilityRequirementSchema`](#capabilityrequirementschema)>\>
 
 Defined in: [capability.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L137)
+
+---
+
+### ContextCapsule
+
+> **ContextCapsule** = `z.infer`\<_typeof_ [`ContextCapsuleSchema`](#contextcapsuleschema)>\>
+
+Defined in: [context-capsule.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L96)
+
+---
+
+### ContextCapsuleItem
+
+> **ContextCapsuleItem** = `z.infer`\<_typeof_ [`ContextCapsuleItemSchema`](#contextcapsuleitemschema)>\>
+
+Defined in: [context-capsule.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L84)
+
+---
+
+### ContextCapsuleItemKind
+
+> **ContextCapsuleItemKind** = _typeof_ [`CONTEXT_CAPSULE_ITEM_KINDS`](#context_capsule_item_kinds)\[`number`\]
+
+Defined in: [context-capsule.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L43)
+
+---
+
+### ContextCapsulePreview
+
+> **ContextCapsulePreview** = `z.infer`\<_typeof_ [`ContextCapsulePreviewSchema`](#contextcapsulepreviewschema)>\>
+
+Defined in: [context-capsule.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L121)
+
+---
+
+### ContextCapsulePreviewItem
+
+> **ContextCapsulePreviewItem** = `z.infer`\<_typeof_ [`ContextCapsulePreviewItemSchema`](#contextcapsulepreviewitemschema)>\>
+
+Defined in: [context-capsule.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L122)
+
+---
+
+### ContextCapsuleValidation
+
+> **ContextCapsuleValidation** = \{ `ok`: `true`; `value`: [`ContextCapsule`](#contextcapsule); \} \| \{ `error`: [`ProtocolError`](#protocolerror); `ok`: `false`; \}
+
+Defined in: [context-capsule.ts:124](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L124)
 
 ---
 
@@ -504,6 +552,52 @@ A positive capability. SharedOS is deny-by-default when no grant matches.
 
 ---
 
+### CONTEXT\_CAPSULE\_ITEM\_KINDS
+
+> `const` **CONTEXT\_CAPSULE\_ITEM\_KINDS**: readonly \[`"requirement"`, `"diff"`, `"file_excerpt"`, `"error"`, `"test_output"`, `"decision"`, `"freeform"`\]
+
+Defined in: [context-capsule.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L33)
+
+What a capsule item is, so a reviewer can judge it without reading it.
+
+---
+
+### ContextCapsuleItemSchema
+
+> `const` **ContextCapsuleItemSchema**: `ZodObject`\<\{ `content`: `ZodString`; `kind`: `ZodEnum`\<\[`"requirement"`, `"diff"`, `"file_excerpt"`, `"error"`, `"test_output"`, `"decision"`, `"freeform"`\]\>; `label`: `ZodString`; `sha256`: `ZodString`; `sourcePath`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: `string`; `kind`: `"error"` \| `"requirement"` \| `"diff"` \| `"file_excerpt"` \| `"test_output"` \| `"decision"` \| `"freeform"`; `label`: `string`; `sha256`: `string`; `sourcePath?`: `string`; \}, \{ `content`: `string`; `kind`: `"error"` \| `"requirement"` \| `"diff"` \| `"file_excerpt"` \| `"test_output"` \| `"decision"` \| `"freeform"`; `label`: `string`; `sha256`: `string`; `sourcePath?`: `string`; \}\>
+
+Defined in: [context-capsule.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L73)
+
+---
+
+### ContextCapsulePreviewItemSchema
+
+> `const` **ContextCapsulePreviewItemSchema**: `ZodObject`\<\{ `contentBytes`: `ZodNumber`; `kind`: `ZodString`; `label`: `ZodString`; `sha256`: `ZodString`; `sourcePath`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `contentBytes`: `number`; `kind`: `string`; `label`: `string`; `sha256`: `string`; `sourcePath?`: `string`; \}, \{ `contentBytes`: `number`; `kind`: `string`; `label`: `string`; `sha256`: `string`; `sourcePath?`: `string`; \}\>
+
+Defined in: [context-capsule.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L98)
+
+---
+
+### ContextCapsulePreviewSchema
+
+> `const` **ContextCapsulePreviewSchema**: `ZodObject`\<\{ `items`: `ZodArray`\<`ZodObject`\<\{ `contentBytes`: `ZodNumber`; `kind`: `ZodString`; `label`: `ZodString`; `sha256`: `ZodString`; `sourcePath`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `contentBytes`: `number`; `kind`: `string`; `label`: `string`; `sha256`: `string`; `sourcePath?`: `string`; \}, \{ `contentBytes`: `number`; `kind`: `string`; `label`: `string`; `sha256`: `string`; `sourcePath?`: `string`; \}\>, `"many"`>\>; `limitations`: `ZodArray`\<`ZodString`, `"many"`>\>; `summary`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `items`: `object`[]; `limitations`: `string`[]; `summary`: `string`; \}, \{ `items`: `object`[]; `limitations`: `string`[]; `summary`: `string`; \}\>
+
+Defined in: [context-capsule.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L113)
+
+The disclosure-free projection of a capsule. It contains every field a
+reviewer needs and no item content, so it is safe to render in an approval
+prompt, persist alongside a pending request, or send to a client.
+
+---
+
+### ContextCapsuleSchema
+
+> `const` **ContextCapsuleSchema**: `ZodObject`\<\{ `items`: `ZodArray`\<`ZodObject`\<\{ `content`: `ZodString`; `kind`: `ZodEnum`\<\[`"requirement"`, `"diff"`, `"file_excerpt"`, `"error"`, `"test_output"`, `"decision"`, `"freeform"`\]\>; `label`: `ZodString`; `sha256`: `ZodString`; `sourcePath`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: `string`; `kind`: `"error"` \| `"requirement"` \| `"diff"` \| `"file_excerpt"` \| `"test_output"` \| `"decision"` \| `"freeform"`; `label`: `string`; `sha256`: `string`; `sourcePath?`: `string`; \}, \{ `content`: `string`; `kind`: `"error"` \| `"requirement"` \| `"diff"` \| `"file_excerpt"` \| `"test_output"` \| `"decision"` \| `"freeform"`; `label`: `string`; `sha256`: `string`; `sourcePath?`: `string`; \}\>, `"many"`>\>; `limitations`: `ZodArray`\<`ZodString`, `"many"`>\>; `objective`: `ZodString`; `summary`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `items`: `object`[]; `limitations`: `string`[]; `objective`: `string`; `summary`: `string`; \}, \{ `items`: `object`[]; `limitations`: `string`[]; `objective`: `string`; `summary`: `string`; \}\>
+
+Defined in: [context-capsule.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L86)
+
+---
+
 ### EnabledToolNamespacesSchema
 
 > `const` **EnabledToolNamespacesSchema**: `ZodEffects`\<`ZodArray`\<`ZodString`, `"many"`>\>, `string`[], `string`[]\>
@@ -614,6 +708,42 @@ Defined in: [json.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 Any value that can round-trip through JSON without custom serialization.
 In particular, this rejects undefined, bigint, Date, NaN, and Infinity.
+
+---
+
+### MAX\_CONTEXT\_CAPSULE\_CONTENT\_BYTES
+
+> `const` **MAX\_CONTEXT\_CAPSULE\_CONTENT\_BYTES**: `number`
+
+Defined in: [context-capsule.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L48)
+
+Combined item content, bounded separately from envelope overhead.
+
+---
+
+### MAX\_CONTEXT\_CAPSULE\_ENCODED\_BYTES
+
+> `const` **MAX\_CONTEXT\_CAPSULE\_ENCODED\_BYTES**: `number`
+
+Defined in: [context-capsule.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L46)
+
+Total encoded size of the capsule, so one delegation cannot become a dump.
+
+---
+
+### MAX\_CONTEXT\_CAPSULE\_ITEMS
+
+> `const` **MAX\_CONTEXT\_CAPSULE\_ITEMS**: `12` = `12`
+
+Defined in: [context-capsule.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L49)
+
+---
+
+### MAX\_CONTEXT\_CAPSULE\_LIMITATIONS
+
+> `const` **MAX\_CONTEXT\_CAPSULE\_LIMITATIONS**: `12` = `12`
+
+Defined in: [context-capsule.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L50)
 
 ---
 
@@ -900,3 +1030,61 @@ Defined in: [tool.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 The host-defined origin of a tool, for example `sharedos`, `native`, `mcp`,
 or `composio`. This is catalog metadata, never proof of authority.
+
+## Functions
+
+### contextCapsulePreview()
+
+> **contextCapsulePreview**(`value`): \{ `items`: `object`[]; `limitations`: `string`[]; `summary`: `string`; \} \| `undefined`
+
+Defined in: [context-capsule.ts:258](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L258)
+
+Project a capsule down to what a reviewer may see before approving.
+
+Deliberately tolerant of malformed input: a preview is rendered for a request
+that has not been accepted yet, so an unparseable capsule must degrade to a
+partial preview rather than throw inside an approval surface. It never copies
+item content — that is the one invariant this function has.
+
+#### Parameters
+
+| Parameter | Type      |
+| --------- | --------- |
+| `value`   | `unknown` |
+
+#### Returns
+
+\{ `items`: `object`[]; `limitations`: `string`[]; `summary`: `string`; \} \| `undefined`
+
+---
+
+### validateContextCapsule()
+
+> **validateContextCapsule**(`value`, `objective`): `Promise`\<[`ContextCapsuleValidation`](#contextcapsulevalidation)>\>
+
+Defined in: [context-capsule.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/context-capsule.ts#L150)
+
+Validate an untrusted capsule against the objective it claims to serve.
+
+Every rejection returns its own code rather than one generic parse failure:
+the caller reports these to the sender, and "your capsule is invalid" is not
+actionable while "context_hash_mismatch" is.
+
+The objective is checked, not just carried. A capsule assembled for one task
+must not be replayed against another, because the receiving owner approved
+the disclosure for that task.
+
+Async because content integrity is verified with Web Crypto: SharedOS depends
+on no Node built-in, and accepting an injected hash function would make the
+integrity property optional for the caller who most wants to skip it.
+
+#### Parameters
+
+| Parameter   | Type      |
+| ----------- | --------- |
+| `value`     | `unknown` |
+| `objective` | `string`  |
+
+#### Returns
+
+`Promise`\<[`ContextCapsuleValidation`](#contextcapsulevalidation)\>
