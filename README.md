@@ -224,9 +224,25 @@ The one-install entry point is `@aicoo/sharedos`. Individual packages remain
 available for hosts that want a smaller dependency surface. Release candidates
 use one synchronized version and the `next` dist-tag.
 
+````
+
+### Delegation on a robot line
+
+One agent passes part of its mandate to another and cannot pass on more than it
+holds. Runs offline in a couple of seconds.
+
 ```bash
+pnpm example:fleet-delegation
+````
+
+It shows a narrower grant derived from a held one, four attempts past its edge
+refused, two grants failing to combine into a third authority, redelegation
+refused once the depth is spent, and a revocation upstream stopping a
+descendant that was never rewritten.
+bash
 pnpm pack:preview
-```
+
+````
 
 This builds every package, verifies that `workspace:*` dependencies were
 rewritten to exact prerelease versions, installs the tarballs into a fresh
@@ -240,7 +256,7 @@ Requirements: Node.js 20.11 or newer and pnpm 9.15.
 ```bash
 pnpm install
 pnpm check
-```
+````
 
 The repository is a TypeScript workspace. Public contracts must stay JSON-safe,
 and permission changes require tests for both allowed and denied paths. See

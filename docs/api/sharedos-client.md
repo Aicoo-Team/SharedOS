@@ -438,7 +438,7 @@ Defined in: [packages/client/src/index.ts:32](https://github.com/Aicoo-Team/Shar
 
 > **RemoteExecutionRequest** = `z.infer`\<_typeof_ [`RemoteExecutionRequestSchema`](sharedos-contracts.md#remoteexecutionrequestschema)>\>
 
-Defined in: packages/contracts/dist/http.d.ts:2075
+Defined in: packages/contracts/dist/http.d.ts:2141
 
 ---
 
@@ -446,7 +446,7 @@ Defined in: packages/contracts/dist/http.d.ts:2075
 
 > **RemoteResourceOperation** = `z.infer`\<_typeof_ [`RemoteResourceOperationSchema`](sharedos-contracts.md#remoteresourceoperationschema)>\>
 
-Defined in: packages/contracts/dist/http.d.ts:805
+Defined in: packages/contracts/dist/http.d.ts:838
 
 ---
 
@@ -454,4 +454,4 @@ Defined in: packages/contracts/dist/http.d.ts:805
 
 > **SharedOSHealth** = `z.infer`\<_typeof_ [`SharedOSHealthSchema`](sharedos-contracts.md#sharedoshealthschema)>\>
 
-Defined in: packages/contracts/dist/http.d.ts:2086
+Defined in: packages/contracts/dist/http.d.ts:2152

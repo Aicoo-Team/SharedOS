@@ -7,6 +7,8 @@ import type {
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
 
+import { delegationChainIsConsistent, type GrantChainResolver } from "./delegation.js";
+
 export interface AuthorizationRequest {
   readonly resource: ResourceRef;
   readonly action: string;
@@ -18,7 +20,9 @@ export type AuthorizationReasonCode =
   | "invalid_request"
   | "no_matching_grant"
   | "grant_exhausted"
-  | "usage_store_unavailable";
+  | "usage_store_unavailable"
+  | "delegation_chain_unavailable"
+  | "delegation_chain_broken";
 
 export interface GrantUsageStore {
   getUsage(namespaceId: string, grantId: string): Promise<number>;
@@ -40,6 +44,12 @@ export interface AuthorizeOptions {
 export interface CapabilityAuthorizerOptions {
   readonly usageStore?: GrantUsageStore;
   readonly grantVerifier?: CapabilityGrantVerifier;
+  /**
+   * Resolves ancestors of a derived grant. Required to use one: a derived
+   * grant's constraints are narrowed at derivation, but revocation and expiry
+   * happen afterwards, and only the ancestors carry them.
+   */
+  readonly chainResolver?: GrantChainResolver;
 }
 
 /**
@@ -73,10 +83,12 @@ export class InMemoryGrantUsageStore implements GrantUsageStore {
 export class CapabilityAuthorizer {
   readonly #usageStore: GrantUsageStore | undefined;
   readonly #grantVerifier: CapabilityGrantVerifier | undefined;
+  readonly #chainResolver: GrantChainResolver | undefined;
 
   constructor(options: CapabilityAuthorizerOptions = {}) {
     this.#usageStore = options.usageStore;
     this.#grantVerifier = options.grantVerifier;
+    this.#chainResolver = options.chainResolver;
   }
 
   async authorize(
@@ -185,6 +197,52 @@ export class CapabilityAuthorizer {
           return false;
         }
       } catch {
+        return false;
+      }
+    }
+
+    return this.#chainIsUsable(context, grant, now);
+  }
+
+  /**
+   * A derived grant is only as alive as every grant above it.
+   *
+   * Narrowing is settled at derivation, so nothing here re-checks scope. That
+   * is safe only because `AccessContext` is a trusted host-created boundary
+   * (see kernel.ts): a grant reaching this point was either issued by the host
+   * or produced by `deriveGrant`, which refuses anything outside its parent. A
+   * host that rebuilds grants from untrusted storage must re-validate them
+   * before assembling the context — this function will not catch a forged
+   * capability set, only a forged or dead chain.
+   *
+   * What cannot be settled in advance is what happens later: revoking the root
+   * must stop everything derived from it, immediately and without rewriting the
+   * children. That is why revocation is checked here, at the point of use.
+   */
+  async #chainIsUsable(
+    context: AccessContext,
+    grant: CapabilityGrant,
+    now: number,
+  ): Promise<boolean> {
+    const delegation = grant.delegation;
+    if (delegation === undefined) return true;
+    if (!delegationChainIsConsistent(grant)) return false;
+    // No resolver means ancestor revocation cannot be observed. Treating that
+    // as "probably still fine" is exactly the failure a revocation is for.
+    if (this.#chainResolver === undefined) return false;
+
+    for (const ancestorId of delegation.chain) {
+      let ancestor: CapabilityGrant | undefined;
+      try {
+        ancestor = await this.#chainResolver.get(context.namespaceId, ancestorId);
+      } catch {
+        return false;
+      }
+      if (
+        ancestor === undefined ||
+        ancestor.namespaceId !== grant.namespaceId ||
+        !grantIsActive(ancestor, context.purpose, now)
+      ) {
         return false;
       }
     }

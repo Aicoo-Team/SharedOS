@@ -88,6 +88,26 @@ export const CapabilityRequestSchema = z
 export type CapabilityRequest = z.infer<typeof CapabilityRequestSchema>;
 
 /** Authority issued to one subject and bounded by explicit constraints. */
+/**
+ * Where a derived grant came from.
+ *
+ * `chain` is ordered root-first and ends with the immediate parent, so a
+ * verifier can re-check every ancestor without walking links one at a time.
+ * It is provenance, not authority: the constraints on a derived grant are
+ * already narrowed at derivation, and the chain exists so a *later* revocation
+ * or expiry upstream can still invalidate what was derived from it.
+ */
+export const GrantDelegationSchema = z
+  .object({
+    parentGrantId: IdentifierSchema,
+    /** Remaining redelegations. Strictly less than the parent's. */
+    depth: z.number().int().nonnegative(),
+    chain: z.array(IdentifierSchema).min(1).max(16),
+  })
+  .strict();
+
+export type GrantDelegation = z.infer<typeof GrantDelegationSchema>;
+
 export const CapabilityGrantSchema = z
   .object({
     id: IdentifierSchema,
@@ -98,6 +118,8 @@ export const CapabilityGrantSchema = z
     constraints: CapabilityConstraintsSchema,
     issuedAt: TimestampSchema,
     revokedAt: TimestampSchema.optional(),
+    /** Present only on a grant produced by `deriveGrant`. */
+    delegation: GrantDelegationSchema.optional(),
     metadata: JsonObjectSchema.optional(),
   })
   .strict();

@@ -468,6 +468,22 @@ Defined in: [testkit/src/index.ts:154](https://github.com/Aicoo-Team/SharedOS/bl
 
 > `optional` **purposes?**: `string`[]
 
+##### delegation?
+
+> `optional` **delegation?**: `object`
+
+###### delegation.chain
+
+> **chain**: `string`[]
+
+###### delegation.depth
+
+> **depth**: `number`
+
+###### delegation.parentGrantId
+
+> **parentGrantId**: `string`
+
 ##### id
 
 > **id**: `string`
