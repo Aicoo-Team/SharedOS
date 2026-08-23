@@ -67,6 +67,7 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
     experiment: input.experiment,
     system: {
       ...publishedCatalogue(result),
+      ...declaredModel(result),
       ...input.system,
       runtime: input.system.runtime ?? runtimeManifestOf(result),
     },
@@ -153,6 +154,27 @@ function publishedCatalogue(result: ExecutionResult): Partial<SystemIdentity> {
     return {};
   }
   return { catalogHash, toolCount: exposedTools(result.events).length };
+}
+
+/**
+ * The model the runtime reported having launched with.
+ *
+ * Read from the turn's own result rather than from the run's configuration,
+ * because those are different claims. A provider that silently substitutes an
+ * unrecognised model name -- DeepSeek maps one to `deepseek-v4-flash` rather
+ * than rejecting it -- would leave a configuration saying one thing and a run
+ * having done another. This records what the harness was actually pointed at,
+ * which is the weaker of the two claims and the honest one.
+ *
+ * The caller's own `system` still wins over it.
+ */
+function declaredModel(result: ExecutionResult): Partial<SystemIdentity> {
+  const model = result.metadata?.["model"];
+  const provider = result.metadata?.["modelProvider"];
+  return {
+    ...(typeof model === "string" ? { model } : {}),
+    ...(typeof provider === "string" ? { modelProvider: provider } : {}),
+  };
 }
 
 function runtimeManifestOf(result: ExecutionResult): RuntimeManifest {

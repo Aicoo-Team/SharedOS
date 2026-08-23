@@ -230,9 +230,7 @@ import { CLAUDE_CODE_MCP_HARNESS, createMcpHarnessRuntime } from "@aicoo/sharedo
 const runtime = createMcpHarnessRuntime(CLAUDE_CODE_MCP_HARNESS);
 ```
 
-`CODEX_MCP_HARNESS` and `DEEPSEEK_MCP_HARNESS` are the other two. Pi has no MCP
-client and is transcript-only; saying so is more useful than a column that cannot
-mean anything.
+`CODEX_MCP_HARNESS`, `DEEPSEEK_MCP_HARNESS`, and `PI_MCP_HARNESS` are the others.
 
 Each spec generates its own connection file and nothing else:
 
@@ -241,6 +239,42 @@ Each spec generates its own connection file and nothing else:
 | Codex       | `config.toml`      | `[mcp_servers.sharedos]`, `required = true`    |
 | Claude Code | `.mcp.json`        | `{"type":"http","url":…}`                      |
 | DeepSeek    | `cordis.patch.yml` | one `@deepseek-ai/dsh-mcp-client` plugin entry |
+| Pi          | `.mcp.json`        | `{"url":…,"lifecycle":"eager"}`                |
+
+The DeepSeek overlay must use dsh's `insert:` form. A bare `id:` entry _overrides_
+a plugin already in the tree and does not add one; dsh warns `patch: entry "..."
+not found` on stderr and boots without the client, which downstream reads as a
+harness that declined the catalogue rather than as a misconfigured one. The
+plugin also has to be installed into the profile first — a patch activates a
+plugin, it does not fetch one:
+
+```sh
+dsh plugin --profile headless add -w @deepseek-ai/dsh-mcp-client
+```
+
+### Pi needs an extension, and which one is your choice
+
+Pi is the one harness here that ships **no MCP client**. Some extension is
+therefore **required** before Pi can reach an MCP server at all — but _which_
+extension is a **choice the host makes**, not something SharedOS mandates.
+`pi-mcp-adapter` is what this repository is exercised against:
+
+```sh
+pi install npm:pi-mcp-adapter
+```
+
+Anything with the same job would serve, and `piMcpConfig` emits that adapter's
+file shape. A different extension may want a different one.
+
+The effect is not identical to a native client, and it is worth knowing when
+reading a Pi column. The adapter registers a single `mcp` proxy tool and
+discovers the catalogue behind it on demand, so Pi's model calls
+`mcp({tool: "files.read", …})` rather than `files.read`, and the harness-facing
+surface is one tool wide. None of that reaches SharedOS: what arrives at the
+bridge is an ordinary `tools/call` naming the canonical tool, authorized like any
+other. The manifest stamps `mcpSupport: "extension"` and names the extension, so
+a record says how the catalogue reached the harness rather than implying Pi did
+it itself.
 
 The launch flags remove what would otherwise confuse a measurement:
 `--strict-mcp-config` drops the machine's own MCP servers, so a `strict` policy
@@ -281,13 +315,46 @@ stale sandbox cannot reconnect and call tools it was never shown.
 
 ```sh
 pnpm build
-pnpm conformance:mcp                      # one case, every installed harness
-pnpm conformance:mcp -- --harness claude-code --full
+pnpm conformance:mcp                                    # one case, every installed harness
+pnpm conformance:mcp -- --config ./run.json --full      # every case, one pinned model
 ```
 
 Live runs cost model tokens, so the default is one case; `--full` runs the whole
 set and is what a published result should come from. Output lands in
 `artifacts/conformance/mcp-conformance.json`.
+
+### Holding the model constant
+
+Comparing harnesses only means something if the model is the same on both sides;
+otherwise a column that refused fewer violations may simply have had a weaker
+model. `--config` takes a file the **operator** supplies — provider names, base
+URLs, credentials, and per-vendor flags are not SharedOS's to know:
+
+```json
+{
+  "model": { "id": "deepseek-v4-flash", "provider": "deepseek" },
+  "harnesses": {
+    "claude-code": {
+      "credentialVariables": ["DEEPSEEK_API_KEY"],
+      "env": { "ANTHROPIC_BASE_URL": "…", "ANTHROPIC_AUTH_TOKEN": "${DEEPSEEK_API_KEY}" },
+      "args": ["--model", "deepseek-v4-flash"]
+    }
+  }
+}
+```
+
+`env` and `args` are passed to the harness process untouched; `${VAR}` is read
+from the ambient environment so a shared file can name a credential without
+containing one. Declaring `credentialVariables` also makes the credential
+_required_ for that column — every harness here can otherwise fall back to a
+stored session login, and a stored session authenticates to the provider the
+harness normally uses, not the one the run pinned.
+
+SharedOS's only interest in the model is the `model` string, recorded on every
+execution record. It does not select the model and cannot confirm the provider
+served it — DeepSeek, for instance, silently maps an unrecognised model name to
+`deepseek-v4-flash` rather than rejecting it. Two columns whose recorded models
+differ are not comparable, and the run says so.
 
 The column is reported separately from the committed manifest. Its correlation is
 weaker than a transcript column's — a live harness mints its own call ids, so

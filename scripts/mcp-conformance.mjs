@@ -26,7 +26,7 @@
  * Live runs cost model tokens, so the default is one case. `--full` runs the
  * whole set and is what a published result should be produced from.
  */
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,13 +43,69 @@ const full = argv.includes("--full");
 const limit = full ? Number.POSITIVE_INFINITY : Number(flag("limit", "1"));
 const only = flag("harness", undefined);
 
-const { CLAUDE_CODE_REQUIREMENTS, CODEX_REQUIREMENTS, DEEPSEEK_REQUIREMENTS } = await import(
-  join(root, "packages", "adapters", "dist", "index.js")
-);
+/**
+ * Which model each harness runs, and how it reaches it.
+ *
+ * Deliberately a file the operator supplies rather than anything this repository
+ * knows. Provider names, base URLs, credentials, and per-vendor flags belong to
+ * whoever is running the experiment; baking them in would put a second source of
+ * truth next to the harness's own configuration, and would rot the first time a
+ * provider changed one.
+ *
+ * SharedOS's interest in the model is exactly one string per column, recorded on
+ * the execution record so a comparison can be checked. It does not select the
+ * model and cannot confirm the provider served it.
+ *
+ * Shape:
+ *
+ *   {
+ *     "model": { "id": "...", "provider": "..." },
+ *     "harnesses": {
+ *       "<harness id>": {
+ *         "env": { "VAR": "value" },
+ *         "args": ["--extra", "flag"],
+ *         "credentialVariables": ["VAR"]
+ *       }
+ *     }
+ *   }
+ *
+ * Absent, every harness runs on whatever it is already configured for, and the
+ * records carry no model — which is honest, and not comparable across columns.
+ */
+const configPath = flag("config", process.env["SHAREDOS_MCP_CONFIG"]);
+const hostConfig =
+  configPath === undefined ? {} : JSON.parse(await readFile(resolve(configPath), "utf8"));
+const model = hostConfig.model;
+
+/**
+ * `${VAR}` in a config value is read from the ambient environment.
+ *
+ * So a committed or shared configuration can name which variable holds a
+ * credential without containing the credential. An unset variable expands to the
+ * empty string rather than to the literal `${VAR}`, which fails at the harness
+ * with an authentication error instead of silently sending a placeholder as a
+ * key.
+ */
+const expand = (value) =>
+  String(value).replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/gu, (_, name) => process.env[name] ?? "");
+const harnessConfig = (id) => {
+  const entry = hostConfig.harnesses?.[id] ?? {};
+  return {
+    ...entry,
+    ...(entry.env === undefined
+      ? {}
+      : { env: Object.fromEntries(Object.entries(entry.env).map(([k, v]) => [k, expand(v)])) }),
+    ...(entry.args === undefined ? {} : { args: entry.args.map((arg) => expand(arg)) }),
+  };
+};
+
+const { CLAUDE_CODE_REQUIREMENTS, CODEX_REQUIREMENTS, DEEPSEEK_REQUIREMENTS, PI_REQUIREMENTS } =
+  await import(join(root, "packages", "adapters", "dist", "index.js"));
 const {
   CLAUDE_CODE_MCP_HARNESS,
   CODEX_MCP_HARNESS,
   DEEPSEEK_MCP_HARNESS,
+  PI_MCP_HARNESS,
   createMcpHarnessRuntime,
   probeHarness,
 } = await import(join(root, "packages", "adapters", "dist", "node.js"));
@@ -78,18 +134,35 @@ const HARNESSES = [
     label: "Claude Code",
     requirements: CLAUDE_CODE_REQUIREMENTS,
     policy: declareToolPolicy({ harnessLocal: ["TodoWrite", "SlashCommand"] }),
+    mcpSupport: "native",
   },
   {
     spec: CODEX_MCP_HARNESS,
     label: "Codex",
     requirements: CODEX_REQUIREMENTS,
     policy: declareToolPolicy({ harnessLocal: ["shell", "apply_patch"] }),
+    mcpSupport: "native",
   },
   {
     spec: DEEPSEEK_MCP_HARNESS,
     label: "Deepseek",
     requirements: DEEPSEEK_REQUIREMENTS,
     policy: declareToolPolicy({ harnessLocal: ["shell", "apply_patch"] }),
+    mcpSupport: "native",
+  },
+  {
+    spec: PI_MCP_HARNESS,
+    label: "pi",
+    requirements: PI_REQUIREMENTS,
+    /** `--no-builtin-tools` leaves the proxy tool the extension registers. */
+    policy: declareToolPolicy({ harnessLocal: [] }),
+    /**
+     * Pi ships no MCP client, so this column's MCP support came from an
+     * extension the host chose to install. Recorded per column: a reader should
+     * not have to know which harnesses have native clients to read the table.
+     */
+    mcpSupport: "extension",
+    mcpExtension: "pi-mcp-adapter",
   },
 ].filter((harness) => only === undefined || harness.spec.id === only);
 
@@ -98,13 +171,32 @@ const columns = [EMBEDDED_COLUMN];
 const diagnostics = new Map();
 
 for (const harness of HARNESSES) {
-  const probe = await probeHarness(harness.requirements);
+  const host = harnessConfig(harness.spec.id);
+  // A pinned model usually moves the credential to a different variable than the
+  // harness's own default, so the host config may override what counts as one.
+  // It also makes the credential required: every harness here can otherwise fall
+  // back to a stored session login, and a stored session authenticates to the
+  // provider the harness normally uses -- not to the one this run pinned. A
+  // column reported available on that basis would run, fail at the harness, and
+  // look like a harness that declined the catalogue.
+  const requirements =
+    host.credentialVariables === undefined
+      ? harness.requirements
+      : {
+          ...harness.requirements,
+          credentialVariables: host.credentialVariables,
+          credentialsOptional: false,
+        };
+  const probe = await probeHarness(requirements);
   availability.push({
     columnId: `${harness.spec.id}-mcp`,
     label: harness.label,
     harness: harness.spec.id,
+    mcpSupport: harness.mcpSupport,
+    ...(harness.mcpExtension === undefined ? {} : { mcpExtension: harness.mcpExtension }),
     toolPolicy: harness.policy,
     policyHash: await toolPolicyHash(harness.policy),
+    ...(model === undefined ? {} : { model }),
     ...probe,
   });
   if (!probe.available) {
@@ -118,6 +210,11 @@ for (const harness of HARNESSES) {
       createRuntime: ({ prompt, executionId, turn }) =>
         createMcpHarnessRuntime(harness.spec, {
           prompt,
+          // Opaque, from the operator's configuration. SharedOS passes it to the
+          // harness process and records the model string; it selects nothing.
+          ...(host.env === undefined ? {} : { env: host.env }),
+          ...(host.args === undefined ? {} : { args: host.args }),
+          ...(model === undefined ? {} : { model }),
           manifest: {
             ...harness.spec.manifest,
             id: `sharedos.conformance.${harness.spec.id}-mcp`,
@@ -197,6 +294,7 @@ for (const entry of evidence) {
     operations: 0,
     catalogHashes: new Set(),
     toolCounts: new Set(),
+    models: new Set(),
     outcomes: new Map(),
     calls: [],
   };
@@ -206,6 +304,9 @@ for (const entry of evidence) {
     if (record.system.catalogHash !== undefined) {
       seen.catalogHashes.add(record.system.catalogHash);
       seen.toolCounts.add(record.system.toolCount);
+    }
+    if (record.system.model !== undefined) {
+      seen.models.add(record.system.model);
     }
     seen.outcomes.set(
       record.execution.status,
@@ -251,6 +352,32 @@ for (const column of manifest.columns) {
         : `${hashes.map((hash) => `sha256:${hash.slice(0, 12)}…`).join(", ")} ` +
           `over ${[...seen.toolCounts].join("/")} tools`),
   );
+  const models = [...seen.models];
+  console.log(
+    `  ${"".padEnd(12)} model:     ` + (models.length === 0 ? "not declared" : models.join(", ")),
+  );
+}
+
+/**
+ * The other half of comparability, and the reason the model string is recorded.
+ *
+ * Equal catalogues make two columns comparable on the tools they were given.
+ * Equal models make them comparable on the harness, which is the variable the
+ * suite is actually isolating. A run missing either is still evidence about each
+ * column on its own, and is not evidence about the difference between them.
+ */
+const measuredColumns = [...perColumn.entries()].filter(([id]) => id !== EMBEDDED_COLUMN.id);
+const declaredModels = new Set(measuredColumns.flatMap(([, seen]) => [...seen.models]));
+if (declaredModels.size > 1) {
+  console.error(
+    `\nWARNING: columns declared ${declaredModels.size} different models ` +
+      `(${[...declaredModels].join(", ")}). They are not comparable to each other.`,
+  );
+} else if (declaredModels.size === 0 && measuredColumns.length > 1) {
+  console.error(
+    "\nWARNING: no column declared a model. Pass --config with a `model` entry " +
+      "if these columns are meant to be compared to each other.",
+  );
 }
 
 const publishedHashes = new Set([...perColumn.values()].flatMap((seen) => [...seen.catalogHashes]));
@@ -278,10 +405,13 @@ await writeFile(
       casesRun: cases.map(({ id }) => id),
       casesDeclared: CANONICAL_CONFORMANCE_CASES.map(({ id }) => id),
       availability,
+      model,
+      configPath,
       catalogues: [...perColumn.entries()].map(([columnId, seen]) => ({
         columnId,
         catalogHashes: [...seen.catalogHashes].map((hash) => `sha256:${hash}`),
         toolCounts: [...seen.toolCounts],
+        models: [...seen.models],
         calls: seen.calls,
       })),
       diagnostics: Object.fromEntries(diagnostics),

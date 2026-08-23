@@ -40,6 +40,7 @@ import {
   deepseekMcpConfig,
   harnessMcpConfigFile,
   harnessToolAlias,
+  piMcpConfig,
   kernelToolBridge,
   mintExecutionToken,
   parseToolPolicy,
@@ -609,8 +610,31 @@ describe("harness configuration", () => {
     expect(harnessMcpConfigFile("codex", connection).filename).toBe("config.toml");
     expect(harnessMcpConfigFile("claude-code", connection).filename).toBe(".mcp.json");
     expect(harnessMcpConfigFile("deepseek", connection).filename).toBe("cordis.patch.yml");
+    expect(harnessMcpConfigFile("pi", connection).filename).toBe(".mcp.json");
     expect(codexMcpConfig(connection)).toContain("required = true");
     expect(claudeAgentSdkMcpOptions(connection)["allowedTools"]).toEqual(["mcp__sharedos__*"]);
+  });
+
+  it("adds the dsh plugin with `insert`, because a bare id only overrides one", () => {
+    const overlay = deepseekMcpConfig(connection);
+
+    // dsh answers a bare `id:` entry naming a plugin that is not already in the
+    // tree with `patch: entry "..." not found` on stderr, then boots without it.
+    // A run that reached the model with no MCP client at all would read as a
+    // harness that declined to use the catalogue rather than as a broken config.
+    expect(overlay.startsWith("- insert:")).toBe(true);
+    expect(overlay).toContain("@deepseek-ai/dsh-mcp-client");
+    expect(overlay).toContain("transport: streamable-http");
+    expect(overlay).not.toMatch(/^- id:/mu);
+  });
+
+  it("gives Pi an eager connection, because a lazy one may outlive the turn", () => {
+    const config = piMcpConfig(connection);
+    const server = (config["mcpServers"] as JsonObject)["sharedos"] as JsonObject;
+
+    expect(server["url"]).toBe(connection.url);
+    expect(server["lifecycle"]).toBe("eager");
+    expect(JSON.stringify(config)).not.toContain("files.search");
   });
 
   it("records the harness-side alias without ever authorizing against it", () => {

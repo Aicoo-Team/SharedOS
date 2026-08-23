@@ -1847,13 +1847,13 @@ Defined in: [packages/core/src/kernel.ts:62](https://github.com/Aicoo-Team/Share
 
 ### ToolCatalogOptions
 
-Defined in: packages/core/src/published-tool.ts:132
+Defined in: [packages/core/src/published-tool.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L132)
 
 #### Properties
 
-| Property                                        | Modifier   | Type     | Defined in                              |
-| ----------------------------------------------- | ---------- | -------- | --------------------------------------- |
-| <a id="property-executionid"></a> `executionId` | `readonly` | `string` | packages/core/src/published-tool.ts:133 |
+| Property                                        | Modifier   | Type     | Defined in                                                                                                                           |
+| ----------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-executionid"></a> `executionId` | `readonly` | `string` | [packages/core/src/published-tool.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L133) |
 
 ---
 
@@ -2108,7 +2108,7 @@ Defined in: [packages/core/src/kernel.ts:85](https://github.com/Aicoo-Team/Share
 
 > `const` **CATALOG\_HASH\_FIELDS**: readonly `string`[]
 
-Defined in: packages/core/src/published-tool.ts:26
+Defined in: [packages/core/src/published-tool.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L26)
 
 The fields of a published tool that `catalogHash` is computed over.
 
@@ -2352,7 +2352,7 @@ Defined in: [packages/core/src/audit.ts:76](https://github.com/Aicoo-Team/Shared
 
 > **buildToolCatalog**(`definitions`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
-Defined in: packages/core/src/published-tool.ts:137
+Defined in: [packages/core/src/published-tool.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L137)
 
 Build the per-turn catalogue a harness is served, hash included.
 
@@ -2461,7 +2461,7 @@ Defined in: [packages/core/src/authorization.ts:308](https://github.com/Aicoo-Te
 
 > **catalogHash**(`tools`): `Promise`\<`string`>\>
 
-Defined in: packages/core/src/published-tool.ts:120
+Defined in: [packages/core/src/published-tool.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L120)
 
 A stable identifier for one effective, model-facing tool catalogue.
 
@@ -2492,7 +2492,7 @@ tool, and a stale discovery cache alike.
 
 > **formatCatalogHash**(`hash`): `string`
 
-Defined in: packages/core/src/published-tool.ts:128
+Defined in: [packages/core/src/published-tool.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L128)
 
 The hash as an experiment record renders it: algorithm-qualified.
 
@@ -2597,7 +2597,7 @@ Defined in: [packages/core/src/message-service.ts:15](https://github.com/Aicoo-T
 
 > **portableToolName**(`name`): `string`
 
-Defined in: packages/core/src/published-tool.ts:160
+Defined in: [packages/core/src/published-tool.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L160)
 
 The canonical name rewritten for a transport that cannot carry a dot.
 
@@ -2624,7 +2624,7 @@ that is the whole of its role.
 
 > **publishToolCatalog**(`definitions`): readonly `object`[]
 
-Defined in: packages/core/src/published-tool.ts:90
+Defined in: [packages/core/src/published-tool.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L90)
 
 Project a permission-filtered catalogue, in canonical order.
 
@@ -2650,7 +2650,7 @@ readonly `object`[]
 
 > **publishToolDefinition**(`definition`): `object`
 
-Defined in: packages/core/src/published-tool.ts:50
+Defined in: [packages/core/src/published-tool.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L50)
 
 Project one registered tool into what a harness is allowed to see.
 

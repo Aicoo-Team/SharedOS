@@ -26,6 +26,7 @@ import type { HarnessProtocol } from "./harness.js";
 import { claudeCodeProtocol } from "./claude-code/protocol.js";
 import { codexProtocol } from "./codex/protocol.js";
 import { deepseekProtocol } from "./deepseek/protocol.js";
+import { piProtocol } from "./pi/protocol.js";
 
 /**
  * A vendor harness run natively, against the SharedOS catalogue over MCP.
@@ -91,6 +92,29 @@ export interface McpHarnessRuntimeOptions {
   readonly onDiagnostic?: (harness: string, line: string) => void;
   /** Bearer token for a sandboxed harness that cannot be trusted by port alone. */
   readonly token?: string;
+  /**
+   * Host configuration passed straight through to the harness process.
+   *
+   * Which model a harness uses, and how it authenticates to reach it, is harness
+   * configuration -- the same class of thing as the MCP endpoint, and equally not
+   * SharedOS's to decide. It is supplied here as opaque environment and
+   * arguments so this package holds no provider names, no base URLs, and no
+   * per-vendor mapping that would rot the first time a provider changed one.
+   *
+   * `env` is merged over the spec's own; `args` are appended after it.
+   */
+  readonly env?: Readonly<Record<string, string>>;
+  readonly args?: readonly string[];
+  /**
+   * The model this run intends the harness to use, recorded and not acted on.
+   *
+   * SharedOS records the string; the configuration above is what actually
+   * selects the model. Keeping those separate is deliberate: a run whose
+   * `env` points at one model and whose `model` says another is a
+   * misconfiguration worth being able to see, and a field that both selected and
+   * reported would make it invisible.
+   */
+  readonly model?: { readonly id: string; readonly provider?: string };
 }
 
 const MAX_DIAGNOSTIC_CHARS = 8_192;
@@ -154,14 +178,19 @@ export function createMcpHarnessRuntime(
         }
 
         const prompt = (options.prompt ?? defaultPrompt)(request);
-        const launch = spec.launch({ prompt, connection, workspace, configPaths, request });
+        const declared = spec.launch({ prompt, connection, workspace, configPaths, request });
+        const launch: McpHarnessLaunch = {
+          ...declared,
+          args: [...declared.args, ...(options.args ?? [])],
+          env: { ...declared.env, ...options.env },
+        };
         const outcome = await runHarness(spec, launch, signal, options);
         const catalogHash = await bridgeCatalogHash(bridge, signal);
         return {
           ...outcome,
           metadata: {
             ...outcome.metadata,
-            ...harnessMetadata(spec, connection, bridge, catalogHash),
+            ...harnessMetadata(spec, connection, bridge, catalogHash, options.model),
           },
         };
       } finally {
@@ -201,6 +230,7 @@ function harnessMetadata(
   connection: HarnessMcpConnection,
   bridge: SharedOSToolBridge,
   catalogHash: string | undefined,
+  model: { readonly id: string; readonly provider?: string } | undefined,
 ): JsonObject {
   const aliases = bridge.aliases;
   return {
@@ -208,6 +238,16 @@ function harnessMetadata(
     toolshare: "mcp",
     mcpServer: connection.name ?? "sharedos",
     ...(catalogHash === undefined ? {} : { catalogHash }),
+    // The model the run declared, carried into the execution record so a
+    // multi-harness comparison can be checked rather than assumed. It is a
+    // declaration: SharedOS did not select it and cannot confirm the provider
+    // served it.
+    ...(model === undefined
+      ? {}
+      : {
+          model: model.id,
+          ...(model.provider === undefined ? {} : { modelProvider: model.provider }),
+        }),
     ...(aliases.length === 0
       ? {}
       : { toolAliases: aliases.map(({ alias, tool }) => ({ alias, tool })) }),
@@ -441,10 +481,14 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
  * DeepSeek Harness, connected to the SharedOS bridge.
  *
  * Its official MCP plugin performs `tools/list`, converts the schemas, and
- * registers them through `ctx.tools.register()`, so the composition file names
- * the endpoint and nothing else. The runtime binary and plugin composition are
- * read from the environment because `dsh`'s shipped profiles do not include one
- * that speaks this protocol.
+ * registers them through `ctx.tools.register()`, so the generated overlay names
+ * the endpoint and nothing else. The plugin must already be installed into the
+ * profile -- `dsh plugin --profile <name> add @deepseek-ai/dsh-mcp-client` --
+ * because a `--patch` overlay activates a plugin and does not fetch one.
+ *
+ * `DSH_COMMAND` and `DSH_PROFILE` are read from the environment because a dsh
+ * profile is host state with its own plugin dependencies, not something a turn
+ * should materialise for itself.
  */
 export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: "deepseek",
@@ -478,10 +522,59 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
   }),
 });
 
+/**
+ * Pi, connected to the SharedOS bridge through an MCP extension.
+ *
+ * Pi is the one harness here that ships no MCP client. An extension is
+ * therefore *required* before Pi can reach an MCP server at all, and *which*
+ * extension is a **choice** the host makes rather than something SharedOS
+ * mandates: `pi-mcp-adapter` is what this repository is exercised against, and
+ * anything with the same job would serve. The manifest records that the support
+ * came from an extension, because a column whose MCP client is third-party is
+ * making a slightly narrower claim than one whose harness ships its own.
+ *
+ * That adapter registers a single `mcp` proxy tool and discovers the catalogue
+ * behind it, so Pi's model calls `mcp({tool: "files.read", ...})` rather than
+ * `files.read`. What reaches the bridge is still an ordinary `tools/call` naming
+ * the canonical tool, authorized like any other.
+ *
+ * `--no-builtin-tools` drops Pi's own file and shell tools while keeping
+ * extension tools, which is exactly the split a conformance run needs. The
+ * prompt goes in as an RPC frame rather than as an argument, because RPC mode is
+ * the one whose frames {@link piProtocol} reads.
+ */
+export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
+  id: "pi",
+  manifest: Object.freeze({
+    id: "sharedos.pi.mcp",
+    version: MCP_ADAPTER_VERSION,
+    protocolVersion: "1",
+    metadata: {
+      package: "@aicoo/sharedos-adapters",
+      harness: "pi",
+      toolshare: "mcp",
+      executionModel: "native-harness-loop",
+      /** Named, not implied: Pi has no MCP client of its own. */
+      mcpSupport: "extension",
+      mcpExtension: "pi-mcp-adapter",
+    },
+  }) as RuntimeManifest,
+  protocol: piProtocol,
+  serverName: "sharedos",
+  configFiles: (connection) => [harnessMcpConfigFile("pi", connection)],
+  launch: ({ prompt, workspace, request }) => ({
+    command: "pi",
+    args: ["--mode", "rpc", "--no-session", "--no-builtin-tools"],
+    cwd: workspace,
+    stdin: `${JSON.stringify({ id: request.executionId, type: "prompt", message: prompt })}\n`,
+  }),
+});
+
 export const MCP_HARNESSES: readonly McpHarnessSpec[] = Object.freeze([
   CLAUDE_CODE_MCP_HARNESS,
   CODEX_MCP_HARNESS,
   DEEPSEEK_MCP_HARNESS,
+  PI_MCP_HARNESS,
 ]);
 
 export { claudeAgentSdkMcpOptions };

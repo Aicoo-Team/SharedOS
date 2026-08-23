@@ -24,8 +24,9 @@ declared attempts issued. The column verified a transport binding and could not
 exercise a single kernel row. **The blocker was the catalogue, not credentials**,
 and no API key would have changed it.
 
-MCP is the one interface all three ecosystems accept a host-supplied tool set on.
-Pi has none, and that is a fact about Pi rather than a gap here.
+MCP is the one interface Codex, Claude Code, and DeepSeek Harness all accept a
+host-supplied tool set on. Pi ships no MCP client, and reaches one only through
+an extension the host installs.
 
 ## Decision
 
@@ -180,8 +181,22 @@ model's choices.
 - A harness process that outlives its turn — they do, on cancellation and on
   timeout — finds a closed bridge and a released port rather than a door onto a
   turn that has ended.
-- Pi remains transcript-only. It has no MCP client, so there is no MCP column for
-  it, and saying so is more useful than a column that cannot mean anything.
+- Pi gets an MCP column, with a caveat carried in its manifest rather than in a
+  footnote. It ships no MCP client, so an extension is **required** before it can
+  reach one — and _which_ extension is a **host choice**, not a SharedOS
+  requirement. `pi-mcp-adapter` is what this repository is exercised against;
+  anything with the same job would serve. `mcpSupport: "extension"` and the
+  extension name are stamped on every record that column produces, because a
+  column whose MCP client is third-party makes a slightly narrower claim than one
+  whose harness ships its own.
+- Which model a harness runs is **not** SharedOS's to configure. Provider names,
+  base URLs, credentials, and per-vendor flags live in a host configuration file
+  the operator supplies; `createMcpHarnessRuntime` takes opaque `env` and `args`
+  and passes them through. SharedOS records one string per column — the declared
+  model — on `SystemIdentity`, and selects nothing. That separation is deliberate:
+  a run whose environment points at one model and whose declaration says another
+  is a misconfiguration worth being able to see, and a field that both selected
+  and reported would make it invisible.
 
 ## Rejected alternatives
 
