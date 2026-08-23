@@ -56,6 +56,32 @@ export interface McpHarnessLaunch {
   readonly env?: Readonly<Record<string, string>>;
   /** Written to the child's stdin, for a CLI that takes its prompt that way. */
   readonly stdin?: string;
+  /**
+   * Whether the CLI treats stdin as an open command channel rather than as one
+   * prompt.
+   *
+   * Most harnesses here read their input and run to completion, so closing stdin
+   * immediately is both correct and the way to make them exit. Pi's `--mode rpc`
+   * is the opposite: EOF means shut down. Closing stdin after writing the prompt
+   * acknowledges the command and then ends the session before the model has
+   * produced anything -- which reads downstream as a harness that connected,
+   * listed the catalogue, and declined to call a single tool. That is a
+   * different finding, so the distinction is declared here rather than left to
+   * whoever reads the result.
+   *
+   * When set, stdin is held open until the protocol reports the turn's terminal
+   * frame, or until the harness has been silent for `idleTimeoutMs`.
+   */
+  readonly keepStdinOpen?: boolean;
+  /**
+   * How long a session harness may produce no output before stdin is closed.
+   *
+   * Only consulted with `keepStdinOpen`. A one-shot harness exits on its own; a
+   * session harness that never reaches a terminal frame would otherwise hold the
+   * turn open indefinitely. Pi streams token deltas throughout a turn, so
+   * silence is a stall rather than a long step.
+   */
+  readonly idleTimeoutMs?: number;
 }
 
 export interface McpLaunchContext {
@@ -281,6 +307,37 @@ async function runHarness(
   let terminal: RuntimeTurnOutcome | undefined;
   let diagnostics = "";
 
+  // A session harness is shut down by closing its command channel, so the close
+  // is deferred to the turn's terminal frame instead of happening at the write.
+  const idleMs = launch.idleTimeoutMs ?? DEFAULT_SESSION_IDLE_MS;
+  let idleTimer: NodeJS.Timeout | undefined;
+  const closeStdin = (): void => {
+    if (idleTimer !== undefined) {
+      clearTimeout(idleTimer);
+      idleTimer = undefined;
+    }
+    if (child.stdin.writableEnded) {
+      return;
+    }
+    child.stdin.end();
+  };
+  const touch = (): void => {
+    if (launch.keepStdinOpen !== true || child.stdin.writableEnded) {
+      return;
+    }
+    if (idleTimer !== undefined) {
+      clearTimeout(idleTimer);
+    }
+    idleTimer = setTimeout(() => {
+      options.onDiagnostic?.(
+        spec.id,
+        `no output for ${String(idleMs)}ms; closing the harness session`,
+      );
+      closeStdin();
+    }, idleMs);
+    idleTimer.unref();
+  };
+
   const lines = createInterface({ input: child.stdout });
   lines.on("line", (line) => {
     const trimmed = line.trim();
@@ -318,24 +375,36 @@ async function runHarness(
       // this channel. If a harness emits one anyway it is transcript noise, and
       // acting on it would be a second, unauthorized call path.
     }
+    if (terminal !== undefined) {
+      // The turn is over. For a session harness this is what makes it exit; for
+      // a one-shot one stdin is already closed and this does nothing.
+      closeStdin();
+    }
+    touch();
   });
 
   child.stderr.setEncoding("utf8");
   child.stderr.on("data", (chunk: string) => {
     diagnostics = `${diagnostics}${chunk}`.slice(-MAX_DIAGNOSTIC_CHARS);
     options.onDiagnostic?.(spec.id, chunk.trimEnd());
+    touch();
   });
 
   if (launch.stdin !== undefined) {
     child.stdin.write(launch.stdin);
   }
-  child.stdin.end();
+  if (launch.keepStdinOpen === true) {
+    touch();
+  } else {
+    closeStdin();
+  }
 
   const exit = await new Promise<{ code: number | null; error?: Error }>((resolve) => {
     child.once("error", (error: Error) => resolve({ code: null, error }));
     child.once("close", (code) => resolve({ code }));
   });
   lines.close();
+  closeStdin();
   signal.removeEventListener("abort", kill);
 
   if (signal.aborted) {
@@ -377,6 +446,9 @@ function defaultPrompt(request: RuntimeTurnRequest): string {
   }
   return JSON.stringify(payload);
 }
+
+/** Two minutes of silence from a session harness is a stall, not a long step. */
+const DEFAULT_SESSION_IDLE_MS = 120_000;
 
 export const MCP_ADAPTER_VERSION = "0.1.0-alpha.0";
 
@@ -471,6 +543,22 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
       "mcp_servers.sharedos.required=true",
       "-c",
       "mcp_servers.sharedos.tool_timeout_sec=120",
+      // The same decision as Claude Code's `--allowedTools`, and not an
+      // authorization one for the same reason.
+      //
+      // Codex gates MCP calls itself, and its default mode -- `auto` -- decides
+      // from the tool's MCP `readOnlyHint`: read-only tools run, everything else
+      // asks a human. `codex exec` has no human, so the ask is refused inside
+      // Codex with `approval policy is never` and the call never reaches the
+      // bridge. The row then reads as a kernel that refused every write, when
+      // the kernel was never consulted -- the one failure mode this whole column
+      // exists to avoid.
+      //
+      // `approve` auto-approves this server's tools. It is scoped to this one
+      // server, leaves Codex's shell sandbox alone, and hands the decision back
+      // to the only thing that should be making it: `RuntimeHost.invokeTool`.
+      "-c",
+      'mcp_servers.sharedos.default_tools_approval_mode="approve"',
       prompt,
     ],
     cwd: workspace,
@@ -567,6 +655,8 @@ export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
     args: ["--mode", "rpc", "--no-session", "--no-builtin-tools"],
     cwd: workspace,
     stdin: `${JSON.stringify({ id: request.executionId, type: "prompt", message: prompt })}\n`,
+    // `--mode rpc` is a session: EOF on stdin ends it. See `keepStdinOpen`.
+    keepStdinOpen: true,
   }),
 });
 

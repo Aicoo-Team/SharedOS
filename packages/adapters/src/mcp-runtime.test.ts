@@ -363,3 +363,97 @@ describe("a harness connected over MCP toolshare", () => {
     ).rejects.toThrow();
   }, 30_000);
 });
+
+/**
+ * A harness whose stdin is a command channel rather than a prompt, like Pi's
+ * `--mode rpc`.
+ *
+ * It exits the moment stdin ends, which is what makes the difference observable:
+ * a runner that closes the channel at the write kills the session while the tool
+ * call is still in flight, and the turn comes back with the catalogue listed and
+ * nothing called. That is indistinguishable, from the manifest, from a harness
+ * that looked at the catalogue and declined -- so it is worth a test rather than
+ * a comment.
+ */
+const SESSION_HARNESS = `
+import { readFileSync } from "node:fs";
+import { createInterface } from "node:readline";
+
+const config = JSON.parse(readFileSync(process.argv[2], "utf8"));
+const url = config.mcpServers.sharedos.url;
+
+// EOF ends the session, whatever else is in flight.
+process.stdin.on("end", () => process.exit(0));
+
+const rpc = async (id, method, params) => {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id, method, params }),
+  });
+  return response.json();
+};
+
+for await (const line of createInterface({ input: process.stdin })) {
+  const command = JSON.parse(line);
+  const answered = await rpc(2, "tools/call", command.call);
+  process.stdout.write(
+    JSON.stringify({
+      type: "result",
+      subtype: "success",
+      is_error: false,
+      result: JSON.stringify({ calls: [answered.result ?? answered.error] }),
+    }) + "\\n",
+  );
+}
+`;
+
+function sessionHarness(keepStdinOpen: boolean): McpHarnessSpec {
+  return {
+    id: "session",
+    manifest: {
+      id: "sharedos.test.session-mcp",
+      version: "0.0.0",
+      protocolVersion: "1",
+      metadata: { harness: "session", toolshare: "mcp" },
+    },
+    protocol: claudeCodeProtocol,
+    serverName: "sharedos",
+    configFiles: (connection) => [
+      {
+        harness: "session",
+        filename: ".mcp.json",
+        contents: JSON.stringify({
+          mcpServers: { sharedos: { type: "http", url: connection.url } },
+        }),
+      },
+      { harness: "session", filename: "harness.mjs", contents: SESSION_HARNESS },
+    ],
+    launch: ({ configPaths }) => ({
+      command: process.execPath,
+      args: [configPaths["harness.mjs"] as string, configPaths[".mcp.json"] as string],
+      stdin: `${JSON.stringify({ call: { name: "files.read", arguments: { path: GRANTED } } })}\n`,
+      keepStdinOpen,
+      idleTimeoutMs: 10_000,
+    }),
+  };
+}
+
+describe("a harness whose stdin is a session", () => {
+  it("is given time to answer, and is closed once its turn ends", async () => {
+    const executor = new SharedOSExecutor(kernel(), createMcpHarnessRuntime(sessionHarness(true)));
+    const result = await executor.execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
+    expect(result.events.filter(({ type }) => type === "tool.requested")).toHaveLength(1);
+    // The turn ended, so the channel was closed rather than left open: a session
+    // held past its terminal frame would hang the run instead of finishing it.
+  }, 30_000);
+
+  it("makes no call at all when the channel is closed at the write", async () => {
+    const executor = new SharedOSExecutor(kernel(), createMcpHarnessRuntime(sessionHarness(false)));
+    const result = await executor.execute(executionRequest());
+
+    expect(result.events.filter(({ type }) => type === "tool.requested")).toHaveLength(0);
+  }, 30_000);
+});
