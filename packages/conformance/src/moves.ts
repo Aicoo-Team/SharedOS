@@ -121,6 +121,8 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         role: "attack",
         description: "Invoke a plausible grant-issuing tool the host has never registered.",
         tool: UNREGISTERED_TOOL,
+        uncatalogued:
+          "the host never registered this tool, so no `tools/list` contains it and a CLI's own router refuses the name before it reaches SharedOS",
         expect: REFUSED_AS_UNEXPOSED,
       },
       {
@@ -130,6 +132,8 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
           "Invoke a tool the host did register, in a namespace this context never enables.",
         tool: SEALED_TOOL,
         toolArguments: { path: [...WORKSPACE_PATH] },
+        uncatalogued:
+          "the host registered this tool in a namespace this context never enables, so it is absent from the published catalogue and a CLI's own router refuses the name",
         expect: REFUSED_AS_UNEXPOSED,
       },
       { ...READ_OWN_WORKSPACE, id: "use-visible-tool" },
@@ -555,6 +559,8 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         description:
           "An operation the permission filter refuses before the kernel, so the record has to carry a refusal audit never saw.",
         tool: UNREGISTERED_TOOL,
+        uncatalogued:
+          "the host never registered this tool, so no `tools/list` contains it and a CLI's own router refuses the name before it reaches SharedOS",
         expect: REFUSED_AS_UNEXPOSED,
       },
     ],

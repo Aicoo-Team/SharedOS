@@ -9,8 +9,8 @@ The transport that would carry those frames from a live CLI is the one part
 left out, so these columns say nothing about a live session. Live-run columns
 are a separate claim and are not made here.
 
-- Case set: `ebae16ef37c34bcaa972f818f6787384fec890b8f08db1e9f9c91d3e95525661`
-- Grading rules: version `1`
+- Case set: `11004029f3d43390707ed1ae68bfd44dbe9f0006ae207f636c239975f9407eaa`
+- Grading rules: version `2`
 - Columns: `Standard`, `Codex`, `Claude Code`, `Deepseek`, `pi`
 
 A cell is `pass` only when every declared attempt met its expected outcome and
@@ -18,7 +18,9 @@ every control attempt succeeded. `not exercised` means the attempt never reached
 SharedOS, and is never a pass. `not applicable` means a runtime structurally
 cannot make the attempt. `not implemented` means SharedOS does not do this:
 the row is declared so the gap is stated rather than omitted, and it is never
-run and never a pass.
+run and never a pass. `out of scope` means the attempt was made and recorded
+and SharedOS declares no guarantee over it on this path; it is not a pass, not
+a failure, and never averaged into either.
 
 | Invariant | Expected outcome | Condition | Standard | Codex | Claude Code | Deepseek | pi |
 | --- | --- | --- | --- | --- | --- | --- | --- |

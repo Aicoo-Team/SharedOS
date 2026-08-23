@@ -1,7 +1,7 @@
 {
   "version": "1",
-  "judgeVersion": "1",
-  "caseSetHash": "ebae16ef37c34bcaa972f818f6787384fec890b8f08db1e9f9c91d3e95525661",
+  "judgeVersion": "2",
+  "caseSetHash": "11004029f3d43390707ed1ae68bfd44dbe9f0006ae207f636c239975f9407eaa",
   "columns": [
     {
       "id": "sharedos-embedded",

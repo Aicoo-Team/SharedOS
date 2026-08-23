@@ -152,6 +152,23 @@ export const AttackAttemptSchema = z
      * considered: an absent row and an unreachable one are different claims.
      */
     unreachable: z.string().min(1).max(512).optional(),
+    /**
+     * Declares that this attempt names a tool no published catalogue contains,
+     * and why that puts it out of reach of a driver with its own tool router.
+     *
+     * Distinct from `unreachable`, which is a claim about every runtime. This
+     * one is true only of a driver that filters its own calls against a
+     * catalogue it registered from `tools/list`: a scripted adversary, or an
+     * adapter driven by recorded frames, issues the call and SharedOS refuses
+     * it with `tool_unavailable`. A CLI speaking MCP never sends it at all, so
+     * the second gate upstream decides the row and the envelope is never asked.
+     *
+     * The attempt is declared identically either way and each column decides
+     * what to do with it. The claim is also self-correcting: an attempt any
+     * column *does* issue is graded on its receipt, so a client that turned out
+     * to forward unknown names would produce a result rather than this label.
+     */
+    uncatalogued: z.string().min(1).max(512).optional(),
   })
   .strict()
   .refine(

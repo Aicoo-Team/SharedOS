@@ -20,6 +20,24 @@ export interface ConformanceCondition {
    * well as on its attempts.
    */
   readonly expectTurn?: TurnExpectation;
+  /**
+   * Why this condition's bound exists only while SharedOS owns the turn loop.
+   *
+   * The envelope's step ceiling is enforced over the steps a runtime *declares*
+   * -- `RuntimeToolInvocationOptions.step` is optional and "enforced when
+   * present", and a plugin that omits it is bounded by `maxToolCalls` alone.
+   * A driver that owns its own loop declares no step, because a step is a
+   * position inside that loop and the envelope cannot see into one.
+   *
+   * Set here rather than derived, so the narrowing is a reviewable declaration
+   * sitting next to the arming it qualifies. A column that owns its loop reports
+   * `out_of_scope` for the row: the attempt is still issued and still recorded,
+   * so the manifest shows what the unbounded call did, but it is not graded
+   * against a guarantee SharedOS declares does not reach it. It is deliberately
+   * *not* `not_applicable`, which would claim the harness could not make the
+   * attempt, and deliberately not a pass.
+   */
+  readonly requiresDeclaredSteps?: string;
 }
 
 /**
@@ -173,6 +191,8 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
         id: "step-ceiling",
         description: "The turn is admitted with a budget of one step and eight tool calls.",
         world: { maxToolCalls: 8, maxSteps: 1 },
+        requiresDeclaredSteps:
+          "the step ceiling is enforced over the steps a runtime declares, and a driver that owns its own loop declares none; the turn is bounded by its tool-call ceiling instead",
       },
     ],
   },

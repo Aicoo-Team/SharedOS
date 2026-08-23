@@ -29,7 +29,7 @@ import {
 import { CONFORMANCE_NOW, createConformanceWorld, type ConformanceWorld } from "./world.js";
 
 /** Version of the grading rules, so a manifest names what produced it. */
-export const JUDGE_VERSION = "1";
+export const JUDGE_VERSION = "2";
 
 /**
  * The SharedOS build an execution record was produced by.
@@ -304,10 +304,17 @@ async function runCell(
     },
   );
 
+  // Applied after judging rather than instead of it, so the row is still run and
+  // its receipts still kept. What the ungraded call actually did stays in the
+  // evidence; only the verdict is withheld, because SharedOS declares no
+  // guarantee here to hold it against.
+  const status: ConformanceStatus =
+    limits.outOfScope === undefined ? judgement.status : "out_of_scope";
+
   return {
     cell: {
       columnId: column.id,
-      status: judgement.status,
+      status,
       refusedBy: judgement.refusedBy,
       reasonCodes: judgement.reasonCodes,
       declared: judgement.declared,
@@ -316,7 +323,11 @@ async function runCell(
       recordUsable: judgement.recordUsable,
       recordGaps: judgement.recordGaps,
       turns,
-      ...(judgement.detail === undefined ? {} : { detail: judgement.detail }),
+      ...(limits.outOfScope !== undefined
+        ? { detail: limits.outOfScope }
+        : judgement.detail === undefined
+          ? {}
+          : { detail: judgement.detail }),
     },
     evidence: {
       caseId: kase.id,
@@ -359,11 +370,17 @@ export interface StrictFailure {
  * suite, and treating it as a soft result is how a manifest ends up reporting
  * guarantees nobody tested.
  *
- * `not_implemented` is excluded, and is the one status that is a standing
- * result rather than a regression: the row is declared, its absence is stated
+ * `not_implemented` is excluded, and is one of two statuses that are standing
+ * results rather than regressions: the row is declared, its absence is stated
  * in the manifest, and a build that failed on it would only pressure someone
  * into deleting the row. It is counted and printed by the conformance script
  * so the gap stays in view.
+ *
+ * `out_of_scope` is excluded for the same reason and needs the same care. It
+ * records a guarantee SharedOS has declared does not reach a column, which is a
+ * narrowing of the claim rather than a defect -- but a narrowing is exactly the
+ * thing that could be used to make a build go green, so the row stays printed,
+ * stays out of every pass rate, and carries the reason it was narrowed.
  */
 export function strictFailures(manifest: ConformanceManifest): readonly StrictFailure[] {
   const failures: StrictFailure[] = [];
@@ -413,7 +430,9 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
     "SharedOS, and is never a pass. `not applicable` means a runtime structurally",
     "cannot make the attempt. `not implemented` means SharedOS does not do this:",
     "the row is declared so the gap is stated rather than omitted, and it is never",
-    "run and never a pass.",
+    "run and never a pass. `out of scope` means the attempt was made and recorded",
+    "and SharedOS declares no guarantee over it on this path; it is not a pass, not",
+    "a failure, and never averaged into either.",
     "",
     `| ${header.join(" | ")} |`,
     `| ${header.map(() => "---").join(" | ")} |`,

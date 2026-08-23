@@ -269,14 +269,16 @@ for (const row of manifest.rows) {
   }
 }
 
-console.log("\n| Harness | pass | not applicable | not implemented | not exercised | fail |");
-console.log("| --- | --- | --- | --- | --- | --- |");
+console.log(
+  "\n| Harness | pass | not applicable | not implemented | out of scope | not exercised | fail |",
+);
+console.log("| --- | --- | --- | --- | --- | --- | --- |");
 for (const column of manifest.columns) {
   const counts = tally.get(column.id) ?? new Map();
   const at = (status) => counts.get(status) ?? 0;
   console.log(
     `| ${column.label} | ${at("pass")} | ${at("not_applicable")} | ` +
-      `${at("not_implemented")} | ${at("not_exercised")} | ${at("fail")} |`,
+      `${at("not_implemented")} | ${at("out_of_scope")} | ${at("not_exercised")} | ${at("fail")} |`,
   );
 }
 

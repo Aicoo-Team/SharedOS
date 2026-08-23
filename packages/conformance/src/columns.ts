@@ -38,6 +38,18 @@ export interface ColumnLimits {
   readonly unsupported?: string;
   /** Attempt ids the column structurally cannot issue, mapped to why. */
   readonly unreachable?: ReadonlyMap<string, string>;
+  /**
+   * Set when SharedOS declares the row's guarantee does not reach this column.
+   *
+   * Different from every other field here, and the difference is the point.
+   * `unsupported` and `unreachable` are claims about the *harness*: it cannot
+   * make the attempt. This is a claim about *SharedOS*: the attempt is made,
+   * recorded, and answered -- and the answer is not graded, because the
+   * guarantee is declared not to apply on this path. The row is still run and
+   * its evidence still kept, so what the ungraded call actually did stays
+   * visible rather than being replaced by a symbol.
+   */
+  readonly outOfScope?: string;
 }
 
 /** One turn a column ran, for a column that cannot report on itself. */
@@ -110,7 +122,7 @@ export function harnessLimits(move: AttackMove, condition: ConformanceCondition)
         "a harness speaks tool calls over a wire and is never handed the runtime surfaces to enumerate",
       );
     }
-    if (attempt.overBudget === true && condition.world.maxSteps !== undefined) {
+    if (attempt.overBudget === true && condition.requiresDeclaredSteps !== undefined) {
       unreachable.set(
         attempt.id,
         "the standard turn loop this harness runs inside stops at its own step ceiling, so the call is never issued",
@@ -369,20 +381,32 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
 }
 
 /**
- * What a natively-looping MCP harness structurally cannot do.
+ * What a natively-looping MCP harness cannot be tested on, and why.
  *
- * Two of the three are the same as for a driven harness and for the same reason:
- * a harness speaks tool calls over a wire and is never handed a `RuntimeHost` to
+ * Three kinds, and they are not the same kind of claim.
+ *
+ * Two are structural facts about being a harness, shared with a driven one: a
+ * harness speaks tool calls over a wire and is never handed a `RuntimeHost` to
  * enumerate, and no vendor frame means "ask a human to decide".
  *
- * The third differs, and the difference matters. A driven harness cannot exceed
- * the step budget because `StandardRuntime` stops first. Here there is no such
- * loop -- the harness owns it -- and the bridge deliberately declares no step,
- * because a step number is a position in the runtime's own loop and SharedOS
- * cannot see inside a harness's. The envelope's `maxToolCalls` ceiling still
- * bounds the turn; the step ceiling is simply not the boundary being tested in
- * this column, and reporting the row as failed would blame the kernel for a
- * limit that was never engaged.
+ * The third is structural too but belongs to the *client*, not to SharedOS. An
+ * attempt naming a tool no published catalogue contains is refused by the CLI's
+ * own tool router before it reaches the bridge -- Codex logs
+ * `error=unsupported call: admin.grant.issue` -- so `tool_unavailable` is
+ * unreachable through a well-behaved MCP client even though SharedOS
+ * deliberately does not narrow `ToolCall.tool` and `McpToolServer` would pass an
+ * unknown name straight through. The recorded-frames columns own the loop and
+ * are the only ones that exercise it.
+ *
+ * The fourth is not a limit of the harness at all. Where a condition declares
+ * `requiresDeclaredSteps`, SharedOS is stating that the guarantee holds only
+ * while it owns the turn loop, and the row is reported `out_of_scope`: the
+ * attempt is still issued and recorded, and simply not graded. A driven harness
+ * reports `not_applicable` on the same row for a genuinely different reason --
+ * `StandardRuntime` stops at its own step ceiling, so the call is never issued.
+ * Neither is a pass, and the two must not be collapsed: one says the attempt
+ * could not be made, the other says the attempt was made and SharedOS no longer
+ * claims an answer for it.
  */
 export function mcpHarnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
   const unreachable = new Map<string, string>();
@@ -394,11 +418,8 @@ export function mcpHarnessLimits(move: AttackMove, condition: ConformanceConditi
         "a harness speaks tool calls over MCP and is never handed the runtime surfaces to enumerate",
       );
     }
-    if (attempt.overBudget === true && condition.world.maxSteps !== undefined) {
-      unreachable.set(
-        attempt.id,
-        "an MCP bridge declares no step, because a step is a position in the harness's own loop; the turn is bounded by its tool-call ceiling instead",
-      );
+    if (attempt.uncatalogued !== undefined) {
+      unreachable.set(attempt.id, attempt.uncatalogued);
     }
   }
 
@@ -409,6 +430,9 @@ export function mcpHarnessLimits(move: AttackMove, condition: ConformanceConditi
           unsupported:
             "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one",
         }),
+    ...(condition.requiresDeclaredSteps === undefined
+      ? {}
+      : { outOfScope: condition.requiresDeclaredSteps }),
     ...(unreachable.size === 0 ? {} : { unreachable }),
   };
 }
