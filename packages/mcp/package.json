@@ -1,16 +1,14 @@
 {
-  "name": "@aicoo/sharedos-adapters",
+  "name": "@aicoo/sharedos-mcp",
   "version": "0.1.0-alpha.0",
-  "description": "Codex, Claude Code, DeepSeek Harness, and Pi runtime adapters for SharedOS",
+  "description": "Model Context Protocol toolshare bridge for SharedOS: the permission-filtered catalogue as an MCP server",
   "license": "Apache-2.0",
   "keywords": [
     "agents",
-    "adapter",
-    "claude-code",
-    "codex",
-    "deepseek",
-    "pi",
-    "runtime"
+    "authorization",
+    "mcp",
+    "model-context-protocol",
+    "tools"
   ],
   "homepage": "https://www.aicoo.io",
   "bugs": {
@@ -19,7 +17,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Aicoo-Team/SharedOS.git",
-    "directory": "packages/adapters"
+    "directory": "packages/mcp"
   },
   "type": "module",
   "sideEffects": false,
@@ -52,12 +50,11 @@
   },
   "dependencies": {
     "@aicoo/sharedos-contracts": "workspace:*",
-    "@aicoo/sharedos-mcp": "workspace:*",
-    "@aicoo/sharedos-runtime": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@aicoo/sharedos-core": "workspace:*",
+    "@aicoo/sharedos-os": "workspace:*",
     "@aicoo/sharedos-testkit": "workspace:*"
   }
 }

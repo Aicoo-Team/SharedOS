@@ -56,15 +56,16 @@ below provide the complete generated signatures and member-level reference.
 
 ## Packages
 
-| Package                                                | Description                                                                     |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| [@aicoo/sharedos](sharedos.md)                         | Permission-controlled state and delegation SDK with pluggable agent runtimes    |
-| [@aicoo/sharedos-adapters](sharedos-adapters.md)       | Codex, Claude Code, DeepSeek Harness, and Pi runtime adapters for SharedOS      |
-| [@aicoo/sharedos-client](sharedos-client.md)           | Runtime-validated HTTP client for SharedOS                                      |
-| [@aicoo/sharedos-conformance](sharedos-conformance.md) | Standard execution records and infrastructure conformance evidence for SharedOS |
-| [@aicoo/sharedos-contracts](sharedos-contracts.md)     | JSON-safe protocol contracts for SharedOS                                       |
-| [@aicoo/sharedos-core](sharedos-core.md)               | Deny-by-default capability kernel for SharedOS                                  |
-| [@aicoo/sharedos-http](sharedos-http.md)               | Fetch-compatible HTTP adapter for SharedOS                                      |
-| [@aicoo/sharedos-os](sharedos-os.md)                   | Standard permission-controlled file capabilities for SharedOS                   |
-| [@aicoo/sharedos-runtime](sharedos-runtime.md)         | Fixed SharedOS security envelope with standard and pluggable one-turn runtimes  |
-| [@aicoo/sharedos-testkit](sharedos-testkit.md)         | In-memory conformance helpers for SharedOS hosts                                |
+| Package                                                | Description                                                                                              |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| [@aicoo/sharedos](sharedos.md)                         | Permission-controlled state and delegation SDK with pluggable agent runtimes                             |
+| [@aicoo/sharedos-adapters](sharedos-adapters.md)       | Codex, Claude Code, DeepSeek Harness, and Pi runtime adapters for SharedOS                               |
+| [@aicoo/sharedos-client](sharedos-client.md)           | Runtime-validated HTTP client for SharedOS                                                               |
+| [@aicoo/sharedos-conformance](sharedos-conformance.md) | Standard execution records and infrastructure conformance evidence for SharedOS                          |
+| [@aicoo/sharedos-contracts](sharedos-contracts.md)     | JSON-safe protocol contracts for SharedOS                                                                |
+| [@aicoo/sharedos-core](sharedos-core.md)               | Deny-by-default capability kernel for SharedOS                                                           |
+| [@aicoo/sharedos-http](sharedos-http.md)               | Fetch-compatible HTTP adapter for SharedOS                                                               |
+| [@aicoo/sharedos-mcp](sharedos-mcp.md)                 | Model Context Protocol toolshare bridge for SharedOS: the permission-filtered catalogue as an MCP server |
+| [@aicoo/sharedos-os](sharedos-os.md)                   | Standard permission-controlled file capabilities for SharedOS                                            |
+| [@aicoo/sharedos-runtime](sharedos-runtime.md)         | Fixed SharedOS security envelope with standard and pluggable one-turn runtimes                           |
+| [@aicoo/sharedos-testkit](sharedos-testkit.md)         | In-memory conformance helpers for SharedOS hosts                                                         |

@@ -301,6 +301,42 @@ function ownerArgument(value: unknown, fallback: Address): Address {
     : fallback;
 }
 
+/**
+ * The input shape a tool publishes, described rather than left opaque.
+ *
+ * Every tool here used to declare `inputSchema: { type: "object" }`, which was
+ * invisible for as long as every column supplied its arguments out of band: the
+ * scripted adversary builds a `ToolCall` directly, and a transcript column writes
+ * the arguments into the recorded frame. The first column to actually read the
+ * published schema -- a live harness over MCP -- found the gap immediately. It
+ * called `files.read` with no `path` at all, the handler fell back to the
+ * workspace root, and the row could not be graded.
+ *
+ * So the schema is the interface, and an undescribed input is an undescribed
+ * operation. `additionalProperties` stays open on purpose: these tools do accept
+ * whatever else a caller sends and do ignore it, which is exactly what the
+ * forged-grant row depends on -- an attacker embeds `grant` in the arguments, the
+ * tool carries it, and no part of authorization ever looks at it.
+ */
+function pathToolSchema(example: readonly string[]): JsonObject {
+  return {
+    type: "object",
+    required: ["path"],
+    properties: {
+      path: {
+        type: "array",
+        items: { type: "string" },
+        description: `Path segments inside the workspace, for example ${JSON.stringify(example)}.`,
+      },
+      owner: {
+        type: "object",
+        description: "The address owning the resource. Defaults to the caller's own owner.",
+      },
+    },
+    additionalProperties: true,
+  };
+}
+
 function fileResource(call: ToolCall, context: AccessContext): ResourceRef {
   const argument = call.arguments as { path?: unknown; owner?: unknown };
   return {
@@ -334,7 +370,7 @@ export class ConformanceFileStore {
       namespace: FILES_NAMESPACE,
       source: "sharedos",
       readWrite: "read",
-      inputSchema: { type: "object" },
+      inputSchema: pathToolSchema(READ_ONLY_FILE),
       requiredCapability: {
         resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
         action: "read",
@@ -372,7 +408,7 @@ export class ConformanceFileStore {
         namespace: FILES_NAMESPACE,
         source: "sharedos",
         readWrite: "write",
-        inputSchema: { type: "object" },
+        inputSchema: pathToolSchema(WRITABLE_FILE),
         requiredCapability: {
           resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
           action: "write",
@@ -417,7 +453,7 @@ export class ConformanceFileStore {
         namespace: FILES_NAMESPACE,
         source: "sharedos",
         readWrite: "read",
-        inputSchema: { type: "object" },
+        inputSchema: pathToolSchema(WORKSPACE_PATH),
         requiredCapability: {
           resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
           action: "read",
@@ -463,7 +499,7 @@ export class ConformanceFileStore {
         namespace: FILES_NAMESPACE,
         source: "sharedos",
         readWrite: "read",
-        inputSchema: { type: "object" },
+        inputSchema: pathToolSchema(READ_ONLY_FILE),
         requiredCapability: {
           resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
           action: "read",
@@ -502,7 +538,7 @@ export class ConformanceFileStore {
         namespace: FILES_ADMIN_NAMESPACE,
         source: "sharedos",
         readWrite: "write",
-        inputSchema: { type: "object" },
+        inputSchema: pathToolSchema(WORKSPACE_PATH),
         requiredCapability: {
           resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
           action: "purge",
@@ -876,7 +912,11 @@ function unregisteredToolStub(): ToolDefinition {
     namespace: FILES_ADMIN_NAMESPACE,
     source: "sharedos",
     readWrite: "write",
-    inputSchema: { type: "object" },
+    inputSchema: {
+      type: "object",
+      properties: { grant: { type: "object", description: "The grant to issue." } },
+      additionalProperties: true,
+    },
     requiredCapability: {
       resource: { namespace: EXECUTION_RESOURCE_NAMESPACE, path: ["grant"] },
       action: "issue",
@@ -893,7 +933,14 @@ function messageHandler(kernel: SharedOSKernel): ToolHandler {
       namespace: MESSAGES_NAMESPACE,
       source: "sharedos",
       readWrite: "write",
-      inputSchema: { type: "object" },
+      inputSchema: {
+        type: "object",
+        properties: {
+          intent: { type: "string", description: "What the message is for, for example `status`." },
+          text: { type: "string", description: "The message body." },
+        },
+        additionalProperties: true,
+      },
       requiredCapability: {
         resource: { namespace: MESSAGING_RESOURCE_NAMESPACE, path: ["human"] },
         action: "send",

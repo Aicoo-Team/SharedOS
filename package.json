@@ -16,6 +16,8 @@
     "docs:api:check": "node scripts/check-api-docs.mjs",
     "conformance": "node scripts/conformance.mjs",
     "conformance:check": "node scripts/conformance.mjs --check --strict",
+    "conformance:mcp": "node scripts/mcp-conformance.mjs",
+    "conformance:live": "node scripts/live-conformance.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc -b --pretty false",

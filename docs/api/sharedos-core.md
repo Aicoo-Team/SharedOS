@@ -671,7 +671,7 @@ Defined in: [packages/core/src/resource-registry.ts:26](https://github.com/Aicoo
 
 ### SharedOSKernel
 
-Defined in: [packages/core/src/kernel.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L108)
+Defined in: [packages/core/src/kernel.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L110)
 
 Host-neutral facade for every permission-controlled SharedOS operation.
 AccessContext is a trusted host-created boundary; never construct it from an
@@ -683,7 +683,7 @@ unverified request body.
 
 > **new SharedOSKernel**(`options`): [`SharedOSKernel`](#sharedoskernel)
 
-Defined in: [packages/core/src/kernel.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L121)
+Defined in: [packages/core/src/kernel.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L123)
 
 ###### Parameters
 
@@ -701,7 +701,7 @@ Defined in: [packages/core/src/kernel.ts:121](https://github.com/Aicoo-Team/Shar
 
 > **admitTurn**(`context`, `agent`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L226)
+Defined in: [packages/core/src/kernel.ts:228](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L228)
 
 Consume permission to invoke exactly one target agent turn.
 
@@ -729,7 +729,7 @@ Consume permission to invoke exactly one target agent turn.
 
 > **authorize**(`context`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:210](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L210)
+Defined in: [packages/core/src/kernel.ts:212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L212)
 
 ###### Parameters
 
@@ -755,7 +755,7 @@ Defined in: [packages/core/src/kernel.ts:210](https://github.com/Aicoo-Team/Shar
 
 > **invokeResource**(`context`, `request`, `options?`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:636](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L636)
+Defined in: [packages/core/src/kernel.ts:661](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L661)
 
 ###### Parameters
 
@@ -781,7 +781,7 @@ Defined in: [packages/core/src/kernel.ts:636](https://github.com/Aicoo-Team/Shar
 
 > **invokeTool**(`context`, `call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:416](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L416)
+Defined in: [packages/core/src/kernel.ts:441](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L441)
 
 ###### Parameters
 
@@ -808,11 +808,50 @@ Defined in: [packages/core/src/kernel.ts:416](https://github.com/Aicoo-Team/Shar
 
 `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
+##### listPublishedTools()
+
+> **listPublishedTools**(`context`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
+
+Defined in: [packages/core/src/kernel.ts:362](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L362)
+
+The effective catalogue as an external harness receives it.
+
+[listTools](#listtools) answers with SharedOS registrations, which carry the
+capability each tool would require. That is the right answer inside the host
+and the wrong thing to put on a wire, so everything crossing the MCP
+boundary goes through this instead: the same permission-filtered set,
+projected to what a model is allowed to see, in canonical order, with the
+hash that identifies it.
+
+A context whose authority could not be loaded receives an empty catalogue
+and a hash over nothing, exactly as [listTools](#listtools) returns no tools --
+fail-closed, and still a well-formed catalogue rather than an error the
+harness would have to interpret.
+
+###### Parameters
+
+| Parameter                       | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `context`                       | \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \} |
+| `context.actor`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.authority`             | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.enabledToolNamespaces` | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.namespaceId`           | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.now`                   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.owner`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.purpose`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.traceId`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `options`                       | [`KernelOperationOptions`](#kerneloperationoptions) & `object`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+
+###### Returns
+
+`Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
+
 ##### listToolNamespaces()
 
 > **listToolNamespaces**(`context`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:345](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L345)
+Defined in: [packages/core/src/kernel.ts:370](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L370)
 
 ###### Parameters
 
@@ -837,7 +876,7 @@ Defined in: [packages/core/src/kernel.ts:345](https://github.com/Aicoo-Team/Shar
 
 > **listTools**(`context`, `options?`): `Promise`\<readonly `object`[]\>
 
-Defined in: [packages/core/src/kernel.ts:296](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L296)
+Defined in: [packages/core/src/kernel.ts:298](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L298)
 
 ###### Parameters
 
@@ -862,7 +901,7 @@ Defined in: [packages/core/src/kernel.ts:296](https://github.com/Aicoo-Team/Shar
 
 > **openTurnAuthority**(`context`, `options?`): `Promise`\<[`TurnAuthorityScope`](#turnauthorityscope)>\>
 
-Defined in: [packages/core/src/kernel.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L174)
+Defined in: [packages/core/src/kernel.ts:176](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L176)
 
 Resolve the authority one turn will be decided against, and hold it.
 
@@ -903,7 +942,7 @@ lease resolves its own authority, which is a turn of one operation.
 
 > **recordEscalation**(`context`, `reason`, `options?`): `Promise`\<\{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:262](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L262)
+Defined in: [packages/core/src/kernel.ts:264](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L264)
 
 Record that a turn stopped and asked a human to decide.
 
@@ -941,7 +980,7 @@ deliberately no path from here back into the running turn.
 
 > **registerResourceProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L138)
+Defined in: [packages/core/src/kernel.ts:140](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L140)
 
 ###### Parameters
 
@@ -957,7 +996,7 @@ Defined in: [packages/core/src/kernel.ts:138](https://github.com/Aicoo-Team/Shar
 
 > **registerTool**(`handler`): `void`
 
-Defined in: [packages/core/src/kernel.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L142)
+Defined in: [packages/core/src/kernel.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L144)
 
 ###### Parameters
 
@@ -973,7 +1012,7 @@ Defined in: [packages/core/src/kernel.ts:142](https://github.com/Aicoo-Team/Shar
 
 > **registerToolProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L146)
+Defined in: [packages/core/src/kernel.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L148)
 
 ###### Parameters
 
@@ -989,7 +1028,7 @@ Defined in: [packages/core/src/kernel.ts:146](https://github.com/Aicoo-Team/Shar
 
 > **sendMessage**(`context`, `envelope`, `options?`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:759](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L759)
+Defined in: [packages/core/src/kernel.ts:784](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L784)
 
 ###### Parameters
 
@@ -1029,7 +1068,7 @@ Defined in: [packages/core/src/kernel.ts:759](https://github.com/Aicoo-Team/Shar
 
 > **updateToolNamespaces**(`context`, `update`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:368](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L368)
+Defined in: [packages/core/src/kernel.ts:393](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L393)
 
 ###### Parameters
 
@@ -1584,13 +1623,13 @@ Defined in: [packages/core/src/authorization.ts:62](https://github.com/Aicoo-Tea
 
 ### KernelOperationOptions
 
-Defined in: [packages/core/src/kernel.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L78)
+Defined in: [packages/core/src/kernel.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L80)
 
 #### Properties
 
 | Property                               | Modifier   | Type          | Defined in                                                                                                         |
 | -------------------------------------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-signal"></a> `signal?` | `readonly` | `AbortSignal` | [packages/core/src/kernel.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L79) |
+| <a id="property-signal"></a> `signal?` | `readonly` | `AbortSignal` | [packages/core/src/kernel.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L81) |
 
 ---
 
@@ -1787,22 +1826,34 @@ Defined in: [packages/core/src/resource-registry.ts:20](https://github.com/Aicoo
 
 ### SharedOSKernelOptions
 
-Defined in: [packages/core/src/kernel.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L60)
+Defined in: [packages/core/src/kernel.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L62)
 
 #### Properties
 
 | Property                                                                     | Modifier   | Type                                                        | Description                                                                                                                  | Defined in                                                                                                         |
 | ---------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-audit"></a> `audit?`                                         | `readonly` | [`AuditSink`](#auditsink)                                   | -                                                                                                                            | [packages/core/src/kernel.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L73) |
-| <a id="property-authorizer"></a> `authorizer?`                               | `readonly` | [`CapabilityAuthorizer`](#capabilityauthorizer)             | -                                                                                                                            | [packages/core/src/kernel.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L66) |
-| <a id="property-grantsource"></a> `grantSource`                              | `readonly` | [`GrantSource`](#grantsource)                               | The trusted boundary that loads authority. It is required: a kernel with no authoritative grant source can only fail closed. | [packages/core/src/kernel.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L65) |
-| <a id="property-messagecapabilityresolver"></a> `messageCapabilityResolver?` | `readonly` | [`MessageCapabilityResolver`](#messagecapabilityresolver)   | -                                                                                                                            | [packages/core/src/kernel.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L72) |
-| <a id="property-messagetransport"></a> `messageTransport?`                   | `readonly` | [`MessageTransport`](#messagetransport)                     | -                                                                                                                            | [packages/core/src/kernel.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L71) |
-| <a id="property-onauditerror"></a> `onAuditError?`                           | `readonly` | (`error`, `event`) => `void` \| `Promise`\<`void`\>         | Notification for audit failures that occur after a side effect.                                                              | [packages/core/src/kernel.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L75) |
-| <a id="property-resources"></a> `resources?`                                 | `readonly` | [`ResourceProviderRegistry`](#resourceproviderregistry)     | -                                                                                                                            | [packages/core/src/kernel.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L67) |
-| <a id="property-toolnamespacesettings"></a> `toolNamespaceSettings?`         | `readonly` | [`ToolNamespaceSettingsStore`](#toolnamespacesettingsstore) | -                                                                                                                            | [packages/core/src/kernel.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L70) |
-| <a id="property-toolproviders"></a> `toolProviders?`                         | `readonly` | readonly [`ContextToolProvider`](#contexttoolprovider)[]    | -                                                                                                                            | [packages/core/src/kernel.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L69) |
-| <a id="property-tools"></a> `tools?`                                         | `readonly` | [`ToolRegistry`](#toolregistry)                             | -                                                                                                                            | [packages/core/src/kernel.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L68) |
+| <a id="property-audit"></a> `audit?`                                         | `readonly` | [`AuditSink`](#auditsink)                                   | -                                                                                                                            | [packages/core/src/kernel.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L75) |
+| <a id="property-authorizer"></a> `authorizer?`                               | `readonly` | [`CapabilityAuthorizer`](#capabilityauthorizer)             | -                                                                                                                            | [packages/core/src/kernel.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L68) |
+| <a id="property-grantsource"></a> `grantSource`                              | `readonly` | [`GrantSource`](#grantsource)                               | The trusted boundary that loads authority. It is required: a kernel with no authoritative grant source can only fail closed. | [packages/core/src/kernel.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L67) |
+| <a id="property-messagecapabilityresolver"></a> `messageCapabilityResolver?` | `readonly` | [`MessageCapabilityResolver`](#messagecapabilityresolver)   | -                                                                                                                            | [packages/core/src/kernel.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L74) |
+| <a id="property-messagetransport"></a> `messageTransport?`                   | `readonly` | [`MessageTransport`](#messagetransport)                     | -                                                                                                                            | [packages/core/src/kernel.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L73) |
+| <a id="property-onauditerror"></a> `onAuditError?`                           | `readonly` | (`error`, `event`) => `void` \| `Promise`\<`void`\>         | Notification for audit failures that occur after a side effect.                                                              | [packages/core/src/kernel.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L77) |
+| <a id="property-resources"></a> `resources?`                                 | `readonly` | [`ResourceProviderRegistry`](#resourceproviderregistry)     | -                                                                                                                            | [packages/core/src/kernel.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L69) |
+| <a id="property-toolnamespacesettings"></a> `toolNamespaceSettings?`         | `readonly` | [`ToolNamespaceSettingsStore`](#toolnamespacesettingsstore) | -                                                                                                                            | [packages/core/src/kernel.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L72) |
+| <a id="property-toolproviders"></a> `toolProviders?`                         | `readonly` | readonly [`ContextToolProvider`](#contexttoolprovider)[]    | -                                                                                                                            | [packages/core/src/kernel.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L71) |
+| <a id="property-tools"></a> `tools?`                                         | `readonly` | [`ToolRegistry`](#toolregistry)                             | -                                                                                                                            | [packages/core/src/kernel.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L70) |
+
+---
+
+### ToolCatalogOptions
+
+Defined in: packages/core/src/published-tool.ts:132
+
+#### Properties
+
+| Property                                        | Modifier   | Type     | Defined in                              |
+| ----------------------------------------------- | ---------- | -------- | --------------------------------------- |
+| <a id="property-executionid"></a> `executionId` | `readonly` | `string` | packages/core/src/published-tool.ts:133 |
 
 ---
 
@@ -1815,24 +1866,24 @@ Defined in: [packages/core/src/tool-registry.ts:14](https://github.com/Aicoo-Tea
 | Property                                                       | Modifier   | Type                                                                                                                                                                                                       | Description                                                                | Defined in                                                                                                                       |
 | -------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="property-definition"></a> `definition`                  | `readonly` | `object`                                                                                                                                                                                                   | -                                                                          | [packages/core/src/tool-registry.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L15) |
-| `definition.annotations?`                                      | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:287                                                                                            |
-| `definition.annotations.destructive?`                          | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:289                                                                                            |
-| `definition.annotations.idempotent?`                           | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:290                                                                                            |
-| `definition.annotations.readOnly?`                             | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:288                                                                                            |
-| `definition.description`                                       | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:261                                                                                            |
-| `definition.inputSchema`                                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                          | packages/contracts/dist/tool.d.ts:264                                                                                            |
-| `definition.metadata?`                                         | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                          | packages/contracts/dist/tool.d.ts:285                                                                                            |
-| `definition.name`                                              | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:260                                                                                            |
-| `definition.namespace`                                         | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:259                                                                                            |
-| `definition.outputSchema?`                                     | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                          | packages/contracts/dist/tool.d.ts:286                                                                                            |
-| `definition.readWrite`                                         | `public`   | `"read"` \| `"write"`                                                                                                                                                                                      | -                                                                          | packages/contracts/dist/tool.d.ts:263                                                                                            |
-| `definition.requiredCapability`                                | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:265                                                                                            |
-| `definition.requiredCapability.action`                         | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:283                                                                                            |
-| `definition.requiredCapability.resource`                       | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:266                                                                                            |
-| `definition.requiredCapability.resource.namespace`             | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:268                                                                                            |
-| `definition.requiredCapability.resource.owner?`                | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                          | packages/contracts/dist/tool.d.ts:269                                                                                            |
-| `definition.requiredCapability.resource.path`                  | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                          | packages/contracts/dist/tool.d.ts:267                                                                                            |
-| `definition.source`                                            | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:262                                                                                            |
+| `definition.annotations?`                                      | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:309                                                                                            |
+| `definition.annotations.destructive?`                          | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:311                                                                                            |
+| `definition.annotations.idempotent?`                           | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:312                                                                                            |
+| `definition.annotations.readOnly?`                             | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:310                                                                                            |
+| `definition.description`                                       | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:283                                                                                            |
+| `definition.inputSchema`                                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                          | packages/contracts/dist/tool.d.ts:286                                                                                            |
+| `definition.metadata?`                                         | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                          | packages/contracts/dist/tool.d.ts:307                                                                                            |
+| `definition.name`                                              | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:282                                                                                            |
+| `definition.namespace`                                         | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:281                                                                                            |
+| `definition.outputSchema?`                                     | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                          | packages/contracts/dist/tool.d.ts:308                                                                                            |
+| `definition.readWrite`                                         | `public`   | `"read"` \| `"write"`                                                                                                                                                                                      | -                                                                          | packages/contracts/dist/tool.d.ts:285                                                                                            |
+| `definition.requiredCapability`                                | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:287                                                                                            |
+| `definition.requiredCapability.action`                         | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:305                                                                                            |
+| `definition.requiredCapability.resource`                       | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:288                                                                                            |
+| `definition.requiredCapability.resource.namespace`             | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:290                                                                                            |
+| `definition.requiredCapability.resource.owner?`                | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                          | packages/contracts/dist/tool.d.ts:291                                                                                            |
+| `definition.requiredCapability.resource.path`                  | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                          | packages/contracts/dist/tool.d.ts:289                                                                                            |
+| `definition.source`                                            | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:284                                                                                            |
 | <a id="property-parsearguments"></a> `parseArguments`          | `readonly` | (`arguments_`) => `unknown`                                                                                                                                                                                | Parse and normalize untrusted arguments before authorization or execution. | [packages/core/src/tool-registry.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L17) |
 | <a id="property-resolverequirement"></a> `resolveRequirement?` | `readonly` | (`context`, `call`) => [`AuthorizationRequest`](#authorizationrequest)                                                                                                                                     | Resolve argument-selected resources immediately before execution.          | [packages/core/src/tool-registry.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L19) |
 
@@ -2049,7 +2100,28 @@ Defined in: [packages/core/src/authority.ts:76](https://github.com/Aicoo-Team/Sh
 
 > `const` **AGENT\_INVOKE\_ACTION**: `"invoke"` = `"invoke"`
 
-Defined in: [packages/core/src/kernel.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L83)
+Defined in: [packages/core/src/kernel.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L85)
+
+---
+
+### CATALOG\_HASH\_FIELDS
+
+> `const` **CATALOG\_HASH\_FIELDS**: readonly `string`[]
+
+Defined in: packages/core/src/published-tool.ts:26
+
+The fields of a published tool that `catalogHash` is computed over.
+
+This list is the contract, not an implementation detail. Two hosts can both
+claim to compute `catalogHash` and disagree on every value unless
+participation is fixed somewhere, so it is fixed here and asserted by
+[publishToolDefinition](#publishtooldefinition), which cannot emit a key outside it.
+
+What is deliberately absent is everything that varies with _how_ a catalogue
+was delivered rather than _what_ it contains: `executionId`, the harness-side
+alias, the runtime name, the transport. Two harnesses handed the same tools
+must hash identically, or the hash cannot be used to prove they were compared
+on equal terms -- which is the only reason it exists.
 
 ---
 
@@ -2067,7 +2139,7 @@ The longest ancestor chain SharedOS will walk before failing closed.
 
 > `const` **EXECUTION\_NAMESPACE**: `"sharedos.execution"` = `"sharedos.execution"`
 
-Defined in: [packages/core/src/kernel.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L82)
+Defined in: [packages/core/src/kernel.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L84)
 
 ---
 
@@ -2187,7 +2259,7 @@ Stable, segment-safe grant path for recipient-scoped messaging.
 
 > **agentExecutionCapability**(`agent`, `owner`): `object`
 
-Defined in: [packages/core/src/kernel.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L85)
+Defined in: [packages/core/src/kernel.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L87)
 
 #### Parameters
 
@@ -2273,6 +2345,27 @@ Defined in: [packages/core/src/audit.ts:76](https://github.com/Aicoo-Team/Shared
 #### Returns
 
 [`AuditEvent`](#auditevent)
+
+---
+
+### buildToolCatalog()
+
+> **buildToolCatalog**(`definitions`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
+
+Defined in: packages/core/src/published-tool.ts:137
+
+Build the per-turn catalogue a harness is served, hash included.
+
+#### Parameters
+
+| Parameter     | Type                                        |
+| ------------- | ------------------------------------------- |
+| `definitions` | readonly `object`[]                         |
+| `options`     | [`ToolCatalogOptions`](#toolcatalogoptions) |
+
+#### Returns
+
+`Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
 ---
 
@@ -2364,6 +2457,57 @@ Defined in: [packages/core/src/authorization.ts:308](https://github.com/Aicoo-Te
 
 ---
 
+### catalogHash()
+
+> **catalogHash**(`tools`): `Promise`\<`string`>\>
+
+Defined in: packages/core/src/published-tool.ts:120
+
+A stable identifier for one effective, model-facing tool catalogue.
+
+    catalogHash = SHA-256(canonical JSON(tools sorted by canonical name))
+
+Canonicalisation is [canonicalJson](#canonicaljson): object keys sorted, no incidental
+whitespace, so a host that serialises its schemas in a different key order
+still produces the same hash. Field participation is
+[CATALOG\_HASH\_FIELDS](#catalog_hash_fields).
+
+The hash answers one question -- were these harnesses given the same semantic
+tool set? -- and answers it against schema drift, a missing tool, a renamed
+tool, and a stale discovery cache alike.
+
+#### Parameters
+
+| Parameter | Type                |
+| --------- | ------------------- |
+| `tools`   | readonly `object`[] |
+
+#### Returns
+
+`Promise`\<`string`\>
+
+---
+
+### formatCatalogHash()
+
+> **formatCatalogHash**(`hash`): `string`
+
+Defined in: packages/core/src/published-tool.ts:128
+
+The hash as an experiment record renders it: algorithm-qualified.
+
+#### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `hash`    | `string` |
+
+#### Returns
+
+`string`
+
+---
+
 ### hashJson()
 
 > **hashJson**(`value`): `Promise`\<`string`>\>
@@ -2446,6 +2590,157 @@ Defined in: [packages/core/src/message-service.ts:15](https://github.com/Aicoo-T
 ##### scope
 
 > **scope**: `"exact"` \| `"descendants"`
+
+---
+
+### portableToolName()
+
+> **portableToolName**(`name`): `string`
+
+Defined in: packages/core/src/published-tool.ts:160
+
+The canonical name rewritten for a transport that cannot carry a dot.
+
+Provided because harnesses do this anyway and an unowned rewrite is worse than
+an owned one. It is transport presentation only: it is not the tool's
+identity, it is not what `catalogHash` covers, and nothing may authorize
+against it. SharedOS maps a harness alias back to the canonical name before
+the call reaches the kernel; the alias may be recorded diagnostically, and
+that is the whole of its role.
+
+#### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `name`    | `string` |
+
+#### Returns
+
+`string`
+
+---
+
+### publishToolCatalog()
+
+> **publishToolCatalog**(`definitions`): readonly `object`[]
+
+Defined in: packages/core/src/published-tool.ts:90
+
+Project a permission-filtered catalogue, in canonical order.
+
+Sorting is part of the projection rather than of the hash, so the tools a
+harness receives and the tools that were hashed are in the same order and can
+be compared by eye. Duplicate names are rejected here: a catalogue that
+publishes one name twice has already lost the property the whole boundary
+rests on, that a name identifies exactly one operation.
+
+#### Parameters
+
+| Parameter     | Type                |
+| ------------- | ------------------- |
+| `definitions` | readonly `object`[] |
+
+#### Returns
+
+readonly `object`[]
+
+---
+
+### publishToolDefinition()
+
+> **publishToolDefinition**(`definition`): `object`
+
+Defined in: packages/core/src/published-tool.ts:50
+
+Project one registered tool into what a harness is allowed to see.
+
+Everything authorization-bearing is dropped rather than redacted:
+`requiredCapability`, `resolveRequirement`, and the handler itself never leave
+SharedOS. A harness therefore cannot infer what authority a call would need,
+and could not use the answer if it could -- the requirement is re-resolved
+from the _arguments_ at invocation time, so two calls to one published tool
+routinely need different authority.
+
+`readWrite` is a required classification on every registration, so
+`readOnlyHint` is always determined. `destructiveHint` and `idempotentHint`
+appear only when the registration stated them: emitting a guess would put an
+unfixed value into `catalogHash`.
+
+#### Parameters
+
+| Parameter                                          | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `definition`                                       | \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](sharedos-contracts.md#jsonobject); `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}; `source`: `string`; \} |
+| `definition.annotations?`                          | \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `definition.annotations.destructive?`              | `boolean`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `definition.annotations.idempotent?`               | `boolean`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `definition.annotations.readOnly?`                 | `boolean`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `definition.description`                           | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `definition.inputSchema`                           | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `definition.metadata?`                             | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `definition.name`                                  | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `definition.namespace`                             | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `definition.outputSchema?`                         | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `definition.readWrite`                             | `"read"` \| `"write"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `definition.requiredCapability`                    | \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `definition.requiredCapability.action`             | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `definition.requiredCapability.resource`           | \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `definition.requiredCapability.resource.namespace` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `definition.requiredCapability.resource.owner?`    | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `definition.requiredCapability.resource.path`      | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `definition.source`                                | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+
+#### Returns
+
+`object`
+
+##### annotations?
+
+> `optional` **annotations?**: `object`
+
+###### annotations.destructiveHint?
+
+> `optional` **destructiveHint?**: `boolean`
+
+###### annotations.idempotentHint?
+
+> `optional` **idempotentHint?**: `boolean`
+
+###### annotations.openWorldHint?
+
+> `optional` **openWorldHint?**: `boolean`
+
+###### annotations.readOnlyHint?
+
+> `optional` **readOnlyHint?**: `boolean`
+
+##### description
+
+> **description**: `string`
+
+##### inputSchema
+
+> **inputSchema**: [`JsonObject`](sharedos-contracts.md#jsonobject)
+
+##### metadata?
+
+> `optional` **metadata?**: `object`
+
+###### metadata.namespace?
+
+> `optional` **namespace?**: `string`
+
+###### metadata.source?
+
+> `optional` **source?**: `string`
+
+##### name
+
+> **name**: `string`
+
+##### outputSchema?
+
+> `optional` **outputSchema?**: [`JsonObject`](sharedos-contracts.md#jsonobject)
 
 ---
 

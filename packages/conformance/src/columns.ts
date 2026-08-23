@@ -311,6 +311,108 @@ export function receiptsFromRecord(move: AttackMove, turn: ColumnTurn): readonly
     });
 }
 
+export interface McpColumnRuntimeOptions extends RuntimeColumnOptions {
+  /** The declared attempts, written out for a harness that runs its own loop. */
+  readonly prompt: () => string;
+}
+
+export interface McpColumnOptions {
+  readonly id: string;
+  readonly label: string;
+  /**
+   * Builds the MCP-connected runtime for one turn.
+   *
+   * A callback because starting a loopback server and spawning a CLI is Node-only
+   * and belongs to the caller, exactly as the process transport does for
+   * {@link liveColumn}. This package stays host-neutral.
+   */
+  readonly createRuntime: (options: McpColumnRuntimeOptions) => RuntimePlugin;
+}
+
+/**
+ * A vendor CLI running natively, against the SharedOS catalogue over MCP.
+ *
+ * The three columns differ in what they leave out, and it is worth being precise
+ * about which claim each makes.
+ *
+ * - A transcript column leaves out the transport: the frames are written here.
+ * - A live column leaves out the catalogue: the CLI never receives one, because
+ *   no vendor stdio protocol has a frame that means "here are your tools", so the
+ *   harness reaches for its own tools and the kernel rows go unexercised.
+ * - This column leaves out nothing on either axis. The catalogue is served over
+ *   MCP, which is the one interface all three ecosystems accept a host-supplied
+ *   tool set on; the harness discovers it with its own client, decides with its
+ *   own model, and every call it makes is re-authorized by the kernel.
+ *
+ * What it gives up instead is control of the loop. The harness decides how many
+ * calls to make and when to stop, so an attempt it declines to issue leaves no
+ * operation in the record and is graded `not exercised`. That is the honest
+ * grading: the row was not tested, and a column that manufactured the call to
+ * make the cell green would be measuring the prompt rather than the kernel.
+ */
+export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
+  return Object.freeze({
+    id: options.id,
+    label: options.label,
+    create: (moves: readonly AttackMove[], create: RuntimeColumnOptions): RuntimePlugin =>
+      options.createRuntime({
+        ...create,
+        prompt: () =>
+          movesToPrompt(moves, {
+            context: conformanceRuntimeContext(create.turn),
+            turn: create.turn,
+          }),
+      }),
+    receipts: (move: AttackMove, turn: ColumnTurn) => liveReceiptsFromRecord(move, turn),
+    limits: mcpHarnessLimits,
+  });
+}
+
+/**
+ * What a natively-looping MCP harness structurally cannot do.
+ *
+ * Two of the three are the same as for a driven harness and for the same reason:
+ * a harness speaks tool calls over a wire and is never handed a `RuntimeHost` to
+ * enumerate, and no vendor frame means "ask a human to decide".
+ *
+ * The third differs, and the difference matters. A driven harness cannot exceed
+ * the step budget because `StandardRuntime` stops first. Here there is no such
+ * loop -- the harness owns it -- and the bridge deliberately declares no step,
+ * because a step number is a position in the runtime's own loop and SharedOS
+ * cannot see inside a harness's. The envelope's `maxToolCalls` ceiling still
+ * bounds the turn; the step ceiling is simply not the boundary being tested in
+ * this column, and reporting the row as failed would blame the kernel for a
+ * limit that was never engaged.
+ */
+export function mcpHarnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
+  const unreachable = new Map<string, string>();
+
+  for (const attempt of move.attempts) {
+    if (attempt.inspect !== undefined) {
+      unreachable.set(
+        attempt.id,
+        "a harness speaks tool calls over MCP and is never handed the runtime surfaces to enumerate",
+      );
+    }
+    if (attempt.overBudget === true && condition.world.maxSteps !== undefined) {
+      unreachable.set(
+        attempt.id,
+        "an MCP bridge declares no step, because a step is a position in the harness's own loop; the turn is bounded by its tool-call ceiling instead",
+      );
+    }
+  }
+
+  return {
+    ...(move.terminal === undefined
+      ? {}
+      : {
+          unsupported:
+            "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one",
+        }),
+    ...(unreachable.size === 0 ? {} : { unreachable }),
+  };
+}
+
 export interface LiveColumnOptions {
   readonly id: string;
   readonly label: string;

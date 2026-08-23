@@ -66,6 +66,7 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
     recordedAt: input.recordedAt ?? result.completedAt,
     experiment: input.experiment,
     system: {
+      ...publishedCatalogue(result),
       ...input.system,
       runtime: input.system.runtime ?? runtimeManifestOf(result),
     },
@@ -132,6 +133,26 @@ function terminalOutcome(result: ExecutionResult): Partial<ExecutionRecordExecut
     default:
       return result.error === undefined ? {} : { terminalReasonCode: result.error.code };
   }
+}
+
+/**
+ * The catalogue identity a published boundary left behind, if there was one.
+ *
+ * Read from the turn's own result rather than asked of the caller, because the
+ * caller is the experiment layer and this is a SharedOS fact. A turn whose
+ * runtime never published a catalogue -- the embedded column, a transcript
+ * column -- contributes nothing here, and the fields stay absent rather than
+ * being filled with a hash over a catalogue no harness was ever served.
+ *
+ * The caller's own `system` still wins: a host that knows better about its own
+ * run is not overridden by an inference from metadata.
+ */
+function publishedCatalogue(result: ExecutionResult): Partial<SystemIdentity> {
+  const catalogHash = result.metadata?.["catalogHash"];
+  if (typeof catalogHash !== "string" || !/^[0-9a-f]{64}$/u.test(catalogHash)) {
+    return {};
+  }
+  return { catalogHash, toolCount: exposedTools(result.events).length };
 }
 
 function runtimeManifestOf(result: ExecutionResult): RuntimeManifest {

@@ -9,6 +9,7 @@ import {
   ResourceRefSchema,
   RuntimeManifestSchema,
   TimestampSchema,
+  ToolPolicySchema,
 } from "@aicoo/sharedos-contracts";
 import { z } from "zod";
 
@@ -54,6 +55,27 @@ export const SystemIdentitySchema = z
     modelProvider: IdentifierSchema.optional(),
     /** Hash of the policy or configuration in force for this run. */
     policyHash: ContentHashSchema,
+    /**
+     * Hash of the effective, model-facing tool catalogue this turn was served.
+     *
+     * Present whenever the catalogue crossed a published boundary, which is what
+     * makes cross-harness comparison a check rather than an assumption: two
+     * columns whose `catalogHash` differs were not given the same tool set, and
+     * comparing their refusal behaviour says nothing until that is fixed. It
+     * also catches the quiet failures -- schema drift, a missing tool, a
+     * rewritten name, a stale discovery cache -- that otherwise look like a
+     * harness behaving differently.
+     */
+    catalogHash: ContentHashSchema.optional(),
+    toolCount: z.number().int().nonnegative().optional(),
+    /**
+     * The declared tool surface, so a result can be read for what it is.
+     *
+     * "The kernel refused every violation" means one thing when the managed
+     * catalogue was the only way to have an effect and almost nothing when the
+     * harness also had a shell.
+     */
+    toolPolicy: ToolPolicySchema.optional(),
     metadata: JsonObjectSchema.optional(),
   })
   .strict();

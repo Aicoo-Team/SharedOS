@@ -17,6 +17,8 @@ import type {
   HarnessTurnRequest,
 } from "./harness.js";
 
+export * from "./mcp-runtime.js";
+
 export interface ChildProcessTransportOptions {
   readonly command: string;
   readonly args?: readonly string[];

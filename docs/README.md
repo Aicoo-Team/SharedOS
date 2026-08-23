@@ -6,6 +6,8 @@
 
 - [Host integration guide](host-integration.md): practical embedded and remote
   setup for files, live tools, grants, one-turn execution, and production ports.
+- [MCP toolshare](mcp-toolshare.md): the permission-filtered catalogue as an MCP
+  server, the boundary presented to Codex, Claude Code, and DeepSeek Harness.
 - [Architecture](architecture.md): responsibilities, packages, fixed security
   envelope, pluggable runtimes, resource providers, and deployment shapes.
 - [Permission model](security/permission-model.md): normative authorization
@@ -39,6 +41,7 @@
 - [ADR 0011: Escalation is a terminal outcome, not a denial](adr/0011-escalation-terminal-outcome.md)
 - [ADR 0012: One refusal vocabulary at both enforcement boundaries](adr/0012-one-refusal-vocabulary.md)
 - [ADR 0013: The conformance matrix is the case set](adr/0013-matrix-is-the-case-set.md)
+- [ADR 0014: MCP is the toolshare boundary](adr/0014-mcp-toolshare.md)
 
 ## Project governance
 

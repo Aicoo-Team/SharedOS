@@ -58,6 +58,9 @@ flowchart TD
   CF --> CT
   AD["@aicoo/sharedos-adapters"] --> RT
   AD --> CT
+  AD --> MCP
+  MCP["@aicoo/sharedos-mcp"] --> CO
+  MCP --> CT
 ```
 
 ### `@aicoo/sharedos-contracts`
@@ -109,10 +112,18 @@ execution record, and runs the adversarial conformance suite that reports what
 the kernel refused and where. It holds no tasks, gold labels, or scores:
 SharedOS states what happened and never whether it was correct.
 
-`@aicoo/sharedos-adapters` installs Codex and Claude Code as agent turn drivers.
-An adapter is translation only. The turn loop, permission-filtered catalogue,
-per-call re-authorization, and audit all come from the execution envelope, so a
-new harness changes no kernel code and adds no second permission path.
+`@aicoo/sharedos-adapters` installs Codex, Claude Code, DeepSeek Harness, and Pi
+as agent turn drivers. An adapter is translation only. The turn loop,
+permission-filtered catalogue, per-call re-authorization, and audit all come from
+the execution envelope, so a new harness changes no kernel code and adds no
+second permission path.
+
+`@aicoo/sharedos-mcp` serves that same permission-filtered catalogue to a harness
+that runs its own loop, over the Model Context Protocol. It is the other half of
+the harness story: a driver puts SharedOS in the model provider's seat, while the
+MCP bridge lets the vendor CLI keep its own model and connect to SharedOS as a
+tool server. Both paths converge on `RuntimeHost.invokeTool`, which stays the
+only execution path. See [MCP toolshare](mcp-toolshare.md).
 
 `@aicoo/sharedos` is an ergonomic distribution layer that re-exports the
 production packages from one install. It contains no policy, storage, or

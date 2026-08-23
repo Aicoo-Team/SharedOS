@@ -8,6 +8,7 @@ import type {
   MessageEnvelope,
   ProtocolError,
   ResourceResult,
+  SharedOSToolCatalog,
   ToolCall,
   ToolDefinition,
   ToolNamespaceCatalog,
@@ -53,6 +54,7 @@ import {
   ResourceProviderRegistry,
   toResourceOperation,
 } from "./resource-registry.js";
+import { buildToolCatalog } from "./published-tool.js";
 import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
 import { DuplicateRegistrationError, MissingRegistrationError } from "./errors.js";
@@ -340,6 +342,29 @@ export class SharedOSKernel {
     );
 
     return allowed;
+  }
+
+  /**
+   * The effective catalogue as an external harness receives it.
+   *
+   * {@link listTools} answers with SharedOS registrations, which carry the
+   * capability each tool would require. That is the right answer inside the host
+   * and the wrong thing to put on a wire, so everything crossing the MCP
+   * boundary goes through this instead: the same permission-filtered set,
+   * projected to what a model is allowed to see, in canonical order, with the
+   * hash that identifies it.
+   *
+   * A context whose authority could not be loaded receives an empty catalogue
+   * and a hash over nothing, exactly as {@link listTools} returns no tools --
+   * fail-closed, and still a well-formed catalogue rather than an error the
+   * harness would have to interpret.
+   */
+  async listPublishedTools(
+    context: AccessContext,
+    options: KernelOperationOptions & { readonly executionId: string },
+  ): Promise<SharedOSToolCatalog> {
+    const definitions = await this.listTools(context, options);
+    return buildToolCatalog(definitions, { executionId: options.executionId });
   }
 
   async listToolNamespaces(
