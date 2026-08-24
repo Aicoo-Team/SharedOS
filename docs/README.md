@@ -102,7 +102,7 @@ is the boundary between them and the agents that act on them.
   required controls, and non-goals.
 - [Release readiness](release-readiness.md): explicit npm and production gates.
 - [API reference](api/README.md): generated reference for every public package.
-- [Changelog](changelog.md): what changed between prereleases, and what a host
+- [Changelog](../CHANGELOG.md): what changed between prereleases, and what a host
   has to update.
 
 ## Architecture decisions
