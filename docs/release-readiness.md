@@ -1,8 +1,8 @@
 # Release readiness
 
-SharedOS is a private-source, publicly distributed prerelease. It is not yet a
-production security boundary. Prerelease packages use the `next` dist-tag and
-carry the Apache-2.0 license.
+SharedOS is an open-source prerelease: the repository and the packages are
+both public under Apache-2.0. It is not yet a production security boundary.
+Prerelease packages use the `next` dist-tag.
 
 ## Distribution gates
 

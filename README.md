@@ -201,6 +201,28 @@ The example executes one Bob → Alice turn, consumes an explicit Alice executio
 grant, filters the visible tool catalog, then authorizes an exact file search.
 See [`examples/quickstart`](examples/quickstart/src/index.ts).
 
+SharedOS leaves storage, durable stores, and the model to the host, so a first
+integration has to write those before anything runs. The
+[reference host](examples/reference-host/README.md) is a working one — a
+filesystem `files` provider covering all twelve actions with its path-escape
+defences, durable SQLite stores for bounded uses, revocation, namespace
+settings and audit, and an `AgentTurnDriver` over a live model:
+
+```bash
+pnpm example:reference-host
+```
+
+To see the delegation rules on their own, in vocabulary that is not a document
+product:
+
+```bash
+pnpm example:fleet-delegation
+```
+
+One robot passes part of its mandate to another, cannot pass on more than it
+holds, and loses it the moment the operator revokes upstream. See
+[`examples/fleet-delegation`](examples/fleet-delegation/src/index.ts).
+
 To explore the two proposed agent-network product modes as an interactive UI,
 run the local Network Studio prototype:
 
@@ -262,7 +284,8 @@ The repository is a TypeScript workspace. Public contracts must stay JSON-safe,
 and permission changes require tests for both allowed and denied paths. See
 [CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change.
 
-The remaining production-hardening work is tracked in
+Released changes are recorded in the [changelog](CHANGELOG.md). The remaining
+production-hardening work is tracked in
 [release readiness](docs/release-readiness.md), including durable
 replay/idempotency and host-adapter requirements. The exact package order,
 validation commands, first-publication bootstrap, and trusted-publishing

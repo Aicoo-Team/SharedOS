@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.1**](README.md)
+[**SharedOS API v0.1.0-alpha.2**](README.md)
 
 ---
 
@@ -1075,7 +1075,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:55](https://github.com/Aic
 
 ### STANDARD\_RUNTIME\_VERSION
 
-> `const` **STANDARD\_RUNTIME\_VERSION**: `"0.1.0-alpha.1"` = `"0.1.0-alpha.1"`
+> `const` **STANDARD\_RUNTIME\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
 
 Defined in: [packages/runtime/src/standard-runtime.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L53)
 

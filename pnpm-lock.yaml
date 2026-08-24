@@ -62,6 +62,21 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testkit
 
+  examples/reference-host:
+    dependencies:
+      '@aicoo/sharedos-contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@aicoo/sharedos-core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@aicoo/sharedos-os':
+        specifier: workspace:*
+        version: link:../../packages/os
+      '@aicoo/sharedos-runtime':
+        specifier: workspace:*
+        version: link:../../packages/runtime
+
   packages/client:
     dependencies:
       '@aicoo/sharedos-contracts':

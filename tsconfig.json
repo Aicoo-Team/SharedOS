@@ -1,15 +1,38 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/contracts" },
-    { "path": "./packages/core" },
-    { "path": "./packages/os" },
-    { "path": "./packages/runtime" },
-    { "path": "./packages/http" },
-    { "path": "./packages/client" },
-    { "path": "./packages/sdk" },
-    { "path": "./packages/testkit" },
-    { "path": "./examples/quickstart" },
-    { "path": "./examples/fleet-delegation" }
+    {
+      "path": "./packages/contracts"
+    },
+    {
+      "path": "./packages/core"
+    },
+    {
+      "path": "./packages/os"
+    },
+    {
+      "path": "./packages/runtime"
+    },
+    {
+      "path": "./packages/http"
+    },
+    {
+      "path": "./packages/client"
+    },
+    {
+      "path": "./packages/sdk"
+    },
+    {
+      "path": "./packages/testkit"
+    },
+    {
+      "path": "./examples/quickstart"
+    },
+    {
+      "path": "./examples/fleet-delegation"
+    },
+    {
+      "path": "./examples/reference-host"
+    }
   ]
 }
