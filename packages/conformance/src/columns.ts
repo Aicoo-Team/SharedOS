@@ -141,7 +141,7 @@ export function harnessLimits(move: AttackMove, condition: ConformanceCondition)
   };
 }
 
-export interface TranscriptColumnOptions {
+export interface ScriptedColumnOptions {
   readonly id: string;
   readonly label: string;
   readonly protocol: HarnessProtocol;
@@ -151,13 +151,13 @@ export interface TranscriptColumnOptions {
 /**
  * A vendor adapter driven by frames built from the move it is meant to attack.
  *
- * The frames are the vendor's own shapes, the parsing is the adapter's, and the
- * kernel and envelope are the real ones. What is left unexercised is the
+ * The frames are written here in the vendor's own shapes, the parsing is the
+ * adapter's, and the kernel and envelope are the real ones. What is left unexercised is the
  * transport that would have carried the frames: this column says nothing about
  * whether the live CLI is installed, authenticated, or emitting these shapes
  * today. A live column is a separate claim and is not yet made.
  */
-export function transcriptColumn(options: TranscriptColumnOptions): RuntimeColumn {
+export function scriptedColumn(options: ScriptedColumnOptions): RuntimeColumn {
   if (options.protocol.id !== options.writer.protocolId) {
     throw new TypeError(
       `Transcript column ${options.id} pairs protocol ${options.protocol.id} with frames for ${options.writer.protocolId}`,
@@ -174,7 +174,7 @@ export function transcriptColumn(options: TranscriptColumnOptions): RuntimeColum
             id: `sharedos.conformance.${options.id}`,
             version: "1.0.0",
             protocolVersion: "1",
-            metadata: { transcript: true, protocol: options.protocol.id },
+            metadata: { scripted: true, protocol: options.protocol.id },
           },
           protocol: options.protocol,
           transport: new TranscriptTransport(
@@ -191,29 +191,29 @@ export function transcriptColumn(options: TranscriptColumnOptions): RuntimeColum
   });
 }
 
-export const CODEX_TRANSCRIPT_COLUMN: RuntimeColumn = transcriptColumn({
-  id: "codex-transcript",
+export const CODEX_SCRIPTED_COLUMN: RuntimeColumn = scriptedColumn({
+  id: "codex-scripted",
   label: "Codex",
   protocol: codexProtocol,
   writer: codexFrameWriter,
 });
 
-export const CLAUDE_CODE_TRANSCRIPT_COLUMN: RuntimeColumn = transcriptColumn({
-  id: "claude-code-transcript",
+export const CLAUDE_CODE_SCRIPTED_COLUMN: RuntimeColumn = scriptedColumn({
+  id: "claude-code-scripted",
   label: "Claude Code",
   protocol: claudeCodeProtocol,
   writer: claudeCodeFrameWriter,
 });
 
-export const DEEPSEEK_TRANSCRIPT_COLUMN: RuntimeColumn = transcriptColumn({
-  id: "deepseek-transcript",
+export const DEEPSEEK_SCRIPTED_COLUMN: RuntimeColumn = scriptedColumn({
+  id: "deepseek-scripted",
   label: "Deepseek",
   protocol: deepseekProtocol,
   writer: deepseekFrameWriter,
 });
 
-export const PI_TRANSCRIPT_COLUMN: RuntimeColumn = transcriptColumn({
-  id: "pi-transcript",
+export const PI_SCRIPTED_COLUMN: RuntimeColumn = scriptedColumn({
+  id: "pi-scripted",
   label: "pi",
   protocol: piProtocol,
   writer: piFrameWriter,
@@ -226,7 +226,7 @@ export interface MoveTranscriptOptions {
 }
 
 /**
- * Turn declared attempts into a recorded conversation.
+ * Turn declared attempts into a scripted conversation.
  *
  * One batch per call, because a harness sends a call and waits for its result
  * before speaking again, and a terminal batch so the turn ends by completing
@@ -347,7 +347,7 @@ export interface McpColumnOptions {
  * The three columns differ in what they leave out, and it is worth being precise
  * about which claim each makes.
  *
- * - A transcript column leaves out the transport: the frames are written here.
+ * - A scripted column leaves out the transport: the frames are written here.
  * - A live column leaves out the catalogue: the CLI never receives one, because
  *   no vendor stdio protocol has a frame that means "here are your tools", so the
  *   harness reaches for its own tools and the kernel rows go unexercised.
@@ -395,7 +395,7 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
  * `error=unsupported call: admin.grant.issue` -- so `tool_unavailable` is
  * unreachable through a well-behaved MCP client even though SharedOS
  * deliberately does not narrow `ToolCall.tool` and `McpToolServer` would pass an
- * unknown name straight through. The recorded-frames columns own the loop and
+ * unknown name straight through. The scripted columns own the loop and
  * are the only ones that exercise it.
  *
  * The fourth is not a limit of the harness at all. Where a condition declares
@@ -452,7 +452,7 @@ export interface LiveColumnOptions {
 /**
  * A vendor adapter driven by the vendor's own CLI, over the real wire.
  *
- * This is the column a transcript column deliberately does not claim. The
+ * This is the column a scripted column deliberately does not claim. The
  * frames are not written here: they are whatever the installed harness actually
  * emits, carried by its actual transport, parsed by the adapter's real protocol
  * translation, into the real kernel and envelope.
@@ -494,7 +494,7 @@ export function liveColumn(options: LiveColumnOptions): RuntimeColumn {
 /**
  * Recover what a live turn attempted, correlating on the call rather than its id.
  *
- * A transcript column issues each attempt under a call id built from the move, so
+ * A scripted column issues each attempt under a call id built from the move, so
  * its operations can be found by that id. A live harness mints its own --
  * `toolu_…`, `call_…` -- and matching on them finds nothing, which reports a turn
  * that made every call as a turn that made none.
@@ -504,7 +504,7 @@ export function liveColumn(options: LiveColumnOptions): RuntimeColumn {
  * each operation consumed at most once. A row whose attempt names a path is
  * matched only against an operation on that path.
  *
- * This is deliberately weaker than the transcript column's correlation and must
+ * This is deliberately weaker than the scripted column's correlation and must
  * not be folded into the committed manifest. Two attempts on one tool and one
  * resource are indistinguishable here, so a harness that made the first call
  * twice and skipped the second would have its repeat counted as the second
@@ -586,7 +586,7 @@ export interface MovePromptOptions {
 /**
  * The declared attempts, written out as instructions a live harness can follow.
  *
- * A transcript column issues the attempts by construction. A live one has to ask
+ * A scripted column issues the attempts by construction. A live one has to ask
  * for them, and asking imprecisely is how a live column ends up reporting on a
  * different attack than the one the row declares -- so each attempt is named
  * with the exact tool and the exact arguments, forged material included.

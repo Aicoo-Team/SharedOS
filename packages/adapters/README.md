@@ -33,7 +33,7 @@ what lets the translation be verified without the vendor's CLI present.
 | Piece              | Responsibility                                                                    |
 | ------------------ | --------------------------------------------------------------------------------- |
 | `HarnessProtocol`  | The vendor's wire shapes: tool declarations, tool calls, tool results, completion |
-| `HarnessTransport` | How the harness is reached: a subprocess, an HTTP session, a recorded transcript  |
+| `HarnessTransport` | How the harness is reached: a subprocess, an HTTP session, a supplied transcript  |
 | `HarnessDriver`    | An `AgentTurnDriver` that joins the two and hands every tool call to the envelope |
 
 ## What the adapter must not do
@@ -56,9 +56,10 @@ order and the one whose audit trail matches what actually happened.
 
 ## Verification status
 
-The translation code is exercised end to end against recorded transcripts, which
+The translation code is exercised end to end against supplied transcripts, which
 run the real protocol modules through a real kernel and a real execution
-envelope. `TranscriptTransport` replays vendor frames batch by batch, releasing
+envelope. Nothing in this package captures a vendor session: a transcript is
+whatever its caller hands it, and the conformance suite writes its own. `TranscriptTransport` replays vendor frames batch by batch, releasing
 the next batch only once a result has been written, which is the shape of every
 tool-using harness.
 

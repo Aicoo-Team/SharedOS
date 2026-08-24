@@ -232,7 +232,7 @@ driver is in the seat. Adding a column is supplying a
 change.
 
 Three columns are committed. `EMBEDDED_COLUMN` puts `HostileRuntime` in the seat
-directly. `CODEX_TRANSCRIPT_COLUMN` and `CLAUDE_CODE_TRANSCRIPT_COLUMN` put the
+directly. `CODEX_SCRIPTED_COLUMN` and `CLAUDE_CODE_SCRIPTED_COLUMN` put the
 Codex and Claude Code adapters there, driven by frames built from the same move:
 `movesToTranscript` renders each declared attempt into that vendor's own wire
 shape, and the adapter's real protocol translation reads them back. The kernel
@@ -261,7 +261,7 @@ something else honoured.
 
 ### ConformanceChainResolver
 
-Defined in: [conformance/src/world.ts:655](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L655)
+Defined in: [conformance/src/world.ts:689](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L689)
 
 Namespace-scoped ancestor lookup over every grant the fixture issued.
 
@@ -275,7 +275,7 @@ Namespace-scoped ancestor lookup over every grant the fixture issued.
 
 > **new ConformanceChainResolver**(`grants`): [`ConformanceChainResolver`](#conformancechainresolver)
 
-Defined in: [conformance/src/world.ts:658](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L658)
+Defined in: [conformance/src/world.ts:692](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L692)
 
 ###### Parameters
 
@@ -293,7 +293,7 @@ Defined in: [conformance/src/world.ts:658](https://github.com/Aicoo-Team/SharedO
 
 > **expire**(`namespaceId`, `grantId`, `expiresAt`): `this`
 
-Defined in: [conformance/src/world.ts:673](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L673)
+Defined in: [conformance/src/world.ts:707](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L707)
 
 ###### Parameters
 
@@ -311,7 +311,7 @@ Defined in: [conformance/src/world.ts:673](https://github.com/Aicoo-Team/SharedO
 
 > **resolve**(`namespaceId`, `grantId`): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: [conformance/src/world.ts:685](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L685)
+Defined in: [conformance/src/world.ts:719](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L719)
 
 ###### Parameters
 
@@ -332,7 +332,7 @@ Defined in: [conformance/src/world.ts:685](https://github.com/Aicoo-Team/SharedO
 
 > **revoke**(`namespaceId`, `grantId`, `revokedAt`): `this`
 
-Defined in: [conformance/src/world.ts:664](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L664)
+Defined in: [conformance/src/world.ts:698](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L698)
 
 ###### Parameters
 
@@ -350,7 +350,7 @@ Defined in: [conformance/src/world.ts:664](https://github.com/Aicoo-Team/SharedO
 
 ### ConformanceFileStore
 
-Defined in: [conformance/src/world.ts:358](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L358)
+Defined in: [conformance/src/world.ts:392](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L392)
 
 The world's file store.
 
@@ -374,8 +374,8 @@ boundary, so the fixture does not let it act like one.
 
 | Property                              | Modifier   | Type       | Default value | Defined in                                                                                                              |
 | ------------------------------------- | ---------- | ---------- | ------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-reads"></a> `reads`   | `readonly` | `string`[] | `[]`          | [conformance/src/world.ts:359](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L359) |
-| <a id="property-writes"></a> `writes` | `readonly` | `string`[] | `[]`          | [conformance/src/world.ts:360](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L360) |
+| <a id="property-reads"></a> `reads`   | `readonly` | `string`[] | `[]`          | [conformance/src/world.ts:393](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L393) |
+| <a id="property-writes"></a> `writes` | `readonly` | `string`[] | `[]`          | [conformance/src/world.ts:394](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L394) |
 
 #### Methods
 
@@ -383,7 +383,7 @@ boundary, so the fixture does not let it act like one.
 
 > **escapingHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [conformance/src/world.ts:448](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L448)
+Defined in: [conformance/src/world.ts:482](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L482)
 
 A tool that resolves a requirement outside the ceiling it declared.
 
@@ -401,7 +401,7 @@ own declaration merely because it wrote one down.
 
 > **mismatchedHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [conformance/src/world.ts:494](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L494)
+Defined in: [conformance/src/world.ts:528](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L528)
 
 A tool whose handler answers a call the kernel never made.
 
@@ -419,7 +419,7 @@ that was authorized when its own was not.
 
 > **readHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [conformance/src/world.ts:366](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L366)
+Defined in: [conformance/src/world.ts:400](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L400)
 
 ###### Returns
 
@@ -429,7 +429,7 @@ Defined in: [conformance/src/world.ts:366](https://github.com/Aicoo-Team/SharedO
 
 > **sealedHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [conformance/src/world.ts:533](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L533)
+Defined in: [conformance/src/world.ts:567](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L567)
 
 A registered, permanently sealed tool. It lives in a namespace this world
 never enables, so it is real enough to guess at and never exposed.
@@ -442,7 +442,7 @@ never enables, so it is real enough to guess at and never exposed.
 
 > **writeHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [conformance/src/world.ts:403](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L403)
+Defined in: [conformance/src/world.ts:437](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L437)
 
 ###### Returns
 
@@ -452,7 +452,7 @@ Defined in: [conformance/src/world.ts:403](https://github.com/Aicoo-Team/SharedO
 
 ### ConformanceGrantSource
 
-Defined in: [conformance/src/world.ts:564](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L564)
+Defined in: [conformance/src/world.ts:598](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L598)
 
 A trusted grant store whose availability the fixture controls.
 
@@ -466,7 +466,7 @@ A trusted grant store whose availability the fixture controls.
 
 > **new ConformanceGrantSource**(`grants`): [`ConformanceGrantSource`](#conformancegrantsource)
 
-Defined in: [conformance/src/world.ts:570](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L570)
+Defined in: [conformance/src/world.ts:604](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L604)
 
 ###### Parameters
 
@@ -486,7 +486,7 @@ Defined in: [conformance/src/world.ts:570](https://github.com/Aicoo-Team/SharedO
 
 > **get** **loads**(): `number`
 
-Defined in: [conformance/src/world.ts:576](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L576)
+Defined in: [conformance/src/world.ts:610](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L610)
 
 ###### Returns
 
@@ -498,7 +498,7 @@ Defined in: [conformance/src/world.ts:576](https://github.com/Aicoo-Team/SharedO
 
 > **afterLoads**(`count`, `action`): `this`
 
-Defined in: [conformance/src/world.ts:623](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L623)
+Defined in: [conformance/src/world.ts:657](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L657)
 
 Run one trusted edit immediately after the given number of loads.
 
@@ -522,7 +522,7 @@ The edit is host-side and fires from the store, never from the adversary.
 
 > **expire**(`grantId`, `expiresAt`): `this`
 
-Defined in: [conformance/src/world.ts:604](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L604)
+Defined in: [conformance/src/world.ts:638](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L638)
 
 Move a grant's expiry to an instant that has already passed.
 
@@ -541,7 +541,7 @@ Move a grant's expiry to an instant that has already passed.
 
 > **failAfterLoads**(`count`): `this`
 
-Defined in: [conformance/src/world.ts:590](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L590)
+Defined in: [conformance/src/world.ts:624](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L624)
 
 Fail every load after this many successful ones.
 
@@ -566,7 +566,7 @@ higher values meaningful again.
 
 > **load**(`context`): `Promise`\<readonly `object`[]\>
 
-Defined in: [conformance/src/world.ts:628](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L628)
+Defined in: [conformance/src/world.ts:662](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L662)
 
 ###### Parameters
 
@@ -594,7 +594,7 @@ Defined in: [conformance/src/world.ts:628](https://github.com/Aicoo-Team/SharedO
 
 > **revoke**(`grantId`, `revokedAt`): `this`
 
-Defined in: [conformance/src/world.ts:595](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L595)
+Defined in: [conformance/src/world.ts:629](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L629)
 
 ###### Parameters
 
@@ -1205,7 +1205,7 @@ Defined in: [conformance/src/runner.ts:100](https://github.com/Aicoo-Team/Shared
 
 ### ConformanceWorld
 
-Defined in: [conformance/src/world.ts:764](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L764)
+Defined in: [conformance/src/world.ts:798](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L798)
 
 A world plus the trusted controls that arm one adversarial condition in it.
 
@@ -1218,9 +1218,9 @@ separation is enforced by construction rather than by convention.
 
 | Property                                                    | Modifier   | Type                                                                                                                                                                                                       | Description                                                 | Defined in                                                                                                              |
 | ----------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-auditevents-1"></a> `auditEvents`           | `readonly` | readonly [`AuditEvent`](sharedos-core.md#auditevent)[]                                                                                                                                                     | -                                                           | [conformance/src/world.ts:770](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L770) |
-| <a id="property-chain"></a> `chain`                         | `readonly` | [`ConformanceChainResolver`](#conformancechainresolver)                                                                                                                                                    | -                                                           | [conformance/src/world.ts:769](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L769) |
-| <a id="property-context"></a> `context`                     | `readonly` | `object`                                                                                                                                                                                                   | -                                                           | [conformance/src/world.ts:766](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L766) |
+| <a id="property-auditevents-1"></a> `auditEvents`           | `readonly` | readonly [`AuditEvent`](sharedos-core.md#auditevent)[]                                                                                                                                                     | -                                                           | [conformance/src/world.ts:804](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L804) |
+| <a id="property-chain"></a> `chain`                         | `readonly` | [`ConformanceChainResolver`](#conformancechainresolver)                                                                                                                                                    | -                                                           | [conformance/src/world.ts:803](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L803) |
+| <a id="property-context"></a> `context`                     | `readonly` | `object`                                                                                                                                                                                                   | -                                                           | [conformance/src/world.ts:800](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L800) |
 | `context.actor`                                             | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                           | contracts/dist/access.d.ts:144                                                                                          |
 | `context.authority`                                         | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                           | contracts/dist/access.d.ts:157                                                                                          |
 | `context.enabledToolNamespaces`                             | `public`   | `string`[]                                                                                                                                                                                                 | -                                                           | contracts/dist/access.d.ts:170                                                                                          |
@@ -1229,12 +1229,12 @@ separation is enforced by construction rather than by convention.
 | `context.owner`                                             | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                           | contracts/dist/access.d.ts:128                                                                                          |
 | `context.purpose`                                           | `public`   | `string`                                                                                                                                                                                                   | -                                                           | contracts/dist/access.d.ts:142                                                                                          |
 | `context.traceId`                                           | `public`   | `string`                                                                                                                                                                                                   | -                                                           | contracts/dist/access.d.ts:143                                                                                          |
-| <a id="property-deliveredmessages"></a> `deliveredMessages` | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                           | [conformance/src/world.ts:771](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L771) |
-| <a id="property-files"></a> `files`                         | `readonly` | [`ConformanceFileStore`](#conformancefilestore)                                                                                                                                                            | -                                                           | [conformance/src/world.ts:767](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L767) |
-| <a id="property-grants"></a> `grants`                       | `readonly` | readonly `object`[]                                                                                                                                                                                        | Every grant this condition actually issued, roots included. | [conformance/src/world.ts:774](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L774) |
-| <a id="property-grantsource"></a> `grantSource`             | `readonly` | [`ConformanceGrantSource`](#conformancegrantsource)                                                                                                                                                        | -                                                           | [conformance/src/world.ts:768](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L768) |
-| <a id="property-kernel"></a> `kernel`                       | `readonly` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)                                                                                                                                                        | -                                                           | [conformance/src/world.ts:765](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L765) |
-| <a id="property-tools"></a> `tools`                         | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                           | [conformance/src/world.ts:772](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L772) |
+| <a id="property-deliveredmessages"></a> `deliveredMessages` | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                           | [conformance/src/world.ts:805](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L805) |
+| <a id="property-files"></a> `files`                         | `readonly` | [`ConformanceFileStore`](#conformancefilestore)                                                                                                                                                            | -                                                           | [conformance/src/world.ts:801](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L801) |
+| <a id="property-grants"></a> `grants`                       | `readonly` | readonly `object`[]                                                                                                                                                                                        | Every grant this condition actually issued, roots included. | [conformance/src/world.ts:808](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L808) |
+| <a id="property-grantsource"></a> `grantSource`             | `readonly` | [`ConformanceGrantSource`](#conformancegrantsource)                                                                                                                                                        | -                                                           | [conformance/src/world.ts:802](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L802) |
+| <a id="property-kernel"></a> `kernel`                       | `readonly` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)                                                                                                                                                        | -                                                           | [conformance/src/world.ts:799](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L799) |
+| <a id="property-tools"></a> `tools`                         | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                           | [conformance/src/world.ts:806](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L806) |
 
 #### Methods
 
@@ -1242,7 +1242,7 @@ separation is enforced by construction rather than by convention.
 
 > **request**(`executionId`, `turn?`): `object`
 
-Defined in: [conformance/src/world.ts:780](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L780)
+Defined in: [conformance/src/world.ts:814](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L814)
 
 One turn's request. Turns after the first get their own trace, because a
 turn is identified by its trace and two turns sharing one would be a single
@@ -1407,24 +1407,24 @@ turn to the kernel and a single record to the evidence layer.
 
 ### ConformanceWorldOptions
 
-Defined in: [conformance/src/world.ts:732](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L732)
+Defined in: [conformance/src/world.ts:766](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L766)
 
 #### Properties
 
 | Property                                                                   | Modifier   | Type                | Description                                                                                                                             | Defined in                                                                                                              |
 | -------------------------------------------------------------------------- | ---------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-authorityfailsafterloads"></a> `authorityFailsAfterLoads?` | `readonly` | `number`            | Arm a grant-store outage that begins after this many successful loads.                                                                  | [conformance/src/world.ts:743](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L743) |
-| <a id="property-bounded"></a> `bounded?`                                   | `readonly` | `boolean`           | Issue the single-use ledger grant, without which nothing is bounded.                                                                    | [conformance/src/world.ts:745](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L745) |
-| <a id="property-expired"></a> `expired?`                                   | `readonly` | readonly `string`[] | Grant ids whose expiry is moved to an instant the turn has already passed.                                                              | [conformance/src/world.ts:736](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L736) |
-| <a id="property-maxsteps"></a> `maxSteps?`                                 | `readonly` | `number`            | -                                                                                                                                       | [conformance/src/world.ts:752](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L752) |
-| <a id="property-maxtoolcalls"></a> `maxToolCalls?`                         | `readonly` | `number`            | Bound the turn below the number of calls its move declares.                                                                             | [conformance/src/world.ts:751](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L751) |
-| <a id="property-now"></a> `now?`                                           | `readonly` | `string`            | -                                                                                                                                       | [conformance/src/world.ts:753](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L753) |
-| <a id="property-overbroaddelegation"></a> `overBroadDelegation?`           | `readonly` | `boolean`           | Issue a grant claiming more than the grant it was delegated from.                                                                       | [conformance/src/world.ts:749](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L749) |
-| <a id="property-revoked"></a> `revoked?`                                   | `readonly` | readonly `string`[] | Grant ids to revoke before the turn starts, as a host store would.                                                                      | [conformance/src/world.ts:734](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L734) |
-| <a id="property-revokedafterturn"></a> `revokedAfterTurn?`                 | `readonly` | `object`            | Grant ids revoked in the store immediately after the given turn's authority load, so the change lands while that turn is still running. | [conformance/src/world.ts:741](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L741) |
-| `revokedAfterTurn.grantIds`                                                | `readonly` | readonly `string`[] | -                                                                                                                                       | [conformance/src/world.ts:741](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L741) |
-| `revokedAfterTurn.turn`                                                    | `readonly` | `number`            | -                                                                                                                                       | [conformance/src/world.ts:741](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L741) |
-| <a id="property-usagestoreunavailable"></a> `usageStoreUnavailable?`       | `readonly` | `boolean`           | Make the bounded-use counter unreachable. Implies [bounded](#property-bounded).                                                         | [conformance/src/world.ts:747](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L747) |
+| <a id="property-authorityfailsafterloads"></a> `authorityFailsAfterLoads?` | `readonly` | `number`            | Arm a grant-store outage that begins after this many successful loads.                                                                  | [conformance/src/world.ts:777](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L777) |
+| <a id="property-bounded"></a> `bounded?`                                   | `readonly` | `boolean`           | Issue the single-use ledger grant, without which nothing is bounded.                                                                    | [conformance/src/world.ts:779](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L779) |
+| <a id="property-expired"></a> `expired?`                                   | `readonly` | readonly `string`[] | Grant ids whose expiry is moved to an instant the turn has already passed.                                                              | [conformance/src/world.ts:770](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L770) |
+| <a id="property-maxsteps"></a> `maxSteps?`                                 | `readonly` | `number`            | -                                                                                                                                       | [conformance/src/world.ts:786](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L786) |
+| <a id="property-maxtoolcalls"></a> `maxToolCalls?`                         | `readonly` | `number`            | Bound the turn below the number of calls its move declares.                                                                             | [conformance/src/world.ts:785](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L785) |
+| <a id="property-now"></a> `now?`                                           | `readonly` | `string`            | -                                                                                                                                       | [conformance/src/world.ts:787](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L787) |
+| <a id="property-overbroaddelegation"></a> `overBroadDelegation?`           | `readonly` | `boolean`           | Issue a grant claiming more than the grant it was delegated from.                                                                       | [conformance/src/world.ts:783](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L783) |
+| <a id="property-revoked"></a> `revoked?`                                   | `readonly` | readonly `string`[] | Grant ids to revoke before the turn starts, as a host store would.                                                                      | [conformance/src/world.ts:768](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L768) |
+| <a id="property-revokedafterturn"></a> `revokedAfterTurn?`                 | `readonly` | `object`            | Grant ids revoked in the store immediately after the given turn's authority load, so the change lands while that turn is still running. | [conformance/src/world.ts:775](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L775) |
+| `revokedAfterTurn.grantIds`                                                | `readonly` | readonly `string`[] | -                                                                                                                                       | [conformance/src/world.ts:775](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L775) |
+| `revokedAfterTurn.turn`                                                    | `readonly` | `number`            | -                                                                                                                                       | [conformance/src/world.ts:775](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L775) |
+| <a id="property-usagestoreunavailable"></a> `usageStoreUnavailable?`       | `readonly` | `boolean`           | Make the bounded-use counter unreachable. Implies [bounded](#property-bounded).                                                         | [conformance/src/world.ts:781](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L781) |
 
 ---
 
@@ -1778,6 +1778,21 @@ Defined in: [conformance/src/columns.ts:62](https://github.com/Aicoo-Team/Shared
 
 ---
 
+### ScriptedColumnOptions
+
+Defined in: [conformance/src/columns.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L144)
+
+#### Properties
+
+| Property                                    | Modifier   | Type                                                            | Defined in                                                                                                                  |
+| ------------------------------------------- | ---------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-id-5"></a> `id`             | `readonly` | `string`                                                        | [conformance/src/columns.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L145) |
+| <a id="property-label-3"></a> `label`       | `readonly` | `string`                                                        | [conformance/src/columns.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L146) |
+| <a id="property-protocol-1"></a> `protocol` | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)       | [conformance/src/columns.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L147) |
+| <a id="property-writer"></a> `writer`       | `readonly` | [`HarnessFrameWriter`](sharedos-adapters.md#harnessframewriter) | [conformance/src/columns.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L148) |
+
+---
+
 ### StrictFailure
 
 Defined in: [conformance/src/runner.ts:358](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L358)
@@ -1791,21 +1806,6 @@ Defined in: [conformance/src/runner.ts:358](https://github.com/Aicoo-Team/Shared
 | <a id="property-conditionid-2"></a> `conditionId` | `readonly` | `string`                                  | [conformance/src/runner.ts:360](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L360) |
 | <a id="property-detail-5"></a> `detail`           | `readonly` | `string`                                  | [conformance/src/runner.ts:363](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L363) |
 | <a id="property-status-4"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus) | [conformance/src/runner.ts:362](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L362) |
-
----
-
-### TranscriptColumnOptions
-
-Defined in: [conformance/src/columns.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L144)
-
-#### Properties
-
-| Property                                    | Modifier   | Type                                                            | Defined in                                                                                                                  |
-| ------------------------------------------- | ---------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-id-5"></a> `id`             | `readonly` | `string`                                                        | [conformance/src/columns.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L145) |
-| <a id="property-label-3"></a> `label`       | `readonly` | `string`                                                        | [conformance/src/columns.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L146) |
-| <a id="property-protocol-1"></a> `protocol` | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)       | [conformance/src/columns.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L147) |
-| <a id="property-writer"></a> `writer`       | `readonly` | [`HarnessFrameWriter`](sharedos-adapters.md#harnessframewriter) | [conformance/src/columns.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L148) |
 
 ---
 
@@ -2265,17 +2265,17 @@ Defined in: [conformance/src/suite.ts:73](https://github.com/Aicoo-Team/SharedOS
 
 ---
 
-### CLAUDE\_CODE\_TRANSCRIPT\_COLUMN
+### CLAUDE\_CODE\_SCRIPTED\_COLUMN
 
-> `const` **CLAUDE\_CODE\_TRANSCRIPT\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
+> `const` **CLAUDE\_CODE\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
 Defined in: [conformance/src/columns.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L201)
 
 ---
 
-### CODEX\_TRANSCRIPT\_COLUMN
+### CODEX\_SCRIPTED\_COLUMN
 
-> `const` **CODEX\_TRANSCRIPT\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
+> `const` **CODEX\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
 Defined in: [conformance/src/columns.ts:194](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L194)
 
@@ -2391,9 +2391,9 @@ One authorization decision, with the authority state it was made against.
 
 ---
 
-### DEEPSEEK\_TRANSCRIPT\_COLUMN
+### DEEPSEEK\_SCRIPTED\_COLUMN
 
-> `const` **DEEPSEEK\_TRANSCRIPT\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
+> `const` **DEEPSEEK\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
 Defined in: [conformance/src/columns.ts:208](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L208)
 
@@ -2408,7 +2408,7 @@ Defined in: [conformance/src/runner.ts:114](https://github.com/Aicoo-Team/Shared
 The columns a committed manifest is produced from.
 
 The scripted adversary in the SharedOS executor, plus each vendor adapter
-driven by recorded frames. The vendor columns exercise the adapter's own
+driven by scripted frames. The vendor columns exercise the adapter's own
 protocol translation against the real kernel and envelope; the transport that
 would carry the frames from a live CLI is the one part left out, so a live
 column is a separate claim and is not made here.
@@ -2539,7 +2539,7 @@ Defined in: [conformance/src/world.ts:80](https://github.com/Aicoo-Team/SharedOS
 
 > `const` **LEDGER\_GRANT**: `"grant-ledger"` = `"grant-ledger"`
 
-Defined in: [conformance/src/world.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L95)
+Defined in: [conformance/src/world.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L118)
 
 A single-use write grant, armed only by the rows about bounded use.
 
@@ -2557,7 +2557,7 @@ Defined in: [conformance/src/world.ts:77](https://github.com/Aicoo-Team/SharedOS
 
 > `const` **MESSAGE\_GRANT**: `"grant-message"` = `"grant-message"`
 
-Defined in: [conformance/src/world.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L93)
+Defined in: [conformance/src/world.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L101)
 
 ---
 
@@ -2616,15 +2616,15 @@ Outside every path the world's tools declare, and outside every grant.
 
 > `const` **OVERBROAD\_GRANT**: `"grant-overbroad"` = `"grant-overbroad"`
 
-Defined in: [conformance/src/world.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L97)
+Defined in: [conformance/src/world.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L120)
 
 A grant claiming more than its parent holds, armed only by the row about it.
 
 ---
 
-### PI\_TRANSCRIPT\_COLUMN
+### PI\_SCRIPTED\_COLUMN
 
-> `const` **PI\_TRANSCRIPT\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
+> `const` **PI\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
 Defined in: [conformance/src/columns.ts:215](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L215)
 
@@ -2634,7 +2634,7 @@ Defined in: [conformance/src/columns.ts:215](https://github.com/Aicoo-Team/Share
 
 > `const` **READ\_GRANT**: `"grant-read"` = `"grant-read"`
 
-Defined in: [conformance/src/world.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L91)
+Defined in: [conformance/src/world.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L99)
 
 ---
 
@@ -2696,11 +2696,46 @@ Defined in: [conformance/src/world.ts:86](https://github.com/Aicoo-Team/SharedOS
 
 ---
 
+### ROOT\_SEALED\_GRANT
+
+> `const` **ROOT\_SEALED\_GRANT**: `"grant-root-sealed"` = `"grant-root-sealed"`
+
+Defined in: [conformance/src/world.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L97)
+
+The ancestor of the authority that reaches the sealed tool.
+
+Its only purpose is to leave the capability plane open on the one row that
+tests the namespace plane, so a refusal there cannot be explained by missing
+authority. See [SEALED\_GRANT](#sealed_grant).
+
+---
+
 ### SCRATCH\_GRANT
 
 > `const` **SCRATCH\_GRANT**: `"grant-scratch"` = `"grant-scratch"`
 
-Defined in: [conformance/src/world.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L92)
+Defined in: [conformance/src/world.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L100)
+
+---
+
+### SEALED\_GRANT
+
+> `const` **SEALED\_GRANT**: `"grant-sealed"` = `"grant-sealed"`
+
+Defined in: [conformance/src/world.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L116)
+
+Authority for the sealed tool's exact requirement, held and never usable.
+
+Tool availability has three independent gates -- registered, namespace
+enabled, capability allowed -- and a row that closes two of them at once
+cannot say which one answered, the more so because both refuse with the same
+`tool_unavailable` code. `files.purge` is registered and this grant carries
+its `purge` action on the workspace, so the only gate still closed against it
+is the namespace: `files.admin` is not in `enabledToolNamespaces`. That makes
+the sealed-tool attempt a clean reading of the namespace plane on its own.
+
+It authorizes nothing else. `purge` is required by no other tool in this
+world, so holding it cannot widen any other row.
 
 ---
 
@@ -2771,7 +2806,7 @@ Everything that must match before two runs are comparable.
 
 > `const` **TURN\_GRANT**: `"grant-turn"` = `"grant-turn"`
 
-Defined in: [conformance/src/world.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L90)
+Defined in: [conformance/src/world.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L98)
 
 ---
 
@@ -2821,7 +2856,7 @@ Defined in: [conformance/src/world.ts:57](https://github.com/Aicoo-Team/SharedOS
 
 > **agentGrants**(): readonly `object`[]
 
-Defined in: [conformance/src/world.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L174)
+Defined in: [conformance/src/world.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L202)
 
 The acting agent's authority, attenuated from [rootGrants](#rootgrants).
 
@@ -3253,7 +3288,7 @@ Defined in: [conformance/src/adversary.ts:538](https://github.com/Aicoo-Team/Sha
 
 The arguments one declared attempt is issued with, forgery included.
 
-Exported because a transcript of recorded frames has to carry exactly the
+Exported because a transcript of scripted frames has to carry exactly the
 arguments the scripted adversary would have sent. Building them twice is how
 two runtimes end up attacking two slightly different things and reporting it
 as one comparison.
@@ -3279,7 +3314,7 @@ as one comparison.
 | `attempt.tool?`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Omitted only by an attempt that inspects a surface rather than calling.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `attempt.toolArguments?`      | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `attempt.turn?`               | `number`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Which turn of the case issues this attempt. Attempts default to the first. A row about what the _next_ turn sees needs two turns against one world, and declaring the turn per attempt is what keeps the number of turns a consequence of the move rather than a second thing to keep in step with it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `attempt.uncatalogued?`       | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Declares that this attempt names a tool no published catalogue contains, and why that puts it out of reach of a driver with its own tool router. Distinct from `unreachable`, which is a claim about every runtime. This one is true only of a driver that filters its own calls against a catalogue it registered from `tools/list`: a scripted adversary, or an adapter driven by recorded frames, issues the call and SharedOS refuses it with `tool_unavailable`. A CLI speaking MCP never sends it at all, so the second gate upstream decides the row and the envelope is never asked. The attempt is declared identically either way and each column decides what to do with it. The claim is also self-correcting: an attempt any column _does_ issue is graded on its receipt, so a client that turned out to forward unknown names would produce a result rather than this label. |
+| `attempt.uncatalogued?`       | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Declares that this attempt names a tool no published catalogue contains, and why that puts it out of reach of a driver with its own tool router. Distinct from `unreachable`, which is a claim about every runtime. This one is true only of a driver that filters its own calls against a catalogue it registered from `tools/list`: a scripted adversary, or an adapter driven by scripted frames, issues the call and SharedOS refuses it with `tool_unavailable`. A CLI speaking MCP never sends it at all, so the second gate upstream decides the row and the envelope is never asked. The attempt is declared identically either way and each column decides what to do with it. The claim is also self-correcting: an attempt any column _does_ issue is graded on its receipt, so a client that turned out to forward unknown names would produce a result rather than this label. |
 | `attempt.unreachable?`        | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Declares that a runtime plugin structurally cannot make this attempt, and why. The attempt is still declared so the manifest shows it was considered: an absent row and an unreachable one are different claims.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 #### Returns
@@ -3298,7 +3333,7 @@ The identifier one declared attempt's call is issued under.
 
 Derived rather than generated, so a receipt can be reconstructed from an
 execution record alone. That is what lets a runtime which cannot report on
-itself -- a vendor harness replaying recorded frames -- still be graded
+itself -- a vendor harness replaying scripted frames -- still be graded
 against the same declared attempts as the scripted adversary.
 
 #### Parameters
@@ -3331,7 +3366,7 @@ against the same declared attempts as the scripted adversary.
 | `attempt.tool?`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Omitted only by an attempt that inspects a surface rather than calling.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `attempt.toolArguments?`      | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `attempt.turn?`               | `number`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Which turn of the case issues this attempt. Attempts default to the first. A row about what the _next_ turn sees needs two turns against one world, and declaring the turn per attempt is what keeps the number of turns a consequence of the move rather than a second thing to keep in step with it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `attempt.uncatalogued?`       | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Declares that this attempt names a tool no published catalogue contains, and why that puts it out of reach of a driver with its own tool router. Distinct from `unreachable`, which is a claim about every runtime. This one is true only of a driver that filters its own calls against a catalogue it registered from `tools/list`: a scripted adversary, or an adapter driven by recorded frames, issues the call and SharedOS refuses it with `tool_unavailable`. A CLI speaking MCP never sends it at all, so the second gate upstream decides the row and the envelope is never asked. The attempt is declared identically either way and each column decides what to do with it. The claim is also self-correcting: an attempt any column _does_ issue is graded on its receipt, so a client that turned out to forward unknown names would produce a result rather than this label. |
+| `attempt.uncatalogued?`       | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Declares that this attempt names a tool no published catalogue contains, and why that puts it out of reach of a driver with its own tool router. Distinct from `unreachable`, which is a claim about every runtime. This one is true only of a driver that filters its own calls against a catalogue it registered from `tools/list`: a scripted adversary, or an adapter driven by scripted frames, issues the call and SharedOS refuses it with `tool_unavailable`. A CLI speaking MCP never sends it at all, so the second gate upstream decides the row and the envelope is never asked. The attempt is declared identically either way and each column decides what to do with it. The claim is also self-correcting: an attempt any column _does_ issue is graded on its receipt, so a client that turned out to forward unknown names would produce a result rather than this label. |
 | `attempt.unreachable?`        | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Declares that a runtime plugin structurally cannot make this attempt, and why. The attempt is still declared so the manifest shows it was considered: an absent row and an unreachable one are different claims.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 #### Returns
@@ -3344,7 +3379,7 @@ against the same declared attempts as the scripted adversary.
 
 > **boundedGrants**(): readonly `object`[]
 
-Defined in: [conformance/src/world.ts:222](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L222)
+Defined in: [conformance/src/world.ts:256](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L256)
 
 A single-use write grant over the ledger, armed by the rows about bounded use.
 
@@ -3682,11 +3717,11 @@ invalidates any comparison of agent behaviour between them.
 
 > **conformanceRuntimeContext**(`turn?`): [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext)
 
-Defined in: [conformance/src/world.ts:281](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L281)
+Defined in: [conformance/src/world.ts:315](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L315)
 
 The context a runtime plugin sees for one turn of the canonical world.
 
-Exposed so a recorded transcript can be built with the same forged material
+Exposed so a scripted transcript can be built with the same forged material
 the scripted adversary would have sent. It carries no grants and no issuing
 authority, because that is all a runtime is ever given.
 
@@ -3706,7 +3741,7 @@ authority, because that is all a runtime is ever given.
 
 > **conformanceTraceId**(`turn?`): `string`
 
-Defined in: [conformance/src/world.ts:270](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L270)
+Defined in: [conformance/src/world.ts:304](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L304)
 
 The trace one turn of a case runs under.
 
@@ -3752,7 +3787,7 @@ Content identifier for any JSON-safe value, stable across key ordering.
 
 > **createConformanceWorld**(`options?`): [`ConformanceWorld`](#conformanceworld)
 
-Defined in: [conformance/src/world.ts:783](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L783)
+Defined in: [conformance/src/world.ts:817](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L817)
 
 #### Parameters
 
@@ -3897,7 +3932,7 @@ Defined in: [conformance/src/columns.ts:467](https://github.com/Aicoo-Team/Share
 
 A vendor adapter driven by the vendor's own CLI, over the real wire.
 
-This is the column a transcript column deliberately does not claim. The
+This is the column a scripted column deliberately does not claim. The
 frames are not written here: they are whatever the installed harness actually
 emits, carried by its actual transport, parsed by the adapter's real protocol
 translation, into the real kernel and envelope.
@@ -3929,7 +3964,7 @@ Defined in: [conformance/src/columns.ts:516](https://github.com/Aicoo-Team/Share
 
 Recover what a live turn attempted, correlating on the call rather than its id.
 
-A transcript column issues each attempt under a call id built from the move, so
+A scripted column issues each attempt under a call id built from the move, so
 its operations can be found by that id. A live harness mints its own --
 `toolu_…`, `call_…` -- and matching on them finds nothing, which reports a turn
 that made every call as a turn that made none.
@@ -3939,7 +3974,7 @@ tool, and the resource the kernel resolved it to, taken in declared order with
 each operation consumed at most once. A row whose attempt names a path is
 matched only against an operation on that path.
 
-This is deliberately weaker than the transcript column's correlation and must
+This is deliberately weaker than the scripted column's correlation and must
 not be folded into the committed manifest. Two attempts on one tool and one
 resource are indistinguishable here, so a harness that made the first call
 twice and skipped the second would have its repeat counted as the second
@@ -3980,7 +4015,7 @@ A vendor CLI running natively, against the SharedOS catalogue over MCP.
 The three columns differ in what they leave out, and it is worth being precise
 about which claim each makes.
 
-- A transcript column leaves out the transport: the frames are written here.
+- A scripted column leaves out the transport: the frames are written here.
 - A live column leaves out the catalogue: the CLI never receives one, because
   no vendor stdio protocol has a frame that means "here are your tools", so the
   harness reaches for its own tools and the kernel rows go unexercised.
@@ -4027,7 +4062,7 @@ own tool router before it reaches the bridge -- Codex logs
 `error=unsupported call: admin.grant.issue` -- so `tool_unavailable` is
 unreachable through a well-behaved MCP client even though SharedOS
 deliberately does not narrow `ToolCall.tool` and `McpToolServer` would pass an
-unknown name straight through. The recorded-frames columns own the loop and
+unknown name straight through. The scripted columns own the loop and
 are the only ones that exercise it.
 
 The fourth is not a limit of the harness at all. Where a condition declares
@@ -4069,7 +4104,7 @@ Defined in: [conformance/src/columns.ts:599](https://github.com/Aicoo-Team/Share
 
 The declared attempts, written out as instructions a live harness can follow.
 
-A transcript column issues the attempts by construction. A live one has to ask
+A scripted column issues the attempts by construction. A live one has to ask
 for them, and asking imprecisely is how a live column ends up reporting on a
 different attack than the one the row declares -- so each attempt is named
 with the exact tool and the exact arguments, forged material included.
@@ -4098,7 +4133,7 @@ try to paper over.
 
 Defined in: [conformance/src/columns.ts:237](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L237)
 
-Turn declared attempts into a recorded conversation.
+Turn declared attempts into a scripted conversation.
 
 One batch per call, because a harness sends a call and waits for its result
 before speaking again, and a terminal batch so the turn ends by completing
@@ -4152,7 +4187,7 @@ How many turns a move's attempts are spread across.
 
 > **overBroadGrants**(): readonly `object`[]
 
-Defined in: [conformance/src/world.ts:246](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L246)
+Defined in: [conformance/src/world.ts:280](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L280)
 
 A grant that claims more than the grant it was delegated from.
 
@@ -4313,7 +4348,7 @@ Render the manifest as a stable Markdown document.
 
 > **rootGrants**(): readonly `object`[]
 
-Defined in: [conformance/src/world.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L121)
+Defined in: [conformance/src/world.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L144)
 
 Grants the owner issued to the orchestrator. They authorize nothing directly
 -- the acting agent is not their subject -- and exist only as the ancestors
@@ -4349,6 +4384,32 @@ manifest every time.
 #### Returns
 
 `Promise`\<[`ConformanceRun`](#conformancerun)\>
+
+---
+
+### scriptedColumn()
+
+> **scriptedColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
+
+Defined in: [conformance/src/columns.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L160)
+
+A vendor adapter driven by frames built from the move it is meant to attack.
+
+The frames are written here in the vendor's own shapes, the parsing is the
+adapter's, and the kernel and envelope are the real ones. What is left unexercised is the
+transport that would have carried the frames: this column says nothing about
+whether the live CLI is installed, authenticated, or emitting these shapes
+today. A live column is a separate claim and is not yet made.
+
+#### Parameters
+
+| Parameter | Type                                              |
+| --------- | ------------------------------------------------- |
+| `options` | [`ScriptedColumnOptions`](#scriptedcolumnoptions) |
+
+#### Returns
+
+[`RuntimeColumn`](#runtimecolumn)
 
 ---
 
@@ -4403,29 +4464,3 @@ stays out of every pass rate, and carries the reason it was narrowed.
 #### Returns
 
 readonly [`StrictFailure`](#strictfailure)[]
-
----
-
-### transcriptColumn()
-
-> **transcriptColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
-
-Defined in: [conformance/src/columns.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L160)
-
-A vendor adapter driven by frames built from the move it is meant to attack.
-
-The frames are the vendor's own shapes, the parsing is the adapter's, and the
-kernel and envelope are the real ones. What is left unexercised is the
-transport that would have carried the frames: this column says nothing about
-whether the live CLI is installed, authenticated, or emitting these shapes
-today. A live column is a separate claim and is not yet made.
-
-#### Parameters
-
-| Parameter | Type                                                  |
-| --------- | ----------------------------------------------------- |
-| `options` | [`TranscriptColumnOptions`](#transcriptcolumnoptions) |
-
-#### Returns
-
-[`RuntimeColumn`](#runtimecolumn)

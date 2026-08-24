@@ -159,7 +159,7 @@ export const AttackAttemptSchema = z
      * Distinct from `unreachable`, which is a claim about every runtime. This
      * one is true only of a driver that filters its own calls against a
      * catalogue it registered from `tools/list`: a scripted adversary, or an
-     * adapter driven by recorded frames, issues the call and SharedOS refuses
+     * adapter driven by scripted frames, issues the call and SharedOS refuses
      * it with `tool_unavailable`. A CLI speaking MCP never sends it at all, so
      * the second gate upstream decides the row and the envelope is never asked.
      *
@@ -516,7 +516,7 @@ export function readAttemptReceipts(result: ExecutionResult): readonly AttemptRe
  *
  * Derived rather than generated, so a receipt can be reconstructed from an
  * execution record alone. That is what lets a runtime which cannot report on
- * itself -- a vendor harness replaying recorded frames -- still be graded
+ * itself -- a vendor harness replaying scripted frames -- still be graded
  * against the same declared attempts as the scripted adversary.
  */
 export function attemptCallId(
@@ -530,7 +530,7 @@ export function attemptCallId(
 /**
  * The arguments one declared attempt is issued with, forgery included.
  *
- * Exported because a transcript of recorded frames has to carry exactly the
+ * Exported because a transcript of scripted frames has to carry exactly the
  * arguments the scripted adversary would have sent. Building them twice is how
  * two runtimes end up attacking two slightly different things and reporting it
  * as one comparison.

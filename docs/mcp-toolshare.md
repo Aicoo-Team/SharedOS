@@ -24,8 +24,9 @@ is your tool catalogue_ — so a live CLI told to call `files.read` reaches for 
 own `Read` instead, and every kernel row goes unexercised.
 
 MCP is the one interface Codex, Claude Code, and DeepSeek Harness all accept a
-host-supplied tool set on. Over it, the CLI runs natively — its own model, its
-own loop — and still cannot take an action SharedOS did not authorize.
+host-supplied tool set on. Over it, the CLI runs natively — its own loop, on
+whatever model it is configured with — and still cannot take an action SharedOS
+did not authorize.
 
 ## One name, three places
 
@@ -357,7 +358,7 @@ served it — DeepSeek, for instance, silently maps an unrecognised model name t
 differ are not comparable, and the run says so.
 
 The column is reported separately from the committed manifest. Its correlation is
-weaker than a transcript column's — a live harness mints its own call ids, so
+weaker than a scripted column's — a live harness mints its own call ids, so
 attempts are matched on tool and resource — and its result depends on a model's
 choices. A harness that is absent, unauthenticated, or that declines a declared
 call leaves no operation in the record and is graded `not exercised`: never a

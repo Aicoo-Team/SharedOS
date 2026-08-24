@@ -37,8 +37,8 @@ import { piProtocol } from "./pi/protocol.js";
  * cannot be run against an installed CLI, because no coding-agent CLI exposes
  * its API layer or accepts a host-supplied tool catalogue on its own protocol.
  *
- * Here the harness keeps its own loop and its own model, and SharedOS is a tool
- * server it connects to. What that buys is the thing the driver path cannot
+ * Here the harness keeps its own loop, on whatever model it is configured with,
+ * and SharedOS is a tool server it connects to. What that buys is the thing the driver path cannot
  * reach: a real CLI, making real decisions, against the real permission-filtered
  * catalogue, with every call re-authorized. What it costs is control of the
  * loop -- the harness decides how many calls to make and when to stop, so a row

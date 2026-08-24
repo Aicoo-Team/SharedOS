@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import type { ToolCall } from "@aicoo/sharedos-contracts";
+
 import { HostileRuntime, type AttackMove } from "./adversary.js";
 import { judgeCase } from "./judge.js";
 import {
@@ -17,11 +19,11 @@ import {
 } from "./columns.js";
 import { CANONICAL_ATTACK_MOVES, canonicalMove } from "./moves.js";
 import {
-  CLAUDE_CODE_TRANSCRIPT_COLUMN,
-  CODEX_TRANSCRIPT_COLUMN,
-  DEEPSEEK_TRANSCRIPT_COLUMN,
+  CLAUDE_CODE_SCRIPTED_COLUMN,
+  CODEX_SCRIPTED_COLUMN,
+  DEEPSEEK_SCRIPTED_COLUMN,
   EMBEDDED_COLUMN,
-  PI_TRANSCRIPT_COLUMN,
+  PI_SCRIPTED_COLUMN,
   receiptsFromRecord,
   type ColumnTurn,
   type RuntimeColumn,
@@ -29,7 +31,16 @@ import {
 } from "./columns.js";
 import { renderConformanceSummary, runConformanceSuite, strictFailures } from "./runner.js";
 import { CANONICAL_CONFORMANCE_CASES, type ConformanceCase } from "./suite.js";
-import { conformanceRuntimeContext, READ_ONLY_FILE, READ_TOOL, WRITE_TOOL } from "./world.js";
+import {
+  conformanceRuntimeContext,
+  createConformanceWorld,
+  FILES_ADMIN_NAMESPACE,
+  READ_ONLY_FILE,
+  READ_TOOL,
+  SEALED_TOOL,
+  WORKSPACE_PATH,
+  WRITE_TOOL,
+} from "./world.js";
 
 /** A move whose control attempt cannot succeed, standing in for a broken fixture. */
 const BROKEN_CONTROL: AttackMove = {
@@ -262,7 +273,7 @@ describe("the conformance suite", () => {
     ) as ConformanceCase;
     const { manifest } = await runConformanceSuite({
       cases: [readToMutation],
-      columns: [EMBEDDED_COLUMN, CODEX_TRANSCRIPT_COLUMN, CLAUDE_CODE_TRANSCRIPT_COLUMN],
+      columns: [EMBEDDED_COLUMN, CODEX_SCRIPTED_COLUMN, CLAUDE_CODE_SCRIPTED_COLUMN],
     });
     const cells = manifest.rows[0]?.cells ?? [];
 
@@ -286,7 +297,7 @@ describe("the conformance suite", () => {
       CANONICAL_CONFORMANCE_CASES.find((kase) => kase.id === id) as ConformanceCase;
     const { manifest } = await runConformanceSuite({
       cases: [byId("grant-material"), byId("escalation")],
-      columns: [EMBEDDED_COLUMN, CODEX_TRANSCRIPT_COLUMN],
+      columns: [EMBEDDED_COLUMN, CODEX_SCRIPTED_COLUMN],
     });
 
     const [inspection, escalation] = manifest.rows;
@@ -359,6 +370,45 @@ describe("the conformance suite", () => {
 
     expect(full.manifest.caseSetHash).toMatch(/^[0-9a-f]{64}$/u);
     expect(partial.manifest.caseSetHash).not.toBe(full.manifest.caseSetHash);
+  });
+});
+
+describe("the world the sealed-tool row is armed against", () => {
+  /**
+   * The row reads the namespace plane, so the other two gates have to be open.
+   *
+   * `usable tool = registered AND namespace enabled AND capability allowed`, and
+   * the first two gates refuse with the same `tool_unavailable` code, so a world
+   * that also withheld the capability would produce an identical refusal for a
+   * different reason and the row would evidence nothing in particular. Flipping
+   * only the namespace is what makes the reading clean: same world, same grants,
+   * same call, and the tool goes from invisible to usable.
+   */
+  it("holds the sealed tool's capability, so only the namespace is closed against it", async () => {
+    const world = createConformanceWorld();
+    const call: ToolCall = {
+      id: "call-sealed",
+      tool: SEALED_TOOL,
+      arguments: { path: [...WORKSPACE_PATH] },
+      traceId: world.context.traceId,
+      requestedAt: world.context.now,
+    };
+
+    const sealed = await world.kernel.invokeTool(world.context, call);
+    expect((await world.kernel.listTools(world.context)).map(({ name }) => name)).not.toContain(
+      SEALED_TOOL,
+    );
+    expect(sealed).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+
+    const namespaceEnabled = {
+      ...world.context,
+      enabledToolNamespaces: [...world.context.enabledToolNamespaces, FILES_ADMIN_NAMESPACE],
+    };
+    const unsealed = await world.kernel.invokeTool(namespaceEnabled, call);
+    expect((await world.kernel.listTools(namespaceEnabled)).map(({ name }) => name)).toContain(
+      SEALED_TOOL,
+    );
+    expect(unsealed.status).toBe("succeeded");
   });
 });
 
@@ -551,7 +601,7 @@ describe("a live column's receipts", () => {
   }
 
   it("finds nothing when correlating a live harness's calls by declared id", () => {
-    // The transcript column's correlation is by an id built from the move. A
+    // The scripted column's correlation is by an id built from the move. A
     // live harness never mints that id, so every attempt reads as unreached --
     // which is what made a turn that issued every call report as issuing none.
     const receipts = receiptsFromRecord(move, liveTurn());
@@ -618,13 +668,13 @@ describe("the prompt a live column issues", () => {
   });
 });
 
-describe("every transcript column", () => {
+describe("every scripted column", () => {
   it("grades identically, which is the portability claim in its smallest form", async () => {
     const columns = [
-      CODEX_TRANSCRIPT_COLUMN,
-      CLAUDE_CODE_TRANSCRIPT_COLUMN,
-      DEEPSEEK_TRANSCRIPT_COLUMN,
-      PI_TRANSCRIPT_COLUMN,
+      CODEX_SCRIPTED_COLUMN,
+      CLAUDE_CODE_SCRIPTED_COLUMN,
+      DEEPSEEK_SCRIPTED_COLUMN,
+      PI_SCRIPTED_COLUMN,
     ];
     const { manifest } = await runConformanceSuite({ columns: [EMBEDDED_COLUMN, ...columns] });
 
@@ -638,7 +688,7 @@ describe("every transcript column", () => {
           .join(",")}`;
       });
 
-    const codex = shape(CODEX_TRANSCRIPT_COLUMN.id);
+    const codex = shape(CODEX_SCRIPTED_COLUMN.id);
     for (const column of columns) {
       expect(shape(column.id)).toEqual(codex);
     }

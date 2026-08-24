@@ -1,9 +1,9 @@
 /**
  * Run the conformance case set against harnesses that are actually installed.
  *
- * The committed manifest's vendor columns replay recorded frames: the frames are
- * the vendor's, the parsing is the adapter's, and the transport is the one part
- * left out. This script runs that missing part. It spawns the real CLI, carries
+ * The committed manifest's vendor columns are scripted: the frame shapes are
+ * written in this repository, the parsing is the adapter's, and the transport is
+ * the one part left out. This script runs that missing part. It spawns the real CLI, carries
  * real frames over real stdio, and parses whatever the binary actually emitted.
  *
  * It is deliberately allowed to prove nothing. A harness that is absent,

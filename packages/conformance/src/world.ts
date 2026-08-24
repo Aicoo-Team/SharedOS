@@ -87,10 +87,33 @@ export const ROOT_SCRATCH_GRANT = "grant-root-scratch";
 export const ROOT_LEDGER_GRANT = "grant-root-ledger";
 export const ROOT_EXECUTION_GRANT = "grant-root-execution";
 export const ROOT_MESSAGING_GRANT = "grant-root-messaging";
+/**
+ * The ancestor of the authority that reaches the sealed tool.
+ *
+ * Its only purpose is to leave the capability plane open on the one row that
+ * tests the namespace plane, so a refusal there cannot be explained by missing
+ * authority. See {@link SEALED_GRANT}.
+ */
+export const ROOT_SEALED_GRANT = "grant-root-sealed";
 export const TURN_GRANT = "grant-turn";
 export const READ_GRANT = "grant-read";
 export const SCRATCH_GRANT = "grant-scratch";
 export const MESSAGE_GRANT = "grant-message";
+/**
+ * Authority for the sealed tool's exact requirement, held and never usable.
+ *
+ * Tool availability has three independent gates -- registered, namespace
+ * enabled, capability allowed -- and a row that closes two of them at once
+ * cannot say which one answered, the more so because both refuse with the same
+ * `tool_unavailable` code. `files.purge` is registered and this grant carries
+ * its `purge` action on the workspace, so the only gate still closed against it
+ * is the namespace: `files.admin` is not in `enabledToolNamespaces`. That makes
+ * the sealed-tool attempt a clean reading of the namespace plane on its own.
+ *
+ * It authorizes nothing else. `purge` is required by no other tool in this
+ * world, so holding it cannot widen any other row.
+ */
+export const SEALED_GRANT = "grant-sealed";
 /** A single-use write grant, armed only by the rows about bounded use. */
 export const LEDGER_GRANT = "grant-ledger";
 /** A grant claiming more than its parent holds, armed only by the row about it. */
@@ -155,6 +178,11 @@ export function rootGrants(): readonly CapabilityGrant[] {
       id: ROOT_MESSAGING_GRANT,
       capabilities: [capability(MESSAGING_RESOURCE_NAMESPACE, ["human", "user-alice"], ["send"])],
     },
+    {
+      ...base,
+      id: ROOT_SEALED_GRANT,
+      capabilities: [capability(FILES_NAMESPACE, WORKSPACE_PATH, ["purge"])],
+    },
   ];
 }
 
@@ -206,6 +234,12 @@ export function agentGrants(): readonly CapabilityGrant[] {
       id: MESSAGE_GRANT,
       parentGrantId: ROOT_MESSAGING_GRANT,
       capabilities: [capability(MESSAGING_RESOURCE_NAMESPACE, ["human", "user-alice"], ["send"])],
+    },
+    {
+      ...base,
+      id: SEALED_GRANT,
+      parentGrantId: ROOT_SEALED_GRANT,
+      capabilities: [capability(FILES_NAMESPACE, WORKSPACE_PATH, ["purge"])],
     },
   ];
 }
@@ -274,7 +308,7 @@ export function conformanceTraceId(turn = 1): string {
 /**
  * The context a runtime plugin sees for one turn of the canonical world.
  *
- * Exposed so a recorded transcript can be built with the same forged material
+ * Exposed so a scripted transcript can be built with the same forged material
  * the scripted adversary would have sent. It carries no grants and no issuing
  * authority, because that is all a runtime is ever given.
  */
@@ -306,8 +340,8 @@ function ownerArgument(value: unknown, fallback: Address): Address {
  *
  * Every tool here used to declare `inputSchema: { type: "object" }`, which was
  * invisible for as long as every column supplied its arguments out of band: the
- * scripted adversary builds a `ToolCall` directly, and a transcript column writes
- * the arguments into the recorded frame. The first column to actually read the
+ * scripted adversary builds a `ToolCall` directly, and a scripted column writes
+ * the arguments into the scripted frame. The first column to actually read the
  * published schema -- a live harness over MCP -- found the gap immediately. It
  * called `files.read` with no `path` at all, the handler fell back to the
  * workspace root, and the row could not be graded.

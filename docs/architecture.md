@@ -121,8 +121,8 @@ second permission path.
 `@aicoo/sharedos-mcp` serves that same permission-filtered catalogue to a harness
 that runs its own loop, over the Model Context Protocol. It is the other half of
 the harness story: a driver puts SharedOS in the model provider's seat, while the
-MCP bridge lets the vendor CLI keep its own model and connect to SharedOS as a
-tool server. Both paths converge on `RuntimeHost.invokeTool`, which stays the
+MCP bridge lets the vendor CLI keep its own loop, on whatever model it is
+configured with, and connect to SharedOS as a tool server. Both paths converge on `RuntimeHost.invokeTool`, which stays the
 only execution path. See [MCP toolshare](mcp-toolshare.md).
 
 `@aicoo/sharedos` is an ergonomic distribution layer that re-exports the

@@ -11,7 +11,7 @@ kernel.
 `HarnessDriver` puts SharedOS in the model provider's seat. It speaks the
 vendor's API-layer tool-call shape — Responses function calls, Anthropic content
 blocks, `dsh` `tool/call`, Pi `toolCall` — and owns the turn loop. The
-translation is exact, and the transcript columns prove it against the real kernel
+translation is exact, and the scripted columns prove it against the real kernel
 and envelope. What it cannot do is run against an installed CLI: none of the four
 CLIs measured on 2026-08-21 (Codex 0.149.0, Claude Code 2.1.238, `dsh`
 0.1.1-rc.2, Pi 0.84.2) exposes its API layer or has any wire frame meaning "here
@@ -146,11 +146,12 @@ almost nothing when the harness also had a shell.
 
 ## The MCP conformance column
 
-`mcpColumn` runs the installed CLI natively — its own model, its own loop, its
-own MCP client — against the permission-filtered catalogue. It is the column the
+`mcpColumn` runs the installed CLI natively — its own loop, its own MCP client,
+and whatever model the host configured it with — against the permission-filtered
+catalogue. It is the column the
 other two deliberately do not claim:
 
-- A transcript column leaves out the transport.
+- A scripted column leaves out the transport.
 - A live column leaves out the catalogue.
 - This one leaves out neither.
 

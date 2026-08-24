@@ -22,8 +22,8 @@ RuntimeHost is the only EXECUTION path.
 
 This is the other half of the harness story. `@aicoo/sharedos-adapters` puts
 SharedOS in the model provider's seat and owns the turn loop; this package lets a
-vendor CLI keep its own model and its own loop and connect to SharedOS as a tool
-server. Both converge on `RuntimeHost.invokeTool`, so neither adds a second
+vendor CLI keep its own loop and whatever model it is configured with, and
+connect to SharedOS as a tool server. Both converge on `RuntimeHost.invokeTool`, so neither adds a second
 permission path.
 
 ```ts

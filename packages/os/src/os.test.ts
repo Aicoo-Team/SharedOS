@@ -205,6 +205,57 @@ describe("standard OS file tools", () => {
     expect(invoke.mock.calls[0]?.[0].action).toBe("append");
   });
 
+  it("does not let read or mutation authority reach snapshot restore", async () => {
+    const invoke = vi.fn(async (operation: ResourceOperation): Promise<ResourceResult> => ({
+      operationId: operation.operationId,
+      status: "succeeded",
+      output: { action: operation.action },
+      completedAt: now,
+    }));
+    const kernel = new SharedOSKernel({
+      grantSource: grantSource([
+        grantFor([
+          "read",
+          "create",
+          "replace",
+          "append",
+          "delete",
+          "snapshot:create",
+          "snapshot:list",
+        ]),
+      ]),
+    });
+    for (const handler of createFileTools(provider(invoke))) kernel.registerTool(handler);
+    const context = contextFor();
+    const path = ["Memory", "Self", "MEMORY.md"];
+
+    // Everything a principal could hold short of restore itself: the whole read
+    // and mutation vocabulary, plus the two snapshot actions that only look at
+    // history. Rollback is a distinct action, so none of it reaches restore.
+    const created = await kernel.invokeTool(context, call("files.snapshot.create", { path }));
+    const listed = await kernel.invokeTool(context, call("files.snapshot.list", { path }));
+    const restored = await kernel.invokeTool(
+      context,
+      call("files.snapshot.restore", { path, snapshotId: "snapshot-1" }),
+    );
+
+    expect(created.status).toBe("succeeded");
+    expect(listed.status).toBe("succeeded");
+    expect(restored).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+
+    // Undiscoverable as well as uninvocable: a rollback path that showed up in
+    // the catalogue would invite the call even though it could never succeed.
+    const visible = (await kernel.listTools(context)).map(({ name }) => name);
+    expect(visible).toContain("files.snapshot.create");
+    expect(visible).not.toContain("files.snapshot.restore");
+
+    // The refusal is an authorization decision, not a provider that declined.
+    expect(invoke.mock.calls.map(([operation]) => operation.action)).toEqual([
+      "snapshot:create",
+      "snapshot:list",
+    ]);
+  });
+
   it("rejects providers from a second resource namespace", () => {
     expect(() => createFileTools({ ...provider(), namespace: "memory" })).toThrow(
       "Expected a files provider",

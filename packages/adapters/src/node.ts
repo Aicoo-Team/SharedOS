@@ -47,7 +47,7 @@ export interface ChildProcessTransportOptions {
  *
  * Both Codex and Claude Code expose exactly this: a long-running process, one
  * JSON object per line each way. Keeping it separate from the protocol means an
- * adapter can be exercised against a recorded transcript and then run live
+ * adapter can be exercised against a supplied transcript and then run live
  * without any change to the translation code that was tested.
  *
  * Node only. It is published from `@aicoo/sharedos-adapters/node` so the main

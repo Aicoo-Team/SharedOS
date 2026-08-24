@@ -8,19 +8,19 @@
       "label": "Standard"
     },
     {
-      "id": "codex-transcript",
+      "id": "codex-scripted",
       "label": "Codex"
     },
     {
-      "id": "claude-code-transcript",
+      "id": "claude-code-scripted",
       "label": "Claude Code"
     },
     {
-      "id": "deepseek-transcript",
+      "id": "deepseek-scripted",
       "label": "Deepseek"
     },
     {
-      "id": "pi-transcript",
+      "id": "pi-scripted",
       "label": "pi"
     }
   ],
@@ -50,7 +50,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -66,7 +66,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -82,7 +82,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -98,7 +98,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -140,7 +140,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "envelope"
@@ -156,7 +156,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "envelope"
@@ -172,7 +172,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "envelope"
@@ -188,7 +188,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "envelope"
@@ -230,7 +230,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -246,7 +246,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -262,7 +262,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -278,7 +278,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -320,7 +320,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -336,7 +336,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -352,7 +352,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -368,7 +368,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -410,7 +410,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -426,7 +426,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -442,7 +442,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -458,7 +458,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -500,7 +500,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -516,7 +516,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -532,7 +532,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -548,7 +548,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -590,7 +590,7 @@
           "turns": 2
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -606,7 +606,7 @@
           "turns": 2
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -622,7 +622,7 @@
           "turns": 2
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -638,7 +638,7 @@
           "turns": 2
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -680,7 +680,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -696,7 +696,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -712,7 +712,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -728,7 +728,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -770,7 +770,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -786,7 +786,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -802,7 +802,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -818,7 +818,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -860,7 +860,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -876,7 +876,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -892,7 +892,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -908,7 +908,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -951,7 +951,7 @@
           "detail": "the turn itself ended as `denied` with `authority_unavailable`, before the runtime was started"
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -968,7 +968,7 @@
           "detail": "the turn itself ended as `denied` with `authority_unavailable`, before the runtime was started"
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -985,7 +985,7 @@
           "detail": "the turn itself ended as `denied` with `authority_unavailable`, before the runtime was started"
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1002,7 +1002,7 @@
           "detail": "the turn itself ended as `denied` with `authority_unavailable`, before the runtime was started"
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1045,7 +1045,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1061,7 +1061,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1077,7 +1077,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1093,7 +1093,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1135,7 +1135,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1151,7 +1151,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1167,7 +1167,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1183,7 +1183,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1225,7 +1225,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "envelope"
@@ -1241,7 +1241,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "envelope"
@@ -1257,7 +1257,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "envelope"
@@ -1273,7 +1273,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "envelope"
@@ -1315,7 +1315,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1328,7 +1328,7 @@
           "detail": "the attempt call-past-the-budget could not be made: the standard turn loop this harness runs inside stops at its own step ceiling, so the call is never issued"
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1341,7 +1341,7 @@
           "detail": "the attempt call-past-the-budget could not be made: the standard turn loop this harness runs inside stops at its own step ceiling, so the call is never issued"
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1354,7 +1354,7 @@
           "detail": "the attempt call-past-the-budget could not be made: the standard turn loop this harness runs inside stops at its own step ceiling, so the call is never issued"
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1391,7 +1391,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1404,7 +1404,7 @@
           "detail": "the attempt enumerate-runtime-surfaces could not be made: a harness speaks tool calls over a wire and is never handed the runtime surfaces to enumerate"
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1417,7 +1417,7 @@
           "detail": "the attempt enumerate-runtime-surfaces could not be made: a harness speaks tool calls over a wire and is never handed the runtime surfaces to enumerate"
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1430,7 +1430,7 @@
           "detail": "the attempt enumerate-runtime-surfaces could not be made: a harness speaks tool calls over a wire and is never handed the runtime surfaces to enumerate"
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1469,7 +1469,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1485,7 +1485,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1501,7 +1501,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1517,7 +1517,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "kernel"
@@ -1561,7 +1561,7 @@
           "detail": "the turn itself ended as `escalated` with `escalation_requested`"
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1574,7 +1574,7 @@
           "detail": "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one"
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1587,7 +1587,7 @@
           "detail": "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one"
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1600,7 +1600,7 @@
           "detail": "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one"
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1641,7 +1641,7 @@
           "turns": 1
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "pass",
           "refusedBy": [
             "envelope",
@@ -1659,7 +1659,7 @@
           "turns": 1
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "pass",
           "refusedBy": [
             "envelope",
@@ -1677,7 +1677,7 @@
           "turns": 1
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "pass",
           "refusedBy": [
             "envelope",
@@ -1695,7 +1695,7 @@
           "turns": 1
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "pass",
           "refusedBy": [
             "envelope",
@@ -1736,7 +1736,7 @@
           "detail": "SharedOS has no view layer. Resources are served whole or refused, so there is nothing between a raw record and a denial for a row about narrowing disclosure to measure."
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1749,7 +1749,7 @@
           "detail": "SharedOS has no view layer. Resources are served whole or refused, so there is nothing between a raw record and a denial for a row about narrowing disclosure to measure."
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1762,7 +1762,7 @@
           "detail": "SharedOS has no view layer. Resources are served whole or refused, so there is nothing between a raw record and a denial for a row about narrowing disclosure to measure."
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1775,7 +1775,7 @@
           "detail": "SharedOS has no view layer. Resources are served whole or refused, so there is nothing between a raw record and a denial for a row about narrowing disclosure to measure."
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1811,7 +1811,7 @@
           "detail": "SharedOS has no freshness port. A call carries its own instant and identifiers and nothing rejects one for having been seen before, so a replay is indistinguishable from a repeat."
         },
         {
-          "columnId": "codex-transcript",
+          "columnId": "codex-scripted",
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1824,7 +1824,7 @@
           "detail": "SharedOS has no freshness port. A call carries its own instant and identifiers and nothing rejects one for having been seen before, so a replay is indistinguishable from a repeat."
         },
         {
-          "columnId": "claude-code-transcript",
+          "columnId": "claude-code-scripted",
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1837,7 +1837,7 @@
           "detail": "SharedOS has no freshness port. A call carries its own instant and identifiers and nothing rejects one for having been seen before, so a replay is indistinguishable from a repeat."
         },
         {
-          "columnId": "deepseek-transcript",
+          "columnId": "deepseek-scripted",
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
@@ -1850,7 +1850,7 @@
           "detail": "SharedOS has no freshness port. A call carries its own instant and identifiers and nothing rejects one for having been seen before, so a replay is indistinguishable from a repeat."
         },
         {
-          "columnId": "pi-transcript",
+          "columnId": "pi-scripted",
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],

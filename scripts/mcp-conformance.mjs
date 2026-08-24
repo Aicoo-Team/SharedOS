@@ -3,8 +3,8 @@
  *
  * This is the column the other two deliberately do not claim.
  *
- * `conformance.mjs` replays recorded frames: the frames are the vendor's, the
- * parsing is the adapter's, and the transport is left out. `live-conformance.mjs`
+ * `conformance.mjs` is the scripted mode: the frame shapes are written in this
+ * repository, the parsing is the adapter's, and the transport is left out. `live-conformance.mjs`
  * adds the transport but cannot add the catalogue, because no coding-agent CLI
  * accepts a host-supplied tool set on its own stdio protocol -- so a live harness
  * reaches for its own tools, every kernel row goes unexercised, and the column
@@ -12,8 +12,9 @@
  *
  * Here SharedOS serves the permission-filtered catalogue over MCP, which is the
  * one interface all three ecosystems accept a host-supplied tool set on. The CLI
- * runs natively with its own model and its own loop, discovers the catalogue with
- * its own MCP client, and every call it makes returns through
+ * runs natively with its own loop and whatever model it is configured with,
+ * discovers the catalogue with its own MCP client, and every call it makes
+ * returns through
  * `RuntimeHost.invokeTool` to be re-authorized.
  *
  * It is still allowed to prove nothing. A harness that is absent, unauthenticated,
@@ -399,10 +400,11 @@ await writeFile(
     {
       kind: "mcp-toolshare-conformance",
       note:
-        "Vendor columns here ran the installed CLI natively, with its own model and " +
-        "its own loop, against the SharedOS permission-filtered catalogue served over " +
-        "MCP. Every tool call returned through RuntimeHost.invokeTool. A column absent " +
-        "from `columns` was not installed and is not a result about SharedOS.",
+        "Vendor columns here ran the installed CLI natively, with its own loop and " +
+        "the model it was configured with, against the SharedOS permission-filtered " +
+        "catalogue served over MCP. Every tool call returned through " +
+        "RuntimeHost.invokeTool. A column absent from `columns` was not installed " +
+        "and is not a result about SharedOS.",
       elapsedMs,
       casesRun: cases.map(({ id }) => id),
       casesDeclared: CANONICAL_CONFORMANCE_CASES.map(({ id }) => id),
