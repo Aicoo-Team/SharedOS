@@ -27,6 +27,7 @@ function createApi(): SharedOSApi {
   return {
     authorize: vi.fn(async () => ({ allowed: false, reasonCode: "no_matching_grant" })),
     listTools: vi.fn(async () => []),
+    listReachable: vi.fn(async () => []),
     listToolNamespaces: vi.fn(async () => ({
       namespaces: [],
       summary: { total: 0, enabled: 0, disabled: 0 },
@@ -117,6 +118,33 @@ describe("createSharedOSHandler", () => {
       context,
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
+  });
+
+  it("serves the reachable scope from server-derived context", async () => {
+    const api = createApi();
+    const resolveContext = vi.fn(async () => context);
+    const handler = createSharedOSHandler({ api, resolveContext });
+
+    const response = await handler(new Request("https://sharedos.test/v1/reachable"));
+
+    expect(response.status).toBe(200);
+    expect(api.listReachable).toHaveBeenCalledWith(
+      context,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it("rejects a write to the reachable scope", async () => {
+    const handler = createSharedOSHandler({
+      api: createApi(),
+      resolveContext: async () => context,
+    });
+
+    const response = await handler(
+      new Request("https://sharedos.test/v1/reachable", { method: "POST" }),
+    );
+
+    expect(response.status).toBe(405);
   });
 
   it("does not resolve auth context for health checks", async () => {

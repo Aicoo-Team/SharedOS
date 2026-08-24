@@ -114,6 +114,34 @@ appear, so a model driven by this list never learns it exists.
 `inputSchema` is JSON Schema and can be handed to a model as a tool definition
 unchanged.
 
+### `GET /v1/reachable`
+
+Where this caller may work. The catalog says _which tools_; this says _which
+resources_, which is the question an agent has to answer first.
+
+```json
+[
+  {
+    "namespace": "files",
+    "path": ["Work", "Projects", "atlas"],
+    "actions": ["read", "search"],
+    "descendants": true
+  }
+]
+```
+
+Derived from the same grants the kernel enforces, so it can never name a place
+that would then be refused, and it carries no grant id, issuer, purpose,
+expiry, or use budget — those are authority. Only currently valid grants
+contribute, and only in namespaces this context has enabled.
+
+Without it a model has to guess paths and spend its step budget being denied,
+and the alternative is describing the boundary in a prompt, which puts it back
+in the model's context one edit away from disagreeing with the kernel.
+
+`POST /v1/turns` computes this server-side and hands it to the runtime, so a
+caller using turns does not need to fetch it.
+
 ### `GET /v1/tools/namespaces` · `PUT /v1/tools/namespaces`
 
 Namespaces are the product control plane: whether a _family_ of tools should be

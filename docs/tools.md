@@ -30,6 +30,29 @@ permitted; a model that rewrites the `path` in its own arguments does not reach
 outside the grant, because the requirement is re-derived from the parsed
 arguments immediately before execution.
 
+## Which tools, and where
+
+The three gates decide what an actor _may_ do. They do not tell it _where_,
+and a filtered catalog is silent on scope: `files.search` appears with its
+declared ceiling, not with the paths a grant actually covers.
+
+`kernel.listReachable(context)` closes that. It returns the places this actor
+may work, derived from the same grants the authorizer evaluates:
+
+```ts
+const reachable = await kernel.listReachable(context);
+// [{ namespace: "files", path: ["Work", "Projects", "atlas"],
+//    actions: ["read", "search"], descendants: true }]
+```
+
+It carries no grant id, issuer, purpose, expiry, or use budget. Scope is not
+authority: telling an agent where it may look does not let it do anything it
+could not already do, it just stops the turn being spent on refusals.
+
+`SharedOSExecutor` computes this for every turn and puts it on
+`request.context.reachable`, so a runtime can plan without the host describing
+the boundary in a prompt — which is where the boundary must never live.
+
 ## The `files` plane
 
 `registerStandardOsTools(kernel, { files })` exposes one `ResourceProvider` as

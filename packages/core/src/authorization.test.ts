@@ -247,3 +247,126 @@ describe("CapabilityAuthorizer", () => {
     });
   });
 });
+
+describe("CapabilityAuthorizer.reachable", () => {
+  it("reports where the actor may work, merging grants over one path", async () => {
+    const authorizer = new CapabilityAuthorizer();
+    const reachable = await authorizer.reachable(
+      context([
+        grant(),
+        grant({
+          id: "grant-files-search",
+          capabilities: [{ resource: RESOURCE, actions: ["search"], scope: "exact" }],
+        }),
+      ]),
+    );
+
+    expect(reachable).toEqual([
+      {
+        namespace: "files",
+        path: ["Workspace", "projects", "sharedos"],
+        actions: ["read", "search"],
+        descendants: false,
+      },
+    ]);
+  });
+
+  it("separates the same path granted at a different scope", async () => {
+    const authorizer = new CapabilityAuthorizer();
+    const reachable = await authorizer.reachable(
+      context([
+        grant(),
+        grant({
+          id: "grant-subtree",
+          capabilities: [{ resource: RESOURCE, actions: ["read"], scope: "descendants" }],
+        }),
+      ]),
+    );
+
+    expect(reachable.map(({ descendants }) => descendants)).toEqual([false, true]);
+  });
+
+  it("carries no authority", async () => {
+    const authorizer = new CapabilityAuthorizer();
+    const [entry] = await authorizer.reachable(context([grant()]));
+
+    // The model is handed this. Anything here that names a grant, an issuer, a
+    // purpose, or a budget would put authority back into a model's context.
+    expect(Object.keys(entry ?? {}).sort()).toEqual([
+      "actions",
+      "descendants",
+      "namespace",
+      "path",
+    ]);
+    expect(JSON.stringify(entry)).not.toContain("grant-files-read");
+    expect(JSON.stringify(entry)).not.toContain("user-alice");
+    expect(JSON.stringify(entry)).not.toContain("prepare-update");
+  });
+
+  it("omits a grant that is expired, revoked, or for another purpose", async () => {
+    const authorizer = new CapabilityAuthorizer();
+
+    const expired = grant({ constraints: { purposes: ["prepare-update"], expiresAt: NOW } });
+    const revoked = grant({ id: "grant-revoked", revokedAt: "2026-08-03T08:30:00.000Z" });
+    const otherPurpose = grant({
+      id: "grant-other",
+      constraints: { purposes: ["something-else"] },
+    });
+    const otherSubject = grant({
+      id: "grant-other-subject",
+      subject: { kind: "agent", agentId: "agent-eve" },
+    });
+
+    for (const dead of [expired, revoked, otherPurpose, otherSubject]) {
+      expect(await authorizer.reachable(context([dead]))).toEqual([]);
+    }
+  });
+
+  it("never advertises somewhere the authorizer would refuse", async () => {
+    const authorizer = new CapabilityAuthorizer();
+    const live = context([
+      grant(),
+      grant({
+        id: "grant-memory",
+        capabilities: [
+          {
+            resource: { namespace: "files", path: ["Memory"], owner: OWNER },
+            actions: ["search", "append"],
+            scope: "descendants",
+          },
+        ],
+      }),
+    ]);
+
+    const reachable = await authorizer.reachable(live);
+    expect(reachable.length).toBeGreaterThan(0);
+
+    // The property that keeps the projection honest: every place it names, with
+    // every action it names, is one the authorizer actually allows.
+    for (const entry of reachable) {
+      for (const action of entry.actions) {
+        const decision = await authorizer.authorize(live, {
+          resource: { namespace: entry.namespace, path: entry.path, owner: OWNER },
+          action,
+        });
+        expect(decision.allowed, `${entry.path.join("/")}·${action}`).toBe(true);
+      }
+    }
+  });
+
+  it("is discovery, so it never spends a bounded grant", async () => {
+    const usageStore = new InMemoryGrantUsageStore();
+    const authorizer = new CapabilityAuthorizer({ usageStore });
+    const bounded = grant({ constraints: { purposes: ["prepare-update"], maxUses: 1 } });
+
+    await authorizer.reachable(context([bounded]));
+    expect(await usageStore.getUsage("world-alpha", bounded.id)).toBe(0);
+
+    const decision = await authorizer.authorize(
+      context([bounded]),
+      { resource: RESOURCE, action: "read" },
+      { consume: true },
+    );
+    expect(decision.allowed).toBe(true);
+  });
+});

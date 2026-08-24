@@ -6,6 +6,7 @@ import type {
   MessageDeliveryResult,
   MessageEnvelope,
   ProtocolError,
+  ReachableResource,
   ResourceResult,
   ToolCall,
   ToolDefinition,
@@ -159,6 +160,24 @@ export class SharedOSKernel {
       },
       true,
     );
+  }
+
+  /**
+   * Where this actor may operate, for a runtime or a host building a prompt.
+   *
+   * Namespaces that are switched off are left out: a resource the actor cannot
+   * reach through any tool is not somewhere it can work, and advertising it
+   * would send an agent at a wall.
+   */
+  async listReachable(
+    context: AccessContext,
+    options: KernelOperationOptions = {},
+  ): Promise<readonly ReachableResource[]> {
+    throwIfAborted(options.signal);
+    context = structuredClone(context);
+    const enabled = new Set(context.enabledToolNamespaces);
+    const reachable = await this.#authorizer.reachable(context);
+    return reachable.filter((entry) => enabled.has(entry.namespace));
   }
 
   async listTools(

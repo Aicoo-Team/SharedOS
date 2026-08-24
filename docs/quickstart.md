@@ -168,14 +168,16 @@ const driver: AgentTurnDriver = {
       async next(input) {
         if (!asked) {
           asked = true;
-          // request.tools is the effective catalog. Hand it to your model as
-          // its tool definitions; `inputSchema` is already JSON Schema.
+          // request.tools is the effective catalog — which tools.
+          // request.context.reachable is where they may be used. Both are
+          // derived from the grants, so neither can disagree with enforcement.
+          const [where] = request.context.reachable;
           return {
             type: "tool_call",
             call: {
               id: crypto.randomUUID(),
               tool: "files.search",
-              arguments: { path: ["Work", "Projects", "atlas"], query: "ship date" },
+              arguments: { path: where?.path ?? [], query: "ship date" },
               traceId: request.context.traceId,
               requestedAt: new Date().toISOString(),
             },

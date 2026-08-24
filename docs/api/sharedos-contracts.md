@@ -104,7 +104,7 @@ Defined in: [capability.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/
 
 > **CapabilityRequirement** = `z.infer`\<_typeof_ [`CapabilityRequirementSchema`](#capabilityrequirementschema)>\>
 
-Defined in: [capability.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L137)
+Defined in: [capability.ts:159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L159)
 
 ---
 
@@ -289,6 +289,14 @@ Defined in: [protocol-error.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/m
 > **ProtocolVersion** = `z.infer`\<_typeof_ [`ProtocolVersionSchema`](#protocolversionschema)>\>
 
 Defined in: [common.ts:5](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L5)
+
+---
+
+### ReachableResource
+
+> **ReachableResource** = `z.infer`\<_typeof_ [`ReachableResourceSchema`](#reachableresourceschema)>\>
+
+Defined in: [capability.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L149)
 
 ---
 
@@ -536,7 +544,7 @@ A request for authority. A request is not itself proof of authority.
 
 > `const` **CapabilityRequirementSchema**: `ZodObject`\<\{ `action`: `ZodString`; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>; \}, `"strict"`, `ZodTypeAny`, \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}, \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}\>
 
-Defined in: [capability.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L130)
+Defined in: [capability.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L152)
 
 The exact capability a tool invocation requires.
 
@@ -824,6 +832,23 @@ A machine-readable error that is safe to return over npm and HTTP APIs.
 Defined in: [common.ts:4](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L4)
 
 The wire protocol version implemented by this package.
+
+---
+
+### ReachableResourceSchema
+
+> `const` **ReachableResourceSchema**: `ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `descendants`: `ZodBoolean`; `namespace`: `ZodString`; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `descendants`: `boolean`; `namespace`: `string`; `path`: `string`[]; \}, \{ `actions`: `string`[]; `descendants`: `boolean`; `namespace`: `string`; `path`: `string`[]; \}\>
+
+Defined in: [capability.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L139)
+
+Where an actor may operate, with the authority stripped out.
+
+A capability answers "may this actor do this here". This answers the question
+an agent has to ask first: "where is here". It is derived from the same
+grants the authorizer evaluates, so it cannot advertise a path that would
+then be refused, and it deliberately carries no grant id, issuer, purpose,
+expiry, or use budget — those are authority, and nothing that reaches a model
+may carry authority.
 
 ---
 

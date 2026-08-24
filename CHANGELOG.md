@@ -10,6 +10,18 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- `ReachableResource`, and `kernel.listReachable(context)` / `GET /v1/reachable`
+  / `client.listReachable()` to obtain it. A filtered tool catalog says *which
+  tools* an actor may call and nothing about *where*, so an agent had to guess
+  paths and spend its step budget being refused — or the host had to describe
+  the boundary in a prompt, which is the boundary living in the model's context
+  again. The projection is derived from the same grants the authorizer
+  evaluates and carries no grant id, issuer, purpose, expiry, or use budget.
+- `RuntimeVisibleContext.reachable`. `SharedOSExecutor` computes it per turn, so
+  a runtime plans from the same grants the kernel enforces.
+
+### Added
+
 - A quickstart with two working programs, an HTTP API reference covering every
   route and status code, a tool catalog covering the twelve `files` tools and
   how to register your own, and a reason/error code reference. None of this was

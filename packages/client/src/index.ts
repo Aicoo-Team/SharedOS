@@ -20,10 +20,12 @@ import {
   ResourceResultSchema,
   SharedOSApiErrorResponseSchema,
   SharedOSHealthSchema,
+  ReachableResourceSchema,
   ToolDefinitionSchema,
   ToolNamespaceCatalogSchema,
   ToolNamespaceUpdateSchema,
   ToolResultSchema,
+  type ReachableResource,
   type RemoteExecutionRequest,
   type RemoteResourceOperation,
   type SharedOSHealth,
@@ -80,6 +82,16 @@ export class SharedOSClient {
     options?: SharedOSCallOptions,
   ): Promise<AuthorizationDecision> {
     return this.#post("/v1/authorize", request, AuthorizationDecisionSchema, options);
+  }
+
+  /** Where this caller may work, for building a prompt or planning a turn. */
+  listReachable(options?: SharedOSCallOptions): Promise<readonly ReachableResource[]> {
+    return this.#request(
+      "/v1/reachable",
+      { method: "GET" },
+      ReachableResourceSchema.array(),
+      options,
+    );
   }
 
   listTools(options?: SharedOSCallOptions): Promise<readonly ToolDefinition[]> {

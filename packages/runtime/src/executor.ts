@@ -18,6 +18,7 @@ import {
   type RuntimeManifest,
   type RuntimeTurnOutcome,
   type ToolCall,
+  type ReachableResource,
   type ToolDefinition,
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
@@ -64,7 +65,10 @@ export interface TurnExecutorOptions extends SharedOSExecutorOptions, StandardRu
  * permits narrow test doubles without granting a runtime direct access to
  * registries, namespace settings, or other host policy state.
  */
-export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool">;
+export type TurnKernel = Pick<
+  SharedOSKernel,
+  "admitTurn" | "listTools" | "listReachable" | "invokeTool"
+>;
 
 /**
  * The non-replaceable security envelope around one replaceable RuntimePlugin.
@@ -200,7 +204,16 @@ export class SharedOSExecutor implements TurnExecutionPort {
       const requestedNames = new Set(request.tools.map(({ name }) => name));
       const effectiveTools = allowedTools.filter(({ name }) => requestedNames.has(name));
       const effectiveToolNames = new Set(effectiveTools.map(({ name }) => name));
-      const runtimeRequest = toRuntimeTurnRequest(request, executionContext, effectiveTools);
+      const reachable = await raceWithAbort(
+        this.#kernel.listReachable(executionContext, { signal: abort.signal }),
+        abort.signal,
+      );
+      const runtimeRequest = toRuntimeTurnRequest(
+        request,
+        executionContext,
+        effectiveTools,
+        reachable,
+      );
 
       emit("turn.started", {
         agent: request.agent,
@@ -369,6 +382,7 @@ function toRuntimeTurnRequest(
   request: ExecutionRequest,
   context: AccessContext,
   tools: readonly ToolDefinition[],
+  reachable: readonly ReachableResource[],
 ): RuntimeTurnRequest {
   return deepFreeze(
     structuredClone({
@@ -384,6 +398,7 @@ function toRuntimeTurnRequest(
         purpose: context.purpose,
         traceId: context.traceId,
         now: context.now,
+        reachable,
       },
       ...(request.state === undefined ? {} : { state: request.state }),
       ...(request.options === undefined ? {} : { options: request.options }),

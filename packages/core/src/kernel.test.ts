@@ -748,3 +748,42 @@ describe("SharedOSKernel messaging and audit", () => {
     expect(onAuditError).toHaveBeenCalledOnce();
   });
 });
+
+describe("SharedOSKernel.listReachable", () => {
+  it("leaves out namespaces the context has switched off", async () => {
+    const kernel = new SharedOSKernel();
+    const grants = [
+      grant("grant-files", FILE_RESOURCE, ["search"]),
+      grant("grant-calendar", { namespace: "calendar", path: ["work"] }, ["freeBusy"]),
+    ];
+
+    const both = await kernel.listReachable(context(grants, ["files", "calendar"]));
+    expect(both.map(({ namespace }) => namespace)).toEqual(["calendar", "files"]);
+
+    // A place reachable only through a disabled namespace is not somewhere the
+    // actor can work, so advertising it would send an agent at a wall.
+    const filesOnly = await kernel.listReachable(context(grants, ["files"]));
+    expect(filesOnly.map(({ namespace }) => namespace)).toEqual(["files"]);
+  });
+
+  it("agrees with what the tool catalog will actually allow", async () => {
+    const kernel = new SharedOSKernel();
+    const access = context([grant("grant-files", FILE_RESOURCE, ["search"])], ["files"]);
+
+    const reachable = await kernel.listReachable(access);
+    expect(reachable).toEqual([
+      {
+        namespace: "files",
+        path: ["Workspace", "project-sharedos"],
+        actions: ["search"],
+        descendants: false,
+      },
+    ]);
+
+    const decision = await kernel.authorize(access, {
+      resource: { ...FILE_RESOURCE, owner: OWNER },
+      action: "search",
+    });
+    expect(decision.allowed).toBe(true);
+  });
+});

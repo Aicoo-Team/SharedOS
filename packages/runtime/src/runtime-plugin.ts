@@ -1,6 +1,7 @@
 import {
   RuntimeManifestSchema,
   type AccessContext,
+  type ReachableResource,
   type ExecutionRequest,
   type RuntimeEvent,
   type RuntimeManifest,
@@ -18,6 +19,12 @@ export interface RuntimeVisibleContext {
   readonly purpose: string;
   readonly traceId: string;
   readonly now: string;
+  /**
+   * Where this turn may operate. Derived from the same grants the kernel
+   * enforces, with the authority stripped out, so a runtime can tell a model
+   * where to look without a host describing the boundary in a prompt.
+   */
+  readonly reachable: readonly ReachableResource[];
 }
 
 /**

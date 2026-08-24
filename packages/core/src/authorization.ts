@@ -4,6 +4,7 @@ import type {
   AuthorizationDecision,
   Capability,
   CapabilityGrant,
+  ReachableResource,
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
 
@@ -109,6 +110,64 @@ export class CapabilityAuthorizer {
     ceiling: AuthorizationRequest,
   ): Promise<AuthorizationDecision> {
     return this.#decide(context, ceiling, capabilityIntersectsCeiling, false);
+  }
+
+  /**
+   * Where this actor may operate right now, as an authority-free projection of
+   * the grants the caller supplied.
+   *
+   * A runtime is handed a filtered tool catalog, which tells it *what* it may
+   * call and nothing about *where*. Without this an agent has to guess paths
+   * and spend its step budget being refused, and the only alternative is for a
+   * host to describe the scope in a prompt — which puts the boundary back in
+   * the model's context, one edit away from disagreeing with the kernel.
+   *
+   * Only currently eligible grants contribute, so an expired or revoked grant
+   * never advertises a path. This is discovery: it consumes nothing.
+   */
+  async reachable(context: AccessContext): Promise<readonly ReachableResource[]> {
+    context = structuredClone(context);
+    const now = parseTimestamp(context.now);
+    if (now === undefined || context.purpose.length === 0 || context.traceId.length === 0) {
+      return [];
+    }
+
+    // Merge by (namespace, path, descendants) so two grants over one path read
+    // as one place with the union of what may be done there.
+    const merged = new Map<string, { entry: ReachableResource; actions: Set<string> }>();
+
+    for (const grant of context.grants) {
+      if (!(await this.#grantIsEligible(context, grant, now))) continue;
+
+      for (const capability of grant.capabilities) {
+        if (!resourceBelongsToContext(capability.resource, context)) continue;
+
+        const descendants = capability.scope === "descendants";
+        const key = `${capability.resource.namespace}\u0000${capability.resource.path.join("\u0000")}\u0000${descendants}`;
+        const existing = merged.get(key);
+        if (existing === undefined) {
+          merged.set(key, {
+            entry: {
+              namespace: capability.resource.namespace,
+              path: [...capability.resource.path],
+              actions: [],
+              descendants,
+            },
+            actions: new Set(capability.actions),
+          });
+          continue;
+        }
+        for (const action of capability.actions) existing.actions.add(action);
+      }
+    }
+
+    return [...merged.values()]
+      .map(({ entry, actions }) => ({ ...entry, actions: [...actions].sort() }))
+      .sort(
+        (left, right) =>
+          left.namespace.localeCompare(right.namespace) ||
+          left.path.join("/").localeCompare(right.path.join("/")),
+      );
   }
 
   async #decide(

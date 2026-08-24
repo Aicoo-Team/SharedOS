@@ -126,6 +126,28 @@ export const CapabilityGrantSchema = z
 
 export type CapabilityGrant = z.infer<typeof CapabilityGrantSchema>;
 
+/**
+ * Where an actor may operate, with the authority stripped out.
+ *
+ * A capability answers "may this actor do this here". This answers the question
+ * an agent has to ask first: "where is here". It is derived from the same
+ * grants the authorizer evaluates, so it cannot advertise a path that would
+ * then be refused, and it deliberately carries no grant id, issuer, purpose,
+ * expiry, or use budget — those are authority, and nothing that reaches a model
+ * may carry authority.
+ */
+export const ReachableResourceSchema = z
+  .object({
+    namespace: IdentifierSchema,
+    path: z.array(PathSegmentSchema).max(64),
+    actions: z.array(ActionSchema).min(1).max(64),
+    /** Whether the actions reach the subtree below `path` or only `path` itself. */
+    descendants: z.boolean(),
+  })
+  .strict();
+
+export type ReachableResource = z.infer<typeof ReachableResourceSchema>;
+
 /** The exact capability a tool invocation requires. */
 export const CapabilityRequirementSchema = z
   .object({

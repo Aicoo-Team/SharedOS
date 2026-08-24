@@ -68,7 +68,7 @@ function request(): ExecutionRequest {
 
 function kernel(
   result?: ToolResult,
-): Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> {
+): Pick<SharedOSKernel, "admitTurn" | "listTools" | "listReachable" | "invokeTool"> {
   return {
     admitTurn: vi.fn(async () => ({
       allowed: true as const,
@@ -76,6 +76,9 @@ function kernel(
       matchedGrantId: "grant-turn",
     })),
     listTools: vi.fn(async () => [tool]),
+    listReachable: vi.fn(async () => [
+      { namespace: "files", path: ["Memory"], actions: ["search"], descendants: true },
+    ]),
     invokeTool: vi.fn(async (_context, call): Promise<ToolResult> => {
       return (
         result ?? {
@@ -116,6 +119,34 @@ describe("TurnExecutor", () => {
     expect(openedRequest?.context).not.toHaveProperty("grants");
     expect(openedRequest?.context).not.toHaveProperty("authority");
     expect(openedRequest?.context).not.toHaveProperty("enabledToolNamespaces");
+  });
+
+  it("tells the driver where it may work, without telling it why", async () => {
+    let openedRequest: AgentTurnRequest | undefined;
+    const driver: AgentTurnDriver = {
+      open: vi.fn(async (input) => {
+        openedRequest = input;
+        return {
+          next: vi.fn<AgentTurnSession["next"]>(async () => ({
+            type: "complete",
+            output: { ok: true },
+          })),
+        };
+      }),
+    };
+
+    await new TurnExecutor(kernel(), driver, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+
+    // Without this a driver has to guess paths and spend its budget being
+    // refused, and the only alternative is a host describing the boundary in a
+    // prompt — which is the boundary living in the model's context again.
+    expect(openedRequest?.context.reachable).toEqual([
+      { namespace: "files", path: ["Memory"], actions: ["search"], descendants: true },
+    ]);
+    expect(JSON.stringify(openedRequest?.context.reachable)).not.toContain("grant");
   });
 
   it("feeds permission-checked tool results back into the driver", async () => {
@@ -245,13 +276,17 @@ describe("TurnExecutor", () => {
   });
 
   it("applies timeout while loading the visible tool catalog", async () => {
-    const runtimeKernel: Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> = {
+    const runtimeKernel: Pick<
+      SharedOSKernel,
+      "admitTurn" | "listTools" | "listReachable" | "invokeTool"
+    > = {
       admitTurn: async () => ({
         allowed: true,
         reasonCode: "allowed",
         matchedGrantId: "grant-turn",
       }),
       listTools: async () => new Promise(() => undefined),
+      listReachable: async () => [],
       invokeTool: vi.fn(),
     };
     const input = request();
