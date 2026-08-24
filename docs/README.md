@@ -84,6 +84,14 @@ is the boundary between them and the agents that act on them.
 
 ## Start here
 
+- [Quickstart](quickstart.md): two working programs — the kernel embedded in
+  your process, and the same kernel over HTTP — against the published packages.
+- [HTTP API reference](http-api.md): every route, request body, status code, and
+  header, plus where authentication enters.
+- [Tool catalog](tools.md): the twelve `files` tools, the three availability
+  gates, and how to register native or MCP tools of your own.
+- [Reason and error codes](errors.md): what every denial and failure means, and
+  what to change in response.
 - [Architecture](architecture.md): responsibilities, packages, fixed security
   envelope, pluggable runtimes, resource providers, and deployment shapes.
 - [Host integration guide](host-integration.md): practical embedded and remote
@@ -94,6 +102,8 @@ is the boundary between them and the agents that act on them.
   required controls, and non-goals.
 - [Release readiness](release-readiness.md): explicit npm and production gates.
 - [API reference](api/README.md): generated reference for every public package.
+- [Changelog](changelog.md): what changed between prereleases, and what a host
+  has to update.
 
 ## Architecture decisions
 

@@ -312,20 +312,24 @@ const handle = createSharedOSHandler({
 });
 ```
 
-On the caller, use `SharedOSClient` for `/v1/tools`, namespace settings,
-resource and tool calls, messages, and `/v1/turns`:
+On the caller, use `SharedOSClient`. It has one method per route and
+validates every response against the same schema the server used:
 
 ```ts
 import { SharedOSClient } from "@aicoo/sharedos";
 
 const sharedos = new SharedOSClient({
   baseUrl: "https://sharedos.internal.example",
-  token: () => serviceIdentityToken(),
+  // A value, or an async function so a short-lived token is minted per call.
+  headers: async () => ({ authorization: `Bearer ${await serviceIdentityToken()}` }),
 });
 ```
 
 The HTTP server must derive `AccessContext` from authenticated server-side
 state. Never accept the authorization context from the remote JSON body.
+
+Every route, request shape, and status code is listed in the
+[HTTP API reference](http-api.md).
 
 ## Production responsibilities that remain in the host
 

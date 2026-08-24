@@ -184,11 +184,20 @@ authorization.
 
 ## Quickstart
 
-Install the prerelease SDK from npm:
-
 ```bash
-npm install @aicoo/sharedos@next
+npm install @aicoo/sharedos
 ```
+
+The [quickstart](docs/quickstart.md) is two working programs — the kernel
+embedded in your process, and the same kernel over HTTP — written against the
+published packages. From there:
+
+- [HTTP API reference](docs/http-api.md): every route, request body, status
+  code, and header, plus where authentication enters.
+- [Tool catalog](docs/tools.md): the twelve `files` tools, the three
+  availability gates, and how to register native or MCP tools of your own.
+- [Reason and error codes](docs/errors.md): what every denial means and what to
+  change in response.
 
 To run the sender-to-receiver example from a local clone:
 

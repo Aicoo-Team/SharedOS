@@ -8,6 +8,26 @@ each entry calls out what a host has to update.
 
 ## Unreleased
 
+### Added
+
+- A quickstart with two working programs, an HTTP API reference covering every
+  route and status code, a tool catalog covering the twelve `files` tools and
+  how to register your own, and a reason/error code reference. None of this was
+  documented outside the source before.
+- `pnpm release:promote-latest <version>` moves the `latest` dist-tag across the
+  whole package set in one command, refusing to act unless every package has
+  published that version.
+
+### Fixed
+
+- The client example in the host integration guide passed a `token` option that
+  `SharedOSClientOptions` has never had. It is `headers`, which accepts a value
+  or an async function.
+- Publish verification retried the same registry URL with default caching, so a
+  CDN edge holding a pre-publish `404` made the whole window unwinnable and a
+  successful release reported failure. It now backs off up to five minutes and
+  requests an uncached response each time.
+
 ## 0.1.0-alpha.2
 
 ### Added
