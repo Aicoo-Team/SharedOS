@@ -218,14 +218,107 @@ export async function probeHarness(
     };
   }
 
+  const reported = await reportedVersion(executable, requirements, environment);
+
   return {
     harness: requirements.harness,
     available: true,
+    ...(reported.version === undefined ? {} : { version: reported.version }),
     detail: {
       executable,
       credential: credential ?? "none; relying on a stored session",
+      ...(reported.output === undefined ? {} : { versionOutput: reported.output }),
     },
   };
+}
+
+/** How long a harness gets to answer `--version` before the answer is dropped. */
+const VERSION_TIMEOUT_MS = 10_000;
+
+/**
+ * Ask the executable what build it is, and record what it said.
+ *
+ * A conformance result about a vendor CLI is a result about one version of it,
+ * and until this ran the version was recorded nowhere: a reader had to take it
+ * from whatever a runbook said had been installed, which is a claim about an
+ * intention rather than about the binary that answered. Only the harness can
+ * answer this -- SharedOS neither installs nor pins it.
+ *
+ * Fails open in every direction. A CLI that has no version flag, prints
+ * something unrecognisable, exits non-zero, or hangs leaves the field absent and
+ * the harness available: not knowing which build ran is worse evidence, never a
+ * reason to refuse to run. Both halves are kept -- the parsed token because a
+ * table wants one, the line it came from because a token nobody can check
+ * against the output is the same unverifiable claim in a new place.
+ */
+async function reportedVersion(
+  executable: string,
+  requirements: HarnessRequirements,
+  environment: Readonly<Record<string, string | undefined>>,
+): Promise<{ readonly version?: string; readonly output?: string }> {
+  const output = await new Promise<string | undefined>((resolve) => {
+    const child = spawnVersionProbe(
+      executable,
+      [...(requirements.versionArguments ?? ["--version"])],
+      environment,
+    );
+    if (child === undefined) {
+      resolve(undefined);
+      return;
+    }
+
+    let text = "";
+    const timer = setTimeout(() => {
+      child.kill();
+      resolve(undefined);
+    }, VERSION_TIMEOUT_MS);
+    timer.unref?.();
+    const keep = (chunk: Buffer): void => {
+      text += chunk.toString("utf8");
+    };
+
+    child.stdout.on("data", keep);
+    // Some CLIs answer on stderr, and a version read from the wrong stream is
+    // still the version.
+    child.stderr.on("data", keep);
+    child.on("error", () => {
+      clearTimeout(timer);
+      resolve(undefined);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      resolve(code === 0 ? text : undefined);
+    });
+  });
+
+  const line = output
+    ?.split("\n")
+    .map((entry) => entry.trim())
+    .find((entry) => entry !== "");
+  if (line === undefined) {
+    return {};
+  }
+
+  const semver = /\d+\.\d+\.\d+[\w.+-]*/u.exec(line)?.[0];
+  return { ...(semver === undefined ? {} : { version: semver }), output: line };
+}
+
+function spawnVersionProbe(
+  command: string,
+  args: readonly string[],
+  environment: Readonly<Record<string, string | undefined>>,
+) {
+  try {
+    return spawn(command, [...args], {
+      env: { ...environment },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  } catch {
+    // A missing or non-executable file arrives as an `error` event rather than a
+    // throw; this catches only a malformed invocation, which is still not a
+    // reason to report the harness unavailable.
+    return undefined;
+  }
 }
 
 export function probeCodex(

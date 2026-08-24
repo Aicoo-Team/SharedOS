@@ -81,6 +81,17 @@ export interface HarnessAvailability {
   readonly harness: string;
   readonly available: boolean;
   readonly reason?: string;
+  /**
+   * The build that answered, as the harness itself reports it.
+   *
+   * A result about a vendor CLI is a result about one version of it, and the
+   * version is the harness's to state: nothing in this repository pins the
+   * installed binary, and a number carried in a runbook is a claim about what
+   * someone typed rather than about what ran. Absent when the executable
+   * declined to report one -- see {@link HarnessRequirements.versionArguments}.
+   */
+  readonly version?: string;
+  /** Includes `versionOutput`, the line `version` was read from, verbatim. */
   readonly detail?: JsonObject;
 }
 
@@ -93,4 +104,9 @@ export interface HarnessRequirements {
   readonly credentialVariables: readonly string[];
   /** True when the harness can authenticate from a stored session instead. */
   readonly credentialsOptional: boolean;
+  /**
+   * How to ask this executable what it is. Defaults to `--version`, which all
+   * four harnesses here answer; declared so one that does not can say so.
+   */
+  readonly versionArguments?: readonly string[];
 }

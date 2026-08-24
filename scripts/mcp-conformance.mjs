@@ -65,7 +65,8 @@ const only = flag("harness", undefined);
  *       "<harness id>": {
  *         "env": { "VAR": "value" },
  *         "args": ["--extra", "flag"],
- *         "credentialVariables": ["VAR"]
+ *         "credentialVariables": ["VAR"],
+ *         "mcpExtensionVersion": "2.27.0"
  *       }
  *     }
  *   }
@@ -195,6 +196,13 @@ for (const harness of HARNESSES) {
     harness: harness.spec.id,
     mcpSupport: harness.mcpSupport,
     ...(harness.mcpExtension === undefined ? {} : { mcpExtension: harness.mcpExtension }),
+    // The one version no CLI can report: the extension is installed inside the
+    // harness's own plugin store, so the operator who installed it is the only
+    // one who can say which build it is. Declared, and absent when undeclared,
+    // rather than guessed at from a lockfile this run never read.
+    ...(host.mcpExtensionVersion === undefined
+      ? {}
+      : { mcpExtensionVersion: String(host.mcpExtensionVersion) }),
     toolPolicy: harness.policy,
     policyHash: await toolPolicyHash(harness.policy),
     ...(model === undefined ? {} : { model }),
@@ -236,8 +244,17 @@ for (const harness of HARNESSES) {
 
 console.log("Harness availability");
 for (const entry of availability) {
+  // The version is printed beside the verdict, because "available" is a claim
+  // about a particular build and the operator is the one who can see whether it
+  // is the build they meant to install.
+  const version =
+    entry.version === undefined
+      ? entry.available
+        ? " (version not reported)"
+        : ""
+      : ` ${entry.version}`;
   console.log(
-    `  ${entry.label.padEnd(12)} ${entry.available ? "available" : "not available"}` +
+    `  ${entry.label.padEnd(12)} ${entry.available ? "available" : "not available"}${version}` +
       `${entry.reason === undefined ? "" : ` — ${entry.reason}`}`,
   );
 }
