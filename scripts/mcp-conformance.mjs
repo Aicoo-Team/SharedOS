@@ -117,6 +117,7 @@ const { declareToolPolicy, toolPolicyHash } = await import(
 const {
   CANONICAL_CONFORMANCE_CASES,
   EMBEDDED_COLUMN,
+  SHAREDOS_VERSION,
   mcpColumn,
   runConformanceSuite,
   strictFailures,
@@ -242,6 +243,7 @@ for (const harness of HARNESSES) {
   );
 }
 
+console.log(`SharedOS ${SHAREDOS_VERSION}\n`);
 console.log("Harness availability");
 for (const entry of availability) {
   // The version is printed beside the verdict, because "available" is a claim
@@ -308,6 +310,16 @@ for (const column of manifest.columns) {
  * and their refusal behaviour cannot be compared until that is explained.
  */
 const perColumn = new Map();
+/**
+ * Which SharedOS built this, kept beside which harness answered.
+ *
+ * Read off the records rather than declared here: every record names the build
+ * that produced it, and an artifact that asserted a version its records did not
+ * carry would be attributing evidence to code that never ran. The declared
+ * constant is the fallback for a run where no column produced a record at all.
+ */
+const sharedOsVersions = new Set();
+const protocolVersions = new Set();
 for (const entry of evidence) {
   const seen = perColumn.get(entry.columnId) ?? {
     turns: 0,
@@ -317,8 +329,18 @@ for (const entry of evidence) {
     models: new Set(),
     outcomes: new Map(),
     calls: [],
+    // Which runtime plugin drove this column, and which build of it. A column is
+    // a runtime as much as it is a harness, and `host-integration.md` asks a host
+    // to record the runtime id and version apart from the model and the backend.
+    runtime: {
+      id: entry.runtime.id,
+      version: entry.runtime.version,
+      protocolVersion: entry.runtime.protocolVersion,
+    },
   };
   for (const record of entry.records) {
+    sharedOsVersions.add(record.system.sharedOsVersion);
+    protocolVersions.add(record.system.protocolVersion);
     seen.turns += 1;
     seen.operations += record.execution.operations.length;
     if (record.system.catalogHash !== undefined) {
@@ -376,6 +398,10 @@ for (const column of manifest.columns) {
   console.log(
     `  ${"".padEnd(12)} model:     ` + (models.length === 0 ? "not declared" : models.join(", ")),
   );
+  console.log(
+    `  ${"".padEnd(12)} runtime:   ${seen.runtime.id} ${seen.runtime.version} ` +
+      `(protocol ${seen.runtime.protocolVersion})`,
+  );
 }
 
 /**
@@ -397,6 +423,13 @@ if (declaredModels.size > 1) {
   console.error(
     "\nWARNING: no column declared a model. Pass --config with a `model` entry " +
       "if these columns are meant to be compared to each other.",
+  );
+}
+
+if (sharedOsVersions.size > 1) {
+  console.error(
+    `\nWARNING: the records name ${sharedOsVersions.size} SharedOS builds ` +
+      `(${[...sharedOsVersions].join(", ")}). One artifact cannot be attributed to one build.`,
   );
 }
 
@@ -423,9 +456,21 @@ await writeFile(
         "RuntimeHost.invokeTool. A column absent from `columns` was not installed " +
         "and is not a result about SharedOS.",
       elapsedMs,
+      // Which SharedOS produced this, apart from the model and the harness, so a
+      // cell can be attributed to a build. `version` is what the records carry;
+      // the declared constant stands in only for a run that produced none.
+      sharedOs: {
+        version: [...sharedOsVersions][0] ?? SHAREDOS_VERSION,
+        protocolVersion: [...protocolVersions][0] ?? "1",
+        declared: SHAREDOS_VERSION,
+      },
       casesRun: cases.map(({ id }) => id),
       casesDeclared: CANONICAL_CONFORMANCE_CASES.map(({ id }) => id),
       availability,
+      runtimes: [...perColumn.entries()].map(([columnId, seen]) => ({
+        columnId,
+        ...seen.runtime,
+      })),
       model,
       configPath,
       catalogues: [...perColumn.entries()].map(([columnId, seen]) => ({
