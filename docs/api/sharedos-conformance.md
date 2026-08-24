@@ -1654,14 +1654,14 @@ Defined in: [conformance/src/hashing.ts:49](https://github.com/Aicoo-Team/Shared
 
 ### RunConformanceSuiteOptions
 
-Defined in: [conformance/src/runner.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L122)
+Defined in: [conformance/src/runner.ts:159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L159)
 
 #### Properties
 
 | Property                                   | Modifier   | Type                                             | Defined in                                                                                                                |
 | ------------------------------------------ | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-cases"></a> `cases?`       | `readonly` | readonly [`ConformanceCase`](#conformancecase)[] | [conformance/src/runner.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L123) |
-| <a id="property-columns-1"></a> `columns?` | `readonly` | readonly [`RuntimeColumn`](#runtimecolumn)[]     | [conformance/src/runner.ts:124](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L124) |
+| <a id="property-cases"></a> `cases?`       | `readonly` | readonly [`ConformanceCase`](#conformancecase)[] | [conformance/src/runner.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L160) |
+| <a id="property-columns-1"></a> `columns?` | `readonly` | readonly [`RuntimeColumn`](#runtimecolumn)[]     | [conformance/src/runner.ts:161](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L161) |
 
 ---
 
@@ -1795,17 +1795,17 @@ Defined in: [conformance/src/columns.ts:144](https://github.com/Aicoo-Team/Share
 
 ### StrictFailure
 
-Defined in: [conformance/src/runner.ts:358](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L358)
+Defined in: [conformance/src/runner.ts:395](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L395)
 
 #### Properties
 
 | Property                                          | Modifier   | Type                                      | Defined in                                                                                                                |
 | ------------------------------------------------- | ---------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-caseid-2"></a> `caseId`           | `readonly` | `string`                                  | [conformance/src/runner.ts:359](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L359) |
-| <a id="property-columnid-2"></a> `columnId`       | `readonly` | `string`                                  | [conformance/src/runner.ts:361](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L361) |
-| <a id="property-conditionid-2"></a> `conditionId` | `readonly` | `string`                                  | [conformance/src/runner.ts:360](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L360) |
-| <a id="property-detail-5"></a> `detail`           | `readonly` | `string`                                  | [conformance/src/runner.ts:363](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L363) |
-| <a id="property-status-4"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus) | [conformance/src/runner.ts:362](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L362) |
+| <a id="property-caseid-2"></a> `caseId`           | `readonly` | `string`                                  | [conformance/src/runner.ts:396](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L396) |
+| <a id="property-columnid-2"></a> `columnId`       | `readonly` | `string`                                  | [conformance/src/runner.ts:398](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L398) |
+| <a id="property-conditionid-2"></a> `conditionId` | `readonly` | `string`                                  | [conformance/src/runner.ts:397](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L397) |
+| <a id="property-detail-5"></a> `detail`           | `readonly` | `string`                                  | [conformance/src/runner.ts:400](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L400) |
+| <a id="property-status-4"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus) | [conformance/src/runner.ts:399](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L399) |
 
 ---
 
@@ -3471,6 +3471,42 @@ Set when the row is about how the turn terminates rather than a call in it.
 
 ---
 
+### caseSetIdentity()
+
+> **caseSetIdentity**(`cases`): `unknown`
+
+Defined in: [conformance/src/runner.ts:141](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L141)
+
+What the case-set hash is taken over: the declarations, without the prose.
+
+A `description` is documentation. It says why an attempt exists and what a
+reader should make of it; nothing in the suite branches on it, and two case
+sets differing only in prose put exactly the same calls to the kernel. Hashing
+it anyway made every editorial fix look like a different experiment, and --
+because the live columns are expensive to produce and are compared to the
+scripted ones by this hash -- put a live re-run behind rewording a sentence.
+The predictable result was that sentences did not get reworded.
+
+Everything a run's behaviour depends on stays in: ids, tools, arguments,
+conditions, expectations, and the markers that decide whether an attempt is
+issued at all. Change any of those and the hash moves, which is the point.
+
+Strips every `description` key at any depth rather than the two known sites,
+so a description added to a new declaration shape is covered without anyone
+remembering to come back here.
+
+#### Parameters
+
+| Parameter | Type                                             |
+| --------- | ------------------------------------------------ |
+| `cases`   | readonly [`ConformanceCase`](#conformancecase)[] |
+
+#### Returns
+
+`unknown`
+
+---
+
 ### checkRecordCompleteness()
 
 > **checkRecordCompleteness**(`record`): [`RecordCompleteness`](#recordcompleteness)
@@ -4328,7 +4364,7 @@ readonly `object`[]
 
 > **renderConformanceSummary**(`manifest`): `string`
 
-Defined in: [conformance/src/runner.ts:404](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L404)
+Defined in: [conformance/src/runner.ts:441](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L441)
 
 Render the manifest as a stable Markdown document.
 
@@ -4367,7 +4403,7 @@ readonly `object`[]
 
 > **runConformanceSuite**(`options?`): `Promise`\<[`ConformanceRun`](#conformancerun)>\>
 
-Defined in: [conformance/src/runner.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L134)
+Defined in: [conformance/src/runner.ts:171](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L171)
 
 Run every case under every column and grade the result.
 
@@ -4435,7 +4471,7 @@ Defined in: core/dist/hashing.d.ts:11
 
 > **strictFailures**(`manifest`): readonly [`StrictFailure`](#strictfailure)[]
 
-Defined in: [conformance/src/runner.ts:385](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L385)
+Defined in: [conformance/src/runner.ts:422](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L422)
 
 Cells that must break a build.
 

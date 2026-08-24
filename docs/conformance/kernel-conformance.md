@@ -11,9 +11,14 @@ out — the transport that would carry the frames from a live CLI, and whether
 the vendor still emits these shapes — so these columns say nothing about a
 live session. Live-run columns are a separate claim and are not made here.
 
-- Case set: `11004029f3d43390707ed1ae68bfd44dbe9f0006ae207f636c239975f9407eaa`
+- Case set: `e1f8d6c13f695350c24400dc2cfee34b10290787b28d648fef8d0c3bd57c55b7`
 - Grading rules: version `2`
 - Columns: `Standard`, `Codex`, `Claude Code`, `Deepseek`, `pi`
+
+The case-set hash covers the declarations only: ids, tools, arguments,
+conditions, expectations, and the markers that decide whether an attempt is
+issued. Prose descriptions are excluded, so rewording one does not read as a
+different experiment and does not oblige a live re-run.
 
 A cell is `pass` only when every declared attempt met its expected outcome and
 every control attempt succeeded. `not exercised` means the attempt never reached

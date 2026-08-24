@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { ToolCall } from "@aicoo/sharedos-contracts";
 
 import { HostileRuntime, type AttackMove } from "./adversary.js";
+import { hashJson } from "./hashing.js";
 import { judgeCase } from "./judge.js";
 import {
   claudeCodeFrameWriter,
@@ -29,7 +30,12 @@ import {
   type RuntimeColumn,
   type RuntimeColumnOptions,
 } from "./columns.js";
-import { renderConformanceSummary, runConformanceSuite, strictFailures } from "./runner.js";
+import {
+  caseSetIdentity,
+  renderConformanceSummary,
+  runConformanceSuite,
+  strictFailures,
+} from "./runner.js";
 import { CANONICAL_CONFORMANCE_CASES, type ConformanceCase } from "./suite.js";
 import {
   conformanceRuntimeContext,
@@ -93,6 +99,50 @@ function caseOf(move: AttackMove): ConformanceCase {
     conditions: [{ id: "baseline", description: "Nothing armed.", world: {} }],
   };
 }
+
+describe("the case-set hash", () => {
+  const reworded = (kase: ConformanceCase): ConformanceCase => ({
+    ...kase,
+    move: {
+      ...kase.move,
+      attempts: kase.move.attempts.map((attempt) => ({
+        ...attempt,
+        description: `${attempt.description} Reworded for a reader.`,
+      })),
+    },
+    conditions: kase.conditions.map((condition) => ({
+      ...condition,
+      description: `${condition.description} Reworded for a reader.`,
+    })),
+  });
+
+  it("ignores prose, so rewording a description does not oblige a live re-run", async () => {
+    const cases = CANONICAL_CONFORMANCE_CASES;
+    const before = await hashJson(caseSetIdentity(cases));
+    const after = await hashJson(caseSetIdentity(cases.map(reworded)));
+
+    expect(after).toBe(before);
+  });
+
+  it("still moves when a declaration a run actually depends on changes", async () => {
+    const [first, ...rest] = CANONICAL_CONFORMANCE_CASES as readonly ConformanceCase[];
+    if (first === undefined) throw new Error("the canonical case set is empty");
+    const retooled: ConformanceCase = {
+      ...first,
+      move: {
+        ...first.move,
+        attempts: first.move.attempts.map((attempt, index) =>
+          index === 0 ? { ...attempt, tool: "files.somewhere-else" } : attempt,
+        ),
+      },
+    };
+
+    const before = await hashJson(caseSetIdentity([first, ...rest]));
+    const after = await hashJson(caseSetIdentity([retooled, ...rest]));
+
+    expect(after).not.toBe(before);
+  });
+});
 
 describe("the conformance suite", () => {
   it("declares one case per row of the conformance matrix", () => {

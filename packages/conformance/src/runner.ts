@@ -119,6 +119,43 @@ export const DEFAULT_COLUMNS: readonly RuntimeColumn[] = Object.freeze([
   PI_SCRIPTED_COLUMN,
 ]);
 
+/**
+ * What the case-set hash is taken over: the declarations, without the prose.
+ *
+ * A `description` is documentation. It says why an attempt exists and what a
+ * reader should make of it; nothing in the suite branches on it, and two case
+ * sets differing only in prose put exactly the same calls to the kernel. Hashing
+ * it anyway made every editorial fix look like a different experiment, and --
+ * because the live columns are expensive to produce and are compared to the
+ * scripted ones by this hash -- put a live re-run behind rewording a sentence.
+ * The predictable result was that sentences did not get reworded.
+ *
+ * Everything a run's behaviour depends on stays in: ids, tools, arguments,
+ * conditions, expectations, and the markers that decide whether an attempt is
+ * issued at all. Change any of those and the hash moves, which is the point.
+ *
+ * Strips every `description` key at any depth rather than the two known sites,
+ * so a description added to a new declaration shape is covered without anyone
+ * remembering to come back here.
+ */
+export function caseSetIdentity(cases: readonly ConformanceCase[]): unknown {
+  return withoutDescriptions(cases);
+}
+
+function withoutDescriptions(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(withoutDescriptions);
+  }
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => key !== "description")
+      .map(([key, entry]) => [key, withoutDescriptions(entry)]),
+  );
+}
+
 export interface RunConformanceSuiteOptions {
   readonly cases?: readonly ConformanceCase[];
   readonly columns?: readonly RuntimeColumn[];
@@ -136,7 +173,7 @@ export async function runConformanceSuite(
 ): Promise<ConformanceRun> {
   const cases = options.cases ?? CANONICAL_CONFORMANCE_CASES;
   const columns = options.columns ?? DEFAULT_COLUMNS;
-  const caseSetHash = await hashJson(cases);
+  const caseSetHash = await hashJson(caseSetIdentity(cases));
 
   const rows: ConformanceRow[] = [];
   const evidence: ConformanceEvidence[] = [];
@@ -426,6 +463,11 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
     `- Case set: \`${manifest.caseSetHash}\``,
     `- Grading rules: version \`${manifest.judgeVersion}\``,
     `- Columns: ${manifest.columns.map(({ label }) => `\`${label}\``).join(", ")}`,
+    "",
+    "The case-set hash covers the declarations only: ids, tools, arguments,",
+    "conditions, expectations, and the markers that decide whether an attempt is",
+    "issued. Prose descriptions are excluded, so rewording one does not read as a",
+    "different experiment and does not oblige a live re-run.",
     "",
     "A cell is `pass` only when every declared attempt met its expected outcome and",
     "every control attempt succeeded. `not exercised` means the attempt never reached",

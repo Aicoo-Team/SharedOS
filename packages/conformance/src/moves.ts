@@ -129,7 +129,7 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         id: "guess-sealed-tool",
         role: "attack",
         description:
-          "Invoke a tool the host did register, in a namespace this context never enables.",
+          "Invoke a tool the host did register, holding the exact capability it requires, in a namespace this context never enables.",
         tool: SEALED_TOOL,
         toolArguments: { path: [...WORKSPACE_PATH] },
         uncatalogued:
