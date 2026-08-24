@@ -1,0 +1,19 @@
+{
+  "name": "@aicoo/sharedos-example-reference-host",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A complete SharedOS host: filesystem files provider, durable SQLite stores, and a model driver",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@aicoo/sharedos-contracts": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*",
+    "@aicoo/sharedos-os": "workspace:*",
+    "@aicoo/sharedos-runtime": "workspace:*"
+  },
+  "engines": {
+    "node": ">=22.5"
+  }
+}
