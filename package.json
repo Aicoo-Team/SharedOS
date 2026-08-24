@@ -29,6 +29,7 @@
     "release:check": "node scripts/release.mjs check",
     "release:check:private": "node scripts/release.mjs check --allow-private",
     "release:publish": "node scripts/release.mjs publish",
+    "release:promote-latest": "node scripts/promote-latest.mjs",
     "test:watch": "vitest",
     "check": "pnpm format:check && pnpm typecheck && pnpm test && pnpm test:release && pnpm docs:api:check",
     "example:fleet-delegation": "pnpm build && pnpm --filter @aicoo/sharedos-example-fleet-delegation start"
