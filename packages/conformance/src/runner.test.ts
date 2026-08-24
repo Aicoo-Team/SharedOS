@@ -35,6 +35,7 @@ import {
   renderConformanceSummary,
   runConformanceSuite,
   strictFailures,
+  worldSetIdentity,
 } from "./runner.js";
 import { CANONICAL_CONFORMANCE_CASES, type ConformanceCase } from "./suite.js";
 import {
@@ -100,22 +101,22 @@ function caseOf(move: AttackMove): ConformanceCase {
   };
 }
 
-describe("the case-set hash", () => {
-  const reworded = (kase: ConformanceCase): ConformanceCase => ({
-    ...kase,
-    move: {
-      ...kase.move,
-      attempts: kase.move.attempts.map((attempt) => ({
-        ...attempt,
-        description: `${attempt.description} Reworded for a reader.`,
-      })),
-    },
-    conditions: kase.conditions.map((condition) => ({
-      ...condition,
-      description: `${condition.description} Reworded for a reader.`,
+const reworded = (kase: ConformanceCase): ConformanceCase => ({
+  ...kase,
+  move: {
+    ...kase.move,
+    attempts: kase.move.attempts.map((attempt) => ({
+      ...attempt,
+      description: `${attempt.description} Reworded for a reader.`,
     })),
-  });
+  },
+  conditions: kase.conditions.map((condition) => ({
+    ...condition,
+    description: `${condition.description} Reworded for a reader.`,
+  })),
+});
 
+describe("the case-set hash", () => {
   it("ignores prose, so rewording a description does not oblige a live re-run", async () => {
     const cases = CANONICAL_CONFORMANCE_CASES;
     const before = await hashJson(caseSetIdentity(cases));
@@ -141,6 +142,81 @@ describe("the case-set hash", () => {
     const after = await hashJson(caseSetIdentity([retooled, ...rest]));
 
     expect(after).not.toBe(before);
+  });
+});
+
+describe("the world-set hash", () => {
+  const sealedRow = () => {
+    const kase = CANONICAL_CONFORMANCE_CASES.find(({ id }) => id === "hidden-tool");
+    if (kase === undefined) throw new Error("the sealed-tool row is missing");
+    return kase;
+  };
+
+  it("carries the grant material a condition issues, not just the condition's overrides", () => {
+    // The gap this hash exists to close. `grant-sealed` gained the `purge`
+    // capability that leaves the namespace as the only gate closed against
+    // `files.purge`, and nothing in the case declarations moved -- so a hash
+    // taken over declarations alone reported the old world and the new one as
+    // the same experiment.
+    const identity = JSON.stringify(worldSetIdentity([sealedRow()]));
+
+    expect(identity).toContain("grant-sealed");
+    expect(identity).toContain('"purge"');
+  });
+
+  it("carries every registered tool's whole definition, schema and prose included", () => {
+    // A tool's description and input schema are what the model is handed over
+    // MCP, so they are world state rather than documentation.
+    const identity = JSON.stringify(worldSetIdentity([sealedRow()]));
+
+    expect(identity).toContain(SEALED_TOOL);
+    expect(identity).toContain("Delete the workspace");
+    expect(identity).toContain("inputSchema");
+  });
+
+  it("moves when the world moves, even where the declarations do not", async () => {
+    const kase = sealedRow();
+    const identity = worldSetIdentity([kase]) as {
+      conditions: { world: { grants: unknown[] } }[];
+    }[];
+    const before = await hashJson(identity);
+
+    // Stands in for an edit to `world.ts`: the same cases, one grant fewer.
+    const first = identity[0];
+    if (first === undefined) throw new Error("the world-set identity is empty");
+    const condition = first.conditions[0];
+    if (condition === undefined) throw new Error("the row declares no condition");
+    const after = await hashJson([
+      {
+        ...first,
+        conditions: [{ ...condition, world: { ...condition.world, grants: [] } }],
+      },
+    ]);
+
+    expect(after).not.toBe(before);
+    expect(await hashJson(caseSetIdentity([kase]))).toBe(await hashJson(caseSetIdentity([kase])));
+  });
+
+  it("separates two conditions that arm the same case differently", async () => {
+    const armed = CANONICAL_CONFORMANCE_CASES.find(({ conditions }) => conditions.length > 1);
+    if (armed === undefined) throw new Error("no case declares two conditions");
+
+    // Hashed on the armed worlds alone, with the condition ids left out, so this
+    // says the *arming* differs rather than that the two rows are named apart.
+    const worlds = (worldSetIdentity([armed]) as { conditions: { world: unknown }[] }[])[0];
+    if (worlds === undefined) throw new Error("the world-set identity is empty");
+    const [left, right] = worlds.conditions;
+    if (left === undefined || right === undefined) throw new Error("expected two conditions");
+
+    expect(await hashJson(right.world)).not.toBe(await hashJson(left.world));
+  });
+
+  it("ignores case prose, and is the same hash every time it is taken", async () => {
+    const cases = CANONICAL_CONFORMANCE_CASES;
+    const before = await hashJson(worldSetIdentity(cases));
+
+    expect(await hashJson(worldSetIdentity(cases))).toBe(before);
+    expect(await hashJson(worldSetIdentity(cases.map(reworded)))).toBe(before);
   });
 });
 
@@ -420,6 +496,13 @@ describe("the conformance suite", () => {
 
     expect(full.manifest.caseSetHash).toMatch(/^[0-9a-f]{64}$/u);
     expect(partial.manifest.caseSetHash).not.toBe(full.manifest.caseSetHash);
+
+    // And the worlds those cases were run against, as a second identifier. Two
+    // runs are comparable only when both match, so a manifest that named one
+    // could assert a comparison it had not checked.
+    expect(full.manifest.worldSetHash).toMatch(/^[0-9a-f]{64}$/u);
+    expect(full.manifest.worldSetHash).not.toBe(full.manifest.caseSetHash);
+    expect(partial.manifest.worldSetHash).not.toBe(full.manifest.worldSetHash);
   });
 });
 

@@ -78,6 +78,11 @@ export interface ConformanceManifest {
   readonly judgeVersion: string;
   /** Hash of the case definitions this manifest was produced from. */
   readonly caseSetHash: string;
+  /**
+   * Hash of the worlds those cases were run against. Separate from the case set
+   * on purpose; see {@link worldSetIdentity}.
+   */
+  readonly worldSetHash: string;
   readonly columns: readonly { readonly id: string; readonly label: string }[];
   readonly rows: readonly ConformanceRow[];
 }
@@ -156,6 +161,38 @@ function withoutDescriptions(value: unknown): unknown {
   );
 }
 
+/**
+ * What the world-set hash is taken over: the worlds those cases materialise.
+ *
+ * The case set says what will be attempted. It does not say what it will be
+ * attempted *against*. A condition's `world` overrides are declarations and are
+ * inside the case-set hash, but the world they modify is not: its grants, its
+ * enabled namespaces, and its registered tools are defined in `world.ts` and can
+ * be rewritten without one case changing.
+ *
+ * That is not hypothetical. `grant-sealed` gained the `purge` capability that
+ * makes the namespace the only gate still closed against `files.purge`, and the
+ * case-set hash did not move -- so nothing on disk recorded that the live
+ * columns had been produced against a different world than the scripted ones.
+ * A hash that cannot see the change it most needs to see is worse than no hash,
+ * because it is read as a guarantee.
+ *
+ * Hashed separately rather than folded into the case set, because the two answer
+ * different questions and one identifier could not say which had moved: a
+ * changed case set means two runs asked different things, a changed world set
+ * means they asked the same thing of different states. Only both together say
+ * two runs may be compared.
+ */
+export function worldSetIdentity(cases: readonly ConformanceCase[]): unknown {
+  return cases.map((kase) => ({
+    case: kase.id,
+    conditions: kase.conditions.map((condition) => ({
+      condition: condition.id,
+      world: worldDescription(createConformanceWorld(condition.world), condition),
+    })),
+  }));
+}
+
 export interface RunConformanceSuiteOptions {
   readonly cases?: readonly ConformanceCase[];
   readonly columns?: readonly RuntimeColumn[];
@@ -173,7 +210,10 @@ export async function runConformanceSuite(
 ): Promise<ConformanceRun> {
   const cases = options.cases ?? CANONICAL_CONFORMANCE_CASES;
   const columns = options.columns ?? DEFAULT_COLUMNS;
-  const caseSetHash = await hashJson(caseSetIdentity(cases));
+  const [caseSetHash, worldSetHash] = await Promise.all([
+    hashJson(caseSetIdentity(cases)),
+    hashJson(worldSetIdentity(cases)),
+  ]);
 
   const rows: ConformanceRow[] = [];
   const evidence: ConformanceEvidence[] = [];
@@ -212,6 +252,7 @@ export async function runConformanceSuite(
       version: "1",
       judgeVersion: JUDGE_VERSION,
       caseSetHash,
+      worldSetHash,
       columns: columns.map(({ id, label }) => ({ id, label })),
       rows,
     },
@@ -388,7 +429,13 @@ function worldDescription(world: ConformanceWorld, condition: ConformanceConditi
     // and a world hash that could not tell them apart would let two different
     // worlds claim to be reproductions of each other.
     grants: world.grants,
-    tools: world.tools.map(({ name }) => name),
+    // Whole definitions, prose included. A tool's description and its input
+    // schema are not documentation the way a case description is: they are
+    // served to the model over MCP and are the only thing it has to choose a
+    // call from -- a live CLI found that an opaque `inputSchema` changes what a
+    // model does. Rewording one is therefore a different world, which is the
+    // opposite of the rule the case set follows for its own descriptions.
+    tools: world.tools,
   };
 }
 
@@ -461,6 +508,7 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
     "live session. Live-run columns are a separate claim and are not made here.",
     "",
     `- Case set: \`${manifest.caseSetHash}\``,
+    `- World set: \`${manifest.worldSetHash}\``,
     `- Grading rules: version \`${manifest.judgeVersion}\``,
     `- Columns: ${manifest.columns.map(({ label }) => `\`${label}\``).join(", ")}`,
     "",
@@ -468,6 +516,13 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
     "conditions, expectations, and the markers that decide whether an attempt is",
     "issued. Prose descriptions are excluded, so rewording one does not read as a",
     "different experiment and does not oblige a live re-run.",
+    "",
+    "The world-set hash covers what those attempts were made against: the grants",
+    "each condition issues, the enabled tool namespaces, and the whole definition",
+    "of every registered tool. It is separate because a world can be rewritten",
+    "without a case changing, and two runs are comparable only when both hashes",
+    "match. Tool prose is inside this one: a description and an input schema are",
+    "served to the model, so rewording them is a different world.",
     "",
     "A cell is `pass` only when every declared attempt met its expected outcome and",
     "every control attempt succeeded. `not exercised` means the attempt never reached",

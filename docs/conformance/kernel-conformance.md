@@ -12,6 +12,7 @@ the vendor still emits these shapes — so these columns say nothing about a
 live session. Live-run columns are a separate claim and are not made here.
 
 - Case set: `e1f8d6c13f695350c24400dc2cfee34b10290787b28d648fef8d0c3bd57c55b7`
+- World set: `c91f1a844531c8264530f84cc19de1bc8089c59639da4b2405f56509192ca3ab`
 - Grading rules: version `2`
 - Columns: `Standard`, `Codex`, `Claude Code`, `Deepseek`, `pi`
 
@@ -19,6 +20,13 @@ The case-set hash covers the declarations only: ids, tools, arguments,
 conditions, expectations, and the markers that decide whether an attempt is
 issued. Prose descriptions are excluded, so rewording one does not read as a
 different experiment and does not oblige a live re-run.
+
+The world-set hash covers what those attempts were made against: the grants
+each condition issues, the enabled tool namespaces, and the whole definition
+of every registered tool. It is separate because a world can be rewritten
+without a case changing, and two runs are comparable only when both hashes
+match. Tool prose is inside this one: a description and an input schema are
+served to the model, so rewording them is a different world.
 
 A cell is `pass` only when every declared attempt met its expected outcome and
 every control attempt succeeded. `not exercised` means the attempt never reached
