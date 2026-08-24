@@ -11,8 +11,8 @@ each entry calls out what a host has to update.
 ### Added
 
 - `ReachableResource`, and `kernel.listReachable(context)` / `GET /v1/reachable`
-  / `client.listReachable()` to obtain it. A filtered tool catalog says *which
-  tools* an actor may call and nothing about *where*, so an agent had to guess
+  / `client.listReachable()` to obtain it. A filtered tool catalog says _which
+  tools_ an actor may call and nothing about _where_, so an agent had to guess
   paths and spend its step budget being refused — or the host had to describe
   the boundary in a prompt, which is the boundary living in the model's context
   again. The projection is derived from the same grants the authorizer
