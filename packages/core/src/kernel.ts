@@ -55,6 +55,7 @@ import {
   toResourceOperation,
 } from "./resource-registry.js";
 import { buildToolCatalog } from "./published-tool.js";
+import { SPAN, measure, type SpanSink } from "./spans.js";
 import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
 import { DuplicateRegistrationError, MissingRegistrationError } from "./errors.js";
@@ -75,6 +76,14 @@ export interface SharedOSKernelOptions {
   readonly audit?: AuditSink;
   /** Notification for audit failures that occur after a side effect. */
   readonly onAuditError?: (error: unknown, event: AuditEvent) => void | Promise<void>;
+  /**
+   * Where the cost of enforcement is reported, when a host is measuring it.
+   *
+   * Absent by default and absent in every production path that does not ask for
+   * it, which is what keeps a measured run and an unmeasured one the same run.
+   * See {@link SpanSink}.
+   */
+  readonly spans?: SpanSink;
 }
 
 export interface KernelOperationOptions {
@@ -119,6 +128,7 @@ export class SharedOSKernel {
   readonly #messageCapabilityResolver: MessageCapabilityResolver;
   readonly #audit: AuditSink;
   readonly #onAuditError: ((error: unknown, event: AuditEvent) => void | Promise<void>) | undefined;
+  readonly #spans: SpanSink | undefined;
 
   constructor(options: SharedOSKernelOptions) {
     this.#authority = new TrustedAuthorityResolver(options?.grantSource);
@@ -135,6 +145,7 @@ export class SharedOSKernel {
       options.messageCapabilityResolver ?? new RecipientScopedMessageCapabilityResolver();
     this.#audit = options.audit ?? new NoopAuditSink();
     this.#onAuditError = options.onAuditError;
+    this.#spans = options.spans;
   }
 
   registerResourceProvider(provider: ResourceProvider): void {
@@ -438,7 +449,30 @@ export class SharedOSKernel {
     return catalog;
   }
 
+  /**
+   * Re-authorize and dispatch one tool call.
+   *
+   * The span around it is the kernel's whole share of one mediated call, and it
+   * contains the provider's own work, which is not enforcement. That part is
+   * named separately as {@link SPAN.TOOL_HANDLER} and carries the same call id,
+   * so a report subtracts it rather than attributing the host's storage to
+   * SharedOS. Both spans exist or neither does.
+   */
   async invokeTool(
+    context: AccessContext,
+    call: ToolCall,
+    options: KernelOperationOptions = {},
+  ): Promise<ToolResult> {
+    return measure(this.#spans, SPAN.TOOL_INVOKE, async (span) => {
+      span.set("callId", call.id);
+      span.set("tool", call.tool);
+      const result = await this.#invokeTool(context, call, options);
+      span.set("outcome", result.status);
+      return result;
+    });
+  }
+
+  async #invokeTool(
     context: AccessContext,
     call: ToolCall,
     options: KernelOperationOptions = {},
@@ -627,11 +661,11 @@ export class SharedOSKernel {
     let result: ToolResult;
     try {
       throwIfAborted(options.signal);
-      const candidate = await handler.invoke(
-        context,
-        parsedCall,
-        options.signal ?? neverAbortedSignal(),
-      );
+      const candidate = await measure(this.#spans, SPAN.TOOL_HANDLER, async (span) => {
+        span.set("callId", call.id);
+        span.set("tool", call.tool);
+        return handler.invoke(context, parsedCall, options.signal ?? neverAbortedSignal());
+      });
       const parsed = ToolResultSchema.safeParse(candidate);
       result =
         parsed.success && parsed.data.callId === call.id && parsed.data.tool === call.tool
@@ -894,25 +928,37 @@ export class SharedOSKernel {
    * live `context`, so a record still states when each decision happened rather
    * than restamping every one of them with the turn's opening instant.
    */
+  /**
+   * One decision against authority the turn already holds.
+   *
+   * Measured as a unit, audit included. The write is not separable from the
+   * decision in any way a host could act on: a decision that was not recorded
+   * did not happen as far as the evidence is concerned, so a cost figure that
+   * left the record out would be the cost of a decision SharedOS does not make.
+   */
   async #authorize(
     context: AccessContext,
     authority: ResolvedAuthority,
     request: AuthorizationRequest,
     consume: boolean,
   ): Promise<AuthorizationDecision> {
-    const decision = await this.#authorizer.authorize(authority, request, {
-      consume,
+    return measure(this.#spans, SPAN.AUTHORIZE, async (span) => {
+      const decision = await this.#authorizer.authorize(authority, request, {
+        consume,
+      });
+
+      await this.#recordAuthorizationDecision(
+        context,
+        request,
+        decision,
+        consume,
+        authority.snapshot.hash,
+      );
+
+      span.set("outcome", decision.allowed ? "allowed" : "denied");
+      span.set("consumed", consume);
+      return decision;
     });
-
-    await this.#recordAuthorizationDecision(
-      context,
-      request,
-      decision,
-      consume,
-      authority.snapshot.hash,
-    );
-
-    return decision;
   }
 
   /**
@@ -943,6 +989,17 @@ export class SharedOSKernel {
 
   /** Read authority from the trusted source once, and audit the attempt. */
   async #loadAuthority(
+    context: AccessContext,
+    signal: AbortSignal | undefined,
+  ): Promise<AuthorityResolution> {
+    return measure(this.#spans, SPAN.AUTHORITY_LOAD, async (span) => {
+      const resolution = await this.#loadAuthorityOnce(context, signal);
+      span.set("outcome", resolution.status === "resolved" ? "resolved" : "unavailable");
+      return resolution;
+    });
+  }
+
+  async #loadAuthorityOnce(
     context: AccessContext,
     signal: AbortSignal | undefined,
   ): Promise<AuthorityResolution> {

@@ -8,5 +8,6 @@ export * from "./kernel.js";
 export * from "./message-service.js";
 export * from "./published-tool.js";
 export * from "./resource-registry.js";
+export * from "./spans.js";
 export * from "./tool-registry.js";
 export * from "./tool-namespace-control.js";

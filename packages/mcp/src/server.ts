@@ -6,7 +6,13 @@ import type {
   SharedOSToolCatalog,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
-import { portableToolName } from "@aicoo/sharedos-core";
+import {
+  SPAN,
+  measure,
+  portableToolName,
+  type SpanScope,
+  type SpanSink,
+} from "@aicoo/sharedos-core";
 
 import {
   CallToolParamsSchema,
@@ -61,6 +67,17 @@ export interface McpToolServerOptions {
   readonly instructions?: string;
   /** Mints the SharedOS call id for one `tools/call`. */
   readonly createId?: () => string;
+  /**
+   * Where the cost of answering one frame is reported.
+   *
+   * This is the span that bounds enforcement over the toolshare path: it opens
+   * when a frame arrives here and closes when the response leaves, so the
+   * model's own thinking time is outside it by construction rather than by
+   * subtraction. What is also outside it, and cannot be brought in, is the
+   * vendor CLI's own tool router -- that code runs before a frame reaches this
+   * server and SharedOS never sees it.
+   */
+  readonly spans?: SpanSink;
 }
 
 export const SHAREDOS_MCP_SERVER_NAME = "sharedos";
@@ -90,6 +107,7 @@ export class McpToolServer {
   readonly #serverInfo: McpServerInfo;
   readonly #instructions: string | undefined;
   readonly #createId: () => string;
+  readonly #spans: SpanSink | undefined;
   #initialized = false;
   #negotiatedVersion: string | undefined;
 
@@ -98,6 +116,7 @@ export class McpToolServer {
     this.#serverInfo = options.serverInfo ?? DEFAULT_SERVER_INFO;
     this.#instructions = options.instructions;
     this.#createId = options.createId ?? (() => crypto.randomUUID());
+    this.#spans = options.spans;
   }
 
   /** The revision agreed with this client, once `initialize` has been answered. */
@@ -117,6 +136,14 @@ export class McpToolServer {
    * is malformed.
    */
   async handle(message: unknown, signal: AbortSignal): Promise<JsonRpcResponse | undefined> {
+    return measure(this.#spans, SPAN.MCP_HANDLE, (span) => this.#handle(message, signal, span));
+  }
+
+  async #handle(
+    message: unknown,
+    signal: AbortSignal,
+    span: SpanScope,
+  ): Promise<JsonRpcResponse | undefined> {
     const request = JsonRpcRequestSchema.safeParse(message);
     if (!request.success) {
       const notification = JsonRpcNotificationSchema.safeParse(message);
@@ -132,6 +159,7 @@ export class McpToolServer {
     }
 
     const { id, method, params } = request.data;
+    span.set("method", method);
 
     try {
       switch (method) {
@@ -142,7 +170,7 @@ export class McpToolServer {
         case "tools/list":
           return jsonRpcResult(id, await this.#listTools(signal));
         case "tools/call":
-          return await this.#callTool(id, params, signal);
+          return await this.#callTool(id, params, signal, span);
         default:
           return jsonRpcError(
             id,
@@ -203,6 +231,7 @@ export class McpToolServer {
     id: string | number,
     params: unknown,
     signal: AbortSignal,
+    span: SpanScope,
   ): Promise<JsonRpcResponse> {
     const parsed = CallToolParamsSchema.safeParse(params);
     if (!parsed.success) {
@@ -218,7 +247,15 @@ export class McpToolServer {
       ...(resolved === parsed.data.name ? {} : { alias: parsed.data.name }),
     };
 
+    // The call id goes on the span, not just into the invocation. Every span
+    // this call produces -- here, in the envelope, in the kernel, around the
+    // provider -- carries the same id, which is what lets a report take the
+    // provider's own time back out of the transport figure.
+    span.set("callId", invocation.callId);
+    span.set("tool", invocation.tool);
+
     const result = await this.#invoker.invoke(invocation, signal);
+    span.set("outcome", result.status);
     const published = catalog.tools.find((tool) => tool.name === resolved);
     return jsonRpcResult(id, toCallToolResult(result, published));
   }
