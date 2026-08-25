@@ -50,7 +50,7 @@ export interface StandardRuntimeOptions {
 }
 
 /** Kept equal to the synchronized package version by the release gate. */
-export const STANDARD_RUNTIME_VERSION = "0.1.0-alpha.0";
+export const STANDARD_RUNTIME_VERSION = "0.1.0-alpha.3";
 
 export const STANDARD_RUNTIME_MANIFEST: RuntimeManifest = deepFreeze({
   id: "sharedos.standard",

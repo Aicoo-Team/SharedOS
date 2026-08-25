@@ -1,6 +1,6 @@
 {
   "name": "@aicoo/sharedos-core",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.3",
   "description": "Deny-by-default capability kernel for SharedOS",
   "license": "Apache-2.0",
   "keywords": [

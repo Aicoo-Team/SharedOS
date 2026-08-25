@@ -38,7 +38,7 @@ export const JUDGE_VERSION = "2";
  * record that names the wrong build is evidence attributed to code that never
  * ran.
  */
-export const SHAREDOS_VERSION = "0.1.0-alpha.0";
+export const SHAREDOS_VERSION = "0.1.0-alpha.3";
 
 /**
  * One cell of the manifest.

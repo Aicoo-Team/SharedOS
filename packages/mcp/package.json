@@ -1,6 +1,6 @@
 {
   "name": "@aicoo/sharedos-mcp",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.3",
   "description": "Model Context Protocol toolshare bridge for SharedOS: the permission-filtered catalogue as an MCP server",
   "license": "Apache-2.0",
   "keywords": [

@@ -5,8 +5,8 @@
 
 ## Context
 
-SharedOS must provide the same permission and execution semantics to Aicoo,
-PACT, and future hosts. Aicoo already has product routes, authentication,
+SharedOS must provide the same permission and execution semantics to every host
+that adopts it. A typical host already has product routes, authentication,
 persistence, tools, and model integrations. Requiring it to call a new service
 for every agent action would add deployment and transaction complexity before a
 process boundary is needed.
@@ -25,7 +25,7 @@ SharedOS is library-first:
 4. `@aicoo/sharedos-http` is an adapter over that runtime, not a second runtime.
 5. `@aicoo/sharedos-client` is a typed transport client over the same contracts.
 
-Aicoo should initially embed the runtime and supply host adapters. Hosts that
+A host should initially embed the runtime and supply host adapters. Hosts that
 need process isolation can expose the HTTP adapter without changing core
 semantics.
 
@@ -52,4 +52,4 @@ couple adoption to an operational migration and could duplicate product
 transactions.
 
 **Host-specific copies.** Rejected because authorization behavior would drift
-between Aicoo, PACT, and external callers.
+between embedded hosts and external callers.

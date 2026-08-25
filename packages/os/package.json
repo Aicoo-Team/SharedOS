@@ -1,6 +1,6 @@
 {
   "name": "@aicoo/sharedos-os",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.3",
   "description": "Standard permission-controlled file capabilities for SharedOS",
   "license": "Apache-2.0",
   "keywords": [

@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.0**](README.md)
+[**SharedOS API v0.1.0-alpha.3**](README.md)
 
 ---
 
@@ -347,7 +347,7 @@ Defined in: [testkit/src/index.ts:39](https://github.com/Aicoo-Team/SharedOS/blo
 
 Defined in: [testkit/src/index.ts:182](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L182)
 
-A host-neutral recording provider for examples, conformance tests, and PACT worlds.
+A host-neutral recording provider for examples, conformance tests, and isolated experiment worlds.
 
 #### Implements
 

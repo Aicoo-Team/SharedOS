@@ -93,6 +93,11 @@ export type CapabilityRequest = z.infer<typeof CapabilityRequestSchema>;
  * A grant that was derived from another grant names its immediate ancestor in
  * `parentGrantId`. The link is a claim, not proof: SharedOS resolves and
  * validates the complete chain before the grant may authorize anything.
+ *
+ * `deriveGrant` in `@aicoo/sharedos-core` is the supported way to produce one.
+ * It only ever emits this single link: a chain embedded in the grant would be
+ * provenance the presenter controls, and the ancestors are re-resolved from the
+ * issuing store at every decision instead.
  */
 export const CapabilityGrantSchema = z
   .object({

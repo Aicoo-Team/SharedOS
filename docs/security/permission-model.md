@@ -219,10 +219,11 @@ ancestor in `parentGrantId`, and SharedOS validates the complete chain before
 the grant authorizes anything:
 
 - every link has a verifiable issuer-to-subject relationship;
-- each derived grant is no broader in resource, action, purpose, time, uses, or
+- each derived grant is no broader in resource, action, purpose, time, or
   namespace than its parent;
 - delegation depth decreases at each link, and a parent without delegation
   budget cannot be reissued at all;
+- a parent bounded by `maxUses` is not delegable at all;
 - revocation and expiry of an ancestor invalidate the usable chain;
 - the full chain or a tamper-evident reference is retained in provenance.
 
@@ -235,6 +236,38 @@ without one, `parentGrantId` authorizes nothing.
 
 `delegationDepth` is therefore a ceiling on reissue, not a permission to reissue
 without a validated parent. See `docs/adr/0008-delegation-chain-validation.md`.
+
+### Bounded grants are not delegable
+
+`maxUses` is counted per grant. Two children of a three-use parent would carry
+six uses between them, so a bounded parent is refused outright rather than
+attenuated — at issue as `bounded_parent_not_delegable`, and again at use as a
+`delegation_chain_invalid` with the same code. Sharing one budget across a chain
+needs usage accounting that spans grants, which SharedOS does not have; refusing
+is the honest answer until it does.
+
+### Issuing a derived grant
+
+`deriveGrant` is the supported way to produce a grant whose issuer is not the
+resource owner. It is a pure function over the parent: it never consults a
+store, and it refuses rather than clamps, because a silently narrowed delegation
+reads as accepted and the delegator then believes it passed on more than it did.
+
+Two rules differ from the chain check above, and both differ in the safe
+direction:
+
+- **An unowned parent capability may not be given an owner.** An unowned
+  capability resolves against whoever presents it, so pinning an owner is
+  narrower in one context and wider in every other. Issuing has no context, so
+  it must hold in all of them.
+- **What a request leaves out is inherited and written down.** An omitted
+  expiry, window, or purpose takes the parent's value and is recorded on the
+  derived grant. The chain check reads an omitted constraint as a widening, so
+  inheritance that stays implicit would be denied at first use.
+
+Deriving a grant is never sufficient on its own. It settles narrowing at the
+moment of issue; revocation happens afterwards, and only the chain check
+observes it.
 
 ## Messaging
 

@@ -47,13 +47,32 @@ of:
   ancestor expiry or revocation invalidates every descendant;
 - every child capability is contained in one parent capability by namespace,
   owner, action set, path, and scope;
-- time window, purposes, and bounded uses never widen, and a child is never
-  issued before its parent;
+- time window and purposes never widen, and a child is never issued before its
+  parent;
 - the parent declares delegation budget and the child's budget is strictly
-  smaller.
+  smaller;
+- the parent is not bounded by `maxUses`.
 
 Validation runs after a capability match rather than during grant eligibility,
 so an ordinary deny path never pays for an ancestor lookup.
+
+A bounded parent is refused rather than attenuated. Usage counters are per
+grant, so n children of a k-use parent carry n\*k uses between them however
+small each child looks; comparing `maxUses` declaratively would report that as
+attenuation. Sharing one budget across a chain needs accounting that spans
+grants, and until that exists the honest answer is
+`bounded_parent_not_delegable`. The same rule is enforced on the issuing side by
+`deriveGrant`, under the same name, so a delegation that will be refused at use
+is refused at the moment someone tries to create it.
+
+`deriveGrant` is the issuing counterpart and is deliberately not the enforcement
+point: it is pure, refuses rather than clamps, and settles narrowing at the
+moment of issue, but only the chain check observes what happens afterwards. It
+differs from the chain check on two axes, both in the safe direction — an
+unowned parent capability may not be given an owner (issuing has no context to
+resolve one against, so it must hold in every context), and an omitted
+constraint is inherited _and written onto the derived grant_, because the chain
+check reads an omission as a widening.
 
 Failure is reported as two distinct, auditable outcomes:
 
@@ -77,9 +96,9 @@ one so an infrastructure failure is never presented as a policy decision.
   unaffected.
 - Chain walking is bounded by `DEFAULT_MAX_DELEGATION_CHAIN_LENGTH` and by cycle
   detection, so a malicious or corrupted store cannot make a decision loop.
-- Attenuation of `maxUses` is compared declaratively. Usage counters are not
-  shared across a chain, so a child's bounded uses are its own budget within its
-  parent's ceiling.
+- A bounded grant cannot be delegated. A host that wants both must issue the
+  child directly from the owner, or drop `maxUses` from the parent. This is a
+  real restriction and is stated as one rather than approximated.
 - Ancestor lookups are on the authorization path. A host resolver is expected to
   cache, and it must fail rather than serve a stale ancestor.
 
@@ -91,7 +110,18 @@ field.
 
 **Embed the whole ancestor chain in the child grant.** Rejected because the
 presented chain is exactly the thing an attacker controls. Only re-resolution
-against the issuing store makes revocation meaningful.
+against the issuing store makes revocation meaningful. A `delegation: { parentGrantId, depth, chain }`
+field shipped briefly on `main` and is superseded by this decision: it made the
+grant's own lineage self-reported, and a truncated `chain` would have narrowed
+what the authorizer checked. `deriveGrant` survives from that change; the
+embedded chain does not.
+
+**Attenuate `maxUses` declaratively across a chain.** Rejected after being
+implemented. Comparing a child's ceiling against its parent's reads as
+attenuation but does not bound total consumption, because the counters are
+separate — the guarantee that would be reported is not the guarantee that would
+hold. Refusing a bounded parent states the limitation instead of approximating
+around it.
 
 **Read ancestors from the actor's own resolved authority.** Rejected because
 that set holds the grants issued _to_ the actor; a parent belongs to the

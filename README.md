@@ -6,8 +6,8 @@ files, and invoke built-in or external tools without allowing a message—or a
 model—to grant itself authority.
 
 SharedOS is more than a messaging protocol. It provides the reusable execution
-and authorization layer beneath products such as Aicoo and experiment systems
-such as PACT.
+and authorization layer beneath agent products and agent evaluation systems
+alike.
 
 > **Project status:** initial architecture and contracts are under active
 > development. SharedOS is distributed as a `0.x` prerelease under npm's
@@ -86,8 +86,8 @@ tasks, gold labels, evaluators, or multi-tick experiment scheduling.
 
 ```mermaid
 flowchart LR
-  A["Aicoo product host"] --> E["Embedded SharedOS runtime"]
-  P["PACT control plane"] --> X["SharedOS execution adapter"]
+  A["Product host"] --> E["Embedded SharedOS runtime"]
+  P["Evaluation control plane"] --> X["SharedOS execution adapter"]
   X --> E
   H["HTTP client / service"] --> E
   E --> K["Fixed security envelope"]
@@ -105,12 +105,12 @@ flowchart LR
 The dependency direction is always:
 
 ```text
-Aicoo / PACT / another host  ->  SharedOS contracts and runtime
+Any host product or harness  ->  SharedOS contracts and runtime
 SharedOS                    -X->  host product internals
 ```
 
-The SharedOS core must not import Next.js, Drizzle, Azure, Aicoo credits, or
-PACT tasks, gold data, runners, and evaluators.
+The SharedOS core must not import a host's web framework, ORM, cloud SDK, credit
+accounting, benchmark tasks, gold data, runners, or evaluators.
 
 Read the practical [host integration guide](docs/host-integration.md), the
 generated [package API reference](docs/api/README.md), the complete
@@ -158,16 +158,14 @@ same capability-broker boundary.
 
 ## Integration modes
 
-**Embedded library — recommended for Aicoo.** Aicoo keeps authentication,
+**Embedded library — recommended for products.** The host keeps authentication,
 billing, UI, and its existing persistence. It implements SharedOS provider
-ports, then calls the runtime in-process. See the
-[Aicoo integration guide](docs/integrations/aicoo.md) and the concrete
-[Pulse migration plan](docs/integrations/pulse-migration.md).
+ports, then calls the runtime in-process.
 
-**Execution adapter — recommended for PACT.** PACT creates an isolated world and
-asks SharedOS to execute one turn at a time. PACT remains responsible for tick
-order, budgets, stopping, snapshots, judges, metrics, and artifacts. See the
-[PACT integration guide](docs/integrations/pact.md).
+**Execution adapter — recommended for evaluation harnesses.** The harness
+creates an isolated world and asks SharedOS to execute one turn at a time. It
+remains responsible for tick order, budgets, stopping, snapshots, judges,
+metrics, and artifacts.
 
 **HTTP boundary.** Deployments that cannot embed the runtime can expose the same
 contracts through `@aicoo/sharedos-http` and consume them with `@aicoo/sharedos-client`.
@@ -189,11 +187,20 @@ authorization.
 
 ## Quickstart
 
-Install the prerelease SDK from npm:
-
 ```bash
-npm install @aicoo/sharedos@next
+npm install @aicoo/sharedos
 ```
+
+The [quickstart](docs/quickstart.md) is two working programs — the kernel
+embedded in your process, and the same kernel over HTTP — written against the
+published packages. From there:
+
+- [HTTP API reference](docs/http-api.md): every route, request body, status
+  code, and header, plus where authentication enters.
+- [Tool catalog](docs/tools.md): the twelve `files` tools, the three
+  availability gates, and how to register native or MCP tools of your own.
+- [Reason and error codes](docs/errors.md): what every denial means and what to
+  change in response.
 
 To run the sender-to-receiver example from a local clone:
 
@@ -205,6 +212,28 @@ pnpm example:quickstart
 The example executes one Bob → Alice turn, consumes an explicit Alice execution
 grant, filters the visible tool catalog, then authorizes an exact file search.
 See [`examples/quickstart`](examples/quickstart/src/index.ts).
+
+SharedOS leaves storage, durable stores, and the model to the host, so a first
+integration has to write those before anything runs. The
+[reference host](examples/reference-host/README.md) is a working one — a
+filesystem `files` provider covering all twelve actions with its path-escape
+defences, durable SQLite stores for bounded uses, revocation, namespace
+settings and audit, and an `AgentTurnDriver` over a live model:
+
+```bash
+pnpm example:reference-host
+```
+
+To see the delegation rules on their own, in vocabulary that is not a document
+product:
+
+```bash
+pnpm example:fleet-delegation
+```
+
+One robot passes part of its mandate to another, cannot pass on more than it
+holds, and loses it the moment the operator revokes upstream. See
+[`examples/fleet-delegation`](examples/fleet-delegation/src/index.ts).
 
 To explore the two proposed agent-network product modes as an interactive UI,
 run the local Network Studio prototype:
@@ -229,9 +258,25 @@ The one-install entry point is `@aicoo/sharedos`. Individual packages remain
 available for hosts that want a smaller dependency surface. Release candidates
 use one synchronized version and the `next` dist-tag.
 
+````
+
+### Delegation on a robot line
+
+One agent passes part of its mandate to another and cannot pass on more than it
+holds. Runs offline in a couple of seconds.
+
 ```bash
+pnpm example:fleet-delegation
+````
+
+It shows a narrower grant derived from a held one, four attempts past its edge
+refused, two grants failing to combine into a third authority, redelegation
+refused once the depth is spent, and a revocation upstream stopping a
+descendant that was never rewritten.
+bash
 pnpm pack:preview
-```
+
+````
 
 This builds every package, verifies that `workspace:*` dependencies were
 rewritten to exact prerelease versions, installs the tarballs into a fresh
@@ -245,13 +290,14 @@ Requirements: Node.js 20.11 or newer and pnpm 9.15.
 ```bash
 pnpm install
 pnpm check
-```
+````
 
 The repository is a TypeScript workspace. Public contracts must stay JSON-safe,
 and permission changes require tests for both allowed and denied paths. See
 [CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change.
 
-The remaining production-hardening work is tracked in
+Released changes are recorded in the [changelog](CHANGELOG.md). The remaining
+production-hardening work is tracked in
 [release readiness](docs/release-readiness.md), including durable
 replay/idempotency and host-adapter requirements. The exact package order,
 validation commands, first-publication bootstrap, and trusted-publishing

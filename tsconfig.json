@@ -12,6 +12,8 @@
     { "path": "./packages/conformance" },
     { "path": "./packages/mcp" },
     { "path": "./packages/adapters" },
-    { "path": "./examples/quickstart" }
+    { "path": "./examples/quickstart" },
+    { "path": "./examples/fleet-delegation" },
+    { "path": "./examples/reference-host" }
   ]
 }
