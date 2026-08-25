@@ -711,7 +711,7 @@ Defined in: [conformance/src/adversary.ts:330](https://github.com/Aicoo-Team/Sha
 
 ### SpanCollector
 
-Defined in: conformance/src/bench.ts:175
+Defined in: [conformance/src/bench.ts:175](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L175)
 
 Buffers spans for a bench run. SharedOS itself accumulates nothing.
 
@@ -737,7 +737,7 @@ Buffers spans for a bench run. SharedOS itself accumulates nothing.
 
 > **get** **spans**(): readonly [`Span`](sharedos-core.md#span)[]
 
-Defined in: conformance/src/bench.ts:185
+Defined in: [conformance/src/bench.ts:185](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L185)
 
 ###### Returns
 
@@ -749,7 +749,7 @@ readonly [`Span`](sharedos-core.md#span)[]
 
 > **named**(`name`): readonly [`Span`](sharedos-core.md#span)[]
 
-Defined in: conformance/src/bench.ts:194
+Defined in: [conformance/src/bench.ts:194](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L194)
 
 ###### Parameters
 
@@ -765,7 +765,7 @@ readonly [`Span`](sharedos-core.md#span)[]
 
 > **pause**(): `void`
 
-Defined in: conformance/src/bench.ts:198
+Defined in: [conformance/src/bench.ts:198](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L198)
 
 ###### Returns
 
@@ -775,7 +775,7 @@ Defined in: conformance/src/bench.ts:198
 
 > **record**(`span`): `void`
 
-Defined in: conformance/src/bench.ts:179
+Defined in: [conformance/src/bench.ts:179](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L179)
 
 ###### Parameters
 
@@ -795,7 +795,7 @@ Defined in: conformance/src/bench.ts:179
 
 > **reset**(): `void`
 
-Defined in: conformance/src/bench.ts:190
+Defined in: [conformance/src/bench.ts:190](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L190)
 
 Drop everything seen so far, which is how a warmup phase is discarded.
 
@@ -807,7 +807,7 @@ Drop everything seen so far, which is how a warmup phase is discarded.
 
 > **resume**(): `void`
 
-Defined in: conformance/src/bench.ts:202
+Defined in: [conformance/src/bench.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L202)
 
 ###### Returns
 
@@ -914,7 +914,7 @@ Defined in: [conformance/src/judge.ts:25](https://github.com/Aicoo-Team/SharedOS
 
 ### BenchMeasure
 
-Defined in: conformance/src/bench.ts:101
+Defined in: [conformance/src/bench.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L101)
 
 One filled row of the enforcement-cost table.
 
@@ -925,98 +925,98 @@ transport has no frames to count, which is not the same as a pending number.
 
 #### Properties
 
-| Property                                            | Modifier   | Type                                    | Description                                              | Defined in                   |
-| --------------------------------------------------- | ---------- | --------------------------------------- | -------------------------------------------------------- | ---------------------------- |
-| <a id="property-basis"></a> `basis`                 | `readonly` | `string`                                | What the number is and is not a measurement of.          | conformance/src/bench.ts:112 |
-| <a id="property-component"></a> `component`         | `readonly` | `string`                                | -                                                        | conformance/src/bench.ts:103 |
-| <a id="property-evidencebytes"></a> `evidenceBytes` | `readonly` | [`ByteSummary`](#bytesummary) \| `null` | -                                                        | conformance/src/bench.ts:109 |
-| <a id="property-id"></a> `id`                       | `readonly` | `string`                                | -                                                        | conformance/src/bench.ts:102 |
-| <a id="property-latency"></a> `latency`             | `readonly` | [`Distribution`](#distribution)         | -                                                        | conformance/src/bench.ts:107 |
-| <a id="property-path"></a> `path`                   | `readonly` | `"in-process"` \| `"mcp-toolshare"`     | -                                                        | conformance/src/bench.ts:104 |
-| <a id="property-tokens"></a> `tokens`               | `readonly` | `number`                                | -                                                        | conformance/src/bench.ts:108 |
-| <a id="property-unit"></a> `unit`                   | `readonly` | `string`                                | What one operation is, for this row's throughput figure. | conformance/src/bench.ts:106 |
-| <a id="property-wirebytes"></a> `wireBytes`         | `readonly` | [`ByteSummary`](#bytesummary) \| `null` | -                                                        | conformance/src/bench.ts:110 |
+| Property                                            | Modifier   | Type                                    | Description                                              | Defined in                                                                                                              |
+| --------------------------------------------------- | ---------- | --------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-basis"></a> `basis`                 | `readonly` | `string`                                | What the number is and is not a measurement of.          | [conformance/src/bench.ts:112](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L112) |
+| <a id="property-component"></a> `component`         | `readonly` | `string`                                | -                                                        | [conformance/src/bench.ts:103](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L103) |
+| <a id="property-evidencebytes"></a> `evidenceBytes` | `readonly` | [`ByteSummary`](#bytesummary) \| `null` | -                                                        | [conformance/src/bench.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L109) |
+| <a id="property-id"></a> `id`                       | `readonly` | `string`                                | -                                                        | [conformance/src/bench.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L102) |
+| <a id="property-latency"></a> `latency`             | `readonly` | [`Distribution`](#distribution)         | -                                                        | [conformance/src/bench.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L107) |
+| <a id="property-path"></a> `path`                   | `readonly` | `"in-process"` \| `"mcp-toolshare"`     | -                                                        | [conformance/src/bench.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L104) |
+| <a id="property-tokens"></a> `tokens`               | `readonly` | `number`                                | -                                                        | [conformance/src/bench.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L108) |
+| <a id="property-unit"></a> `unit`                   | `readonly` | `string`                                | What one operation is, for this row's throughput figure. | [conformance/src/bench.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L106) |
+| <a id="property-wirebytes"></a> `wireBytes`         | `readonly` | [`ByteSummary`](#bytesummary) \| `null` | -                                                        | [conformance/src/bench.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L110) |
 
 ---
 
 ### BenchOptions
 
-Defined in: conformance/src/bench.ts:60
+Defined in: [conformance/src/bench.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L60)
 
 #### Properties
 
-| Property                                             | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                 | Defined in                  |
-| ---------------------------------------------------- | ---------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| <a id="property-environment"></a> `environment?`     | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | What the run was taken on, supplied by the host. A latency figure is a figure about a machine, and this package cannot read one: it is host-neutral and has no `process`. The Node script that drives a published run fills this in, and a report without it is a report nobody can say where it came from. | conformance/src/bench.ts:72 |
-| <a id="property-measuredturns"></a> `measuredTurns?` | `readonly` | `number`                                         | -                                                                                                                                                                                                                                                                                                           | conformance/src/bench.ts:63 |
-| <a id="property-warmupturns"></a> `warmupTurns?`     | `readonly` | `number`                                         | Turns whose spans are discarded, so a figure is not a report about JIT warmup.                                                                                                                                                                                                                              | conformance/src/bench.ts:62 |
+| Property                                             | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                 | Defined in                                                                                                            |
+| ---------------------------------------------------- | ---------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-environment"></a> `environment?`     | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | What the run was taken on, supplied by the host. A latency figure is a figure about a machine, and this package cannot read one: it is host-neutral and has no `process`. The Node script that drives a published run fills this in, and a report without it is a report nobody can say where it came from. | [conformance/src/bench.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L72) |
+| <a id="property-measuredturns"></a> `measuredTurns?` | `readonly` | `number`                                         | -                                                                                                                                                                                                                                                                                                           | [conformance/src/bench.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L63) |
+| <a id="property-warmupturns"></a> `warmupTurns?`     | `readonly` | `number`                                         | Turns whose spans are discarded, so a figure is not a report about JIT warmup.                                                                                                                                                                                                                              | [conformance/src/bench.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L62) |
 
 ---
 
 ### BenchSettings
 
-Defined in: conformance/src/bench.ts:851
+Defined in: [conformance/src/bench.ts:851](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L851)
 
 [BenchOptions](#benchoptions) with every default already applied.
 
 #### Properties
 
-| Property                                              | Modifier   | Type     | Defined in                   |
-| ----------------------------------------------------- | ---------- | -------- | ---------------------------- |
-| <a id="property-measuredturns-1"></a> `measuredTurns` | `readonly` | `number` | conformance/src/bench.ts:853 |
-| <a id="property-warmupturns-1"></a> `warmupTurns`     | `readonly` | `number` | conformance/src/bench.ts:852 |
+| Property                                              | Modifier   | Type     | Defined in                                                                                                              |
+| ----------------------------------------------------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-measuredturns-1"></a> `measuredTurns` | `readonly` | `number` | [conformance/src/bench.ts:853](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L853) |
+| <a id="property-warmupturns-1"></a> `warmupTurns`     | `readonly` | `number` | [conformance/src/bench.ts:852](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L852) |
 
 ---
 
 ### BenchWorkload
 
-Defined in: conformance/src/bench.ts:53
+Defined in: [conformance/src/bench.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L53)
 
 How many attempts the bench workload issues per turn.
 
 #### Properties
 
-| Property                                              | Modifier   | Type                | Defined in                  |
-| ----------------------------------------------------- | ---------- | ------------------- | --------------------------- |
-| <a id="property-callsperturn"></a> `callsPerTurn`     | `readonly` | `number`            | conformance/src/bench.ts:55 |
-| <a id="property-caseids"></a> `caseIds`               | `readonly` | readonly `string`[] | conformance/src/bench.ts:54 |
-| <a id="property-measuredturns-2"></a> `measuredTurns` | `readonly` | `number`            | conformance/src/bench.ts:57 |
-| <a id="property-warmupturns-2"></a> `warmupTurns`     | `readonly` | `number`            | conformance/src/bench.ts:56 |
+| Property                                              | Modifier   | Type                | Defined in                                                                                                            |
+| ----------------------------------------------------- | ---------- | ------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-callsperturn"></a> `callsPerTurn`     | `readonly` | `number`            | [conformance/src/bench.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L55) |
+| <a id="property-caseids"></a> `caseIds`               | `readonly` | readonly `string`[] | [conformance/src/bench.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L54) |
+| <a id="property-measuredturns-2"></a> `measuredTurns` | `readonly` | `number`            | [conformance/src/bench.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L57) |
+| <a id="property-warmupturns-2"></a> `warmupTurns`     | `readonly` | `number`            | [conformance/src/bench.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L56) |
 
 ---
 
 ### BreakdownSegment
 
-Defined in: conformance/src/bench.ts:140
+Defined in: [conformance/src/bench.ts:140](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L140)
 
 #### Properties
 
-| Property                                  | Modifier   | Type                            | Description                                                         | Defined in                   |
-| ----------------------------------------- | ---------- | ------------------------------- | ------------------------------------------------------------------- | ---------------------------- |
-| <a id="property-label"></a> `label`       | `readonly` | `string`                        | -                                                                   | conformance/src/bench.ts:142 |
-| <a id="property-latency-1"></a> `latency` | `readonly` | [`Distribution`](#distribution) | -                                                                   | conformance/src/bench.ts:143 |
-| <a id="property-percall"></a> `perCall`   | `readonly` | `number`                        | Segments per mediated call. Two authorization checks on some paths. | conformance/src/bench.ts:145 |
-| <a id="property-span"></a> `span`         | `readonly` | `string`                        | -                                                                   | conformance/src/bench.ts:141 |
+| Property                                  | Modifier   | Type                            | Description                                                         | Defined in                                                                                                              |
+| ----------------------------------------- | ---------- | ------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-label"></a> `label`       | `readonly` | `string`                        | -                                                                   | [conformance/src/bench.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L142) |
+| <a id="property-latency-1"></a> `latency` | `readonly` | [`Distribution`](#distribution) | -                                                                   | [conformance/src/bench.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L143) |
+| <a id="property-percall"></a> `perCall`   | `readonly` | `number`                        | Segments per mediated call. Two authorization checks on some paths. | [conformance/src/bench.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L145) |
+| <a id="property-span"></a> `span`         | `readonly` | `string`                        | -                                                                   | [conformance/src/bench.ts:141](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L141) |
 
 ---
 
 ### ByteSummary
 
-Defined in: conformance/src/bench.ts:87
+Defined in: [conformance/src/bench.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L87)
 
 #### Properties
 
-| Property                                      | Modifier   | Type     | Defined in                  |
-| --------------------------------------------- | ---------- | -------- | --------------------------- |
-| <a id="property-meanbytes"></a> `meanBytes`   | `readonly` | `number` | conformance/src/bench.ts:89 |
-| <a id="property-n"></a> `n`                   | `readonly` | `number` | conformance/src/bench.ts:88 |
-| <a id="property-totalbytes"></a> `totalBytes` | `readonly` | `number` | conformance/src/bench.ts:90 |
+| Property                                      | Modifier   | Type     | Defined in                                                                                                            |
+| --------------------------------------------- | ---------- | -------- | --------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-meanbytes"></a> `meanBytes`   | `readonly` | `number` | [conformance/src/bench.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L89) |
+| <a id="property-n"></a> `n`                   | `readonly` | `number` | [conformance/src/bench.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L88) |
+| <a id="property-totalbytes"></a> `totalBytes` | `readonly` | `number` | [conformance/src/bench.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L90) |
 
 ---
 
 ### CallBreakdown
 
-Defined in: conformance/src/bench.ts:132
+Defined in: [conformance/src/bench.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L132)
 
 Where the cost of one mediated call goes.
 
@@ -1027,12 +1027,12 @@ subtraction rather than a category for whatever was not measured.
 
 #### Properties
 
-| Property                                    | Modifier   | Type                                               | Description                                                               | Defined in                   |
-| ------------------------------------------- | ---------- | -------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------- |
-| <a id="property-path-1"></a> `path`         | `readonly` | `"in-process"` \| `"mcp-toolshare"`                | -                                                                         | conformance/src/bench.ts:133 |
-| <a id="property-remainder"></a> `remainder` | `readonly` | [`Distribution`](#distribution)                    | The outer span, less every named segment: cloning, validation, and audit. | conformance/src/bench.ts:136 |
-| <a id="property-segments"></a> `segments`   | `readonly` | readonly [`BreakdownSegment`](#breakdownsegment)[] | -                                                                         | conformance/src/bench.ts:134 |
-| <a id="property-whole"></a> `whole`         | `readonly` | [`Distribution`](#distribution)                    | -                                                                         | conformance/src/bench.ts:137 |
+| Property                                    | Modifier   | Type                                               | Description                                                               | Defined in                                                                                                              |
+| ------------------------------------------- | ---------- | -------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-path-1"></a> `path`         | `readonly` | `"in-process"` \| `"mcp-toolshare"`                | -                                                                         | [conformance/src/bench.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L133) |
+| <a id="property-remainder"></a> `remainder` | `readonly` | [`Distribution`](#distribution)                    | The outer span, less every named segment: cloning, validation, and audit. | [conformance/src/bench.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L136) |
+| <a id="property-segments"></a> `segments`   | `readonly` | readonly [`BreakdownSegment`](#breakdownsegment)[] | -                                                                         | [conformance/src/bench.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L134) |
+| <a id="property-whole"></a> `whole`         | `readonly` | [`Distribution`](#distribution)                    | -                                                                         | [conformance/src/bench.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L137) |
 
 ---
 
@@ -1681,21 +1681,21 @@ Defined in: [conformance/src/world.ts:767](https://github.com/Aicoo-Team/SharedO
 
 ### Distribution
 
-Defined in: conformance/src/bench.ts:76
+Defined in: [conformance/src/bench.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L76)
 
 A latency distribution over observed spans. Never a fitted curve.
 
 #### Properties
 
-| Property                                          | Modifier   | Type     | Description                                                           | Defined in                  |
-| ------------------------------------------------- | ---------- | -------- | --------------------------------------------------------------------- | --------------------------- |
-| <a id="property-maxms"></a> `maxMs`               | `readonly` | `number` | -                                                                     | conformance/src/bench.ts:82 |
-| <a id="property-meanms"></a> `meanMs`             | `readonly` | `number` | -                                                                     | conformance/src/bench.ts:78 |
-| <a id="property-minms"></a> `minMs`               | `readonly` | `number` | -                                                                     | conformance/src/bench.ts:81 |
-| <a id="property-n-1"></a> `n`                     | `readonly` | `number` | -                                                                     | conformance/src/bench.ts:77 |
-| <a id="property-opspersecond"></a> `opsPerSecond` | `readonly` | `number` | Operations per second of SharedOS-attributable time: `1000 / meanMs`. | conformance/src/bench.ts:84 |
-| <a id="property-p50ms"></a> `p50Ms`               | `readonly` | `number` | -                                                                     | conformance/src/bench.ts:79 |
-| <a id="property-p95ms"></a> `p95Ms`               | `readonly` | `number` | -                                                                     | conformance/src/bench.ts:80 |
+| Property                                          | Modifier   | Type     | Description                                                           | Defined in                                                                                                            |
+| ------------------------------------------------- | ---------- | -------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-maxms"></a> `maxMs`               | `readonly` | `number` | -                                                                     | [conformance/src/bench.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L82) |
+| <a id="property-meanms"></a> `meanMs`             | `readonly` | `number` | -                                                                     | [conformance/src/bench.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L78) |
+| <a id="property-minms"></a> `minMs`               | `readonly` | `number` | -                                                                     | [conformance/src/bench.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L81) |
+| <a id="property-n-1"></a> `n`                     | `readonly` | `number` | -                                                                     | [conformance/src/bench.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L77) |
+| <a id="property-opspersecond"></a> `opsPerSecond` | `readonly` | `number` | Operations per second of SharedOS-attributable time: `1000 / meanMs`. | [conformance/src/bench.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L84) |
+| <a id="property-p50ms"></a> `p50Ms`               | `readonly` | `number` | -                                                                     | [conformance/src/bench.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L79) |
+| <a id="property-p95ms"></a> `p95Ms`               | `readonly` | `number` | -                                                                     | [conformance/src/bench.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L80) |
 
 ---
 
@@ -1884,17 +1884,17 @@ Defined in: [conformance/src/columns.ts:222](https://github.com/Aicoo-Team/Share
 
 ### PathRun
 
-Defined in: conformance/src/bench.ts:444
+Defined in: [conformance/src/bench.ts:444](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L444)
 
 #### Properties
 
-| Property                                                      | Modifier   | Type                                       | Defined in                   |
-| ------------------------------------------------------------- | ---------- | ------------------------------------------ | ---------------------------- |
-| <a id="property-cataloguewidth"></a> `catalogueWidth`         | `readonly` | `number`                                   | conformance/src/bench.ts:449 |
-| <a id="property-cataloguewirebytes"></a> `catalogueWireBytes` | `readonly` | `number`                                   | conformance/src/bench.ts:448 |
-| <a id="property-spans-1"></a> `spans`                         | `readonly` | readonly [`Span`](sharedos-core.md#span)[] | conformance/src/bench.ts:445 |
-| <a id="property-turns-1"></a> `turns`                         | `readonly` | readonly [`TurnOutcome`](#turnoutcome)[]   | conformance/src/bench.ts:446 |
-| <a id="property-wirebytespercall"></a> `wireBytesPerCall`     | `readonly` | readonly `number`[]                        | conformance/src/bench.ts:447 |
+| Property                                                      | Modifier   | Type                                       | Defined in                                                                                                              |
+| ------------------------------------------------------------- | ---------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-cataloguewidth"></a> `catalogueWidth`         | `readonly` | `number`                                   | [conformance/src/bench.ts:449](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L449) |
+| <a id="property-cataloguewirebytes"></a> `catalogueWireBytes` | `readonly` | `number`                                   | [conformance/src/bench.ts:448](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L448) |
+| <a id="property-spans-1"></a> `spans`                         | `readonly` | readonly [`Span`](sharedos-core.md#span)[] | [conformance/src/bench.ts:445](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L445) |
+| <a id="property-turns-1"></a> `turns`                         | `readonly` | readonly [`TurnOutcome`](#turnoutcome)[]   | [conformance/src/bench.ts:446](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L446) |
+| <a id="property-wirebytespercall"></a> `wireBytesPerCall`     | `readonly` | readonly `number`[]                        | [conformance/src/bench.ts:447](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L447) |
 
 ---
 
@@ -1914,14 +1914,14 @@ Defined in: [conformance/src/completeness.ts:11](https://github.com/Aicoo-Team/S
 
 ### RecordWriteRun
 
-Defined in: conformance/src/bench.ts:687
+Defined in: [conformance/src/bench.ts:687](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L687)
 
 #### Properties
 
-| Property                                        | Modifier   | Type                | Defined in                   |
-| ----------------------------------------------- | ---------- | ------------------- | ---------------------------- |
-| <a id="property-durations"></a> `durations`     | `readonly` | readonly `number`[] | conformance/src/bench.ts:688 |
-| <a id="property-recordbytes"></a> `recordBytes` | `readonly` | readonly `number`[] | conformance/src/bench.ts:689 |
+| Property                                        | Modifier   | Type                | Defined in                                                                                                              |
+| ----------------------------------------------- | ---------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-durations"></a> `durations`     | `readonly` | readonly `number`[] | [conformance/src/bench.ts:688](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L688) |
+| <a id="property-recordbytes"></a> `recordBytes` | `readonly` | readonly `number`[] | [conformance/src/bench.ts:689](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L689) |
 
 ---
 
@@ -2111,73 +2111,73 @@ Defined in: [conformance/src/runner.ts:442](https://github.com/Aicoo-Team/Shared
 
 ### StructuralFootprint
 
-Defined in: conformance/src/bench.ts:163
+Defined in: [conformance/src/bench.ts:163](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L163)
 
 #### Properties
 
-| Property                                                            | Modifier   | Type                          | Description                                                                 | Defined in                   |
-| ------------------------------------------------------------------- | ---------- | ----------------------------- | --------------------------------------------------------------------------- | ---------------------------- |
-| <a id="property-auditeventsperturn"></a> `auditEventsPerTurn`       | `readonly` | `number`                      | -                                                                           | conformance/src/bench.ts:167 |
-| <a id="property-authorityloadsperturn"></a> `authorityLoadsPerTurn` | `readonly` | `number`                      | -                                                                           | conformance/src/bench.ts:165 |
-| <a id="property-cataloguewidth-1"></a> `catalogueWidth`             | `readonly` | `number`                      | -                                                                           | conformance/src/bench.ts:171 |
-| <a id="property-cataloguewirebytes-1"></a> `catalogueWireBytes`     | `readonly` | `number`                      | Bytes of the catalogue a harness receives from `tools/list`, once per turn. | conformance/src/bench.ts:170 |
-| <a id="property-decisionsperturn"></a> `decisionsPerTurn`           | `readonly` | `number`                      | -                                                                           | conformance/src/bench.ts:166 |
-| <a id="property-recordbytes-1"></a> `recordBytes`                   | `readonly` | [`ByteSummary`](#bytesummary) | -                                                                           | conformance/src/bench.ts:164 |
-| <a id="property-toolcallsperturn"></a> `toolCallsPerTurn`           | `readonly` | `number`                      | -                                                                           | conformance/src/bench.ts:168 |
+| Property                                                            | Modifier   | Type                          | Description                                                                 | Defined in                                                                                                              |
+| ------------------------------------------------------------------- | ---------- | ----------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-auditeventsperturn"></a> `auditEventsPerTurn`       | `readonly` | `number`                      | -                                                                           | [conformance/src/bench.ts:167](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L167) |
+| <a id="property-authorityloadsperturn"></a> `authorityLoadsPerTurn` | `readonly` | `number`                      | -                                                                           | [conformance/src/bench.ts:165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L165) |
+| <a id="property-cataloguewidth-1"></a> `catalogueWidth`             | `readonly` | `number`                      | -                                                                           | [conformance/src/bench.ts:171](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L171) |
+| <a id="property-cataloguewirebytes-1"></a> `catalogueWireBytes`     | `readonly` | `number`                      | Bytes of the catalogue a harness receives from `tools/list`, once per turn. | [conformance/src/bench.ts:170](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L170) |
+| <a id="property-decisionsperturn"></a> `decisionsPerTurn`           | `readonly` | `number`                      | -                                                                           | [conformance/src/bench.ts:166](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L166) |
+| <a id="property-recordbytes-1"></a> `recordBytes`                   | `readonly` | [`ByteSummary`](#bytesummary) | -                                                                           | [conformance/src/bench.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L164) |
+| <a id="property-toolcallsperturn"></a> `toolCallsPerTurn`           | `readonly` | `number`                      | -                                                                           | [conformance/src/bench.ts:168](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L168) |
 
 ---
 
 ### SystemsCostReport
 
-Defined in: conformance/src/bench.ts:148
+Defined in: [conformance/src/bench.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L148)
 
 #### Properties
 
-| Property                                                  | Modifier   | Type                                                   | Description                                                            | Defined in                   |
-| --------------------------------------------------------- | ---------- | ------------------------------------------------------ | ---------------------------------------------------------------------- | ---------------------------- |
-| <a id="property-benchversion"></a> `benchVersion`         | `readonly` | `string`                                               | -                                                                      | conformance/src/bench.ts:150 |
-| <a id="property-breakdown"></a> `breakdown`               | `readonly` | readonly [`CallBreakdown`](#callbreakdown)[]           | -                                                                      | conformance/src/bench.ts:155 |
-| <a id="property-environment-1"></a> `environment?`        | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)       | -                                                                      | conformance/src/bench.ts:160 |
-| <a id="property-measures"></a> `measures`                 | `readonly` | readonly [`BenchMeasure`](#benchmeasure)[]             | -                                                                      | conformance/src/bench.ts:153 |
-| <a id="property-sharedosversion-1"></a> `sharedOsVersion` | `readonly` | `string`                                               | -                                                                      | conformance/src/bench.ts:151 |
-| <a id="property-structural"></a> `structural`             | `readonly` | [`StructuralFootprint`](#structuralfootprint)          | Model-free constants this run observed, alongside the latency figures. | conformance/src/bench.ts:157 |
-| <a id="property-timeroverhead"></a> `timerOverhead`       | `readonly` | [`Distribution`](#distribution)                        | What taking one measurement costs, printed rather than subtracted.     | conformance/src/bench.ts:159 |
-| <a id="property-translation"></a> `translation`           | `readonly` | readonly [`TranslationMeasure`](#translationmeasure)[] | -                                                                      | conformance/src/bench.ts:154 |
-| <a id="property-version-2"></a> `version`                 | `readonly` | `"1"`                                                  | -                                                                      | conformance/src/bench.ts:149 |
-| <a id="property-workload"></a> `workload`                 | `readonly` | [`BenchWorkload`](#benchworkload)                      | -                                                                      | conformance/src/bench.ts:152 |
+| Property                                                  | Modifier   | Type                                                   | Description                                                            | Defined in                                                                                                              |
+| --------------------------------------------------------- | ---------- | ------------------------------------------------------ | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-benchversion"></a> `benchVersion`         | `readonly` | `string`                                               | -                                                                      | [conformance/src/bench.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L150) |
+| <a id="property-breakdown"></a> `breakdown`               | `readonly` | readonly [`CallBreakdown`](#callbreakdown)[]           | -                                                                      | [conformance/src/bench.ts:155](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L155) |
+| <a id="property-environment-1"></a> `environment?`        | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)       | -                                                                      | [conformance/src/bench.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L160) |
+| <a id="property-measures"></a> `measures`                 | `readonly` | readonly [`BenchMeasure`](#benchmeasure)[]             | -                                                                      | [conformance/src/bench.ts:153](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L153) |
+| <a id="property-sharedosversion-1"></a> `sharedOsVersion` | `readonly` | `string`                                               | -                                                                      | [conformance/src/bench.ts:151](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L151) |
+| <a id="property-structural"></a> `structural`             | `readonly` | [`StructuralFootprint`](#structuralfootprint)          | Model-free constants this run observed, alongside the latency figures. | [conformance/src/bench.ts:157](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L157) |
+| <a id="property-timeroverhead"></a> `timerOverhead`       | `readonly` | [`Distribution`](#distribution)                        | What taking one measurement costs, printed rather than subtracted.     | [conformance/src/bench.ts:159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L159) |
+| <a id="property-translation"></a> `translation`           | `readonly` | readonly [`TranslationMeasure`](#translationmeasure)[] | -                                                                      | [conformance/src/bench.ts:154](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L154) |
+| <a id="property-version-2"></a> `version`                 | `readonly` | `"1"`                                                  | -                                                                      | [conformance/src/bench.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L149) |
+| <a id="property-workload"></a> `workload`                 | `readonly` | [`BenchWorkload`](#benchworkload)                      | -                                                                      | [conformance/src/bench.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L152) |
 
 ---
 
 ### TranslationMeasure
 
-Defined in: conformance/src/bench.ts:116
+Defined in: [conformance/src/bench.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L116)
 
 One harness adapter's translation cost, measured with no model in any span.
 
 #### Properties
 
-| Property                                                | Modifier   | Type                            | Defined in                   |
-| ------------------------------------------------------- | ---------- | ------------------------------- | ---------------------------- |
-| <a id="property-cataloguewidth-2"></a> `catalogueWidth` | `readonly` | `number`                        | conformance/src/bench.ts:121 |
-| <a id="property-columnid-3"></a> `columnId`             | `readonly` | `string`                        | conformance/src/bench.ts:117 |
-| <a id="property-label-5"></a> `label`                   | `readonly` | `string`                        | conformance/src/bench.ts:118 |
-| <a id="property-latency-2"></a> `latency`               | `readonly` | [`Distribution`](#distribution) | conformance/src/bench.ts:120 |
-| <a id="property-protocolid"></a> `protocolId`           | `readonly` | `string`                        | conformance/src/bench.ts:119 |
+| Property                                                | Modifier   | Type                            | Defined in                                                                                                              |
+| ------------------------------------------------------- | ---------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-cataloguewidth-2"></a> `catalogueWidth` | `readonly` | `number`                        | [conformance/src/bench.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L121) |
+| <a id="property-columnid-3"></a> `columnId`             | `readonly` | `string`                        | [conformance/src/bench.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L117) |
+| <a id="property-label-5"></a> `label`                   | `readonly` | `string`                        | [conformance/src/bench.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L118) |
+| <a id="property-latency-2"></a> `latency`               | `readonly` | [`Distribution`](#distribution) | [conformance/src/bench.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L120) |
+| <a id="property-protocolid"></a> `protocolId`           | `readonly` | `string`                        | [conformance/src/bench.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L119) |
 
 ---
 
 ### TranslationSubject
 
-Defined in: conformance/src/bench.ts:761
+Defined in: [conformance/src/bench.ts:761](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L761)
 
 #### Properties
 
-| Property                                    | Modifier   | Type                                                            | Defined in                   |
-| ------------------------------------------- | ---------- | --------------------------------------------------------------- | ---------------------------- |
-| <a id="property-columnid-4"></a> `columnId` | `readonly` | `string`                                                        | conformance/src/bench.ts:762 |
-| <a id="property-label-6"></a> `label`       | `readonly` | `string`                                                        | conformance/src/bench.ts:763 |
-| <a id="property-protocol-2"></a> `protocol` | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)       | conformance/src/bench.ts:764 |
-| <a id="property-writer-1"></a> `writer`     | `readonly` | [`HarnessFrameWriter`](sharedos-adapters.md#harnessframewriter) | conformance/src/bench.ts:765 |
+| Property                                    | Modifier   | Type                                                            | Defined in                                                                                                              |
+| ------------------------------------------- | ---------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-columnid-4"></a> `columnId` | `readonly` | `string`                                                        | [conformance/src/bench.ts:762](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L762) |
+| <a id="property-label-6"></a> `label`       | `readonly` | `string`                                                        | [conformance/src/bench.ts:763](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L763) |
+| <a id="property-protocol-2"></a> `protocol` | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)       | [conformance/src/bench.ts:764](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L764) |
+| <a id="property-writer-1"></a> `writer`     | `readonly` | [`HarnessFrameWriter`](sharedos-adapters.md#harnessframewriter) | [conformance/src/bench.ts:765](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L765) |
 
 ---
 
@@ -2206,7 +2206,7 @@ issued, and the row is about the ending on top of them.
 
 ### TurnOutcome
 
-Defined in: conformance/src/bench.ts:349
+Defined in: [conformance/src/bench.ts:349](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L349)
 
 What one measured turn produced, apart from its durations.
 
@@ -2222,12 +2222,12 @@ punctuation between them.
 
 | Property                                                              | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Defined in                                                                                                                |
 | --------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-auditbytes"></a> `auditBytes`                         | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | conformance/src/bench.ts:354                                                                                              |
-| <a id="property-auditevents-2"></a> `auditEvents`                     | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | conformance/src/bench.ts:359                                                                                              |
-| <a id="property-auditwithoutdecisions"></a> `auditWithoutDecisions`   | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | conformance/src/bench.ts:355                                                                                              |
-| <a id="property-authorityloads"></a> `authorityLoads`                 | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | conformance/src/bench.ts:358                                                                                              |
-| <a id="property-decisions"></a> `decisions`                           | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | conformance/src/bench.ts:357                                                                                              |
-| <a id="property-record-2"></a> `record`                               | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | conformance/src/bench.ts:350                                                                                              |
+| <a id="property-auditbytes"></a> `auditBytes`                         | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/bench.ts:354](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L354)   |
+| <a id="property-auditevents-2"></a> `auditEvents`                     | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/bench.ts:359](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L359)   |
+| <a id="property-auditwithoutdecisions"></a> `auditWithoutDecisions`   | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/bench.ts:355](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L355)   |
+| <a id="property-authorityloads"></a> `authorityLoads`                 | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/bench.ts:358](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L358)   |
+| <a id="property-decisions"></a> `decisions`                           | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/bench.ts:357](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L357)   |
+| <a id="property-record-2"></a> `record`                               | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/bench.ts:350](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L350)   |
 | `record.authority`                                                    | `public`   | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:256](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L256) |
 | `record.authority.actor`                                              | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L107) |
 | `record.authority.namespaceId`                                        | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L109) |
@@ -2312,10 +2312,10 @@ punctuation between them.
 | `record.system.toolPolicy.managedMcp`                                 | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | contracts/dist/tool.d.ts:670                                                                                              |
 | `record.system.toolPolicy.mode`                                       | `public`   | `"strict"` \| `"hybrid"`                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | contracts/dist/tool.d.ts:669                                                                                              |
 | `record.version`                                                      | `public`   | `"1"`                                                                                                                                                                                                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:252](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L252) |
-| <a id="property-recordbytes-2"></a> `recordBytes`                     | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | conformance/src/bench.ts:351                                                                                              |
-| <a id="property-recordwithoutcalls"></a> `recordWithoutCalls`         | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | conformance/src/bench.ts:352                                                                                              |
-| <a id="property-recordwithoutdecisions"></a> `recordWithoutDecisions` | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | conformance/src/bench.ts:353                                                                                              |
-| <a id="property-toolcalls"></a> `toolCalls`                           | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | conformance/src/bench.ts:356                                                                                              |
+| <a id="property-recordbytes-2"></a> `recordBytes`                     | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/bench.ts:351](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L351)   |
+| <a id="property-recordwithoutcalls"></a> `recordWithoutCalls`         | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/bench.ts:352](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L352)   |
+| <a id="property-recordwithoutdecisions"></a> `recordWithoutDecisions` | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/bench.ts:353](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L353)   |
+| <a id="property-toolcalls"></a> `toolCalls`                           | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/bench.ts:356](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L356)   |
 
 ## Type Aliases
 
@@ -2728,7 +2728,7 @@ because a host may make kernel calls outside any turn, and because restoring
 
 > `const` **BENCH\_VERSION**: `"1"` = `"1"`
 
-Defined in: conformance/src/bench.ts:50
+Defined in: [conformance/src/bench.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L50)
 
 The version of the measurement rules, so a report names what produced it.
 
@@ -3308,7 +3308,7 @@ Everything that must match before two runs are comparable.
 
 > `const` **TRANSLATION\_SUBJECTS**: readonly [`TranslationSubject`](#translationsubject)[]
 
-Defined in: conformance/src/bench.ts:833
+Defined in: [conformance/src/bench.ts:833](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L833)
 
 The four scripted adapters, paired with the frames that drive them.
 
@@ -3891,7 +3891,7 @@ against the same declared attempts as the scripted adversary.
 
 > **attributable**(`spans`, `outer`, `foreign`): readonly `number`[]
 
-Defined in: conformance/src/bench.ts:269
+Defined in: [conformance/src/bench.ts:269](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L269)
 
 Foreign work taken back out, correlated on the call id every span carries.
 
@@ -3922,7 +3922,7 @@ readonly `number`[]
 
 > **benchAttempts**(`moves`): readonly `object`[]
 
-Defined in: conformance/src/bench.ts:324
+Defined in: [conformance/src/bench.ts:324](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L324)
 
 The attempts of those moves a harness can actually put on a wire.
 
@@ -3942,7 +3942,7 @@ readonly `object`[]
 
 > **benchMoves**(`cases?`): readonly `object`[]
 
-Defined in: conformance/src/bench.ts:310
+Defined in: [conformance/src/bench.ts:310](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L310)
 
 The moves the bench issues, and why these ones.
 
@@ -4978,7 +4978,7 @@ Render the manifest as a stable Markdown document.
 
 > **renderSystemsCostReport**(`report`): `string`
 
-Defined in: conformance/src/bench.ts:1111
+Defined in: [conformance/src/bench.ts:1111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L1111)
 
 Render the report as a stable Markdown document.
 
@@ -5048,7 +5048,7 @@ manifest every time.
 
 > **runInProcessPath**(`moves`, `options`): `Promise`\<[`PathRun`](#pathrun)>\>
 
-Defined in: conformance/src/bench.ts:456
+Defined in: [conformance/src/bench.ts:456](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L456)
 
 The in-process path: the scripted adversary in the delegate seat, one fixed
 world, and no model anywhere in the loop.
@@ -5070,7 +5070,7 @@ world, and no model anywhere in the loop.
 
 > **runRecordWritePath**(`moves`, `options`): `Promise`\<[`RecordWriteRun`](#recordwriterun)>\>
 
-Defined in: conformance/src/bench.ts:701
+Defined in: [conformance/src/bench.ts:701](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L701)
 
 One record assembled, validated, and serialized.
 
@@ -5097,7 +5097,7 @@ not serialized was not written.
 
 > **runSystemsCostBench**(`options?`): `Promise`\<[`SystemsCostReport`](#systemscostreport)>\>
 
-Defined in: conformance/src/bench.ts:868
+Defined in: [conformance/src/bench.ts:868](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L868)
 
 Measure what enforcement costs, apart from what the model costs.
 
@@ -5121,7 +5121,7 @@ difference between them is the toolshare boundary and nothing else.
 
 > **runToolsharePath**(`moves`, `options`): `Promise`\<[`PathRun`](#pathrun)>\>
 
-Defined in: conformance/src/bench.ts:625
+Defined in: [conformance/src/bench.ts:625](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L625)
 
 #### Parameters
 
@@ -5140,7 +5140,7 @@ Defined in: conformance/src/bench.ts:625
 
 > **runTranslationPath**(`subjects`, `moves`, `options`, `catalogueWidth`): `Promise`\<readonly [`TranslationMeasure`](#translationmeasure)[]\>
 
-Defined in: conformance/src/bench.ts:777
+Defined in: [conformance/src/bench.ts:777](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L777)
 
 The adapter layer, measured with no model in any span.
 
@@ -5249,7 +5249,7 @@ readonly [`StrictFailure`](#strictfailure)[]
 
 > **summarize**(`durations`): [`Distribution`](#distribution)
 
-Defined in: conformance/src/bench.ts:221
+Defined in: [conformance/src/bench.ts:221](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L221)
 
 A distribution over observed durations.
 
@@ -5280,7 +5280,7 @@ member.
 
 > **timerOverhead**(`samples?`): [`Distribution`](#distribution)
 
-Defined in: conformance/src/bench.ts:678
+Defined in: [conformance/src/bench.ts:678](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L678)
 
 What the timing instrument itself costs, measured the same way it measures.
 
