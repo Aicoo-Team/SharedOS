@@ -1,15 +1,103 @@
 # SharedOS documentation
 
-- [API reference](api/README.md) — generated reference for every public package
+SharedOS is open-source infrastructure for permissioned agent-to-agent
+communication. It decides whether one agent may read a given file or call a
+given tool on behalf of another — per resource, per action, per call.
+
+## Why SharedOS exists
+
+Start with a request that any two teams will want to make eventually. Your agent
+asks a colleague's agent:
+
+> What did your team decide about the Q3 launch, and is your lead free Thursday
+> afternoon?
+
+Answering it well requires two very different kinds of access:
+
+- **Accumulated knowledge.** Decisions, plans, and context that were built up
+  over time and now sit in notes, documents, and project files.
+- **Live state.** Calendar availability right now, which cannot be answered from
+  a copy because a copy goes stale the moment it is made.
+
+Answering it safely requires that a long list of adjacent things stay
+unavailable: the rest of that person's notes, the contents of the calendar
+entries themselves, their inbox, and the ability to send anything to anyone.
+
+Today that request usually has two outcomes, and both are bad. Either the
+request is refused, because there is no way to open a narrow door — so agents
+can only work inside a single trust boundary, and cross-team delegation never
+happens. Or someone hands over a session, an API key, or a broad OAuth scope,
+and the actual decision about what may be touched ends up **inside the model's
+context**, expressed as instructions the model is asked to respect.
+
+That second outcome is the failure mode SharedOS is built to remove. When
+authorization lives in the prompt:
+
+- A message can talk the model into widening its own access, because the text
+  asking for the work and the text describing the limits arrive on the same
+  channel.
+- Tool discovery leaks. A model that can see a tool it must not use will
+  eventually try to use it, and every guardrail becomes a string comparison in a
+  system prompt.
+- Nothing is auditable after the fact. There is no record that separates "the
+  agent was allowed to do this" from "the agent did this and nobody stopped it."
+- Nothing is revocable. Access ends when a key is rotated, not when a
+  collaboration ends.
+
+SharedOS moves that decision out of the model and into a kernel that evaluates
+it independently.
+
+### What that looks like for the request above
+
+The colleague's host issues two narrow, separately partitioned grants:
+
+1. A **file capability**: search and read under one project path — not the
+   parent directory, not personal notes.
+2. A **tool capability**: `free/busy` on one calendar — not event contents, not
+   the mailbox, not send.
+
+Then the turn runs inside a fixed envelope. The requesting agent is admitted
+only because it holds an execution grant. The tool catalog it is shown is
+already filtered down to what it may use, so the model never sees the mailbox
+exists. Every individual call — the exact path, the exact action — is authorized
+again at invocation time, because passing discovery is not permission to invoke.
+The model never sees the grants themselves or the authority that issued them.
+The turn carries a deadline, and what was requested, allowed, and denied is
+recorded.
+
+The message coordinated the work. It never carried authority.
+
+### What this is not
+
+- **Not a tool-connection protocol.** Connecting a tool is not authorizing it.
+  External and MCP tools are welcome here; they arrive as namespaces that are
+  off by default and still require an exact capability match per call.
+- **Not an agent messaging protocol.** Receiving a message is not permission to
+  act on it. SharedOS sits underneath messaging, not on top of it.
+- **Not an agent framework.** The model, the prompt strategy, the agent loop,
+  and the execution backend are all replaceable — that is the point. The
+  security envelope around them is the part that does not vary.
+
+SharedOS also deliberately does not own product UI, accounts, billing, or task
+scheduling. The host keeps its storage, its credentials, and its users. SharedOS
+is the boundary between them and the agents that act on them.
 
 ## Start here
 
-- [Host integration guide](host-integration.md): practical embedded and remote
-  setup for files, live tools, grants, one-turn execution, and production ports.
+- [Quickstart](quickstart.md): two working programs — the kernel embedded in
+  your process, and the same kernel over HTTP — against the published packages.
+- [HTTP API reference](http-api.md): every route, request body, status code, and
+  header, plus where authentication enters.
+- [Tool catalog](tools.md): the twelve `files` tools, the three availability
+  gates, and how to register native or MCP tools of your own.
 - [MCP toolshare](mcp-toolshare.md): the permission-filtered catalogue as an MCP
   server, the boundary presented to Codex, Claude Code, and DeepSeek Harness.
+- [Reason and error codes](errors.md): what every denial and failure means, and
+  what to change in response.
 - [Architecture](architecture.md): responsibilities, packages, fixed security
   envelope, pluggable runtimes, resource providers, and deployment shapes.
+- [Host integration guide](host-integration.md): practical embedded and remote
+  setup for files, live tools, grants, one-turn execution, and production ports.
 - [Permission model](security/permission-model.md): normative authorization
   invariants and grant evaluation.
 - [Threat model](security/threat-model.md): trust boundaries, attack surfaces,
@@ -17,6 +105,9 @@
 - [Release readiness](release-readiness.md): explicit npm and production gates.
 - [npm release runbook](npm-release.md): package validation, first publication,
   trusted publishing, and registry verification.
+- [API reference](api/README.md): generated reference for every public package.
+- [Changelog](../CHANGELOG.md): what changed between prereleases, and what a host
+  has to update.
 
 ## Host integrations
 

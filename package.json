@@ -1,6 +1,6 @@
 {
   "name": "sharedos",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.2",
   "description": "Permission-controlled state and delegation kernel with pluggable agent runtimes",
   "private": true,
   "license": "Apache-2.0",
@@ -25,6 +25,7 @@
     "test:release": "node --test scripts/*.test.mjs",
     "test:coverage": "vitest run --coverage",
     "example:quickstart": "pnpm build && pnpm --filter @aicoo/sharedos-example-quickstart start",
+    "example:reference-host": "pnpm build && pnpm --filter @aicoo/sharedos-example-reference-host start",
     "example:network-studio": "pnpm --filter @aicoo/sharedos-example-network-studio start",
     "pack:preview": "node scripts/pack-preview.mjs",
     "pack:check": "node scripts/pack-preview.mjs --check",
@@ -32,7 +33,9 @@
     "release:check": "node scripts/release.mjs check",
     "release:check:private": "node scripts/release.mjs check --allow-private",
     "release:publish": "node scripts/release.mjs publish",
+    "release:promote-latest": "node scripts/promote-latest.mjs",
     "test:watch": "vitest",
+    "example:fleet-delegation": "pnpm build && pnpm --filter @aicoo/sharedos-example-fleet-delegation start",
     "check": "pnpm format:check && pnpm typecheck && pnpm test && pnpm test:release && pnpm docs:api:check && pnpm conformance:check"
   },
   "devDependencies": {

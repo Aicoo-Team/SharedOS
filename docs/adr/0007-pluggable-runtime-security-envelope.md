@@ -6,9 +6,9 @@
 ## Context
 
 SharedOS must support different agent harnesses without making one model loop,
-provider, or sandbox architecture part of the operating-system contract. Aicoo
-already has a Codex-specific runtime, and future hosts may use DeepSeek Harness,
-another vendor harness, or a private implementation.
+provider, or sandbox architecture part of the operating-system contract. One
+host may run a Codex-specific runtime while others use DeepSeek Harness, another
+vendor harness, or a private implementation.
 
 The original `TurnExecutor` exposed an `AgentTurnDriver` port, but still owned
 the complete model/tool loop. That made model providers replaceable inside one
@@ -58,8 +58,8 @@ message.
 
 Each runtime has a JSON-safe manifest containing an id, implementation version,
 SharedOS protocol version, and optional descriptive metadata. The executor
-places an authoritative manifest snapshot in every execution result so hosts
-and PACT do not pool outcomes from semantically different harnesses.
+places an authoritative manifest snapshot in every execution result so hosts and
+evaluation pipelines do not pool outcomes from semantically different harnesses.
 
 In-process runtime plugins are trusted code with the ambient privileges of the
 host process. A host that does not trust a runtime must place it behind a

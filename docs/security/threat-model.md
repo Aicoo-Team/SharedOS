@@ -81,7 +81,7 @@ Authenticated callers remain untrusted for authorization.
 | Secret disclosure        | Provider output or logs contain OAuth tokens                      | Never place secrets in contracts, model context, errors, or audit payloads           |
 | Resource exhaustion      | Large schema, loop, payload, or tool call consumes resources      | Contract limits, timeouts, step budgets, rate limits, cancellation                   |
 | Audit tampering          | Operator removes denied calls                                     | Append-only/tamper-evident host storage, sequence checks, restricted access          |
-| Evaluation leakage       | PACT runtime sees hidden gold                                     | Separate execution and evaluation channels; fresh world per run                      |
+| Evaluation leakage       | An evaluation runtime sees hidden gold labels                     | Separate execution and evaluation channels; fresh world per run                      |
 | Runtime escape           | A third-party harness bypasses the broker or keeps calling later  | Give plugins only the scoped broker; close it after the turn; isolate untrusted code |
 
 ## Detailed attack surfaces
@@ -214,8 +214,8 @@ IDs, and it does not impose a created-at freshness window. A production host
 must atomically bind each accepted identifier to namespace/world,
 authenticated actor, operation, target, and semantic input, and must reject a
 replay whose input changes. Public package release is blocked until this is a
-tested SharedOS port with Aicoo and PACT adapters rather than an undocumented
-host convention.
+tested SharedOS port with production and isolated adapters rather than an
+undocumented host convention.
 
 Authorization and a side effect can have a time-of-check/time-of-use gap. For
 high-risk writes, hosts should combine grant-use consumption, revocation check,
@@ -237,10 +237,11 @@ preserves the typed provider result and reports `onAuditError`; production hosts
 must persist the effect and audit outcome through an outbox or equivalent atomic
 protocol.
 
-## PACT-specific integrity
+## Evaluation integrity
 
-PACT uses a fresh namespace and provider world for each run. The responder and
-SharedOS execution path do not receive gold labels or evaluator-only channels.
+An evaluation host uses a fresh namespace and provider world for each run. The
+responder and SharedOS execution path do not receive gold labels or
+evaluator-only channels.
 Evaluation starts after execution is frozen. Adapter and protocol versions are
 recorded so results from semantically different runtimes are not accidentally
 pooled.
@@ -266,7 +267,7 @@ SharedOS does not by itself:
 - provide durable replay protection in the initial private bootstrap;
 - guarantee storage durability or deletion when a host provider violates its
   contract;
-- define Aicoo billing policy or PACT evaluation validity.
+- define host billing policy or the statistical validity of an evaluation.
 
 These limits should be explicit in deployment documentation rather than hidden
 behind the SharedOS permission guarantee.

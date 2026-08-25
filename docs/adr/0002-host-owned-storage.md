@@ -6,13 +6,14 @@
 ## Context
 
 Files, derived indexes, messages, grants, and audit records need durable storage
-in a product. Aicoo already has a database and embedding infrastructure. PACT
-needs a fresh isolated world for each experiment. Future hosts may use a native
-filesystem, SQLite, Postgres, a vector store, or a remote data service.
+in a product. A product host already has a database and embedding
+infrastructure. An evaluation host needs a fresh isolated world for each
+experiment. Other hosts may use a native filesystem, SQLite, Postgres, a vector
+store, or a remote data service.
 
 If SharedOS embeds one storage technology, its permission model becomes coupled
-to one product and PACT cannot reproduce production execution against an
-isolated world. If storage semantics are entirely left to hosts, however, hosts
+to one product, and an evaluation host cannot reproduce production execution
+against an isolated world. If storage semantics are entirely left to hosts, however, hosts
 can accidentally bypass authorization or disagree about what a file operation
 means.
 
@@ -40,9 +41,10 @@ They are not a recommended production data layer.
 
 ### Positive
 
-- Aicoo can reuse its existing data without making SharedOS import Drizzle,
-  Azure, or its schema.
-- PACT can create a hermetic world without seeing product or gold data.
+- A product host can reuse its existing data without making SharedOS import an
+  ORM, a cloud SDK, or its schema.
+- An evaluation host can create a hermetic world without seeing product or gold
+  data.
 - Storage vendors can change without changing permission semantics.
 - SharedOS can publish provider conformance tests.
 

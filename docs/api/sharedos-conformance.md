@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.0**](README.md)
+[**SharedOS API v0.1.0-alpha.2**](README.md)
 
 ---
 
@@ -2760,7 +2760,7 @@ Defined in: [conformance/src/world.ts:58](https://github.com/Aicoo-Team/SharedOS
 
 ### SHAREDOS\_VERSION
 
-> `const` **SHAREDOS\_VERSION**: `"0.1.0-alpha.0"` = `"0.1.0-alpha.0"`
+> `const` **SHAREDOS\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
 
 Defined in: [conformance/src/runner.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L41)
 

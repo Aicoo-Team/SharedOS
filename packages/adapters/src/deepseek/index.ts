@@ -8,7 +8,7 @@ import { DEEPSEEK_PROTOCOL_ID, deepseekProtocol } from "./protocol.js";
 
 export { DEEPSEEK_PROTOCOL_ID, deepseekProtocol } from "./protocol.js";
 
-export const DEEPSEEK_ADAPTER_VERSION = "0.1.0-alpha.0";
+export const DEEPSEEK_ADAPTER_VERSION = "0.1.0-alpha.2";
 
 export const DEEPSEEK_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   id: "sharedos.deepseek",

@@ -349,6 +349,9 @@ describe("the conformance suite", () => {
     expect(revoked?.reasonCodes).toEqual(["no_matching_grant"]);
   });
 
+  // The only test that runs the whole suite twice, so it needs roughly double
+  // the budget. It was already inside 5s by a couple of hundred milliseconds;
+  // one more case would have made determinism look like a flake.
   it("produces the same manifest on every run", async () => {
     const first = await runConformanceSuite();
     const second = await runConformanceSuite();
@@ -357,7 +360,7 @@ describe("the conformance suite", () => {
     expect(renderConformanceSummary(second.manifest)).toBe(
       renderConformanceSummary(first.manifest),
     );
-  });
+  }, 30_000);
 
   it("keeps volatile runtime identity out of the committed manifest", async () => {
     const { manifest, evidence } = await runConformanceSuite();

@@ -10,7 +10,11 @@ import { CapabilityGrantSchema } from "@aicoo/sharedos-contracts";
 
 import type { ResolvedAuthority } from "./authority.js";
 import { CapabilityAuthorizer } from "./authorization.js";
-import { type DelegationChainResolver, validateDelegationChain } from "./delegation.js";
+import {
+  type DelegationChainResolver,
+  deriveGrant,
+  validateDelegationChain,
+} from "./delegation.js";
 
 const NOW = "2026-08-03T09:00:00.000Z";
 const OWNER = { kind: "human", userId: "user-alice" } as const;
@@ -201,10 +205,8 @@ describe("delegation chain validation", () => {
     });
   });
 
-  it("rejects a child that outlives, outlasts, or outspends its parent", async () => {
-    const parent = parentGrant({
-      constraints: { ...parentGrant().constraints, maxUses: 5 },
-    });
+  it("rejects a child that outlives or outlasts its parent", async () => {
+    const parent = parentGrant();
 
     await expect(
       validate(childGrant({}, { expiresAt: "2026-08-05T00:00:00.000Z" }), resolverFor(parent)),
@@ -215,12 +217,24 @@ describe("delegation chain validation", () => {
     ).resolves.toMatchObject({ status: "invalid", code: "constraints_widened" });
 
     await expect(
-      validate(childGrant({}, { maxUses: 50 }), resolverFor(parent)),
-    ).resolves.toMatchObject({ status: "invalid", code: "constraints_widened" });
-
-    await expect(
       validate(childGrant({ issuedAt: "2026-08-03T07:00:00.000Z" }), resolverFor(parent)),
     ).resolves.toMatchObject({ status: "invalid", code: "constraints_widened" });
+  });
+
+  it("refuses a bounded parent outright rather than splitting its budget", async () => {
+    const bounded = parentGrant({ constraints: { ...parentGrant().constraints, maxUses: 5 } });
+
+    // Not a widening question. Usage counters are per grant, so two children of
+    // a five-use parent would carry ten uses between them however small each
+    // one looks; the link is refused before any attenuation is compared.
+    for (const constraints of [{ maxUses: 50 }, { maxUses: 1 }, {}]) {
+      await expect(
+        validate(childGrant({}, constraints), resolverFor(bounded)),
+      ).resolves.toMatchObject({
+        status: "invalid",
+        code: "bounded_parent_not_delegable",
+      });
+    }
   });
 
   it("requires delegation budget that strictly decreases at each link", async () => {
@@ -369,5 +383,290 @@ describe("delegated grant contract", () => {
     expect(
       CapabilityGrantSchema.safeParse(childGrant({ parentGrantId: "grant-child" })).success,
     ).toBe(false);
+  });
+});
+
+/*
+ * The issuing side. A separate vocabulary on purpose: the kernel does not know
+ * what an arm is, and a robot line is the clearest way to say that the rules
+ * are about resources and actions rather than about files.
+ */
+const FLEET_NOW = "2026-08-20T09:00:00.000Z";
+const FLEET_OWNER = { kind: "human", userId: "fleet-operator" } as const;
+const ROBOT_A = { kind: "agent", agentId: "robot-a" } as const;
+const ROBOT_B = { kind: "agent", agentId: "robot-b" } as const;
+
+/** Operator grants robot A the whole of cell 3, redelegable once. */
+function fleetParent(overrides: Partial<CapabilityGrant> = {}): CapabilityGrant {
+  return {
+    id: "grant-a",
+    namespaceId: "fleet",
+    subject: ROBOT_A,
+    issuer: FLEET_OWNER,
+    capabilities: [
+      {
+        resource: { namespace: "fleet", path: ["cell-3"], owner: FLEET_OWNER },
+        actions: ["move", "grip", "release"],
+        scope: "descendants",
+      },
+    ],
+    constraints: { purposes: ["pick-and-place"], delegationDepth: 1 },
+    issuedAt: "2026-08-20T08:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function derive(
+  parent: CapabilityGrant,
+  capabilities: CapabilityGrant["capabilities"],
+  constraints?: Parameters<typeof deriveGrant>[1]["constraints"],
+) {
+  return deriveGrant(parent, {
+    id: "grant-b",
+    subject: ROBOT_B,
+    capabilities,
+    issuedAt: FLEET_NOW,
+    ...(constraints ? { constraints } : {}),
+  });
+}
+
+const armOnly = [
+  {
+    resource: { namespace: "fleet", path: ["cell-3", "arm-1"], owner: FLEET_OWNER },
+    actions: ["grip"],
+    scope: "exact" as const,
+  },
+];
+
+describe("deriveGrant", () => {
+  it("passes on a strict subset and names the delegator as issuer", () => {
+    const result = derive(fleetParent(), armOnly);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    // The audit trail has to say who passed the authority on, not only who
+    // owned the resource.
+    expect(result.grant.issuer).toEqual(ROBOT_A);
+    expect(result.grant.subject).toEqual(ROBOT_B);
+    // One link, not a chain: the rest of the lineage is the store's to say.
+    expect(result.grant.parentGrantId).toBe("grant-a");
+    expect(result.grant.constraints.delegationDepth).toBe(0);
+    // Purposes are inherited, not dropped.
+    expect(result.grant.constraints.purposes).toEqual(["pick-and-place"]);
+  });
+
+  it("refuses a wider path", () => {
+    const result = derive(fleetParent(), [
+      {
+        resource: { namespace: "fleet", path: [], owner: FLEET_OWNER },
+        actions: ["grip"],
+        scope: "descendants",
+      },
+    ]);
+    expect(result).toEqual({ ok: false, reason: "capability_not_within_parent" });
+  });
+
+  it("refuses a sibling path that shares a prefix", () => {
+    // `cell-3` must not cover `cell-30`: matching has to be by segment.
+    const result = derive(fleetParent(), [
+      {
+        resource: { namespace: "fleet", path: ["cell-30"], owner: FLEET_OWNER },
+        actions: ["grip"],
+        scope: "exact",
+      },
+    ]);
+    expect(result).toEqual({ ok: false, reason: "capability_not_within_parent" });
+  });
+
+  it("refuses an action the parent does not hold", () => {
+    const result = derive(fleetParent(), [
+      {
+        resource: { namespace: "fleet", path: ["cell-3", "arm-1"], owner: FLEET_OWNER },
+        actions: ["weld"],
+        scope: "exact",
+      },
+    ]);
+    expect(result).toEqual({ ok: false, reason: "capability_not_within_parent" });
+  });
+
+  it("refuses a wildcard the parent does not hold", () => {
+    const result = derive(fleetParent(), [
+      {
+        resource: { namespace: "fleet", path: ["cell-3", "arm-1"], owner: FLEET_OWNER },
+        actions: ["*"],
+        scope: "exact",
+      },
+    ]);
+    expect(result).toEqual({ ok: false, reason: "capability_not_within_parent" });
+  });
+
+  it("refuses to widen an exact parent into a subtree", () => {
+    const exactParent = fleetParent({
+      capabilities: [
+        {
+          resource: { namespace: "fleet", path: ["cell-3", "arm-1"], owner: FLEET_OWNER },
+          actions: ["grip"],
+          scope: "exact",
+        },
+      ],
+    });
+    const result = derive(exactParent, [
+      {
+        resource: { namespace: "fleet", path: ["cell-3", "arm-1"], owner: FLEET_OWNER },
+        actions: ["grip"],
+        scope: "descendants",
+      },
+    ]);
+    expect(result).toEqual({ ok: false, reason: "capability_not_within_parent" });
+  });
+
+  it("refuses to pin an owner onto an unowned parent capability", () => {
+    // An unowned parent resolves to whoever presents it, so pinning an owner is
+    // narrower in one context and wider in every other. Issuing has no context.
+    const unowned = fleetParent({
+      capabilities: [
+        {
+          resource: { namespace: "fleet", path: ["cell-3"] },
+          actions: ["grip"],
+          scope: "descendants",
+        },
+      ],
+    });
+    expect(derive(unowned, armOnly)).toEqual({
+      ok: false,
+      reason: "capability_not_within_parent",
+    });
+  });
+
+  it("refuses a purpose outside the parent's", () => {
+    const result = derive(fleetParent(), armOnly, { purposes: ["teardown"] });
+    expect(result).toEqual({ ok: false, reason: "purpose_not_within_parent" });
+  });
+
+  it("refuses to outlive the parent, and writes down what it inherited", () => {
+    const bounded = fleetParent({
+      constraints: { delegationDepth: 1, expiresAt: "2026-08-20T10:00:00.000Z" },
+    });
+    expect(derive(bounded, armOnly, { expiresAt: "2026-08-20T18:00:00.000Z" })).toEqual({
+      ok: false,
+      reason: "window_not_within_parent",
+    });
+    // An unbounded child of a bounded parent outlives it just as surely. The
+    // inherited expiry is written onto the derived grant rather than left
+    // implicit, because the chain check reads an omission as a widening.
+    expect(derive(bounded, armOnly)).toEqual({
+      ok: true,
+      grant: expect.objectContaining({
+        constraints: expect.objectContaining({ expiresAt: "2026-08-20T10:00:00.000Z" }),
+      }),
+    });
+  });
+
+  it("refuses to backdate a child before the parent that authorized it", () => {
+    expect(
+      deriveGrant(fleetParent(), {
+        id: "grant-b",
+        subject: ROBOT_B,
+        capabilities: armOnly,
+        issuedAt: "2026-08-20T07:00:00.000Z",
+      }),
+    ).toEqual({ ok: false, reason: "issued_before_parent" });
+  });
+
+  it("refuses an id that collides with the parent's", () => {
+    expect(
+      deriveGrant(fleetParent(), {
+        id: "grant-a",
+        subject: ROBOT_B,
+        capabilities: armOnly,
+        issuedAt: FLEET_NOW,
+      }),
+    ).toEqual({ ok: false, reason: "id_collides_with_parent" });
+  });
+
+  it("refuses when the parent may not be redelegated", () => {
+    expect(derive(fleetParent({ constraints: { delegationDepth: 0 } }), armOnly)).toEqual({
+      ok: false,
+      reason: "parent_not_delegable",
+    });
+    expect(derive(fleetParent({ constraints: {} }), armOnly)).toEqual({
+      ok: false,
+      reason: "parent_not_delegable",
+    });
+  });
+
+  it("refuses to hand on a longer chain than it received", () => {
+    expect(derive(fleetParent(), armOnly, { delegationDepth: 5 })).toEqual({
+      ok: false,
+      reason: "depth_exhausted",
+    });
+  });
+
+  it("refuses to split a bounded-use parent", () => {
+    // Two children of a 3-use parent would carry six uses between them.
+    const bounded = fleetParent({ constraints: { delegationDepth: 1, maxUses: 3 } });
+    expect(derive(bounded, armOnly)).toEqual({
+      ok: false,
+      reason: "bounded_parent_not_delegable",
+    });
+  });
+
+  it("refuses to satisfy one child capability from parts of several parent ones", () => {
+    const split = fleetParent({
+      capabilities: [
+        {
+          resource: { namespace: "fleet", path: ["cell-3", "arm-1"], owner: FLEET_OWNER },
+          actions: ["grip"],
+          scope: "exact",
+        },
+        {
+          resource: { namespace: "fleet", path: ["cell-3", "arm-2"], owner: FLEET_OWNER },
+          actions: ["move"],
+          scope: "exact",
+        },
+      ],
+    });
+    // "move arm-1" is covered by neither, though the pieces exist across both.
+    const result = derive(split, [
+      {
+        resource: { namespace: "fleet", path: ["cell-3", "arm-1"], owner: FLEET_OWNER },
+        actions: ["move"],
+        scope: "exact",
+      },
+    ]);
+    expect(result).toEqual({ ok: false, reason: "capability_not_within_parent" });
+  });
+
+  it("produces a grant the chain check accepts, and stops when the parent dies", async () => {
+    // The two halves have to agree: what issuing is willing to write down is
+    // exactly what use is willing to honour, and nothing about the child
+    // changes when the parent is revoked.
+    const parent = fleetParent();
+    const derived = derive(parent, armOnly);
+    expect(derived.ok).toBe(true);
+    if (!derived.ok) return;
+
+    expect(CapabilityGrantSchema.safeParse(derived.grant).success).toBe(true);
+
+    const fleetContext: AccessContext = {
+      namespaceId: "fleet",
+      enabledToolNamespaces: [],
+      actor: ROBOT_B,
+      authority: ROBOT_A,
+      owner: FLEET_OWNER,
+      purpose: "pick-and-place",
+      traceId: "shift",
+      now: FLEET_NOW,
+    };
+    const at = Date.parse(FLEET_NOW);
+
+    await expect(
+      validateDelegationChain(derived.grant, fleetContext, at, { resolver: resolverFor(parent) }),
+    ).resolves.toEqual({ status: "valid", chain: ["grant-a"] });
+
+    const revoked = { ...parent, revokedAt: "2026-08-20T08:30:00.000Z" };
+    await expect(
+      validateDelegationChain(derived.grant, fleetContext, at, { resolver: resolverFor(revoked) }),
+    ).resolves.toMatchObject({ status: "invalid", code: "parent_inactive" });
   });
 });
