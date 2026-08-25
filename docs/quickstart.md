@@ -170,6 +170,13 @@ const driver: AgentTurnDriver = {
           asked = true;
           // request.tools is the effective catalog. Hand it to your model as
           // its tool definitions; `inputSchema` is already JSON Schema.
+          //
+          // request.context.reach says which resources are worth naming:
+          // [{ namespace: "files", path: ["Work","Projects","atlas"],
+          //    actions: ["search"], scope: "descendants" }]
+          // The catalog cannot answer that — a tool's requiredCapability is
+          // the ceiling it could ever need, which for the file tools is the
+          // root. Without reach a model searches "/" and collects denials.
           return {
             type: "tool_call",
             call: {
@@ -233,6 +240,13 @@ The driver received `request.context` without grants and without the issuing
 authority. It cannot widen its own access, and it cannot reach a tool outside
 the catalog it was given — `RuntimeHost.invokeTool` checks the catalog and
 re-authorizes before anything runs.
+
+What it does get is `context.reach`: the shape of its own scope, with the
+authority stripped out. Namespace, path, actions, and scope — never a grant id,
+an issuer, an expiry, or a remaining use count. It is descriptive, so a stale or
+over-wide entry cannot permit anything; every call is authorized independently
+afterwards. Grants that are expired, revoked, wrong-purpose, chain-broken, or
+already exhausted do not appear, and reading it never spends a bounded grant.
 
 ## Remote: the same kernel over HTTP
 

@@ -6,6 +6,7 @@ import type {
   MessageDeliveryResult,
   MessageEnvelope,
   ProtocolError,
+  ResourceReach,
   ResourceResult,
   ToolCall,
   ToolDefinition,
@@ -159,6 +160,20 @@ export class SharedOSKernel {
       },
       true,
     );
+  }
+
+  /**
+   * Where this actor may operate, with the authority stripped out.
+   *
+   * Non-consuming, and never a substitute for authorization: it says which
+   * resources are worth naming, not that any particular call will be allowed.
+   */
+  async reach(
+    context: AccessContext,
+    options: KernelOperationOptions = {},
+  ): Promise<readonly ResourceReach[]> {
+    throwIfAborted(options.signal);
+    return this.#authorizer.reach(context);
   }
 
   async listTools(

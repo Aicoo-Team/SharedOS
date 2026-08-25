@@ -247,3 +247,92 @@ describe("CapabilityAuthorizer", () => {
     });
   });
 });
+
+describe("CapabilityAuthorizer.reach", () => {
+  it("describes the reachable surface without the authority behind it", async () => {
+    const reach = await new CapabilityAuthorizer().reach(context([grant()]));
+
+    expect(reach).toEqual([
+      {
+        namespace: "files",
+        path: ["Workspace", "projects", "sharedos"],
+        actions: ["read"],
+        scope: "exact",
+      },
+    ]);
+    // The point of the type: nothing here says who allowed it or for how long.
+    for (const entry of reach) {
+      expect(Object.keys(entry).sort()).toEqual(["actions", "namespace", "path", "scope"]);
+    }
+  });
+
+  it("omits a grant that would not authorize anything right now", async () => {
+    const authorizer = new CapabilityAuthorizer();
+
+    const expired = await authorizer.reach(
+      context([
+        grant({
+          constraints: { purposes: ["prepare-update"], expiresAt: "2026-08-03T08:30:00.000Z" },
+        }),
+      ]),
+    );
+    const wrongPurpose = await authorizer.reach(
+      context([grant({ constraints: { purposes: ["something-else"] } })]),
+    );
+    const wrongSubject = await authorizer.reach(
+      context([grant({ subject: { kind: "agent", agentId: "agent-carol" } as Address })]),
+    );
+
+    expect(expired).toEqual([]);
+    expect(wrongPurpose).toEqual([]);
+    expect(wrongSubject).toEqual([]);
+  });
+
+  it("omits a grant a verifier rejects", async () => {
+    const revoked: CapabilityGrantVerifier = { verify: async () => false };
+    const reach = await new CapabilityAuthorizer({ grantVerifier: revoked }).reach(
+      context([grant()]),
+    );
+
+    expect(reach).toEqual([]);
+  });
+
+  it("does not advertise a door that is already closed, and never spends one to look", async () => {
+    const usageStore = new InMemoryGrantUsageStore();
+    const authorizer = new CapabilityAuthorizer({ usageStore });
+    const bounded = context([grant({ constraints: { purposes: ["prepare-update"], maxUses: 1 } })]);
+
+    expect(await authorizer.reach(bounded)).toHaveLength(1);
+    // Asking repeatedly must not consume the budget.
+    expect(await authorizer.reach(bounded)).toHaveLength(1);
+    expect(await usageStore.getUsage("world-alpha", "grant-files-read")).toBe(0);
+
+    const spent = await authorizer.authorize(
+      bounded,
+      { resource: RESOURCE, action: "read" },
+      { consume: true },
+    );
+    expect(spent.allowed).toBe(true);
+    expect(await authorizer.reach(bounded)).toEqual([]);
+  });
+
+  it("reports nothing rather than guessing when the bounded budget cannot be read", async () => {
+    const broken: GrantUsageStore = {
+      getUsage: async () => {
+        throw new Error("store down");
+      },
+      tryConsume: async () => false,
+    };
+    const reach = await new CapabilityAuthorizer({ usageStore: broken }).reach(
+      context([grant({ constraints: { purposes: ["prepare-update"], maxUses: 5 } })]),
+    );
+
+    expect(reach).toEqual([]);
+  });
+
+  it("is empty for a context that could not authorize anything", async () => {
+    const reach = await new CapabilityAuthorizer().reach({ ...context([grant()]), purpose: "" });
+
+    expect(reach).toEqual([]);
+  });
+});

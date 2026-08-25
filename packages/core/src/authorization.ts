@@ -4,6 +4,7 @@ import type {
   AuthorizationDecision,
   Capability,
   CapabilityGrant,
+  ResourceReach,
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
 
@@ -109,6 +110,64 @@ export class CapabilityAuthorizer {
     ceiling: AuthorizationRequest,
   ): Promise<AuthorizationDecision> {
     return this.#decide(context, ceiling, capabilityIntersectsCeiling, false);
+  }
+
+  /**
+   * The reachable surface for this context, with authority removed.
+   *
+   * Answers "where may I look" for a runtime that is deliberately never shown
+   * its grants. Only currently eligible grants contribute — an expired,
+   * revoked, wrong-purpose, or chain-broken grant is not reach — and nothing
+   * here is consumed, so asking never spends a bounded grant.
+   *
+   * This is descriptive, never permissive. Every operation is authorized
+   * independently afterwards.
+   */
+  async reach(context: AccessContext): Promise<readonly ResourceReach[]> {
+    context = structuredClone(context);
+    const now = parseTimestamp(context.now);
+    if (now === undefined || context.purpose.length === 0 || context.traceId.length === 0) {
+      return [];
+    }
+
+    const reachable: ResourceReach[] = [];
+    const seen = new Set<string>();
+
+    for (const grant of context.grants) {
+      if (!(await this.#grantIsEligible(context, grant, now))) {
+        continue;
+      }
+      // A grant with a spent budget can still be listed as reach only if it has
+      // budget left; otherwise it advertises a door that is already closed.
+      if (grant.constraints.maxUses !== undefined) {
+        if (this.#usageStore === undefined) continue;
+        try {
+          if (
+            (await this.#usageStore.getUsage(context.namespaceId, grant.id)) >=
+            grant.constraints.maxUses
+          ) {
+            continue;
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      for (const capability of grant.capabilities) {
+        const entry: ResourceReach = {
+          namespace: capability.resource.namespace,
+          path: [...capability.resource.path],
+          actions: [...capability.actions].sort(),
+          scope: capability.scope,
+        };
+        const key = JSON.stringify(entry);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        reachable.push(entry);
+      }
+    }
+
+    return reachable;
   }
 
   async #decide(

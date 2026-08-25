@@ -1,6 +1,7 @@
 import {
   RuntimeManifestSchema,
   type AccessContext,
+  type ResourceReach,
   type ExecutionRequest,
   type RuntimeEvent,
   type RuntimeManifest,
@@ -18,6 +19,17 @@ export interface RuntimeVisibleContext {
   readonly purpose: string;
   readonly traceId: string;
   readonly now: string;
+  /**
+   * Where this turn may operate, with the authority stripped out.
+   *
+   * The catalog says which tools exist; this says which resources they are
+   * worth pointing at. Without it a runtime can only guess paths and collect
+   * denials, and the host ends up reading raw grants to build a prompt — at
+   * exactly the boundary designed to keep grants away from the model.
+   *
+   * Descriptive, never permissive: every call is authorized independently.
+   */
+  readonly reach: readonly ResourceReach[];
 }
 
 /**

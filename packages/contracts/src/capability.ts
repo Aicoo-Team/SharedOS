@@ -135,3 +135,24 @@ export const CapabilityRequirementSchema = z
   .strict();
 
 export type CapabilityRequirement = z.infer<typeof CapabilityRequirementSchema>;
+
+/**
+ * Where an actor may operate, with the authority stripped out.
+ *
+ * A model needs to know which paths are worth trying — otherwise it guesses and
+ * collects denials — but it must not learn who granted the access, for how
+ * long, or how many uses remain. This carries the shape of the reachable
+ * surface and nothing else. It is descriptive: every call is still authorized
+ * independently, so a stale or over-wide `ResourceReach` cannot permit
+ * anything.
+ */
+export const ResourceReachSchema = z
+  .object({
+    namespace: IdentifierSchema,
+    path: z.array(PathSegmentSchema).max(64),
+    actions: z.array(ActionSchema).min(1).max(64),
+    scope: z.enum(["exact", "descendants"]),
+  })
+  .strict();
+
+export type ResourceReach = z.infer<typeof ResourceReachSchema>;

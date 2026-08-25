@@ -10,6 +10,15 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- `RuntimeVisibleContext.reach` and `kernel.reach(context)`: a runtime can now
+  discover the shape of its own scope — namespace, path, actions, scope —
+  without being shown a grant, an issuer, an expiry, or a use count. A tool's
+  `requiredCapability` is the ceiling it could ever need, so the catalog could
+  never answer "where may I look"; a model either guessed paths and collected
+  denials, or the host read raw grants and injected them into the prompt, at
+  exactly the boundary designed to keep grants away from the model. Only
+  currently eligible grants contribute, and asking never consumes one.
+
 - A quickstart with two working programs, an HTTP API reference covering every
   route and status code, a tool catalog covering the twelve `files` tools and
   how to register your own, and a reason/error code reference. None of this was

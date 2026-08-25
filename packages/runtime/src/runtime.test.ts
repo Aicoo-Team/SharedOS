@@ -68,7 +68,7 @@ function request(): ExecutionRequest {
 
 function kernel(
   result?: ToolResult,
-): Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> {
+): Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool" | "reach"> {
   return {
     admitTurn: vi.fn(async () => ({
       allowed: true as const,
@@ -76,6 +76,7 @@ function kernel(
       matchedGrantId: "grant-turn",
     })),
     listTools: vi.fn(async () => [tool]),
+    reach: vi.fn(async () => []),
     invokeTool: vi.fn(async (_context, call): Promise<ToolResult> => {
       return (
         result ?? {
@@ -91,6 +92,36 @@ function kernel(
 }
 
 describe("TurnExecutor", () => {
+  it("tells the driver where it may operate, without telling it who allowed that", async () => {
+    const seen: unknown[] = [];
+    const driver: AgentTurnDriver = {
+      open: async (request) => {
+        seen.push(request.context.reach);
+        return { next: async () => ({ type: "complete" as const, output: null }) };
+      },
+    };
+    const turnKernel = kernel();
+    turnKernel.reach = vi.fn(async () => [
+      {
+        namespace: "files",
+        path: ["Work", "atlas"],
+        actions: ["read", "search"],
+        scope: "descendants" as const,
+      },
+    ]);
+
+    await new TurnExecutor(turnKernel, driver).execute(request());
+
+    expect(seen[0]).toEqual([
+      {
+        namespace: "files",
+        path: ["Work", "atlas"],
+        actions: ["read", "search"],
+        scope: "descendants",
+      },
+    ]);
+  });
+
   it("uses the registry's permission-filtered tool definition", async () => {
     let openedRequest: AgentTurnRequest | undefined;
     const session: AgentTurnSession = {
@@ -245,15 +276,17 @@ describe("TurnExecutor", () => {
   });
 
   it("applies timeout while loading the visible tool catalog", async () => {
-    const runtimeKernel: Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> = {
-      admitTurn: async () => ({
-        allowed: true,
-        reasonCode: "allowed",
-        matchedGrantId: "grant-turn",
-      }),
-      listTools: async () => new Promise(() => undefined),
-      invokeTool: vi.fn(),
-    };
+    const runtimeKernel: Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool" | "reach"> =
+      {
+        admitTurn: async () => ({
+          allowed: true,
+          reasonCode: "allowed",
+          matchedGrantId: "grant-turn",
+        }),
+        listTools: async () => new Promise(() => undefined),
+        reach: async () => [],
+        invokeTool: vi.fn(),
+      };
     const input = request();
     input.options = { timeoutMs: 5 };
     const driver: AgentTurnDriver = { open: vi.fn() };

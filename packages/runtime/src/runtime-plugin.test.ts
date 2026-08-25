@@ -78,7 +78,7 @@ function request(): ExecutionRequest {
 
 function kernel(
   result?: ToolResult,
-): Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> {
+): Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool" | "reach"> {
   return {
     admitTurn: vi.fn(async () => ({
       allowed: true as const,
@@ -86,6 +86,7 @@ function kernel(
       matchedGrantId: "grant-turn",
     })),
     listTools: vi.fn(async () => [tool]),
+    reach: async () => [],
     invokeTool: vi.fn(async (_context, call): Promise<ToolResult> => {
       return (
         result ?? {

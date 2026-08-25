@@ -14,6 +14,7 @@ import {
   type JsonObject,
   type JsonValue,
   type ProtocolError,
+  type ResourceReach,
   type RuntimeEvent,
   type RuntimeManifest,
   type RuntimeTurnOutcome,
@@ -64,7 +65,7 @@ export interface TurnExecutorOptions extends SharedOSExecutorOptions, StandardRu
  * permits narrow test doubles without granting a runtime direct access to
  * registries, namespace settings, or other host policy state.
  */
-export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool">;
+export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool" | "reach">;
 
 /**
  * The non-replaceable security envelope around one replaceable RuntimePlugin.
@@ -200,7 +201,11 @@ export class SharedOSExecutor implements TurnExecutionPort {
       const requestedNames = new Set(request.tools.map(({ name }) => name));
       const effectiveTools = allowedTools.filter(({ name }) => requestedNames.has(name));
       const effectiveToolNames = new Set(effectiveTools.map(({ name }) => name));
-      const runtimeRequest = toRuntimeTurnRequest(request, executionContext, effectiveTools);
+      const reach = await raceWithAbort(
+        this.#kernel.reach(executionContext, { signal: abort.signal }),
+        abort.signal,
+      );
+      const runtimeRequest = toRuntimeTurnRequest(request, executionContext, effectiveTools, reach);
 
       emit("turn.started", {
         agent: request.agent,
@@ -369,6 +374,7 @@ function toRuntimeTurnRequest(
   request: ExecutionRequest,
   context: AccessContext,
   tools: readonly ToolDefinition[],
+  reach: readonly ResourceReach[],
 ): RuntimeTurnRequest {
   return deepFreeze(
     structuredClone({
@@ -384,6 +390,7 @@ function toRuntimeTurnRequest(
         purpose: context.purpose,
         traceId: context.traceId,
         now: context.now,
+        reach: [...reach],
       },
       ...(request.state === undefined ? {} : { state: request.state }),
       ...(request.options === undefined ? {} : { options: request.options }),

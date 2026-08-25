@@ -316,6 +316,14 @@ Defined in: [resource.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/pa
 
 ---
 
+### ResourceReach
+
+> **ResourceReach** = `z.infer`\<_typeof_ [`ResourceReachSchema`](#resourcereachschema)>\>
+
+Defined in: [capability.ts:158](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L158)
+
+---
+
 ### ResourceRef
 
 > **ResourceRef** = `z.infer`\<_typeof_ [`ResourceRefSchema`](#resourcerefschema)>\>
@@ -854,6 +862,23 @@ Resource operation accepted over HTTP; authority is injected by the host.
 Defined in: [resource.ts:10](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/resource.ts#L10)
 
 A self-contained request to perform one permission-controlled operation.
+
+---
+
+### ResourceReachSchema
+
+> `const` **ResourceReachSchema**: `ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `namespace`: `ZodString`; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}\>
+
+Defined in: [capability.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L149)
+
+Where an actor may operate, with the authority stripped out.
+
+A model needs to know which paths are worth trying — otherwise it guesses and
+collects denials — but it must not learn who granted the access, for how
+long, or how many uses remain. This carries the shape of the reachable
+surface and nothing else. It is descriptive: every call is still authorized
+independently, so a stale or over-wide `ResourceReach` cannot permit
+anything.
 
 ---
 
