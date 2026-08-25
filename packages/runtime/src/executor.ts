@@ -148,12 +148,15 @@ export class SharedOSExecutor implements TurnExecutionPort {
     input: ExecutionRequest,
     options: ExecuteTurnOptions = {},
   ): Promise<ExecutionResult> {
-    return measure(this.#spans, SPAN.TURN, async (span) => {
-      const result = await this.#execute(input, options);
-      span.set("executionId", result.executionId);
-      span.set("status", result.status);
-      return result;
-    });
+    return measure(
+      this.#spans,
+      SPAN.TURN,
+      () => this.#execute(input, options),
+      (result, span) => {
+        span.set("executionId", result.executionId);
+        span.set("status", result.status);
+      },
+    );
   }
 
   async #execute(
@@ -323,13 +326,16 @@ export class SharedOSExecutor implements TurnExecutionPort {
           call: ToolCall,
           invocationOptions: RuntimeToolInvocationOptions = {},
         ): Promise<ToolResult> =>
-          measure(this.#spans, SPAN.TOOL_MEDIATE, async (span) => {
-            const result = await mediateTool(call, invocationOptions);
-            span.set("callId", result.callId);
-            span.set("tool", result.tool);
-            span.set("outcome", result.status);
-            return result;
-          }),
+          measure(
+            this.#spans,
+            SPAN.TOOL_MEDIATE,
+            () => mediateTool(call, invocationOptions),
+            (result, span) => {
+              span.set("callId", result.callId);
+              span.set("tool", result.tool);
+              span.set("outcome", result.status);
+            },
+          ),
         emit: (event: RuntimeEvent): void => {
           assertRuntimeHostActive(runtimeHostActive, abort.signal);
           const parsedEvent = RuntimeEventSchema.safeParse(structuredClone(event));

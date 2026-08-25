@@ -10,6 +10,7 @@
     { "path": "../adapters" },
     { "path": "../contracts" },
     { "path": "../core" },
+    { "path": "../mcp" },
     { "path": "../runtime" }
   ]
 }

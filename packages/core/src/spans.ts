@@ -70,9 +70,17 @@ const IGNORED_SCOPE: SpanScope = Object.freeze({ set: () => undefined });
 /**
  * Run an operation, and report how long the part SharedOS owns took.
  *
- * With no sink this is one comparison and a direct call: the operation's own
- * promise is returned untouched, so an uninstrumented host pays nothing for the
- * call sites existing.
+ * With no sink this is one comparison and a direct call: `operation` is invoked
+ * and its own promise handed back untouched, so an uninstrumented host pays
+ * nothing for the call sites existing.
+ *
+ * That property is the reason `operation` must be an ordinary arrow that
+ * *returns* a promise rather than an `async` one that awaits inside. An async
+ * callback allocates a second promise and two microtask hops on every call,
+ * measured or not, and eight of those on the path of one tool call is a real
+ * cost charged to hosts that never asked to be measured. Attributes only
+ * knowable from the result go to `describe`, which runs solely when there is a
+ * sink to report to.
  *
  * Nested spans are reported whole and are not subtracted from one another here.
  * A span that contains foreign work -- a resource provider, a host's storage --
@@ -85,8 +93,9 @@ export function measure<T>(
   sink: SpanSink | undefined,
   name: string,
   operation: (scope: SpanScope) => Promise<T>,
+  describe?: (value: T, scope: SpanScope) => void,
 ): Promise<T> {
-  return sink === undefined ? operation(IGNORED_SCOPE) : timed(sink, name, operation);
+  return sink === undefined ? operation(IGNORED_SCOPE) : timed(sink, name, operation, describe);
 }
 
 /** {@link measure} for an operation that does not await. */
@@ -115,15 +124,19 @@ async function timed<T>(
   sink: SpanSink,
   name: string,
   operation: (scope: SpanScope) => Promise<T>,
+  describe: ((value: T, scope: SpanScope) => void) | undefined,
 ): Promise<T> {
   const attributes: Record<string, string | number | boolean> = {};
+  const scope: SpanScope = {
+    set: (key, value) => {
+      attributes[key] = value;
+    },
+  };
   const startedAt = performance.now();
   try {
-    return await operation({
-      set: (key, value) => {
-        attributes[key] = value;
-      },
-    });
+    const value = await operation(scope);
+    describe?.(value, scope);
+    return value;
   } finally {
     report(sink, name, performance.now() - startedAt, attributes);
   }
@@ -158,6 +171,10 @@ export const SPAN = Object.freeze({
   AUTHORIZE: "kernel.authorize",
   /** One `SharedOSKernel.invokeTool`, provider included. */
   TOOL_INVOKE: "kernel.tool.invoke",
+  /** Resolving the effective tool registry one call is answered against. */
+  TOOL_CATALOGUE: "kernel.tool.catalogue",
+  /** The discovery filter: whether this authority may see the tool at all. */
+  TOOL_DISCOVER: "kernel.tool.discover",
   /** The provider call inside it. Foreign work, to be subtracted. */
   TOOL_HANDLER: "kernel.tool.handler",
   /** One `RuntimeHost.invokeTool`: the envelope's mediation of one call. */

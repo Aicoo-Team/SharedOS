@@ -22,6 +22,7 @@ import {
   InMemoryGrantUsageStore,
   type MessageTransport,
   SharedOSKernel,
+  type SpanSink,
   type ToolHandler,
 } from "@aicoo/sharedos-core";
 import type { RuntimeVisibleContext } from "@aicoo/sharedos-runtime";
@@ -814,7 +815,23 @@ export interface ConformanceWorld {
   request(executionId: string, turn?: number): ExecutionRequest;
 }
 
-export function createConformanceWorld(options: ConformanceWorldOptions = {}): ConformanceWorld {
+/**
+ * Measurement wiring, kept out of {@link ConformanceWorldOptions} on purpose.
+ *
+ * The options object is hashed into the world-set identity, and a world is
+ * identified by the grants it issues, the namespaces it enables, and the tools
+ * it registers. Where the cost of running it is reported is none of those: two
+ * runs of one world, one measured and one not, must hash the same or the hash
+ * stops meaning "the same world" and starts meaning "the same command line".
+ */
+export interface ConformanceWorldInstrumentation {
+  readonly spans?: SpanSink;
+}
+
+export function createConformanceWorld(
+  options: ConformanceWorldOptions = {},
+  instrumentation: ConformanceWorldInstrumentation = {},
+): ConformanceWorld {
   const now = options.now ?? CONFORMANCE_NOW;
   const bounded = options.bounded === true || options.usageStoreUnavailable === true;
   const agent = [
@@ -853,6 +870,7 @@ export function createConformanceWorld(options: ConformanceWorldOptions = {}): C
     grantSource,
     audit,
     messageTransport: transport,
+    ...(instrumentation.spans === undefined ? {} : { spans: instrumentation.spans }),
     authorizer: new CapabilityAuthorizer({
       usageStore:
         options.usageStoreUnavailable === true

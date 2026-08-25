@@ -348,7 +348,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:118](https://github.com/Aico
 
 ### SharedOSExecutor
 
-Defined in: [packages/runtime/src/executor.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L81)
+Defined in: [packages/runtime/src/executor.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L90)
 
 The non-replaceable security envelope around one replaceable RuntimePlugin.
 Scheduling, retries, and network-level stopping remain host responsibilities.
@@ -363,7 +363,7 @@ Scheduling, retries, and network-level stopping remain host responsibilities.
 
 > **new SharedOSExecutor**(`kernel`, `runtime`, `options?`): [`SharedOSExecutor`](#sharedosexecutor)
 
-Defined in: [packages/runtime/src/executor.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L91)
+Defined in: [packages/runtime/src/executor.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L101)
 
 ###### Parameters
 
@@ -385,7 +385,7 @@ Defined in: [packages/runtime/src/executor.ts:91](https://github.com/Aicoo-Team/
 
 > **get** **runtimeManifest**(): `object`
 
-Defined in: [packages/runtime/src/executor.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L132)
+Defined in: [packages/runtime/src/executor.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L143)
 
 ###### Returns
 
@@ -413,7 +413,7 @@ Defined in: [packages/runtime/src/executor.ts:132](https://github.com/Aicoo-Team
 
 > **execute**(`input`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/runtime/src/executor.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L136)
+Defined in: [packages/runtime/src/executor.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L147)
 
 ###### Parameters
 
@@ -535,7 +535,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:79](https://github.com/Aic
 
 ### TurnExecutor
 
-Defined in: [packages/runtime/src/executor.ts:411](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L411)
+Defined in: [packages/runtime/src/executor.ts:457](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L457)
 
 Compatibility facade for the original driver-based API. New harnesses should
 implement RuntimePlugin and use SharedOSExecutor directly.
@@ -550,7 +550,7 @@ implement RuntimePlugin and use SharedOSExecutor directly.
 
 > **new TurnExecutor**(`kernel`, `driver`, `options?`): [`TurnExecutor`](#turnexecutor)
 
-Defined in: [packages/runtime/src/executor.ts:414](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L414)
+Defined in: [packages/runtime/src/executor.ts:460](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L460)
 
 ###### Parameters
 
@@ -572,7 +572,7 @@ Defined in: [packages/runtime/src/executor.ts:414](https://github.com/Aicoo-Team
 
 > **get** **runtimeManifest**(): `object`
 
-Defined in: [packages/runtime/src/executor.ts:438](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L438)
+Defined in: [packages/runtime/src/executor.ts:484](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L484)
 
 ###### Returns
 
@@ -600,7 +600,7 @@ Defined in: [packages/runtime/src/executor.ts:438](https://github.com/Aicoo-Team
 
 > **execute**(`input`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/runtime/src/executor.ts:442](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L442)
+Defined in: [packages/runtime/src/executor.ts:488](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L488)
 
 ###### Parameters
 
@@ -726,14 +726,14 @@ Defined in: [packages/runtime/src/standard-runtime.ts:39](https://github.com/Aic
 
 ### ExecuteTurnOptions
 
-Defined in: [packages/runtime/src/executor.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L48)
+Defined in: [packages/runtime/src/executor.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L57)
 
 #### Properties
 
 | Property                                 | Type                | Description                                                             | Defined in                                                                                                                   |
 | ---------------------------------------- | ------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-onevent"></a> `onEvent?` | (`event`) => `void` | Synchronous observation hook for streaming an immutable event snapshot. | [packages/runtime/src/executor.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L51) |
-| <a id="property-signal"></a> `signal?`   | `AbortSignal`       | -                                                                       | [packages/runtime/src/executor.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L49) |
+| <a id="property-onevent"></a> `onEvent?` | (`event`) => `void` | Synchronous observation hook for streaming an immutable event snapshot. | [packages/runtime/src/executor.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L60) |
+| <a id="property-signal"></a> `signal?`   | `AbortSignal`       | -                                                                       | [packages/runtime/src/executor.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L58) |
 
 ---
 
@@ -879,7 +879,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:14](https://github.com/Aicoo
 
 ### SharedOSExecutorOptions
 
-Defined in: [packages/runtime/src/executor.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L40)
+Defined in: [packages/runtime/src/executor.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L41)
 
 #### Extended by
 
@@ -887,13 +887,14 @@ Defined in: [packages/runtime/src/executor.ts:40](https://github.com/Aicoo-Team/
 
 #### Properties
 
-| Property                                                         | Type           | Defined in                                                                                                                   |
-| ---------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-clock"></a> `clock?`                             | () => `string` | [packages/runtime/src/executor.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L41) |
-| <a id="property-createid"></a> `createId?`                       | () => `string` | [packages/runtime/src/executor.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L42) |
-| <a id="property-defaultmaxsteps"></a> `defaultMaxSteps?`         | `number`       | [packages/runtime/src/executor.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L43) |
-| <a id="property-defaultmaxtoolcalls"></a> `defaultMaxToolCalls?` | `number`       | [packages/runtime/src/executor.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L44) |
-| <a id="property-defaulttimeoutms"></a> `defaultTimeoutMs?`       | `number`       | [packages/runtime/src/executor.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L45) |
+| Property                                                         | Type                                    | Description                                                                                                                                                                                                                                         | Defined in                                                                                                                   |
+| ---------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-clock"></a> `clock?`                             | () => `string`                          | -                                                                                                                                                                                                                                                   | [packages/runtime/src/executor.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L42) |
+| <a id="property-createid"></a> `createId?`                       | () => `string`                          | -                                                                                                                                                                                                                                                   | [packages/runtime/src/executor.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L43) |
+| <a id="property-defaultmaxsteps"></a> `defaultMaxSteps?`         | `number`                                | -                                                                                                                                                                                                                                                   | [packages/runtime/src/executor.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L44) |
+| <a id="property-defaultmaxtoolcalls"></a> `defaultMaxToolCalls?` | `number`                                | -                                                                                                                                                                                                                                                   | [packages/runtime/src/executor.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L45) |
+| <a id="property-defaulttimeoutms"></a> `defaultTimeoutMs?`       | `number`                                | -                                                                                                                                                                                                                                                   | [packages/runtime/src/executor.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L46) |
+| <a id="property-spans"></a> `spans?`                             | [`SpanSink`](sharedos-core.md#spansink) | Where the envelope reports what it cost, when a host is measuring. A second clock, and deliberately not the one `clock` supplies: that one names instants for a record and a conformance run freezes it. See [SpanSink](sharedos-core.md#spansink). | [packages/runtime/src/executor.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L54) |
 
 ---
 
@@ -915,7 +916,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:48](https://github.com/Aic
 
 ### TurnExecutionPort
 
-Defined in: [packages/runtime/src/executor.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L54)
+Defined in: [packages/runtime/src/executor.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L63)
 
 #### Methods
 
@@ -923,7 +924,7 @@ Defined in: [packages/runtime/src/executor.ts:54](https://github.com/Aicoo-Team/
 
 > **execute**(`input`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/runtime/src/executor.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L55)
+Defined in: [packages/runtime/src/executor.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L64)
 
 ###### Parameters
 
@@ -976,7 +977,7 @@ Defined in: [packages/runtime/src/executor.ts:55](https://github.com/Aicoo-Team/
 
 ### TurnExecutorOptions
 
-Defined in: [packages/runtime/src/executor.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L58)
+Defined in: [packages/runtime/src/executor.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L67)
 
 #### Extends
 
@@ -984,14 +985,15 @@ Defined in: [packages/runtime/src/executor.ts:58](https://github.com/Aicoo-Team/
 
 #### Properties
 
-| Property                                                           | Type           | Inherited from                                                                                               | Defined in                                                                                                                                   |
-| ------------------------------------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-clock-1"></a> `clock?`                             | () => `string` | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`clock`](#property-clock)                             | [packages/runtime/src/executor.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L41)                 |
-| <a id="property-closetimeoutms-1"></a> `closeTimeoutMs?`           | `number`       | [`StandardRuntimeOptions`](#standardruntimeoptions).[`closeTimeoutMs`](#property-closetimeoutms)             | [packages/runtime/src/standard-runtime.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L49) |
-| <a id="property-createid-1"></a> `createId?`                       | () => `string` | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`createId`](#property-createid)                       | [packages/runtime/src/executor.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L42)                 |
-| <a id="property-defaultmaxsteps-1"></a> `defaultMaxSteps?`         | `number`       | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`defaultMaxSteps`](#property-defaultmaxsteps)         | [packages/runtime/src/executor.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L43)                 |
-| <a id="property-defaultmaxtoolcalls-1"></a> `defaultMaxToolCalls?` | `number`       | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`defaultMaxToolCalls`](#property-defaultmaxtoolcalls) | [packages/runtime/src/executor.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L44)                 |
-| <a id="property-defaulttimeoutms-1"></a> `defaultTimeoutMs?`       | `number`       | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`defaultTimeoutMs`](#property-defaulttimeoutms)       | [packages/runtime/src/executor.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L45)                 |
+| Property                                                           | Type                                    | Description                                                                                                                                                                                                                                         | Inherited from                                                                                               | Defined in                                                                                                                                   |
+| ------------------------------------------------------------------ | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-clock-1"></a> `clock?`                             | () => `string`                          | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`clock`](#property-clock)                             | [packages/runtime/src/executor.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L42)                 |
+| <a id="property-closetimeoutms-1"></a> `closeTimeoutMs?`           | `number`                                | -                                                                                                                                                                                                                                                   | [`StandardRuntimeOptions`](#standardruntimeoptions).[`closeTimeoutMs`](#property-closetimeoutms)             | [packages/runtime/src/standard-runtime.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L49) |
+| <a id="property-createid-1"></a> `createId?`                       | () => `string`                          | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`createId`](#property-createid)                       | [packages/runtime/src/executor.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L43)                 |
+| <a id="property-defaultmaxsteps-1"></a> `defaultMaxSteps?`         | `number`                                | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`defaultMaxSteps`](#property-defaultmaxsteps)         | [packages/runtime/src/executor.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L44)                 |
+| <a id="property-defaultmaxtoolcalls-1"></a> `defaultMaxToolCalls?` | `number`                                | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`defaultMaxToolCalls`](#property-defaultmaxtoolcalls) | [packages/runtime/src/executor.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L45)                 |
+| <a id="property-defaulttimeoutms-1"></a> `defaultTimeoutMs?`       | `number`                                | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`defaultTimeoutMs`](#property-defaulttimeoutms)       | [packages/runtime/src/executor.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L46)                 |
+| <a id="property-spans-1"></a> `spans?`                             | [`SpanSink`](sharedos-core.md#spansink) | Where the envelope reports what it cost, when a host is measuring. A second clock, and deliberately not the one `clock` supplies: that one names instants for a record and a conformance run freezes it. See [SpanSink](sharedos-core.md#spansink). | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`spans`](#property-spans)                             | [packages/runtime/src/executor.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L54)                 |
 
 ## Type Aliases
 
@@ -1052,7 +1054,7 @@ issuing authority, or namespace-management state.
 
 > **TurnKernel** = `Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"admitTurn"` \| `"listTools"` \| `"invokeTool"`> \> & `Partial`\<`Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"openTurnAuthority"` \| `"recordEscalation"`>>\>\>
 
-Defined in: [packages/runtime/src/executor.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L67)
+Defined in: [packages/runtime/src/executor.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L76)
 
 The minimal deny-by-default kernel surface required by a turn executor.
 

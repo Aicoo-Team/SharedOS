@@ -454,7 +454,7 @@ export class SharedOSKernel {
    *
    * The span around it is the kernel's whole share of one mediated call, and it
    * contains the provider's own work, which is not enforcement. That part is
-   * named separately as {@link SPAN.TOOL_HANDLER} and carries the same call id,
+   * named separately as `SPAN.TOOL_HANDLER` and carries the same call id,
    * so a report subtracts it rather than attributing the host's storage to
    * SharedOS. Both spans exist or neither does.
    */
@@ -463,13 +463,16 @@ export class SharedOSKernel {
     call: ToolCall,
     options: KernelOperationOptions = {},
   ): Promise<ToolResult> {
-    return measure(this.#spans, SPAN.TOOL_INVOKE, async (span) => {
-      span.set("callId", call.id);
-      span.set("tool", call.tool);
-      const result = await this.#invokeTool(context, call, options);
-      span.set("outcome", result.status);
-      return result;
-    });
+    return measure(
+      this.#spans,
+      SPAN.TOOL_INVOKE,
+      (span) => {
+        span.set("callId", call.id);
+        span.set("tool", call.tool);
+        return this.#invokeTool(context, call, options);
+      },
+      (result, span) => span.set("outcome", result.status),
+    );
   }
 
   async #invokeTool(
@@ -505,7 +508,12 @@ export class SharedOSKernel {
 
     let tools: ToolRegistry;
     try {
-      tools = await this.#resolveToolRegistry(context, options.signal);
+      // Named separately because it is re-derived per call, and a number that
+      // could not be attributed to it would read as the cost of authorizing.
+      tools = await measure(this.#spans, SPAN.TOOL_CATALOGUE, (span) => {
+        span.set("callId", call.id);
+        return this.#resolveToolRegistry(context, options.signal);
+      });
     } catch (error) {
       if (options.signal?.aborted) {
         throw options.signal.reason ?? error;
@@ -543,10 +551,18 @@ export class SharedOSKernel {
       return result;
     }
 
-    const discoverable = await this.#authorizer.canDiscover(authority.authority, {
-      resource: handler.definition.requiredCapability.resource,
-      action: handler.definition.requiredCapability.action,
-    });
+    const discoverable = await measure(
+      this.#spans,
+      SPAN.TOOL_DISCOVER,
+      (span) => {
+        span.set("callId", call.id);
+        return this.#authorizer.canDiscover(authority.authority, {
+          resource: handler.definition.requiredCapability.resource,
+          action: handler.definition.requiredCapability.action,
+        });
+      },
+      (decision, span) => span.set("outcome", decision.allowed ? "visible" : "hidden"),
+    );
     if (!discoverable.allowed) {
       await this.#recordAuthorizationDecision(
         context,
@@ -619,6 +635,7 @@ export class SharedOSKernel {
         authority.authority,
         { resource: requirement.resource, action: requirement.action },
         false,
+        call.id,
       );
       const result = deniedToolResult(
         call,
@@ -646,6 +663,7 @@ export class SharedOSKernel {
       authority.authority,
       { resource: requirement.resource, action: requirement.action },
       true,
+      call.id,
     );
     if (!decision.allowed) {
       const result = deniedToolResult(
@@ -661,7 +679,7 @@ export class SharedOSKernel {
     let result: ToolResult;
     try {
       throwIfAborted(options.signal);
-      const candidate = await measure(this.#spans, SPAN.TOOL_HANDLER, async (span) => {
+      const candidate = await measure(this.#spans, SPAN.TOOL_HANDLER, (span) => {
         span.set("callId", call.id);
         span.set("tool", call.tool);
         return handler.invoke(context, parsedCall, options.signal ?? neverAbortedSignal());
@@ -941,24 +959,48 @@ export class SharedOSKernel {
     authority: ResolvedAuthority,
     request: AuthorizationRequest,
     consume: boolean,
+    /**
+     * The operation this decision was made for, when there is one.
+     *
+     * Carried only onto the span, never into the decision. Every span produced
+     * for one call names that call, which is what lets a report attribute the
+     * cost of a call to its parts instead of to a remainder. An operation that
+     * is not a tool call -- a bare `authorize`, a turn admission -- has no id
+     * to give and its span carries none.
+     */
+    operationId?: string,
   ): Promise<AuthorizationDecision> {
-    return measure(this.#spans, SPAN.AUTHORIZE, async (span) => {
-      const decision = await this.#authorizer.authorize(authority, request, {
-        consume,
-      });
+    return measure(
+      this.#spans,
+      SPAN.AUTHORIZE,
+      (span) => {
+        if (operationId !== undefined) {
+          span.set("callId", operationId);
+        }
+        span.set("consumed", consume);
+        return this.#decideAndRecord(context, authority, request, consume);
+      },
+      (decision, span) => span.set("outcome", decision.allowed ? "allowed" : "denied"),
+    );
+  }
 
-      await this.#recordAuthorizationDecision(
-        context,
-        request,
-        decision,
-        consume,
-        authority.snapshot.hash,
-      );
+  async #decideAndRecord(
+    context: AccessContext,
+    authority: ResolvedAuthority,
+    request: AuthorizationRequest,
+    consume: boolean,
+  ): Promise<AuthorizationDecision> {
+    const decision = await this.#authorizer.authorize(authority, request, { consume });
 
-      span.set("outcome", decision.allowed ? "allowed" : "denied");
-      span.set("consumed", consume);
-      return decision;
-    });
+    await this.#recordAuthorizationDecision(
+      context,
+      request,
+      decision,
+      consume,
+      authority.snapshot.hash,
+    );
+
+    return decision;
   }
 
   /**
@@ -992,11 +1034,13 @@ export class SharedOSKernel {
     context: AccessContext,
     signal: AbortSignal | undefined,
   ): Promise<AuthorityResolution> {
-    return measure(this.#spans, SPAN.AUTHORITY_LOAD, async (span) => {
-      const resolution = await this.#loadAuthorityOnce(context, signal);
-      span.set("outcome", resolution.status === "resolved" ? "resolved" : "unavailable");
-      return resolution;
-    });
+    return measure(
+      this.#spans,
+      SPAN.AUTHORITY_LOAD,
+      () => this.#loadAuthorityOnce(context, signal),
+      (resolution, span) =>
+        span.set("outcome", resolution.status === "resolved" ? "resolved" : "unavailable"),
+    );
   }
 
   async #loadAuthorityOnce(
