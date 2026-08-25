@@ -1,0 +1,13 @@
+{
+  "name": "@aicoo/sharedos-example-fleet-delegation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@aicoo/sharedos-contracts": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*"
+  }
+}

@@ -8,7 +8,7 @@ import { CODEX_PROTOCOL_ID, codexProtocol } from "./protocol.js";
 
 export { CODEX_PROTOCOL_ID, codexProtocol } from "./protocol.js";
 
-export const CODEX_ADAPTER_VERSION = "0.1.0-alpha.0";
+export const CODEX_ADAPTER_VERSION = "0.1.0-alpha.2";
 
 export const CODEX_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   id: "sharedos.codex",

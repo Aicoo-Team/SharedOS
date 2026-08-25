@@ -124,8 +124,8 @@ transport logic and does not change the dependency direction.
 
 A namespace is the mandatory tenant and isolation boundary for identifiers,
 grants, messages, resources, and audit events. A world is the host-provided state
-visible to an execution within a namespace. PACT normally creates a fresh world
-per run; Aicoo maps a namespace to durable product state.
+visible to an execution within a namespace. An evaluation host normally creates
+a fresh world per run; a product host maps a namespace to durable product state.
 
 No unqualified identifier is globally resolvable. Provider calls receive the
 namespace explicitly.
@@ -183,9 +183,9 @@ const files: ResourceProvider = {
 };
 ```
 
-An Aicoo provider can map notes and folders to files while using its search
-index for `files.search`. A PACT provider can use an isolated in-memory world.
-The runtime sees only the provider contract.
+A product provider can map notes and folders to files while using its own search
+index for `files.search`. An evaluation provider can use an isolated in-memory
+world. The runtime sees only the provider contract.
 
 Memory, active work, raw evidence, and curated knowledge may be represented as
 different file roots. Indexes and context mounts are derived views: they must
@@ -292,23 +292,23 @@ boundary.
 
 SharedOS executes one turn; a host decides when and how often turns happen.
 
-- Aicoo owns production heartbeat scheduling, delivery policy, billing and
+- A product host owns recurring scheduling, delivery policy, billing and
   retries.
-- PACT owns experimental ticks, order, budgets, stopping conditions, snapshots,
-  judge execution, gold labels, statistics and artifacts.
+- An evaluation host owns experimental ticks, order, budgets, stopping
+  conditions, snapshots, judge execution, gold labels, statistics and artifacts.
 - SharedOS owns permission-controlled execution inside each individual turn.
 
-The legacy `experiment_v2.ts` orchestration therefore belongs to PACT. Generic
-logic extracted from it may enter SharedOS only if it describes a single turn
-without benchmark or product scheduling semantics.
+Experiment orchestration therefore belongs to the host. Generic logic extracted
+from it may enter SharedOS only if it describes a single turn without benchmark
+or product scheduling semantics.
 
 ## Deployment shapes
 
 ### Embedded
 
 The host imports contracts and runtime packages and provides adapters in the
-same process. This is the default for Aicoo because it avoids a second network
-hop and lets the existing product own transactions.
+same process. This is the default for a product host because it avoids a second
+network hop and lets the existing product own transactions.
 
 ### Remote
 
@@ -327,9 +327,9 @@ results use 200. Malformed, unauthenticated, and transport-level failures use
 
 SharedOS code cannot import:
 
-- Aicoo routes, database schema, credit accounting, UI, or framework request
+- host routes, database schema, credit accounting, UI, or framework request
   types;
-- PACT tasks, gold labels, runner orchestration, judges, or metrics;
+- benchmark tasks, gold labels, runner orchestration, judges, or metrics;
 - a required vendor-specific model, database, vector store, or tool SDK.
 
 Hosts depend on SharedOS and satisfy its ports. SharedOS never reaches upward

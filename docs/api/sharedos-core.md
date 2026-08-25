@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.0**](README.md)
+[**SharedOS API v0.1.0-alpha.2**](README.md)
 
 ---
 
@@ -1451,7 +1451,7 @@ Defined in: [packages/core/src/tool-registry.ts:31](https://github.com/Aicoo-Tea
 
 ### DelegationChainResolver
 
-Defined in: [packages/core/src/delegation.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L22)
+Defined in: [packages/core/src/delegation.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L28)
 
 The trusted lookup for ancestors of a derived grant.
 
@@ -1466,7 +1466,7 @@ throw rather than return a partial or stale ancestor.
 
 > **resolve**(`namespaceId`, `grantId`): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: [packages/core/src/delegation.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L23)
+Defined in: [packages/core/src/delegation.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L29)
 
 ###### Parameters
 
@@ -1483,14 +1483,31 @@ Defined in: [packages/core/src/delegation.ts:23](https://github.com/Aicoo-Team/S
 
 ### DelegationValidationOptions
 
-Defined in: [packages/core/src/delegation.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L57)
+Defined in: [packages/core/src/delegation.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L64)
 
 #### Properties
 
 | Property                                               | Modifier   | Type                                                  | Defined in                                                                                                                 |
 | ------------------------------------------------------ | ---------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-maxchainlength"></a> `maxChainLength?` | `readonly` | `number`                                              | [packages/core/src/delegation.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L59) |
-| <a id="property-resolver"></a> `resolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | [packages/core/src/delegation.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L58) |
+| <a id="property-maxchainlength"></a> `maxChainLength?` | `readonly` | `number`                                              | [packages/core/src/delegation.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L66) |
+| <a id="property-resolver"></a> `resolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | [packages/core/src/delegation.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L65) |
+
+---
+
+### DeriveGrantRequest
+
+Defined in: [packages/core/src/delegation.ts:278](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L278)
+
+#### Properties
+
+| Property                                          | Modifier   | Type                                                                                                                                                                                                       | Description                                                                      | Defined in                                                                                                                   |
+| ------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-capabilities"></a> `capabilities` | `readonly` | readonly `object`[]                                                                                                                                                                                        | The subset being passed on. Must be within the parent, capability by capability. | [packages/core/src/delegation.ts:284](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L284) |
+| <a id="property-constraints"></a> `constraints?`  | `readonly` | `Omit`\<\{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, `"delegationDepth"`\> & `object`                               | -                                                                                | [packages/core/src/delegation.ts:285](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L285) |
+| <a id="property-id-1"></a> `id`                   | `readonly` | `string`                                                                                                                                                                                                   | Identifier for the derived grant. Must be unique within the namespace.           | [packages/core/src/delegation.ts:280](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L280) |
+| <a id="property-issuedat"></a> `issuedAt`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                | [packages/core/src/delegation.ts:288](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L288) |
+| <a id="property-metadata-1"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                | [packages/core/src/delegation.ts:289](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L289) |
+| <a id="property-subject"></a> `subject`           | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Who receives the derived authority.                                              | [packages/core/src/delegation.ts:282](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L282) |
 
 ---
 
@@ -1728,7 +1745,7 @@ Defined in: [packages/core/src/resource-registry.ts:10](https://github.com/Aicoo
 | ------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="property-action-2"></a> `action`           | `readonly` | `string`                                                                                                                                                                                                   | [packages/core/src/resource-registry.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L13) |
 | <a id="property-input"></a> `input?`              | `readonly` | [`JsonValue`](sharedos-contracts.md#jsonvalue)                                                                                                                                                             | [packages/core/src/resource-registry.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L14) |
-| <a id="property-metadata-1"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | [packages/core/src/resource-registry.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L15) |
+| <a id="property-metadata-2"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | [packages/core/src/resource-registry.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L15) |
 | <a id="property-operationid-1"></a> `operationId` | `readonly` | `string`                                                                                                                                                                                                   | [packages/core/src/resource-registry.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L11) |
 | <a id="property-resource-2"></a> `resource`       | `readonly` | `object`                                                                                                                                                                                                   | [packages/core/src/resource-registry.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L12) |
 | `resource.namespace`                              | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/capability.d.ts:54                                                                                               |
@@ -1961,11 +1978,21 @@ Defined in: [packages/core/src/authorization.ts:31](https://github.com/Aicoo-Tea
 
 ---
 
+### DelegationRefusal
+
+> **DelegationRefusal** = `"empty_capabilities"` \| `"id_collides_with_parent"` \| `"bounded_parent_not_delegable"` \| `"parent_not_delegable"` \| `"depth_exhausted"` \| `"capability_not_within_parent"` \| `"purpose_not_within_parent"` \| `"window_not_within_parent"` \| `"issued_before_parent"`
+
+Defined in: [packages/core/src/delegation.ts:263](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L263)
+
+Why a delegation was refused at the point it was issued.
+
+---
+
 ### DelegationUnverifiedCode
 
 > **DelegationUnverifiedCode** = `"resolver_unavailable"` \| `"parent_not_found"` \| `"resolver_failed"`
 
-Defined in: [packages/core/src/delegation.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L39)
+Defined in: [packages/core/src/delegation.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L46)
 
 The chain could not be established, which is never treated as valid.
 
@@ -1975,17 +2002,25 @@ The chain could not be established, which is never treated as valid.
 
 > **DelegationValidation** = \{ `chain`: readonly `string`[]; `status`: `"valid"`; \} \| \{ `chain`: readonly `string`[]; `code`: [`DelegationViolationCode`](#delegationviolationcode); `grantId`: `string`; `status`: `"invalid"`; \} \| \{ `chain`: readonly `string`[]; `code`: [`DelegationUnverifiedCode`](#delegationunverifiedcode); `grantId`: `string`; `status`: `"unverified"`; \}
 
-Defined in: [packages/core/src/delegation.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L42)
+Defined in: [packages/core/src/delegation.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L49)
 
 ---
 
 ### DelegationViolationCode
 
-> **DelegationViolationCode** = `"delegation_not_permitted"` \| `"delegation_depth_exceeded"` \| `"issuer_not_parent_subject"` \| `"namespace_mismatch"` \| `"parent_inactive"` \| `"capability_widened"` \| `"constraints_widened"` \| `"chain_cycle"` \| `"chain_too_long"`
+> **DelegationViolationCode** = `"delegation_not_permitted"` \| `"delegation_depth_exceeded"` \| `"bounded_parent_not_delegable"` \| `"issuer_not_parent_subject"` \| `"namespace_mismatch"` \| `"parent_inactive"` \| `"capability_widened"` \| `"constraints_widened"` \| `"chain_cycle"` \| `"chain_too_long"`
 
-Defined in: [packages/core/src/delegation.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L27)
+Defined in: [packages/core/src/delegation.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L33)
 
 A structural rule the presented chain broke.
+
+---
+
+### DeriveGrantResult
+
+> **DeriveGrantResult** = \{ `grant`: [`CapabilityGrant`](sharedos-contracts.md#capabilitygrant); `ok`: `true`; \} \| \{ `ok`: `false`; `reason`: [`DelegationRefusal`](#delegationrefusal); \}
+
+Defined in: [packages/core/src/delegation.ts:274](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L274)
 
 ---
 
@@ -2057,7 +2092,7 @@ Defined in: [packages/core/src/kernel.ts:83](https://github.com/Aicoo-Team/Share
 
 > `const` **DEFAULT\_MAX\_DELEGATION\_CHAIN\_LENGTH**: `16` = `16`
 
-Defined in: [packages/core/src/delegation.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L12)
+Defined in: [packages/core/src/delegation.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L18)
 
 The longest ancestor chain SharedOS will walk before failing closed.
 
@@ -2364,6 +2399,55 @@ Defined in: [packages/core/src/authorization.ts:308](https://github.com/Aicoo-Te
 
 ---
 
+### deriveGrant()
+
+> **deriveGrant**(`parent`, `request`): [`DeriveGrantResult`](#derivegrantresult)
+
+Defined in: [packages/core/src/delegation.ts:388](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L388)
+
+Derive a narrower grant from one the delegator already holds.
+
+This is the supported way to produce a grant whose issuer is not the resource
+owner. It is a pure function: it never consults a store, never mints
+authority the parent does not carry, and refuses rather than clamping when a
+request would exceed the parent — a silently clamped delegation reads as
+accepted, and the delegator then believes it passed on more than it did.
+
+What it produces is a claim, not a decision. The derived grant names only its
+immediate parent, and `validateDelegationChain` re-resolves the ancestors
+from the issuing store at every use, because narrowing settles here but
+revocation happens afterwards. Deriving a grant is therefore never sufficient
+on its own: a host that issues one must also install a
+`DelegationChainResolver`.
+
+#### Parameters
+
+| Parameter                             | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parent`                              | \{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} |
+| `parent.capabilities`                 | `object`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `parent.constraints`                  | \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `parent.constraints.delegationDepth?` | `number`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `parent.constraints.expiresAt?`       | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `parent.constraints.maxUses?`         | `number`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `parent.constraints.notBefore?`       | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `parent.constraints.purposes?`        | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `parent.id`                           | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `parent.issuedAt`                     | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `parent.issuer`                       | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `parent.metadata?`                    | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `parent.namespaceId`                  | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `parent.parentGrantId?`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `parent.revokedAt?`                   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `parent.subject`                      | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `request`                             | [`DeriveGrantRequest`](#derivegrantrequest)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+
+#### Returns
+
+[`DeriveGrantResult`](#derivegrantresult)
+
+---
+
 ### hashJson()
 
 > **hashJson**(`value`): `Promise`\<`string`>\>
@@ -2600,7 +2684,7 @@ a lease can never answer for a context it was not resolved for.
 
 > **validateDelegationChain**(`grant`, `context`, `now`, `options?`): `Promise`\<[`DelegationValidation`](#delegationvalidation)>\>
 
-Defined in: [packages/core/src/delegation.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L80)
+Defined in: [packages/core/src/delegation.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L91)
 
 Validate the complete ancestor chain of one grant.
 
@@ -2613,9 +2697,13 @@ derived grant every link must satisfy all of:
 - the parent is itself active for the requested purpose at `now`, so
   revoking or expiring an ancestor invalidates every descendant;
 - every child capability is covered by one parent capability;
-- time window, purposes, and bounded uses never widen;
+- time window and purposes never widen;
 - the parent holds delegation budget and the child's budget is strictly
-  smaller.
+  smaller;
+- the parent is not itself bounded by `maxUses`. Usage counters are per
+  grant, so n children of a k-use parent would carry n*k uses between them.
+  Sharing one budget across a chain needs accounting that spans grants, and
+  until that exists the parent is refused rather than multiplied.
 
 Anything the resolver cannot establish returns `unverified`, never `valid`.
 

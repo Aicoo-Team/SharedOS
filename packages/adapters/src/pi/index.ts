@@ -8,7 +8,7 @@ import { PI_PROTOCOL_ID, piProtocol } from "./protocol.js";
 
 export { PI_PROTOCOL_ID, piProtocol } from "./protocol.js";
 
-export const PI_ADAPTER_VERSION = "0.1.0-alpha.0";
+export const PI_ADAPTER_VERSION = "0.1.0-alpha.2";
 
 export const PI_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   id: "sharedos.pi",

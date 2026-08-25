@@ -52,8 +52,8 @@ production gates are tracked in [release readiness](release-readiness.md).
 
 ### Embedded runtime
 
-Use the packages in the host process. This is the preferred shape for Aicoo and
-other products that already own transactions, persistence, and model calls.
+Use the packages in the host process. This is the preferred shape for products
+that already own transactions, persistence, and model calls.
 There is no extra network hop, and the host can implement providers directly
 over its existing services.
 
@@ -64,9 +64,9 @@ Expose the same kernel through `@aicoo/sharedos-http` and call it with
 than the additional deployment boundary. Transport authentication identifies
 the caller; it does not replace SharedOS capability authorization.
 
-PACT uses a third, related shape: its runner owns the experiment loop and calls
-an embedded or remote SharedOS adapter once per tick. SharedOS still executes
-only one bounded turn.
+Evaluation harnesses use a third, related shape: the runner owns the experiment
+loop and calls an embedded or remote SharedOS adapter once per tick. SharedOS
+still executes only one bounded turn.
 
 ## Embedded integration, step by step
 
@@ -199,8 +199,8 @@ Registering the provider enables direct resource operations. Registering the
 standard tools exposes the same operations as model-callable tools such as
 `files.search` and `files.append`. Neither registration grants access.
 
-The in-memory stores from `@aicoo/sharedos-testkit` are useful for tests and isolated
-PACT worlds. They are not production persistence.
+The in-memory stores from `@aicoo/sharedos-testkit` are useful for tests and
+isolated experiment worlds. They are not production persistence.
 
 ### 4. Grant the minimum authority
 
@@ -347,20 +347,24 @@ const handle = createSharedOSHandler({
 });
 ```
 
-On the caller, use `SharedOSClient` for `/v1/tools`, namespace settings,
-resource and tool calls, messages, and `/v1/turns`:
+On the caller, use `SharedOSClient`. It has one method per route and
+validates every response against the same schema the server used:
 
 ```ts
 import { SharedOSClient } from "@aicoo/sharedos";
 
 const sharedos = new SharedOSClient({
   baseUrl: "https://sharedos.internal.example",
-  token: () => serviceIdentityToken(),
+  // A value, or an async function so a short-lived token is minted per call.
+  headers: async () => ({ authorization: `Bearer ${await serviceIdentityToken()}` }),
 });
 ```
 
 The HTTP server must derive `AccessContext` from authenticated server-side
 state. Never accept the authorization context from the remote JSON body.
+
+Every route, request shape, and status code is listed in the
+[HTTP API reference](http-api.md).
 
 ## Production responsibilities that remain in the host
 
@@ -399,6 +403,5 @@ tools.
 11. Run `pnpm check` and test cancellation, replay, revocation, audit failure,
     broker closure, and tenant isolation before enabling production writes.
 
-Product-specific mappings are documented in the [Aicoo integration guide](integrations/aicoo.md),
-the [Pulse migration plan](integrations/pulse-migration.md), and the
-[PACT integration guide](integrations/pact.md).
+Host-specific mappings live outside this guide: they depend on how your product
+already models storage, identity, and tools.

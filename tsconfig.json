@@ -11,6 +11,8 @@
     { "path": "./packages/testkit" },
     { "path": "./packages/conformance" },
     { "path": "./packages/adapters" },
-    { "path": "./examples/quickstart" }
+    { "path": "./examples/quickstart" },
+    { "path": "./examples/fleet-delegation" },
+    { "path": "./examples/reference-host" }
   ]
 }

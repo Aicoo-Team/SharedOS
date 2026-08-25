@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.0**](README.md)
+[**SharedOS API v0.1.0-alpha.2**](README.md)
 
 ---
 
@@ -719,7 +719,7 @@ Defined in: [adapters/src/codex/index.ts:34](https://github.com/Aicoo-Team/Share
 
 > **DeepseekDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: adapters/src/deepseek/index.ts:41
+Defined in: [adapters/src/deepseek/index.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L41)
 
 #### Type Declaration
 
@@ -760,7 +760,7 @@ whose terminal frame carries no text still produces a turn output.
 
 > **PiDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: adapters/src/pi/index.ts:45
+Defined in: [adapters/src/pi/index.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L45)
 
 #### Type Declaration
 
@@ -776,7 +776,7 @@ Defined in: adapters/src/pi/index.ts:45
 
 ### CLAUDE\_CODE\_ADAPTER\_VERSION
 
-> `const` **CLAUDE\_CODE\_ADAPTER\_VERSION**: `"0.1.0-alpha.0"` = `"0.1.0-alpha.0"`
+> `const` **CLAUDE\_CODE\_ADAPTER\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
 
 Defined in: [adapters/src/claude-code/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L11)
 
@@ -835,7 +835,7 @@ Defined in: [adapters/src/claude-code/protocol.ts:48](https://github.com/Aicoo-T
 
 ### CODEX\_ADAPTER\_VERSION
 
-> `const` **CODEX\_ADAPTER\_VERSION**: `"0.1.0-alpha.0"` = `"0.1.0-alpha.0"`
+> `const` **CODEX\_ADAPTER\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
 
 Defined in: [adapters/src/codex/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L11)
 
@@ -895,9 +895,9 @@ Defined in: [adapters/src/codex/protocol.ts:63](https://github.com/Aicoo-Team/Sh
 
 ### DEEPSEEK\_ADAPTER\_VERSION
 
-> `const` **DEEPSEEK\_ADAPTER\_VERSION**: `"0.1.0-alpha.0"` = `"0.1.0-alpha.0"`
+> `const` **DEEPSEEK\_ADAPTER\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
 
-Defined in: adapters/src/deepseek/index.ts:11
+Defined in: [adapters/src/deepseek/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L11)
 
 ---
 
@@ -905,7 +905,7 @@ Defined in: adapters/src/deepseek/index.ts:11
 
 > `const` **DEEPSEEK\_PROTOCOL\_ID**: `"deepseek.harness.session-events"` = `"deepseek.harness.session-events"`
 
-Defined in: adapters/src/deepseek/protocol.ts:26
+Defined in: [adapters/src/deepseek/protocol.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L26)
 
 DeepSeek Harness speaks its own session-log vocabulary over a
 newline-delimited JSON-RPC 2.0 stdio transport.
@@ -931,7 +931,7 @@ that out-of-band channel carries, and no frame is emitted for it.
 
 > `const` **DEEPSEEK\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: adapters/src/deepseek/index.ts:33
+Defined in: [adapters/src/deepseek/index.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L33)
 
 What a live DeepSeek Harness session needs before it can run.
 
@@ -941,7 +941,7 @@ What a live DeepSeek Harness session needs before it can run.
 
 > `const` **DEEPSEEK\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: adapters/src/deepseek/index.ts:13
+Defined in: [adapters/src/deepseek/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L13)
 
 ---
 
@@ -963,15 +963,15 @@ envelope would exercise only half of what the parser has to accept.
 
 > `const` **deepseekProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: adapters/src/deepseek/protocol.ts:106
+Defined in: [adapters/src/deepseek/protocol.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L106)
 
 ---
 
 ### PI\_ADAPTER\_VERSION
 
-> `const` **PI\_ADAPTER\_VERSION**: `"0.1.0-alpha.0"` = `"0.1.0-alpha.0"`
+> `const` **PI\_ADAPTER\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
 
-Defined in: adapters/src/pi/index.ts:11
+Defined in: [adapters/src/pi/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L11)
 
 ---
 
@@ -979,7 +979,7 @@ Defined in: adapters/src/pi/index.ts:11
 
 > `const` **PI\_PROTOCOL\_ID**: `"pi.rpc.jsonl"` = `"pi.rpc.jsonl"`
 
-Defined in: adapters/src/pi/protocol.ts:29
+Defined in: [adapters/src/pi/protocol.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L29)
 
 Pi speaks newline-delimited JSON events in its RPC mode (`pi --mode rpc`).
 
@@ -1008,7 +1008,7 @@ harness rather than of this adapter:
 
 > `const` **PI\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: adapters/src/pi/index.ts:33
+Defined in: [adapters/src/pi/index.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L33)
 
 What a live Pi session needs before it can run.
 
@@ -1018,7 +1018,7 @@ What a live Pi session needs before it can run.
 
 > `const` **PI\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: adapters/src/pi/index.ts:13
+Defined in: [adapters/src/pi/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L13)
 
 ---
 
@@ -1036,7 +1036,7 @@ Frames in the RPC message shape Pi speaks.
 
 > `const` **piProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: adapters/src/pi/protocol.ts:85
+Defined in: [adapters/src/pi/protocol.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L85)
 
 ## Functions
 
@@ -1142,7 +1142,7 @@ this form files a turn's evidence under the harness that produced it.
 
 > **createDeepseekDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: adapters/src/deepseek/index.ts:53
+Defined in: [adapters/src/deepseek/index.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L53)
 
 DeepSeek Harness as a SharedOS agent turn driver.
 
@@ -1166,7 +1166,7 @@ changes no kernel code and adds no second permission path.
 
 > **createDeepseekRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: adapters/src/deepseek/index.ts:68
+Defined in: [adapters/src/deepseek/index.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L68)
 
 DeepSeek Harness as an installable runtime, reporting its own manifest.
 
@@ -1191,7 +1191,7 @@ this form files a turn's evidence under the harness that produced it.
 
 > **createPiDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: adapters/src/pi/index.ts:57
+Defined in: [adapters/src/pi/index.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L57)
 
 Pi as a SharedOS agent turn driver.
 
@@ -1215,7 +1215,7 @@ changes no kernel code and adds no second permission path.
 
 > **createPiRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: adapters/src/pi/index.ts:72
+Defined in: [adapters/src/pi/index.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L72)
 
 Pi as an installable runtime, reporting its own manifest.
 

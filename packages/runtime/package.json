@@ -1,6 +1,6 @@
 {
   "name": "@aicoo/sharedos-runtime",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.2",
   "description": "Fixed SharedOS security envelope with standard and pluggable one-turn runtimes",
   "license": "Apache-2.0",
   "keywords": [

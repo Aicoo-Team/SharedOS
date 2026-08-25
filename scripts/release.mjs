@@ -7,6 +7,11 @@ import { packageContentDigest, registryPackageContentDigest } from "./package-ar
 import { npmRegistry, packageDirectories, prereleaseTag } from "./package-set.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+/** Registry propagation is eventual; a red verify on a successful publish is worse than waiting. */
+const VERIFY_TIMEOUT_MS = 300_000;
+const VERIFY_BASE_DELAY_MS = 3_000;
+const VERIFY_MAX_DELAY_MS = 30_000;
 const command = process.argv[2] ?? "check";
 const isPublish = command === "publish";
 const allowPrivate = process.argv.includes("--allow-private");
@@ -161,6 +166,11 @@ function verifyEmbeddedVersions(version_) {
       path: ["packages", "adapters", "src", "claude-code", "index.ts"],
       name: "CLAUDE_CODE_ADAPTER_VERSION",
     },
+    {
+      path: ["packages", "adapters", "src", "deepseek", "index.ts"],
+      name: "DEEPSEEK_ADAPTER_VERSION",
+    },
+    { path: ["packages", "adapters", "src", "pi", "index.ts"], name: "PI_ADAPTER_VERSION" },
     { path: ["packages", "conformance", "src", "runner.ts"], name: "SHAREDOS_VERSION" },
   ];
 
@@ -253,10 +263,20 @@ async function verifyPublished(packageEntries, archives) {
   for (const { manifest } of packageEntries) {
     const expectedDigest = packageContentDigest(archiveFor(manifest, archives), repositoryRoot);
     let published = false;
-    for (let attempt = 0; attempt < 6; attempt += 1) {
+    let attempts = 0;
+    const deadline = Date.now() + VERIFY_TIMEOUT_MS;
+
+    // The registry is read-after-write eventual, and a CDN edge that served a
+    // 404 before the publish landed will keep serving it. Retrying the same
+    // URL with default caching can therefore never succeed, which is why this
+    // waits with backoff *and* asks for an uncached response every time.
+    while (Date.now() < deadline) {
+      attempts += 1;
       const response = await fetch(
         `${npmRegistry}/${encodeURIComponent(manifest.name)}/${encodeURIComponent(manifest.version)}`,
+        { cache: "no-store", headers: { "cache-control": "no-cache", pragma: "no-cache" } },
       );
+
       if (response.ok) {
         const metadata = await response.json();
         const publishedDigest = await registryPackageContentDigest(metadata, repositoryRoot);
@@ -268,10 +288,29 @@ async function verifyPublished(packageEntries, archives) {
         published = true;
         break;
       }
-      await new Promise((resolve_) => setTimeout(resolve_, 5_000));
+
+      if (response.status !== 404) {
+        console.log(
+          `Waiting for ${manifest.name}@${manifest.version}: registry returned ${response.status}.`,
+        );
+      }
+
+      const wait = Math.min(VERIFY_MAX_DELAY_MS, VERIFY_BASE_DELAY_MS * 2 ** (attempts - 1));
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) break;
+      console.log(
+        `${manifest.name}@${manifest.version} not visible yet (attempt ${attempts}); retrying in ${Math.round(Math.min(wait, remaining) / 1000)}s.`,
+      );
+      await new Promise((resolve_) => setTimeout(resolve_, Math.min(wait, remaining)));
     }
-    if (!published)
-      throw new Error(`Could not verify ${manifest.name}@${manifest.version} on npm.`);
+
+    if (!published) {
+      throw new Error(
+        `Could not verify ${manifest.name}@${manifest.version} on npm after ${attempts} attempts over ` +
+          `${Math.round(VERIFY_TIMEOUT_MS / 1000)}s. The publish may still have succeeded — check ` +
+          `\`npm view ${manifest.name} versions\` before republishing.`,
+      );
+    }
   }
 }
 

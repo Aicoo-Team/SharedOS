@@ -6,14 +6,14 @@
 ## Context
 
 SharedOS already required a capability grant before an agent could discover or
-invoke a tool. Pulse also groups tools into user-configurable namespaces such
-as `calendar`, `email`, `github`, or a user-connected `notion` MCP server. That
-second mechanism answers a different question: which families of tools should
-exist in this user's current tool surface at all?
+invoke a tool. Hosts additionally group tools into user-configurable namespaces
+such as `calendar`, `email`, `github`, or a user-connected `notion` MCP server.
+That second mechanism answers a different question: which families of tools
+should exist in this user's current tool surface at all?
 
 Without a shared contract, every host would recreate catalog metadata,
-enable/disable behavior, MCP aggregation, and execution-time checks. Copying
-Pulse's process-global mutable registry would also allow one user's MCP reload
+enable/disable behavior, MCP aggregation, and execution-time checks. The common
+process-global mutable registry pattern would also allow one user's MCP reload
 to remove or replace another user's tools under concurrent requests.
 
 Three concepts called “namespace” must remain distinct:
@@ -74,7 +74,7 @@ aggregation, and enforcement. Each host continues to own:
 - OAuth tokens, MCP credentials, server connections, and refresh lifecycle;
 - connector egress controls and concrete tool implementations.
 
-For example, importing a Notion MCP server remains a Pulse operation. Pulse
+For example, importing a Notion MCP server remains a host operation. The host
 supplies that user's Notion handlers through a context provider with
 `namespace: "notion"` and `source: "mcp"`. SharedOS then lists and toggles the
 namespace consistently, but a Notion capability grant is still required for
@@ -84,7 +84,7 @@ each visible or executed operation.
 
 ### Positive
 
-- Pulse, PACT, and future hosts share one catalog and enablement model without
+- Product and evaluation hosts share one catalog and enablement model without
   importing product code into SharedOS.
 - Disabled namespaces disappear from model-visible discovery and fail closed
   at invocation even when a caller guesses a tool name.
@@ -114,6 +114,6 @@ default-off tool-surface switch independent of fine-grained resource authority.
 **Treat namespace enablement as authority.** Rejected because enabling
 `calendar` must not imply permission to create, delete, or read every calendar.
 
-**Copy Pulse's mutable singleton MCP registry.** Rejected because concurrent
+**Use a mutable singleton MCP registry.** Rejected because concurrent
 users can overwrite one another's catalogs and because a host-specific loading
 strategy does not belong in SharedOS.
