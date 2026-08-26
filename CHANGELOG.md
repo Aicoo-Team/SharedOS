@@ -10,6 +10,12 @@ each entry calls out what a host has to update.
 
 ### Changed — breaking
 
+- **Messages now have one policy-bound reason: `purpose`.** The redundant
+  `MessageEnvelope.intent` field is removed, and strict parsing rejects legacy
+  envelopes that still carry it. Outbound sends execute as their sender; an
+  inbound turn executes as its recipient and resolves that recipient's
+  execution, file, and tool authority independently. See ADR 0015.
+
 - **`grants` is removed from `AccessContext`.** Authority now enters SharedOS
   through one required port, `GrantSource`, which `SharedOSKernel` calls once per
   turn. A context names who is asking, on whose authority, and for what; it
@@ -51,6 +57,14 @@ each entry calls out what a host has to update.
   only — a refusal to pin an owner onto an unowned parent capability.
 
 ### Added
+
+- `messages.request`, a canonical recipient-scoped request/reply tool. The model
+  supplies only a recipient and JSON-safe payload; trusted context supplies the
+  sender, purpose, trace, timestamp, and message id. `MessageTransport` and
+  `MessageRequestRouter` remain host ports for durable delivery and reply
+  lookup—SharedOS does not own a queue, receiver wake-up, or scheduler. Direct
+  send and the request tool share one post-authorization delivery path, so a
+  bounded send grant is consumed exactly once.
 
 - A quickstart with two working programs, an HTTP API reference covering every
   route and status code, a tool catalog covering the twelve `files` tools and

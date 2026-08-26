@@ -586,8 +586,8 @@ function contextAt(context: AccessContext, now: string): AccessContext {
 }
 
 function validateTurnContext(request: ExecutionRequest): ProtocolError | undefined {
-  if (canonicalJson(request.message.sender) !== canonicalJson(request.context.actor)) {
-    return protocolError("actor_mismatch", "Message sender does not match the access actor.");
+  if (canonicalJson(request.context.actor) !== canonicalJson(request.agent)) {
+    return protocolError("actor_mismatch", "Access actor does not match the executing agent.");
   }
 
   if (canonicalJson(request.message.receiver) !== canonicalJson(request.agent)) {

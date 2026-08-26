@@ -60,7 +60,7 @@ const READ_TOOL: ToolDefinition = {
 };
 
 const CONTEXT: AccessContext = {
-  actor: AGENT,
+  actor: DELEGATE,
   authority: OWNER,
   owner: OWNER,
   namespaceId: "world-1",
@@ -75,7 +75,7 @@ function grants(): readonly CapabilityGrant[] {
     {
       id: "grant-public",
       namespaceId: "world-1",
-      subject: AGENT,
+      subject: DELEGATE,
       issuer: OWNER,
       capabilities: [
         {
@@ -169,7 +169,6 @@ function executionRequest(): ExecutionRequest {
       id: "message-1",
       sender: AGENT,
       receiver: DELEGATE,
-      intent: "read",
       purpose: CONTEXT.purpose,
       payload: { text: "read both files" },
       traceId: CONTEXT.traceId,

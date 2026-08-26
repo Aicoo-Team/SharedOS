@@ -101,7 +101,6 @@ function request(): ExecutionRequest {
       id: "message-1",
       sender: AGENT,
       receiver: AGENT,
-      intent: "read",
       purpose: "test",
       payload: { text: "read the workspace" },
       traceId: "trace-1",

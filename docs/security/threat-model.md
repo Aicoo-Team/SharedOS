@@ -42,7 +42,7 @@ receiving a correctly scoped request.
 
 ### Untrusted or partially trusted inputs
 
-- Message payloads, intent, purpose claims, and provenance metadata.
+- Message payloads, purpose claims, and provenance metadata.
 - Model and agent output, including proposed tool calls.
 - Files, notes, documents, web pages, and tool results that may contain prompt
   injection.

@@ -204,7 +204,6 @@ does not permit that agent to do anything, and does not permit you to run it.
   "id": "message-1",
   "sender": { "kind": "agent", "agentId": "bob-assistant" },
   "receiver": { "kind": "agent", "agentId": "alice-assistant" },
-  "intent": "answer-question",
   "purpose": "atlas-status",
   "payload": { "text": "When does Atlas ship?" },
   "traceId": "trace-1",

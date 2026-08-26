@@ -20,6 +20,7 @@ import {
   EscalationSchema,
   JsonObjectSchema,
   MessageDeliveryResultSchema,
+  MessageEnvelopeSchema,
   ResourceResultSchema,
   ToolNamespaceUpdateSchema,
   ToolResultSchema,
@@ -44,10 +45,12 @@ import {
 } from "./authorization.js";
 import {
   type MessageCapabilityResolver,
+  type MessageRequestRouter,
   type MessageTransport,
   RecipientScopedMessageCapabilityResolver,
   addressPath,
 } from "./message-service.js";
+import { createMessageRequestTool } from "./message-tool.js";
 import {
   type ResourceInvocationRequest,
   type ResourceProvider,
@@ -72,7 +75,9 @@ export interface SharedOSKernelOptions {
   readonly toolProviders?: readonly ContextToolProvider[];
   readonly toolNamespaceSettings?: ToolNamespaceSettingsStore;
   readonly messageTransport?: MessageTransport;
+  readonly messageRequestRouter?: MessageRequestRouter;
   readonly messageCapabilityResolver?: MessageCapabilityResolver;
+  readonly createMessageId?: (context: AccessContext, call: ToolCall) => string;
   readonly audit?: AuditSink;
   /** Notification for audit failures that occur after a side effect. */
   readonly onAuditError?: (error: unknown, event: AuditEvent) => void | Promise<void>;
@@ -125,7 +130,9 @@ export class SharedOSKernel {
   readonly #toolProviders: Map<string, ContextToolProvider>;
   readonly #toolNamespaceSettings: ToolNamespaceSettingsStore | undefined;
   readonly #messageTransport: MessageTransport | undefined;
+  readonly #messageRequestRouter: MessageRequestRouter | undefined;
   readonly #messageCapabilityResolver: MessageCapabilityResolver;
+  readonly #createMessageId: (context: AccessContext, call: ToolCall) => string;
   readonly #audit: AuditSink;
   readonly #onAuditError: ((error: unknown, event: AuditEvent) => void | Promise<void>) | undefined;
   readonly #spans: SpanSink | undefined;
@@ -141,8 +148,10 @@ export class SharedOSKernel {
     }
     this.#toolNamespaceSettings = options.toolNamespaceSettings;
     this.#messageTransport = options.messageTransport;
+    this.#messageRequestRouter = options.messageRequestRouter;
     this.#messageCapabilityResolver =
       options.messageCapabilityResolver ?? new RecipientScopedMessageCapabilityResolver();
+    this.#createMessageId = options.createMessageId ?? (() => crypto.randomUUID());
     this.#audit = options.audit ?? new NoopAuditSink();
     this.#onAuditError = options.onAuditError;
     this.#spans = options.spans;
@@ -806,6 +815,24 @@ export class SharedOSKernel {
       resolved.register(handler);
     }
 
+    if (this.#messageTransport !== undefined && this.#messageRequestRouter !== undefined) {
+      resolved.register(
+        createMessageRequestTool({
+          capabilityResolver: this.#messageCapabilityResolver,
+          router: this.#messageRequestRouter,
+          createMessageId: this.#createMessageId,
+          deliverAuthorizedMessage: (access, envelope, operationSignal, operationId) =>
+            this.#deliverAuthorizedMessage(
+              access,
+              envelope,
+              operationSignal,
+              undefined,
+              operationId,
+            ),
+        }),
+      );
+    }
+
     for (const provider of [...this.#toolProviders.values()].sort((left, right) =>
       left.id.localeCompare(right.id),
     )) {
@@ -839,8 +866,17 @@ export class SharedOSKernel {
     options: KernelOperationOptions = {},
   ): Promise<MessageDeliveryResult> {
     throwIfAborted(options.signal);
+    let parsedEnvelope: ReturnType<typeof MessageEnvelopeSchema.safeParse>;
+    try {
+      parsedEnvelope = MessageEnvelopeSchema.safeParse(structuredClone(envelope));
+    } catch {
+      throw new TypeError("message envelope does not match the SharedOS contract");
+    }
+    if (!parsedEnvelope.success) {
+      throw new TypeError("message envelope does not match the SharedOS contract");
+    }
     context = structuredClone(context);
-    envelope = structuredClone(envelope);
+    envelope = parsedEnvelope.data;
     if (
       !addressesEqual(context.actor, envelope.sender) ||
       context.purpose !== envelope.purpose ||
@@ -858,7 +894,10 @@ export class SharedOSKernel {
 
     let requirement: AuthorizationRequest;
     try {
-      requirement = this.#messageCapabilityResolver.resolve(context, envelope);
+      requirement = this.#messageCapabilityResolver.resolve(
+        structuredClone(context),
+        structuredClone(envelope),
+      );
     } catch {
       const result = failedMessageResult(
         envelope,
@@ -893,48 +932,72 @@ export class SharedOSKernel {
       return result;
     }
 
+    return this.#deliverAuthorizedMessage(
+      context,
+      envelope,
+      options.signal ?? neverAbortedSignal(),
+      decision.matchedGrantId,
+    );
+  }
+
+  /** Deliver and audit a message whose exact send requirement was already consumed. */
+  async #deliverAuthorizedMessage(
+    context: AccessContext,
+    envelope: MessageEnvelope,
+    signal: AbortSignal,
+    grantId?: string,
+    operationId?: string,
+  ): Promise<MessageDeliveryResult> {
+    const trustedContext = deepFreeze(structuredClone(context));
+    const trustedEnvelope = deepFreeze(structuredClone(envelope));
     if (this.#messageTransport === undefined) {
       const result = failedMessageResult(
-        envelope,
-        context.now,
+        trustedEnvelope,
+        trustedContext.now,
         "message_transport_not_configured",
         "No message transport is configured",
       );
-      await this.#recordMessageResult(context, envelope, result, decision.matchedGrantId);
+      await this.#recordMessageResult(
+        trustedContext,
+        trustedEnvelope,
+        result,
+        grantId,
+        operationId,
+      );
       return result;
     }
 
     let result: MessageDeliveryResult;
     try {
-      throwIfAborted(options.signal);
+      throwIfAborted(signal);
       const receipt = await this.#messageTransport.deliver(
-        context,
-        envelope,
-        options.signal ?? neverAbortedSignal(),
+        structuredClone(trustedContext),
+        structuredClone(trustedEnvelope),
+        signal,
       );
       const parsed = MessageDeliveryResultSchema.safeParse(receipt);
       result =
-        parsed.success && parsed.data.messageId === envelope.id
+        parsed.success && parsed.data.messageId === trustedEnvelope.id
           ? parsed.data
           : failedMessageResult(
-              envelope,
-              context.now,
+              trustedEnvelope,
+              trustedContext.now,
               "invalid_message_receipt",
               "The message transport returned a mismatched receipt",
             );
     } catch (error) {
-      if (options.signal?.aborted) {
-        throw options.signal.reason ?? error;
+      if (signal.aborted) {
+        throw signal.reason ?? error;
       }
       result = failedMessageResult(
-        envelope,
-        context.now,
+        trustedEnvelope,
+        trustedContext.now,
         "message_delivery_failed",
         "The message transport failed while delivering the message",
       );
     }
 
-    await this.#recordMessageResult(context, envelope, result, decision.matchedGrantId);
+    await this.#recordMessageResult(trustedContext, trustedEnvelope, result, grantId, operationId);
     return result;
   }
 
@@ -962,11 +1025,10 @@ export class SharedOSKernel {
     /**
      * The operation this decision was made for, when there is one.
      *
-     * Carried only onto the span, never into the decision. Every span produced
-     * for one call names that call, which is what lets a report attribute the
-     * cost of a call to its parts instead of to a remainder. An operation that
-     * is not a tool call -- a bare `authorize`, a turn admission -- has no id
-     * to give and its span carries none.
+     * Carried onto the span and audit event, never into the decision. Every
+     * record produced for one call names that call, which is what lets a report
+     * attribute the cost and outcome to the same operation. An operation that
+     * is not a tool call -- a bare `authorize`, a turn admission -- has no id.
      */
     operationId?: string,
   ): Promise<AuthorizationDecision> {
@@ -978,7 +1040,7 @@ export class SharedOSKernel {
           span.set("callId", operationId);
         }
         span.set("consumed", consume);
-        return this.#decideAndRecord(context, authority, request, consume);
+        return this.#decideAndRecord(context, authority, request, consume, operationId);
       },
       (decision, span) => span.set("outcome", decision.allowed ? "allowed" : "denied"),
     );
@@ -989,6 +1051,7 @@ export class SharedOSKernel {
     authority: ResolvedAuthority,
     request: AuthorizationRequest,
     consume: boolean,
+    operationId?: string,
   ): Promise<AuthorizationDecision> {
     const decision = await this.#authorizer.authorize(authority, request, { consume });
 
@@ -998,6 +1061,7 @@ export class SharedOSKernel {
       decision,
       consume,
       authority.snapshot.hash,
+      operationId,
     );
 
     return decision;
@@ -1093,6 +1157,7 @@ export class SharedOSKernel {
     decision: AuthorizationDecision,
     consume: boolean,
     authorityHash?: string,
+    operationId?: string,
   ): Promise<void> {
     await this.#audit.record(
       auditEvent(context, {
@@ -1101,6 +1166,7 @@ export class SharedOSKernel {
         resource: request.resource,
         action: request.action,
         ...(authorityHash === undefined ? {} : { authorityHash }),
+        ...(operationId === undefined ? {} : { operationId }),
         ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
         ...(!decision.allowed ? { reason: decision.reasonCode } : {}),
         metadata: {
@@ -1163,6 +1229,7 @@ export class SharedOSKernel {
     envelope: MessageEnvelope,
     result: MessageDeliveryResult,
     grantId?: string,
+    operationId?: string,
   ): Promise<void> {
     await this.#recordOutcome(
       auditEvent(context, {
@@ -1173,6 +1240,7 @@ export class SharedOSKernel {
             : result.status,
         messageId: envelope.id,
         receiver: envelope.receiver,
+        ...(operationId === undefined ? {} : { operationId }),
         ...(grantId === undefined ? {} : { grantId }),
         ...(result.status === "denied" || result.status === "failed"
           ? { reason: result.error.code }

@@ -32,6 +32,19 @@ export interface MessageTransport {
   ): Promise<MessageDeliveryResult>;
 }
 
+/**
+ * Host-owned lookup for the durable reply to one accepted message request.
+ * SharedOS validates the returned envelope before exposing its payload.
+ */
+export interface MessageRequestRouter {
+  resolveReply(
+    context: AccessContext,
+    request: MessageEnvelope,
+    delivery: MessageDeliveryResult,
+    signal: AbortSignal,
+  ): Promise<MessageEnvelope>;
+}
+
 export interface MessageCapabilityResolver {
   resolve(context: AccessContext, envelope: MessageEnvelope): AuthorizationRequest;
 }

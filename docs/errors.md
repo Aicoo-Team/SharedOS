@@ -136,14 +136,18 @@ impermissible.
 
 ## Messages
 
-| Code                                    | Status | Means                                               |
-| --------------------------------------- | ------ | --------------------------------------------------- |
-| `message_transport_not_configured`      | failed | No `messageTransport` was supplied to the kernel    |
-| `message_context_mismatch`              | failed | The envelope disagrees with the context             |
-| `receiver_mismatch`                     | failed | The delivered receiver is not the addressed one     |
-| `message_requirement_resolution_failed` | failed | The capability resolver threw                       |
-| `message_delivery_failed`               | failed | Your transport threw                                |
-| `invalid_message_receipt`               | failed | Your transport returned a malformed delivery result |
+| Code                                    | Status | Means                                                |
+| --------------------------------------- | ------ | ---------------------------------------------------- |
+| `message_transport_not_configured`      | failed | No `messageTransport` was supplied to the kernel     |
+| `message_context_mismatch`              | denied | The envelope disagrees with the context              |
+| `receiver_mismatch`                     | denied | The delivered receiver is not the executing agent    |
+| `message_requirement_resolution_failed` | failed | The capability resolver threw                        |
+| `message_delivery_failed`               | failed | Your transport threw                                 |
+| `invalid_message_receipt`               | failed | Your transport returned a malformed delivery result  |
+| `message_request_not_prepared`          | failed | The request tool did not prepare the authorized call |
+| `message_request_not_accepted`          | failed | The transport did not accept the request             |
+| `message_reply_resolution_failed`       | failed | The host router could not resolve the durable reply  |
+| `invalid_message_reply`                 | failed | The resolved reply did not preserve request context  |
 
 ## Turns
 
