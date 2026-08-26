@@ -1,0 +1,60 @@
+{
+  "name": "@aicoo/sharedos-mcp",
+  "version": "0.1.0-alpha.3",
+  "description": "Model Context Protocol toolshare bridge for SharedOS: the permission-filtered catalogue as an MCP server",
+  "license": "Apache-2.0",
+  "keywords": [
+    "agents",
+    "authorization",
+    "mcp",
+    "model-context-protocol",
+    "tools"
+  ],
+  "homepage": "https://www.aicoo.io",
+  "bugs": {
+    "email": "founders@aicoo.io"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aicoo-Team/SharedOS.git",
+    "directory": "packages/mcp"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "tag": "next",
+    "registry": "https://registry.npmjs.org"
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "src/**/*.ts",
+    "!dist/**/*.test.*",
+    "!src/**/*.test.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    }
+  },
+  "dependencies": {
+    "@aicoo/sharedos-contracts": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@aicoo/sharedos-os": "workspace:*",
+    "@aicoo/sharedos-testkit": "workspace:*"
+  }
+}

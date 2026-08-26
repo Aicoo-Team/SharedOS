@@ -35,7 +35,14 @@ export interface RuntimeLimits {
 }
 
 export interface RuntimeToolInvocationOptions {
-  /** Optional diagnostic position within the runtime's own loop. */
+  /**
+   * Position within the runtime's own loop.
+   *
+   * Optional, and enforced when present: the execution envelope refuses a call
+   * declaring a step at or past `RuntimeLimits.maxSteps`, and refuses a new
+   * step once that many distinct ones have been seen. A plugin that omits it is
+   * bounded by `maxToolCalls` alone.
+   */
   readonly step?: number;
 }
 

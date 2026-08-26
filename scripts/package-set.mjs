@@ -9,5 +9,8 @@ export const packageDirectories = [
   "client",
   "http",
   "testkit",
+  "conformance",
+  "mcp",
+  "adapters",
   "sdk",
 ];

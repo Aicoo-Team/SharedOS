@@ -35,7 +35,7 @@ if (typeof version !== "string" || !/^0\.\d+\.\d+-[0-9A-Za-z.-]+$/.test(version)
 }
 
 verifyReleaseMetadata(packages, allowPrivate);
-verifyStandardRuntimeVersion(version);
+verifyEmbeddedVersions(version);
 
 run("pnpm", ["check"], repositoryRoot);
 run("pnpm", ["pack:preview"], repositoryRoot);
@@ -147,16 +147,42 @@ function verifyReleaseMetadata(packageEntries, allowPrivatePackages) {
   }
 }
 
-function verifyStandardRuntimeVersion(version_) {
-  const source = readFileSync(
-    join(repositoryRoot, "packages", "runtime", "src", "standard-runtime.ts"),
-    "utf8",
-  );
-  const declared = source.match(/export const STANDARD_RUNTIME_VERSION = "([^"]+)";/)?.[1];
-  if (declared !== version_) {
-    throw new Error(
-      `STANDARD_RUNTIME_VERSION must match the synchronized package version ${version_}; found ${String(declared)}.`,
-    );
+/**
+ * Pin every version constant that is compiled into a published artifact.
+ *
+ * Each of these ends up in a runtime manifest or an execution record, where it
+ * identifies which build produced a piece of evidence. A stale one is worse
+ * than a missing one, so they are checked here rather than trusted to be
+ * updated by hand.
+ */
+function verifyEmbeddedVersions(version_) {
+  const embedded = [
+    {
+      path: ["packages", "runtime", "src", "standard-runtime.ts"],
+      name: "STANDARD_RUNTIME_VERSION",
+    },
+    { path: ["packages", "adapters", "src", "codex", "index.ts"], name: "CODEX_ADAPTER_VERSION" },
+    {
+      path: ["packages", "adapters", "src", "claude-code", "index.ts"],
+      name: "CLAUDE_CODE_ADAPTER_VERSION",
+    },
+    {
+      path: ["packages", "adapters", "src", "deepseek", "index.ts"],
+      name: "DEEPSEEK_ADAPTER_VERSION",
+    },
+    { path: ["packages", "adapters", "src", "pi", "index.ts"], name: "PI_ADAPTER_VERSION" },
+    { path: ["packages", "adapters", "src", "mcp-runtime.ts"], name: "MCP_ADAPTER_VERSION" },
+    { path: ["packages", "conformance", "src", "runner.ts"], name: "SHAREDOS_VERSION" },
+  ];
+
+  for (const { path, name } of embedded) {
+    const source = readFileSync(join(repositoryRoot, ...path), "utf8");
+    const declared = source.match(new RegExp(`export const ${name} = "([^"]+)";`))?.[1];
+    if (declared !== version_) {
+      throw new Error(
+        `${name} must match the synchronized package version ${version_}; found ${String(declared)}.`,
+      );
+    }
   }
 }
 

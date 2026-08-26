@@ -1,0 +1,478 @@
+import { describe, expect, it } from "vitest";
+
+import type { ExecutionRequest, ExecutionResult } from "@aicoo/sharedos-contracts";
+import type { AuditEvent } from "@aicoo/sharedos-core";
+
+import { assembleExecutionRecord } from "./assemble.js";
+import { checkRecordCompleteness, checkRecordRedaction } from "./completeness.js";
+import { compareReproducibility, contentHash, hashExperimentInputs } from "./hashing.js";
+import type { ExperimentIdentity, SystemIdentity } from "./record.js";
+
+const NOW = "2026-08-03T09:00:00.000Z";
+const LATER = "2026-08-03T09:00:02.500Z";
+const ACTOR = { kind: "agent", agentId: "agent-bob" } as const;
+const AGENT = { kind: "agent", agentId: "agent-alice" } as const;
+const OWNER = { kind: "human", userId: "user-alice" } as const;
+const AUTHORITY_HASH = "a".repeat(64);
+const SECOND_AUTHORITY_HASH = "b".repeat(64);
+const HASH = "c".repeat(64);
+
+function request(): ExecutionRequest {
+  return {
+    version: "1",
+    executionId: "execution-1",
+    agent: AGENT,
+    context: {
+      namespaceId: "world-alpha",
+      enabledToolNamespaces: ["files"],
+      actor: ACTOR,
+      authority: OWNER,
+      owner: OWNER,
+      purpose: "prepare-update",
+      traceId: "trace-1",
+      now: NOW,
+    },
+    message: {
+      version: "1",
+      id: "message-1",
+      sender: ACTOR,
+      receiver: AGENT,
+      purpose: "prepare-update",
+      payload: { topic: "status" },
+      traceId: "trace-1",
+      createdAt: NOW,
+    },
+    tools: [
+      {
+        name: "files.read",
+        description: "Read one authorized file",
+        namespace: "files",
+        source: "sharedos",
+        readWrite: "read",
+        inputSchema: { type: "object" },
+        requiredCapability: {
+          resource: { namespace: "files", path: ["Workspace"] },
+          action: "read",
+        },
+        annotations: { readOnly: true },
+      },
+    ],
+  };
+}
+
+function result(overrides: Partial<ExecutionResult> = {}): ExecutionResult {
+  return {
+    version: "1",
+    executionId: "execution-1",
+    traceId: "trace-1",
+    status: "succeeded",
+    output: { answer: "done" },
+    startedAt: NOW,
+    completedAt: LATER,
+    metadata: {
+      runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "1" },
+    },
+    events: [
+      {
+        version: "1",
+        eventId: "event-1",
+        executionId: "execution-1",
+        traceId: "trace-1",
+        sequence: 0,
+        type: "turn.started",
+        data: { agent: AGENT, visibleTools: ["files.read"] },
+        occurredAt: NOW,
+      },
+      {
+        version: "1",
+        eventId: "event-2",
+        executionId: "execution-1",
+        traceId: "trace-1",
+        sequence: 1,
+        type: "tool.requested",
+        data: { callId: "call-1", tool: "files.read" },
+        occurredAt: NOW,
+      },
+    ],
+    ...overrides,
+  } as ExecutionResult;
+}
+
+function auditEvent(overrides: Partial<AuditEvent>): AuditEvent {
+  return {
+    version: "1",
+    type: "authorization.checked",
+    outcome: "allowed",
+    at: NOW,
+    traceId: "trace-1",
+    namespaceId: "world-alpha",
+    actor: ACTOR,
+    authority: OWNER,
+    owner: OWNER,
+    purpose: "prepare-update",
+    ...overrides,
+  } as AuditEvent;
+}
+
+function auditTrail(): AuditEvent[] {
+  return [
+    auditEvent({
+      type: "authority.resolved",
+      outcome: "succeeded",
+      authorityHash: AUTHORITY_HASH,
+      metadata: { grantIds: ["grant-read"], grantCount: 1 },
+    }),
+    auditEvent({
+      type: "authorization.checked",
+      outcome: "allowed",
+      authorityHash: AUTHORITY_HASH,
+      resource: { namespace: "files", path: ["Workspace", "notes.md"] },
+      action: "read",
+      grantId: "grant-read",
+    }),
+    auditEvent({
+      type: "tool.invoked",
+      outcome: "succeeded",
+      operationId: "call-1",
+      tool: "files.read",
+      grantId: "grant-read",
+    }),
+  ];
+}
+
+const experiment: ExperimentIdentity = {
+  experimentId: "pact-pair",
+  taskId: "files-qa-017",
+  runId: "run-1",
+  specHash: HASH,
+  worldHash: HASH,
+  evaluatorHash: HASH,
+};
+
+const system: Omit<SystemIdentity, "runtime"> = {
+  protocolVersion: "1",
+  sharedOsVersion: "0.1.0-alpha.0",
+  adapterId: "sharedos-embedded",
+  policyHash: HASH,
+};
+
+describe("execution record assembly", () => {
+  it("binds identity, authority, execution, and cost into one comparable record", () => {
+    const record = assembleExecutionRecord({
+      request: request(),
+      result: result(),
+      auditEvents: auditTrail(),
+      experiment,
+      system,
+    });
+
+    expect(record.system.runtime.id).toBe("sharedos.standard");
+    expect(record.authority).toMatchObject({
+      actor: ACTOR,
+      namespaceId: "world-alpha",
+      purpose: "prepare-update",
+      stableAuthorityHash: AUTHORITY_HASH,
+    });
+    expect(record.authority.snapshots).toEqual([
+      {
+        hash: AUTHORITY_HASH,
+        grantIds: ["grant-read"],
+        grantCount: 1,
+        firstSeenAt: NOW,
+        lastSeenAt: NOW,
+        observations: 1,
+      },
+    ]);
+    expect(record.execution).toMatchObject({
+      status: "succeeded",
+      exposedTools: ["files.read"],
+      requestedTools: ["files.read"],
+    });
+    expect(record.execution.decisions).toEqual([
+      {
+        at: NOW,
+        outcome: "allowed",
+        reasonCode: "allowed",
+        resource: { namespace: "files", path: ["Workspace", "notes.md"] },
+        action: "read",
+        grantId: "grant-read",
+        authorityHash: AUTHORITY_HASH,
+        failClosed: false,
+      },
+    ]);
+    expect(record.execution.operations).toEqual([
+      {
+        at: NOW,
+        kind: "tool",
+        source: "kernel",
+        outcome: "succeeded",
+        operationId: "call-1",
+        tool: "files.read",
+        grantId: "grant-read",
+        failClosed: false,
+      },
+    ]);
+    expect(record.cost).toMatchObject({
+      elapsedMs: 2_500,
+      toolCalls: 1,
+      authorityLoads: 1,
+      auditEvents: 3,
+    });
+  });
+
+  it("keeps one snapshot per authority state when a turn observes more than one", () => {
+    const record = assembleExecutionRecord({
+      request: request(),
+      result: result(),
+      auditEvents: [
+        ...auditTrail(),
+        auditEvent({
+          type: "authority.resolved",
+          outcome: "succeeded",
+          at: LATER,
+          authorityHash: SECOND_AUTHORITY_HASH,
+          metadata: { grantIds: [], grantCount: 0 },
+        }),
+        auditEvent({
+          type: "authorization.checked",
+          outcome: "denied",
+          at: LATER,
+          reason: "no_matching_grant",
+          authorityHash: SECOND_AUTHORITY_HASH,
+          resource: { namespace: "files", path: ["Workspace", "notes.md"] },
+          action: "read",
+        }),
+      ],
+      experiment,
+      system,
+    });
+
+    expect(record.authority.snapshots.map(({ hash }) => hash)).toEqual([
+      AUTHORITY_HASH,
+      SECOND_AUTHORITY_HASH,
+    ]);
+    expect(record.authority.stableAuthorityHash).toBeUndefined();
+    expect(record.execution.decisions.map(({ authorityHash }) => authorityHash)).toEqual([
+      AUTHORITY_HASH,
+      SECOND_AUTHORITY_HASH,
+    ]);
+  });
+
+  it("separates denials SharedOS caused from denials it decided", () => {
+    const record = assembleExecutionRecord({
+      request: request(),
+      result: result({ status: "denied", error: { code: "authority_unavailable", message: "x" } }),
+      auditEvents: [
+        auditEvent({
+          type: "authority.resolved",
+          outcome: "succeeded",
+          authorityHash: AUTHORITY_HASH,
+          metadata: { grantIds: [], grantCount: 0 },
+        }),
+        auditEvent({
+          type: "authorization.checked",
+          outcome: "denied",
+          reason: "no_matching_grant",
+          authorityHash: AUTHORITY_HASH,
+        }),
+        auditEvent({
+          type: "authorization.checked",
+          outcome: "denied",
+          reason: "authority_unavailable",
+          authorityHash: AUTHORITY_HASH,
+        }),
+      ],
+      experiment,
+      system,
+    });
+
+    expect(record.execution.decisions.map(({ failClosed }) => failClosed)).toEqual([false, true]);
+    expect(record.execution.terminalReasonCode).toBe("authority_unavailable");
+  });
+
+  it("ignores audit events from another trace", () => {
+    const record = assembleExecutionRecord({
+      request: request(),
+      result: result(),
+      auditEvents: [...auditTrail(), auditEvent({ traceId: "trace-other", tool: "files.read" })],
+      experiment,
+      system,
+    });
+
+    expect(record.execution.decisions).toHaveLength(1);
+  });
+
+  it("refuses to invent runtime provenance", () => {
+    expect(() =>
+      assembleExecutionRecord({
+        request: request(),
+        result: result({ metadata: {} }),
+        experiment,
+        system,
+      }),
+    ).toThrow("carries no runtime provenance");
+  });
+});
+
+describe("record completeness", () => {
+  const complete = (): ReturnType<typeof assembleExecutionRecord> =>
+    assembleExecutionRecord({
+      request: request(),
+      result: result(),
+      auditEvents: auditTrail(),
+      experiment,
+      system,
+      state: {
+        before: { snapshotId: "snapshot-before", hash: HASH },
+        after: { snapshotId: "snapshot-after", hash: HASH },
+      },
+      cost: { inputTokens: 120, outputTokens: 45, infrastructureMs: 12 },
+    });
+
+  it("accepts a record carrying every piece of expected evidence", () => {
+    expect(checkRecordCompleteness(complete())).toEqual({
+      complete: true,
+      usable: true,
+      gaps: [],
+    });
+  });
+
+  it("names each missing field instead of returning one verdict", () => {
+    const report = checkRecordCompleteness(
+      assembleExecutionRecord({
+        request: request(),
+        result: result(),
+        auditEvents: auditTrail(),
+        experiment,
+        system,
+      }),
+    );
+
+    expect(report.complete).toBe(false);
+    expect(report.usable).toBe(true);
+    expect(report.gaps.map(({ field }) => field)).toEqual([
+      "state",
+      "cost.tokens",
+      "cost.infrastructureMs",
+    ]);
+    expect(report.gaps.every(({ severity }) => severity === "expected")).toBe(true);
+  });
+
+  it("treats a decision with no authority state as unusable", () => {
+    const record = assembleExecutionRecord({
+      request: request(),
+      result: result(),
+      auditEvents: [auditEvent({ type: "authorization.checked", outcome: "allowed" })],
+      experiment,
+      system,
+    });
+    const report = checkRecordCompleteness(record);
+
+    expect(report.usable).toBe(false);
+    expect(report.gaps.map(({ field }) => field)).toContain("authority.snapshots");
+    expect(report.gaps.map(({ field }) => field)).toContain("execution.decisions.0.authorityHash");
+  });
+
+  it("does not demand an authority state from a turn that never established one", () => {
+    const record = assembleExecutionRecord({
+      request: request(),
+      result: result(),
+      auditEvents: [
+        auditEvent({
+          type: "authorization.checked",
+          outcome: "denied",
+          reason: "authority_unavailable",
+          metadata: { failClosed: true },
+        }),
+      ],
+      experiment,
+      system,
+    });
+    const report = checkRecordCompleteness(record);
+
+    // The turn could not reach its grant store, so there is no authority state
+    // for it to name. Requiring one would report every correct fail-closed turn
+    // as unusable evidence -- which is the opposite of what the row is for.
+    expect(report.usable).toBe(true);
+    expect(report.gaps).toContainEqual(
+      expect.objectContaining({ field: "authority.snapshots", severity: "expected" }),
+    );
+    expect(report.gaps.map(({ field }) => field)).not.toContain(
+      "execution.decisions.0.authorityHash",
+    );
+  });
+
+  it("rejects a decision naming an authority state with no snapshot", () => {
+    const record = assembleExecutionRecord({
+      request: request(),
+      result: result(),
+      auditEvents: [
+        auditEvent({
+          type: "authority.resolved",
+          outcome: "succeeded",
+          authorityHash: AUTHORITY_HASH,
+          metadata: { grantIds: [], grantCount: 0 },
+        }),
+        auditEvent({
+          type: "authorization.checked",
+          outcome: "allowed",
+          authorityHash: SECOND_AUTHORITY_HASH,
+        }),
+      ],
+      experiment,
+      system,
+    });
+
+    expect(checkRecordCompleteness(record).usable).toBe(false);
+  });
+
+  it("keeps private call data out of the record", () => {
+    const record = complete();
+
+    expect(checkRecordRedaction(record)).toEqual({ clean: true, violations: [] });
+    expect(JSON.stringify(record)).not.toContain("topic");
+  });
+});
+
+describe("reproducibility hashes", () => {
+  it("hashes spec, world, and evaluator independently", async () => {
+    const hashes = await hashExperimentInputs({
+      spec: { seed: 7, agents: 2 },
+      world: { files: ["a", "b"] },
+      evaluator: { version: "2.1.0" },
+    });
+
+    expect(new Set(Object.values(hashes)).size).toBe(4);
+    expect(hashes.specHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("ignores key order so two hosts agree on one world hash", async () => {
+    await expect(contentHash({ a: 1, b: [2, { c: 3, d: 4 }] })).resolves.toBe(
+      await contentHash({ b: [2, { d: 4, c: 3 }], a: 1 }),
+    );
+  });
+
+  it("refuses to compare runs whose worlds differ", () => {
+    expect(
+      compareReproducibility(
+        { specHash: HASH, worldHash: HASH },
+        { specHash: HASH, worldHash: AUTHORITY_HASH },
+      ),
+    ).toMatchObject({
+      status: "world_differs",
+      comparable: false,
+    });
+    expect(
+      compareReproducibility(
+        { specHash: HASH, worldHash: HASH },
+        { specHash: AUTHORITY_HASH, worldHash: HASH },
+      ),
+    ).toMatchObject({ status: "spec_differs", comparable: false });
+    expect(
+      compareReproducibility(
+        { specHash: HASH, worldHash: HASH },
+        { specHash: HASH, worldHash: HASH },
+      ),
+    ).toMatchObject({ status: "identical", comparable: true });
+  });
+});

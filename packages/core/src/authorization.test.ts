@@ -7,6 +7,7 @@ import type {
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
 
+import type { ResolvedAuthority } from "./authority.js";
 import {
   type CapabilityGrantVerifier,
   CapabilityAuthorizer,
@@ -37,17 +38,34 @@ function grant(overrides: Partial<CapabilityGrant> = {}): CapabilityGrant {
   };
 }
 
-function context(grants: CapabilityGrant[]): AccessContext {
+function accessContext(namespaceId = "world-alpha"): AccessContext {
   return {
-    namespaceId: "world-alpha",
+    namespaceId,
     enabledToolNamespaces: [],
     actor: ACTOR,
     authority: AUTHORITY,
     owner: OWNER,
     purpose: "prepare-update",
     traceId: "trace-1",
-    grants,
     now: NOW,
+  };
+}
+
+/** Authority as the kernel would have resolved it from a trusted source. */
+function context(grants: CapabilityGrant[]): ResolvedAuthority {
+  return authorityFor(accessContext(), grants);
+}
+
+function authorityFor(access: AccessContext, grants: CapabilityGrant[]): ResolvedAuthority {
+  return {
+    context: access,
+    grants,
+    snapshot: {
+      hash: `snapshot-${grants.map(({ id }) => id).join("+")}`,
+      grantIds: grants.map(({ id }) => id),
+      grantCount: grants.length,
+      loadedAt: access.now,
+    },
   };
 }
 
@@ -175,10 +193,7 @@ describe("CapabilityAuthorizer", () => {
       namespaceId: "world-beta",
       constraints: { maxUses: 1 },
     });
-    const betaContext: AccessContext = {
-      ...context([betaGrant]),
-      namespaceId: "world-beta",
-    };
+    const betaContext = authorityFor(accessContext("world-beta"), [betaGrant]);
 
     await expect(
       authorizer.authorize(context([alphaGrant]), request, { consume: true }),

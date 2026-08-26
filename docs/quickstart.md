@@ -59,12 +59,7 @@ const files: ResourceProvider = {
   },
 };
 
-// 2. A kernel. Registering a provider exposes it; it grants nothing.
-const kernel = new SharedOSKernel({ authorizer: new CapabilityAuthorizer() });
-kernel.registerResourceProvider(files);
-registerStandardOsTools(kernel, { files });
-
-// 3. Authority, issued explicitly and scoped on every axis that matters.
+// 2. Authority, issued explicitly and scoped on every axis that matters.
 const grant: CapabilityGrant = {
   id: "grant-1",
   namespaceId: "acme",
@@ -85,8 +80,34 @@ const grant: CapabilityGrant = {
   issuedAt: new Date().toISOString(),
 };
 
+// 3. A kernel. Registering a provider exposes it; it grants nothing.
+//    `grantSource` is required and is the only way authority gets in: the
+//    kernel loads it for each turn from your trusted store. A real host queries
+//    a database here and throws on an outage — SharedOS turns that into a
+//    fail-closed denial rather than falling back to anything.
+const issued: CapabilityGrant[] = [grant];
+const kernel = new SharedOSKernel({
+  grantSource: {
+    async load(access) {
+      // Answer for this actor and this issuer only. A source that returns a
+      // superset is treated as unavailable, not quietly filtered.
+      return issued.filter(
+        (candidate) =>
+          candidate.namespaceId === access.namespaceId &&
+          JSON.stringify(candidate.subject) === JSON.stringify(access.actor) &&
+          JSON.stringify(candidate.issuer) === JSON.stringify(access.authority),
+      );
+    },
+  },
+  authorizer: new CapabilityAuthorizer(),
+});
+kernel.registerResourceProvider(files);
+registerStandardOsTools(kernel, { files });
+
 // 4. The trusted context. Build it from server-side state, never from a
-//    request body, a message, or model output.
+//    request body, a message, or model output. It says who is asking, on whose
+//    authority, and for what — it carries no grants, so nothing a caller
+//    assembles can become authority.
 const context: AccessContext = {
   namespaceId: "acme",
   actor: bobAgent, // who is acting
@@ -95,7 +116,6 @@ const context: AccessContext = {
   purpose: "atlas-status",
   traceId: crypto.randomUUID(),
   enabledToolNamespaces: ["files"],
-  grants: [grant],
   now: new Date().toISOString(),
 };
 
@@ -192,11 +212,29 @@ const driver: AgentTurnDriver = {
 const invokeAlice: CapabilityGrant = {
   ...grant,
   id: "grant-invoke",
+  subject: aliceAgent,
   capabilities: [agentExecutionCapability(aliceAgent, alice)],
   constraints: { purposes: ["atlas-status"] },
 };
 
-const turnContext = { ...context, grants: [grant, invokeAlice] };
+// The recipient needs its own file authority too. The requester's grant does
+// not transfer through the message.
+const aliceSearch: CapabilityGrant = {
+  ...grant,
+  id: "grant-alice-search",
+  subject: aliceAgent,
+};
+
+// The store gains the recipient's grants. The next turn to resolve authority
+// sees them — which is also how a revocation lands.
+issued.push(invokeAlice, aliceSearch);
+
+const turnContext: AccessContext = {
+  ...context,
+  actor: aliceAgent,
+  traceId: crypto.randomUUID(),
+  now: new Date().toISOString(),
+};
 const tools = await kernel.listTools(turnContext);
 
 const result = await new SharedOSExecutor(kernel, new StandardRuntime(driver), {
@@ -213,7 +251,6 @@ const result = await new SharedOSExecutor(kernel, new StandardRuntime(driver), {
     id: crypto.randomUUID(),
     sender: bobAgent,
     receiver: aliceAgent,
-    intent: "answer-question",
     purpose: turnContext.purpose,
     payload: { text: "When does Atlas ship?" },
     traceId: turnContext.traceId,
@@ -233,6 +270,10 @@ The driver received `request.context` without grants and without the issuing
 authority. It cannot widen its own access, and it cannot reach a tool outside
 the catalog it was given — `RuntimeHost.invokeTool` checks the catalog and
 re-authorizes before anything runs.
+
+The message sender is Bob, but the trusted turn context actor is Alice, the
+executing recipient. Admission and file search therefore use Alice's grants;
+Bob's authority is not transferred by the message.
 
 ## Remote: the same kernel over HTTP
 
@@ -258,7 +299,6 @@ const handler = createSharedOSHandler({
       purpose: request.headers.get("x-sharedos-purpose") ?? "default",
       traceId: crypto.randomUUID(),
       enabledToolNamespaces: await settings.enabledFor(session),
-      grants: await grantStore.resolveEffectiveGrants(session),
       now: new Date().toISOString(),
     };
   },
@@ -301,15 +341,20 @@ const result = await sharedos.invokeTool({
 minted per call. Every route, request shape, and status code is listed in the
 [HTTP API reference](http-api.md).
 
-## Three things that will bite a first integration
+## Four things that will bite a first integration
 
 **`authority` is not the data owner.** It is the issuer whose grants are being
 exercised. For a grant Alice issued, that is Alice. For a grant Bob _derived_
 from it, that is Bob. Get it wrong and the grant is invisible — reported as
 `no_matching_grant`, identical to having no grant at all.
 
+**Your `GrantSource` must pre-filter.** Answer only for the context's namespace,
+actor, and issuing authority. Returning everything and letting the kernel sort it
+out is `authority_unavailable`, not partial authority — a source that is loose
+about scope is treated as one that is broken.
+
 **Bounded and derived grants fail closed.** `maxUses` needs a `usageStore`;
-`deriveGrant` output needs a `chainResolver`. Without them the kernel denies
+`deriveGrant` output needs a `delegationResolver`. Without them the kernel denies
 rather than assuming, and the reason code tells you which one is missing.
 
 **A filesystem provider must reject links, not just escapes.** Authorization is

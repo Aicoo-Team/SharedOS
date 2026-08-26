@@ -55,11 +55,28 @@ export const FilesCreateArgumentsSchema = z
   .strict();
 export type FilesCreateArguments = z.infer<typeof FilesCreateArgumentsSchema>;
 
+const OpaqueVersionTokenSchema = z
+  .string()
+  .min(1)
+  .refine((value) => value.trim() === value, {
+    message: "version tokens must not have leading or trailing whitespace",
+  })
+  .refine((value) => [...value].length <= 256, {
+    message: "version tokens must contain at most 256 Unicode code points",
+  });
+
+const opaqueVersionTokenJsonSchema = {
+  type: "string",
+  minLength: 1,
+  maxLength: 256,
+  pattern: "^(?!\\s)[\\s\\S]*\\S$",
+} as const;
+
 export const FilesReplaceArgumentsSchema = z
   .object({
     path: FilePathSchema.min(1),
     content: JsonValueSchema,
-    expectedVersion: z.string().trim().min(1).max(256).optional(),
+    expectedVersion: OpaqueVersionTokenSchema.optional(),
   })
   .strict();
 export type FilesReplaceArguments = z.infer<typeof FilesReplaceArgumentsSchema>;
@@ -68,7 +85,7 @@ export const FilesAppendArgumentsSchema = z
   .object({
     path: FilePathSchema.min(1),
     content: JsonValueSchema,
-    expectedVersion: z.string().trim().min(1).max(256).optional(),
+    expectedVersion: OpaqueVersionTokenSchema.optional(),
     metadata: z.record(JsonValueSchema).optional(),
   })
   .strict();
@@ -77,7 +94,7 @@ export type FilesAppendArguments = z.infer<typeof FilesAppendArgumentsSchema>;
 export const FilesDeleteArgumentsSchema = z
   .object({
     path: FilePathSchema.min(1),
-    expectedVersion: z.string().trim().min(1).max(256).optional(),
+    expectedVersion: OpaqueVersionTokenSchema.optional(),
     recursive: z.boolean().default(false),
   })
   .strict();
@@ -103,7 +120,7 @@ export const FilesSnapshotRestoreArgumentsSchema = z
   .object({
     path: FilePathSchema.min(1),
     snapshotId: z.string().trim().min(1).max(256),
-    expectedVersion: z.string().trim().min(1).max(256).optional(),
+    expectedVersion: OpaqueVersionTokenSchema.optional(),
   })
   .strict();
 export type FilesSnapshotRestoreArguments = z.infer<typeof FilesSnapshotRestoreArgumentsSchema>;
@@ -229,7 +246,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
           properties: {
             path: pathJsonSchema(1),
             content: {},
-            expectedVersion: { type: "string" },
+            expectedVersion: opaqueVersionTokenJsonSchema,
           },
         },
         destructive: true,
@@ -251,7 +268,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
           properties: {
             path: pathJsonSchema(1),
             content: {},
-            expectedVersion: { type: "string" },
+            expectedVersion: opaqueVersionTokenJsonSchema,
             metadata: { type: "object" },
           },
         },
@@ -273,7 +290,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
           required: ["path"],
           properties: {
             path: pathJsonSchema(1),
-            expectedVersion: { type: "string" },
+            expectedVersion: opaqueVersionTokenJsonSchema,
             recursive: { type: "boolean", default: false },
           },
         },
@@ -334,7 +351,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
           properties: {
             path: pathJsonSchema(1),
             snapshotId: { type: "string" },
-            expectedVersion: { type: "string" },
+            expectedVersion: opaqueVersionTokenJsonSchema,
           },
         },
         destructive: true,

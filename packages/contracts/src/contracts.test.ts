@@ -9,6 +9,7 @@ import {
   MAX_EXECUTION_TIMEOUT_MS,
   MessageDeliveryResultSchema,
   MessageEnvelopeSchema,
+  MessageRequestArgumentsSchema,
   RemoteExecutionRequestSchema,
   RemoteResourceOperationSchema,
   ResourceRefSchema,
@@ -59,7 +60,6 @@ const context = {
   owner,
   purpose: "prepare-investor-update",
   traceId: "trace-1",
-  grants: [grant],
   now,
 };
 
@@ -77,6 +77,10 @@ describe("JSON-safe protocol contracts", () => {
     expect(CapabilityGrantSchema.parse(grant)).toEqual(grant);
     expect(AccessContextSchema.parse(context)).toEqual(context);
     expectTypeOf(AccessContextSchema.parse(context)).toEqualTypeOf<AccessContext>();
+  });
+
+  it("keeps authority out of an access context", () => {
+    expect(AccessContextSchema.safeParse({ ...context, grants: [grant] }).success).toBe(false);
   });
 
   it("requires an explicit, internally consistent tool namespace policy", () => {
@@ -162,13 +166,12 @@ describe("JSON-safe protocol contracts", () => {
     },
   );
 
-  it("keeps authority out of message envelopes", () => {
+  it("has one message purpose and rejects the removed intent field", () => {
     const message = {
       version: "1",
       id: "message-1",
       sender: actor,
       receiver: { kind: "agent" as const, agentId: "agent-alice" },
-      intent: "summarize",
       purpose: "prepare-investor-update",
       payload: { query: "latest project status" },
       traceId: "trace-1",
@@ -176,7 +179,74 @@ describe("JSON-safe protocol contracts", () => {
     };
 
     expect(MessageEnvelopeSchema.parse(message)).toEqual(message);
-    expect(MessageEnvelopeSchema.safeParse({ ...message, grants: [grant] }).success).toBe(false);
+    expect(MessageEnvelopeSchema.safeParse({ ...message, intent: "summarize" }).success).toBe(
+      false,
+    );
+  });
+
+  it("accepts only recipient and JSON-safe payload as model-authored message request input", () => {
+    expect(
+      MessageRequestArgumentsSchema.safeParse({
+        recipient: actor,
+        payload: { taskId: "Q1" },
+      }).success,
+    ).toBe(true);
+
+    for (const field of ["sender", "purpose", "traceId", "messageId", "intent", "replyTo"]) {
+      expect(
+        MessageRequestArgumentsSchema.safeParse({
+          recipient: actor,
+          payload: {},
+          [field]: "forged",
+        }).success,
+      ).toBe(false);
+    }
+
+    expect(
+      MessageRequestArgumentsSchema.safeParse({ recipient: actor, payload: { bad: undefined } })
+        .success,
+    ).toBe(false);
+  });
+
+  it("validates model-authored recipient IDs without normalization and by Unicode code point", () => {
+    const recipient = (kind: string, idKey: string, id: string) => ({
+      kind,
+      [idKey]: id,
+    });
+    const variants = [
+      ["human", "userId"],
+      ["agent", "agentId"],
+      ["group", "conversationId"],
+      ["service", "serviceId"],
+    ] as const;
+    const invalidWhitespace = [
+      "",
+      " ",
+      "\tidentifier",
+      "identifier\n",
+      "\uFEFFidentifier",
+      "identifier\u00A0",
+    ];
+    const ascii256 = "a".repeat(256);
+    const ascii257 = "a".repeat(257);
+    const emoji256 = "😀".repeat(256);
+    const emoji257 = "😀".repeat(257);
+
+    for (const [kind, idKey] of variants) {
+      const parse = (id: string) =>
+        MessageRequestArgumentsSchema.safeParse({
+          recipient: recipient(kind, idKey, id),
+          payload: {},
+        });
+
+      for (const id of invalidWhitespace) {
+        expect(parse(id).success, `${kind} should reject ${JSON.stringify(id)}`).toBe(false);
+      }
+      expect(parse(ascii256).success).toBe(true);
+      expect(parse(ascii257).success).toBe(false);
+      expect(parse(emoji256).success).toBe(true);
+      expect(parse(emoji257).success).toBe(false);
+    }
   });
 
   it("requires an error when message delivery fails", () => {
@@ -210,7 +280,6 @@ describe("JSON-safe protocol contracts", () => {
       id: "message-1",
       sender: owner,
       receiver: actor,
-      intent: "search-files",
       purpose: context.purpose,
       payload: { query: "project status" },
       traceId: context.traceId,
@@ -381,7 +450,6 @@ describe("JSON-safe protocol contracts", () => {
           id: "message-1",
           sender: owner,
           receiver: actor,
-          intent: "read",
           purpose: context.purpose,
           payload: null,
           traceId: context.traceId,

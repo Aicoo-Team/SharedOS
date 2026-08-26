@@ -19,7 +19,6 @@ const context: AccessContext = {
   enabledToolNamespaces: ["files"],
   purpose: "prepare-report",
   traceId: "trace-1",
-  grants: [],
   now: "2026-08-03T00:00:00.000Z",
 };
 
@@ -68,7 +67,14 @@ function createApi(): SharedOSApi {
 
 describe("createSharedOSHandler", () => {
   it("builds remote turns from server context and permission-filtered tools", async () => {
-    const kernel = new SharedOSKernel();
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        async load() {
+          await Promise.resolve();
+          return [];
+        },
+      },
+    });
     const execute = vi.fn(async () => ({
       version: "1" as const,
       executionId: "execution-1",
@@ -93,7 +99,6 @@ describe("createSharedOSHandler", () => {
         id: "message-1",
         sender: { kind: "agent", agentId: "agent-bob" },
         receiver: { kind: "agent", agentId: "agent-alice" },
-        intent: "prepare",
         purpose: "prepare-report",
         payload: null,
         traceId: "trace-1",
@@ -251,7 +256,6 @@ describe("createSharedOSHandler", () => {
       id: "message-1",
       sender: context.actor,
       receiver: { kind: "agent" as const, agentId: "agent-alice" },
-      intent: "prepare",
       purpose: context.purpose,
       payload: null,
       traceId: context.traceId,

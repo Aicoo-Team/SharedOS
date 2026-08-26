@@ -21,7 +21,8 @@ import {
   type ToolDefinition,
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
-import type { SharedOSKernel } from "@aicoo/sharedos-core";
+import { SPAN, measure, type SpanSink } from "@aicoo/sharedos-core";
+import type { SharedOSKernel, TurnAuthorityScope } from "@aicoo/sharedos-core";
 
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
 import type {
@@ -43,6 +44,14 @@ export interface SharedOSExecutorOptions {
   defaultMaxSteps?: number;
   defaultMaxToolCalls?: number;
   defaultTimeoutMs?: number;
+  /**
+   * Where the envelope reports what it cost, when a host is measuring.
+   *
+   * A second clock, and deliberately not the one `clock` supplies: that one
+   * names instants for a record and a conformance run freezes it. See
+   * {@link SpanSink}.
+   */
+  spans?: SpanSink;
 }
 
 export interface ExecuteTurnOptions {
@@ -64,7 +73,15 @@ export interface TurnExecutorOptions extends SharedOSExecutorOptions, StandardRu
  * permits narrow test doubles without granting a runtime direct access to
  * registries, namespace settings, or other host policy state.
  */
-export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool">;
+export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> &
+  /**
+   * Optional so a narrow test double stays viable. A kernel that does not offer
+   * `openTurnAuthority` resolves authority per operation, which is the older and
+   * stricter behaviour; one that does not offer `recordEscalation` still ends an
+   * escalated turn as escalated, but without an audit trail for it.
+   * `SharedOSKernel` offers both.
+   */
+  Partial<Pick<SharedOSKernel, "openTurnAuthority" | "recordEscalation">>;
 
 /**
  * The non-replaceable security envelope around one replaceable RuntimePlugin.
@@ -79,6 +96,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
   readonly #defaultMaxSteps: number;
   readonly #defaultMaxToolCalls: number | undefined;
   readonly #defaultTimeoutMs: number;
+  readonly #spans: SpanSink | undefined;
 
   constructor(kernel: TurnKernel, runtime: RuntimePlugin, options: SharedOSExecutorOptions = {}) {
     if (runtime === null || typeof runtime !== "object" || typeof runtime.run !== "function") {
@@ -100,6 +118,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
     this.#defaultMaxSteps = options.defaultMaxSteps ?? 16;
     this.#defaultMaxToolCalls = options.defaultMaxToolCalls;
     this.#defaultTimeoutMs = options.defaultTimeoutMs ?? 120_000;
+    this.#spans = options.spans;
 
     if (!Number.isInteger(this.#defaultMaxSteps) || this.#defaultMaxSteps <= 0) {
       throw new TypeError("defaultMaxSteps must be a positive integer");
@@ -126,6 +145,21 @@ export class SharedOSExecutor implements TurnExecutionPort {
   }
 
   async execute(
+    input: ExecutionRequest,
+    options: ExecuteTurnOptions = {},
+  ): Promise<ExecutionResult> {
+    return measure(
+      this.#spans,
+      SPAN.TURN,
+      () => this.#execute(input, options),
+      (result, span) => {
+        span.set("executionId", result.executionId);
+        span.set("status", result.status);
+      },
+    );
+  }
+
+  async #execute(
     input: ExecutionRequest,
     options: ExecuteTurnOptions = {},
   ): Promise<ExecutionResult> {
@@ -173,6 +207,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
     const abort = createAbortController(options.signal, timeoutMs);
     let runtimeHostActive = true;
     let toolCallCount = 0;
+    const steps = new Set<number>();
+    let authority: TurnAuthorityScope | undefined;
+    let opening: Promise<TurnAuthorityScope> | undefined;
 
     try {
       if (abort.signal.aborted) {
@@ -180,6 +217,16 @@ export class SharedOSExecutor implements TurnExecutionPort {
       }
 
       const executionContext = structuredClone(contextAt(request.context, this.#clock()));
+
+      // The turn boundary. Authority is resolved once here and held for every
+      // decision the turn goes on to make, so a grant removed from the store
+      // while this turn runs is observed by the next turn rather than part-way
+      // through this one. The promise is kept as well as the handle, because a
+      // turn cancelled while this is still in flight never receives the handle
+      // and would leave the lease answering for a turn that has ended.
+      opening = this.#kernel.openTurnAuthority?.(executionContext, { signal: abort.signal });
+      authority = await raceWithAbort(opening ?? Promise.resolve(undefined), abort.signal);
+
       const admission = await raceWithAbort(
         this.#kernel.admitTurn(executionContext, request.agent, { signal: abort.signal }),
         abort.signal,
@@ -208,53 +255,87 @@ export class SharedOSExecutor implements TurnExecutionPort {
         runtime: runtimeProvenance(this.#manifest),
       });
 
+      // The envelope's whole share of one mediated call: budget checks, the
+      // effective-catalogue check, the kernel round trip, and the two events
+      // the call leaves behind. Named separately from the kernel's own span
+      // because they are different costs with different owners, and the
+      // difference between them is what the envelope charges for existing.
+      const mediateTool = async (
+        call: ToolCall,
+        invocationOptions: RuntimeToolInvocationOptions = {},
+      ): Promise<ToolResult> => {
+        assertRuntimeHostActive(runtimeHostActive, abort.signal);
+        const parsedCall = ToolCallSchema.safeParse(structuredClone(call));
+        if (!parsedCall.success) {
+          throw new TypeError("Runtime tool call does not match the SharedOS v1 contract");
+        }
+        const step = parseRuntimeStep(invocationOptions.step);
+        const eventData = toolEventData(parsedCall.data, step);
+        emit("tool.requested", eventData);
+
+        if (step !== undefined && !stepIsWithinBudget(step, steps, limits.maxSteps)) {
+          const result = deniedToolResult(
+            parsedCall.data,
+            this.#clock(),
+            "step_limit_exceeded",
+            "The runtime reached its maximum number of steps.",
+          );
+          emit("tool.completed", completedToolEventData(result, step));
+          return result;
+        }
+        if (step !== undefined) {
+          steps.add(step);
+        }
+
+        if (toolCallCount >= limits.maxToolCalls) {
+          const result = deniedToolResult(
+            parsedCall.data,
+            this.#clock(),
+            "tool_call_limit_exceeded",
+            "The runtime reached its maximum number of tool calls.",
+          );
+          emit("tool.completed", completedToolEventData(result, step));
+          return result;
+        }
+        toolCallCount += 1;
+
+        if (!effectiveToolNames.has(parsedCall.data.tool)) {
+          const result = unavailableToolResult(parsedCall.data, this.#clock());
+          emit("tool.completed", completedToolEventData(result, step));
+          return result;
+        }
+
+        const resultCandidate = await raceWithAbort(
+          this.#kernel.invokeTool(contextAt(executionContext, this.#clock()), parsedCall.data, {
+            signal: abort.signal,
+          }),
+          abort.signal,
+        );
+        const result = ToolResultSchema.safeParse(resultCandidate);
+        if (!result.success) {
+          throw new TypeError("Kernel returned an invalid tool result");
+        }
+        assertRuntimeHostActive(runtimeHostActive, abort.signal);
+        emit("tool.completed", completedToolEventData(result.data, step));
+        return result.data;
+      };
+
       const host: RuntimeHost = Object.freeze({
         limits,
-        invokeTool: async (
+        invokeTool: (
           call: ToolCall,
           invocationOptions: RuntimeToolInvocationOptions = {},
-        ): Promise<ToolResult> => {
-          assertRuntimeHostActive(runtimeHostActive, abort.signal);
-          const parsedCall = ToolCallSchema.safeParse(structuredClone(call));
-          if (!parsedCall.success) {
-            throw new TypeError("Runtime tool call does not match the SharedOS v1 contract");
-          }
-          const step = parseRuntimeStep(invocationOptions.step);
-          const eventData = toolEventData(parsedCall.data, step);
-          emit("tool.requested", eventData);
-
-          if (toolCallCount >= limits.maxToolCalls) {
-            const result = deniedToolResult(
-              parsedCall.data,
-              this.#clock(),
-              "tool_call_limit_exceeded",
-              "The runtime reached its maximum number of tool calls.",
-            );
-            emit("tool.completed", completedToolEventData(result, step));
-            return result;
-          }
-          toolCallCount += 1;
-
-          if (!effectiveToolNames.has(parsedCall.data.tool)) {
-            const result = unavailableToolResult(parsedCall.data, this.#clock());
-            emit("tool.completed", completedToolEventData(result, step));
-            return result;
-          }
-
-          const resultCandidate = await raceWithAbort(
-            this.#kernel.invokeTool(contextAt(executionContext, this.#clock()), parsedCall.data, {
-              signal: abort.signal,
-            }),
-            abort.signal,
-          );
-          const result = ToolResultSchema.safeParse(resultCandidate);
-          if (!result.success) {
-            throw new TypeError("Kernel returned an invalid tool result");
-          }
-          assertRuntimeHostActive(runtimeHostActive, abort.signal);
-          emit("tool.completed", completedToolEventData(result.data, step));
-          return result.data;
-        },
+        ): Promise<ToolResult> =>
+          measure(
+            this.#spans,
+            SPAN.TOOL_MEDIATE,
+            () => mediateTool(call, invocationOptions),
+            (result, span) => {
+              span.set("callId", result.callId);
+              span.set("tool", result.tool);
+              span.set("outcome", result.status);
+            },
+          ),
         emit: (event: RuntimeEvent): void => {
           assertRuntimeHostActive(runtimeHostActive, abort.signal);
           const parsedEvent = RuntimeEventSchema.safeParse(structuredClone(event));
@@ -298,6 +379,41 @@ export class SharedOSExecutor implements TurnExecutionPort {
         };
       }
 
+      if (outcome.data.type === "escalate") {
+        // The escalation is recorded through the kernel, which owns audit, and
+        // then the turn ends. Nothing here waits for a reviewer: resolving an
+        // escalation means issuing a grant to the trusted store, which the next
+        // turn loads. A kernel that offers no escalation port still terminates
+        // the turn as escalated -- the outcome is the runtime's to declare, and
+        // dropping it because audit is unavailable would lose the one fact this
+        // path exists to record.
+        const escalation = (await raceWithAbort(
+          this.#kernel.recordEscalation?.(
+            contextAt(executionContext, this.#clock()),
+            outcome.data.reason,
+            { signal: abort.signal },
+          ) ?? Promise.resolve(undefined),
+          abort.signal,
+        )) ?? {
+          reason: outcome.data.reason,
+          reviewer: request.context.owner,
+          requestedAt: this.#clock(),
+          status: "pending" as const,
+        };
+        emit("turn.escalated", { reason: escalation.reason, reviewer: escalation.reviewer });
+        return {
+          version: "1",
+          executionId: request.executionId,
+          traceId: request.context.traceId,
+          status: "escalated",
+          escalation,
+          events,
+          startedAt,
+          completedAt: this.#clock(),
+          metadata: runtimeResultMetadata(this.#manifest, outcome.data),
+        };
+      }
+
       emit("turn.failed", { code: outcome.data.error.code });
       return resultFor(
         request,
@@ -319,6 +435,15 @@ export class SharedOSExecutor implements TurnExecutionPort {
       return resultFor(request, events, startedAt, this.#clock(), "failed", error, metadata);
     } finally {
       runtimeHostActive = false;
+      // Released on every path out, including cancellation: an unclosed lease
+      // would keep answering for a turn that has already ended. Closing is
+      // idempotent, so covering both the handle and the promise it came from is
+      // safe and covers the abandoned-while-opening case too.
+      authority?.close();
+      void opening?.then(
+        (scope) => scope.close(),
+        () => undefined,
+      );
       abort.abort(new Error("turn closed"));
       abort.dispose();
     }
@@ -392,6 +517,24 @@ function toRuntimeTurnRequest(
   );
 }
 
+/**
+ * Whether one declared step is inside the turn's step budget.
+ *
+ * `StandardRuntime` bounds its own loop, but a replacement plugin is a
+ * replacement for exactly that loop, so a limit only the reference
+ * implementation honours is not a limit. The envelope holds the ceiling from
+ * outside: a step at or past `maxSteps` is refused, and so is a new step once
+ * `maxSteps` distinct ones have been seen -- which is what stops a plugin from
+ * renumbering its way around the first rule.
+ *
+ * A plugin that declares no step at all is not step-bounded, because the
+ * envelope sees tool calls and cannot infer model turns from them. That plugin
+ * is still bounded by `maxToolCalls`, which needs nothing from the runtime.
+ */
+function stepIsWithinBudget(step: number, seen: ReadonlySet<number>, maxSteps: number): boolean {
+  return step < maxSteps && (seen.has(step) || seen.size < maxSteps);
+}
+
 function parseRuntimeStep(step: number | undefined): number | undefined {
   if (step === undefined) {
     return undefined;
@@ -410,12 +553,25 @@ function toolEventData(call: ToolCall, step: number | undefined): JsonObject {
   };
 }
 
+/**
+ * What a completed call contributes to the durable event stream.
+ *
+ * The refusal code is included because a call the envelope terminated never
+ * reaches the kernel and so never reaches audit: the event stream is the only
+ * place it is recorded at all. Without the code, an execution record could say
+ * that an envelope refusal happened but not whether it was a guess at an
+ * unexposed tool or a blown call budget, and the distinction had to be taken on
+ * trust from whatever the runtime chose to report about itself.
+ *
+ * Arguments, results, and payloads stay out, exactly as they do in audit.
+ */
 function completedToolEventData(result: ToolResult, step: number | undefined): JsonObject {
   return {
     callId: result.callId,
     status: result.status,
     tool: result.tool,
     ...(step === undefined ? {} : { step }),
+    ...(result.status === "succeeded" ? {} : { code: result.error.code }),
   };
 }
 
@@ -430,8 +586,8 @@ function contextAt(context: AccessContext, now: string): AccessContext {
 }
 
 function validateTurnContext(request: ExecutionRequest): ProtocolError | undefined {
-  if (canonicalJson(request.message.sender) !== canonicalJson(request.context.actor)) {
-    return protocolError("actor_mismatch", "Message sender does not match the access actor.");
+  if (canonicalJson(request.context.actor) !== canonicalJson(request.agent)) {
+    return protocolError("actor_mismatch", "Access actor does not match the executing agent.");
   }
 
   if (canonicalJson(request.message.receiver) !== canonicalJson(request.agent)) {
@@ -494,11 +650,21 @@ function cancelledResult(
   );
 }
 
+/**
+ * The envelope's refusal for a tool outside the permission-filtered catalogue.
+ *
+ * It carries `tool_unavailable`, the same code `SharedOSKernel` uses when the
+ * tool is absent, sealed, or undiscoverable. The two boundaries refuse the same
+ * attempt for the same reason, and emitting two codes for it made the
+ * conformance matrix's declared signal depend on which boundary happened to get
+ * there first. The boundary that refused is still distinguishable: it is
+ * `OperationRecord.source`, which is where that distinction belongs.
+ */
 function unavailableToolResult(call: ToolCall, completedAt: string): ToolResult {
   return deniedToolResult(
     call,
     completedAt,
-    "tool_not_available",
+    "tool_unavailable",
     "The tool is not available in this permission-filtered turn.",
   );
 }

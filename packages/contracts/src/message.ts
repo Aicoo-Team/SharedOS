@@ -16,8 +16,8 @@ export const MessageProvenanceSchema = z
 export type MessageProvenance = z.infer<typeof MessageProvenanceSchema>;
 
 /**
- * A message carries intent and context, never authority. Authority is supplied
- * separately through AccessContext and evaluated at the point of use.
+ * A message carries data and one host-bound purpose, never authority. Authority
+ * is supplied separately through AccessContext and evaluated at the point of use.
  */
 export const MessageEnvelopeSchema = z
   .object({
@@ -25,7 +25,6 @@ export const MessageEnvelopeSchema = z
     id: IdentifierSchema,
     sender: AddressSchema,
     receiver: AddressSchema,
-    intent: z.string().trim().min(1).max(512),
     purpose: z.string().trim().min(1).max(512),
     payload: JsonValueSchema,
     traceId: IdentifierSchema,
@@ -36,6 +35,37 @@ export const MessageEnvelopeSchema = z
   .strict();
 
 export type MessageEnvelope = z.infer<typeof MessageEnvelopeSchema>;
+
+const MessageRequestRecipientIdentifierSchema = z
+  .string()
+  .min(1)
+  .refine((value) => value.trim() === value, {
+    message: "recipient identifiers must not have leading or trailing whitespace",
+  })
+  .refine((value) => [...value].length <= 256, {
+    message: "recipient identifiers must contain at most 256 Unicode code points",
+  });
+
+const MessageRequestRecipientAddressSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("human"), userId: MessageRequestRecipientIdentifierSchema }).strict(),
+  z.object({ kind: z.literal("agent"), agentId: MessageRequestRecipientIdentifierSchema }).strict(),
+  z
+    .object({ kind: z.literal("group"), conversationId: MessageRequestRecipientIdentifierSchema })
+    .strict(),
+  z
+    .object({ kind: z.literal("service"), serviceId: MessageRequestRecipientIdentifierSchema })
+    .strict(),
+]);
+
+/** The complete and intentionally narrow message input a model may author. */
+export const MessageRequestArgumentsSchema = z
+  .object({
+    recipient: MessageRequestRecipientAddressSchema,
+    payload: JsonValueSchema,
+  })
+  .strict();
+
+export type MessageRequestArguments = z.infer<typeof MessageRequestArgumentsSchema>;
 
 const MessageDeliveryBaseSchema = z.object({
   messageId: IdentifierSchema,

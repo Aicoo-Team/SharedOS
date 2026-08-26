@@ -11,7 +11,12 @@
  * Run: pnpm example:fleet-delegation
  */
 import type { AccessContext, CapabilityGrant, ResourceRef } from "@aicoo/sharedos-contracts";
-import { CapabilityAuthorizer, deriveGrant, type GrantChainResolver } from "@aicoo/sharedos-core";
+import {
+  CapabilityAuthorizer,
+  deriveGrant,
+  type DelegationChainResolver,
+  type ResolvedAuthority,
+} from "@aicoo/sharedos-core";
 
 const NOW = "2026-08-20T09:00:00.000Z";
 const SHIFT_END = "2026-08-20T17:00:00.000Z";
@@ -20,13 +25,19 @@ const OPERATOR = { kind: "human", userId: "operator-lin" } as const;
 const ROBOT_A = { kind: "agent", agentId: "robot-a" } as const;
 const ROBOT_B = { kind: "agent", agentId: "robot-b" } as const;
 
+/**
+ * The operator's ledger, standing in for a host's grant store. Ancestors are
+ * read back from here at every decision and never from the grant presented, so
+ * revoking a parent below takes effect without rewriting the child.
+ */
 const ledger = new Map<string, CapabilityGrant>();
-const chainResolver: GrantChainResolver = {
-  async get(_namespaceId, grantId) {
-    return ledger.get(grantId);
+const delegationResolver: DelegationChainResolver = {
+  async resolve(namespaceId, grantId) {
+    const grant = ledger.get(grantId);
+    return grant?.namespaceId === namespaceId ? grant : undefined;
   },
 };
-const authorizer = new CapabilityAuthorizer({ chainResolver });
+const authorizer = new CapabilityAuthorizer({ delegationResolver });
 
 function record(grant: CapabilityGrant): CapabilityGrant {
   ledger.set(grant.id, grant);
@@ -37,8 +48,12 @@ function arm(id: string): ResourceRef {
   return { namespace: "fleet", path: ["cell-3", id], owner: OPERATOR };
 }
 
+/**
+ * Authority as a kernel would hand it to the authorizer: a context that carries
+ * no grants, plus the set a trusted source answered with for that turn.
+ */
 function turn(actor: AccessContext["actor"], authority: AccessContext["authority"]) {
-  return (grants: CapabilityGrant[]): AccessContext => ({
+  const context: AccessContext = {
     namespaceId: "line-7",
     enabledToolNamespaces: [],
     actor,
@@ -46,8 +61,17 @@ function turn(actor: AccessContext["actor"], authority: AccessContext["authority
     owner: OPERATOR,
     purpose: "pick-and-place",
     traceId: "shift-2026-08-20",
-    grants,
     now: NOW,
+  };
+  return (grants: CapabilityGrant[]): ResolvedAuthority => ({
+    context,
+    grants,
+    snapshot: {
+      hash: grants.map(({ id }) => id).join("+"),
+      grantIds: grants.map(({ id }) => id),
+      grantCount: grants.length,
+      loadedAt: NOW,
+    },
   });
 }
 
@@ -68,11 +92,12 @@ const audit: string[] = [];
 
 async function attempt(
   label: string,
-  context: AccessContext,
+  authority: ResolvedAuthority,
   resource: ResourceRef,
   action: string,
 ): Promise<void> {
-  const decision = await authorizer.authorize(context, { resource, action });
+  const { context } = authority;
+  const decision = await authorizer.authorize(authority, { resource, action });
   const verdict = decision.allowed ? "ALLOW" : "DENY ";
   const detail = decision.allowed
     ? `via ${decision.matchedGrantId}`
@@ -128,7 +153,7 @@ async function main(): Promise<void> {
   const toRobotB = record(delegation.grant);
   console.log(
     `2. robot-a -> robot-b: cell-3/arm-1 grip only` +
-      `  (issuer=${describe(toRobotB.issuer)}, chain=${toRobotB.delegation?.chain.join("->")}, ` +
+      `  (issuer=${describe(toRobotB.issuer)}, parent=${toRobotB.parentGrantId}, ` +
       `expires ${toRobotB.constraints.expiresAt}, redelegable ${toRobotB.constraints.delegationDepth} more times)\n`,
   );
 

@@ -72,8 +72,9 @@ The message coordinated the work. It never carried authority.
 - **Not a tool-connection protocol.** Connecting a tool is not authorizing it.
   External and MCP tools are welcome here; they arrive as namespaces that are
   off by default and still require an exact capability match per call.
-- **Not an agent messaging protocol.** Receiving a message is not permission to
-  act on it. SharedOS sits underneath messaging, not on top of it.
+- **Not a messaging platform.** SharedOS authorizes and validates message
+  requests, but the host owns durable logs, inboxes, receiver wake-up, retries,
+  and multi-turn scheduling. Receiving a message is not permission to act on it.
 - **Not an agent framework.** The model, the prompt strategy, the agent loop,
   and the execution backend are all replaceable — that is the point. The
   security envelope around them is the part that does not vary.
@@ -90,6 +91,8 @@ is the boundary between them and the agents that act on them.
   header, plus where authentication enters.
 - [Tool catalog](tools.md): the twelve `files` tools, the three availability
   gates, and how to register native or MCP tools of your own.
+- [MCP toolshare](mcp-toolshare.md): the permission-filtered catalogue as an MCP
+  server, the boundary presented to Codex, Claude Code, and DeepSeek Harness.
 - [Reason and error codes](errors.md): what every denial and failure means, and
   what to change in response.
 - [Architecture](architecture.md): responsibilities, packages, fixed security
@@ -101,9 +104,19 @@ is the boundary between them and the agents that act on them.
 - [Threat model](security/threat-model.md): trust boundaries, attack surfaces,
   required controls, and non-goals.
 - [Release readiness](release-readiness.md): explicit npm and production gates.
+- [npm release runbook](npm-release.md): package validation, first publication,
+  trusted publishing, and registry verification.
 - [API reference](api/README.md): generated reference for every public package.
 - [Changelog](../CHANGELOG.md): what changed between prereleases, and what a host
   has to update.
+
+## Host integrations
+
+- [Aicoo](integrations/aicoo.md): embedded adoption and provider migration.
+- [Pulse migration](integrations/pulse-migration.md): concrete files, tools, and
+  one-turn cutover plan.
+- [PACT](integrations/pact.md): isolated worlds, execution adapters, and the
+  experiment scheduler boundary.
 
 ## Architecture decisions
 
@@ -114,6 +127,14 @@ is the boundary between them and the agents that act on them.
 - [ADR 0005: Files are the canonical resource plane](adr/0005-files-resource-plane.md)
 - [ADR 0006: Tool namespace control plane](adr/0006-tool-namespace-control-plane.md)
 - [ADR 0007: Pluggable runtimes inside a fixed security envelope](adr/0007-pluggable-runtime-security-envelope.md)
+- [ADR 0008: Validate the complete delegation chain before use](adr/0008-delegation-chain-validation.md)
+- [ADR 0009: Load authority from a trusted grant source, never from a context](adr/0009-trusted-grant-source.md)
+- [ADR 0010: Resolve authority once per turn](adr/0010-per-turn-authority.md)
+- [ADR 0011: Escalation is a terminal outcome, not a denial](adr/0011-escalation-terminal-outcome.md)
+- [ADR 0012: One refusal vocabulary at both enforcement boundaries](adr/0012-one-refusal-vocabulary.md)
+- [ADR 0013: The conformance matrix is the case set](adr/0013-matrix-is-the-case-set.md)
+- [ADR 0014: MCP is the toolshare boundary](adr/0014-mcp-toolshare.md)
+- [ADR 0015: One message purpose and recipient-owned execution](adr/0015-message-purpose-and-recipient-execution.md)
 
 ## Project governance
 

@@ -18,6 +18,8 @@ import {
   applyToolNamespaceUpdate,
   type AuditEvent,
   type AuditSink,
+  type DelegationChainResolver,
+  type GrantSource,
   type MessageTransport,
   type ResourceProvider,
   type ToolNamespaceSettingsStore,
@@ -74,6 +76,106 @@ export class InMemoryToolNamespaceSettingsStore implements ToolNamespaceSettings
   }
 }
 
+/**
+ * A host grant store fixture.
+ *
+ * `load` answers only with grants issued to the context's actor by its
+ * authority inside its namespace, which is the contract every production
+ * `GrantSource` must satisfy.
+ */
+export class InMemoryGrantSource implements GrantSource {
+  readonly #grants: CapabilityGrant[] = [];
+
+  constructor(grants: readonly CapabilityGrant[] = []) {
+    for (const grant of grants) {
+      this.add(grant);
+    }
+  }
+
+  add(...grants: readonly CapabilityGrant[]): this {
+    for (const grant of grants) {
+      this.#grants.push(structuredClone(grant));
+    }
+    return this;
+  }
+
+  /** Record a revocation the way a host store would, without deleting history. */
+  revoke(grantId: string, revokedAt: string): this {
+    const index = this.#grants.findIndex((grant) => grant.id === grantId);
+    const grant = this.#grants[index];
+    if (grant === undefined) {
+      throw new Error(`grant is not registered: ${grantId}`);
+    }
+    this.#grants[index] = { ...grant, revokedAt };
+    return this;
+  }
+
+  async load(context: AccessContext): Promise<readonly CapabilityGrant[]> {
+    await Promise.resolve();
+    return this.#grants
+      .filter(
+        (grant) =>
+          grant.namespaceId === context.namespaceId &&
+          sameAddress(grant.subject, context.actor) &&
+          sameAddress(grant.issuer, context.authority),
+      )
+      .map((grant) => structuredClone(grant));
+  }
+}
+
+/** A grant store that is down; every decision made against it must fail closed. */
+export class UnavailableGrantSource implements GrantSource {
+  async load(): Promise<readonly CapabilityGrant[]> {
+    await Promise.resolve();
+    throw new Error("grant source is unavailable");
+  }
+}
+
+/** Namespace-scoped ancestor lookup for delegated-grant fixtures. */
+export class InMemoryGrantChainResolver implements DelegationChainResolver {
+  readonly #grantsByNamespace = new Map<string, Map<string, CapabilityGrant>>();
+
+  constructor(grants: readonly CapabilityGrant[] = []) {
+    for (const grant of grants) {
+      this.add(grant);
+    }
+  }
+
+  add(grant: CapabilityGrant): this {
+    let namespaceGrants = this.#grantsByNamespace.get(grant.namespaceId);
+    if (namespaceGrants === undefined) {
+      namespaceGrants = new Map<string, CapabilityGrant>();
+      this.#grantsByNamespace.set(grant.namespaceId, namespaceGrants);
+    }
+    namespaceGrants.set(grant.id, structuredClone(grant));
+    return this;
+  }
+
+  /** Record a revocation the way a host grant store would, in place. */
+  revoke(namespaceId: string, grantId: string, revokedAt: string): this {
+    const grant = this.#grantsByNamespace.get(namespaceId)?.get(grantId);
+    if (grant === undefined) {
+      throw new Error(`grant is not registered: ${grantId}`);
+    }
+    this.#grantsByNamespace.get(namespaceId)?.set(grantId, { ...grant, revokedAt });
+    return this;
+  }
+
+  async resolve(namespaceId: string, grantId: string): Promise<CapabilityGrant | undefined> {
+    await Promise.resolve();
+    const grant = this.#grantsByNamespace.get(namespaceId)?.get(grantId);
+    return grant === undefined ? undefined : structuredClone(grant);
+  }
+}
+
+/** A resolver whose authoritative source is down; every lookup must fail closed. */
+export class UnavailableGrantChainResolver implements DelegationChainResolver {
+  async resolve(): Promise<CapabilityGrant | undefined> {
+    await Promise.resolve();
+    throw new Error("delegation chain resolver is unavailable");
+  }
+}
+
 export type ResourceHandler = (operation: ResourceOperation) => Promise<ResourceResult>;
 
 /** A host-neutral recording provider for examples, conformance tests, and isolated experiment worlds. */
@@ -97,19 +199,38 @@ export interface TestKernel {
   readonly kernel: SharedOSKernel;
   readonly audit: InMemoryAuditSink;
   readonly messages: InMemoryMessageTransport;
+  /** The trusted store the kernel loads authority from; mutate it to grant or revoke. */
+  readonly grants: InMemoryGrantSource;
 }
 
-export function createTestKernel(): TestKernel {
+export interface TestKernelOptions {
+  /** Seed authority for the kernel's trusted grant source. */
+  readonly grants?: readonly CapabilityGrant[];
+  /** Replaces the trusted grant source, for example to exercise an outage. */
+  readonly grantSource?: GrantSource;
+  /** Installs ancestor validation so delegated grants can be exercised. */
+  readonly delegationResolver?: DelegationChainResolver;
+}
+
+export function createTestKernel(options: TestKernelOptions = {}): TestKernel {
   const audit = new InMemoryAuditSink();
   const messages = new InMemoryMessageTransport();
+  const grants = new InMemoryGrantSource(options.grants ?? []);
   return {
     kernel: new SharedOSKernel({
+      grantSource: options.grantSource ?? grants,
       audit,
-      authorizer: new CapabilityAuthorizer({ usageStore: new InMemoryGrantUsageStore() }),
+      authorizer: new CapabilityAuthorizer({
+        usageStore: new InMemoryGrantUsageStore(),
+        ...(options.delegationResolver === undefined
+          ? {}
+          : { delegationResolver: options.delegationResolver }),
+      }),
       messageTransport: messages,
     }),
     audit,
     messages,
+    grants,
   };
 }
 
@@ -121,7 +242,6 @@ export interface TestContextOptions {
   readonly enabledToolNamespaces?: readonly string[];
   readonly purpose?: string;
   readonly traceId?: string;
-  readonly grants?: readonly CapabilityGrant[];
   readonly now?: string;
 }
 
@@ -135,7 +255,6 @@ export function createTestContext(options: TestContextOptions = {}): AccessConte
     enabledToolNamespaces: [...(options.enabledToolNamespaces ?? [])],
     purpose: options.purpose ?? "test",
     traceId: options.traceId ?? "trace-1",
-    grants: [...(options.grants ?? [])],
     now: options.now ?? "2026-01-01T00:00:00.000Z",
   };
 }
@@ -148,13 +267,21 @@ export interface TestGrantOptions {
   readonly capabilities: readonly Capability[];
   readonly purposes?: readonly string[];
   readonly issuedAt?: string;
+  readonly notBefore?: string;
   readonly expiresAt?: string;
+  readonly revokedAt?: string;
+  readonly maxUses?: number;
+  readonly delegationDepth?: number;
+  readonly parentGrantId?: string;
 }
 
 export function createTestGrant(options: TestGrantOptions): CapabilityGrant {
   const constraints = {
     ...(options.purposes === undefined ? {} : { purposes: [...options.purposes] }),
+    ...(options.notBefore === undefined ? {} : { notBefore: options.notBefore }),
     ...(options.expiresAt === undefined ? {} : { expiresAt: options.expiresAt }),
+    ...(options.maxUses === undefined ? {} : { maxUses: options.maxUses }),
+    ...(options.delegationDepth === undefined ? {} : { delegationDepth: options.delegationDepth }),
   };
   return {
     id: options.id ?? "grant-1",
@@ -164,7 +291,26 @@ export function createTestGrant(options: TestGrantOptions): CapabilityGrant {
     capabilities: [...options.capabilities],
     constraints,
     issuedAt: options.issuedAt ?? "2026-01-01T00:00:00.000Z",
+    ...(options.revokedAt === undefined ? {} : { revokedAt: options.revokedAt }),
+    ...(options.parentGrantId === undefined ? {} : { parentGrantId: options.parentGrantId }),
   };
+}
+
+function sameAddress(left: Address, right: Address): boolean {
+  return canonicalAddress(left) === canonicalAddress(right);
+}
+
+function canonicalAddress(address: Address): string {
+  switch (address.kind) {
+    case "human":
+      return `human:${address.userId}`;
+    case "agent":
+      return `agent:${address.agentId}`;
+    case "group":
+      return `group:${address.conversationId}`;
+    case "service":
+      return `service:${address.serviceId}`;
+  }
 }
 
 async function echoResourceOperation(operation: ResourceOperation): Promise<ResourceResult> {

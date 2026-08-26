@@ -6,7 +6,8 @@ import type {
   ToolDefinition,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
-import type { SharedOSKernel } from "@aicoo/sharedos-core";
+import { SharedOSKernel } from "@aicoo/sharedos-core";
+import type { CapabilityGrant } from "@aicoo/sharedos-contracts";
 
 import {
   TurnExecutor,
@@ -34,14 +35,13 @@ const tool: ToolDefinition = {
 };
 
 const context: AccessContext = {
-  actor: sender,
+  actor: receiver,
   authority: owner,
   owner,
   namespaceId: "namespace-1",
   enabledToolNamespaces: ["files"],
   purpose: "prepare-report",
   traceId: "trace-1",
-  grants: [],
   now,
 };
 
@@ -56,7 +56,6 @@ function request(): ExecutionRequest {
       id: "message-1",
       sender,
       receiver,
-      intent: "prepare",
       purpose: context.purpose,
       payload: { topic: "status" },
       traceId: context.traceId,
@@ -91,6 +90,51 @@ function kernel(
 }
 
 describe("TurnExecutor", () => {
+  it("executes an inbound message as its recipient", async () => {
+    const input = request();
+    const runtimeKernel = kernel();
+    const next = vi
+      .fn<AgentTurnSession["next"]>()
+      .mockResolvedValueOnce({
+        type: "tool_call",
+        call: {
+          id: "call-1",
+          tool: tool.name,
+          arguments: { query: "status" },
+          traceId: context.traceId,
+          requestedAt: now,
+        },
+      })
+      .mockResolvedValueOnce({ type: "complete", output: { ok: true } });
+
+    const result = await new TurnExecutor(
+      runtimeKernel,
+      {
+        open: async () => ({ next }),
+      },
+      {
+        clock: () => now,
+        createId: () => "event-1",
+      },
+    ).execute(input);
+
+    expect(result.status).toBe("succeeded");
+    expect(runtimeKernel.admitTurn).toHaveBeenCalledWith(
+      expect.objectContaining({ actor: receiver }),
+      receiver,
+      expect.anything(),
+    );
+    expect(runtimeKernel.listTools).toHaveBeenCalledWith(
+      expect.objectContaining({ actor: receiver }),
+      expect.anything(),
+    );
+    expect(runtimeKernel.invokeTool).toHaveBeenCalledWith(
+      expect.objectContaining({ actor: receiver }),
+      expect.objectContaining({ id: "call-1", tool: tool.name }),
+      expect.anything(),
+    );
+  });
+
   it("uses the registry's permission-filtered tool definition", async () => {
     let openedRequest: AgentTurnRequest | undefined;
     const session: AgentTurnSession = {
@@ -156,18 +200,88 @@ describe("TurnExecutor", () => {
     );
   });
 
-  it("denies a turn when message authority does not match", async () => {
+  it("denies a turn when the access actor differs from the executing agent", async () => {
     const input = request();
-    input.message.sender = { kind: "agent", agentId: "forged-agent" };
+    input.context = { ...input.context, actor: sender };
+    const runtimeKernel = kernel();
     const driver: AgentTurnDriver = { open: vi.fn() };
 
-    const result = await new TurnExecutor(kernel(), driver, {
+    const result = await new TurnExecutor(runtimeKernel, driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(input);
 
     expect(result.status).toBe("denied");
+    if (result.status === "denied") {
+      expect(result.error.code).toBe("actor_mismatch");
+    }
     expect(driver.open).not.toHaveBeenCalled();
+    expect(runtimeKernel.admitTurn).not.toHaveBeenCalled();
+    expect(runtimeKernel.listTools).not.toHaveBeenCalled();
+    expect(runtimeKernel.invokeTool).not.toHaveBeenCalled();
+  });
+
+  it("denies a turn when the message receiver differs from the executing agent", async () => {
+    const input = request();
+    input.message.receiver = sender;
+    const runtimeKernel = kernel();
+    const driver: AgentTurnDriver = { open: vi.fn() };
+
+    const result = await new TurnExecutor(runtimeKernel, driver, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(input);
+
+    expect(result.status).toBe("denied");
+    if (result.status === "denied") {
+      expect(result.error.code).toBe("receiver_mismatch");
+    }
+    expect(driver.open).not.toHaveBeenCalled();
+    expect(runtimeKernel.admitTurn).not.toHaveBeenCalled();
+    expect(runtimeKernel.listTools).not.toHaveBeenCalled();
+    expect(runtimeKernel.invokeTool).not.toHaveBeenCalled();
+  });
+
+  it("denies a turn when the message purpose differs from the access context", async () => {
+    const input = request();
+    input.message.purpose = "different-purpose";
+    const runtimeKernel = kernel();
+    const driver: AgentTurnDriver = { open: vi.fn() };
+
+    const result = await new TurnExecutor(runtimeKernel, driver, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(input);
+
+    expect(result.status).toBe("denied");
+    if (result.status === "denied") {
+      expect(result.error.code).toBe("message_context_mismatch");
+    }
+    expect(driver.open).not.toHaveBeenCalled();
+    expect(runtimeKernel.admitTurn).not.toHaveBeenCalled();
+    expect(runtimeKernel.listTools).not.toHaveBeenCalled();
+    expect(runtimeKernel.invokeTool).not.toHaveBeenCalled();
+  });
+
+  it("denies a turn when the message trace differs from the access context", async () => {
+    const input = request();
+    input.message.traceId = "different-trace";
+    const runtimeKernel = kernel();
+    const driver: AgentTurnDriver = { open: vi.fn() };
+
+    const result = await new TurnExecutor(runtimeKernel, driver, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(input);
+
+    expect(result.status).toBe("denied");
+    if (result.status === "denied") {
+      expect(result.error.code).toBe("message_context_mismatch");
+    }
+    expect(driver.open).not.toHaveBeenCalled();
+    expect(runtimeKernel.admitTurn).not.toHaveBeenCalled();
+    expect(runtimeKernel.listTools).not.toHaveBeenCalled();
+    expect(runtimeKernel.invokeTool).not.toHaveBeenCalled();
   });
 
   it("denies a turn before opening the driver without an execution grant", async () => {
@@ -219,7 +333,7 @@ describe("TurnExecutor", () => {
         result: expect.objectContaining({
           tool: "files.delete",
           status: "denied",
-          error: expect.objectContaining({ code: "tool_not_available" }),
+          error: expect.objectContaining({ code: "tool_unavailable" }),
         }),
       },
       expect.anything(),
@@ -334,5 +448,67 @@ describe("TurnExecutor", () => {
     }).execute(request());
 
     expect(result.status).toBe("succeeded");
+  });
+});
+
+describe("turn-scoped authority", () => {
+  const agentGrant: CapabilityGrant = {
+    id: "grant-turn",
+    namespaceId: "world-1",
+    subject: receiver,
+    issuer: owner,
+    capabilities: [
+      {
+        resource: { namespace: "sharedos.execution", path: ["agent", "agent-alice"], owner },
+        actions: ["invoke"],
+        scope: "exact",
+      },
+    ],
+    constraints: {},
+    issuedAt: "2026-08-02T00:00:00.000Z",
+  };
+
+  const completingDriver: AgentTurnDriver = {
+    open: async () => ({ next: async () => ({ type: "complete", output: { ok: true } }) }),
+  };
+
+  it("releases the turn's authority when the turn is cancelled while it is being resolved", async () => {
+    let loads = 0;
+    let revoked = false;
+    let releaseLoad: (() => void) | undefined;
+
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        async load() {
+          loads += 1;
+          if (loads === 1) {
+            await new Promise<void>((resolve) => {
+              releaseLoad = resolve;
+            });
+          }
+          return revoked ? [] : [agentGrant];
+        },
+      },
+    });
+    const executor = new TurnExecutor(kernel, completingDriver, { clock: () => now });
+
+    const controller = new AbortController();
+    const cancelled = executor.execute(request(), { signal: controller.signal });
+    // Abort while the very first authority load is still in flight.
+    await Promise.resolve();
+    controller.abort();
+    await expect(cancelled).resolves.toMatchObject({ status: "cancelled" });
+
+    // Let the abandoned load finish, and revoke before the next turn opens.
+    releaseLoad?.();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    revoked = true;
+
+    // The abandoned lease must not answer this turn.
+    await expect(executor.execute(request())).resolves.toMatchObject({
+      status: "denied",
+      error: { code: "no_matching_grant" },
+    });
+    expect(loads).toBe(2);
   });
 });

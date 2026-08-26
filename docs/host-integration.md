@@ -72,8 +72,8 @@ still executes only one bounded turn.
 
 ### 1. Resolve a trusted access context
 
-For every request, the host resolves identity, grants, namespace settings, and
-time from trusted server-side state:
+For every request, the host resolves identity, namespace settings, and time from
+trusted server-side state. An access context carries no authority:
 
 ```ts
 import type { AccessContext } from "@aicoo/sharedos";
@@ -86,22 +86,57 @@ const context: AccessContext = {
   purpose: "prepare-investor-update",
   traceId: crypto.randomUUID(),
   enabledToolNamespaces: ["files", "calendar"],
-  grants: await grantStore.resolveEffectiveGrants(/* trusted identity */),
   now: new Date().toISOString(),
 };
 ```
 
 Do not deserialize an `AccessContext` supplied by a model, message payload, or
-untrusted client and treat it as authority. In particular:
+untrusted client and treat it as trusted identity. In particular:
 
 - `actor` is the principal performing the operation;
 - `authority` is the issuer whose grants are being exercised;
 - `owner` scopes the target resources;
 - `namespaceId` isolates the tenant or benchmark world;
 - `purpose`, time, expiry, and usage limits participate in authorization;
-- `enabledToolNamespaces` comes from host-owned settings;
-- `grants` come from a trusted grant store and may require signature or
-  revocation verification.
+- `enabledToolNamespaces` comes from host-owned settings.
+
+### 1b. Implement the trusted grant source
+
+Authority enters SharedOS only through a `GrantSource`, which every kernel
+requires. The kernel calls it once per turn, so a grant revoked or expired while
+a turn is running is observed by the next turn:
+
+```ts
+import type { GrantSource } from "@aicoo/sharedos";
+
+const grantSource: GrantSource = {
+  async load(access, signal) {
+    // Answer from the issuing store, never from anything the caller supplied.
+    return grantStore.activeGrantsFor(
+      {
+        namespaceId: access.namespaceId,
+        subject: access.actor,
+        issuer: access.authority,
+      },
+      { signal },
+    );
+  },
+};
+```
+
+The contract is narrow on purpose:
+
+- return only grants issued to `access.actor` by `access.authority` inside
+  `access.namespaceId`; anything else is treated as an unavailable source, not
+  as partial authority;
+- return material that satisfies `CapabilityGrantSchema`, including signature or
+  revocation verification the host requires;
+- throw when the store is unreachable. SharedOS converts that into a fail-closed
+  `authority_unavailable` denial and never falls back to a cached set.
+
+A host that issues delegated grants also installs a `DelegationChainResolver`
+so ancestors can be re-resolved; see
+`docs/adr/0008-delegation-chain-validation.md`.
 
 ### 2. Adapt host state to the `files` resource plane
 
@@ -147,6 +182,7 @@ indexes and model context mounts must preserve the grants of their source files.
 import { CapabilityAuthorizer, SharedOSKernel, registerStandardOsTools } from "@aicoo/sharedos";
 
 const kernel = new SharedOSKernel({
+  grantSource,
   authorizer: new CapabilityAuthorizer({
     usageStore: durableGrantUsageStore,
     grantVerifier: durableGrantVerifier,
@@ -154,6 +190,11 @@ const kernel = new SharedOSKernel({
   audit: durableAuditSink,
   toolNamespaceSettings,
   toolProviders: [userMcpToolProvider],
+  // Durable host ports. The router returns only a reply accepted from the
+  // run's message log; it does not fabricate an envelope from model output.
+  messageTransport: durableMessageLog,
+  messageRequestRouter: durableReplyRouter,
+  createMessageId: () => crypto.randomUUID(),
 });
 
 kernel.registerResourceProvider(files);
@@ -166,6 +207,20 @@ standard tools exposes the same operations as model-callable tools such as
 
 The in-memory stores from `@aicoo/sharedos-testkit` are useful for tests and
 isolated experiment worlds. They are not production persistence.
+
+When both message ports are configured, the kernel adds the canonical
+`messages.request` tool to each effective turn catalog. Enable the `messages`
+tool namespace and issue a recipient-scoped `sharedos.messaging` + `send`
+grant. The model supplies only `recipient` and JSON-safe `payload`; SharedOS
+copies sender, purpose, trace, timestamp, and message id from trusted context,
+consumes the exact send capability once, and validates the correlated reply.
+
+The transport and router do not make SharedOS a scheduler. After durable
+acceptance, the host wakes the recipient and invokes another SharedOS turn with
+the recipient as both `context.actor` and `request.agent`. That recipient needs
+its own `sharedos.execution` + `invoke` grant and its own file or tool grants.
+The reply is another authorized envelope whose `replyTo` names the immutable
+request id.
 
 ### 4. Grant the minimum authority
 
@@ -250,6 +305,11 @@ const result = await turns.execute({
   tools: [...visibleTools],
 });
 ```
+
+For an inbound Bob → Alice message, `targetAgent` and `context.actor` are both
+Alice. The envelope sender remains Bob for provenance; it is not the actor whose
+grants are used by Alice's turn. Purpose and trace must match the trusted
+recipient context.
 
 `TurnExecutor(kernel, agentDriver)` remains a compatibility shorthand for this
 standard composition.
@@ -336,7 +396,8 @@ Every route, request shape, and status code is listed in the
 Before production use, the host must provide:
 
 - authenticated identity and tenant resolution;
-- durable grants, revocation verification, and atomic bounded-grant usage;
+- a durable `GrantSource`, revocation verification, and atomic bounded-grant
+  usage;
 - isolated file and tool providers with cancellation-safe side effects;
 - durable tool namespace settings and credential isolation;
 - durable, append-only audit storage and operational alerting;

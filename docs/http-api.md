@@ -38,6 +38,8 @@ safe to expose:
    context-bearing endpoints (`RemoteResourceOperation`, `RemoteExecutionRequest`)
    are the embedded shapes with `context` — and for turns, `tools` — _removed_.
    A caller cannot describe its own grants, and cannot widen its own catalog.
+   Neither can `resolveContext`: an `AccessContext` has no `grants` field at
+   all, and the kernel loads authority itself, through its `GrantSource`.
 2. **The context you return is re-validated.** It is parsed against
    `AccessContextSchema` before anything runs. A host bug that produces a
    malformed context is a `500 invalid_access_context`, not a bypass.
@@ -202,7 +204,6 @@ does not permit that agent to do anything, and does not permit you to run it.
   "id": "message-1",
   "sender": { "kind": "agent", "agentId": "bob-assistant" },
   "receiver": { "kind": "agent", "agentId": "alice-assistant" },
-  "intent": "answer-question",
   "purpose": "atlas-status",
   "payload": { "text": "When does Atlas ship?" },
   "traceId": "trace-1",
@@ -252,7 +253,8 @@ at admission and nothing runs.
 }
 ```
 
-`status` is `succeeded`, `denied`, `failed`, or `cancelled`. `events` is
+`status` is `succeeded`, `denied`, `failed`, `cancelled`, or `escalated` — the
+last carries an `escalation` and no `error`. `events` is
 append-only and ordered by `sequence`; the eight types are listed in
 [events](errors.md#execution-events). `options` is clamped by the server —
 `maxToolCalls` at most 10,000, `timeoutMs` at most 600,000.

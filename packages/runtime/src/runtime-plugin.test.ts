@@ -37,14 +37,13 @@ const tool: ToolDefinition = {
 };
 
 const context: AccessContext = {
-  actor: sender,
+  actor: receiver,
   authority: owner,
   owner,
   namespaceId: "namespace-1",
   enabledToolNamespaces: ["files"],
   purpose: "prepare-report",
   traceId: "trace-1",
-  grants: [],
   now,
 };
 
@@ -66,7 +65,6 @@ function request(): ExecutionRequest {
       id: "message-1",
       sender,
       receiver,
-      intent: "prepare",
       purpose: context.purpose,
       payload: { topic: "status" },
       traceId: context.traceId,
@@ -189,7 +187,7 @@ describe("RuntimePlugin security envelope", () => {
       expect(result.output).toMatchObject({
         tool: "files.delete",
         status: "denied",
-        error: { code: "tool_not_available" },
+        error: { code: "tool_unavailable" },
       });
     }
     expect(runtimeKernel.invokeTool).not.toHaveBeenCalled();
@@ -230,13 +228,14 @@ describe("RuntimePlugin security envelope", () => {
     expect(runtimeKernel.invokeTool).toHaveBeenCalledOnce();
     expect(runtimeKernel.invokeTool).toHaveBeenCalledWith(
       expect.objectContaining({
-        actor: sender,
+        actor: receiver,
         authority: owner,
-        grants: context.grants,
+        namespaceId: context.namespaceId,
       }),
       expect.objectContaining({ id: "call-allowed", tool: tool.name }),
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
+    expect(vi.mocked(runtimeKernel.invokeTool).mock.calls[0]?.[0]).not.toHaveProperty("grants");
     if (result.status === "succeeded") {
       expect(result.output).toEqual({ status: "denied", code: "no_matching_grant" });
     }
@@ -356,6 +355,166 @@ describe("RuntimePlugin security envelope", () => {
       });
     }
     expect(runtimeKernel.invokeTool).toHaveBeenCalledOnce();
+  });
+
+  it("enforces a step ceiling on a plugin that declares its own steps", async () => {
+    const runtimeKernel = kernel();
+    const call = (host: RuntimeHost, id: string, step: number) =>
+      host.invokeTool(
+        { id, tool: tool.name, arguments: {}, traceId: context.traceId, requestedAt: now },
+        { step },
+      );
+    const plugin = runtime(async (_input, host) => {
+      const first = await call(host, "call-1", 0);
+      // Past the ceiling, honestly labelled.
+      const second = await call(host, "call-2", 1);
+      // Under the ceiling by relabelling: a third distinct step where two were
+      // allowed. Refusing only the first form would leave the ceiling to the
+      // plugin's own bookkeeping, which is exactly what a replacement plugin
+      // replaces.
+      const third = await call(host, "call-3", 0);
+      return {
+        type: "complete",
+        output: {
+          first: first.status,
+          second: second.status === "succeeded" ? null : second.error.code,
+          third: third.status,
+        },
+      };
+    });
+
+    const result = await new SharedOSExecutor(runtimeKernel, plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+      defaultMaxSteps: 1,
+      defaultMaxToolCalls: 8,
+    }).execute(request());
+
+    expect(result.status).toBe("succeeded");
+    if (result.status === "succeeded") {
+      expect(result.output).toEqual({
+        first: "succeeded",
+        second: "step_limit_exceeded",
+        third: "succeeded",
+      });
+    }
+    expect(runtimeKernel.invokeTool).toHaveBeenCalledTimes(2);
+  });
+
+  it("leaves a plugin that declares no step bounded by its call ceiling alone", async () => {
+    const runtimeKernel = kernel();
+    const plugin = runtime(async (_input, host) => {
+      // No step is declared, so the envelope cannot infer model turns from tool
+      // calls and does not pretend to. The call ceiling still applies.
+      const results = [];
+      for (const id of ["call-1", "call-2", "call-3"]) {
+        const result = await host.invokeTool({
+          id,
+          tool: tool.name,
+          arguments: {},
+          traceId: context.traceId,
+          requestedAt: now,
+        });
+        results.push(result.status === "succeeded" ? "succeeded" : result.error.code);
+      }
+      return { type: "complete", output: { results } };
+    });
+
+    const result = await new SharedOSExecutor(runtimeKernel, plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+      defaultMaxSteps: 1,
+      defaultMaxToolCalls: 2,
+    }).execute(request());
+
+    expect(result.status).toBe("succeeded");
+    if (result.status === "succeeded") {
+      expect(result.output).toEqual({
+        results: ["succeeded", "succeeded", "tool_call_limit_exceeded"],
+      });
+    }
+  });
+
+  it("records an envelope refusal code on the event that carries it", async () => {
+    const plugin = runtime(async (_input, host) => {
+      const result = await host.invokeTool({
+        id: "call-hidden",
+        tool: "files.delete",
+        arguments: {},
+        traceId: context.traceId,
+        requestedAt: now,
+      });
+      return { type: "complete", output: { status: result.status } };
+    });
+
+    const result = await new SharedOSExecutor(kernel(), plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+
+    // A call the envelope terminated never reaches the kernel and so never
+    // reaches audit. The event stream is the only record of it, and without the
+    // code an execution record could say a refusal happened but not which one.
+    expect(result.events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "tool.completed",
+          data: expect.objectContaining({
+            callId: "call-hidden",
+            status: "denied",
+            code: "tool_unavailable",
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it("ends a turn that asked a human to decide as escalated, and records it", async () => {
+    const recordEscalation = vi.fn(async (access: AccessContext, reason: string) => ({
+      reason,
+      reviewer: access.owner,
+      requestedAt: access.now,
+      status: "pending" as const,
+    }));
+    const plugin = runtime(async () => ({
+      type: "escalate",
+      reason: "issuing a grant is outside this agent's authority",
+    }));
+
+    const result = await new SharedOSExecutor({ ...kernel(), recordEscalation }, plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+
+    // Not a failure and not a denial: a third terminal state, so "the agent
+    // asked for help" stays recoverable from the result.
+    expect(result.status).toBe("escalated");
+    if (result.status === "escalated") {
+      expect(result.escalation).toEqual({
+        reason: "issuing a grant is outside this agent's authority",
+        reviewer: owner,
+        requestedAt: now,
+        status: "pending",
+      });
+    }
+    expect(recordEscalation).toHaveBeenCalledOnce();
+    expect(result.events.map(({ type }) => type)).toContain("turn.escalated");
+  });
+
+  it("still ends the turn as escalated when the kernel offers no escalation port", async () => {
+    const plugin = runtime(async () => ({ type: "escalate", reason: "needs a human" }));
+
+    const result = await new SharedOSExecutor(kernel(), plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+
+    // Losing the audit trail is bad; losing the fact that the turn stopped to
+    // ask would be worse, so the outcome survives an unavailable port.
+    expect(result.status).toBe("escalated");
+    if (result.status === "escalated") {
+      expect(result.escalation.reviewer).toEqual(owner);
+    }
   });
 
   it("does not let an observational event sink replace the turn outcome", async () => {

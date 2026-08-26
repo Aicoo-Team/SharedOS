@@ -120,16 +120,19 @@ generated [package API reference](docs/api/README.md), the complete
 
 ## Packages
 
-| Package                     | Responsibility                                               |
-| --------------------------- | ------------------------------------------------------------ |
-| `@aicoo/sharedos-contracts` | JSON-safe protocol types, schemas, and stable identifiers    |
-| `@aicoo/sharedos-core`      | Deterministic authorization, routing, and dispatch decisions |
-| `@aicoo/sharedos-os`        | Standard `files` operations and guarded OS tools             |
-| `@aicoo/sharedos-runtime`   | Fixed turn envelope, standard runtime, and plugin contract   |
-| `@aicoo/sharedos-client`    | Typed client for a remote SharedOS HTTP boundary             |
-| `@aicoo/sharedos-http`      | Transport adapter over the same runtime and contracts        |
-| `@aicoo/sharedos`           | One-install entry point re-exporting the production packages |
-| `@aicoo/sharedos-testkit`   | In-memory providers and conformance helpers for tests        |
+| Package                       | Responsibility                                                  |
+| ----------------------------- | --------------------------------------------------------------- |
+| `@aicoo/sharedos-contracts`   | JSON-safe protocol types, schemas, and stable identifiers       |
+| `@aicoo/sharedos-core`        | Deterministic authorization, routing, and dispatch decisions    |
+| `@aicoo/sharedos-os`          | Standard `files` operations and guarded OS tools                |
+| `@aicoo/sharedos-runtime`     | Fixed turn envelope, standard runtime, and plugin contract      |
+| `@aicoo/sharedos-client`      | Typed client for a remote SharedOS HTTP boundary                |
+| `@aicoo/sharedos-http`        | Transport adapter over the same runtime and contracts           |
+| `@aicoo/sharedos`             | One-install entry point re-exporting the production packages    |
+| `@aicoo/sharedos-testkit`     | In-memory providers and conformance helpers for tests           |
+| `@aicoo/sharedos-conformance` | Standard execution records and adversarial conformance evidence |
+| `@aicoo/sharedos-adapters`    | Codex, Claude Code, DeepSeek Harness, and Pi runtime adapters   |
+| `@aicoo/sharedos-mcp`         | The permission-filtered catalogue served as an MCP tool server  |
 
 `testkit` is not a production persistence layer. Production state remains in
 the host.
@@ -172,7 +175,7 @@ authorization.
 ## Security invariants
 
 1. No matching grant means deny.
-2. A message carries intent and context, never authority.
+2. A message carries data and one host-bound purpose, never authority.
 3. Tool discovery is filtered, and every invocation is authorized again.
 4. A tool namespace must be enabled independently of its capability grant.
 5. Invoking a target agent requires its own recipient-scoped execution grant.
@@ -310,6 +313,12 @@ transition are documented in the
 - [ADR 0005: Files are the canonical resource plane](docs/adr/0005-files-resource-plane.md)
 - [ADR 0006: Tool namespace control plane](docs/adr/0006-tool-namespace-control-plane.md)
 - [ADR 0007: Pluggable runtimes inside a fixed security envelope](docs/adr/0007-pluggable-runtime-security-envelope.md)
+- [ADR 0008: Validate the complete delegation chain before use](docs/adr/0008-delegation-chain-validation.md)
+- [ADR 0009: Load authority from a trusted grant source, never from a context](docs/adr/0009-trusted-grant-source.md)
+- [ADR 0010: Resolve authority once per turn](docs/adr/0010-per-turn-authority.md)
+- [ADR 0011: Escalation is a terminal outcome, not a denial](docs/adr/0011-escalation-terminal-outcome.md)
+- [ADR 0012: One refusal vocabulary at both enforcement boundaries](docs/adr/0012-one-refusal-vocabulary.md)
+- [ADR 0013: The conformance matrix is the case set](docs/adr/0013-matrix-is-the-case-set.md)
 
 ## License
 

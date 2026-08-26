@@ -1,13 +1,27 @@
 import type {
   AccessContext,
-  Address,
   AuthorizationDecision,
   Capability,
   CapabilityGrant,
+  JsonObject,
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
 
-import { delegationChainIsConsistent, type GrantChainResolver } from "./delegation.js";
+import type { ResolvedAuthority } from "./authority.js";
+import {
+  type DelegationChainResolver,
+  type DelegationValidation,
+  validateDelegationChain,
+} from "./delegation.js";
+import {
+  addressesEqual,
+  grantIsActive,
+  parseTimestamp,
+  pathIsWithin,
+  pathsEqual,
+} from "./internal.js";
+
+export { addressesEqual };
 
 export interface AuthorizationRequest {
   readonly resource: ResourceRef;
@@ -20,9 +34,28 @@ export type AuthorizationReasonCode =
   | "invalid_request"
   | "no_matching_grant"
   | "grant_exhausted"
-  | "usage_store_unavailable"
-  | "delegation_chain_unavailable"
-  | "delegation_chain_broken";
+  | "delegation_chain_invalid"
+  | "authority_unavailable"
+  | "delegation_chain_unverified"
+  | "usage_store_unavailable";
+
+/**
+ * Denials caused by SharedOS being unable to establish a fact, not by policy.
+ *
+ * Fail-closed behaviour makes these look like denials at the call site. An
+ * experiment must separate them from expected permission denials before
+ * computing any rate, so they are named once here and marked `failClosed` in
+ * the audit record.
+ */
+export const INFRASTRUCTURE_DENIAL_REASONS: readonly AuthorizationReasonCode[] = [
+  "authority_unavailable",
+  "delegation_chain_unverified",
+  "usage_store_unavailable",
+];
+
+export function isInfrastructureDenial(reasonCode: string): boolean {
+  return (INFRASTRUCTURE_DENIAL_REASONS as readonly string[]).includes(reasonCode);
+}
 
 export interface GrantUsageStore {
   getUsage(namespaceId: string, grantId: string): Promise<number>;
@@ -45,11 +78,11 @@ export interface CapabilityAuthorizerOptions {
   readonly usageStore?: GrantUsageStore;
   readonly grantVerifier?: CapabilityGrantVerifier;
   /**
-   * Resolves ancestors of a derived grant. Required to use one: a derived
-   * grant's constraints are narrowed at derivation, but revocation and expiry
-   * happen afterwards, and only the ancestors carry them.
+   * Trusted ancestor lookup for delegated grants. Without it, a grant that
+   * claims a parent can never authorize anything.
    */
-  readonly chainResolver?: GrantChainResolver;
+  readonly delegationResolver?: DelegationChainResolver;
+  readonly maxDelegationChainLength?: number;
 }
 
 /**
@@ -83,20 +116,22 @@ export class InMemoryGrantUsageStore implements GrantUsageStore {
 export class CapabilityAuthorizer {
   readonly #usageStore: GrantUsageStore | undefined;
   readonly #grantVerifier: CapabilityGrantVerifier | undefined;
-  readonly #chainResolver: GrantChainResolver | undefined;
+  readonly #delegationResolver: DelegationChainResolver | undefined;
+  readonly #maxDelegationChainLength: number | undefined;
 
   constructor(options: CapabilityAuthorizerOptions = {}) {
     this.#usageStore = options.usageStore;
     this.#grantVerifier = options.grantVerifier;
-    this.#chainResolver = options.chainResolver;
+    this.#delegationResolver = options.delegationResolver;
+    this.#maxDelegationChainLength = options.maxDelegationChainLength;
   }
 
   async authorize(
-    context: AccessContext,
+    authority: ResolvedAuthority,
     request: AuthorizationRequest,
     options: AuthorizeOptions = {},
   ): Promise<AuthorizationDecision> {
-    return this.#decide(context, request, capabilityMatches, options.consume ?? false);
+    return this.#decide(authority, request, capabilityMatches, options.consume ?? false);
   }
 
   /**
@@ -105,14 +140,14 @@ export class CapabilityAuthorizer {
    * argument-selected resource.
    */
   async canDiscover(
-    context: AccessContext,
+    authority: ResolvedAuthority,
     ceiling: AuthorizationRequest,
   ): Promise<AuthorizationDecision> {
-    return this.#decide(context, ceiling, capabilityIntersectsCeiling, false);
+    return this.#decide(authority, ceiling, capabilityIntersectsCeiling, false);
   }
 
   async #decide(
-    context: AccessContext,
+    authority: ResolvedAuthority,
     request: AuthorizationRequest,
     matches: (
       capability: Capability,
@@ -121,7 +156,8 @@ export class CapabilityAuthorizer {
     ) => boolean,
     consume: boolean,
   ): Promise<AuthorizationDecision> {
-    context = structuredClone(context);
+    const context = structuredClone(authority.context);
+    const grants = structuredClone([...authority.grants]);
     request = structuredClone(request);
     const now = parseTimestamp(context.now);
     if (now === undefined || context.purpose.length === 0 || context.traceId.length === 0) {
@@ -137,8 +173,9 @@ export class CapabilityAuthorizer {
     }
 
     let foundExhaustedGrant = false;
+    let delegationFailure: DelegationFailure | undefined;
 
-    for (const grant of context.grants) {
+    for (const grant of grants) {
       if (!(await this.#grantIsEligible(context, grant, now))) {
         continue;
       }
@@ -147,6 +184,16 @@ export class CapabilityAuthorizer {
         matches(candidate, request, context),
       );
       if (capability === undefined) {
+        continue;
+      }
+
+      const delegation = await this.#validateDelegation(context, grant, now);
+      if (delegation.status !== "valid") {
+        delegationFailure = worstDelegationFailure(delegationFailure, {
+          status: delegation.status,
+          code: delegation.code,
+          grantId: delegation.grantId,
+        });
         continue;
       }
 
@@ -174,7 +221,29 @@ export class CapabilityAuthorizer {
       }
     }
 
+    if (delegationFailure !== undefined) {
+      return deny(
+        delegationFailure.status === "unverified"
+          ? "delegation_chain_unverified"
+          : "delegation_chain_invalid",
+        { delegation: { code: delegationFailure.code, grantId: delegationFailure.grantId } },
+      );
+    }
+
     return deny(foundExhaustedGrant ? "grant_exhausted" : "no_matching_grant");
+  }
+
+  async #validateDelegation(
+    context: AccessContext,
+    grant: CapabilityGrant,
+    now: number,
+  ): Promise<DelegationValidation> {
+    return validateDelegationChain(grant, context, now, {
+      ...(this.#delegationResolver === undefined ? {} : { resolver: this.#delegationResolver }),
+      ...(this.#maxDelegationChainLength === undefined
+        ? {}
+        : { maxChainLength: this.#maxDelegationChainLength }),
+    });
   }
 
   async #grantIsEligible(
@@ -201,66 +270,39 @@ export class CapabilityAuthorizer {
       }
     }
 
-    return this.#chainIsUsable(context, grant, now);
-  }
-
-  /**
-   * A derived grant is only as alive as every grant above it.
-   *
-   * Narrowing is settled at derivation, so nothing here re-checks scope. That
-   * is safe only because `AccessContext` is a trusted host-created boundary
-   * (see kernel.ts): a grant reaching this point was either issued by the host
-   * or produced by `deriveGrant`, which refuses anything outside its parent. A
-   * host that rebuilds grants from untrusted storage must re-validate them
-   * before assembling the context — this function will not catch a forged
-   * capability set, only a forged or dead chain.
-   *
-   * What cannot be settled in advance is what happens later: revoking the root
-   * must stop everything derived from it, immediately and without rewriting the
-   * children. That is why revocation is checked here, at the point of use.
-   */
-  async #chainIsUsable(
-    context: AccessContext,
-    grant: CapabilityGrant,
-    now: number,
-  ): Promise<boolean> {
-    const delegation = grant.delegation;
-    if (delegation === undefined) return true;
-    if (!delegationChainIsConsistent(grant)) return false;
-    // No resolver means ancestor revocation cannot be observed. Treating that
-    // as "probably still fine" is exactly the failure a revocation is for.
-    if (this.#chainResolver === undefined) return false;
-
-    for (const ancestorId of delegation.chain) {
-      let ancestor: CapabilityGrant | undefined;
-      try {
-        ancestor = await this.#chainResolver.get(context.namespaceId, ancestorId);
-      } catch {
-        return false;
-      }
-      if (
-        ancestor === undefined ||
-        ancestor.namespaceId !== grant.namespaceId ||
-        !grantIsActive(ancestor, context.purpose, now)
-      ) {
-        return false;
-      }
-    }
-
     return true;
   }
+}
+
+interface DelegationFailure {
+  readonly status: "invalid" | "unverified";
+  readonly code: string;
+  readonly grantId: string;
+}
+
+/** An unverifiable chain outranks an invalid one so failures stay fail-closed. */
+function worstDelegationFailure(
+  current: DelegationFailure | undefined,
+  candidate: DelegationFailure,
+): DelegationFailure {
+  if (
+    current === undefined ||
+    (current.status === "invalid" && candidate.status === "unverified")
+  ) {
+    return candidate;
+  }
+  return current;
 }
 
 function allow(grantId: string): AuthorizationDecision {
   return { allowed: true, reasonCode: "allowed", matchedGrantId: grantId };
 }
 
-function deny(reasonCode: Exclude<AuthorizationReasonCode, "allowed">): AuthorizationDecision {
-  return { allowed: false, reasonCode };
-}
-
-export function addressesEqual(left: Address, right: Address): boolean {
-  return canonicalJson(left) === canonicalJson(right);
+function deny(
+  reasonCode: Exclude<AuthorizationReasonCode, "allowed">,
+  metadata?: JsonObject,
+): AuthorizationDecision {
+  return { allowed: false, reasonCode, ...(metadata === undefined ? {} : { metadata }) };
 }
 
 export function capabilityMatches(
@@ -324,62 +366,4 @@ export function capabilityIntersectsCeiling(
 
 function resourceBelongsToContext(resource: ResourceRef, context: AccessContext): boolean {
   return resource.owner === undefined || addressesEqual(resource.owner, context.owner);
-}
-
-function grantIsActive(grant: CapabilityGrant, purpose: string, now: number): boolean {
-  const issuedAt = parseTimestamp(grant.issuedAt);
-  const notBefore = parseTimestamp(grant.constraints.notBefore);
-  const expiresAt = parseTimestamp(grant.constraints.expiresAt);
-  const revokedAt = parseTimestamp(grant.revokedAt);
-
-  if (
-    issuedAt === undefined ||
-    issuedAt > now ||
-    (grant.constraints.notBefore !== undefined && notBefore === undefined) ||
-    (notBefore !== undefined && now < notBefore) ||
-    (grant.constraints.expiresAt !== undefined && expiresAt === undefined) ||
-    (expiresAt !== undefined && now >= expiresAt) ||
-    (grant.revokedAt !== undefined && revokedAt === undefined) ||
-    (revokedAt !== undefined && now >= revokedAt)
-  ) {
-    return false;
-  }
-
-  const purposes = grant.constraints.purposes;
-  return purposes === undefined || purposes.includes(purpose);
-}
-
-function pathsEqual(left: readonly string[], right: readonly string[]): boolean {
-  return left.length === right.length && left.every((segment, index) => segment === right[index]);
-}
-
-function pathIsWithin(parent: readonly string[], candidate: readonly string[]): boolean {
-  return (
-    parent.length <= candidate.length &&
-    parent.every((segment, index) => segment === candidate[index])
-  );
-}
-
-function parseTimestamp(value: string | undefined): number | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function canonicalJson(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map(canonicalJson).join(",")}]`;
-  }
-
-  if (value !== null && typeof value === "object") {
-    const entries = Object.entries(value).sort(([left], [right]) => left.localeCompare(right));
-    return `{${entries
-      .map(([key, child]) => `${JSON.stringify(key)}:${canonicalJson(child)}`)
-      .join(",")}}`;
-  }
-
-  return JSON.stringify(value) ?? "undefined";
 }

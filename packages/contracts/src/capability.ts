@@ -87,27 +87,18 @@ export const CapabilityRequestSchema = z
 
 export type CapabilityRequest = z.infer<typeof CapabilityRequestSchema>;
 
-/** Authority issued to one subject and bounded by explicit constraints. */
 /**
- * Where a derived grant came from.
+ * Authority issued to one subject and bounded by explicit constraints.
  *
- * `chain` is ordered root-first and ends with the immediate parent, so a
- * verifier can re-check every ancestor without walking links one at a time.
- * It is provenance, not authority: the constraints on a derived grant are
- * already narrowed at derivation, and the chain exists so a *later* revocation
- * or expiry upstream can still invalidate what was derived from it.
+ * A grant that was derived from another grant names its immediate ancestor in
+ * `parentGrantId`. The link is a claim, not proof: SharedOS resolves and
+ * validates the complete chain before the grant may authorize anything.
+ *
+ * `deriveGrant` in `@aicoo/sharedos-core` is the supported way to produce one.
+ * It only ever emits this single link: a chain embedded in the grant would be
+ * provenance the presenter controls, and the ancestors are re-resolved from the
+ * issuing store at every decision instead.
  */
-export const GrantDelegationSchema = z
-  .object({
-    parentGrantId: IdentifierSchema,
-    /** Remaining redelegations. Strictly less than the parent's. */
-    depth: z.number().int().nonnegative(),
-    chain: z.array(IdentifierSchema).min(1).max(16),
-  })
-  .strict();
-
-export type GrantDelegation = z.infer<typeof GrantDelegationSchema>;
-
 export const CapabilityGrantSchema = z
   .object({
     id: IdentifierSchema,
@@ -118,11 +109,19 @@ export const CapabilityGrantSchema = z
     constraints: CapabilityConstraintsSchema,
     issuedAt: TimestampSchema,
     revokedAt: TimestampSchema.optional(),
-    /** Present only on a grant produced by `deriveGrant`. */
-    delegation: GrantDelegationSchema.optional(),
+    parentGrantId: IdentifierSchema.optional(),
     metadata: JsonObjectSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((grant, context) => {
+    if (grant.parentGrantId === grant.id) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "a grant must not name itself as its delegation parent",
+        path: ["parentGrantId"],
+      });
+    }
+  });
 
 export type CapabilityGrant = z.infer<typeof CapabilityGrantSchema>;
 

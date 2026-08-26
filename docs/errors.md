@@ -14,7 +14,11 @@ Three statuses appear across `ToolResult`, `ResourceResult`,
 | `denied`    | Authorization refused it. Nothing ran              | No — change the grant     |
 | `failed`    | It was allowed, and something broke while doing it | Maybe — check `retryable` |
 
-`ExecutionResult` adds `cancelled` for a deadline or host cancellation.
+`ExecutionResult` adds `cancelled` for a deadline or host cancellation, and
+`escalated` for a turn that stopped and asked for a human. An escalated result
+carries an `escalation`, not an `error`: a denial is a decision SharedOS made,
+and an escalation is one it declined to make. Counting them together inflates
+every denial rate by the cases where the system correctly asked.
 
 Over HTTP all four are **200**. A `403` means the request never reached the
 kernel's decision. Client code that only checks the HTTP status will read
@@ -25,16 +29,35 @@ denials as successes.
 `AuthorizationDecision.reasonCode`, and the `reason` field on
 `authorization.checked` audit events.
 
-| Code                           | Means                                                             | Fix                                              |
-| ------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------ |
-| `allowed`                      | A grant matched                                                   | —                                                |
-| `no_matching_grant`            | Nothing in `context.grants` covers this resource and action       | See the checklist below                          |
-| `grant_exhausted`              | A matching grant exists but its `maxUses` is spent                | Issue a new grant; usage is not resettable       |
-| `invalid_context`              | The `AccessContext` failed its schema                             | A host bug. Build the context server-side        |
-| `invalid_request`              | The resource or action failed its schema                          | Check path segments and action naming            |
-| `usage_store_unavailable`      | The grant has `maxUses` and there is no `usageStore`, or it threw | Supply `CapabilityAuthorizer({ usageStore })`    |
-| `delegation_chain_unavailable` | The grant was derived and there is no `chainResolver`             | Supply `CapabilityAuthorizer({ chainResolver })` |
-| `delegation_chain_broken`      | An ancestor is missing, revoked, or expired                       | Working as intended — upstream authority ended   |
+| Code                          | Means                                                              | Fix                                                    |
+| ----------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------ |
+| `allowed`                     | A grant matched                                                    | —                                                      |
+| `no_matching_grant`           | Nothing the `GrantSource` returned covers this resource and action | See the checklist below                                |
+| `grant_exhausted`             | A matching grant exists but its `maxUses` is spent                 | Issue a new grant; usage is not resettable             |
+| `invalid_context`             | The `AccessContext` failed its schema                              | A host bug. Build the context server-side              |
+| `invalid_request`             | The resource or action failed its schema, or names another world   | Check path segments, action naming, and the owner      |
+| `authority_unavailable`       | The `GrantSource` threw, or answered with unusable material        | Fail-closed. See the authority table below             |
+| `usage_store_unavailable`     | The grant has `maxUses` and there is no `usageStore`, or it threw  | Supply `CapabilityAuthorizer({ usageStore })`          |
+| `delegation_chain_unverified` | The chain could not be established at all                          | Supply `CapabilityAuthorizer({ delegationResolver })`  |
+| `delegation_chain_invalid`    | The chain resolved and broke a rule — often a revoked ancestor     | Usually working as intended — upstream authority ended |
+
+The last three are SharedOS failing to establish a fact, not a policy decision.
+They are named once, in `INFRASTRUCTURE_DENIAL_REASONS`, and their audit records
+carry `failClosed: true`. Exclude them before computing any denial rate.
+
+`authority_unavailable` collapses four situations on purpose, so that no caller
+can tell a broken store from a rejected one:
+
+| Situation                                               | Internal code            |
+| ------------------------------------------------------- | ------------------------ |
+| the source threw                                        | `grant_source_failed`    |
+| a grant does not satisfy `CapabilityGrantSchema`        | `invalid_grant_material` |
+| a grant is outside the context's namespace/actor/issuer | `grant_scope_mismatch`   |
+| more grants than `MAX_RESOLVED_GRANTS`                  | `grant_limit_exceeded`   |
+
+A source that answers with a superset fails closed rather than being quietly
+filtered: pre-filtering to (namespace, actor, authority) is part of the
+contract.
 
 ### When you get `no_matching_grant` and expected otherwise
 
@@ -75,13 +98,26 @@ tool.invoked           denied  files.read         <- tool_unavailable
 If you are debugging a `tool_unavailable` and have no audit sink wired, wire one
 first.
 
+**Both boundaries use this one code.** The execution envelope refuses a tool
+outside the turn's permission-filtered catalogue with `tool_unavailable`, the
+same code the kernel uses. Which boundary refused is recorded separately, as
+`OperationRecord.source`: a code says what was refused, a source says who
+refused it. The earlier `tool_not_available` is gone rather than aliased — two
+names for one refusal is the defect.
+
+An owner-crossing requirement is the other pair worth keeping apart:
+`invalid_request` is a denial, checked before the tool's declared ceiling and
+answered by the authorizer, so it produces an authorization decision;
+`invalid_tool_requirement` says the tool misbehaved, not that the request was
+impermissible.
+
 ## Tool invocation
 
 | Code                                 | Status | Means                                                                  |
 | ------------------------------------ | ------ | ---------------------------------------------------------------------- |
 | `tool_unavailable`                   | denied | Not registered, namespace off, or not discoverable — see above         |
-| `tool_not_available`                 | denied | A runtime asked for a tool outside its permission-filtered turn        |
 | `no_matching_grant`                  | denied | The exact argument-selected resource is not authorized                 |
+| `invalid_request`                    | denied | The resolved requirement names a world other than the caller's own     |
 | `invalid_tool_arguments`             | failed | `parseArguments` rejected the call                                     |
 | `invalid_tool_requirement`           | failed | `resolveRequirement` returned something outside the declared ceiling   |
 | `tool_requirement_resolution_failed` | failed | `resolveRequirement` threw                                             |
@@ -100,28 +136,33 @@ first.
 
 ## Messages
 
-| Code                                    | Status | Means                                               |
-| --------------------------------------- | ------ | --------------------------------------------------- |
-| `message_transport_not_configured`      | failed | No `messageTransport` was supplied to the kernel    |
-| `message_context_mismatch`              | failed | The envelope disagrees with the context             |
-| `receiver_mismatch`                     | failed | The delivered receiver is not the addressed one     |
-| `message_requirement_resolution_failed` | failed | The capability resolver threw                       |
-| `message_delivery_failed`               | failed | Your transport threw                                |
-| `invalid_message_receipt`               | failed | Your transport returned a malformed delivery result |
+| Code                                    | Status | Means                                                |
+| --------------------------------------- | ------ | ---------------------------------------------------- |
+| `message_transport_not_configured`      | failed | No `messageTransport` was supplied to the kernel     |
+| `message_context_mismatch`              | denied | The envelope disagrees with the context              |
+| `receiver_mismatch`                     | denied | The delivered receiver is not the executing agent    |
+| `message_requirement_resolution_failed` | failed | The capability resolver threw                        |
+| `message_delivery_failed`               | failed | Your transport threw                                 |
+| `invalid_message_receipt`               | failed | Your transport returned a malformed delivery result  |
+| `message_request_not_prepared`          | failed | The request tool did not prepare the authorized call |
+| `message_request_not_accepted`          | failed | The transport did not accept the request             |
+| `message_reply_resolution_failed`       | failed | The host router could not resolve the durable reply  |
+| `invalid_message_reply`                 | failed | The resolved reply did not preserve request context  |
 
 ## Turns
 
-| Code                       | Status    | Means                                                         |
-| -------------------------- | --------- | ------------------------------------------------------------- |
-| `actor_mismatch`           | denied    | The turn's agent is not the admitted one                      |
-| `no_matching_grant`        | denied    | No `sharedos.execution` / `invoke` grant for the target agent |
-| `step_limit_exceeded`      | failed    | `StandardRuntime` hit its driver step budget                  |
-| `tool_call_limit_exceeded` | failed    | The envelope's `maxToolCalls` was reached                     |
-| `driver_failed`            | failed    | Your `AgentTurnDriver` threw                                  |
-| `invalid_driver_decision`  | failed    | The driver returned something that is not a valid decision    |
-| `runtime_failed`           | failed    | A `RuntimePlugin` threw                                       |
-| `invalid_runtime_outcome`  | failed    | A plugin returned a malformed outcome                         |
-| `turn_cancelled`           | cancelled | Deadline expired, or the host aborted                         |
+| Code                       | Status    | Means                                                              |
+| -------------------------- | --------- | ------------------------------------------------------------------ |
+| `actor_mismatch`           | denied    | The turn's agent is not the admitted one                           |
+| `no_matching_grant`        | denied    | No `sharedos.execution` / `invoke` grant for the target agent      |
+| `escalation_requested`     | escalated | The runtime stopped and asked for a human. Nothing was granted     |
+| `step_limit_exceeded`      | failed    | A step budget was reached, in `StandardRuntime` or in the envelope |
+| `tool_call_limit_exceeded` | failed    | The envelope's `maxToolCalls` was reached                          |
+| `driver_failed`            | failed    | Your `AgentTurnDriver` threw                                       |
+| `invalid_driver_decision`  | failed    | The driver returned something that is not a valid decision         |
+| `runtime_failed`           | failed    | A `RuntimePlugin` threw                                            |
+| `invalid_runtime_outcome`  | failed    | A plugin returned a malformed outcome                              |
+| `turn_cancelled`           | cancelled | Deadline expired, or the host aborted                              |
 
 ## HTTP
 
@@ -135,23 +176,53 @@ first.
 | 500    | `invalid_access_context` | `resolveContext` returned an invalid context    |
 | 500    | `internal_error`         | Anything else; details never leak               |
 
-## Delegation refusals
+## Delegation
+
+Delegation has two boundaries and each has its own vocabulary. `deriveGrant`
+refuses to **issue**; the chain check refuses to **honour**. A host that hits the
+first has a bug in what it is trying to hand out; a host that hits the second
+has a grant that was fine when written and is not fine now.
+
+### Refused at issue — `deriveGrant`
 
 `deriveGrant` returns `{ ok: false, reason }` rather than clamping — a silently
 narrowed delegation reads as accepted, and the delegator then believes it passed
 on more than it did.
 
-| Reason                         | Means                                                                                                                                       |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `namespace_mismatch`           | The child names a different world                                                                                                           |
-| `issuer_is_not_the_holder`     | Only the parent's subject may pass it on                                                                                                    |
-| `parent_not_delegable`         | The parent has no `delegationDepth`, or it is already zero                                                                                  |
-| `depth_exhausted`              | The child asked for a longer chain than was received                                                                                        |
-| `capability_not_within_parent` | Wider or sibling path, an unheld action, an exact parent widened into a subtree, or one child capability assembled from several parent ones |
-| `purpose_not_within_parent`    | A purpose the parent does not carry                                                                                                         |
-| `window_not_within_parent`     | A validity window outside the parent's                                                                                                      |
-| `bounded_parent_not_delegable` | A `maxUses` parent. Sharing one budget across a chain needs cross-grant accounting, so it is refused rather than multiplied                 |
-| `empty_capabilities`           | Nothing was actually delegated                                                                                                              |
+| Reason                         | Means                                                                                                                                                             |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `empty_capabilities`           | Nothing was actually delegated                                                                                                                                    |
+| `id_collides_with_parent`      | The derived grant reuses the parent's id                                                                                                                          |
+| `parent_not_delegable`         | The parent has no `delegationDepth`, or it is already zero                                                                                                        |
+| `depth_exhausted`              | The child asked for a longer chain than was received                                                                                                              |
+| `capability_not_within_parent` | Wider or sibling path, an unheld action, an exact parent widened into a subtree, an owner pinned onto an unowned parent, or one capability assembled from several |
+| `purpose_not_within_parent`    | A purpose the parent does not carry                                                                                                                               |
+| `window_not_within_parent`     | A validity window outside the parent's                                                                                                                            |
+| `issued_before_parent`         | The child is dated earlier than the grant that authorized it                                                                                                      |
+| `bounded_parent_not_delegable` | A `maxUses` parent. Sharing one budget across a chain needs cross-grant accounting, so it is refused rather than multiplied                                       |
+
+### Refused at use — the chain check
+
+Reported as `delegation_chain_invalid`, with the failing link's code and grant id
+in `AuthorizationDecision.metadata`.
+
+| Code                           | Means                                                                   |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| `issuer_not_parent_subject`    | The child's issuer is not who the parent was issued to                  |
+| `namespace_mismatch`           | Parent and child are in different worlds                                |
+| `parent_inactive`              | An ancestor is revoked, expired, or out of purpose                      |
+| `capability_widened`           | A child capability is not contained in one parent capability            |
+| `constraints_widened`          | Window, purposes, or issue order widened — an omitted constraint counts |
+| `delegation_not_permitted`     | The parent declares no delegation budget                                |
+| `delegation_depth_exceeded`    | The child's budget is not strictly smaller                              |
+| `bounded_parent_not_delegable` | The parent is bounded by `maxUses`                                      |
+| `chain_cycle`                  | The chain leads back to a grant already walked                          |
+| `chain_too_long`               | More links than `DEFAULT_MAX_DELEGATION_CHAIN_LENGTH`                   |
+
+And as `delegation_chain_unverified`, when the chain could not be established at
+all: `resolver_unavailable` (none installed), `parent_not_found`, or
+`resolver_failed`. Unverified outranks invalid when several grants fail
+differently, so an outage is never reported as a policy decision.
 
 ## Execution events
 

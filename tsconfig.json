@@ -1,38 +1,19 @@
 {
   "files": [],
   "references": [
-    {
-      "path": "./packages/contracts"
-    },
-    {
-      "path": "./packages/core"
-    },
-    {
-      "path": "./packages/os"
-    },
-    {
-      "path": "./packages/runtime"
-    },
-    {
-      "path": "./packages/http"
-    },
-    {
-      "path": "./packages/client"
-    },
-    {
-      "path": "./packages/sdk"
-    },
-    {
-      "path": "./packages/testkit"
-    },
-    {
-      "path": "./examples/quickstart"
-    },
-    {
-      "path": "./examples/fleet-delegation"
-    },
-    {
-      "path": "./examples/reference-host"
-    }
+    { "path": "./packages/contracts" },
+    { "path": "./packages/core" },
+    { "path": "./packages/os" },
+    { "path": "./packages/runtime" },
+    { "path": "./packages/http" },
+    { "path": "./packages/client" },
+    { "path": "./packages/sdk" },
+    { "path": "./packages/testkit" },
+    { "path": "./packages/conformance" },
+    { "path": "./packages/mcp" },
+    { "path": "./packages/adapters" },
+    { "path": "./examples/quickstart" },
+    { "path": "./examples/fleet-delegation" },
+    { "path": "./examples/reference-host" }
   ]
 }

@@ -15,16 +15,22 @@ scripted driver.
 
 ## What it implements
 
-| File                     | Port                                                                                                          | Why it is the host's job                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `filesystem-provider.ts` | `ResourceProvider`                                                                                            | All twelve `files` actions over one root, per `(namespace, owner)` tenant, with path safety   |
-| `sqlite-stores.ts`       | `GrantUsageStore`, `CapabilityGrantVerifier`, `GrantChainResolver`, `ToolNamespaceSettingsStore`, `AuditSink` | Bounded uses need an atomic compare-and-set; revocation and audit need to outlive the process |
-| `driver.ts`              | `AgentTurnDriver`                                                                                             | The model, its tool-calling format, and its credentials belong to the host                    |
+| File                     | Port                                                                                                                              | Why it is the host's job                                                                                                                    |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `filesystem-provider.ts` | `ResourceProvider`                                                                                                                | All twelve `files` actions over one root, per `(namespace, owner)` tenant, with path safety                                                 |
+| `sqlite-stores.ts`       | `GrantSource`, `GrantUsageStore`, `CapabilityGrantVerifier`, `DelegationChainResolver`, `ToolNamespaceSettingsStore`, `AuditSink` | Authority has to come from somewhere durable; bounded uses need an atomic compare-and-set; revocation and audit need to outlive the process |
+| `driver.ts`              | `AgentTurnDriver`                                                                                                                 | The model, its tool-calling format, and its credentials belong to the host                                                                  |
 
 It uses `node:sqlite`, so it adds no dependency. A production host would use
 its existing database and keep the same statement shapes.
 
-## The three things a first integration usually gets wrong
+## The four things a first integration usually gets wrong
+
+**Authority enters through the grant source, not the request.** The kernel
+requires a `GrantSource` and calls it once per turn. `load` must answer only for
+the context's namespace, actor, and issuing authority: a superset is treated as
+`authority_unavailable` rather than quietly narrowed, and throwing is the right
+answer to an outage.
 
 **Bounded grants fail closed without a usage store.** `maxUses` is denied with
 `usage_store_unavailable` when `CapabilityAuthorizer` has no `usageStore`, and
@@ -33,8 +39,8 @@ the last use.
 
 **Derived grants fail closed without a chain resolver.** A grant produced by
 `deriveGrant` is narrowed at derivation, but revocation and expiry happen
-afterwards and live on the ancestors. Without `chainResolver` every derived
-grant is denied with `delegation_chain_unavailable`.
+afterwards and live on the ancestors. Without `delegationResolver` every derived
+grant is denied with `delegation_chain_unverified`.
 
 **`authority` is not the data owner.** It is the issuer whose grants are being
 exercised. For a grant Alice issued, that is Alice; for a grant Bob derived

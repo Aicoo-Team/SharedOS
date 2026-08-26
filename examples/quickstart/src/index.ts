@@ -13,7 +13,6 @@ const now = "2026-08-03T00:00:00.000Z";
 const bob = { kind: "agent", agentId: "agent-bob" } as const;
 const alice = { kind: "agent", agentId: "agent-alice" } as const;
 const owner = { kind: "human", userId: "owner-1" } as const;
-const { kernel } = createTestKernel();
 
 const files = new InMemoryResourceProvider("files", async (operation): Promise<ResourceResult> => ({
   operationId: operation.operationId,
@@ -21,21 +20,18 @@ const files = new InMemoryResourceProvider("files", async (operation): Promise<R
   output: { hits: [{ text: "SharedOS keeps authority outside the message." }] },
   completedAt: operation.context.now,
 }));
-for (const handler of createFileTools(files)) {
-  kernel.registerTool(handler);
-}
 
 const grants = [
   createTestGrant({
     id: "grant-invoke-alice",
-    subject: bob,
+    subject: alice,
     issuer: owner,
     capabilities: [agentExecutionCapability(alice, owner)],
     purposes: ["prepare-report"],
   }),
   createTestGrant({
     id: "grant-search-files",
-    subject: bob,
+    subject: alice,
     issuer: owner,
     capabilities: [
       {
@@ -47,13 +43,19 @@ const grants = [
     purposes: ["prepare-report"],
   }),
 ];
+
+// Authority reaches the kernel only through its trusted grant source.
+const { kernel } = createTestKernel({ grants });
+for (const handler of createFileTools(files)) {
+  kernel.registerTool(handler);
+}
+
 const context = createTestContext({
-  actor: bob,
+  actor: alice,
   authority: owner,
   owner,
   purpose: "prepare-report",
   enabledToolNamespaces: ["files"],
-  grants,
   now,
 });
 
@@ -93,7 +95,6 @@ const request: ExecutionRequest = {
     id: "message-1",
     sender: bob,
     receiver: alice,
-    intent: "prepare-report",
     purpose: context.purpose,
     payload: { topic: "SharedOS authority" },
     traceId: context.traceId,
@@ -111,5 +112,10 @@ const result = await new SharedOSExecutor(kernel, new StandardRuntime(driver), {
 console.log({
   visibleTools: tools.map(({ name }) => name),
   status: result.status,
-  output: result.status === "succeeded" ? result.output : result.error,
+  output:
+    result.status === "succeeded"
+      ? result.output
+      : result.status === "escalated"
+        ? result.escalation
+        : result.error,
 });

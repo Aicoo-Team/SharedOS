@@ -10,7 +10,10 @@
     "packages/http",
     "packages/client",
     "packages/sdk",
-    "packages/testkit"
+    "packages/testkit",
+    "packages/conformance",
+    "packages/mcp",
+    "packages/adapters"
   ],
   "packageOptions": {
     "entryPoints": ["src/index.ts"],

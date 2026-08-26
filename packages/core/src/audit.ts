@@ -1,7 +1,9 @@
 import type { AccessContext, Address, JsonObject, ResourceRef } from "@aicoo/sharedos-contracts";
 
 export type AuditEventType =
+  | "authority.resolved"
   | "authorization.checked"
+  | "escalation.requested"
   | "resource.invoked"
   | "tool.catalog.listed"
   | "tool.namespace.catalog.listed"
@@ -9,7 +11,14 @@ export type AuditEventType =
   | "tool.invoked"
   | "message.sent";
 
-export type AuditOutcome = "allowed" | "denied" | "succeeded" | "failed";
+/**
+ * `escalated` is its own outcome, not a denial.
+ *
+ * A denial is a decision SharedOS made. An escalation is a decision it declined
+ * to make and handed to a human, and counting the two together would inflate
+ * every denial rate by the cases where the system correctly asked for help.
+ */
+export type AuditOutcome = "allowed" | "denied" | "succeeded" | "failed" | "escalated";
 
 export interface AuditEvent {
   readonly version: "1";
@@ -25,6 +34,13 @@ export interface AuditEvent {
   readonly resource?: ResourceRef;
   readonly action?: string;
   readonly grantId?: string;
+  /**
+   * Content identifier of the exact authority set the decision was made
+   * against. A turn resolves authority once, so every decision in it carries the
+   * same value; the `authority.resolved` event that opened the turn carries the
+   * grant ids behind it.
+   */
+  readonly authorityHash?: string;
   readonly operationId?: string;
   readonly tool?: string;
   readonly messageId?: string;
@@ -52,7 +68,7 @@ export class CompositeAuditSink implements AuditSink {
 
   async record(event: AuditEvent): Promise<void> {
     for (const sink of this.#sinks) {
-      await sink.record(event);
+      await sink.record(immutableAuditEvent(event));
     }
   }
 }
@@ -64,7 +80,7 @@ export function auditEvent(
     "version" | "at" | "traceId" | "namespaceId" | "actor" | "authority" | "owner" | "purpose"
   >,
 ): AuditEvent {
-  return {
+  return immutableAuditEvent({
     version: "1",
     at: context.now,
     traceId: context.traceId,
@@ -74,5 +90,19 @@ export function auditEvent(
     owner: context.owner,
     purpose: context.purpose,
     ...event,
-  };
+  });
+}
+
+function immutableAuditEvent(event: AuditEvent): AuditEvent {
+  return deepFreeze(structuredClone(event));
+}
+
+function deepFreeze<T>(value: T): T {
+  if (value !== null && typeof value === "object") {
+    for (const child of Object.values(value)) {
+      deepFreeze(child);
+    }
+    Object.freeze(value);
+  }
+  return value;
 }

@@ -7,8 +7,9 @@ import type {
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
 
+import type { ResolvedAuthority } from "./authority.js";
 import { CapabilityAuthorizer, capabilityMatches } from "./authorization.js";
-import { deriveGrant, type GrantChainResolver } from "./delegation.js";
+import { deriveGrant, type DelegationChainResolver } from "./delegation.js";
 
 /**
  * Generated coverage for the two properties the kernel is *for*. Handwritten
@@ -87,7 +88,7 @@ function request(rng: Rng): { resource: ResourceRef; action: string } {
   };
 }
 
-function context(grants: CapabilityGrant[], overrides: Partial<AccessContext> = {}): AccessContext {
+function context(overrides: Partial<AccessContext> = {}): AccessContext {
   return {
     namespaceId: "fleet",
     enabledToolNamespaces: [],
@@ -96,9 +97,25 @@ function context(grants: CapabilityGrant[], overrides: Partial<AccessContext> = 
     owner: OWNER,
     purpose: PURPOSES[0]!,
     traceId: "trace",
-    grants,
     now: NOW,
     ...overrides,
+  };
+}
+
+/** Authority as the kernel would have resolved it from a trusted source. */
+function authorityOf(
+  grants: readonly CapabilityGrant[],
+  overrides: Partial<AccessContext> = {},
+): ResolvedAuthority {
+  return {
+    context: context(overrides),
+    grants: [...grants],
+    snapshot: {
+      hash: `snapshot-${grants.map(({ id }) => id).join("+")}`,
+      grantIds: grants.map(({ id }) => id),
+      grantCount: grants.length,
+      loadedAt: NOW,
+    },
   };
 }
 
@@ -111,17 +128,17 @@ describe("invariant: authority never comes from a cross-product", () => {
       const grants = Array.from({ length: 1 + Math.floor(rng() * 3) }, (_, index) =>
         grant(rng, `grant-${index}`),
       );
-      const access = context(grants);
+      const authority = authorityOf(grants);
       const attempt = request(rng);
 
-      const decision = await authorizer.authorize(access, attempt);
+      const decision = await authorizer.authorize(authority, attempt);
       if (!decision.allowed) continue;
 
       // The whole point of the kernel: an allow is always attributable to one
       // complete capability, never assembled from pieces of several.
       const covering = grants.flatMap((candidate) =>
         candidate.capabilities
-          .filter((entry) => capabilityMatches(entry, attempt, access))
+          .filter((entry) => capabilityMatches(entry, attempt, authority.context))
           .map(() => candidate.id),
       );
       expect(covering, `seed ${seed}`).not.toHaveLength(0);
@@ -158,7 +175,7 @@ describe("invariant: authority never comes from a cross-product", () => {
         ],
       };
 
-      const decision = await authorizer.authorize(context([resourceOnly, actionOnly]), attempt);
+      const decision = await authorizer.authorize(authorityOf([resourceOnly, actionOnly]), attempt);
       expect(decision.allowed, `seed ${seed}`).toBe(false);
     }
   });
@@ -190,23 +207,23 @@ describe("invariant: a derived grant never outreaches its parent", () => {
       if (!derivation.ok) continue;
       derivations += 1;
 
-      const resolver: GrantChainResolver = {
-        async get(_namespaceId, grantId) {
+      const resolver: DelegationChainResolver = {
+        async resolve(_namespaceId, grantId) {
           return grantId === parent.id ? parent : undefined;
         },
       };
-      const childAuthorizer = new CapabilityAuthorizer({ chainResolver: resolver });
+      const childAuthorizer = new CapabilityAuthorizer({ delegationResolver: resolver });
       const parentAuthorizer = new CapabilityAuthorizer();
 
       for (let probe = 0; probe < 6; probe += 1) {
         const attempt = request(rng);
         const childDecision = await childAuthorizer.authorize(
-          context([derivation.grant], { actor: DELEGATE, authority: ACTOR }),
+          authorityOf([derivation.grant], { actor: DELEGATE, authority: ACTOR }),
           attempt,
         );
         if (!childDecision.allowed) continue;
 
-        const parentDecision = await parentAuthorizer.authorize(context([parent]), attempt);
+        const parentDecision = await parentAuthorizer.authorize(authorityOf([parent]), attempt);
         expect(
           parentDecision.allowed,
           `seed ${seed} probe ${probe}: child allowed ${attempt.action} on ${attempt.resource.path.join("/")} but parent did not`,
@@ -238,7 +255,8 @@ describe("invariant: a derived grant never outreaches its parent", () => {
     });
     expect(second.ok).toBe(true);
     if (!second.ok) return;
-    expect(second.grant.delegation?.chain).toEqual(["root", "mid"]);
+    // The grant names one link. The rest of the lineage is the store's to say.
+    expect(second.grant.parentGrantId).toBe("mid");
 
     const attempt = {
       resource: root.capabilities[0]!.resource,
@@ -248,24 +266,24 @@ describe("invariant: a derived grant never outreaches its parent", () => {
       ["root", root],
       ["mid", first.grant],
     ]);
-    const resolver: GrantChainResolver = {
-      async get(_ns, id) {
+    const resolver: DelegationChainResolver = {
+      async resolve(_ns, id) {
         return live.get(id);
       },
     };
-    const authorizer = new CapabilityAuthorizer({ chainResolver: resolver });
-    const access = context([second.grant], {
+    const authorizer = new CapabilityAuthorizer({ delegationResolver: resolver });
+    const authority = authorityOf([second.grant], {
       actor: { kind: "agent", agentId: "robot-c" },
       authority: DELEGATE,
     });
 
-    await expect(authorizer.authorize(access, attempt)).resolves.toEqual(
+    await expect(authorizer.authorize(authority, attempt)).resolves.toEqual(
       expect.objectContaining({ allowed: true }),
     );
 
     // Revoke the root only. Nothing about the leaf changes.
     live.set("root", { ...root, revokedAt: "2026-08-20T08:30:00.000Z" });
-    await expect(authorizer.authorize(access, attempt)).resolves.toEqual(
+    await expect(authorizer.authorize(authority, attempt)).resolves.toEqual(
       expect.objectContaining({ allowed: false }),
     );
   });

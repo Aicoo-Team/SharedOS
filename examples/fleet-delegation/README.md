@@ -34,6 +34,10 @@ Each line is a rule that a "looks narrower" comparison would get wrong:
 - **A bounded grant cannot be delegated at all.** Sharing one `maxUses` budget
   across a chain needs accounting that spans grants, so `deriveGrant` refuses
   rather than handing each delegate its own copy of the budget.
+- **The derived grant names one parent, not a lineage.** It carries
+  `parentGrantId` and nothing else about where it came from; the operator's
+  ledger is re-read at every decision. A grant that described its own ancestry
+  would be describing the one thing its holder controls.
 
 The last two steps are the ones that matter operationally. The operator revokes
 the _first_ robot's shift grant, and the call that was allowed in step 3 is now

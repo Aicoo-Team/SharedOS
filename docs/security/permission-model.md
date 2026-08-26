@@ -16,8 +16,7 @@ verified active grant     =  possible authority, after policy evaluation
 ```
 
 Messages and model output are untrusted input even when they come from a known
-agent. They may state intent and purpose, but cannot contain self-validating
-authority.
+agent. A message carries data and one host-bound purpose, never authority.
 
 ## Actors and authority
 
@@ -79,23 +78,96 @@ by attaching an arbitrary grant object to its payload.
 `CapabilityRequest` expresses requested authority for a consent workflow. It is
 not usable authority until an eligible issuer turns it into a trusted grant.
 
+## Where authority comes from
+
+An `AccessContext` carries identity, purpose, trace, enabled tool namespaces,
+and time. It carries no grants. Authority is loaded by the kernel from a
+required `GrantSource`, once per turn, and is held beside the context in a
+`ResolvedAuthority` that no provider, tool handler, transport, or runtime can
+receive.
+
+A `GrantSource` must answer from the issuing store with exactly the grants
+issued to the context's actor by the context's authority inside the context's
+namespace. Material outside that scope, material that fails the grant contract,
+and an unreachable store are all the same outcome: authority is unavailable and
+the operation is denied before any provider runs.
+
+```text
+Need authority
+     |
+     v
+Trusted grant source
+     |
+     +-- available ------> evaluate grants
+     |
+     +-- unavailable ----> DENY (authority_unavailable, failClosed)
+```
+
 ## Authorization algorithm
 
 For each concrete resource or tool operation, the kernel evaluates:
 
 1. Validate the protocol object and namespace/world binding.
 2. Establish the authenticated actor independently from untrusted payload.
-3. Ensure the request owner matches the access context owner.
-4. Ignore grants whose subject or issuer does not match the access context.
-5. Ignore grants that are not active, have expired, or have been revoked.
-6. Match the declared purpose when the grant restricts purposes.
-7. Match resource namespace, owner, path scope, and exact action together.
-8. Apply the host ceiling and any non-grant policy constraints.
-9. Atomically consume a bounded grant only for execution, not discovery.
-10. Return an explicit decision and append an audit event.
+3. Load authority from the trusted grant source, or deny.
+4. Ensure the request owner matches the access context owner.
+5. Ignore grants whose subject or issuer does not match the access context.
+6. Ignore grants that are not active, have expired, or have been revoked.
+7. Match the declared purpose when the grant restricts purposes.
+8. Match resource namespace, owner, path scope, and exact action together.
+9. Validate the delegation chain of a derived grant, or deny.
+10. Apply the host ceiling and any non-grant policy constraints.
+11. Atomically consume a bounded grant only for execution, not discovery.
+12. Return an explicit decision and append an audit event.
 
-If no complete grant matches, deny. If trusted grant state or an atomic usage
-store is unavailable, fail closed.
+If no complete grant matches, deny. If trusted grant state, a delegation
+ancestor, or an atomic usage store is unavailable, fail closed.
+
+### Denials SharedOS caused
+
+Fail-closed behaviour makes an infrastructure failure look like a denial at the
+call site. The reason codes listed in `INFRASTRUCTURE_DENIAL_REASONS`
+(`authority_unavailable`, `delegation_chain_unverified`,
+`usage_store_unavailable`) mark that case, and their audit records carry
+`failClosed: true`. A measurement must separate them from policy denials before
+computing any rate.
+
+A turn that could not establish authority at all has no authority state to name,
+so record completeness does not require one from a decision that failed closed.
+Demanding it would report every correct fail-closed turn as unusable evidence.
+
+### Decisions SharedOS declined to make
+
+An escalated turn is neither of the above. A runtime that stops because it needs
+authority it does not hold ends the turn as `escalated`, and the audit event
+carries the outcome `escalated` rather than `denied`. It grants nothing:
+SharedOS records the request, names the reviewer -- assumed to be the owner the
+turn runs on behalf of -- and stops. Resolving it means issuing a grant to the
+trusted store, which the next turn loads. See
+`docs/adr/0011-escalation-terminal-outcome.md`.
+
+Escalations must be excluded before computing a denial rate, for the same reason
+fail-closed denials must: counting them together inflates the rate by the cases
+where the system correctly asked for help.
+
+### One refusal, one code
+
+The execution envelope and the kernel both refuse, and they use the same
+vocabulary for the same refusal: a tool outside the permission-filtered
+catalogue is `tool_unavailable` at either boundary. Which one refused is
+recorded separately, as `OperationRecord.source`, because a code says what was
+refused and a source says who refused it.
+
+Two codes that are easy to confuse are kept apart deliberately:
+
+- `invalid_request` -- the request names a resource outside this world. This is
+  a denial, checked before the tool's own ceiling and answered by the
+  authorizer, so it carries a recorded authorization decision.
+- `invalid_tool_requirement` -- the tool resolved a capability outside the
+  ceiling it declared. This says the tool misbehaved, not that the request was
+  impermissible.
+
+See `docs/adr/0012-one-refusal-vocabulary.md`.
 
 ### No permission cross-products
 
@@ -141,28 +213,87 @@ They must not silently substitute a broader purpose after a denial.
 ## Delegation
 
 Delegation is explicit and bounded. A subject cannot mint authority merely by
-forwarding a message or copying a grant. When delegation is supported:
+forwarding a message or copying a grant. A derived grant names its immediate
+ancestor in `parentGrantId`, and SharedOS validates the complete chain before
+the grant authorizes anything:
 
 - every link has a verifiable issuer-to-subject relationship;
-- each derived grant is no broader in resource, action, purpose, time, uses, or
+- each derived grant is no broader in resource, action, purpose, time, or
   namespace than its parent;
-- delegation depth decreases at each link;
+- delegation depth decreases at each link, and a parent without delegation
+  budget cannot be reissued at all;
+- a parent bounded by `maxUses` is not delegable at all;
 - revocation and expiry of an ancestor invalidate the usable chain;
 - the full chain or a tamper-evident reference is retained in provenance.
 
-Until chain validation is implemented and tested, `delegationDepth` must not be
-interpreted as automatic permission to reissue a grant.
+Ancestors are loaded from a trusted `DelegationChainResolver`, never from the
+presented grant or the access context. A chain that cannot be established is
+denied as `delegation_chain_unverified`; a chain that resolves and breaks a rule
+above is denied as `delegation_chain_invalid`. Both carry the failing link into
+the audit record. A host that issues delegated grants must install a resolver;
+without one, `parentGrantId` authorizes nothing.
+
+`delegationDepth` is therefore a ceiling on reissue, not a permission to reissue
+without a validated parent. See `docs/adr/0008-delegation-chain-validation.md`.
+
+### Bounded grants are not delegable
+
+`maxUses` is counted per grant. Two children of a three-use parent would carry
+six uses between them, so a bounded parent is refused outright rather than
+attenuated — at issue as `bounded_parent_not_delegable`, and again at use as a
+`delegation_chain_invalid` with the same code. Sharing one budget across a chain
+needs usage accounting that spans grants, which SharedOS does not have; refusing
+is the honest answer until it does.
+
+### Issuing a derived grant
+
+`deriveGrant` is the supported way to produce a grant whose issuer is not the
+resource owner. It is a pure function over the parent: it never consults a
+store, and it refuses rather than clamps, because a silently narrowed delegation
+reads as accepted and the delegator then believes it passed on more than it did.
+
+Two rules differ from the chain check above, and both differ in the safe
+direction:
+
+- **An unowned parent capability may not be given an owner.** An unowned
+  capability resolves against whoever presents it, so pinning an owner is
+  narrower in one context and wider in every other. Issuing has no context, so
+  it must hold in all of them.
+- **What a request leaves out is inherited and written down.** An omitted
+  expiry, window, or purpose takes the parent's value and is recorded on the
+  derived grant. The chain check reads an omitted constraint as a widening, so
+  inheritance that stays implicit would be denied at first use.
+
+Deriving a grant is never sufficient on its own. It settles narrowing at the
+moment of issue; revocation happens afterwards, and only the chain check
+observes it.
 
 ## Messaging
 
-A `MessageEnvelope` contains sender, receiver, intent, purpose, payload, trace,
-time, and provenance. It intentionally contains no grants.
+A `MessageEnvelope` contains sender, receiver, purpose, payload, trace, time,
+and provenance. It intentionally contains no grants.
+
+It also contains no second `intent` field. `purpose` is the single host-bound
+reason used by access context, grants, turn validation, and audit; model-authored
+instructions belong in the payload.
 
 Sending or receiving a message and performing the requested work are separate
 authorization decisions. A recipient may accept the message yet be denied
 access to the file or tool named inside it. Replying can also require its own
 `sharedos.messaging` + `send` capability. Opening a target agent turn requires a
 separate recipient-scoped `sharedos.execution` + `invoke` capability.
+
+Outbound sends execute as the sender. Inbound turns execute as the recipient:
+the access actor must equal the target agent and the envelope receiver, while
+the envelope sender remains untrusted provenance. The requester's send grant,
+the recipient's execution grant, and every file or tool grant used by that
+recipient are separate decisions.
+
+For model-authored request/reply, `messages.request` accepts only a recipient
+and JSON-safe payload. SharedOS fills trusted envelope fields, authorizes and
+consumes the recipient-scoped send capability once, delivers through a host
+port, and validates the correlated reply before exposing its payload. Durable
+logs, queues, receiver wake-up, and scheduling remain host-owned.
 
 ## Tools and MCP
 
@@ -232,14 +363,30 @@ or embeddings.
 
 ## Time, revocation, and bounded use
 
-Expiry and revocation are checked at point of use, not only when a turn begins.
-Long-running turns must re-authorize each external side effect. Hosts supply a
-trusted clock or trusted timestamp policy.
+Every external side effect is authorized separately, against the authority the
+turn was admitted with. Hosts supply a trusted clock or trusted timestamp
+policy.
 
 `maxUses` requires an atomic compare-and-set store shared by all executing
 instances. The kernel has no implicit process-local fallback: a bounded grant
 fails closed unless the host explicitly supplies a store. The exported in-memory
 store is suitable only for tests or a guaranteed single-process host.
+
+Authority is loaded from the trusted source once, when a turn is admitted, and
+held for that turn. Every way a grant leaves an actor's authority -- not yet
+active, expired, revoked, or withdrawn from the requested purpose -- runs through
+one check evaluated against the instant the turn was admitted, so all four are
+observed by the **next** turn. A turn therefore carries the authority it was
+admitted with, rather than having authority resolved underneath it while it runs.
+
+A host whose revocation SLA is shorter than its longest turn must bound turn
+length; the kernel will not cut a turn short. A host that additionally caches
+inside its `GrantSource` owns that staleness window on top.
+
+The per-operation path is retained behind `MID_TURN_AUTHORITY_REFRESH`, together
+with the open question of whether expiry -- unlike revocation, a property the
+grant already carried at admission -- should still be refused mid-turn. See
+`docs/adr/0010-per-turn-authority.md`.
 
 ## Audit requirements
 

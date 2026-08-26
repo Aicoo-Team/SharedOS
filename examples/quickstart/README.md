@@ -17,7 +17,8 @@ pnpm example:quickstart
 
 Roughly 115 lines, and every line is one of the five things a turn needs:
 
-1. An `AccessContext` built from trusted state, carrying one grant.
+1. An `AccessContext` built from trusted state for Alice, the executing
+   recipient. Grants are loaded separately from the trusted source.
 2. A `ResourceProvider` — here an in-memory stub standing in for storage.
 3. An execution grant, because invoking Alice's agent is its own capability and
    a message addressed to her is not enough.
@@ -32,6 +33,10 @@ it was given.
 
 The executor takes injected `clock` and `createId` functions here, which is how
 a test or an evaluation harness makes a turn reproducible.
+
+Bob remains the message sender, but the turn executes as Alice and uses Alice's
+independently loaded execution and file grants. Sender identity is provenance;
+it never becomes recipient authority.
 
 ## Next
 

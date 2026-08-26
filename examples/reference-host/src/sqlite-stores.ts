@@ -16,11 +16,14 @@ import {
   applyToolNamespaceUpdate,
   type AuditEvent,
   type AuditSink,
+  type GrantSource,
   type GrantUsageStore,
   type ToolNamespaceSettingsStore,
 } from "@aicoo/sharedos-core";
 
-export class SqliteHostStores implements GrantUsageStore, AuditSink, ToolNamespaceSettingsStore {
+export class SqliteHostStores
+  implements GrantSource, GrantUsageStore, AuditSink, ToolNamespaceSettingsStore
+{
   readonly #db: DatabaseSync;
 
   constructor(file: string) {
@@ -102,6 +105,25 @@ export class SqliteHostStores implements GrantUsageStore, AuditSink, ToolNamespa
       .prepare("SELECT grant FROM grants WHERE namespace_id = ? AND revoked_at IS NULL")
       .all(namespaceId) as Array<{ grant: string }>;
     return rows.map((row) => JSON.parse(row.grant) as CapabilityGrant);
+  }
+
+  /**
+   * The only way authority enters the kernel.
+   *
+   * Pre-filtering to the context's namespace, actor, and issuing authority is
+   * part of the contract, not an optimisation: a source that answers with a
+   * superset is treated as unavailable rather than quietly narrowed. Throwing
+   * here — an outage, a corrupt row — is the correct answer, and the kernel
+   * turns it into a fail-closed denial.
+   */
+  async load(context: AccessContext, signal: AbortSignal): Promise<readonly CapabilityGrant[]> {
+    signal.throwIfAborted();
+    const actor = JSON.stringify(context.actor);
+    const authority = JSON.stringify(context.authority);
+    return this.resolveGrants(context.namespaceId).filter(
+      (grant) =>
+        JSON.stringify(grant.subject) === actor && JSON.stringify(grant.issuer) === authority,
+    );
   }
 
   /** A grant handed to the kernel is only honoured while the store still has it live. */

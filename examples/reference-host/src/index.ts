@@ -13,10 +13,11 @@
  *                                   settings, and an audit trail
  *   - `AnthropicTurnDriver`         the model side of `AgentTurnDriver`
  *
- * The scenario: Alice owns a private file tree. Bob's assistant is allowed to
- * search and read exactly one project subtree, for one purpose, for one hour,
- * three times. Bob can pass a strictly narrower slice to a summariser, and
- * Alice revoking her grant kills the derived one at use time.
+ * The scenario: Alice owns a private file tree. Bob asks Alice's assistant for
+ * project status; the recipient executes with its own narrow grants, not
+ * Bob's. Bob separately receives bounded and delegable grants for the path and
+ * delegation demonstrations. Alice revoking her grant kills the derived one
+ * at use time.
  *
  * Run: pnpm example:reference-host
  * Set ANTHROPIC_API_KEY to drive the same turn with a live model.
@@ -63,12 +64,15 @@ const tenantRoot = join(filesRoot, WORLD, "human-alice");
 /**
  * `authority` is whose grants are being exercised, which is not always the
  * owner of the data: down a delegation chain it is the delegator.
+ *
+ * The context carries no grants. It names who is asking, on whose authority,
+ * for what — and the kernel loads the matching grants from the store itself, so
+ * nothing a caller assembles can become authority.
  */
 function accessContext(input: {
   actor: Address;
   authority?: Address;
   purpose: string;
-  grants: readonly CapabilityGrant[];
   namespaces: readonly string[];
 }): AccessContext {
   return {
@@ -79,7 +83,6 @@ function accessContext(input: {
     purpose: input.purpose,
     traceId: randomUUID(),
     enabledToolNamespaces: [...input.namespaces],
-    grants: [...input.grants],
     now: new Date().toISOString(),
   };
 }
@@ -140,11 +143,15 @@ async function main(): Promise<void> {
   const files = new FilesystemResourceProvider({ root: filesRoot });
 
   const kernel = new SharedOSKernel({
+    // Authority is loaded here, never handed in with the request.
+    grantSource: stores,
     authorizer: new CapabilityAuthorizer({
       usageStore: stores,
       grantVerifier: stores,
-      // Without a chain resolver every derived grant fails closed.
-      chainResolver: { get: (_namespaceId, grantId) => stores.resolveChain(WORLD, grantId) },
+      // Without a delegation resolver every derived grant fails closed.
+      delegationResolver: {
+        resolve: (namespaceId, grantId) => stores.resolveChain(namespaceId, grantId),
+      },
     }),
     audit: stores,
     toolNamespaceSettings: stores,
@@ -158,7 +165,7 @@ async function main(): Promise<void> {
   // Namespaces are off until the owner turns them on. That is availability,
   // not authority: a grant is still required for every call.
   const catalog = await kernel.updateToolNamespaces(
-    accessContext({ actor: ALICE, purpose: "configure-workspace", grants: [], namespaces: [] }),
+    accessContext({ actor: ALICE, purpose: "configure-workspace", namespaces: [] }),
     { enable: ["files"] },
     { signal: AbortSignal.timeout(5_000) },
   );
@@ -169,7 +176,7 @@ async function main(): Promise<void> {
 
   const atlasRead = grant({
     id: "grant-atlas-read",
-    subject: BOB_AGENT,
+    subject: ALICE_AGENT,
     path: ATLAS,
     actions: ["search", "read", "list"],
     purpose: "atlas-status",
@@ -200,29 +207,27 @@ async function main(): Promise<void> {
     defaultTimeoutMs: 60_000,
   });
 
-  const bob = accessContext({
-    actor: BOB_AGENT,
+  const aliceTurn = accessContext({
+    actor: ALICE_AGENT,
     purpose: "atlas-status",
-    grants: [atlasRead, invokeAlice],
     namespaces,
   });
-  const visible = await kernel.listTools(bob);
-  console.log(`2. bob's agent can see: ${visible.map(({ name }) => name).join(", ")}`);
+  const visible = await kernel.listTools(aliceTurn);
+  console.log(`2. alice's agent can see: ${visible.map(({ name }) => name).join(", ")}`);
 
   const request: ExecutionRequest = {
     version: "1",
     executionId: randomUUID(),
     agent: ALICE_AGENT,
-    context: bob,
+    context: aliceTurn,
     message: {
       version: "1",
       id: randomUUID(),
       sender: BOB_AGENT,
       receiver: ALICE_AGENT,
-      intent: "answer-question",
-      purpose: bob.purpose,
+      purpose: aliceTurn.purpose,
       payload: { text: "When does Atlas ship, and what is blocking it?" },
-      traceId: bob.traceId,
+      traceId: aliceTurn.traceId,
       createdAt: new Date().toISOString(),
     },
     tools: [...visible],
@@ -230,7 +235,15 @@ async function main(): Promise<void> {
 
   const result = await turns.execute(request);
   console.log(`3. one bounded turn: ${result.status}`);
-  console.log(`   ${JSON.stringify(result.status === "succeeded" ? result.output : result.error)}`);
+  // `escalated` is a third terminal state, not a denial: the turn stopped and
+  // asked for a human rather than SharedOS deciding. It carries no error.
+  const detail =
+    result.status === "succeeded"
+      ? result.output
+      : result.status === "escalated"
+        ? result.escalation
+        : result.error;
+  console.log(`   ${JSON.stringify(detail)}`);
 
   console.log("\n4. the provider is the last line of defence on paths:\n");
   const auditor = grant({
@@ -244,7 +257,6 @@ async function main(): Promise<void> {
   const probeContext = accessContext({
     actor: BOB_AGENT,
     purpose: "path-probe",
-    grants: [auditor],
     namespaces,
   });
   await probe(kernel, probeContext, "traversal markers in the path", [
@@ -308,7 +320,6 @@ async function main(): Promise<void> {
     actor: SUMMARISER,
     authority: BOB_AGENT,
     purpose: "atlas-status",
-    grants: [narrower.grant],
     namespaces,
   });
   const read = {
