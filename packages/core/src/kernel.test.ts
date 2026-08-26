@@ -13,13 +13,18 @@ import type { AuditEvent, AuditSink } from "./audit.js";
 import type { GrantSource } from "./authority.js";
 import { CapabilityAuthorizer, InMemoryGrantUsageStore } from "./authorization.js";
 import { SharedOSKernel, type SharedOSKernelOptions } from "./kernel.js";
-import { addressPath, type MessageTransport } from "./message-service.js";
+import {
+  addressPath,
+  type MessageRequestRouter,
+  type MessageTransport,
+} from "./message-service.js";
+import { MESSAGE_REQUEST_TOOL_DEFINITION, MESSAGE_REQUEST_TOOL_NAME } from "./message-tool.js";
 import type { ResourceInvocationRequest, ResourceProvider } from "./resource-registry.js";
 import {
   applyToolNamespaceUpdate,
   type ToolNamespaceSettingsStore,
 } from "./tool-namespace-control.js";
-import type { ContextToolProvider, ToolHandler } from "./tool-registry.js";
+import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 
 const NOW = "2026-08-03T09:00:00.000Z";
 const ACTOR = { kind: "agent", agentId: "agent-bob" } as const;
@@ -808,7 +813,6 @@ describe("SharedOSKernel messaging and audit", () => {
       id: "message-1",
       sender: ACTOR,
       receiver: RECEIVER,
-      intent: "delegate-research",
       purpose: "prepare-update",
       payload: { request: "Summarize the architecture" },
       traceId: "trace-1",
@@ -816,6 +820,522 @@ describe("SharedOSKernel messaging and audit", () => {
       ...overrides,
     };
   }
+
+  function replyTo(request: MessageEnvelope, overrides: Partial<MessageEnvelope> = {}) {
+    return envelope({
+      id: "message-reply-1",
+      sender: request.receiver,
+      receiver: request.sender,
+      payload: { answer: "Architecture summarized" },
+      replyTo: request.id,
+      ...overrides,
+    });
+  }
+
+  function messageRequestCall(arguments_: ToolCall["arguments"] = {}): ToolCall {
+    return toolCall({
+      id: "untrusted-model-call-1",
+      tool: MESSAGE_REQUEST_TOOL_NAME,
+      arguments: { recipient: RECEIVER, payload: { request: "Summarize" }, ...arguments_ },
+    });
+  }
+
+  function messageResource(receiver = RECEIVER): ResourceRef {
+    return {
+      namespace: "sharedos.messaging",
+      path: addressPath(receiver),
+      owner: OWNER,
+    };
+  }
+
+  function authorityMutatingAudit(events: AuditEvent[], mutationResults: boolean[]): AuditSink {
+    return {
+      async record(event) {
+        events.push(event);
+        if (event.type !== "authorization.checked" || event.outcome !== "allowed") {
+          return;
+        }
+        mutationResults.push(Reflect.set(event.actor, "agentId", "audit-poisoned-actor"));
+        mutationResults.push(Reflect.set(event.owner, "userId", "audit-poisoned-owner"));
+        if (event.resource !== undefined) {
+          mutationResults.push(Reflect.set(event.resource, "namespace", "audit-poisoned-resource"));
+        }
+      },
+    };
+  }
+
+  it("does not expose or execute the request tool without send authority", async () => {
+    const deliver = vi.fn<MessageTransport["deliver"]>();
+    const resolveReply = vi.fn<MessageRequestRouter["resolveReply"]>();
+    const kernel = kernelWith([], {
+      messageTransport: { deliver },
+      messageRequestRouter: { resolveReply },
+    });
+    const access = context(["messages"]);
+
+    await expect(kernel.listTools(access)).resolves.toEqual([]);
+    await expect(kernel.invokeTool(access, messageRequestCall())).resolves.toMatchObject({
+      status: "denied",
+      error: { code: "tool_unavailable" },
+    });
+    expect(deliver).not.toHaveBeenCalled();
+    expect(resolveReply).not.toHaveBeenCalled();
+  });
+
+  it("installs the request tool only when both host ports exist and never mutates the host registry", async () => {
+    const messagingGrant = grant("grant-message", messageResource(), ["send"]);
+    const hostTools = new ToolRegistry();
+    const deliver = vi.fn<MessageTransport["deliver"]>();
+    const resolveReply = vi.fn<MessageRequestRouter["resolveReply"]>();
+
+    await expect(
+      kernelWith([messagingGrant], { tools: hostTools, messageTransport: { deliver } }).listTools(
+        context(["messages"]),
+      ),
+    ).resolves.toEqual([]);
+    await expect(
+      kernelWith([messagingGrant], {
+        tools: hostTools,
+        messageRequestRouter: { resolveReply },
+      }).listTools(context(["messages"])),
+    ).resolves.toEqual([]);
+    await expect(
+      kernelWith([messagingGrant], {
+        tools: hostTools,
+        messageTransport: { deliver },
+        messageRequestRouter: { resolveReply },
+      }).listTools(context(["messages"])),
+    ).resolves.toEqual([MESSAGE_REQUEST_TOOL_DEFINITION]);
+
+    expect(hostTools.definitions()).toEqual([]);
+  });
+
+  it("discovers the request tool without consuming its bounded recipient grant", async () => {
+    const usage = new InMemoryGrantUsageStore();
+    const messagingGrant = grant("grant-message", messageResource(), ["send"], { maxUses: 1 });
+    const kernel = kernelWith([messagingGrant], {
+      authorizer: new CapabilityAuthorizer({ usageStore: usage }),
+      messageTransport: { deliver: vi.fn() },
+      messageRequestRouter: { resolveReply: vi.fn() },
+    });
+
+    await expect(kernel.listTools(context(["messages"]))).resolves.toEqual([
+      MESSAGE_REQUEST_TOOL_DEFINITION,
+    ]);
+    await expect(usage.getUsage("world-alpha", "grant-message")).resolves.toBe(0);
+  });
+
+  it("publishes every accepted recipient address as a closed, unambiguous schema", async () => {
+    const kernel = kernelWith([grant("grant-message", messageResource(), ["send"])], {
+      messageTransport: { deliver: vi.fn() },
+      messageRequestRouter: { resolveReply: vi.fn() },
+    });
+
+    const catalog = await kernel.listPublishedTools(context(["messages"]), {
+      executionId: "execution-message-schema",
+    });
+
+    expect(catalog.tools).toHaveLength(1);
+    expect(catalog.tools[0]?.inputSchema).toEqual({
+      type: "object",
+      properties: {
+        recipient: {
+          oneOf: [
+            {
+              type: "object",
+              properties: {
+                kind: { const: "human" },
+                userId: {
+                  type: "string",
+                  minLength: 1,
+                  maxLength: 256,
+                  pattern: "^(?!\\s)[\\s\\S]*\\S$",
+                },
+              },
+              required: ["kind", "userId"],
+              additionalProperties: false,
+            },
+            {
+              type: "object",
+              properties: {
+                kind: { const: "agent" },
+                agentId: {
+                  type: "string",
+                  minLength: 1,
+                  maxLength: 256,
+                  pattern: "^(?!\\s)[\\s\\S]*\\S$",
+                },
+              },
+              required: ["kind", "agentId"],
+              additionalProperties: false,
+            },
+            {
+              type: "object",
+              properties: {
+                kind: { const: "group" },
+                conversationId: {
+                  type: "string",
+                  minLength: 1,
+                  maxLength: 256,
+                  pattern: "^(?!\\s)[\\s\\S]*\\S$",
+                },
+              },
+              required: ["kind", "conversationId"],
+              additionalProperties: false,
+            },
+            {
+              type: "object",
+              properties: {
+                kind: { const: "service" },
+                serviceId: {
+                  type: "string",
+                  minLength: 1,
+                  maxLength: 256,
+                  pattern: "^(?!\\s)[\\s\\S]*\\S$",
+                },
+              },
+              required: ["kind", "serviceId"],
+              additionalProperties: false,
+            },
+          ],
+        },
+        payload: {},
+      },
+      required: ["recipient", "payload"],
+      additionalProperties: false,
+    });
+  });
+
+  it("constructs a trusted request, consumes once, and returns only the durable reply payload", async () => {
+    const usage = new InMemoryGrantUsageStore();
+    const events: AuditEvent[] = [];
+    let acceptedRequest: MessageEnvelope | undefined;
+    const deliver = vi.fn<MessageTransport["deliver"]>(async (_access, message) => {
+      acceptedRequest = message;
+      return { messageId: message.id, status: "accepted", timestamp: NOW };
+    });
+    const resolveReply = vi.fn<MessageRequestRouter["resolveReply"]>(
+      async (_access, request, delivery) => {
+        expect(delivery).toMatchObject({ status: "accepted", messageId: request.id });
+        return replyTo(request);
+      },
+    );
+    const messagingGrant = grant("grant-message", messageResource(), ["send"], { maxUses: 1 });
+    const kernel = kernelWith([messagingGrant], {
+      authorizer: new CapabilityAuthorizer({ usageStore: usage }),
+      messageTransport: { deliver },
+      messageRequestRouter: { resolveReply },
+      createMessageId: () => "message-generated-1",
+      audit: { record: async (event) => void events.push(event) },
+    });
+
+    await expect(kernel.invokeTool(context(["messages"]), messageRequestCall())).resolves.toEqual({
+      callId: "untrusted-model-call-1",
+      tool: MESSAGE_REQUEST_TOOL_NAME,
+      status: "succeeded",
+      output: { answer: "Architecture summarized" },
+      completedAt: NOW,
+    });
+    expect(acceptedRequest).toEqual({
+      version: "1",
+      id: "message-generated-1",
+      sender: ACTOR,
+      receiver: RECEIVER,
+      purpose: "prepare-update",
+      payload: { request: "Summarize" },
+      traceId: "trace-1",
+      createdAt: NOW,
+    });
+    expect(acceptedRequest?.id).not.toBe("untrusted-model-call-1");
+    expect(deliver).toHaveBeenCalledOnce();
+    expect(resolveReply).toHaveBeenCalledOnce();
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "authorization.checked",
+        outcome: "allowed",
+        operationId: "untrusted-model-call-1",
+        resource: messageResource(),
+        action: "send",
+      }),
+    );
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "message.sent",
+        outcome: "succeeded",
+        operationId: "untrusted-model-call-1",
+        messageId: "message-generated-1",
+        receiver: RECEIVER,
+      }),
+    );
+    expect(JSON.stringify(events)).not.toContain("Summarize");
+    expect(JSON.stringify(events)).not.toContain("Architecture summarized");
+    await expect(usage.getUsage("world-alpha", "grant-message")).resolves.toBe(1);
+
+    await expect(
+      kernel.invokeTool(context(["messages"]), messageRequestCall()),
+    ).resolves.toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+    expect(deliver).toHaveBeenCalledOnce();
+  });
+
+  it.each(["sender", "purpose", "traceId", "messageId", "intent", "replyTo"])(
+    "rejects model-authored authority field %s before delivery",
+    async (field) => {
+      const deliver = vi.fn<MessageTransport["deliver"]>();
+      const resolveReply = vi.fn<MessageRequestRouter["resolveReply"]>();
+      const kernel = kernelWith([grant("grant-message", messageResource(), ["send"])], {
+        messageTransport: { deliver },
+        messageRequestRouter: { resolveReply },
+      });
+
+      await expect(
+        kernel.invokeTool(context(["messages"]), messageRequestCall({ [field]: "forged" })),
+      ).resolves.toMatchObject({
+        status: "failed",
+        error: { code: "invalid_tool_arguments" },
+      });
+      expect(deliver).not.toHaveBeenCalled();
+      expect(resolveReply).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    ["replyTo", { replyTo: "wrong-request" }],
+    ["sender", { sender: ACTOR }],
+    ["receiver", { receiver: RECEIVER }],
+    ["purpose", { purpose: "other-purpose" }],
+    ["trace", { traceId: "other-trace" }],
+  ] satisfies readonly [string, Partial<MessageEnvelope>][])(
+    "fails closed on a mismatched durable reply %s",
+    async (_field, mismatch) => {
+      const deliver = vi.fn<MessageTransport["deliver"]>(async (_access, message) => ({
+        messageId: message.id,
+        status: "accepted",
+        timestamp: NOW,
+      }));
+      const resolveReply = vi.fn<MessageRequestRouter["resolveReply"]>(async (_access, request) =>
+        replyTo(request, mismatch),
+      );
+      const kernel = kernelWith([grant("grant-message", messageResource(), ["send"])], {
+        messageTransport: { deliver },
+        messageRequestRouter: { resolveReply },
+        createMessageId: () => "message-generated-1",
+      });
+
+      const result = await kernel.invokeTool(context(["messages"]), messageRequestCall());
+
+      expect(result).toMatchObject({
+        status: "failed",
+        error: {
+          code: "invalid_message_reply",
+          message: "The message router returned an invalid reply",
+          retryable: false,
+        },
+      });
+      expect(JSON.stringify(result)).not.toContain("Architecture summarized");
+      expect(JSON.stringify(result)).not.toContain("other-purpose");
+      expect(deliver).toHaveBeenCalledOnce();
+      expect(resolveReply).toHaveBeenCalledOnce();
+    },
+  );
+
+  it("rejects malformed durable replies and sanitizes router failures", async () => {
+    const deliver = vi.fn<MessageTransport["deliver"]>(async (_access, message) => ({
+      messageId: message.id,
+      status: "accepted",
+      timestamp: NOW,
+    }));
+    const malformedRouter: MessageRequestRouter = {
+      async resolveReply(_access, request) {
+        return { ...replyTo(request), intent: "legacy-authority-shape" } as MessageEnvelope;
+      },
+    };
+    const failingRouter: MessageRequestRouter = {
+      async resolveReply() {
+        throw new Error("/private/reply-log/secret: database password leaked");
+      },
+    };
+    const options = {
+      messageTransport: { deliver },
+      createMessageId: () => "message-generated-1",
+    };
+    const messagingGrant = grant("grant-message", messageResource(), ["send"]);
+
+    await expect(
+      kernelWith([messagingGrant], {
+        ...options,
+        messageRequestRouter: malformedRouter,
+      }).invokeTool(context(["messages"]), messageRequestCall()),
+    ).resolves.toMatchObject({
+      status: "failed",
+      error: { code: "invalid_message_reply" },
+    });
+
+    const failed = await kernelWith([messagingGrant], {
+      ...options,
+      messageRequestRouter: failingRouter,
+    }).invokeTool(context(["messages"]), messageRequestCall());
+    expect(failed).toMatchObject({
+      status: "failed",
+      error: {
+        code: "message_reply_resolution_failed",
+        message: "The message router could not resolve a reply",
+      },
+    });
+    expect(JSON.stringify(failed)).not.toContain("secret");
+    expect(JSON.stringify(failed)).not.toContain("password");
+  });
+
+  it("rejects a reply correlated only to router-mutated request authority", async () => {
+    const deliver = vi.fn<MessageTransport["deliver"]>(async (_access, message) => ({
+      messageId: message.id,
+      status: "accepted",
+      timestamp: NOW,
+    }));
+    const resolveReply = vi.fn<MessageRequestRouter["resolveReply"]>(
+      async (_access, mutableRequest) => {
+        mutableRequest.id = "router-forged-request";
+        mutableRequest.sender = RECEIVER;
+        mutableRequest.receiver = ACTOR;
+        mutableRequest.purpose = "router-forged-purpose";
+        mutableRequest.traceId = "router-forged-trace";
+        return replyTo(mutableRequest, {
+          purpose: mutableRequest.purpose,
+          traceId: mutableRequest.traceId,
+          payload: { secret: "router-forged-reply" },
+        });
+      },
+    );
+    const kernel = kernelWith([grant("grant-message", messageResource(), ["send"])], {
+      messageTransport: { deliver },
+      messageRequestRouter: { resolveReply },
+      createMessageId: () => "message-generated-1",
+    });
+
+    const result = await kernel.invokeTool(context(["messages"]), messageRequestCall());
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: { code: "invalid_message_reply" },
+    });
+    expect(JSON.stringify(result)).not.toContain("router-forged");
+  });
+
+  it("keeps transport mutation out of request correlation and router input", async () => {
+    const deliver = vi.fn<MessageTransport["deliver"]>(async (_access, mutableMessage) => {
+      const authorizedId = mutableMessage.id;
+      mutableMessage.id = "transport-forged-request";
+      mutableMessage.purpose = "transport-forged-purpose";
+      mutableMessage.traceId = "transport-forged-trace";
+      return { messageId: authorizedId, status: "accepted", timestamp: NOW };
+    });
+    const resolveReply = vi.fn<MessageRequestRouter["resolveReply"]>(
+      async (_access, immutableRequest) => {
+        expect(immutableRequest).toMatchObject({
+          id: "message-generated-1",
+          purpose: "prepare-update",
+          traceId: "trace-1",
+        });
+        return replyTo(immutableRequest);
+      },
+    );
+    const kernel = kernelWith([grant("grant-message", messageResource(), ["send"])], {
+      messageTransport: { deliver },
+      messageRequestRouter: { resolveReply },
+      createMessageId: () => "message-generated-1",
+    });
+
+    await expect(
+      kernel.invokeTool(context(["messages"]), messageRequestCall()),
+    ).resolves.toMatchObject({
+      status: "succeeded",
+      output: { answer: "Architecture summarized" },
+    });
+  });
+
+  it("keeps direct send sender-bound and consumes its recipient grant once", async () => {
+    const usage = new InMemoryGrantUsageStore();
+    const deliver = vi.fn<MessageTransport["deliver"]>(async (_access, message) => ({
+      messageId: message.id,
+      status: "delivered",
+      timestamp: NOW,
+    }));
+    const kernel = kernelWith(
+      [grant("grant-message", messageResource(), ["send"], { maxUses: 1 })],
+      {
+        authorizer: new CapabilityAuthorizer({ usageStore: usage }),
+        messageTransport: { deliver },
+      },
+    );
+
+    await expect(kernel.sendMessage(context(), envelope())).resolves.toMatchObject({
+      status: "delivered",
+    });
+    await expect(usage.getUsage("world-alpha", "grant-message")).resolves.toBe(1);
+    expect(deliver).toHaveBeenCalledOnce();
+
+    await expect(
+      kernel.sendMessage(context(), envelope({ id: "message-2" })),
+    ).resolves.toMatchObject({ status: "denied", error: { code: "grant_exhausted" } });
+    expect(deliver).toHaveBeenCalledOnce();
+  });
+
+  it("rejects invalid direct message envelopes before authority, audit, or transport", async () => {
+    const messagingGrant = grant("grant-message", messageResource(), ["send"], { maxUses: 1 });
+    const load = vi.fn<GrantSource["load"]>(async () => [messagingGrant]);
+    const getUsage = vi.fn(async () => 0);
+    const tryConsume = vi.fn(async () => true);
+    const record = vi.fn<AuditSink["record"]>(async () => undefined);
+    const deliver = vi.fn<MessageTransport["deliver"]>();
+    const kernel = new SharedOSKernel({
+      grantSource: { load },
+      authorizer: new CapabilityAuthorizer({ usageStore: { getUsage, tryConsume } }),
+      audit: { record },
+      messageTransport: { deliver },
+    });
+    const legacy = { ...envelope(), intent: "removed-message-field" } as MessageEnvelope;
+    const { id: _removedId, ...withoutId } = envelope();
+    const malformed = withoutId as unknown as MessageEnvelope;
+
+    for (const invalid of [legacy, malformed]) {
+      await expect(kernel.sendMessage(context(), invalid)).rejects.toThrow(
+        "message envelope does not match the SharedOS contract",
+      );
+    }
+
+    expect(load).not.toHaveBeenCalled();
+    expect(getUsage).not.toHaveBeenCalled();
+    expect(tryConsume).not.toHaveBeenCalled();
+    expect(record).not.toHaveBeenCalled();
+    expect(deliver).not.toHaveBeenCalled();
+  });
+
+  it("propagates cancellation after delivery without retrying the request", async () => {
+    const controller = new AbortController();
+    const reason = new Error("cancel request wait");
+    const deliver = vi.fn<MessageTransport["deliver"]>(async (_access, message) => ({
+      messageId: message.id,
+      status: "accepted",
+      timestamp: NOW,
+    }));
+    const resolveReply = vi.fn<MessageRequestRouter["resolveReply"]>(
+      async (_access, _request, _delivery, signal) => {
+        controller.abort(reason);
+        expect(signal.aborted).toBe(true);
+        throw reason;
+      },
+    );
+    const kernel = kernelWith([grant("grant-message", messageResource(), ["send"])], {
+      messageTransport: { deliver },
+      messageRequestRouter: { resolveReply },
+      createMessageId: () => "message-generated-1",
+    });
+
+    await expect(
+      kernel.invokeTool(context(["messages"]), messageRequestCall(), { signal: controller.signal }),
+    ).rejects.toBe(reason);
+    expect(deliver).toHaveBeenCalledOnce();
+    expect(resolveReply).toHaveBeenCalledOnce();
+  });
 
   it("binds sender, purpose, trace, and recipient capability before delivery", async () => {
     const deliver = vi.fn<MessageTransport["deliver"]>(async (_access, message) => ({
@@ -898,6 +1418,77 @@ describe("SharedOSKernel messaging and audit", () => {
     });
     expect(JSON.stringify(events)).not.toContain("architecture");
     expect(JSON.stringify(events)).not.toContain("memory-1");
+  });
+
+  it("isolates message execution and later events from authorization audit mutation", async () => {
+    const events: AuditEvent[] = [];
+    const mutationResults: boolean[] = [];
+    let deliveredContext: AccessContext | undefined;
+    const deliver = vi.fn<MessageTransport["deliver"]>(async (access, message) => {
+      deliveredContext = access;
+      return { messageId: message.id, status: "accepted", timestamp: NOW };
+    });
+    const resolveReply = vi.fn<MessageRequestRouter["resolveReply"]>(async (_access, request) =>
+      replyTo(request),
+    );
+    const kernel = kernelWith([grant("grant-message", messageResource(), ["send"])], {
+      audit: authorityMutatingAudit(events, mutationResults),
+      messageTransport: { deliver },
+      messageRequestRouter: { resolveReply },
+      createMessageId: () => "message-generated-1",
+    });
+
+    await expect(
+      kernel.invokeTool(context(["messages"]), messageRequestCall()),
+    ).resolves.toMatchObject({ status: "succeeded" });
+
+    expect(mutationResults).toEqual([false, false, false]);
+    expect(deliveredContext).toMatchObject({ actor: ACTOR, owner: OWNER });
+    expect(events.every((event) => JSON.stringify(event.actor) === JSON.stringify(ACTOR))).toBe(
+      true,
+    );
+    expect(events.every((event) => JSON.stringify(event.owner) === JSON.stringify(OWNER))).toBe(
+      true,
+    );
+    expect(JSON.stringify(events)).not.toContain("audit-poisoned");
+  });
+
+  it("isolates generic tool execution and its requirement from authorization audit mutation", async () => {
+    const events: AuditEvent[] = [];
+    const mutationResults: boolean[] = [];
+    let invokedContext: AccessContext | undefined;
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+      audit: authorityMutatingAudit(events, mutationResults),
+    });
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      async invoke(access, call) {
+        invokedContext = access;
+        return {
+          callId: call.id,
+          tool: call.tool,
+          status: "succeeded",
+          output: null,
+          completedAt: NOW,
+        };
+      },
+    });
+
+    await expect(kernel.invokeTool(context(["files"]), toolCall())).resolves.toMatchObject({
+      status: "succeeded",
+    });
+
+    expect(mutationResults).toEqual([false, false, false]);
+    expect(invokedContext).toMatchObject({ actor: ACTOR, owner: OWNER });
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "tool.invoked",
+        resource: FILE_RESOURCE,
+        action: "search",
+      }),
+    );
+    expect(JSON.stringify(events)).not.toContain("audit-poisoned");
   });
 
   it("does not turn a completed side effect into a retry when outcome audit fails", async () => {

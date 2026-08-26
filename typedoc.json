@@ -12,6 +12,7 @@
     "packages/sdk",
     "packages/testkit",
     "packages/conformance",
+    "packages/mcp",
     "packages/adapters"
   ],
   "packageOptions": {

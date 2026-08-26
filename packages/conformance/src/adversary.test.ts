@@ -24,6 +24,7 @@ import {
   READ_TOOL,
   ROOT_FILES_GRANT,
   SEALED_TOOL,
+  SEND_TOOL,
   UNREGISTERED_TOOL,
   WRITE_TOOL,
 } from "./world.js";
@@ -200,7 +201,7 @@ describe("manifest rows under the canonical world", () => {
       READ_TOOL,
       MISMATCHED_TOOL,
       WRITE_TOOL,
-      "messages.send",
+      SEND_TOOL,
     ]);
     expect(report?.visibleTools).not.toContain(SEALED_TOOL);
     expect(report?.visibleTools).not.toContain(UNREGISTERED_TOOL);

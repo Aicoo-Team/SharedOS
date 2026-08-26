@@ -8,8 +8,7 @@ communication, access to files, and invocation of built-in or external tools.
 
 The central rule is:
 
-> A message conveys intent and context. Only an independently evaluated
-> capability grant conveys authority.
+> A message carries data and one host-bound purpose, never authority.
 
 This separates a model's requested action from the policy decision that permits
 or rejects it.
@@ -20,7 +19,7 @@ or rejects it.
 | ----------- | ------------------------------------------------------------------ | -------------------------------------------------------------- |
 | Identity    | Structured human, agent, group, and service addresses              | Account login, sessions, identity proofing                     |
 | Permissions | Grant semantics, evaluation, revocation behavior, decision records | Grant persistence, consent UI, organizational policy ceiling   |
-| Messaging   | Envelopes, routing, dispatch, provenance                           | Product inbox, notifications, retention UX                     |
+| Messaging   | Envelopes, authorization, correlation, validation and audit        | Durable transport, inbox, wake-up, retries and retention       |
 | Files       | Paths, operations, authorization, result and audit contracts       | Notes, folders, storage, indexes, embeddings and deletion      |
 | Memory      | Rule that mounted/indexed context retains source file authority    | Selection, compaction, ranking and context assembly            |
 | Tools       | Namespace/catalog contracts, filtered discovery, invocation gate   | Settings storage, OAuth, MCP connections, tool implementations |
@@ -58,6 +57,9 @@ flowchart TD
   CF --> CT
   AD["@aicoo/sharedos-adapters"] --> RT
   AD --> CT
+  AD --> MCP
+  MCP["@aicoo/sharedos-mcp"] --> CO
+  MCP --> CT
 ```
 
 ### `@aicoo/sharedos-contracts`
@@ -65,7 +67,7 @@ flowchart TD
 Contains JSON-safe, transport-neutral schemas. Important concepts include:
 
 - Structured `Address` values for humans, agents, groups, and services.
-- `MessageEnvelope`, including sender, receiver, intent, purpose, and trace.
+- `MessageEnvelope`, including sender, receiver, purpose, and trace.
 - `CapabilityGrant`, `CapabilityRequirement`, and `AuthorizationDecision`.
 - Resource and tool descriptors, tool namespace control-plane requests,
   execution inputs, results, and HTTP schemas.
@@ -109,10 +111,18 @@ execution record, and runs the adversarial conformance suite that reports what
 the kernel refused and where. It holds no tasks, gold labels, or scores:
 SharedOS states what happened and never whether it was correct.
 
-`@aicoo/sharedos-adapters` installs Codex and Claude Code as agent turn drivers.
-An adapter is translation only. The turn loop, permission-filtered catalogue,
-per-call re-authorization, and audit all come from the execution envelope, so a
-new harness changes no kernel code and adds no second permission path.
+`@aicoo/sharedos-adapters` installs Codex, Claude Code, DeepSeek Harness, and Pi
+as agent turn drivers. An adapter is translation only. The turn loop,
+permission-filtered catalogue, per-call re-authorization, and audit all come from
+the execution envelope, so a new harness changes no kernel code and adds no
+second permission path.
+
+`@aicoo/sharedos-mcp` serves that same permission-filtered catalogue to a harness
+that runs its own loop, over the Model Context Protocol. It is the other half of
+the harness story: a driver puts SharedOS in the model provider's seat, while the
+MCP bridge lets the vendor CLI keep its own loop, on whatever model it is
+configured with, and connect to SharedOS as a tool server. Both paths converge on `RuntimeHost.invokeTool`, which stays the
+only execution path. See [MCP toolshare](mcp-toolshare.md).
 
 `@aicoo/sharedos` is an ergonomic distribution layer that re-exports the
 production packages from one install. It contains no policy, storage, or
@@ -223,6 +233,14 @@ Static tools use `ToolRegistry`. User-specific MCP or connector catalogs use a
 `ContextToolProvider`; the kernel builds an ephemeral registry per operation so
 one user's reload cannot mutate another user's catalog. `listToolNamespaces`
 aggregates the available context-specific namespaces and their enabled state.
+
+The built-in `messages.request` tool is similarly narrow. The model supplies
+only a recipient and JSON-safe payload; the trusted context supplies sender,
+purpose, trace, timestamp, and message id. Its exact recipient-scoped send
+capability is consumed once before a host-owned `MessageTransport` receives the
+envelope. A host-owned `MessageRequestRouter` resolves the durable correlated
+reply. SharedOS validates that reply and returns only its payload. The host owns
+the durable log, receiver wake-up, and the next recipient turn.
 `updateToolNamespaces` applies an idempotent patch through a host-owned,
 atomic `ToolNamespaceSettingsStore` and returns the effective catalog.
 
@@ -243,7 +261,7 @@ sequenceDiagram
   participant Providers
 
   Host->>Envelope: execute one turn with trusted runtime selection
-  Envelope->>Kernel: authorize message / delegation
+  Envelope->>Kernel: admit executing recipient
   Kernel-->>Envelope: decision + matched authority
   Envelope->>Kernel: filter enabled namespaces and discoverable capabilities
   Envelope->>Runtime: sanitized request + effective tools + broker

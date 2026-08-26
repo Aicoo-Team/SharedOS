@@ -81,6 +81,9 @@ importers:
       '@aicoo/sharedos-contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@aicoo/sharedos-mcp':
+        specifier: workspace:*
+        version: link:../mcp
       '@aicoo/sharedos-runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -112,6 +115,9 @@ importers:
       '@aicoo/sharedos-core':
         specifier: workspace:*
         version: link:../core
+      '@aicoo/sharedos-mcp':
+        specifier: workspace:*
+        version: link:../mcp
       '@aicoo/sharedos-runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -150,6 +156,25 @@ importers:
       '@aicoo/sharedos-client':
         specifier: workspace:*
         version: link:../client
+
+  packages/mcp:
+    dependencies:
+      '@aicoo/sharedos-contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@aicoo/sharedos-core':
+        specifier: workspace:*
+        version: link:../core
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@aicoo/sharedos-os':
+        specifier: workspace:*
+        version: link:../os
+      '@aicoo/sharedos-testkit':
+        specifier: workspace:*
+        version: link:../testkit
 
   packages/os:
     dependencies:

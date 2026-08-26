@@ -26,9 +26,8 @@ if (!skipBuild) {
   }
 }
 
-const { renderConformanceSummary, runConformanceSuite, strictFailures } = await import(
-  join(root, "packages", "conformance", "dist", "index.js")
-);
+const { SHAREDOS_VERSION, renderConformanceSummary, runConformanceSuite, strictFailures } =
+  await import(join(root, "packages", "conformance", "dist", "index.js"));
 
 const { manifest, evidence } = await runConformanceSuite();
 const markdown = renderConformanceSummary(manifest);
@@ -76,6 +75,14 @@ console.log(
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([status, count]) => `${status}: ${count}`)
     .join("  "),
+);
+// Which build produced those cells. It stays out of the committed manifest on
+// purpose -- a version bump would make every gated file stale without a single
+// enforcement change -- so it is printed here and carried on every record in
+// `evidence.json`, which is where a reader can check it.
+console.log(
+  `SharedOS ${SHAREDOS_VERSION}, runtime ${evidence[0]?.runtime.id ?? "none ran"} ` +
+    `${evidence[0]?.runtime.version ?? ""}`.trimEnd(),
 );
 
 const failures = strictFailures(manifest);

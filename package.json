@@ -1,6 +1,6 @@
 {
   "name": "sharedos",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "Permission-controlled state and delegation kernel with pluggable agent runtimes",
   "private": true,
   "license": "Apache-2.0",
@@ -16,6 +16,9 @@
     "docs:api:check": "node scripts/check-api-docs.mjs",
     "conformance": "node scripts/conformance.mjs",
     "conformance:check": "node scripts/conformance.mjs --check --strict",
+    "conformance:mcp": "node scripts/mcp-conformance.mjs",
+    "conformance:live": "node scripts/live-conformance.mjs",
+    "bench": "node scripts/bench.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc -b --pretty false",

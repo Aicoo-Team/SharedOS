@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import type { ToolCall } from "@aicoo/sharedos-contracts";
+
 import { HostileRuntime, type AttackMove } from "./adversary.js";
+import { hashJson } from "./hashing.js";
 import { judgeCase } from "./judge.js";
 import {
   claudeCodeFrameWriter,
@@ -9,22 +12,42 @@ import {
   codexProtocol,
 } from "@aicoo/sharedos-adapters";
 
-import { liveReceiptsFromRecord, movesToPrompt, movesToTranscript } from "./columns.js";
+import {
+  liveReceiptsFromRecord,
+  mcpHarnessLimits,
+  movesToPrompt,
+  movesToTranscript,
+} from "./columns.js";
 import { CANONICAL_ATTACK_MOVES, canonicalMove } from "./moves.js";
 import {
-  CLAUDE_CODE_TRANSCRIPT_COLUMN,
-  CODEX_TRANSCRIPT_COLUMN,
-  DEEPSEEK_TRANSCRIPT_COLUMN,
+  CLAUDE_CODE_SCRIPTED_COLUMN,
+  CODEX_SCRIPTED_COLUMN,
+  DEEPSEEK_SCRIPTED_COLUMN,
   EMBEDDED_COLUMN,
-  PI_TRANSCRIPT_COLUMN,
+  PI_SCRIPTED_COLUMN,
   receiptsFromRecord,
   type ColumnTurn,
   type RuntimeColumn,
   type RuntimeColumnOptions,
 } from "./columns.js";
-import { renderConformanceSummary, runConformanceSuite, strictFailures } from "./runner.js";
+import {
+  caseSetIdentity,
+  renderConformanceSummary,
+  runConformanceSuite,
+  strictFailures,
+  worldSetIdentity,
+} from "./runner.js";
 import { CANONICAL_CONFORMANCE_CASES, type ConformanceCase } from "./suite.js";
-import { conformanceRuntimeContext, READ_ONLY_FILE, READ_TOOL, WRITE_TOOL } from "./world.js";
+import {
+  conformanceRuntimeContext,
+  createConformanceWorld,
+  FILES_ADMIN_NAMESPACE,
+  READ_ONLY_FILE,
+  READ_TOOL,
+  SEALED_TOOL,
+  WORKSPACE_PATH,
+  WRITE_TOOL,
+} from "./world.js";
 
 /** A move whose control attempt cannot succeed, standing in for a broken fixture. */
 const BROKEN_CONTROL: AttackMove = {
@@ -77,6 +100,125 @@ function caseOf(move: AttackMove): ConformanceCase {
     conditions: [{ id: "baseline", description: "Nothing armed.", world: {} }],
   };
 }
+
+const reworded = (kase: ConformanceCase): ConformanceCase => ({
+  ...kase,
+  move: {
+    ...kase.move,
+    attempts: kase.move.attempts.map((attempt) => ({
+      ...attempt,
+      description: `${attempt.description} Reworded for a reader.`,
+    })),
+  },
+  conditions: kase.conditions.map((condition) => ({
+    ...condition,
+    description: `${condition.description} Reworded for a reader.`,
+  })),
+});
+
+describe("the case-set hash", () => {
+  it("ignores prose, so rewording a description does not oblige a live re-run", async () => {
+    const cases = CANONICAL_CONFORMANCE_CASES;
+    const before = await hashJson(caseSetIdentity(cases));
+    const after = await hashJson(caseSetIdentity(cases.map(reworded)));
+
+    expect(after).toBe(before);
+  });
+
+  it("still moves when a declaration a run actually depends on changes", async () => {
+    const [first, ...rest] = CANONICAL_CONFORMANCE_CASES as readonly ConformanceCase[];
+    if (first === undefined) throw new Error("the canonical case set is empty");
+    const retooled: ConformanceCase = {
+      ...first,
+      move: {
+        ...first.move,
+        attempts: first.move.attempts.map((attempt, index) =>
+          index === 0 ? { ...attempt, tool: "files.somewhere-else" } : attempt,
+        ),
+      },
+    };
+
+    const before = await hashJson(caseSetIdentity([first, ...rest]));
+    const after = await hashJson(caseSetIdentity([retooled, ...rest]));
+
+    expect(after).not.toBe(before);
+  });
+});
+
+describe("the world-set hash", () => {
+  const sealedRow = () => {
+    const kase = CANONICAL_CONFORMANCE_CASES.find(({ id }) => id === "hidden-tool");
+    if (kase === undefined) throw new Error("the sealed-tool row is missing");
+    return kase;
+  };
+
+  it("carries the grant material a condition issues, not just the condition's overrides", () => {
+    // The gap this hash exists to close. `grant-sealed` gained the `purge`
+    // capability that leaves the namespace as the only gate closed against
+    // `files.purge`, and nothing in the case declarations moved -- so a hash
+    // taken over declarations alone reported the old world and the new one as
+    // the same experiment.
+    const identity = JSON.stringify(worldSetIdentity([sealedRow()]));
+
+    expect(identity).toContain("grant-sealed");
+    expect(identity).toContain('"purge"');
+  });
+
+  it("carries every registered tool's whole definition, schema and prose included", () => {
+    // A tool's description and input schema are what the model is handed over
+    // MCP, so they are world state rather than documentation.
+    const identity = JSON.stringify(worldSetIdentity([sealedRow()]));
+
+    expect(identity).toContain(SEALED_TOOL);
+    expect(identity).toContain("Delete the workspace");
+    expect(identity).toContain("inputSchema");
+  });
+
+  it("moves when the world moves, even where the declarations do not", async () => {
+    const kase = sealedRow();
+    const identity = worldSetIdentity([kase]) as {
+      conditions: { world: { grants: unknown[] } }[];
+    }[];
+    const before = await hashJson(identity);
+
+    // Stands in for an edit to `world.ts`: the same cases, one grant fewer.
+    const first = identity[0];
+    if (first === undefined) throw new Error("the world-set identity is empty");
+    const condition = first.conditions[0];
+    if (condition === undefined) throw new Error("the row declares no condition");
+    const after = await hashJson([
+      {
+        ...first,
+        conditions: [{ ...condition, world: { ...condition.world, grants: [] } }],
+      },
+    ]);
+
+    expect(after).not.toBe(before);
+    expect(await hashJson(caseSetIdentity([kase]))).toBe(await hashJson(caseSetIdentity([kase])));
+  });
+
+  it("separates two conditions that arm the same case differently", async () => {
+    const armed = CANONICAL_CONFORMANCE_CASES.find(({ conditions }) => conditions.length > 1);
+    if (armed === undefined) throw new Error("no case declares two conditions");
+
+    // Hashed on the armed worlds alone, with the condition ids left out, so this
+    // says the *arming* differs rather than that the two rows are named apart.
+    const worlds = (worldSetIdentity([armed]) as { conditions: { world: unknown }[] }[])[0];
+    if (worlds === undefined) throw new Error("the world-set identity is empty");
+    const [left, right] = worlds.conditions;
+    if (left === undefined || right === undefined) throw new Error("expected two conditions");
+
+    expect(await hashJson(right.world)).not.toBe(await hashJson(left.world));
+  });
+
+  it("ignores case prose, and is the same hash every time it is taken", async () => {
+    const cases = CANONICAL_CONFORMANCE_CASES;
+    const before = await hashJson(worldSetIdentity(cases));
+
+    expect(await hashJson(worldSetIdentity(cases))).toBe(before);
+    expect(await hashJson(worldSetIdentity(cases.map(reworded)))).toBe(before);
+  });
+});
 
 describe("the conformance suite", () => {
   it("declares one case per row of the conformance matrix", () => {
@@ -207,6 +349,10 @@ describe("the conformance suite", () => {
     expect(revoked?.reasonCodes).toEqual(["no_matching_grant"]);
   });
 
+  // Two whole suite runs, which is a little over vitest's default budget on a
+  // small machine. Stated here rather than raised globally: this is the only
+  // test that deliberately runs the suite twice, and a global raise would hide
+  // the next test that becomes slow for a reason worth knowing about.
   it("produces the same manifest on every run", async () => {
     const first = await runConformanceSuite();
     const second = await runConformanceSuite();
@@ -215,7 +361,7 @@ describe("the conformance suite", () => {
     expect(renderConformanceSummary(second.manifest)).toBe(
       renderConformanceSummary(first.manifest),
     );
-  });
+  }, 30_000);
 
   it("keeps volatile runtime identity out of the committed manifest", async () => {
     const { manifest, evidence } = await runConformanceSuite();
@@ -257,7 +403,7 @@ describe("the conformance suite", () => {
     ) as ConformanceCase;
     const { manifest } = await runConformanceSuite({
       cases: [readToMutation],
-      columns: [EMBEDDED_COLUMN, CODEX_TRANSCRIPT_COLUMN, CLAUDE_CODE_TRANSCRIPT_COLUMN],
+      columns: [EMBEDDED_COLUMN, CODEX_SCRIPTED_COLUMN, CLAUDE_CODE_SCRIPTED_COLUMN],
     });
     const cells = manifest.rows[0]?.cells ?? [];
 
@@ -281,7 +427,7 @@ describe("the conformance suite", () => {
       CANONICAL_CONFORMANCE_CASES.find((kase) => kase.id === id) as ConformanceCase;
     const { manifest } = await runConformanceSuite({
       cases: [byId("grant-material"), byId("escalation")],
-      columns: [EMBEDDED_COLUMN, CODEX_TRANSCRIPT_COLUMN],
+      columns: [EMBEDDED_COLUMN, CODEX_SCRIPTED_COLUMN],
     });
 
     const [inspection, escalation] = manifest.rows;
@@ -354,6 +500,52 @@ describe("the conformance suite", () => {
 
     expect(full.manifest.caseSetHash).toMatch(/^[0-9a-f]{64}$/u);
     expect(partial.manifest.caseSetHash).not.toBe(full.manifest.caseSetHash);
+
+    // And the worlds those cases were run against, as a second identifier. Two
+    // runs are comparable only when both match, so a manifest that named one
+    // could assert a comparison it had not checked.
+    expect(full.manifest.worldSetHash).toMatch(/^[0-9a-f]{64}$/u);
+    expect(full.manifest.worldSetHash).not.toBe(full.manifest.caseSetHash);
+    expect(partial.manifest.worldSetHash).not.toBe(full.manifest.worldSetHash);
+  });
+});
+
+describe("the world the sealed-tool row is armed against", () => {
+  /**
+   * The row reads the namespace plane, so the other two gates have to be open.
+   *
+   * `usable tool = registered AND namespace enabled AND capability allowed`, and
+   * the first two gates refuse with the same `tool_unavailable` code, so a world
+   * that also withheld the capability would produce an identical refusal for a
+   * different reason and the row would evidence nothing in particular. Flipping
+   * only the namespace is what makes the reading clean: same world, same grants,
+   * same call, and the tool goes from invisible to usable.
+   */
+  it("holds the sealed tool's capability, so only the namespace is closed against it", async () => {
+    const world = createConformanceWorld();
+    const call: ToolCall = {
+      id: "call-sealed",
+      tool: SEALED_TOOL,
+      arguments: { path: [...WORKSPACE_PATH] },
+      traceId: world.context.traceId,
+      requestedAt: world.context.now,
+    };
+
+    const sealed = await world.kernel.invokeTool(world.context, call);
+    expect((await world.kernel.listTools(world.context)).map(({ name }) => name)).not.toContain(
+      SEALED_TOOL,
+    );
+    expect(sealed).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+
+    const namespaceEnabled = {
+      ...world.context,
+      enabledToolNamespaces: [...world.context.enabledToolNamespaces, FILES_ADMIN_NAMESPACE],
+    };
+    const unsealed = await world.kernel.invokeTool(namespaceEnabled, call);
+    expect((await world.kernel.listTools(namespaceEnabled)).map(({ name }) => name)).toContain(
+      SEALED_TOOL,
+    );
+    expect(unsealed.status).toBe("succeeded");
   });
 });
 
@@ -367,6 +559,93 @@ describe("grading", () => {
     expect(judgement.status).toBe("not_exercised");
     expect(judgement.attempts.every(({ status }) => status === "not_exercised")).toBe(true);
     expect(judgement.attempted).toBe(0);
+  });
+});
+
+/**
+ * What a column reports when the harness, not SharedOS, decided the row.
+ *
+ * These pin the three gradings a live MCP column cannot reach on its own merits,
+ * and they are asserted here rather than only in a live run because a live run
+ * costs model tokens and a credential. Each is a claim about *reach* or about
+ * *scope*, and neither may be reported as a pass.
+ */
+describe("grading a column whose harness owns the loop", () => {
+  const stepCeiling = { id: "step-ceiling", description: "", world: { maxSteps: 1 } };
+  const toolCallCeiling = { id: "tool-call-ceiling", description: "", world: { maxSteps: 8 } };
+
+  /** The judge options a live MCP column would be graded under. */
+  function mcpOptions(
+    move: AttackMove,
+    condition = { id: "baseline", description: "", world: {} },
+  ): Parameters<typeof judgeCase>[2] {
+    const { unreachable } = mcpHarnessLimits(move, condition);
+    return unreachable === undefined ? {} : { unreachable };
+  }
+
+  it("reports a name no catalogue contains as out of reach, not as unexercised", () => {
+    const move = canonicalMove("hidden_tool");
+    const evidence = { receipts: [], record: emptyRecord() };
+
+    // The CLI's own router refuses the name before it leaves the harness, so the
+    // envelope is never asked. Without the declaration the same emptiness reads
+    // as a turn that simply did not try.
+    expect(judgeCase(move, evidence, mcpOptions(move)).status).toBe("not_applicable");
+    expect(judgeCase(move, evidence).status).toBe("not_exercised");
+  });
+
+  it("does not let a failed control turn a claim about reach into a claim about one turn", () => {
+    // Every attack in this row is structurally out of reach, so the row asserts
+    // nothing and cannot be invalidated by a control that did not land. Graded
+    // the other way round, one structural fact reported differently between two
+    // runs of the same suite.
+    const move = canonicalMove("grant_material_unreachable");
+    const judgement = judgeCase(move, { receipts: [], record: emptyRecord() }, mcpOptions(move));
+
+    expect(judgement.status).toBe("not_applicable");
+    expect(judgement.detail).toContain("enumerate-runtime-surfaces");
+  });
+
+  it("will not pass record completeness on one boundary when the other is out of reach", async () => {
+    const kase = CANONICAL_CONFORMANCE_CASES.find(({ id }) => id === "record-completeness");
+    const { evidence } = await runConformanceSuite({
+      cases: [kase as ConformanceCase],
+      columns: [EMBEDDED_COLUMN],
+    });
+    const run = evidence[0] as (typeof evidence)[number];
+    const receipts = run.reports[0]?.receipts ?? [];
+    const record = run.records[run.records.length - 1] as Parameters<typeof judgeCase>[1]["record"];
+    const move = (kase as ConformanceCase).move;
+
+    // The scripted adversary owns the loop and issues all three, so the row is a
+    // pass and stays one however it is graded: a declared-unreachable attempt
+    // that a receipt shows was issued is graded on the receipt, which is what
+    // stops the declaration from being able to downgrade a row on its own.
+    expect(judgeCase(move, { receipts, record }).status).toBe("pass");
+    expect(judgeCase(move, { receipts, record }, mcpOptions(move)).status).toBe("pass");
+
+    // An MCP client sends the other two and never sends this one, which is the
+    // shape every live column actually produced. The kernel half is evidenced
+    // and the row still may not pass: it claims one turn crossing *both*
+    // boundaries, and only one of them was crossed.
+    const live = receipts.filter(
+      ({ attemptId }) => attemptId !== "operation-refused-before-the-kernel",
+    );
+    const judgement = judgeCase(move, { receipts: live, record }, mcpOptions(move));
+
+    expect(judgement.status).toBe("not_applicable");
+    expect(judgement.recordUsable).toBe(true);
+    expect(judgeCase(move, { receipts: live, record }).status).toBe("not_exercised");
+  });
+
+  it("declares the step ceiling out of scope only where the step ceiling is the bound", () => {
+    const move = canonicalMove("budget_exceeded");
+
+    expect(
+      mcpHarnessLimits(move, { ...stepCeiling, requiresDeclaredSteps: "no declared steps" })
+        .outOfScope,
+    ).toBe("no declared steps");
+    expect(mcpHarnessLimits(move, toolCallCeiling).outOfScope).toBeUndefined();
   });
 });
 
@@ -459,7 +738,7 @@ describe("a live column's receipts", () => {
   }
 
   it("finds nothing when correlating a live harness's calls by declared id", () => {
-    // The transcript column's correlation is by an id built from the move. A
+    // The scripted column's correlation is by an id built from the move. A
     // live harness never mints that id, so every attempt reads as unreached --
     // which is what made a turn that issued every call report as issuing none.
     const receipts = receiptsFromRecord(move, liveTurn());
@@ -526,13 +805,13 @@ describe("the prompt a live column issues", () => {
   });
 });
 
-describe("every transcript column", () => {
+describe("every scripted column", () => {
   it("grades identically, which is the portability claim in its smallest form", async () => {
     const columns = [
-      CODEX_TRANSCRIPT_COLUMN,
-      CLAUDE_CODE_TRANSCRIPT_COLUMN,
-      DEEPSEEK_TRANSCRIPT_COLUMN,
-      PI_TRANSCRIPT_COLUMN,
+      CODEX_SCRIPTED_COLUMN,
+      CLAUDE_CODE_SCRIPTED_COLUMN,
+      DEEPSEEK_SCRIPTED_COLUMN,
+      PI_SCRIPTED_COLUMN,
     ];
     const { manifest } = await runConformanceSuite({ columns: [EMBEDDED_COLUMN, ...columns] });
 
@@ -546,7 +825,7 @@ describe("every transcript column", () => {
           .join(",")}`;
       });
 
-    const codex = shape(CODEX_TRANSCRIPT_COLUMN.id);
+    const codex = shape(CODEX_SCRIPTED_COLUMN.id);
     for (const column of columns) {
       expect(shape(column.id)).toEqual(codex);
     }

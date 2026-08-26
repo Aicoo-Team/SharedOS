@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.2**](README.md)
+[**SharedOS API v0.1.0-alpha.3**](README.md)
 
 ---
 
@@ -42,7 +42,7 @@ what lets the translation be verified without the vendor's CLI present.
 | Piece              | Responsibility                                                                    |
 | ------------------ | --------------------------------------------------------------------------------- |
 | `HarnessProtocol`  | The vendor's wire shapes: tool declarations, tool calls, tool results, completion |
-| `HarnessTransport` | How the harness is reached: a subprocess, an HTTP session, a recorded transcript  |
+| `HarnessTransport` | How the harness is reached: a subprocess, an HTTP session, a supplied transcript  |
 | `HarnessDriver`    | An `AgentTurnDriver` that joins the two and hands every tool call to the envelope |
 
 ## What the adapter must not do
@@ -65,9 +65,10 @@ order and the one whose audit trail matches what actually happened.
 
 ## Verification status
 
-The translation code is exercised end to end against recorded transcripts, which
+The translation code is exercised end to end against supplied transcripts, which
 run the real protocol modules through a real kernel and a real execution
-envelope. `TranscriptTransport` replays vendor frames batch by batch, releasing
+envelope. Nothing in this package captures a vendor session: a transcript is
+whatever its caller hands it, and the conformance suite writes its own. `TranscriptTransport` replays vendor frames batch by batch, releasing
 the next batch only once a result has been written, which is the shape of every
 tool-using harness.
 
@@ -294,7 +295,7 @@ Defined in: [adapters/src/runtime.ts:36](https://github.com/Aicoo-Team/SharedOS/
 
 Defined in: [adapters/src/transcript.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L27)
 
-Replays a recorded conversation through the real protocol translation.
+Replays a supplied conversation through the real protocol translation.
 
 This is how an adapter is verified without the vendor's CLI or credentials
 present. The frames are the vendor's, the parsing is the adapter's, and the
@@ -361,12 +362,13 @@ Whether a harness can actually be run here, and if not, why not.
 
 #### Properties
 
-| Property                                    | Modifier   | Type                                             | Defined in                                                                                                          |
-| ------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-available"></a> `available` | `readonly` | `boolean`                                        | [adapters/src/harness.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L82) |
-| <a id="property-detail"></a> `detail?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [adapters/src/harness.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L84) |
-| <a id="property-harness"></a> `harness`     | `readonly` | `string`                                         | [adapters/src/harness.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L81) |
-| <a id="property-reason"></a> `reason?`      | `readonly` | `string`                                         | [adapters/src/harness.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L83) |
+| Property                                    | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Defined in                                                                                                          |
+| ------------------------------------------- | ---------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-available"></a> `available` | `readonly` | `boolean`                                        | -                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [adapters/src/harness.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L82) |
+| <a id="property-detail"></a> `detail?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Includes `versionOutput`, the line `version` was read from, verbatim.                                                                                                                                                                                                                                                                                                                                                                                       | [adapters/src/harness.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L95) |
+| <a id="property-harness"></a> `harness`     | `readonly` | `string`                                         | -                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [adapters/src/harness.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L81) |
+| <a id="property-reason"></a> `reason?`      | `readonly` | `string`                                         | -                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [adapters/src/harness.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L83) |
+| <a id="property-version"></a> `version?`    | `readonly` | `string`                                         | The build that answered, as the harness itself reports it. A result about a vendor CLI is a result about one version of it, and the version is the harness's to state: nothing in this repository pins the installed binary, and a number carried in a runbook is a claim about what someone typed rather than about what ran. Absent when the executable declined to report one -- see [HarnessRequirements.versionArguments](#property-versionarguments). | [adapters/src/harness.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L93) |
 
 ---
 
@@ -597,18 +599,19 @@ readonly [`HarnessStep`](#harnessstep)[]
 
 ### HarnessRequirements
 
-Defined in: [adapters/src/harness.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L88)
+Defined in: [adapters/src/harness.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L99)
 
 What a harness needs before it can run: an executable, credentials, or both.
 
 #### Properties
 
-| Property                                                        | Modifier   | Type                | Description                                                            | Defined in                                                                                                          |
-| --------------------------------------------------------------- | ---------- | ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-credentialsoptional"></a> `credentialsOptional` | `readonly` | `boolean`           | True when the harness can authenticate from a stored session instead.  | [adapters/src/harness.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L95) |
-| <a id="property-credentialvariables"></a> `credentialVariables` | `readonly` | readonly `string`[] | Environment variables, any one of which satisfies the credential need. | [adapters/src/harness.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L93) |
-| <a id="property-executable"></a> `executable`                   | `readonly` | `string`            | Executable expected on PATH.                                           | [adapters/src/harness.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L91) |
-| <a id="property-harness-1"></a> `harness`                       | `readonly` | `string`            | -                                                                      | [adapters/src/harness.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L89) |
+| Property                                                        | Modifier   | Type                | Description                                                                                                                                     | Defined in                                                                                                            |
+| --------------------------------------------------------------- | ---------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-credentialsoptional"></a> `credentialsOptional` | `readonly` | `boolean`           | True when the harness can authenticate from a stored session instead.                                                                           | [adapters/src/harness.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L106) |
+| <a id="property-credentialvariables"></a> `credentialVariables` | `readonly` | readonly `string`[] | Environment variables, any one of which satisfies the credential need.                                                                          | [adapters/src/harness.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L104) |
+| <a id="property-executable"></a> `executable`                   | `readonly` | `string`            | Executable expected on PATH.                                                                                                                    | [adapters/src/harness.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L102) |
+| <a id="property-harness-1"></a> `harness`                       | `readonly` | `string`            | -                                                                                                                                               | [adapters/src/harness.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L100) |
+| <a id="property-versionarguments"></a> `versionArguments?`      | `readonly` | readonly `string`[] | How to ask this executable what it is. Defaults to `--version`, which all four harnesses here answer; declared so one that does not can say so. | [adapters/src/harness.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L111) |
 
 ---
 
@@ -616,7 +619,7 @@ What a harness needs before it can run: an executable, credentials, or both.
 
 Defined in: [adapters/src/transcript.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L16)
 
-A recorded harness conversation.
+A harness conversation, supplied by its caller.
 
 Batches are released one tool result at a time: the first batch is emitted
 when the turn opens, and each later batch is unlocked by the adapter writing
@@ -776,7 +779,7 @@ Defined in: [adapters/src/pi/index.ts:45](https://github.com/Aicoo-Team/SharedOS
 
 ### CLAUDE\_CODE\_ADAPTER\_VERSION
 
-> `const` **CLAUDE\_CODE\_ADAPTER\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
+> `const` **CLAUDE\_CODE\_ADAPTER\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
 
 Defined in: [adapters/src/claude-code/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L11)
 
@@ -835,7 +838,7 @@ Defined in: [adapters/src/claude-code/protocol.ts:48](https://github.com/Aicoo-T
 
 ### CODEX\_ADAPTER\_VERSION
 
-> `const` **CODEX\_ADAPTER\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
+> `const` **CODEX\_ADAPTER\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
 
 Defined in: [adapters/src/codex/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L11)
 
@@ -895,7 +898,7 @@ Defined in: [adapters/src/codex/protocol.ts:63](https://github.com/Aicoo-Team/Sh
 
 ### DEEPSEEK\_ADAPTER\_VERSION
 
-> `const` **DEEPSEEK\_ADAPTER\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
+> `const` **DEEPSEEK\_ADAPTER\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
 
 Defined in: [adapters/src/deepseek/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L11)
 
@@ -969,7 +972,7 @@ Defined in: [adapters/src/deepseek/protocol.ts:106](https://github.com/Aicoo-Tea
 
 ### PI\_ADAPTER\_VERSION
 
-> `const` **PI\_ADAPTER\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
+> `const` **PI\_ADAPTER\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
 
 Defined in: [adapters/src/pi/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L11)
 

@@ -101,7 +101,6 @@ function request(): ExecutionRequest {
       id: "message-1",
       sender: AGENT,
       receiver: AGENT,
-      intent: "read",
       purpose: "test",
       payload: { text: "read the workspace" },
       traceId: "trace-1",
@@ -413,6 +412,37 @@ describe("harness availability", () => {
     );
 
     expect(availability.available).toBe(true);
+    expect(availability.detail).toMatchObject({ credential: "ANTHROPIC_API_KEY" });
+  });
+
+  it("records the build that answered, and the line it read that from", async () => {
+    // A conformance result about a vendor CLI is a result about one version of
+    // it, and only the harness can say which. `node --version` prints `vX.Y.Z`,
+    // so this also pins that the token is read out of a line rather than the
+    // line being taken for a token.
+    const availability = await probeHarness(
+      { ...CLAUDE_CODE_REQUIREMENTS, executable: "node" },
+      { PATH: process.env["PATH"] ?? "", ANTHROPIC_API_KEY: "test-key" },
+    );
+
+    expect(availability.version).toMatch(/^\d+\.\d+\.\d+/u);
+    expect(availability.detail?.["versionOutput"]).toContain(availability.version);
+  });
+
+  it("stays available when the executable will not say what it is", async () => {
+    // Not knowing which build ran is worse evidence, never a reason to refuse to
+    // run: an unreadable version leaves the field absent and the column open.
+    const availability = await probeHarness(
+      {
+        ...CLAUDE_CODE_REQUIREMENTS,
+        executable: "node",
+        versionArguments: ["--no-such-flag"],
+      },
+      { PATH: process.env["PATH"] ?? "", ANTHROPIC_API_KEY: "test-key" },
+    );
+
+    expect(availability.available).toBe(true);
+    expect(availability.version).toBeUndefined();
     expect(availability.detail).toMatchObject({ credential: "ANTHROPIC_API_KEY" });
   });
 

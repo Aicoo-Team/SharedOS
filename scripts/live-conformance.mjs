@@ -1,9 +1,9 @@
 /**
  * Run the conformance case set against harnesses that are actually installed.
  *
- * The committed manifest's vendor columns replay recorded frames: the frames are
- * the vendor's, the parsing is the adapter's, and the transport is the one part
- * left out. This script runs that missing part. It spawns the real CLI, carries
+ * The committed manifest's vendor columns are scripted: the frame shapes are
+ * written in this repository, the parsing is the adapter's, and the transport is
+ * the one part left out. This script runs that missing part. It spawns the real CLI, carries
  * real frames over real stdio, and parses whatever the binary actually emitted.
  *
  * It is deliberately allowed to prove nothing. A harness that is absent,
@@ -198,14 +198,16 @@ for (const row of manifest.rows) {
   }
 }
 
-console.log("\n| Harness | pass | not applicable | not implemented | not exercised | fail |");
-console.log("| --- | --- | --- | --- | --- | --- |");
+console.log(
+  "\n| Harness | pass | not applicable | not implemented | out of scope | not exercised | fail |",
+);
+console.log("| --- | --- | --- | --- | --- | --- | --- |");
 for (const column of manifest.columns) {
   const counts = tally.get(column.id) ?? new Map();
   const at = (status) => counts.get(status) ?? 0;
   console.log(
     `| ${column.label} | ${at("pass")} | ${at("not_applicable")} | ` +
-      `${at("not_implemented")} | ${at("not_exercised")} | ${at("fail")} |`,
+      `${at("not_implemented")} | ${at("out_of_scope")} | ${at("not_exercised")} | ${at("fail")} |`,
   );
 }
 

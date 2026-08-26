@@ -16,8 +16,7 @@ verified active grant     =  possible authority, after policy evaluation
 ```
 
 Messages and model output are untrusted input even when they come from a known
-agent. They may state intent and purpose, but cannot contain self-validating
-authority.
+agent. A message carries data and one host-bound purpose, never authority.
 
 ## Actors and authority
 
@@ -271,14 +270,30 @@ observes it.
 
 ## Messaging
 
-A `MessageEnvelope` contains sender, receiver, intent, purpose, payload, trace,
-time, and provenance. It intentionally contains no grants.
+A `MessageEnvelope` contains sender, receiver, purpose, payload, trace, time,
+and provenance. It intentionally contains no grants.
+
+It also contains no second `intent` field. `purpose` is the single host-bound
+reason used by access context, grants, turn validation, and audit; model-authored
+instructions belong in the payload.
 
 Sending or receiving a message and performing the requested work are separate
 authorization decisions. A recipient may accept the message yet be denied
 access to the file or tool named inside it. Replying can also require its own
 `sharedos.messaging` + `send` capability. Opening a target agent turn requires a
 separate recipient-scoped `sharedos.execution` + `invoke` capability.
+
+Outbound sends execute as the sender. Inbound turns execute as the recipient:
+the access actor must equal the target agent and the envelope receiver, while
+the envelope sender remains untrusted provenance. The requester's send grant,
+the recipient's execution grant, and every file or tool grant used by that
+recipient are separate decisions.
+
+For model-authored request/reply, `messages.request` accepts only a recipient
+and JSON-safe payload. SharedOS fills trusted envelope fields, authorizes and
+consumes the recipient-scoped send capability once, delivers through a host
+port, and validates the correlated reply before exposing its payload. Durable
+logs, queues, receiver wake-up, and scheduling remain host-owned.
 
 ## Tools and MCP
 

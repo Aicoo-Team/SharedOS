@@ -6,7 +6,7 @@ import type {
 } from "./harness.js";
 
 /**
- * A recorded harness conversation.
+ * A harness conversation, supplied by its caller.
  *
  * Batches are released one tool result at a time: the first batch is emitted
  * when the turn opens, and each later batch is unlocked by the adapter writing
@@ -18,7 +18,7 @@ export interface HarnessTranscript {
 }
 
 /**
- * Replays a recorded conversation through the real protocol translation.
+ * Replays a supplied conversation through the real protocol translation.
  *
  * This is how an adapter is verified without the vendor's CLI or credentials
  * present. The frames are the vendor's, the parsing is the adapter's, and the

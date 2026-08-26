@@ -11,9 +11,13 @@ import type { ExecutionRecord } from "./record.js";
  * which is a claim about the design rather than about a run.
  * `not_implemented` says SharedOS does not do this at all: the row is declared
  * so the gap is visible, and it is never run and never a pass.
+ * `out_of_scope` says SharedOS declares this guarantee does not reach this
+ * column: the attempt was issued and recorded, and is deliberately not graded.
+ * It is the one status that reports a *narrowed claim* rather than a result, and
+ * it exists so narrowing a guarantee cannot be done by deleting a row.
  */
 export type ConformanceStatus =
-  "pass" | "fail" | "not_exercised" | "not_applicable" | "not_implemented";
+  "pass" | "fail" | "not_exercised" | "not_applicable" | "not_implemented" | "out_of_scope";
 
 /** The boundary that refused an attempt. */
 export type EnforcementPoint = "kernel" | "envelope";
@@ -240,6 +244,33 @@ function caseStatus(
   controls: readonly AttemptOutcome[],
   recordUsable: boolean,
 ): ConformanceStatus {
+  // Asked before the control rule, because a row whose every attack is
+  // structurally out of reach asserts nothing, and a claim about reach cannot be
+  // invalidated by a control that did not land. Ordered the other way, whether
+  // the cell reported "this runtime cannot make the attempt" or "this turn did
+  // not make it" would depend on whether an unrelated call succeeded -- which
+  // made the same structural fact report differently between two runs of one
+  // suite.
+  if (adversarial.length > 0 && adversarial.every(({ status }) => status === "not_applicable")) {
+    return "not_applicable";
+  }
+  // The record-completeness row is conjunctive in a way no other row is: it
+  // asserts that *one* turn crossing *both* enforcement boundaries still leaves
+  // a usable record. Losing any one of its attacks loses a boundary, so the row
+  // as declared was not put -- and grading the remainder `pass` would report a
+  // single-boundary result under a two-boundary claim. Asked here, beside the
+  // rule above and ahead of the control rule, for the same reason: whether the
+  // row could be put is a fact about reach, not about how one turn went.
+  //
+  // Not generalised beyond this row on purpose. Elsewhere an unreachable attempt
+  // narrows a row rather than voiding it -- `namespace-crossing` declares three
+  // attempts, issues two, and its claim is evidenced by the two that ran.
+  if (
+    move.kind === "record_completeness" &&
+    adversarial.some(({ status }) => status === "not_applicable")
+  ) {
+    return "not_applicable";
+  }
   // A denial only evidences enforcement if the turn could otherwise act. A
   // failed control means the fixture, not the kernel, decided the outcome.
   if (controls.some(({ status }) => status !== "pass")) {
@@ -250,9 +281,6 @@ function caseStatus(
   }
   if (adversarial.some(({ status }) => status === "not_exercised")) {
     return "not_exercised";
-  }
-  if (adversarial.length > 0 && adversarial.every(({ status }) => status === "not_applicable")) {
-    return "not_applicable";
   }
   // For every other row the record is reported beside the verdict. For this one
   // the record *is* the claim, so an unusable record is a failure of the row.
@@ -288,7 +316,10 @@ function statusDetail(
   if (status === "not_applicable") {
     // Say which attempt could not be made and why. "Not applicable" with no
     // reason is indistinguishable from a row nobody bothered to run.
-    const unreachable = adversarial.find(({ detail }) => detail !== undefined);
+    const unreachable = adversarial.find(
+      ({ status: attemptStatus, detail }) =>
+        attemptStatus === "not_applicable" && detail !== undefined,
+    );
     return unreachable === undefined
       ? undefined
       : `the attempt ${unreachable.attemptId} could not be made: ${unreachable.detail}`;

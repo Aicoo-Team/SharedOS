@@ -9,11 +9,11 @@ import {
   type AttemptReceipt,
 } from "./adversary.js";
 import {
-  CLAUDE_CODE_TRANSCRIPT_COLUMN,
-  CODEX_TRANSCRIPT_COLUMN,
-  DEEPSEEK_TRANSCRIPT_COLUMN,
+  CLAUDE_CODE_SCRIPTED_COLUMN,
+  CODEX_SCRIPTED_COLUMN,
+  DEEPSEEK_SCRIPTED_COLUMN,
   EMBEDDED_COLUMN,
-  PI_TRANSCRIPT_COLUMN,
+  PI_SCRIPTED_COLUMN,
   type ColumnLimits,
   type RuntimeColumn,
 } from "./columns.js";
@@ -29,7 +29,7 @@ import {
 import { CONFORMANCE_NOW, createConformanceWorld, type ConformanceWorld } from "./world.js";
 
 /** Version of the grading rules, so a manifest names what produced it. */
-export const JUDGE_VERSION = "1";
+export const JUDGE_VERSION = "2";
 
 /**
  * The SharedOS build an execution record was produced by.
@@ -38,7 +38,7 @@ export const JUDGE_VERSION = "1";
  * record that names the wrong build is evidence attributed to code that never
  * ran.
  */
-export const SHAREDOS_VERSION = "0.1.0-alpha.2";
+export const SHAREDOS_VERSION = "0.1.0-alpha.3";
 
 /**
  * One cell of the manifest.
@@ -78,6 +78,11 @@ export interface ConformanceManifest {
   readonly judgeVersion: string;
   /** Hash of the case definitions this manifest was produced from. */
   readonly caseSetHash: string;
+  /**
+   * Hash of the worlds those cases were run against. Separate from the case set
+   * on purpose; see {@link worldSetIdentity}.
+   */
+  readonly worldSetHash: string;
   readonly columns: readonly { readonly id: string; readonly label: string }[];
   readonly rows: readonly ConformanceRow[];
 }
@@ -106,18 +111,87 @@ export interface ConformanceRun {
  * The columns a committed manifest is produced from.
  *
  * The scripted adversary in the SharedOS executor, plus each vendor adapter
- * driven by recorded frames. The vendor columns exercise the adapter's own
+ * driven by scripted frames. The vendor columns exercise the adapter's own
  * protocol translation against the real kernel and envelope; the transport that
  * would carry the frames from a live CLI is the one part left out, so a live
  * column is a separate claim and is not made here.
  */
 export const DEFAULT_COLUMNS: readonly RuntimeColumn[] = Object.freeze([
   EMBEDDED_COLUMN,
-  CODEX_TRANSCRIPT_COLUMN,
-  CLAUDE_CODE_TRANSCRIPT_COLUMN,
-  DEEPSEEK_TRANSCRIPT_COLUMN,
-  PI_TRANSCRIPT_COLUMN,
+  CODEX_SCRIPTED_COLUMN,
+  CLAUDE_CODE_SCRIPTED_COLUMN,
+  DEEPSEEK_SCRIPTED_COLUMN,
+  PI_SCRIPTED_COLUMN,
 ]);
+
+/**
+ * What the case-set hash is taken over: the declarations, without the prose.
+ *
+ * A `description` is documentation. It says why an attempt exists and what a
+ * reader should make of it; nothing in the suite branches on it, and two case
+ * sets differing only in prose put exactly the same calls to the kernel. Hashing
+ * it anyway made every editorial fix look like a different experiment, and --
+ * because the live columns are expensive to produce and are compared to the
+ * scripted ones by this hash -- put a live re-run behind rewording a sentence.
+ * The predictable result was that sentences did not get reworded.
+ *
+ * Everything a run's behaviour depends on stays in: ids, tools, arguments,
+ * conditions, expectations, and the markers that decide whether an attempt is
+ * issued at all. Change any of those and the hash moves, which is the point.
+ *
+ * Strips every `description` key at any depth rather than the two known sites,
+ * so a description added to a new declaration shape is covered without anyone
+ * remembering to come back here.
+ */
+export function caseSetIdentity(cases: readonly ConformanceCase[]): unknown {
+  return withoutDescriptions(cases);
+}
+
+function withoutDescriptions(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(withoutDescriptions);
+  }
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => key !== "description")
+      .map(([key, entry]) => [key, withoutDescriptions(entry)]),
+  );
+}
+
+/**
+ * What the world-set hash is taken over: the worlds those cases materialise.
+ *
+ * The case set says what will be attempted. It does not say what it will be
+ * attempted *against*. A condition's `world` overrides are declarations and are
+ * inside the case-set hash, but the world they modify is not: its grants, its
+ * enabled namespaces, and its registered tools are defined in `world.ts` and can
+ * be rewritten without one case changing.
+ *
+ * That is not hypothetical. `grant-sealed` gained the `purge` capability that
+ * makes the namespace the only gate still closed against `files.purge`, and the
+ * case-set hash did not move -- so nothing on disk recorded that the live
+ * columns had been produced against a different world than the scripted ones.
+ * A hash that cannot see the change it most needs to see is worse than no hash,
+ * because it is read as a guarantee.
+ *
+ * Hashed separately rather than folded into the case set, because the two answer
+ * different questions and one identifier could not say which had moved: a
+ * changed case set means two runs asked different things, a changed world set
+ * means they asked the same thing of different states. Only both together say
+ * two runs may be compared.
+ */
+export function worldSetIdentity(cases: readonly ConformanceCase[]): unknown {
+  return cases.map((kase) => ({
+    case: kase.id,
+    conditions: kase.conditions.map((condition) => ({
+      condition: condition.id,
+      world: worldDescription(createConformanceWorld(condition.world), condition),
+    })),
+  }));
+}
 
 export interface RunConformanceSuiteOptions {
   readonly cases?: readonly ConformanceCase[];
@@ -136,7 +210,10 @@ export async function runConformanceSuite(
 ): Promise<ConformanceRun> {
   const cases = options.cases ?? CANONICAL_CONFORMANCE_CASES;
   const columns = options.columns ?? DEFAULT_COLUMNS;
-  const caseSetHash = await hashJson(cases);
+  const [caseSetHash, worldSetHash] = await Promise.all([
+    hashJson(caseSetIdentity(cases)),
+    hashJson(worldSetIdentity(cases)),
+  ]);
 
   const rows: ConformanceRow[] = [];
   const evidence: ConformanceEvidence[] = [];
@@ -175,6 +252,7 @@ export async function runConformanceSuite(
       version: "1",
       judgeVersion: JUDGE_VERSION,
       caseSetHash,
+      worldSetHash,
       columns: columns.map(({ id, label }) => ({ id, label })),
       rows,
     },
@@ -304,10 +382,17 @@ async function runCell(
     },
   );
 
+  // Applied after judging rather than instead of it, so the row is still run and
+  // its receipts still kept. What the ungraded call actually did stays in the
+  // evidence; only the verdict is withheld, because SharedOS declares no
+  // guarantee here to hold it against.
+  const status: ConformanceStatus =
+    limits.outOfScope === undefined ? judgement.status : "out_of_scope";
+
   return {
     cell: {
       columnId: column.id,
-      status: judgement.status,
+      status,
       refusedBy: judgement.refusedBy,
       reasonCodes: judgement.reasonCodes,
       declared: judgement.declared,
@@ -316,7 +401,11 @@ async function runCell(
       recordUsable: judgement.recordUsable,
       recordGaps: judgement.recordGaps,
       turns,
-      ...(judgement.detail === undefined ? {} : { detail: judgement.detail }),
+      ...(limits.outOfScope !== undefined
+        ? { detail: limits.outOfScope }
+        : judgement.detail === undefined
+          ? {}
+          : { detail: judgement.detail }),
     },
     evidence: {
       caseId: kase.id,
@@ -340,7 +429,13 @@ function worldDescription(world: ConformanceWorld, condition: ConformanceConditi
     // and a world hash that could not tell them apart would let two different
     // worlds claim to be reproductions of each other.
     grants: world.grants,
-    tools: world.tools.map(({ name }) => name),
+    // Whole definitions, prose included. A tool's description and its input
+    // schema are not documentation the way a case description is: they are
+    // served to the model over MCP and are the only thing it has to choose a
+    // call from -- a live CLI found that an opaque `inputSchema` changes what a
+    // model does. Rewording one is therefore a different world, which is the
+    // opposite of the rule the case set follows for its own descriptions.
+    tools: world.tools,
   };
 }
 
@@ -359,11 +454,17 @@ export interface StrictFailure {
  * suite, and treating it as a soft result is how a manifest ends up reporting
  * guarantees nobody tested.
  *
- * `not_implemented` is excluded, and is the one status that is a standing
- * result rather than a regression: the row is declared, its absence is stated
+ * `not_implemented` is excluded, and is one of two statuses that are standing
+ * results rather than regressions: the row is declared, its absence is stated
  * in the manifest, and a build that failed on it would only pressure someone
  * into deleting the row. It is counted and printed by the conformance script
  * so the gap stays in view.
+ *
+ * `out_of_scope` is excluded for the same reason and needs the same care. It
+ * records a guarantee SharedOS has declared does not reach a column, which is a
+ * narrowing of the claim rather than a defect -- but a narrowing is exactly the
+ * thing that could be used to make a build go green, so the row stays printed,
+ * stays out of every pass rate, and carries the reason it was narrowed.
  */
 export function strictFailures(manifest: ConformanceManifest): readonly StrictFailure[] {
   const failures: StrictFailure[] = [];
@@ -398,22 +499,39 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
     "Generated by `pnpm conformance`. Every row is an attempted violation, run by a",
     "scripted adversary against a world armed by trusted setup.",
     "",
-    "Vendor columns replay recorded frames in that vendor's own wire shape through",
-    "the adapter's real protocol translation, against the real kernel and envelope.",
-    "The transport that would carry those frames from a live CLI is the one part",
-    "left out, so these columns say nothing about a live session. Live-run columns",
-    "are a separate claim and are not made here.",
+    "Vendor columns are scripted. Their frames are written here, from the declared",
+    "attempt, in the wire shape that vendor's protocol is understood to use, and are",
+    "parsed back by the adapter's real protocol translation against the real kernel",
+    "and envelope. No vendor session was captured. Two things are left",
+    "out — the transport that would carry the frames from a live CLI, and whether",
+    "the vendor still emits these shapes — so these columns say nothing about a",
+    "live session. Live-run columns are a separate claim and are not made here.",
     "",
     `- Case set: \`${manifest.caseSetHash}\``,
+    `- World set: \`${manifest.worldSetHash}\``,
     `- Grading rules: version \`${manifest.judgeVersion}\``,
     `- Columns: ${manifest.columns.map(({ label }) => `\`${label}\``).join(", ")}`,
+    "",
+    "The case-set hash covers the declarations only: ids, tools, arguments,",
+    "conditions, expectations, and the markers that decide whether an attempt is",
+    "issued. Prose descriptions are excluded, so rewording one does not read as a",
+    "different experiment and does not oblige a live re-run.",
+    "",
+    "The world-set hash covers what those attempts were made against: the grants",
+    "each condition issues, the enabled tool namespaces, and the whole definition",
+    "of every registered tool. It is separate because a world can be rewritten",
+    "without a case changing, and two runs are comparable only when both hashes",
+    "match. Tool prose is inside this one: a description and an input schema are",
+    "served to the model, so rewording them is a different world.",
     "",
     "A cell is `pass` only when every declared attempt met its expected outcome and",
     "every control attempt succeeded. `not exercised` means the attempt never reached",
     "SharedOS, and is never a pass. `not applicable` means a runtime structurally",
     "cannot make the attempt. `not implemented` means SharedOS does not do this:",
     "the row is declared so the gap is stated rather than omitted, and it is never",
-    "run and never a pass.",
+    "run and never a pass. `out of scope` means the attempt was made and recorded",
+    "and SharedOS declares no guarantee over it on this path; it is not a pass, not",
+    "a failure, and never averaged into either.",
     "",
     `| ${header.join(" | ")} |`,
     `| ${header.map(() => "---").join(" | ")} |`,

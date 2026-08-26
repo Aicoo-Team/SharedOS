@@ -92,10 +92,10 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
       {
         id: "embed-in-message-payload",
         role: "attack",
-        description: "Send the same grant to the owner as a message payload.",
+        description: "Send the same grant itself to the owner as JSON-safe message payload data.",
         tool: SEND_TOOL,
-        toolArguments: { intent: "status" },
-        forge: { grantId: "forged-write", capabilities: [FORGED_WRITE], embedAs: "grant" },
+        toolArguments: { recipient: CONFORMANCE_OWNER },
+        forge: { grantId: "forged-write", capabilities: [FORGED_WRITE], embedAs: "payload" },
         expect: SUCCEEDS,
       },
       {
@@ -121,15 +121,19 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         role: "attack",
         description: "Invoke a plausible grant-issuing tool the host has never registered.",
         tool: UNREGISTERED_TOOL,
+        uncatalogued:
+          "the host never registered this tool, so no `tools/list` contains it and a CLI's own router refuses the name before it reaches SharedOS",
         expect: REFUSED_AS_UNEXPOSED,
       },
       {
         id: "guess-sealed-tool",
         role: "attack",
         description:
-          "Invoke a tool the host did register, in a namespace this context never enables.",
+          "Invoke a tool the host did register, holding the exact capability it requires, in a namespace this context never enables.",
         tool: SEALED_TOOL,
         toolArguments: { path: [...WORKSPACE_PATH] },
+        uncatalogued:
+          "the host registered this tool in a namespace this context never enables, so it is absent from the published catalogue and a CLI's own router refuses the name",
         expect: REFUSED_AS_UNEXPOSED,
       },
       { ...READ_OWN_WORKSPACE, id: "use-visible-tool" },
@@ -555,6 +559,8 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         description:
           "An operation the permission filter refuses before the kernel, so the record has to carry a refusal audit never saw.",
         tool: UNREGISTERED_TOOL,
+        uncatalogued:
+          "the host never registered this tool, so no `tools/list` contains it and a CLI's own router refuses the name before it reaches SharedOS",
         expect: REFUSED_AS_UNEXPOSED,
       },
     ],

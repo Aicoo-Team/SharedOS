@@ -68,7 +68,7 @@ export class CompositeAuditSink implements AuditSink {
 
   async record(event: AuditEvent): Promise<void> {
     for (const sink of this.#sinks) {
-      await sink.record(event);
+      await sink.record(immutableAuditEvent(event));
     }
   }
 }
@@ -80,7 +80,7 @@ export function auditEvent(
     "version" | "at" | "traceId" | "namespaceId" | "actor" | "authority" | "owner" | "purpose"
   >,
 ): AuditEvent {
-  return {
+  return immutableAuditEvent({
     version: "1",
     at: context.now,
     traceId: context.traceId,
@@ -90,5 +90,19 @@ export function auditEvent(
     owner: context.owner,
     purpose: context.purpose,
     ...event,
-  };
+  });
+}
+
+function immutableAuditEvent(event: AuditEvent): AuditEvent {
+  return deepFreeze(structuredClone(event));
+}
+
+function deepFreeze<T>(value: T): T {
+  if (value !== null && typeof value === "object") {
+    for (const child of Object.values(value)) {
+      deepFreeze(child);
+    }
+    Object.freeze(value);
+  }
+  return value;
 }

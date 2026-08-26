@@ -6,9 +6,15 @@ version and are published together under npm's `next` dist-tag.
 SharedOS is a `0.x` prerelease: contracts may change between prereleases, and
 each entry calls out what a host has to update.
 
-## Unreleased
+## 0.1.0-alpha.3
 
 ### Changed — breaking
+
+- **Messages now have one policy-bound reason: `purpose`.** The redundant
+  `MessageEnvelope.intent` field is removed, and strict parsing rejects legacy
+  envelopes that still carry it. Outbound sends execute as their sender; an
+  inbound turn executes as its recipient and resolves that recipient's
+  execution, file, and tool authority independently. See ADR 0015.
 
 - **`grants` is removed from `AccessContext`.** Authority now enters SharedOS
   through one required port, `GrantSource`, which `SharedOSKernel` calls once per
@@ -52,6 +58,14 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- `messages.request`, a canonical recipient-scoped request/reply tool. The model
+  supplies only a recipient and JSON-safe payload; trusted context supplies the
+  sender, purpose, trace, timestamp, and message id. `MessageTransport` and
+  `MessageRequestRouter` remain host ports for durable delivery and reply
+  lookup—SharedOS does not own a queue, receiver wake-up, or scheduler. Direct
+  send and the request tool share one post-authorization delivery path, so a
+  bounded send grant is consumed exactly once.
+
 - A quickstart with two working programs, an HTTP API reference covering every
   route and status code, a tool catalog covering the twelve `files` tools and
   how to register your own, and a reason/error code reference. None of this was
@@ -61,12 +75,23 @@ each entry calls out what a host has to update.
   against hashed separately. `pnpm conformance` regenerates it.
 - Escalation as a recorded outcome, per-turn authority resolution, and one
   refusal vocabulary across both enforcement boundaries. See ADRs 0008–0013.
+- `@aicoo/sharedos-mcp`: the permission-filtered catalogue served as an MCP
+  server, which is the boundary a vendor harness actually connects to, plus
+  Codex, Claude Code, DeepSeek Harness, and Pi adapters in
+  `@aicoo/sharedos-adapters`. See ADR 0014.
+- What enforcement costs, measured on both paths and reported in
+  `docs/conformance/systems-cost.md`. `pnpm bench` regenerates it, against a
+  monotonic clock added for the purpose — wall time is not a duration.
 - `pnpm release:promote-latest <version>` moves the `latest` dist-tag across the
   whole package set in one command, refusing to act unless every package has
   published that version.
 
 ### Fixed
 
+- Five embedded build constants — the DeepSeek, Pi, and MCP adapter versions
+  among them — were left at `0.1.0-alpha.0` while their packages moved. They
+  name the build that produced an execution record, so a stale one misattributes
+  evidence. `release:check` guarded two of the seven and now guards all of them.
 - The client example in the host integration guide passed a `token` option that
   `SharedOSClientOptions` has never had. It is `headers`, which accepts a value
   or an async function.

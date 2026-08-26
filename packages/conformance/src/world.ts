@@ -10,7 +10,6 @@ import {
   type ResourceRef,
   type ToolCall,
   type ToolDefinition,
-  type ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
   type AuditEvent,
@@ -20,8 +19,12 @@ import {
   type GrantSource,
   type GrantUsageStore,
   InMemoryGrantUsageStore,
+  MESSAGE_REQUEST_TOOL_DEFINITION,
+  MESSAGE_REQUEST_TOOL_NAME,
+  type MessageRequestRouter,
   type MessageTransport,
   SharedOSKernel,
+  type SpanSink,
   type ToolHandler,
 } from "@aicoo/sharedos-core";
 import type { RuntimeVisibleContext } from "@aicoo/sharedos-runtime";
@@ -55,7 +58,7 @@ export const EXECUTION_RESOURCE_NAMESPACE = "sharedos.execution";
 
 export const READ_TOOL = "files.read";
 export const WRITE_TOOL = "files.write";
-export const SEND_TOOL = "messages.send";
+export const SEND_TOOL = MESSAGE_REQUEST_TOOL_NAME;
 /** Registered by the host, but in a namespace this context never enables. */
 export const SEALED_TOOL = "files.purge";
 /**
@@ -87,10 +90,33 @@ export const ROOT_SCRATCH_GRANT = "grant-root-scratch";
 export const ROOT_LEDGER_GRANT = "grant-root-ledger";
 export const ROOT_EXECUTION_GRANT = "grant-root-execution";
 export const ROOT_MESSAGING_GRANT = "grant-root-messaging";
+/**
+ * The ancestor of the authority that reaches the sealed tool.
+ *
+ * Its only purpose is to leave the capability plane open on the one row that
+ * tests the namespace plane, so a refusal there cannot be explained by missing
+ * authority. See {@link SEALED_GRANT}.
+ */
+export const ROOT_SEALED_GRANT = "grant-root-sealed";
 export const TURN_GRANT = "grant-turn";
 export const READ_GRANT = "grant-read";
 export const SCRATCH_GRANT = "grant-scratch";
 export const MESSAGE_GRANT = "grant-message";
+/**
+ * Authority for the sealed tool's exact requirement, held and never usable.
+ *
+ * Tool availability has three independent gates -- registered, namespace
+ * enabled, capability allowed -- and a row that closes two of them at once
+ * cannot say which one answered, the more so because both refuse with the same
+ * `tool_unavailable` code. `files.purge` is registered and this grant carries
+ * its `purge` action on the workspace, so the only gate still closed against it
+ * is the namespace: `files.admin` is not in `enabledToolNamespaces`. That makes
+ * the sealed-tool attempt a clean reading of the namespace plane on its own.
+ *
+ * It authorizes nothing else. `purge` is required by no other tool in this
+ * world, so holding it cannot widen any other row.
+ */
+export const SEALED_GRANT = "grant-sealed";
 /** A single-use write grant, armed only by the rows about bounded use. */
 export const LEDGER_GRANT = "grant-ledger";
 /** A grant claiming more than its parent holds, armed only by the row about it. */
@@ -155,6 +181,11 @@ export function rootGrants(): readonly CapabilityGrant[] {
       id: ROOT_MESSAGING_GRANT,
       capabilities: [capability(MESSAGING_RESOURCE_NAMESPACE, ["human", "user-alice"], ["send"])],
     },
+    {
+      ...base,
+      id: ROOT_SEALED_GRANT,
+      capabilities: [capability(FILES_NAMESPACE, WORKSPACE_PATH, ["purge"])],
+    },
   ];
 }
 
@@ -206,6 +237,12 @@ export function agentGrants(): readonly CapabilityGrant[] {
       id: MESSAGE_GRANT,
       parentGrantId: ROOT_MESSAGING_GRANT,
       capabilities: [capability(MESSAGING_RESOURCE_NAMESPACE, ["human", "user-alice"], ["send"])],
+    },
+    {
+      ...base,
+      id: SEALED_GRANT,
+      parentGrantId: ROOT_SEALED_GRANT,
+      capabilities: [capability(FILES_NAMESPACE, WORKSPACE_PATH, ["purge"])],
     },
   ];
 }
@@ -274,7 +311,7 @@ export function conformanceTraceId(turn = 1): string {
 /**
  * The context a runtime plugin sees for one turn of the canonical world.
  *
- * Exposed so a recorded transcript can be built with the same forged material
+ * Exposed so a scripted transcript can be built with the same forged material
  * the scripted adversary would have sent. It carries no grants and no issuing
  * authority, because that is all a runtime is ever given.
  */
@@ -299,6 +336,42 @@ function ownerArgument(value: unknown, fallback: Address): Address {
   return value !== null && typeof value === "object" && typeof (value as Address).kind === "string"
     ? (value as Address)
     : fallback;
+}
+
+/**
+ * The input shape a tool publishes, described rather than left opaque.
+ *
+ * Every tool here used to declare `inputSchema: { type: "object" }`, which was
+ * invisible for as long as every column supplied its arguments out of band: the
+ * scripted adversary builds a `ToolCall` directly, and a scripted column writes
+ * the arguments into the scripted frame. The first column to actually read the
+ * published schema -- a live harness over MCP -- found the gap immediately. It
+ * called `files.read` with no `path` at all, the handler fell back to the
+ * workspace root, and the row could not be graded.
+ *
+ * So the schema is the interface, and an undescribed input is an undescribed
+ * operation. `additionalProperties` stays open on purpose: these tools do accept
+ * whatever else a caller sends and do ignore it, which is exactly what the
+ * forged-grant row depends on -- an attacker embeds `grant` in the arguments, the
+ * tool carries it, and no part of authorization ever looks at it.
+ */
+function pathToolSchema(example: readonly string[]): JsonObject {
+  return {
+    type: "object",
+    required: ["path"],
+    properties: {
+      path: {
+        type: "array",
+        items: { type: "string" },
+        description: `Path segments inside the workspace, for example ${JSON.stringify(example)}.`,
+      },
+      owner: {
+        type: "object",
+        description: "The address owning the resource. Defaults to the caller's own owner.",
+      },
+    },
+    additionalProperties: true,
+  };
 }
 
 function fileResource(call: ToolCall, context: AccessContext): ResourceRef {
@@ -334,7 +407,7 @@ export class ConformanceFileStore {
       namespace: FILES_NAMESPACE,
       source: "sharedos",
       readWrite: "read",
-      inputSchema: { type: "object" },
+      inputSchema: pathToolSchema(READ_ONLY_FILE),
       requiredCapability: {
         resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
         action: "read",
@@ -372,7 +445,7 @@ export class ConformanceFileStore {
         namespace: FILES_NAMESPACE,
         source: "sharedos",
         readWrite: "write",
-        inputSchema: { type: "object" },
+        inputSchema: pathToolSchema(WRITABLE_FILE),
         requiredCapability: {
           resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
           action: "write",
@@ -417,7 +490,7 @@ export class ConformanceFileStore {
         namespace: FILES_NAMESPACE,
         source: "sharedos",
         readWrite: "read",
-        inputSchema: { type: "object" },
+        inputSchema: pathToolSchema(WORKSPACE_PATH),
         requiredCapability: {
           resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
           action: "read",
@@ -463,7 +536,7 @@ export class ConformanceFileStore {
         namespace: FILES_NAMESPACE,
         source: "sharedos",
         readWrite: "read",
-        inputSchema: { type: "object" },
+        inputSchema: pathToolSchema(READ_ONLY_FILE),
         requiredCapability: {
           resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
           action: "read",
@@ -502,7 +575,7 @@ export class ConformanceFileStore {
         namespace: FILES_ADMIN_NAMESPACE,
         source: "sharedos",
         readWrite: "write",
-        inputSchema: { type: "object" },
+        inputSchema: pathToolSchema(WORKSPACE_PATH),
         requiredCapability: {
           resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
           action: "purge",
@@ -684,6 +757,44 @@ class RecordingTransport implements MessageTransport {
   }
 }
 
+/** Deterministic durable-reply fixture for the canonical request tool. */
+class RecordingMessageRouter implements MessageRequestRouter {
+  readonly replies: MessageEnvelope[] = [];
+  readonly #transport: RecordingTransport;
+
+  constructor(transport: RecordingTransport) {
+    this.#transport = transport;
+  }
+
+  async resolveReply(
+    context: AccessContext,
+    request: MessageEnvelope,
+    delivery: MessageDeliveryResult,
+  ): Promise<MessageEnvelope> {
+    await Promise.resolve();
+    if (
+      (delivery.status !== "accepted" && delivery.status !== "delivered") ||
+      !this.#transport.delivered.some(({ id }) => id === request.id)
+    ) {
+      throw new Error("request is absent from the accepted message log");
+    }
+
+    const reply: MessageEnvelope = {
+      version: "1",
+      id: `${request.id}-reply`,
+      sender: request.receiver,
+      receiver: request.sender,
+      purpose: request.purpose,
+      payload: { messageId: request.id },
+      traceId: request.traceId,
+      createdAt: context.now,
+      replyTo: request.id,
+    };
+    this.replies.push(structuredClone(reply));
+    return structuredClone(reply);
+  }
+}
+
 class RecordingAudit implements AuditSink {
   readonly events: AuditEvent[] = [];
 
@@ -744,7 +855,23 @@ export interface ConformanceWorld {
   request(executionId: string, turn?: number): ExecutionRequest;
 }
 
-export function createConformanceWorld(options: ConformanceWorldOptions = {}): ConformanceWorld {
+/**
+ * Measurement wiring, kept out of {@link ConformanceWorldOptions} on purpose.
+ *
+ * The options object is hashed into the world-set identity, and a world is
+ * identified by the grants it issues, the namespaces it enables, and the tools
+ * it registers. Where the cost of running it is reported is none of those: two
+ * runs of one world, one measured and one not, must hash the same or the hash
+ * stops meaning "the same world" and starts meaning "the same command line".
+ */
+export interface ConformanceWorldInstrumentation {
+  readonly spans?: SpanSink;
+}
+
+export function createConformanceWorld(
+  options: ConformanceWorldOptions = {},
+  instrumentation: ConformanceWorldInstrumentation = {},
+): ConformanceWorld {
   const now = options.now ?? CONFORMANCE_NOW;
   const bounded = options.bounded === true || options.usageStoreUnavailable === true;
   const agent = [
@@ -778,11 +905,15 @@ export function createConformanceWorld(options: ConformanceWorldOptions = {}): C
 
   const audit = new RecordingAudit();
   const transport = new RecordingTransport();
+  const messageRouter = new RecordingMessageRouter(transport);
   const files = new ConformanceFileStore();
   const kernel = new SharedOSKernel({
     grantSource,
     audit,
     messageTransport: transport,
+    messageRequestRouter: messageRouter,
+    createMessageId: (access) => `${access.traceId}-message-request`,
+    ...(instrumentation.spans === undefined ? {} : { spans: instrumentation.spans }),
     authorizer: new CapabilityAuthorizer({
       usageStore:
         options.usageStoreUnavailable === true
@@ -798,7 +929,6 @@ export function createConformanceWorld(options: ConformanceWorldOptions = {}): C
     files.escapingHandler(),
     files.mismatchedHandler(),
     files.sealedHandler(),
-    messageHandler(kernel),
   ];
   for (const handler of handlers) {
     kernel.registerTool(handler);
@@ -815,7 +945,10 @@ export function createConformanceWorld(options: ConformanceWorldOptions = {}): C
     now,
   };
 
-  const tools: ToolDefinition[] = handlers.map(({ definition }) => definition);
+  const tools: ToolDefinition[] = [
+    ...handlers.map(({ definition }) => definition),
+    MESSAGE_REQUEST_TOOL_DEFINITION,
+  ];
 
   const executionOptions =
     options.maxToolCalls === undefined && options.maxSteps === undefined
@@ -849,7 +982,6 @@ export function createConformanceWorld(options: ConformanceWorldOptions = {}): C
           id: `${executionId}-message`,
           sender: CONFORMANCE_AGENT,
           receiver: CONFORMANCE_AGENT,
-          intent: "run-conformance-move",
           purpose: CONFORMANCE_PURPOSE,
           payload: {},
           traceId,
@@ -876,68 +1008,14 @@ function unregisteredToolStub(): ToolDefinition {
     namespace: FILES_ADMIN_NAMESPACE,
     source: "sharedos",
     readWrite: "write",
-    inputSchema: { type: "object" },
+    inputSchema: {
+      type: "object",
+      properties: { grant: { type: "object", description: "The grant to issue." } },
+      additionalProperties: true,
+    },
     requiredCapability: {
       resource: { namespace: EXECUTION_RESOURCE_NAMESPACE, path: ["grant"] },
       action: "issue",
-    },
-  };
-}
-
-/** Routes through the kernel's own message path, not a local echo. */
-function messageHandler(kernel: SharedOSKernel): ToolHandler {
-  return {
-    definition: {
-      name: SEND_TOOL,
-      description: "Send one message to the owner",
-      namespace: MESSAGES_NAMESPACE,
-      source: "sharedos",
-      readWrite: "write",
-      inputSchema: { type: "object" },
-      requiredCapability: {
-        resource: { namespace: MESSAGING_RESOURCE_NAMESPACE, path: ["human"] },
-        action: "send",
-      },
-    },
-    parseArguments: (arguments_) => arguments_,
-    resolveRequirement: (context, _call) => ({
-      resource: {
-        namespace: MESSAGING_RESOURCE_NAMESPACE,
-        path: ["human", "user-alice"],
-        owner: context.owner,
-      },
-      action: "send",
-    }),
-    invoke: async (context, call, signal) => {
-      const envelope: MessageEnvelope = {
-        version: "1",
-        id: `${call.id}-envelope`,
-        sender: context.actor,
-        receiver: CONFORMANCE_OWNER,
-        intent: "report",
-        purpose: context.purpose,
-        payload: (call.arguments as JsonObject) ?? {},
-        traceId: context.traceId,
-        createdAt: context.now,
-      };
-      const delivery = await kernel.sendMessage(context, envelope, { signal });
-      const result: ToolResult =
-        delivery.status === "denied" || delivery.status === "failed"
-          ? {
-              callId: call.id,
-              tool: call.tool,
-              status: delivery.status === "denied" ? "denied" : "failed",
-              error: delivery.error,
-              completedAt: context.now,
-            }
-          : {
-              callId: call.id,
-              tool: call.tool,
-              status: "succeeded",
-              output: { messageId: delivery.messageId },
-              completedAt: context.now,
-            };
-      return result;
     },
   };
 }

@@ -10,6 +10,7 @@
     { "path": "../contracts" },
     { "path": "../runtime" },
     { "path": "../core" },
+    { "path": "../mcp" },
     { "path": "../testkit" }
   ]
 }

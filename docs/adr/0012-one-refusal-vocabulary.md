@@ -71,7 +71,7 @@ The two boundaries share one vocabulary and are equally recorded.
 - An execution record distinguishes envelope refusals without depending on the
   runtime to report honestly about itself. That is what makes a conformance
   column possible for a runtime which cannot report on itself at all — a vendor
-  harness replaying recorded frames has its attempts recovered from the record.
+  harness replaying scripted frames has its attempts recovered from the record.
 - `step_limit_exceeded` can now come from the envelope as well as from
   `StandardRuntime`. Both mean the same thing, which is the point.
 

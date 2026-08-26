@@ -226,7 +226,7 @@ driver is in the seat. Adding a column is supplying a
 change.
 
 Three columns are committed. `EMBEDDED_COLUMN` puts `HostileRuntime` in the seat
-directly. `CODEX_TRANSCRIPT_COLUMN` and `CLAUDE_CODE_TRANSCRIPT_COLUMN` put the
+directly. `CODEX_SCRIPTED_COLUMN` and `CLAUDE_CODE_SCRIPTED_COLUMN` put the
 Codex and Claude Code adapters there, driven by frames built from the same move:
 `movesToTranscript` renders each declared attempt into that vendor's own wire
 shape, and the adapter's real protocol translation reads them back. The kernel

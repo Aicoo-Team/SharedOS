@@ -21,6 +21,7 @@ import {
   type ToolDefinition,
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
+import { SPAN, measure, type SpanSink } from "@aicoo/sharedos-core";
 import type { SharedOSKernel, TurnAuthorityScope } from "@aicoo/sharedos-core";
 
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
@@ -43,6 +44,14 @@ export interface SharedOSExecutorOptions {
   defaultMaxSteps?: number;
   defaultMaxToolCalls?: number;
   defaultTimeoutMs?: number;
+  /**
+   * Where the envelope reports what it cost, when a host is measuring.
+   *
+   * A second clock, and deliberately not the one `clock` supplies: that one
+   * names instants for a record and a conformance run freezes it. See
+   * {@link SpanSink}.
+   */
+  spans?: SpanSink;
 }
 
 export interface ExecuteTurnOptions {
@@ -87,6 +96,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
   readonly #defaultMaxSteps: number;
   readonly #defaultMaxToolCalls: number | undefined;
   readonly #defaultTimeoutMs: number;
+  readonly #spans: SpanSink | undefined;
 
   constructor(kernel: TurnKernel, runtime: RuntimePlugin, options: SharedOSExecutorOptions = {}) {
     if (runtime === null || typeof runtime !== "object" || typeof runtime.run !== "function") {
@@ -108,6 +118,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
     this.#defaultMaxSteps = options.defaultMaxSteps ?? 16;
     this.#defaultMaxToolCalls = options.defaultMaxToolCalls;
     this.#defaultTimeoutMs = options.defaultTimeoutMs ?? 120_000;
+    this.#spans = options.spans;
 
     if (!Number.isInteger(this.#defaultMaxSteps) || this.#defaultMaxSteps <= 0) {
       throw new TypeError("defaultMaxSteps must be a positive integer");
@@ -134,6 +145,21 @@ export class SharedOSExecutor implements TurnExecutionPort {
   }
 
   async execute(
+    input: ExecutionRequest,
+    options: ExecuteTurnOptions = {},
+  ): Promise<ExecutionResult> {
+    return measure(
+      this.#spans,
+      SPAN.TURN,
+      () => this.#execute(input, options),
+      (result, span) => {
+        span.set("executionId", result.executionId);
+        span.set("status", result.status);
+      },
+    );
+  }
+
+  async #execute(
     input: ExecutionRequest,
     options: ExecuteTurnOptions = {},
   ): Promise<ExecutionResult> {
@@ -229,67 +255,87 @@ export class SharedOSExecutor implements TurnExecutionPort {
         runtime: runtimeProvenance(this.#manifest),
       });
 
+      // The envelope's whole share of one mediated call: budget checks, the
+      // effective-catalogue check, the kernel round trip, and the two events
+      // the call leaves behind. Named separately from the kernel's own span
+      // because they are different costs with different owners, and the
+      // difference between them is what the envelope charges for existing.
+      const mediateTool = async (
+        call: ToolCall,
+        invocationOptions: RuntimeToolInvocationOptions = {},
+      ): Promise<ToolResult> => {
+        assertRuntimeHostActive(runtimeHostActive, abort.signal);
+        const parsedCall = ToolCallSchema.safeParse(structuredClone(call));
+        if (!parsedCall.success) {
+          throw new TypeError("Runtime tool call does not match the SharedOS v1 contract");
+        }
+        const step = parseRuntimeStep(invocationOptions.step);
+        const eventData = toolEventData(parsedCall.data, step);
+        emit("tool.requested", eventData);
+
+        if (step !== undefined && !stepIsWithinBudget(step, steps, limits.maxSteps)) {
+          const result = deniedToolResult(
+            parsedCall.data,
+            this.#clock(),
+            "step_limit_exceeded",
+            "The runtime reached its maximum number of steps.",
+          );
+          emit("tool.completed", completedToolEventData(result, step));
+          return result;
+        }
+        if (step !== undefined) {
+          steps.add(step);
+        }
+
+        if (toolCallCount >= limits.maxToolCalls) {
+          const result = deniedToolResult(
+            parsedCall.data,
+            this.#clock(),
+            "tool_call_limit_exceeded",
+            "The runtime reached its maximum number of tool calls.",
+          );
+          emit("tool.completed", completedToolEventData(result, step));
+          return result;
+        }
+        toolCallCount += 1;
+
+        if (!effectiveToolNames.has(parsedCall.data.tool)) {
+          const result = unavailableToolResult(parsedCall.data, this.#clock());
+          emit("tool.completed", completedToolEventData(result, step));
+          return result;
+        }
+
+        const resultCandidate = await raceWithAbort(
+          this.#kernel.invokeTool(contextAt(executionContext, this.#clock()), parsedCall.data, {
+            signal: abort.signal,
+          }),
+          abort.signal,
+        );
+        const result = ToolResultSchema.safeParse(resultCandidate);
+        if (!result.success) {
+          throw new TypeError("Kernel returned an invalid tool result");
+        }
+        assertRuntimeHostActive(runtimeHostActive, abort.signal);
+        emit("tool.completed", completedToolEventData(result.data, step));
+        return result.data;
+      };
+
       const host: RuntimeHost = Object.freeze({
         limits,
-        invokeTool: async (
+        invokeTool: (
           call: ToolCall,
           invocationOptions: RuntimeToolInvocationOptions = {},
-        ): Promise<ToolResult> => {
-          assertRuntimeHostActive(runtimeHostActive, abort.signal);
-          const parsedCall = ToolCallSchema.safeParse(structuredClone(call));
-          if (!parsedCall.success) {
-            throw new TypeError("Runtime tool call does not match the SharedOS v1 contract");
-          }
-          const step = parseRuntimeStep(invocationOptions.step);
-          const eventData = toolEventData(parsedCall.data, step);
-          emit("tool.requested", eventData);
-
-          if (step !== undefined && !stepIsWithinBudget(step, steps, limits.maxSteps)) {
-            const result = deniedToolResult(
-              parsedCall.data,
-              this.#clock(),
-              "step_limit_exceeded",
-              "The runtime reached its maximum number of steps.",
-            );
-            emit("tool.completed", completedToolEventData(result, step));
-            return result;
-          }
-          if (step !== undefined) {
-            steps.add(step);
-          }
-
-          if (toolCallCount >= limits.maxToolCalls) {
-            const result = deniedToolResult(
-              parsedCall.data,
-              this.#clock(),
-              "tool_call_limit_exceeded",
-              "The runtime reached its maximum number of tool calls.",
-            );
-            emit("tool.completed", completedToolEventData(result, step));
-            return result;
-          }
-          toolCallCount += 1;
-
-          if (!effectiveToolNames.has(parsedCall.data.tool)) {
-            const result = unavailableToolResult(parsedCall.data, this.#clock());
-            emit("tool.completed", completedToolEventData(result, step));
-            return result;
-          }
-
-          const resultCandidate = await raceWithAbort(
-            this.#kernel.invokeTool(contextAt(executionContext, this.#clock()), parsedCall.data, {
-              signal: abort.signal,
-            }),
-            abort.signal,
-          );
-          const result = ToolResultSchema.safeParse(resultCandidate);
-          if (!result.success) {
-            throw new TypeError("Kernel returned an invalid tool result");
-          }
-          assertRuntimeHostActive(runtimeHostActive, abort.signal);
-          emit("tool.completed", completedToolEventData(result.data, step));
-          return result.data;
-        },
+        ): Promise<ToolResult> =>
+          measure(
+            this.#spans,
+            SPAN.TOOL_MEDIATE,
+            () => mediateTool(call, invocationOptions),
+            (result, span) => {
+              span.set("callId", result.callId);
+              span.set("tool", result.tool);
+              span.set("outcome", result.status);
+            },
+          ),
         emit: (event: RuntimeEvent): void => {
           assertRuntimeHostActive(runtimeHostActive, abort.signal);
           const parsedEvent = RuntimeEventSchema.safeParse(structuredClone(event));
@@ -540,8 +586,8 @@ function contextAt(context: AccessContext, now: string): AccessContext {
 }
 
 function validateTurnContext(request: ExecutionRequest): ProtocolError | undefined {
-  if (canonicalJson(request.message.sender) !== canonicalJson(request.context.actor)) {
-    return protocolError("actor_mismatch", "Message sender does not match the access actor.");
+  if (canonicalJson(request.context.actor) !== canonicalJson(request.agent)) {
+    return protocolError("actor_mismatch", "Access actor does not match the executing agent.");
   }
 
   if (canonicalJson(request.message.receiver) !== canonicalJson(request.agent)) {

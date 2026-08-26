@@ -212,15 +212,29 @@ const driver: AgentTurnDriver = {
 const invokeAlice: CapabilityGrant = {
   ...grant,
   id: "grant-invoke",
+  subject: aliceAgent,
   capabilities: [agentExecutionCapability(aliceAgent, alice)],
   constraints: { purposes: ["atlas-status"] },
 };
 
-// The store gains a grant. Nothing about the context changes, and the next turn
-// to resolve authority sees it — which is also how a revocation lands.
-issued.push(invokeAlice);
+// The recipient needs its own file authority too. The requester's grant does
+// not transfer through the message.
+const aliceSearch: CapabilityGrant = {
+  ...grant,
+  id: "grant-alice-search",
+  subject: aliceAgent,
+};
 
-const turnContext = context;
+// The store gains the recipient's grants. The next turn to resolve authority
+// sees them — which is also how a revocation lands.
+issued.push(invokeAlice, aliceSearch);
+
+const turnContext: AccessContext = {
+  ...context,
+  actor: aliceAgent,
+  traceId: crypto.randomUUID(),
+  now: new Date().toISOString(),
+};
 const tools = await kernel.listTools(turnContext);
 
 const result = await new SharedOSExecutor(kernel, new StandardRuntime(driver), {
@@ -237,7 +251,6 @@ const result = await new SharedOSExecutor(kernel, new StandardRuntime(driver), {
     id: crypto.randomUUID(),
     sender: bobAgent,
     receiver: aliceAgent,
-    intent: "answer-question",
     purpose: turnContext.purpose,
     payload: { text: "When does Atlas ship?" },
     traceId: turnContext.traceId,
@@ -257,6 +270,10 @@ The driver received `request.context` without grants and without the issuing
 authority. It cannot widen its own access, and it cannot reach a tool outside
 the catalog it was given — `RuntimeHost.invokeTool` checks the catalog and
 re-authorizes before anything runs.
+
+The message sender is Bob, but the trusted turn context actor is Alice, the
+executing recipient. Admission and file search therefore use Alice's grants;
+Bob's authority is not transferred by the message.
 
 ## Remote: the same kernel over HTTP
 

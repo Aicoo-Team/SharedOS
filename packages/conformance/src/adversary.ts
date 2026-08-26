@@ -152,6 +152,23 @@ export const AttackAttemptSchema = z
      * considered: an absent row and an unreachable one are different claims.
      */
     unreachable: z.string().min(1).max(512).optional(),
+    /**
+     * Declares that this attempt names a tool no published catalogue contains,
+     * and why that puts it out of reach of a driver with its own tool router.
+     *
+     * Distinct from `unreachable`, which is a claim about every runtime. This
+     * one is true only of a driver that filters its own calls against a
+     * catalogue it registered from `tools/list`: a scripted adversary, or an
+     * adapter driven by scripted frames, issues the call and SharedOS refuses
+     * it with `tool_unavailable`. A CLI speaking MCP never sends it at all, so
+     * the second gate upstream decides the row and the envelope is never asked.
+     *
+     * The attempt is declared identically either way and each column decides
+     * what to do with it. The claim is also self-correcting: an attempt any
+     * column *does* issue is graded on its receipt, so a client that turned out
+     * to forward unknown names would produce a result rather than this label.
+     */
+    uncatalogued: z.string().min(1).max(512).optional(),
   })
   .strict()
   .refine(
@@ -499,7 +516,7 @@ export function readAttemptReceipts(result: ExecutionResult): readonly AttemptRe
  *
  * Derived rather than generated, so a receipt can be reconstructed from an
  * execution record alone. That is what lets a runtime which cannot report on
- * itself -- a vendor harness replaying recorded frames -- still be graded
+ * itself -- a vendor harness replaying scripted frames -- still be graded
  * against the same declared attempts as the scripted adversary.
  */
 export function attemptCallId(
@@ -513,7 +530,7 @@ export function attemptCallId(
 /**
  * The arguments one declared attempt is issued with, forgery included.
  *
- * Exported because a transcript of recorded frames has to carry exactly the
+ * Exported because a transcript of scripted frames has to carry exactly the
  * arguments the scripted adversary would have sent. Building them twice is how
  * two runtimes end up attacking two slightly different things and reporting it
  * as one comparison.

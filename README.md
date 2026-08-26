@@ -131,7 +131,8 @@ generated [package API reference](docs/api/README.md), the complete
 | `@aicoo/sharedos`             | One-install entry point re-exporting the production packages    |
 | `@aicoo/sharedos-testkit`     | In-memory providers and conformance helpers for tests           |
 | `@aicoo/sharedos-conformance` | Standard execution records and adversarial conformance evidence |
-| `@aicoo/sharedos-adapters`    | Codex and Claude Code runtime adapters                          |
+| `@aicoo/sharedos-adapters`    | Codex, Claude Code, DeepSeek Harness, and Pi runtime adapters   |
+| `@aicoo/sharedos-mcp`         | The permission-filtered catalogue served as an MCP tool server  |
 
 `testkit` is not a production persistence layer. Production state remains in
 the host.
@@ -174,7 +175,7 @@ authorization.
 ## Security invariants
 
 1. No matching grant means deny.
-2. A message carries intent and context, never authority.
+2. A message carries data and one host-bound purpose, never authority.
 3. Tool discovery is filtered, and every invocation is authorized again.
 4. A tool namespace must be enabled independently of its capability grant.
 5. Invoking a target agent requires its own recipient-scoped execution grant.
