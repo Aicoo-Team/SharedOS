@@ -84,7 +84,6 @@ function request(): ExecutionRequest {
       id: "message-1",
       sender: AGENT,
       receiver: AGENT,
-      intent: "prepare",
       purpose: "prepare-update",
       payload: { secret: "do-not-record-me" },
       traceId: "trace-1",

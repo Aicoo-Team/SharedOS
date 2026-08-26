@@ -175,7 +175,7 @@ authorization.
 ## Security invariants
 
 1. No matching grant means deny.
-2. A message carries intent and context, never authority.
+2. A message carries data and one host-bound purpose, never authority.
 3. Tool discovery is filtered, and every invocation is authorized again.
 4. A tool namespace must be enabled independently of its capability grant.
 5. Invoking a target agent requires its own recipient-scoped execution grant.

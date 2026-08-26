@@ -37,7 +37,7 @@ const tool: ToolDefinition = {
 };
 
 const context: AccessContext = {
-  actor: sender,
+  actor: receiver,
   authority: owner,
   owner,
   namespaceId: "namespace-1",
@@ -65,7 +65,6 @@ function request(): ExecutionRequest {
       id: "message-1",
       sender,
       receiver,
-      intent: "prepare",
       purpose: context.purpose,
       payload: { topic: "status" },
       traceId: context.traceId,
@@ -229,7 +228,7 @@ describe("RuntimePlugin security envelope", () => {
     expect(runtimeKernel.invokeTool).toHaveBeenCalledOnce();
     expect(runtimeKernel.invokeTool).toHaveBeenCalledWith(
       expect.objectContaining({
-        actor: sender,
+        actor: receiver,
         authority: owner,
         namespaceId: context.namespaceId,
       }),

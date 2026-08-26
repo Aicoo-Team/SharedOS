@@ -182,6 +182,7 @@ indexes and model context mounts must preserve the grants of their source files.
 import { CapabilityAuthorizer, SharedOSKernel, registerStandardOsTools } from "@aicoo/sharedos";
 
 const kernel = new SharedOSKernel({
+  grantSource,
   authorizer: new CapabilityAuthorizer({
     usageStore: durableGrantUsageStore,
     grantVerifier: durableGrantVerifier,
@@ -189,6 +190,11 @@ const kernel = new SharedOSKernel({
   audit: durableAuditSink,
   toolNamespaceSettings,
   toolProviders: [userMcpToolProvider],
+  // Durable host ports. The router returns only a reply accepted from the
+  // run's message log; it does not fabricate an envelope from model output.
+  messageTransport: durableMessageLog,
+  messageRequestRouter: durableReplyRouter,
+  createMessageId: () => crypto.randomUUID(),
 });
 
 kernel.registerResourceProvider(files);
@@ -201,6 +207,20 @@ standard tools exposes the same operations as model-callable tools such as
 
 The in-memory stores from `@aicoo/sharedos-testkit` are useful for tests and
 isolated experiment worlds. They are not production persistence.
+
+When both message ports are configured, the kernel adds the canonical
+`messages.request` tool to each effective turn catalog. Enable the `messages`
+tool namespace and issue a recipient-scoped `sharedos.messaging` + `send`
+grant. The model supplies only `recipient` and JSON-safe `payload`; SharedOS
+copies sender, purpose, trace, timestamp, and message id from trusted context,
+consumes the exact send capability once, and validates the correlated reply.
+
+The transport and router do not make SharedOS a scheduler. After durable
+acceptance, the host wakes the recipient and invokes another SharedOS turn with
+the recipient as both `context.actor` and `request.agent`. That recipient needs
+its own `sharedos.execution` + `invoke` grant and its own file or tool grants.
+The reply is another authorized envelope whose `replyTo` names the immutable
+request id.
 
 ### 4. Grant the minimum authority
 
@@ -285,6 +305,11 @@ const result = await turns.execute({
   tools: [...visibleTools],
 });
 ```
+
+For an inbound Bob → Alice message, `targetAgent` and `context.actor` are both
+Alice. The envelope sender remains Bob for provenance; it is not the actor whose
+grants are used by Alice's turn. Purpose and trace must match the trusted
+recipient context.
 
 `TurnExecutor(kernel, agentDriver)` remains a compatibility shorthand for this
 standard composition.

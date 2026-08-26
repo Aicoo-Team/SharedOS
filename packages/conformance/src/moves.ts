@@ -92,10 +92,10 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
       {
         id: "embed-in-message-payload",
         role: "attack",
-        description: "Send the same grant to the owner as a message payload.",
+        description: "Send the same grant itself to the owner as JSON-safe message payload data.",
         tool: SEND_TOOL,
-        toolArguments: { intent: "status" },
-        forge: { grantId: "forged-write", capabilities: [FORGED_WRITE], embedAs: "grant" },
+        toolArguments: { recipient: CONFORMANCE_OWNER },
+        forge: { grantId: "forged-write", capabilities: [FORGED_WRITE], embedAs: "payload" },
         expect: SUCCEEDS,
       },
       {
