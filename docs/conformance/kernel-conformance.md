@@ -11,8 +11,8 @@ out — the transport that would carry the frames from a live CLI, and whether
 the vendor still emits these shapes — so these columns say nothing about a
 live session. Live-run columns are a separate claim and are not made here.
 
-- Case set: `e1f8d6c13f695350c24400dc2cfee34b10290787b28d648fef8d0c3bd57c55b7`
-- World set: `c91f1a844531c8264530f84cc19de1bc8089c59639da4b2405f56509192ca3ab`
+- Case set: `39e66966d29cb217a95da46a1e7d2b434ec23a81a0ce9af2d2d39083e5bcdeab`
+- World set: `bfcbba617397dea4ee6826cf1509711e790b407e9d2adb8eb188b5f3bbbc5427`
 - Grading rules: version `2`
 - Columns: `Standard`, `Codex`, `Claude Code`, `Deepseek`, `pi`
 

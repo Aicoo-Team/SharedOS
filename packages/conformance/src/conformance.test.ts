@@ -37,7 +37,6 @@ function request(): ExecutionRequest {
       id: "message-1",
       sender: ACTOR,
       receiver: AGENT,
-      intent: "prepare",
       purpose: "prepare-update",
       payload: { topic: "status" },
       traceId: "trace-1",

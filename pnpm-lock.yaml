@@ -115,6 +115,9 @@ importers:
       '@aicoo/sharedos-core':
         specifier: workspace:*
         version: link:../core
+      '@aicoo/sharedos-mcp':
+        specifier: workspace:*
+        version: link:../mcp
       '@aicoo/sharedos-runtime':
         specifier: workspace:*
         version: link:../runtime

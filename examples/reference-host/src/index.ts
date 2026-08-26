@@ -13,10 +13,11 @@
  *                                   settings, and an audit trail
  *   - `AnthropicTurnDriver`         the model side of `AgentTurnDriver`
  *
- * The scenario: Alice owns a private file tree. Bob's assistant is allowed to
- * search and read exactly one project subtree, for one purpose, for one hour,
- * three times. Bob can pass a strictly narrower slice to a summariser, and
- * Alice revoking her grant kills the derived one at use time.
+ * The scenario: Alice owns a private file tree. Bob asks Alice's assistant for
+ * project status; the recipient executes with its own narrow grants, not
+ * Bob's. Bob separately receives bounded and delegable grants for the path and
+ * delegation demonstrations. Alice revoking her grant kills the derived one
+ * at use time.
  *
  * Run: pnpm example:reference-host
  * Set ANTHROPIC_API_KEY to drive the same turn with a live model.
@@ -175,7 +176,7 @@ async function main(): Promise<void> {
 
   const atlasRead = grant({
     id: "grant-atlas-read",
-    subject: BOB_AGENT,
+    subject: ALICE_AGENT,
     path: ATLAS,
     actions: ["search", "read", "list"],
     purpose: "atlas-status",
@@ -206,28 +207,27 @@ async function main(): Promise<void> {
     defaultTimeoutMs: 60_000,
   });
 
-  const bob = accessContext({
-    actor: BOB_AGENT,
+  const aliceTurn = accessContext({
+    actor: ALICE_AGENT,
     purpose: "atlas-status",
     namespaces,
   });
-  const visible = await kernel.listTools(bob);
-  console.log(`2. bob's agent can see: ${visible.map(({ name }) => name).join(", ")}`);
+  const visible = await kernel.listTools(aliceTurn);
+  console.log(`2. alice's agent can see: ${visible.map(({ name }) => name).join(", ")}`);
 
   const request: ExecutionRequest = {
     version: "1",
     executionId: randomUUID(),
     agent: ALICE_AGENT,
-    context: bob,
+    context: aliceTurn,
     message: {
       version: "1",
       id: randomUUID(),
       sender: BOB_AGENT,
       receiver: ALICE_AGENT,
-      intent: "answer-question",
-      purpose: bob.purpose,
+      purpose: aliceTurn.purpose,
       payload: { text: "When does Atlas ship, and what is blocking it?" },
-      traceId: bob.traceId,
+      traceId: aliceTurn.traceId,
       createdAt: new Date().toISOString(),
     },
     tools: [...visible],

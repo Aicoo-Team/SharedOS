@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.2**](README.md)
+[**SharedOS API v0.1.0-alpha.3**](README.md)
 
 ---
 
@@ -779,7 +779,7 @@ Defined in: [adapters/src/pi/index.ts:45](https://github.com/Aicoo-Team/SharedOS
 
 ### CLAUDE\_CODE\_ADAPTER\_VERSION
 
-> `const` **CLAUDE\_CODE\_ADAPTER\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
+> `const` **CLAUDE\_CODE\_ADAPTER\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
 
 Defined in: [adapters/src/claude-code/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L11)
 
@@ -838,7 +838,7 @@ Defined in: [adapters/src/claude-code/protocol.ts:48](https://github.com/Aicoo-T
 
 ### CODEX\_ADAPTER\_VERSION
 
-> `const` **CODEX\_ADAPTER\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
+> `const` **CODEX\_ADAPTER\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
 
 Defined in: [adapters/src/codex/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L11)
 
@@ -898,7 +898,7 @@ Defined in: [adapters/src/codex/protocol.ts:63](https://github.com/Aicoo-Team/Sh
 
 ### DEEPSEEK\_ADAPTER\_VERSION
 
-> `const` **DEEPSEEK\_ADAPTER\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
+> `const` **DEEPSEEK\_ADAPTER\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
 
 Defined in: [adapters/src/deepseek/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L11)
 
@@ -972,7 +972,7 @@ Defined in: [adapters/src/deepseek/protocol.ts:106](https://github.com/Aicoo-Tea
 
 ### PI\_ADAPTER\_VERSION
 
-> `const` **PI\_ADAPTER\_VERSION**: `"0.1.0-alpha.2"` = `"0.1.0-alpha.2"`
+> `const` **PI\_ADAPTER\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
 
 Defined in: [adapters/src/pi/index.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L11)
 

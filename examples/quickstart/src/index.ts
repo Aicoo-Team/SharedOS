@@ -24,14 +24,14 @@ const files = new InMemoryResourceProvider("files", async (operation): Promise<R
 const grants = [
   createTestGrant({
     id: "grant-invoke-alice",
-    subject: bob,
+    subject: alice,
     issuer: owner,
     capabilities: [agentExecutionCapability(alice, owner)],
     purposes: ["prepare-report"],
   }),
   createTestGrant({
     id: "grant-search-files",
-    subject: bob,
+    subject: alice,
     issuer: owner,
     capabilities: [
       {
@@ -51,7 +51,7 @@ for (const handler of createFileTools(files)) {
 }
 
 const context = createTestContext({
-  actor: bob,
+  actor: alice,
   authority: owner,
   owner,
   purpose: "prepare-report",
@@ -95,7 +95,6 @@ const request: ExecutionRequest = {
     id: "message-1",
     sender: bob,
     receiver: alice,
-    intent: "prepare-report",
     purpose: context.purpose,
     payload: { topic: "SharedOS authority" },
     traceId: context.traceId,

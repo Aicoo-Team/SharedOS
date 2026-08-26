@@ -10,7 +10,6 @@ import {
   type ResourceRef,
   type ToolCall,
   type ToolDefinition,
-  type ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
   type AuditEvent,
@@ -20,8 +19,12 @@ import {
   type GrantSource,
   type GrantUsageStore,
   InMemoryGrantUsageStore,
+  MESSAGE_REQUEST_TOOL_DEFINITION,
+  MESSAGE_REQUEST_TOOL_NAME,
+  type MessageRequestRouter,
   type MessageTransport,
   SharedOSKernel,
+  type SpanSink,
   type ToolHandler,
 } from "@aicoo/sharedos-core";
 import type { RuntimeVisibleContext } from "@aicoo/sharedos-runtime";
@@ -55,7 +58,7 @@ export const EXECUTION_RESOURCE_NAMESPACE = "sharedos.execution";
 
 export const READ_TOOL = "files.read";
 export const WRITE_TOOL = "files.write";
-export const SEND_TOOL = "messages.send";
+export const SEND_TOOL = MESSAGE_REQUEST_TOOL_NAME;
 /** Registered by the host, but in a namespace this context never enables. */
 export const SEALED_TOOL = "files.purge";
 /**
@@ -754,6 +757,44 @@ class RecordingTransport implements MessageTransport {
   }
 }
 
+/** Deterministic durable-reply fixture for the canonical request tool. */
+class RecordingMessageRouter implements MessageRequestRouter {
+  readonly replies: MessageEnvelope[] = [];
+  readonly #transport: RecordingTransport;
+
+  constructor(transport: RecordingTransport) {
+    this.#transport = transport;
+  }
+
+  async resolveReply(
+    context: AccessContext,
+    request: MessageEnvelope,
+    delivery: MessageDeliveryResult,
+  ): Promise<MessageEnvelope> {
+    await Promise.resolve();
+    if (
+      (delivery.status !== "accepted" && delivery.status !== "delivered") ||
+      !this.#transport.delivered.some(({ id }) => id === request.id)
+    ) {
+      throw new Error("request is absent from the accepted message log");
+    }
+
+    const reply: MessageEnvelope = {
+      version: "1",
+      id: `${request.id}-reply`,
+      sender: request.receiver,
+      receiver: request.sender,
+      purpose: request.purpose,
+      payload: { messageId: request.id },
+      traceId: request.traceId,
+      createdAt: context.now,
+      replyTo: request.id,
+    };
+    this.replies.push(structuredClone(reply));
+    return structuredClone(reply);
+  }
+}
+
 class RecordingAudit implements AuditSink {
   readonly events: AuditEvent[] = [];
 
@@ -814,7 +855,23 @@ export interface ConformanceWorld {
   request(executionId: string, turn?: number): ExecutionRequest;
 }
 
-export function createConformanceWorld(options: ConformanceWorldOptions = {}): ConformanceWorld {
+/**
+ * Measurement wiring, kept out of {@link ConformanceWorldOptions} on purpose.
+ *
+ * The options object is hashed into the world-set identity, and a world is
+ * identified by the grants it issues, the namespaces it enables, and the tools
+ * it registers. Where the cost of running it is reported is none of those: two
+ * runs of one world, one measured and one not, must hash the same or the hash
+ * stops meaning "the same world" and starts meaning "the same command line".
+ */
+export interface ConformanceWorldInstrumentation {
+  readonly spans?: SpanSink;
+}
+
+export function createConformanceWorld(
+  options: ConformanceWorldOptions = {},
+  instrumentation: ConformanceWorldInstrumentation = {},
+): ConformanceWorld {
   const now = options.now ?? CONFORMANCE_NOW;
   const bounded = options.bounded === true || options.usageStoreUnavailable === true;
   const agent = [
@@ -848,11 +905,15 @@ export function createConformanceWorld(options: ConformanceWorldOptions = {}): C
 
   const audit = new RecordingAudit();
   const transport = new RecordingTransport();
+  const messageRouter = new RecordingMessageRouter(transport);
   const files = new ConformanceFileStore();
   const kernel = new SharedOSKernel({
     grantSource,
     audit,
     messageTransport: transport,
+    messageRequestRouter: messageRouter,
+    createMessageId: (access) => `${access.traceId}-message-request`,
+    ...(instrumentation.spans === undefined ? {} : { spans: instrumentation.spans }),
     authorizer: new CapabilityAuthorizer({
       usageStore:
         options.usageStoreUnavailable === true
@@ -868,7 +929,6 @@ export function createConformanceWorld(options: ConformanceWorldOptions = {}): C
     files.escapingHandler(),
     files.mismatchedHandler(),
     files.sealedHandler(),
-    messageHandler(kernel),
   ];
   for (const handler of handlers) {
     kernel.registerTool(handler);
@@ -885,7 +945,10 @@ export function createConformanceWorld(options: ConformanceWorldOptions = {}): C
     now,
   };
 
-  const tools: ToolDefinition[] = handlers.map(({ definition }) => definition);
+  const tools: ToolDefinition[] = [
+    ...handlers.map(({ definition }) => definition),
+    MESSAGE_REQUEST_TOOL_DEFINITION,
+  ];
 
   const executionOptions =
     options.maxToolCalls === undefined && options.maxSteps === undefined
@@ -919,7 +982,6 @@ export function createConformanceWorld(options: ConformanceWorldOptions = {}): C
           id: `${executionId}-message`,
           sender: CONFORMANCE_AGENT,
           receiver: CONFORMANCE_AGENT,
-          intent: "run-conformance-move",
           purpose: CONFORMANCE_PURPOSE,
           payload: {},
           traceId,
@@ -954,71 +1016,6 @@ function unregisteredToolStub(): ToolDefinition {
     requiredCapability: {
       resource: { namespace: EXECUTION_RESOURCE_NAMESPACE, path: ["grant"] },
       action: "issue",
-    },
-  };
-}
-
-/** Routes through the kernel's own message path, not a local echo. */
-function messageHandler(kernel: SharedOSKernel): ToolHandler {
-  return {
-    definition: {
-      name: SEND_TOOL,
-      description: "Send one message to the owner",
-      namespace: MESSAGES_NAMESPACE,
-      source: "sharedos",
-      readWrite: "write",
-      inputSchema: {
-        type: "object",
-        properties: {
-          intent: { type: "string", description: "What the message is for, for example `status`." },
-          text: { type: "string", description: "The message body." },
-        },
-        additionalProperties: true,
-      },
-      requiredCapability: {
-        resource: { namespace: MESSAGING_RESOURCE_NAMESPACE, path: ["human"] },
-        action: "send",
-      },
-    },
-    parseArguments: (arguments_) => arguments_,
-    resolveRequirement: (context, _call) => ({
-      resource: {
-        namespace: MESSAGING_RESOURCE_NAMESPACE,
-        path: ["human", "user-alice"],
-        owner: context.owner,
-      },
-      action: "send",
-    }),
-    invoke: async (context, call, signal) => {
-      const envelope: MessageEnvelope = {
-        version: "1",
-        id: `${call.id}-envelope`,
-        sender: context.actor,
-        receiver: CONFORMANCE_OWNER,
-        intent: "report",
-        purpose: context.purpose,
-        payload: (call.arguments as JsonObject) ?? {},
-        traceId: context.traceId,
-        createdAt: context.now,
-      };
-      const delivery = await kernel.sendMessage(context, envelope, { signal });
-      const result: ToolResult =
-        delivery.status === "denied" || delivery.status === "failed"
-          ? {
-              callId: call.id,
-              tool: call.tool,
-              status: delivery.status === "denied" ? "denied" : "failed",
-              error: delivery.error,
-              completedAt: context.now,
-            }
-          : {
-              callId: call.id,
-              tool: call.tool,
-              status: "succeeded",
-              output: { messageId: delivery.messageId },
-              completedAt: context.now,
-            };
-      return result;
     },
   };
 }

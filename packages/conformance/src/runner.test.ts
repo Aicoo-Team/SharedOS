@@ -349,9 +349,10 @@ describe("the conformance suite", () => {
     expect(revoked?.reasonCodes).toEqual(["no_matching_grant"]);
   });
 
-  // The only test that runs the whole suite twice, so it needs roughly double
-  // the budget. It was already inside 5s by a couple of hundred milliseconds;
-  // one more case would have made determinism look like a flake.
+  // Two whole suite runs, which is a little over vitest's default budget on a
+  // small machine. Stated here rather than raised globally: this is the only
+  // test that deliberately runs the suite twice, and a global raise would hide
+  // the next test that becomes slow for a reason worth knowing about.
   it("produces the same manifest on every run", async () => {
     const first = await runConformanceSuite();
     const second = await runConformanceSuite();

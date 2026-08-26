@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.2**](README.md)
+[**SharedOS API v0.1.0-alpha.3**](README.md)
 
 ---
 
@@ -29,13 +29,13 @@ SharedOS is currently an `0.x` prerelease.
 
 ### StandardOsProviders
 
-Defined in: [index.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L121)
+Defined in: [index.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L138)
 
 #### Properties
 
 | Property                             | Modifier   | Type                                                    | Defined in                                                                                     |
 | ------------------------------------ | ---------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| <a id="property-files"></a> `files?` | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L122) |
+| <a id="property-files"></a> `files?` | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L139) |
 
 ## Type Aliases
 
@@ -51,7 +51,7 @@ Defined in: [index.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **FilesAppendArguments** = `z.infer`\<_typeof_ [`FilesAppendArgumentsSchema`](#filesappendargumentsschema)>\>
 
-Defined in: [index.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L75)
+Defined in: [index.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L92)
 
 ---
 
@@ -67,7 +67,7 @@ Defined in: [index.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **FilesDeleteArguments** = `z.infer`\<_typeof_ [`FilesDeleteArgumentsSchema`](#filesdeleteargumentsschema)>\>
 
-Defined in: [index.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L84)
+Defined in: [index.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L101)
 
 ---
 
@@ -91,7 +91,7 @@ Defined in: [index.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **FilesReplaceArguments** = `z.infer`\<_typeof_ [`FilesReplaceArgumentsSchema`](#filesreplaceargumentsschema)>\>
 
-Defined in: [index.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L65)
+Defined in: [index.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L82)
 
 ---
 
@@ -107,7 +107,7 @@ Defined in: [index.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **FilesSnapshotCreateArguments** = `z.infer`\<_typeof_ [`FilesSnapshotCreateArgumentsSchema`](#filessnapshotcreateargumentsschema)>\>
 
-Defined in: [index.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L92)
+Defined in: [index.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L109)
 
 ---
 
@@ -115,7 +115,7 @@ Defined in: [index.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **FilesSnapshotListArguments** = `z.infer`\<_typeof_ [`FilesSnapshotListArgumentsSchema`](#filessnapshotlistargumentsschema)>\>
 
-Defined in: [index.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L100)
+Defined in: [index.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L117)
 
 ---
 
@@ -123,7 +123,7 @@ Defined in: [index.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **FilesSnapshotRestoreArguments** = `z.infer`\<_typeof_ [`FilesSnapshotRestoreArgumentsSchema`](#filessnapshotrestoreargumentsschema)>\>
 
-Defined in: [index.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L109)
+Defined in: [index.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L126)
 
 ## Variables
 
@@ -147,9 +147,9 @@ The canonical SharedOS resource plane. Memory is a role of files, not a second s
 
 ### FilesAppendArgumentsSchema
 
-> `const` **FilesAppendArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodString`>\>; `metadata`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>>>\>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}\>
+> `const` **FilesAppendArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>>\>\>; `metadata`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>>>\>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L67)
+Defined in: [index.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L84)
 
 ---
 
@@ -163,9 +163,9 @@ Defined in: [index.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 ### FilesDeleteArgumentsSchema
 
-> `const` **FilesDeleteArgumentsSchema**: `ZodObject`\<\{ `expectedVersion`: `ZodOptional`\<`ZodString`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `recursive`: `ZodDefault`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `expectedVersion?`: `string`; `path`: `string`[]; `recursive`: `boolean`; \}, \{ `expectedVersion?`: `string`; `path`: `string`[]; `recursive?`: `boolean`; \}\>
+> `const` **FilesDeleteArgumentsSchema**: `ZodObject`\<\{ `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `recursive`: `ZodDefault`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `expectedVersion?`: `string`; `path`: `string`[]; `recursive`: `boolean`; \}, \{ `expectedVersion?`: `string`; `path`: `string`[]; `recursive?`: `boolean`; \}\>
 
-Defined in: [index.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L77)
+Defined in: [index.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L94)
 
 ---
 
@@ -187,9 +187,9 @@ Defined in: [index.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 ### FilesReplaceArgumentsSchema
 
-> `const` **FilesReplaceArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodString`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}\>
+> `const` **FilesReplaceArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L58)
+Defined in: [index.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L75)
 
 ---
 
@@ -205,7 +205,7 @@ Defined in: [index.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **FilesSnapshotCreateArgumentsSchema**: `ZodObject`\<\{ `label`: `ZodOptional`\<`ZodString`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `label?`: `string`; `path`: `string`[]; \}, \{ `label?`: `string`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L86)
+Defined in: [index.ts:103](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L103)
 
 ---
 
@@ -213,15 +213,15 @@ Defined in: [index.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **FilesSnapshotListArgumentsSchema**: `ZodObject`\<\{ `limit`: `ZodOptional`\<`ZodNumber`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `limit?`: `number`; `path`: `string`[]; \}, \{ `limit?`: `number`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L94)
+Defined in: [index.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L111)
 
 ---
 
 ### FilesSnapshotRestoreArgumentsSchema
 
-> `const` **FilesSnapshotRestoreArgumentsSchema**: `ZodObject`\<\{ `expectedVersion`: `ZodOptional`\<`ZodString`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `snapshotId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `expectedVersion?`: `string`; `path`: `string`[]; `snapshotId`: `string`; \}, \{ `expectedVersion?`: `string`; `path`: `string`[]; `snapshotId`: `string`; \}\>
+> `const` **FilesSnapshotRestoreArgumentsSchema**: `ZodObject`\<\{ `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `snapshotId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `expectedVersion?`: `string`; `path`: `string`[]; `snapshotId`: `string`; \}, \{ `expectedVersion?`: `string`; `path`: `string`[]; `snapshotId`: `string`; \}\>
 
-Defined in: [index.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L102)
+Defined in: [index.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L119)
 
 ---
 
@@ -237,7 +237,7 @@ Defined in: [index.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **createFileTools**(`provider`): readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
-Defined in: [index.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L143)
+Defined in: [index.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L160)
 
 Portable file tools over one host-owned provider.
 
@@ -261,7 +261,7 @@ readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
 > **registerStandardOsTools**(`kernel`, `providers`): `void`
 
-Defined in: [index.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L125)
+Defined in: [index.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L142)
 
 #### Parameters
 
