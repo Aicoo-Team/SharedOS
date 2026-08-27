@@ -343,10 +343,14 @@ export class SharedOSKernel {
       if (!enabledNamespaces.has(definition.namespace)) {
         continue;
       }
-      const decision = await this.#authorizer.canDiscover(authority.authority, {
-        resource: definition.requiredCapability.resource,
-        action: definition.requiredCapability.action,
-      });
+      const decision = await this.#authorizer.canDiscover(
+        authority.authority,
+        {
+          resource: definition.requiredCapability.resource,
+          action: definition.requiredCapability.action,
+        },
+        { now: context.now },
+      );
       if (decision.allowed) {
         allowed.push(definition);
       }
@@ -565,10 +569,14 @@ export class SharedOSKernel {
       SPAN.TOOL_DISCOVER,
       (span) => {
         span.set("callId", call.id);
-        return this.#authorizer.canDiscover(authority.authority, {
-          resource: handler.definition.requiredCapability.resource,
-          action: handler.definition.requiredCapability.action,
-        });
+        return this.#authorizer.canDiscover(
+          authority.authority,
+          {
+            resource: handler.definition.requiredCapability.resource,
+            action: handler.definition.requiredCapability.action,
+          },
+          { now: context.now },
+        );
       },
       (decision, span) => span.set("outcome", decision.allowed ? "visible" : "hidden"),
     );
@@ -1005,9 +1013,16 @@ export class SharedOSKernel {
    * Decide and audit one request.
    *
    * The decision is made against `authority`, whose context carries the instant
-   * the turn's authority was resolved. The audit event is written against the
-   * live `context`, so a record still states when each decision happened rather
-   * than restamping every one of them with the turn's opening instant.
+   * the turn's authority was resolved, and against the live `context`, which
+   * carries the instant of this operation. The grant set is the turn's; the
+   * clock is the operation's, so a grant whose validity window closed while the
+   * turn was running is refused here rather than at the next turn. See
+   * `grantIsActive` in `internal.ts` for which removals move with the operation
+   * and which stay with the turn.
+   *
+   * The audit event is written against the live `context` too, so a record
+   * states when each decision happened rather than restamping every one of them
+   * with the turn's opening instant.
    */
   /**
    * One decision against authority the turn already holds.
@@ -1053,7 +1068,10 @@ export class SharedOSKernel {
     consume: boolean,
     operationId?: string,
   ): Promise<AuthorizationDecision> {
-    const decision = await this.#authorizer.authorize(authority, request, { consume });
+    const decision = await this.#authorizer.authorize(authority, request, {
+      consume,
+      now: context.now,
+    });
 
     await this.#recordAuthorizationDecision(
       context,

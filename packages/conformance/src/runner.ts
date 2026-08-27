@@ -26,7 +26,7 @@ import {
   type ConformanceCase,
   type ConformanceCondition,
 } from "./suite.js";
-import { CONFORMANCE_NOW, createConformanceWorld, type ConformanceWorld } from "./world.js";
+import { createConformanceWorld, type ConformanceWorld } from "./world.js";
 
 /** Version of the grading rules, so a manifest names what produced it. */
 export const JUDGE_VERSION = "2";
@@ -333,7 +333,11 @@ async function runCell(
       world.kernel,
       column.create([kase.move], { turn, executionId: turnId }),
       {
-        clock: () => CONFORMANCE_NOW,
+        // The world's clock, not the frozen constant. It is frozen for every
+        // condition that did not arm one that moves, so this changes nothing on
+        // any existing row -- and a row whose claim is that a window closes
+        // mid-turn cannot be run against a clock that never reaches it.
+        clock: world.clock,
         createId: () => `${turnId}.event-${(sequence += 1)}`,
       },
     ).execute(request);

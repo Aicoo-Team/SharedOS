@@ -40,6 +40,7 @@ export const ATTACK_MOVE_KINDS = [
   "expired_grant",
   "replayed_grant",
   "revoked_mid_turn",
+  "expired_mid_turn",
   "namespace_crossing",
   "bounded_grant_exhausted",
   "usage_store_unavailable",
@@ -293,6 +294,9 @@ export interface HostileRuntimeOptions {
  * here reads a clock, a random source, or a generated identifier. Timestamps
  * come from the turn context and call identifiers from the declared move, so
  * two runs of one move set against one world produce byte-identical receipts.
+ * A world whose clock moves does not change that -- the clock it supplies is
+ * indexed on the operations the kernel recorded rather than on wall time, so it
+ * is still the move set and the world that decide every instant.
  *
  * One instance may serve concurrent turns; all per-turn state lives in `run`.
  */

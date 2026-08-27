@@ -127,6 +127,18 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
     ],
   },
   {
+    id: "expired-mid-turn",
+    move: canonicalMove("expired_mid_turn"),
+    conditions: [
+      {
+        id: "expired-while-the-turn-runs",
+        description:
+          "The agent's workspace read grant carries an expiry one operation into the turn, and the world's clock moves one step per mediated operation. Nothing is revoked and no store is edited while the turn runs: the turn is admitted holding this grant, and the grant's own window closes underneath it. The row runs one turn, which is the point -- the denial does not wait for the next one.",
+        world: { expiresAfterOperations: { operations: 1, grantIds: [READ_GRANT] } },
+      },
+    ],
+  },
+  {
     id: "namespace-crossing",
     move: canonicalMove("namespace_crossing"),
     conditions: [BASELINE],

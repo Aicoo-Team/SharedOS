@@ -15,6 +15,10 @@
  * probe must not be able to edit files or run commands on the machine it is
  * measuring, and a harness reaching for its own `bash` instead of the catalogue
  * would be answering a different question anyway.
+ *
+ * Usage:
+ *   node scripts/live-conformance.mjs
+ *   node scripts/live-conformance.mjs --case expired-mid-turn
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -38,9 +42,50 @@ const {
 const { ChildProcessTransport, probeHarness } = await import(
   join(root, "packages", "adapters", "dist", "node.js")
 );
-const { EMBEDDED_COLUMN, liveColumn, runConformanceSuite, strictFailures } = await import(
-  join(root, "packages", "conformance", "dist", "index.js")
-);
+const {
+  CANONICAL_CONFORMANCE_CASES,
+  EMBEDDED_COLUMN,
+  liveColumn,
+  runConformanceSuite,
+  strictFailures,
+} = await import(join(root, "packages", "conformance", "dist", "index.js"));
+
+const argv = process.argv.slice(2);
+const flag = (name, fallback) => {
+  const index = argv.indexOf(`--${name}`);
+  return index === -1 ? fallback : (argv[index + 1] ?? fallback);
+};
+/**
+ * Run named cases instead of the whole set.
+ *
+ * A live turn costs model tokens and a live harness is slow, so exercising one
+ * row should not oblige the twenty-three that precede it. Ids are comma
+ * separated, and one that names no case stops the run before a harness is even
+ * probed: quietly executing a smaller set than was asked for is how a green
+ * result gets attributed to a row that never ran.
+ *
+ * The default stays the whole set, unlike `mcp-conformance.mjs`, which defaults
+ * to one. This script's contract has always been "run the case set", and a
+ * published live result is a whole-set one; narrowing the default would silently
+ * change what an existing invocation produces.
+ */
+const selected = flag("case", undefined)
+  ?.split(",")
+  .map((id) => id.trim())
+  .filter((id) => id.length > 0);
+
+if (selected !== undefined) {
+  const declared = new Set(CANONICAL_CONFORMANCE_CASES.map(({ id }) => id));
+  const unknown = selected.filter((id) => !declared.has(id));
+  if (unknown.length > 0) {
+    console.error(`No such conformance case: ${unknown.join(", ")}`);
+    process.exit(1);
+  }
+}
+const cases =
+  selected === undefined
+    ? CANONICAL_CONFORMANCE_CASES
+    : CANONICAL_CONFORMANCE_CASES.filter(({ id }) => selected.includes(id));
 
 /**
  * How each harness is launched, and how the turn's prompt reaches it.
@@ -184,9 +229,16 @@ if (columns.length === 1) {
   console.log("\nNo vendor harness is installed here. Nothing live was run.");
 }
 
-console.log(`\nRunning the case set against ${columns.length} column(s)...`);
+if (cases.length < CANONICAL_CONFORMANCE_CASES.length) {
+  console.log(
+    `\nRunning ${cases.length} of ${CANONICAL_CONFORMANCE_CASES.length} cases ` +
+      `(${cases.map(({ id }) => id).join(", ")}). A partial run is not a manifest.`,
+  );
+}
+
+console.log(`\nRunning ${cases.length} case(s) against ${columns.length} column(s)...`);
 const started = Date.now();
-const { manifest, evidence } = await runConformanceSuite({ columns });
+const { manifest, evidence } = await runConformanceSuite({ cases, columns });
 const elapsedMs = Date.now() - started;
 
 const tally = new Map();
@@ -260,6 +312,10 @@ await writeFile(
         "transport. A column absent from `columns` was not installed and is not a " +
         "result about SharedOS.",
       elapsedMs,
+      // Which rows this run actually put, beside every row it could have. A
+      // partial run that recorded only its results would be read as a whole one.
+      casesRun: cases.map(({ id }) => id),
+      casesDeclared: CANONICAL_CONFORMANCE_CASES.map(({ id }) => id),
       availability: availability.map(
         ({ columnId, label, harness, available, reason, detail, command, args }) => ({
           columnId,

@@ -8,6 +8,7 @@ import type {
 
 import {
   addressesEqual,
+  type GrantInstants,
   grantIsActive,
   parseTimestamp,
   pathIsWithin,
@@ -64,6 +65,14 @@ export type DelegationValidation =
 export interface DelegationValidationOptions {
   readonly resolver?: DelegationChainResolver;
   readonly maxChainLength?: number;
+  /**
+   * The instant the turn's authority was resolved, when it is not `now`.
+   *
+   * An ancestor is subject to the same split as the grant that names it: its
+   * expiry is observed at `now`, everything else at the instant the turn was
+   * admitted. Defaults to `now`, which decides the whole chain at one instant.
+   */
+  readonly admittedAt?: number;
 }
 
 /**
@@ -75,8 +84,10 @@ export interface DelegationValidationOptions {
  *
  * - the child's issuer is exactly the parent's subject;
  * - both grants live in the same namespace;
- * - the parent is itself active for the requested purpose at `now`, so
- *   revoking or expiring an ancestor invalidates every descendant;
+ * - the parent is itself active for the requested purpose, so revoking or
+ *   expiring an ancestor invalidates every descendant. A revoked ancestor is
+ *   observed at `options.admittedAt` and an expired one at `now`, exactly as
+ *   for the grant presenting the chain;
  * - every child capability is covered by one parent capability;
  * - time window and purposes never widen;
  * - the parent holds delegation budget and the child's budget is strictly
@@ -100,6 +111,7 @@ export async function validateDelegationChain(
   }
 
   const maxChainLength = options.maxChainLength ?? DEFAULT_MAX_DELEGATION_CHAIN_LENGTH;
+  const at: GrantInstants = { admittedAt: options.admittedAt ?? now, now };
   const seen = new Set<string>([grant.id]);
   let child = grant;
 
@@ -125,7 +137,7 @@ export async function validateDelegationChain(
       return invalid(chain, "chain_cycle", parent.id);
     }
 
-    const violation = linkViolation(child, parent, context, now);
+    const violation = linkViolation(child, parent, context, at);
     if (violation !== undefined) {
       return invalid(chain, violation, parent.id);
     }
@@ -142,7 +154,7 @@ function linkViolation(
   child: CapabilityGrant,
   parent: CapabilityGrant,
   context: AccessContext,
-  now: number,
+  at: GrantInstants,
 ): DelegationViolationCode | undefined {
   if (parent.namespaceId !== child.namespaceId) {
     return "namespace_mismatch";
@@ -150,7 +162,7 @@ function linkViolation(
   if (!addressesEqual(parent.subject, child.issuer)) {
     return "issuer_not_parent_subject";
   }
-  if (!grantIsActive(parent, context.purpose, now)) {
+  if (!grantIsActive(parent, context.purpose, at)) {
     return "parent_inactive";
   }
 

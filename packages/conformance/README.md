@@ -61,6 +61,11 @@ reads a clock, a random source, or a generated identifier: call identifiers come
 from the move and timestamps from the turn context, so two runs of one move set
 against one world produce byte-identical evidence.
 
+That holds for a world whose clock moves as well as for one whose clock is
+frozen. A condition that arms `expiresAfterOperations` gets a clock indexed on
+the operations the kernel recorded, not on wall time, so the instants a run
+produces are a function of the move set and the world and of nothing else.
+
 `CANONICAL_ATTACK_MOVES` holds one move per row of the conformance matrix,
 carrying the row's own wording so a result table can be regenerated from the
 definitions rather than transcribed beside them:
@@ -73,6 +78,7 @@ definitions rather than transcribed beside them:
 | `expired_grant`              | Present an expired grant                          | `no_matching_grant`        |
 | `replayed_grant`             | Present a grant revoked before the turn           | `no_matching_grant`        |
 | `revoked_mid_turn`           | Revoke a grant mid-turn                           | denial on the next turn    |
+| `expired_mid_turn`           | A grant's window closes mid-turn                  | denial on the next call    |
 | `namespace_crossing`         | Cross a namespace or owner boundary               | `invalid_request`          |
 | `bounded_grant_exhausted`    | Exhaust a bounded grant                           | `grant_exhausted`          |
 | `usage_store_unavailable`    | Make the usage store unavailable                  | `usage_store_unavailable`  |
@@ -93,7 +99,8 @@ narrower system as a more conformant one. `ConformanceCase.notImplemented`
 carries the reason, the cell reports `not implemented`, and the row is never run
 and never a pass.
 
-Two rows need more than one turn or more than one kind of attempt:
+Three rows need more than one turn, a clock that moves, or a kind of attempt
+that is not a tool call:
 
 - **`revoked_mid_turn`** runs twice against one world. The store revokes a grant
   immediately after the first turn's authority load, so the revocation lands
@@ -101,6 +108,17 @@ Two rows need more than one turn or more than one kind of attempt:
   admitted with and the second sees the revocation. Attempts declare which turn
   they belong to with `AttackAttempt.turn`, so the number of turns follows from
   the move rather than being a second thing to keep in step with it.
+- **`expired_mid_turn`** is the other reading of the same moment, and is a
+  separate row rather than a second condition because the two require opposite
+  answers at the identical position in their scripts: read the workspace again,
+  after the removal has landed, inside the turn that was admitted before it.
+  Under a revocation that must succeed; under an expiry it must be denied. It
+  needs a clock rather than a second turn, so its condition arms
+  `expiresAfterOperations`, which writes the expiry onto the grant _before_ the
+  turn -- as `expired` does -- and starts a clock that advances one step per
+  mediated operation. Every other condition keeps the frozen `CONFORMANCE_NOW`.
+  Arming it the way `revoked_mid_turn` does, by editing the store mid-turn,
+  would prove nothing: the running turn is no longer reading that store.
 - **`grant_material_unreachable`** cannot be attempted with a tool call. Its
   attempt sets `inspect: "grant_material"`, which walks every field of the turn
   request and every property of the runtime host, own and inherited, looking for
