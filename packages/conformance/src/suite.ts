@@ -256,6 +256,47 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
       },
     ],
   },
+  /**
+   * Two conditions on one script, which is the shape this reading needs.
+   *
+   * Unlike the rollback pair, both conditions here make the identical call at
+   * the identical path and expect the identical answer. That is exactly what is
+   * being asserted: attaching the broker changes the catalogue not at all, so
+   * the two cells must agree. A single condition could assert that the tool is
+   * out of reach; only the pair can assert that *registration is not what puts
+   * it in reach*, because the difference between the two worlds is precisely the
+   * registration.
+   */
+  {
+    id: "broker-ungranted",
+    move: canonicalMove("broker_ungranted"),
+    conditions: [
+      {
+        id: "broker-unattached",
+        description:
+          "No provider is registered, so `notion.search` resolves to no handler at all. The turn still asks for the tool by name and its namespace is still enabled, so a refusal here is about the absent handler and nothing else.",
+        world: {},
+      },
+      {
+        id: "broker-attached-ungranted",
+        description:
+          "The host has connected the external server and its provider lists `notion.search` for this context. The handler now exists and the namespace is enabled; no grant carries `search`, and the expected answer does not move.",
+        world: { broker: "registered" },
+      },
+    ],
+  },
+  {
+    id: "broker-out-of-scope",
+    move: canonicalMove("broker_out_of_scope"),
+    conditions: [
+      {
+        id: "search-confined-to-one-page-tree",
+        description:
+          "The provider is attached and a grant carries `search` over `Handbook` and nothing wider. The tool is therefore in this world's published catalogue and genuinely usable inside that tree, which is what makes this the external reading a live CLI can actually attempt.",
+        world: { broker: "granted" },
+      },
+    ],
+  },
   {
     id: "escalation",
     move: canonicalMove("escalation_recorded"),

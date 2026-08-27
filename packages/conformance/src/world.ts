@@ -27,6 +27,7 @@ import {
   type MessageTransport,
   type ResourceProvider,
   SharedOSKernel,
+  type ContextToolProvider,
   type SpanSink,
   type ToolHandler,
 } from "@aicoo/sharedos-core";
@@ -140,6 +141,38 @@ export const ESCAPING_TOOL = "files.index";
 export const MISMATCHED_TOOL = "files.describe";
 /** Registered nowhere. A plausible control-plane name for an attacker to guess. */
 export const UNREGISTERED_TOOL = "admin.grant.issue";
+
+/**
+ * A brokered external MCP server, and the one tool it publishes.
+ *
+ * Every other tool in this world is registered statically, the way a host's own
+ * tools are. This one arrives through {@link ContextToolProvider}, which is the
+ * port ADR 0006 reserves for user-connected MCP servers and other per-context
+ * catalogues -- resolved for exactly one access context and merged into an
+ * ephemeral registry for that one operation, rather than mutating a registry
+ * concurrent turns share.
+ *
+ * That difference is the whole reason these rows exist. The invariant is the one
+ * every native tool is already held to; what is unverified is whether it still
+ * holds for a handler that was never in the static registry when the turn began.
+ *
+ * `notion` is both the tool namespace and the resource namespace here, which
+ * ADR 0006 permits for a simple integration while insisting the two stay
+ * distinct concepts. The rows below depend on that distinction: the namespace is
+ * enabled in *every* condition, so a refusal is never attributable to the
+ * enablement switch and is always attributable to authority.
+ */
+export const BROKER_NAMESPACE = "notion";
+export const BROKER_PROVIDER_ID = "notion-mcp";
+export const BROKER_SEARCH_TOOL = "notion.search";
+export const BROKER_ACTION = "search";
+/** The page tree the brokered grant covers, and one page inside it. */
+export const BROKER_GRANTED_PATH = ["Handbook"] as const;
+export const BROKER_IN_SCOPE_PAGE = ["Handbook", "onboarding"] as const;
+/** A page of the same brokered server that no grant reaches. */
+export const BROKER_OUT_OF_SCOPE_PAGE = ["Payroll", "salaries"] as const;
+export const BROKER_GRANT = "grant-broker-search";
+export const ROOT_BROKER_GRANT = "grant-root-broker-search";
 
 export const WORKSPACE_PATH = ["Workspace"] as const;
 export const WRITABLE_PATH = ["Workspace", "scratch"] as const;
@@ -494,6 +527,46 @@ export function restoreRootGrants(): readonly CapabilityGrant[] {
       issuedAt: ISSUED_AT,
       id: ROOT_RESTORE_GRANT,
       capabilities: [capability(FILES_NAMESPACE, WRITABLE_PATH, [RESTORE_ACTION])],
+    },
+  ];
+}
+
+/**
+ * Search authority over one page tree of the brokered server, and nothing wider.
+ *
+ * This is the grant the whole external-tool question turns on. Registering the
+ * broker publishes nothing on its own: `notion.search` declares its ceiling as
+ * the whole `notion` namespace, so the discovery filter keeps it out of the
+ * catalogue until some grant somewhere carries `search`. Issuing this one
+ * publishes it and simultaneously bounds it, which is what lets one row ask
+ * whether an external tool obeys its grant the way a native one does.
+ */
+export function brokerGrants(): readonly CapabilityGrant[] {
+  return [
+    {
+      namespaceId: CONFORMANCE_NAMESPACE_ID,
+      subject: CONFORMANCE_AGENT,
+      issuer: CONFORMANCE_ORCHESTRATOR,
+      constraints: { purposes: [CONFORMANCE_PURPOSE], delegationDepth: 1 },
+      issuedAt: ISSUED_AT,
+      id: BROKER_GRANT,
+      parentGrantId: ROOT_BROKER_GRANT,
+      capabilities: [capability(BROKER_NAMESPACE, BROKER_GRANTED_PATH, [BROKER_ACTION])],
+    },
+  ];
+}
+
+/** The ancestor {@link brokerGrants} is attenuated from, armed with it. */
+export function brokerRootGrants(): readonly CapabilityGrant[] {
+  return [
+    {
+      namespaceId: CONFORMANCE_NAMESPACE_ID,
+      subject: CONFORMANCE_ORCHESTRATOR,
+      issuer: CONFORMANCE_OWNER,
+      constraints: { purposes: [CONFORMANCE_PURPOSE], delegationDepth: 2 },
+      issuedAt: ISSUED_AT,
+      id: ROOT_BROKER_GRANT,
+      capabilities: [capability(BROKER_NAMESPACE, BROKER_GRANTED_PATH, [BROKER_ACTION])],
     },
   ];
 }
@@ -959,6 +1032,103 @@ export class ConformanceFileStore {
   }
 }
 
+/**
+ * What the broker publishes, declared once.
+ *
+ * Named separately because the turn request has to carry it in every condition,
+ * including the ones where no provider registers it. A row that only asked for
+ * the tool when it existed could not tell "the host never registered it" from
+ * "the turn never asked", and the first is the thing being measured.
+ */
+export function brokerToolDefinition(): ToolDefinition {
+  return {
+    name: BROKER_SEARCH_TOOL,
+    description: "Search a page of the brokered workspace",
+    namespace: BROKER_NAMESPACE,
+    // `mcp`, not `sharedos`: the source marks this as a catalogue the host
+    // connected rather than one SharedOS ships. It is metadata and never
+    // permission evidence -- which is part of what these rows check.
+    source: "mcp",
+    readWrite: "read",
+    inputSchema: pathToolSchema(BROKER_IN_SCOPE_PAGE, { owner: false }),
+    // The whole namespace, like every shipped tool's ceiling. So the tool is
+    // discoverable exactly when some grant carries `search` somewhere in
+    // `notion`, and absent from the catalogue when none does.
+    requiredCapability: {
+      resource: { namespace: BROKER_NAMESPACE, path: [] },
+      action: BROKER_ACTION,
+    },
+    annotations: { readOnly: true },
+  };
+}
+
+/**
+ * The brokered external MCP server, as a host would supply one.
+ *
+ * Deliberately undefended, exactly like {@link ConformanceFileStore}: it clamps
+ * no path and checks no authority of its own. A broker that filtered its own
+ * results would make the kernel look correct while doing the enforcement
+ * itself, and the rows would then be evidence about this fixture rather than
+ * about SharedOS.
+ *
+ * The handler is built fresh on each `listTools` because that is the contract a
+ * real per-context provider has to honour -- one user's catalogue is resolved
+ * for one context and must not be a handle onto anything shared.
+ */
+export class ConformanceBrokerStore {
+  /** Every page the broker was actually asked for, in order. */
+  readonly searches: string[] = [];
+  /**
+   * Every context the provider was resolved for.
+   *
+   * Recorded because the row that matters most is the one where attaching the
+   * broker changes nothing, and a provider that was silently never consulted
+   * would produce exactly that cell for the wrong reason. This is what separates
+   * "listed and then refused by the grant store" from "never listed at all".
+   */
+  readonly listings: string[] = [];
+
+  provider(): ContextToolProvider {
+    return {
+      id: BROKER_PROVIDER_ID,
+      listTools: async (context) => {
+        await Promise.resolve();
+        this.listings.push(context.namespaceId);
+        return [this.#searchHandler()];
+      },
+    };
+  }
+
+  #searchHandler(): ToolHandler {
+    return {
+      definition: brokerToolDefinition(),
+      parseArguments: (arguments_) => arguments_,
+      resolveRequirement: (context, call) => ({
+        resource: {
+          namespace: BROKER_NAMESPACE,
+          path: pathArgument((call.arguments as { path?: unknown }).path, BROKER_GRANTED_PATH),
+          owner: context.owner,
+        },
+        action: BROKER_ACTION,
+      }),
+      invoke: async (context, call) => {
+        const key = pathArgument(
+          (call.arguments as { path?: unknown }).path,
+          BROKER_GRANTED_PATH,
+        ).join("/");
+        this.searches.push(key);
+        return {
+          callId: call.id,
+          tool: call.tool,
+          status: "succeeded" as const,
+          output: { page: key, results: [] },
+          completedAt: context.now,
+        };
+      },
+    };
+  }
+}
+
 /** A trusted grant store whose availability the fixture controls. */
 export class ConformanceGrantSource implements GrantSource {
   readonly #grants = new Map<string, CapabilityGrant>();
@@ -1194,6 +1364,21 @@ export interface ConformanceWorldOptions {
    * rather than part of the standing agent authority.
    */
   readonly restorable?: boolean;
+  /**
+   * Attach the brokered external MCP server, and optionally grant against it.
+   *
+   * Three states, because the question these rows ask has three answers.
+   * Absent, no provider is registered and `notion.search` resolves to no handler
+   * at all. `registered` attaches the provider, so the handler exists for this
+   * context -- and nothing else changes, because no grant carries `search`.
+   * `granted` adds authority over one page tree, which is what finally publishes
+   * the tool and bounds it at the same time.
+   *
+   * The tool namespace is enabled in all three. Enablement is not authority, and
+   * leaving it constant is what makes a refusal attributable to the grant store
+   * rather than to a switch.
+   */
+  readonly broker?: "registered" | "granted";
   /** Bound the turn below the number of calls its move declares. */
   readonly maxToolCalls?: number;
   readonly maxSteps?: number;
@@ -1212,6 +1397,8 @@ export interface ConformanceWorld {
   readonly kernel: SharedOSKernel;
   readonly context: AccessContext;
   readonly files: ConformanceFileStore;
+  /** The brokered external server, so a row can see what it was actually asked. */
+  readonly broker: ConformanceBrokerStore;
   readonly grantSource: ConformanceGrantSource;
   readonly chain: ConformanceChainResolver;
   readonly auditEvents: readonly AuditEvent[];
@@ -1251,10 +1438,12 @@ export function createConformanceWorld(
     ...(bounded ? boundedGrants() : []),
     ...(options.overBroadDelegation === true ? overBroadGrants() : []),
     ...(options.restorable === true ? restoreGrants() : []),
+    ...(options.broker === "granted" ? brokerGrants() : []),
   ];
   const all = [
     ...rootGrants(),
     ...(options.restorable === true ? restoreRootGrants() : []),
+    ...(options.broker === "granted" ? brokerRootGrants() : []),
     ...agent,
   ];
   const grantSource = new ConformanceGrantSource(agent);
@@ -1284,6 +1473,7 @@ export function createConformanceWorld(
   const transport = new RecordingTransport();
   const messageRouter = new RecordingMessageRouter(transport);
   const files = new ConformanceFileStore();
+  const broker = new ConformanceBrokerStore();
   const kernel = new SharedOSKernel({
     grantSource,
     audit,
@@ -1322,10 +1512,13 @@ export function createConformanceWorld(
   for (const handler of handlers) {
     kernel.registerTool(handler);
   }
+  if (options.broker !== undefined) {
+    kernel.registerToolProvider(broker.provider());
+  }
 
   const context: AccessContext = {
     namespaceId: CONFORMANCE_NAMESPACE_ID,
-    enabledToolNamespaces: [FILES_NAMESPACE, MESSAGES_NAMESPACE],
+    enabledToolNamespaces: [FILES_NAMESPACE, MESSAGES_NAMESPACE, BROKER_NAMESPACE],
     actor: CONFORMANCE_AGENT,
     authority: CONFORMANCE_ORCHESTRATOR,
     owner: CONFORMANCE_OWNER,
@@ -1353,6 +1546,7 @@ export function createConformanceWorld(
     kernel,
     context,
     files,
+    broker,
     grantSource,
     chain,
     auditEvents: audit.events,
@@ -1376,7 +1570,7 @@ export function createConformanceWorld(
           traceId,
           createdAt: now,
         },
-        tools: [...tools, unregisteredToolStub()],
+        tools: [...tools, brokerToolDefinition(), unregisteredToolStub()],
         ...executionOptions,
       };
     },
