@@ -94,7 +94,17 @@ export const MESSAGE_REQUEST_TOOL_DEFINITION: ToolDefinition = {
     required: ["recipient", "payload"],
     additionalProperties: false,
   },
-  outputSchema: {},
+  /**
+   * The reply payload, whose shape is the recipient's and not ours to declare.
+   *
+   * `{ type: "object" }` rather than `{}`: MCP types `outputSchema` as an object
+   * schema, and the reference SDK validates that literally -- a `tools/list`
+   * carrying a typeless one is rejected whole, so every tool in the catalogue
+   * disappears along with it. Clients that skip the check connect regardless,
+   * which is what makes this worth spelling out here: the same catalogue reaches
+   * one harness intact and another not at all.
+   */
+  outputSchema: { type: "object" },
   requiredCapability: {
     resource: { namespace: MESSAGING_NAMESPACE, path: [] },
     action: MESSAGE_SEND_ACTION,

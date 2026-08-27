@@ -1879,14 +1879,14 @@ Defined in: [conformance/src/columns.ts:326](https://github.com/Aicoo-Team/Share
 
 ### MovePromptOptions
 
-Defined in: [conformance/src/columns.ts:581](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L581)
+Defined in: [conformance/src/columns.ts:597](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L597)
 
 #### Properties
 
 | Property                                  | Modifier   | Type                                                                 | Defined in                                                                                                                  |
 | ----------------------------------------- | ---------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-context-1"></a> `context` | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | [conformance/src/columns.ts:582](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L582) |
-| <a id="property-turn-3"></a> `turn`       | `readonly` | `number`                                                             | [conformance/src/columns.ts:583](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L583) |
+| <a id="property-context-1"></a> `context` | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | [conformance/src/columns.ts:598](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L598) |
+| <a id="property-turn-3"></a> `turn`       | `readonly` | `number`                                                             | [conformance/src/columns.ts:599](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L599) |
 
 ---
 
@@ -4874,7 +4874,7 @@ something that did not happen.
 
 > **liveReceiptsFromRecord**(`move`, `turn`): readonly `object`[]
 
-Defined in: [conformance/src/columns.ts:516](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L516)
+Defined in: [conformance/src/columns.ts:518](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L518)
 
 Recover what a live turn attempted, correlating on the call rather than its id.
 
@@ -4886,7 +4886,9 @@ that made every call as a turn that made none.
 So the correlation is on what the record can actually show about a call: the
 tool, and the resource the kernel resolved it to, taken in declared order with
 each operation consumed at most once. A row whose attempt names a path is
-matched only against an operation on that path.
+matched against an operation on that path, and only against a resource-less
+one once no exact match is left -- see the two passes below, and why an
+operation that never reached authorization must not outrank one that did.
 
 This is deliberately weaker than the scripted column's correlation and must
 not be folded into the committed manifest. Two attempts on one tool and one
@@ -5014,7 +5016,7 @@ claims an answer for it.
 
 > **movesToPrompt**(`moves`, `options`): `string`
 
-Defined in: [conformance/src/columns.ts:599](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L599)
+Defined in: [conformance/src/columns.ts:615](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L615)
 
 The declared attempts, written out as instructions a live harness can follow.
 

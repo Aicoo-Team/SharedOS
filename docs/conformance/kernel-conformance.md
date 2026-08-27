@@ -12,7 +12,7 @@ the vendor still emits these shapes — so these columns say nothing about a
 live session. Live-run columns are a separate claim and are not made here.
 
 - Case set: `bb6c573fc22ff61922c13369f7416e504e65086d80b185afcc9ea2ff481b5fa1`
-- World set: `c0c0b138e97aaedb10bb02bad957b624e70079f87e799afd2f888b42c231e999`
+- World set: `a294ebe22eb1f8ca5ab752ecc5aef164bb12926d2870a73d2aa312a877551cde`
 - Grading rules: version `2`
 - Columns: `Standard`, `Codex`, `Claude Code`, `Deepseek`, `pi`
 
