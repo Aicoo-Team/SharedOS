@@ -175,6 +175,19 @@ export const MUTATION_ACTIONS = ["create", "replace", "append", "delete"] as con
  * harmless snapshot actions, and still cannot restore anything.
  */
 export const SNAPSHOT_ACTIONS = ["snapshot:create", "snapshot:list"] as const;
+/**
+ * The one recovery action that does roll something back.
+ *
+ * Carried by no grant unless a condition arms
+ * {@link ConformanceWorldOptions.restorable}. That is not an oversight to be
+ * tidied up later: a grant carrying it makes `files.snapshot.restore` pass the
+ * discovery filter and enter the published catalogue for every call in that
+ * world, and the catalogue is what a live model chooses from. Leaving it
+ * unheld by default is what lets one row read the availability gate and another
+ * read the scope gate, without either row's world contaminating the other's.
+ */
+export const RESTORE_ACTION = "snapshot:restore";
+
 /** The snapshot every seeded file already has, so a rollback has something to name. */
 export const SEEDED_SNAPSHOT_ID = "snapshot-1";
 
@@ -186,6 +199,8 @@ export const ROOT_EXECUTION_GRANT = "grant-root-execution";
 export const ROOT_MESSAGING_GRANT = "grant-root-messaging";
 /** The ancestor of the two harmless snapshot actions. */
 export const ROOT_SNAPSHOT_GRANT = "grant-root-snapshot";
+/** The ancestor of rollback authority. Issued only when a condition arms it. */
+export const ROOT_RESTORE_GRANT = "grant-root-restore";
 /**
  * The ancestor of the authority that reaches the sealed tool.
  *
@@ -200,6 +215,15 @@ export const SCRATCH_GRANT = "grant-scratch";
 export const MESSAGE_GRANT = "grant-message";
 /** Workspace-wide authority for `snapshot:create` and `snapshot:list`, and nothing else. */
 export const SNAPSHOT_GRANT = "grant-snapshot";
+/**
+ * Rollback authority over the scratch folder alone.
+ *
+ * Armed by one condition. Its existence is the whole difference between the two
+ * rollback rows: without it the tool is absent from the catalogue and the call
+ * is refused at the envelope; with it the tool is present and usable inside
+ * scratch, and a rollback aimed anywhere else is refused by the kernel.
+ */
+export const RESTORE_GRANT = "grant-restore";
 /**
  * Authority for the sealed tool's exact requirement, held and never usable.
  *
@@ -418,6 +442,58 @@ export function overBroadGrants(): readonly CapabilityGrant[] {
       capabilities: [
         capability(FILES_NAMESPACE, WORKSPACE_PATH, [...READ_ACTIONS, ...MUTATION_ACTIONS]),
       ],
+    },
+  ];
+}
+
+/**
+ * Rollback authority over the scratch folder, armed by one condition.
+ *
+ * Issuing it does two things at once, and both are the point. It makes
+ * `files.snapshot.restore` pass the discovery filter, so the tool enters the
+ * published catalogue and a live model can actually choose it -- which is what
+ * makes the scope reading live-testable where the availability reading can only
+ * ever be scripted. And it confines rollback to `Workspace/scratch`, so a
+ * rollback aimed anywhere else is refused by the kernel on scope rather than by
+ * the envelope on availability.
+ *
+ * It is deliberately not part of {@link agentGrants}. A grant that reaches the
+ * catalogue changes what every call in that world is choosing from, so it stays
+ * inside the single condition that needs it.
+ */
+export function restoreGrants(): readonly CapabilityGrant[] {
+  return [
+    {
+      namespaceId: CONFORMANCE_NAMESPACE_ID,
+      subject: CONFORMANCE_AGENT,
+      issuer: CONFORMANCE_ORCHESTRATOR,
+      constraints: { purposes: [CONFORMANCE_PURPOSE], delegationDepth: 1 },
+      issuedAt: ISSUED_AT,
+      id: RESTORE_GRANT,
+      parentGrantId: ROOT_RESTORE_GRANT,
+      capabilities: [capability(FILES_NAMESPACE, WRITABLE_PATH, [RESTORE_ACTION])],
+    },
+  ];
+}
+
+/**
+ * The ancestor {@link restoreGrants} is attenuated from, armed with it.
+ *
+ * Separate from {@link rootGrants} for the same reason every other root is
+ * separate: it is the minimal ancestor of exactly one working grant, so nothing
+ * about arming rollback authority disturbs the conditions that revoke an
+ * ancestor to arm something else.
+ */
+export function restoreRootGrants(): readonly CapabilityGrant[] {
+  return [
+    {
+      namespaceId: CONFORMANCE_NAMESPACE_ID,
+      subject: CONFORMANCE_ORCHESTRATOR,
+      issuer: CONFORMANCE_OWNER,
+      constraints: { purposes: [CONFORMANCE_PURPOSE], delegationDepth: 2 },
+      issuedAt: ISSUED_AT,
+      id: ROOT_RESTORE_GRANT,
+      capabilities: [capability(FILES_NAMESPACE, WRITABLE_PATH, [RESTORE_ACTION])],
     },
   ];
 }
@@ -1108,6 +1184,16 @@ export interface ConformanceWorldOptions {
   readonly usageStoreUnavailable?: boolean;
   /** Issue a grant claiming more than the grant it was delegated from. */
   readonly overBroadDelegation?: boolean;
+  /**
+   * Issue rollback authority over `Workspace/scratch`, and nothing wider.
+   *
+   * Without it no grant anywhere carries `snapshot:restore`, so
+   * `files.snapshot.restore` fails the discovery filter and is absent from the
+   * published catalogue. Arming it publishes the tool, which changes what every
+   * call in this world is choosing from -- so it is a per-condition option
+   * rather than part of the standing agent authority.
+   */
+  readonly restorable?: boolean;
   /** Bound the turn below the number of calls its move declares. */
   readonly maxToolCalls?: number;
   readonly maxSteps?: number;
@@ -1164,8 +1250,13 @@ export function createConformanceWorld(
     ...agentGrants(),
     ...(bounded ? boundedGrants() : []),
     ...(options.overBroadDelegation === true ? overBroadGrants() : []),
+    ...(options.restorable === true ? restoreGrants() : []),
   ];
-  const all = [...rootGrants(), ...agent];
+  const all = [
+    ...rootGrants(),
+    ...(options.restorable === true ? restoreRootGrants() : []),
+    ...agent,
+  ];
   const grantSource = new ConformanceGrantSource(agent);
   const chain = new ConformanceChainResolver(all);
   for (const grantId of options.revoked ?? []) {

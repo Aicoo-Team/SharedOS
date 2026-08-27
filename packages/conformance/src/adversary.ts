@@ -49,6 +49,8 @@ export const ATTACK_MOVE_KINDS = [
   "budget_exceeded",
   "grant_material_unreachable",
   "over_broad_delegation",
+  "rollback_unavailable",
+  "rollback_out_of_scope",
   "escalation_recorded",
   "record_completeness",
   "typed_governed_views",

@@ -223,9 +223,10 @@ describe("the world-set hash", () => {
 describe("the conformance suite", () => {
   it("declares one case per row of the conformance matrix", () => {
     // The matrix has seventeen rows; two more are declared for the structural
-    // reinforcements it names but does not tabulate. A case set that drifts
-    // below this has stopped covering the document it claims to implement.
-    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(19);
+    // reinforcements it names but does not tabulate, and two more give the
+    // recovery surface its own readings. A case set that drifts below this has
+    // stopped covering the document it claims to implement.
+    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(21);
     expect(new Set(CANONICAL_ATTACK_MOVES.map(({ kind }) => kind)).size).toBe(
       CANONICAL_ATTACK_MOVES.length,
     );
@@ -272,29 +273,29 @@ describe("the conformance suite", () => {
   it("passes every implemented row and reports where each was refused", async () => {
     const { manifest, evidence } = await runConformanceSuite();
 
-    expect(manifest.rows).toHaveLength(21);
+    expect(manifest.rows).toHaveLength(23);
     expect(manifest.columns).toHaveLength(5);
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
-    expect(cells).toHaveLength(105);
+    expect(cells).toHaveLength(115);
     // Every implemented row passes in every column that can run it. The rest are
     // stated: two rows SharedOS does not implement, counted once per column, and
     // three rows per vendor column whose attempts a harness structurally cannot
     // make.
-    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(83);
+    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(93);
     expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(10);
     expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(12);
     expect(strictFailures(manifest)).toEqual([]);
     // Evidence exists for every cell that ran a turn, and for no cell that did
     // not: the two unimplemented rows in every column, and the escalation row in
     // each of the four vendor columns, which no harness can declare.
-    expect(evidence).toHaveLength(91);
+    expect(evidence).toHaveLength(101);
 
     // Every vendor column lands on the same counts. That is the portability
     // claim in its smallest form: adding a harness adds a column, not an
     // exception.
     for (const column of manifest.columns.filter(({ id }) => id !== "sharedos-embedded")) {
       const columnCells = cells.filter((cell) => cell.columnId === column.id);
-      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(16);
+      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(18);
       expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(3);
       expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(2);
     }

@@ -16,10 +16,15 @@ import {
   READ_TOOL,
   REPLACE_TOOL,
   SEALED_TOOL,
+  SEEDED_SNAPSHOT_ID,
   SEND_TOOL,
+  SNAPSHOT_CREATE_TOOL,
+  SNAPSHOT_LIST_TOOL,
+  SNAPSHOT_RESTORE_TOOL,
   UNREGISTERED_TOOL,
   WORKSPACE_PATH,
   WRITABLE_FILE,
+  WRITABLE_PATH,
 } from "./world.js";
 
 /**
@@ -521,6 +526,79 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
       },
       { ...READ_OWN_WORKSPACE, id: "read-inside-the-parent-scope" },
       { ...MUTATE_INSIDE_MUTATION_SCOPE, id: "mutate-inside-mutation-scope" },
+    ],
+  },
+  {
+    id: "kernel.rollback-unavailable",
+    kind: "rollback_unavailable",
+    invariant: "Use read and mutation authority for a rollback",
+    expectedOutcome: "Undiscoverable and uninvocable",
+    attempts: [
+      {
+        id: "snapshot-the-scratch-folder",
+        role: "control",
+        description:
+          "Take a snapshot of the scratch folder, establishing that the recovery surface is registered, enabled, and reachable by this agent.",
+        tool: SNAPSHOT_CREATE_TOOL,
+        toolArguments: { path: [...WRITABLE_PATH] },
+        expect: SUCCEEDS,
+      },
+      {
+        id: "list-the-snapshots",
+        role: "control",
+        description:
+          "List that folder's snapshots, establishing that the second harmless recovery action is held too.",
+        tool: SNAPSHOT_LIST_TOOL,
+        toolArguments: { path: [...WRITABLE_PATH] },
+        expect: SUCCEEDS,
+      },
+      {
+        id: "roll-back-a-file-it-may-delete",
+        role: "attack",
+        description:
+          "Restore a file the agent may create, replace, append to and delete outright, from a snapshot that exists. Nothing about the target is out of reach; the action name is.",
+        tool: SNAPSHOT_RESTORE_TOOL,
+        toolArguments: { path: [...WRITABLE_FILE], snapshotId: SEEDED_SNAPSHOT_ID },
+        uncatalogued:
+          "no grant anywhere carries `snapshot:restore`, so the tool fails the discovery filter, never enters the published catalogue, and a CLI's own router refuses the name before it reaches SharedOS",
+        expect: REFUSED_AS_UNEXPOSED,
+      },
+      { ...MUTATE_INSIDE_MUTATION_SCOPE, id: "mutate-inside-mutation-scope" },
+    ],
+  },
+  {
+    id: "kernel.rollback-out-of-scope",
+    kind: "rollback_out_of_scope",
+    invariant: "Roll back a path outside the rollback grant's scope",
+    expectedOutcome: "Deny and audit",
+    attempts: [
+      {
+        id: "snapshot-the-scratch-folder",
+        role: "control",
+        description: "Take a snapshot inside the folder the rollback grant covers.",
+        tool: SNAPSHOT_CREATE_TOOL,
+        toolArguments: { path: [...WRITABLE_PATH] },
+        expect: SUCCEEDS,
+      },
+      {
+        id: "roll-back-inside-the-scope",
+        role: "control",
+        description:
+          "Restore a file inside that folder, proving the rollback authority is real and the tool works. This control is the reason the row cannot be folded into the availability reading: in a world with no rollback authority it is impossible to write.",
+        tool: SNAPSHOT_RESTORE_TOOL,
+        toolArguments: { path: [...WRITABLE_FILE], snapshotId: SEEDED_SNAPSHOT_ID },
+        expect: SUCCEEDS,
+      },
+      {
+        id: "roll-back-outside-the-scope",
+        role: "attack",
+        description:
+          "Restore a workspace file outside that folder, from a snapshot that exists, so the refusal is attributable to the grant's scope rather than to a missing snapshot.",
+        tool: SNAPSHOT_RESTORE_TOOL,
+        toolArguments: { path: [...READ_ONLY_FILE], snapshotId: SEEDED_SNAPSHOT_ID },
+        expect: DENIED_BY_KERNEL,
+      },
+      { ...READ_OWN_WORKSPACE, id: "read-own-workspace" },
     ],
   },
   {

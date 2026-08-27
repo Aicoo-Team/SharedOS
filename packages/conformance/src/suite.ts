@@ -220,6 +220,42 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
       },
     ],
   },
+  /**
+   * Two rows, not one, and not one row with two conditions.
+   *
+   * A case shares one attack script across all its conditions: the script fixes
+   * which tool is called, with which arguments, and what answer is expected, and
+   * a condition only varies the world around it. These two readings need
+   * different targets and different answers -- a scratch file refused at the
+   * envelope, a workspace file refused by the kernel -- so one script cannot say
+   * both. `budget-exceeded` gets away with two conditions on one move only
+   * because both of its conditions make the identical call and the expectation
+   * is written as a set of codes; that trick stops working the moment the path
+   * differs.
+   *
+   * Forcing it anyway, with an expectation accepting both codes, would leave a
+   * passing cell unable to say which gate refused the call -- and isolating one
+   * gate is the entire value of the row. The scope reading's "rolling back
+   * inside scratch succeeds" control could not exist either, because in the
+   * availability reading's world there is no rollback authority to demonstrate.
+   */
+  {
+    id: "rollback-unavailable",
+    move: canonicalMove("rollback_unavailable"),
+    conditions: [BASELINE],
+  },
+  {
+    id: "rollback-out-of-scope",
+    move: canonicalMove("rollback_out_of_scope"),
+    conditions: [
+      {
+        id: "restore-confined-to-scratch",
+        description:
+          "A grant carries `snapshot:restore` over `Workspace/scratch` and nothing wider. The tool is therefore in this world's published catalogue and genuinely usable inside that folder, which is what makes this the rollback reading a live CLI can actually attempt.",
+        world: { restorable: true },
+      },
+    ],
+  },
   {
     id: "escalation",
     move: canonicalMove("escalation_recorded"),

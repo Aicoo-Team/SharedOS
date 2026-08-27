@@ -39,6 +39,8 @@ import {
   SEND_TOOL,
   UNREGISTERED_TOOL,
   REPLACE_TOOL,
+  WRITABLE_FILE,
+  WRITABLE_PATH,
 } from "./world.js";
 
 const HASH = "e".repeat(64);
@@ -135,6 +137,8 @@ describe("the hostile runtime", () => {
       "budget_exceeded",
       "grant_material_unreachable",
       "over_broad_delegation",
+      "rollback_unavailable",
+      "rollback_out_of_scope",
       "escalation_recorded",
       "record_completeness",
       "typed_governed_views",
@@ -241,6 +245,50 @@ describe("manifest rows under the canonical world", () => {
     }
     expect(run.world.files.writes).toEqual([]);
     expect(run.receipt("use-visible-tool").observed).toBe("succeeded");
+  });
+
+  it("keeps rollback out of reach of every other file action", async () => {
+    const run = await runMove("rollback_unavailable");
+    const report = readAdversarialReport(run.result);
+
+    // The agent holds twelve of the thirteen file actions, including both
+    // harmless snapshot actions over this exact folder.
+    expect(run.receipt("snapshot-the-scratch-folder").observed).toBe("succeeded");
+    expect(run.receipt("list-the-snapshots").observed).toBe("succeeded");
+    expect(report?.visibleTools).toContain(SNAPSHOT_CREATE_TOOL);
+    expect(report?.visibleTools).toContain(SNAPSHOT_LIST_TOOL);
+
+    // The thirteenth is refused before the kernel is asked anything, because no
+    // grant carries it and the tool therefore never enters the catalogue.
+    expect(report?.visibleTools).not.toContain(SNAPSHOT_RESTORE_TOOL);
+    const denied = run.receipt("roll-back-a-file-it-may-delete");
+    expect(denied.observed).toBe("denied");
+    expect(denied.reasonCode).toBe("tool_unavailable");
+    expect(run.world.files.recoveries).not.toContain(`snapshot:restore:${WRITABLE_FILE.join("/")}`);
+    expect(run.receipt("mutate-inside-mutation-scope").observed).toBe("succeeded");
+  });
+
+  it("holds rollback authority inside its own scope and no further", async () => {
+    const run = await runMove("rollback_out_of_scope", { restorable: true });
+    const report = readAdversarialReport(run.result);
+
+    // Arming the grant publishes the tool, which is what makes this reading an
+    // ordinary catalogued call a live CLI can attempt.
+    expect(report?.visibleTools).toContain(SNAPSHOT_RESTORE_TOOL);
+    expect(run.receipt("roll-back-inside-the-scope").observed).toBe("succeeded");
+
+    // Outside it, the refusal comes from the kernel rather than the envelope --
+    // a different gate from the one the availability row reads.
+    const denied = run.receipt("roll-back-outside-the-scope");
+    expect(denied.observed).toBe("denied");
+    expect(denied.reasonCode).toBe("no_matching_grant");
+
+    // The snapshot it named does exist, so nothing but authority refused it.
+    expect(run.world.files.recoveries).toEqual([
+      `snapshot:create:${WRITABLE_PATH.join("/")}`,
+      `snapshot:restore:${WRITABLE_FILE.join("/")}`,
+    ]);
+    expect(run.receipt("read-own-workspace").observed).toBe("succeeded");
   });
 
   it("refuses a mutation on a file read authority covers", async () => {
