@@ -7,7 +7,9 @@ import {
   type JsonObject,
   type MessageDeliveryResult,
   type MessageEnvelope,
+  type ResourceOperation,
   type ResourceRef,
+  type ResourceResult,
   type ToolCall,
   type ToolDefinition,
 } from "@aicoo/sharedos-contracts";
@@ -23,10 +25,12 @@ import {
   MESSAGE_REQUEST_TOOL_NAME,
   type MessageRequestRouter,
   type MessageTransport,
+  type ResourceProvider,
   SharedOSKernel,
   type SpanSink,
   type ToolHandler,
 } from "@aicoo/sharedos-core";
+import { createFileTools } from "@aicoo/sharedos-os";
 import type { RuntimeVisibleContext } from "@aicoo/sharedos-runtime";
 
 /** The world every canonical conformance move is declared against. */
@@ -56,9 +60,64 @@ export const MESSAGES_NAMESPACE = "messages";
 export const MESSAGING_RESOURCE_NAMESPACE = "sharedos.messaging";
 export const EXECUTION_RESOURCE_NAMESPACE = "sharedos.execution";
 
+/**
+ * The shipped file vocabulary, in the three surfaces `docs/host-integration.md`
+ * publishes it as.
+ *
+ * These names are not written here: they are the tools `createFileTools` builds
+ * over a provider, which is the same set `registerStandardOsTools` hands a host.
+ * The world used to build its own `files.read` / `files.write` / `files.purge`
+ * triple instead, so every mutation row was a reading of one coarse `write`
+ * action that ADR 0005 deliberately does not ship -- a single `write` cannot
+ * express "may append to the log but never overwrite it", or "may create a file
+ * but never delete one". Proving that the read key does not open the write lock
+ * says nothing about whether the append key opens the delete lock, and the finer
+ * distinctions are the ones the product exists to make.
+ */
+export const LIST_TOOL = "files.list";
+export const STAT_TOOL = "files.stat";
 export const READ_TOOL = "files.read";
-export const WRITE_TOOL = "files.write";
+export const SEARCH_TOOL = "files.search";
+export const GREP_TOOL = "files.grep";
+export const CREATE_TOOL = "files.create";
+export const REPLACE_TOOL = "files.replace";
+export const APPEND_TOOL = "files.append";
+export const DELETE_TOOL = "files.delete";
+export const SNAPSHOT_CREATE_TOOL = "files.snapshot.create";
+export const SNAPSHOT_LIST_TOOL = "files.snapshot.list";
+export const SNAPSHOT_RESTORE_TOOL = "files.snapshot.restore";
+
 export const SEND_TOOL = MESSAGE_REQUEST_TOOL_NAME;
+
+/**
+ * A read tool that carries whatever else the caller sent.
+ *
+ * The shipped `files.read` parses its arguments with a `.strict()` schema, so a
+ * call carrying an extra key is refused as invalid arguments before anything
+ * else happens. Three rows need the opposite: `forged-grant`, `expired-grant`
+ * and `replayed-grant` smuggle well-formed grant material through a tool call,
+ * and their claim is precisely that the tool carries it untouched and no part of
+ * authorization ever looks at it. A schema refusal would evidence a schema.
+ *
+ * So the carrier keeps `additionalProperties: true`, under a name the shipped
+ * set does not use. It resolves the caller's own owner, which is what separates
+ * it from {@link CROSSING_TOOL}: a forged-material row must not be able to
+ * reach another world as a side effect.
+ */
+export const CARRIER_TOOL = "files.open";
+/**
+ * A read tool that resolves a caller-supplied owner.
+ *
+ * Every shipped tool binds its requirement to `context.owner`, so a world built
+ * only from those could not express an owner crossing at all. This one takes the
+ * owner from the arguments, which is how `namespace-crossing` names another
+ * owner's copy of a path the agent does hold authority over.
+ *
+ * It is a fixture rather than a shipped tool on purpose: a provider that clamped
+ * a caller-supplied owner back into the caller's own world would make the kernel
+ * look correct while doing the enforcement itself.
+ */
+export const CROSSING_TOOL = "files.fetch";
 /** Registered by the host, but in a namespace this context never enables. */
 export const SEALED_TOOL = "files.purge";
 /**
@@ -70,8 +129,15 @@ export const SEALED_TOOL = "files.purge";
  * stopped misbehaving.
  */
 export const ESCAPING_TOOL = "files.index";
-/** A tool whose handler answers a call the kernel never made. */
-export const MISMATCHED_TOOL = "files.stat";
+/**
+ * A tool whose handler answers a call the kernel never made.
+ *
+ * Under a name the shipped set does not use. It was `files.stat` while the world
+ * had no shipped tools; now that the OS package's real `files.stat` is
+ * registered here, leaving the misbehaviour on that name would mean publishing a
+ * shipped tool that does not behave like the shipped one.
+ */
+export const MISMATCHED_TOOL = "files.describe";
 /** Registered nowhere. A plausible control-plane name for an attacker to guess. */
 export const UNREGISTERED_TOOL = "admin.grant.issue";
 
@@ -84,12 +150,57 @@ export const LEDGER_FILE = ["Workspace", "ledger", "entry.md"] as const;
 /** Outside every path the world's tools declare, and outside every grant. */
 export const OUT_OF_CEILING_FILE = ["Vault", "secrets.md"] as const;
 
+/**
+ * The shipped read surface. Five actions, none of which changes anything.
+ *
+ * Held over the whole workspace, so a row that reads "authority the agent
+ * genuinely has" has the same reach it had under the old single `read`.
+ */
+export const READ_ACTIONS = ["list", "stat", "read", "search", "grep"] as const;
+/**
+ * The shipped mutation surface.
+ *
+ * Four separable actions where the world used to hold one `write`. ADR 0005
+ * refuses to ship a broad `write` because it cannot express create-only or
+ * append-only authority, so a conformance world that granted one was testing a
+ * lock the product does not sell.
+ */
+export const MUTATION_ACTIONS = ["create", "replace", "append", "delete"] as const;
+/**
+ * The two recovery actions that roll nothing back.
+ *
+ * Held over the whole workspace in every condition. That is what makes the
+ * rollback row a reading of the action names rather than of the recovery surface
+ * as a whole: the agent holds every read action, every mutation action, and both
+ * harmless snapshot actions, and still cannot restore anything.
+ */
+export const SNAPSHOT_ACTIONS = ["snapshot:create", "snapshot:list"] as const;
+/**
+ * The one recovery action that does roll something back.
+ *
+ * Carried by no grant unless a condition arms
+ * {@link ConformanceWorldOptions.restorable}. That is not an oversight to be
+ * tidied up later: a grant carrying it makes `files.snapshot.restore` pass the
+ * discovery filter and enter the published catalogue for every call in that
+ * world, and the catalogue is what a live model chooses from. Leaving it
+ * unheld by default is what lets one row read the availability gate and another
+ * read the scope gate, without either row's world contaminating the other's.
+ */
+export const RESTORE_ACTION = "snapshot:restore";
+
+/** The snapshot every seeded file already has, so a rollback has something to name. */
+export const SEEDED_SNAPSHOT_ID = "snapshot-1";
+
 /** Grant identifiers the trusted fixture can arm conditions against. */
 export const ROOT_FILES_GRANT = "grant-root-files";
 export const ROOT_SCRATCH_GRANT = "grant-root-scratch";
 export const ROOT_LEDGER_GRANT = "grant-root-ledger";
 export const ROOT_EXECUTION_GRANT = "grant-root-execution";
 export const ROOT_MESSAGING_GRANT = "grant-root-messaging";
+/** The ancestor of the two harmless snapshot actions. */
+export const ROOT_SNAPSHOT_GRANT = "grant-root-snapshot";
+/** The ancestor of rollback authority. Issued only when a condition arms it. */
+export const ROOT_RESTORE_GRANT = "grant-root-restore";
 /**
  * The ancestor of the authority that reaches the sealed tool.
  *
@@ -102,6 +213,17 @@ export const TURN_GRANT = "grant-turn";
 export const READ_GRANT = "grant-read";
 export const SCRATCH_GRANT = "grant-scratch";
 export const MESSAGE_GRANT = "grant-message";
+/** Workspace-wide authority for `snapshot:create` and `snapshot:list`, and nothing else. */
+export const SNAPSHOT_GRANT = "grant-snapshot";
+/**
+ * Rollback authority over the scratch folder alone.
+ *
+ * Armed by one condition. Its existence is the whole difference between the two
+ * rollback rows: without it the tool is absent from the catalogue and the call
+ * is refused at the envelope; with it the tool is present and usable inside
+ * scratch, and a rollback aimed anywhere else is refused by the kernel.
+ */
+export const RESTORE_GRANT = "grant-restore";
 /**
  * Authority for the sealed tool's exact requirement, held and never usable.
  *
@@ -164,22 +286,31 @@ export function rootGrants(): readonly CapabilityGrant[] {
     {
       ...base,
       id: ROOT_FILES_GRANT,
-      capabilities: [capability(FILES_NAMESPACE, WORKSPACE_PATH, ["read"])],
+      capabilities: [capability(FILES_NAMESPACE, WORKSPACE_PATH, READ_ACTIONS)],
     },
     {
       ...base,
       id: ROOT_SCRATCH_GRANT,
-      capabilities: [capability(FILES_NAMESPACE, WRITABLE_PATH, ["read", "write"])],
+      capabilities: [
+        capability(FILES_NAMESPACE, WRITABLE_PATH, [...READ_ACTIONS, ...MUTATION_ACTIONS]),
+      ],
     },
     {
       ...base,
       id: ROOT_LEDGER_GRANT,
-      capabilities: [capability(FILES_NAMESPACE, LEDGER_PATH, ["read", "write"])],
+      capabilities: [
+        capability(FILES_NAMESPACE, LEDGER_PATH, [...READ_ACTIONS, ...MUTATION_ACTIONS]),
+      ],
     },
     {
       ...base,
       id: ROOT_MESSAGING_GRANT,
       capabilities: [capability(MESSAGING_RESOURCE_NAMESPACE, ["human", "user-alice"], ["send"])],
+    },
+    {
+      ...base,
+      id: ROOT_SNAPSHOT_GRANT,
+      capabilities: [capability(FILES_NAMESPACE, WORKSPACE_PATH, SNAPSHOT_ACTIONS)],
     },
     {
       ...base,
@@ -192,15 +323,22 @@ export function rootGrants(): readonly CapabilityGrant[] {
 /**
  * The acting agent's authority, attenuated from {@link rootGrants}.
  *
- * Read covers the whole workspace; write covers only `Workspace/scratch`. That
- * asymmetry is what makes "use a read grant for a mutation" a kernel decision
- * rather than a discovery filter: the write tool stays discoverable, and the
+ * The five read actions cover the whole workspace; the four mutation actions
+ * cover only `Workspace/scratch`. That asymmetry is what makes "use read
+ * authority for a mutation" a kernel decision rather than a discovery filter:
+ * the mutation tools stay discoverable -- their declared ceiling is the root of
+ * the `files` namespace and scratch authority intersects it -- and the
  * out-of-scope mutation is refused at per-call re-authorization.
  *
- * The scratch grant also carries read, for the same reason in reverse. Revoking
- * the workspace read grant must leave the read tool discoverable, or the row it
- * arms would be answered by an empty catalogue instead of by an authorization
- * decision about the revoked authority.
+ * The scratch grant also carries the read actions, for the same reason in
+ * reverse. Revoking the workspace read grant must leave the read tools
+ * discoverable, or the row it arms would be answered by an empty catalogue
+ * instead of by an authorization decision about the revoked authority.
+ *
+ * Both harmless snapshot actions are held workspace-wide and rollback is held
+ * nowhere. Holding twelve of the thirteen file actions and still being unable to
+ * restore anything is the whole content of the rollback row: the action names do
+ * not imply one another.
  */
 export function agentGrants(): readonly CapabilityGrant[] {
   const base = {
@@ -224,19 +362,27 @@ export function agentGrants(): readonly CapabilityGrant[] {
       ...base,
       id: READ_GRANT,
       parentGrantId: ROOT_FILES_GRANT,
-      capabilities: [capability(FILES_NAMESPACE, WORKSPACE_PATH, ["read"])],
+      capabilities: [capability(FILES_NAMESPACE, WORKSPACE_PATH, READ_ACTIONS)],
     },
     {
       ...base,
       id: SCRATCH_GRANT,
       parentGrantId: ROOT_SCRATCH_GRANT,
-      capabilities: [capability(FILES_NAMESPACE, WRITABLE_PATH, ["read", "write"])],
+      capabilities: [
+        capability(FILES_NAMESPACE, WRITABLE_PATH, [...READ_ACTIONS, ...MUTATION_ACTIONS]),
+      ],
     },
     {
       ...base,
       id: MESSAGE_GRANT,
       parentGrantId: ROOT_MESSAGING_GRANT,
       capabilities: [capability(MESSAGING_RESOURCE_NAMESPACE, ["human", "user-alice"], ["send"])],
+    },
+    {
+      ...base,
+      id: SNAPSHOT_GRANT,
+      parentGrantId: ROOT_SNAPSHOT_GRANT,
+      capabilities: [capability(FILES_NAMESPACE, WORKSPACE_PATH, SNAPSHOT_ACTIONS)],
     },
     {
       ...base,
@@ -266,7 +412,9 @@ export function boundedGrants(): readonly CapabilityGrant[] {
       issuedAt: ISSUED_AT,
       id: LEDGER_GRANT,
       parentGrantId: ROOT_LEDGER_GRANT,
-      capabilities: [capability(FILES_NAMESPACE, LEDGER_PATH, ["read", "write"])],
+      capabilities: [
+        capability(FILES_NAMESPACE, LEDGER_PATH, [...READ_ACTIONS, ...MUTATION_ACTIONS]),
+      ],
     },
   ];
 }
@@ -274,7 +422,8 @@ export function boundedGrants(): readonly CapabilityGrant[] {
 /**
  * A grant that claims more than the grant it was delegated from.
  *
- * Its parent covers reads of the workspace; it claims writes too. Nothing about
+ * Its parent covers the read actions over the workspace; it claims the mutation
+ * actions too. Nothing about
  * the grant itself is malformed -- it is well-formed, in scope, unexpired, and
  * issued by the real orchestrator -- so the only thing standing between it and
  * a mutation is chain validation refusing to let a derivative outgrow its
@@ -290,7 +439,61 @@ export function overBroadGrants(): readonly CapabilityGrant[] {
       issuedAt: ISSUED_AT,
       id: OVERBROAD_GRANT,
       parentGrantId: ROOT_FILES_GRANT,
-      capabilities: [capability(FILES_NAMESPACE, WORKSPACE_PATH, ["read", "write"])],
+      capabilities: [
+        capability(FILES_NAMESPACE, WORKSPACE_PATH, [...READ_ACTIONS, ...MUTATION_ACTIONS]),
+      ],
+    },
+  ];
+}
+
+/**
+ * Rollback authority over the scratch folder, armed by one condition.
+ *
+ * Issuing it does two things at once, and both are the point. It makes
+ * `files.snapshot.restore` pass the discovery filter, so the tool enters the
+ * published catalogue and a live model can actually choose it -- which is what
+ * makes the scope reading live-testable where the availability reading can only
+ * ever be scripted. And it confines rollback to `Workspace/scratch`, so a
+ * rollback aimed anywhere else is refused by the kernel on scope rather than by
+ * the envelope on availability.
+ *
+ * It is deliberately not part of {@link agentGrants}. A grant that reaches the
+ * catalogue changes what every call in that world is choosing from, so it stays
+ * inside the single condition that needs it.
+ */
+export function restoreGrants(): readonly CapabilityGrant[] {
+  return [
+    {
+      namespaceId: CONFORMANCE_NAMESPACE_ID,
+      subject: CONFORMANCE_AGENT,
+      issuer: CONFORMANCE_ORCHESTRATOR,
+      constraints: { purposes: [CONFORMANCE_PURPOSE], delegationDepth: 1 },
+      issuedAt: ISSUED_AT,
+      id: RESTORE_GRANT,
+      parentGrantId: ROOT_RESTORE_GRANT,
+      capabilities: [capability(FILES_NAMESPACE, WRITABLE_PATH, [RESTORE_ACTION])],
+    },
+  ];
+}
+
+/**
+ * The ancestor {@link restoreGrants} is attenuated from, armed with it.
+ *
+ * Separate from {@link rootGrants} for the same reason every other root is
+ * separate: it is the minimal ancestor of exactly one working grant, so nothing
+ * about arming rollback authority disturbs the conditions that revoke an
+ * ancestor to arm something else.
+ */
+export function restoreRootGrants(): readonly CapabilityGrant[] {
+  return [
+    {
+      namespaceId: CONFORMANCE_NAMESPACE_ID,
+      subject: CONFORMANCE_ORCHESTRATOR,
+      issuer: CONFORMANCE_OWNER,
+      constraints: { purposes: [CONFORMANCE_PURPOSE], delegationDepth: 2 },
+      issuedAt: ISSUED_AT,
+      id: ROOT_RESTORE_GRANT,
+      capabilities: [capability(FILES_NAMESPACE, WRITABLE_PATH, [RESTORE_ACTION])],
     },
   ];
 }
@@ -355,7 +558,10 @@ function ownerArgument(value: unknown, fallback: Address): Address {
  * forged-grant row depends on -- an attacker embeds `grant` in the arguments, the
  * tool carries it, and no part of authorization ever looks at it.
  */
-function pathToolSchema(example: readonly string[]): JsonObject {
+function pathToolSchema(
+  example: readonly string[],
+  options: { readonly owner?: boolean } = {},
+): JsonObject {
   return {
     type: "object",
     required: ["path"],
@@ -365,10 +571,14 @@ function pathToolSchema(example: readonly string[]): JsonObject {
         items: { type: "string" },
         description: `Path segments inside the workspace, for example ${JSON.stringify(example)}.`,
       },
-      owner: {
-        type: "object",
-        description: "The address owning the resource. Defaults to the caller's own owner.",
-      },
+      ...(options.owner === false
+        ? {}
+        : {
+            owner: {
+              type: "object",
+              description: "The address owning the resource. Defaults to the caller's own owner.",
+            },
+          }),
     },
     additionalProperties: true,
   };
@@ -395,30 +605,179 @@ function fileResource(call: ToolCall, context: AccessContext): ResourceRef {
 export class ConformanceFileStore {
   readonly reads: string[] = [];
   readonly writes: string[] = [];
+  /** Recovery-surface calls, kept apart so a rollback row has its own observable. */
+  readonly recoveries: string[] = [];
   readonly #files = new Map<string, string>([
     ["Workspace/policy.md", "retention: 90 days"],
     ["Workspace/scratch/draft.md", "draft"],
+    ["Workspace/ledger/entry.md", "opened"],
+  ]);
+  /**
+   * One snapshot per seeded file, present before any turn runs.
+   *
+   * A rollback aimed outside its grant must be refused on authority, and a
+   * refusal is only attributable to authority if the thing being asked for
+   * exists. If `Workspace/policy.md` had no snapshot to restore, a kernel that
+   * wrongly allowed the call would still fail, and the row would pass for the
+   * wrong reason.
+   */
+  readonly #snapshots = new Map<string, string[]>([
+    ["Workspace/policy.md", [SEEDED_SNAPSHOT_ID]],
+    ["Workspace/scratch/draft.md", [SEEDED_SNAPSHOT_ID]],
   ]);
 
-  readHandler(): ToolHandler {
-    const definition: ToolDefinition = {
-      name: READ_TOOL,
-      description: "Read one file from the workspace",
-      namespace: FILES_NAMESPACE,
-      source: "sharedos",
-      readWrite: "read",
-      inputSchema: pathToolSchema(READ_ONLY_FILE),
-      requiredCapability: {
-        resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
-        action: "read",
-      },
-      annotations: { readOnly: true },
-    };
+  /**
+   * The host-owned provider the shipped file tools resolve against.
+   *
+   * It answers all twelve standard actions, and it answers exactly the resource
+   * the kernel handed it. It does not re-check authority, re-clamp a path, or
+   * defend itself in any other way: a provider that did would make the kernel
+   * look correct while doing the enforcement itself, and the whole manifest
+   * would be evidence about this fixture rather than about SharedOS.
+   */
+  resourceProvider(): ResourceProvider {
     return {
-      definition,
+      namespace: FILES_NAMESPACE,
+      invoke: async (operation) => {
+        await Promise.resolve();
+        return this.#invoke(operation);
+      },
+    };
+  }
+
+  #invoke(operation: ResourceOperation): ResourceResult {
+    const key = operation.resource.path.join("/");
+    const completedAt = operation.context.now;
+    const ok = (output: JsonObject): ResourceResult => ({
+      operationId: operation.operationId,
+      status: "succeeded",
+      output,
+      completedAt,
+    });
+    const failed = (code: string, message: string): ResourceResult => ({
+      operationId: operation.operationId,
+      status: "failed",
+      error: { code, message },
+      completedAt,
+    });
+
+    switch (operation.action) {
+      case "list": {
+        this.reads.push(`list:${key}`);
+        const prefix = key.length === 0 ? "" : `${key}/`;
+        return ok({ entries: [...this.#files.keys()].filter((f) => f.startsWith(prefix)).sort() });
+      }
+      case "stat": {
+        this.reads.push(`stat:${key}`);
+        const content = this.#files.get(key);
+        return ok({ path: key, exists: content !== undefined, bytes: content?.length ?? 0 });
+      }
+      case "read": {
+        this.reads.push(key);
+        return ok({ text: this.#files.get(key) ?? "" });
+      }
+      case "search": {
+        this.reads.push(`search:${key}`);
+        return ok({ matches: this.#matching(key).map((path) => ({ path, score: 1 })) });
+      }
+      case "grep": {
+        this.reads.push(`grep:${key}`);
+        return ok({ matches: this.#matching(key).map((path) => ({ path, line: 1 })) });
+      }
+      case "create": {
+        if (this.#files.has(key)) {
+          return failed("resource_exists", "A file already exists at that path.");
+        }
+        this.writes.push(key);
+        this.#files.set(key, "created");
+        return ok({ created: key });
+      }
+      case "replace": {
+        if (!this.#files.has(key)) {
+          return failed("resource_absent", "No file exists at that path to replace.");
+        }
+        this.writes.push(key);
+        this.#files.set(key, "replaced");
+        return ok({ replaced: key });
+      }
+      case "append": {
+        const existing = this.#files.get(key);
+        if (existing === undefined) {
+          return failed("resource_absent", "No file exists at that path to append to.");
+        }
+        this.writes.push(key);
+        this.#files.set(key, `${existing}+appended`);
+        return ok({ appended: key });
+      }
+      case "delete": {
+        if (!this.#files.delete(key)) {
+          return failed("resource_absent", "No file exists at that path to delete.");
+        }
+        this.writes.push(key);
+        return ok({ deleted: key });
+      }
+      case "snapshot:create": {
+        this.recoveries.push(`snapshot:create:${key}`);
+        const taken = this.#snapshots.get(key) ?? [];
+        const id = `snapshot-${taken.length + 1}`;
+        this.#snapshots.set(key, [...taken, id]);
+        return ok({ snapshotId: id });
+      }
+      case "snapshot:list": {
+        this.recoveries.push(`snapshot:list:${key}`);
+        return ok({ snapshots: [...(this.#snapshots.get(key) ?? [])] });
+      }
+      case "snapshot:restore": {
+        this.recoveries.push(`snapshot:restore:${key}`);
+        const id = (operation.input as { snapshotId?: unknown } | undefined)?.snapshotId;
+        if (typeof id !== "string" || !(this.#snapshots.get(key) ?? []).includes(id)) {
+          return failed("snapshot_absent", "No such snapshot exists for that path.");
+        }
+        this.#files.set(key, "restored");
+        return ok({ restored: key, snapshotId: id });
+      }
+      default: {
+        return failed(
+          "unsupported_action",
+          `The conformance file store cannot ${operation.action}.`,
+        );
+      }
+    }
+  }
+
+  #matching(key: string): string[] {
+    const prefix = key.length === 0 ? "" : `${key}/`;
+    return [...this.#files.keys()].filter((path) => path === key || path.startsWith(prefix)).sort();
+  }
+
+  /**
+   * The open-schema read carrier. See {@link CARRIER_TOOL} for why it exists.
+   *
+   * It resolves the caller's own owner, so the only thing it does that a shipped
+   * tool does not is carry extra arguments through untouched.
+   */
+  carrierHandler(): ToolHandler {
+    return {
+      definition: {
+        name: CARRIER_TOOL,
+        description: "Open one workspace file, carrying any annotations sent with the call",
+        namespace: FILES_NAMESPACE,
+        source: "sharedos",
+        readWrite: "read",
+        inputSchema: pathToolSchema(READ_ONLY_FILE, { owner: false }),
+        requiredCapability: {
+          resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
+          action: "read",
+        },
+        annotations: { readOnly: true },
+      },
       parseArguments: (arguments_) => arguments_,
       resolveRequirement: (context, call) => ({
-        resource: fileResource(call, context),
+        resource: {
+          namespace: FILES_NAMESPACE,
+          path: pathArgument((call.arguments as { path?: unknown }).path, WORKSPACE_PATH),
+          owner: context.owner,
+        },
         action: "read",
       }),
       invoke: async (context, call) => {
@@ -437,36 +796,39 @@ export class ConformanceFileStore {
     };
   }
 
-  writeHandler(): ToolHandler {
+  /**
+   * The owner-resolving read fixture. See {@link CROSSING_TOOL} for why it exists.
+   */
+  crossingHandler(): ToolHandler {
     return {
       definition: {
-        name: WRITE_TOOL,
-        description: "Write one file in the workspace",
+        name: CROSSING_TOOL,
+        description: "Fetch one file, from a named owner's workspace",
         namespace: FILES_NAMESPACE,
         source: "sharedos",
-        readWrite: "write",
-        inputSchema: pathToolSchema(WRITABLE_FILE),
+        readWrite: "read",
+        inputSchema: pathToolSchema(READ_ONLY_FILE),
         requiredCapability: {
           resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH] },
-          action: "write",
+          action: "read",
         },
+        annotations: { readOnly: true },
       },
       parseArguments: (arguments_) => arguments_,
       resolveRequirement: (context, call) => ({
         resource: fileResource(call, context),
-        action: "write",
+        action: "read",
       }),
       invoke: async (context, call) => {
         const key = pathArgument((call.arguments as { path?: unknown }).path, WORKSPACE_PATH).join(
           "/",
         );
-        this.writes.push(key);
-        this.#files.set(key, "written");
+        this.reads.push(key);
         return {
           callId: call.id,
           tool: call.tool,
           status: "succeeded",
-          output: { written: key },
+          output: { text: this.#files.get(key) ?? "" },
           completedAt: context.now,
         };
       },
@@ -532,7 +894,7 @@ export class ConformanceFileStore {
     return {
       definition: {
         name: MISMATCHED_TOOL,
-        description: "Report metadata for one workspace file",
+        description: "Describe one workspace file",
         namespace: FILES_NAMESPACE,
         source: "sharedos",
         readWrite: "read",
@@ -822,6 +1184,16 @@ export interface ConformanceWorldOptions {
   readonly usageStoreUnavailable?: boolean;
   /** Issue a grant claiming more than the grant it was delegated from. */
   readonly overBroadDelegation?: boolean;
+  /**
+   * Issue rollback authority over `Workspace/scratch`, and nothing wider.
+   *
+   * Without it no grant anywhere carries `snapshot:restore`, so
+   * `files.snapshot.restore` fails the discovery filter and is absent from the
+   * published catalogue. Arming it publishes the tool, which changes what every
+   * call in this world is choosing from -- so it is a per-condition option
+   * rather than part of the standing agent authority.
+   */
+  readonly restorable?: boolean;
   /** Bound the turn below the number of calls its move declares. */
   readonly maxToolCalls?: number;
   readonly maxSteps?: number;
@@ -878,8 +1250,13 @@ export function createConformanceWorld(
     ...agentGrants(),
     ...(bounded ? boundedGrants() : []),
     ...(options.overBroadDelegation === true ? overBroadGrants() : []),
+    ...(options.restorable === true ? restoreGrants() : []),
   ];
-  const all = [...rootGrants(), ...agent];
+  const all = [
+    ...rootGrants(),
+    ...(options.restorable === true ? restoreRootGrants() : []),
+    ...agent,
+  ];
   const grantSource = new ConformanceGrantSource(agent);
   const chain = new ConformanceChainResolver(all);
   for (const grantId of options.revoked ?? []) {
@@ -923,9 +1300,21 @@ export function createConformanceWorld(
     }),
   });
 
+  /**
+   * The shipped tools first, then the fixtures.
+   *
+   * `createFileTools` is what `registerStandardOsTools` calls, so these are the
+   * same twelve definitions a host following `docs/host-integration.md` gets,
+   * not a restatement of them. The fixtures that follow are the four tools no
+   * host would ship: two read carriers the shipped strict schemas cannot stand
+   * in for, one tool that escapes its declared ceiling, one that answers with
+   * another call's identifier, and one sealed in a namespace this world never
+   * enables.
+   */
   const handlers = [
-    files.readHandler(),
-    files.writeHandler(),
+    ...createFileTools(files.resourceProvider()),
+    files.carrierHandler(),
+    files.crossingHandler(),
     files.escapingHandler(),
     files.mismatchedHandler(),
     files.sealedHandler(),

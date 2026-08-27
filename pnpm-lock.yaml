@@ -76,6 +76,7 @@ importers:
       '@aicoo/sharedos-runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+
   packages/adapters:
     dependencies:
       '@aicoo/sharedos-contracts':
@@ -118,6 +119,9 @@ importers:
       '@aicoo/sharedos-mcp':
         specifier: workspace:*
         version: link:../mcp
+      '@aicoo/sharedos-os':
+        specifier: workspace:*
+        version: link:../os
       '@aicoo/sharedos-runtime':
         specifier: workspace:*
         version: link:../runtime

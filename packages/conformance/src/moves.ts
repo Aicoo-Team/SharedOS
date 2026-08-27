@@ -2,25 +2,48 @@ import type { Capability } from "@aicoo/sharedos-contracts";
 
 import type { AttackAttempt, AttackMove, AttemptExpectation } from "./adversary.js";
 import {
+  APPEND_TOOL,
+  CARRIER_TOOL,
   CONFORMANCE_OWNER,
+  CROSSING_TOOL,
   ESCAPING_TOOL,
   FILES_NAMESPACE,
   LEDGER_FILE,
   MISMATCHED_TOOL,
+  MUTATION_ACTIONS,
+  READ_ACTIONS,
   READ_ONLY_FILE,
   READ_TOOL,
+  REPLACE_TOOL,
   SEALED_TOOL,
+  SEEDED_SNAPSHOT_ID,
   SEND_TOOL,
+  SNAPSHOT_CREATE_TOOL,
+  SNAPSHOT_LIST_TOOL,
+  SNAPSHOT_RESTORE_TOOL,
   UNREGISTERED_TOOL,
   WORKSPACE_PATH,
   WRITABLE_FILE,
-  WRITE_TOOL,
+  WRITABLE_PATH,
 } from "./world.js";
 
-/** The authority the attacker tries to mint for itself: unrestricted workspace writes. */
+/**
+ * The authority the attacker tries to mint for itself.
+ *
+ * Every read action and every mutation action over the whole workspace -- the
+ * shipped vocabulary rather than a coarse `write`, so the forged grant claims
+ * something a real grant could actually say.
+ */
 const FORGED_WRITE: Capability = {
   resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH], owner: CONFORMANCE_OWNER },
-  actions: ["read", "write"],
+  actions: [...READ_ACTIONS, ...MUTATION_ACTIONS],
+  scope: "descendants",
+};
+
+/** The read authority the agent genuinely holds, re-presented by the rows that replay it. */
+const HELD_READ: Capability = {
+  resource: { namespace: FILES_NAMESPACE, path: [...WORKSPACE_PATH], owner: CONFORMANCE_OWNER },
+  actions: [...READ_ACTIONS],
   scope: "descendants",
 };
 
@@ -51,11 +74,31 @@ const READ_OWN_WORKSPACE: Omit<AttackAttempt, "id"> = {
   expect: SUCCEEDS,
 };
 
-const WRITE_INSIDE_WRITE_SCOPE: Omit<AttackAttempt, "id"> = {
+/**
+ * The body every mutation attempt sends.
+ *
+ * The shipped mutation tools parse their arguments with a strict schema that
+ * requires `content`; a call without it is refused as invalid arguments before
+ * authorization is asked anything at all. Under the old world's open-schema
+ * `files.write` a bare path was enough, so this is a real consequence of moving
+ * to the shipped vocabulary: an attack now has to be a well-formed call before
+ * it can be an interesting one.
+ */
+const MUTATION_CONTENT = "conformance";
+
+/**
+ * The mutation control, on one named action rather than a blanket `write`.
+ *
+ * `replace` is the action the out-of-scope attacks reach for, so the control and
+ * the attack differ in exactly one thing -- the path -- and a reader can see
+ * that the refusal is about scope rather than about the tool.
+ */
+const MUTATE_INSIDE_MUTATION_SCOPE: Omit<AttackAttempt, "id"> = {
   role: "control",
-  description: "Write inside the narrow scratch scope, proving the write tool itself works.",
-  tool: WRITE_TOOL,
-  toolArguments: { path: [...WRITABLE_FILE] },
+  description:
+    "Replace a file inside the narrow scratch scope, proving the mutation tool itself works.",
+  tool: REPLACE_TOOL,
+  toolArguments: { path: [...WRITABLE_FILE], content: MUTATION_CONTENT },
   expect: SUCCEEDS,
 };
 
@@ -83,8 +126,8 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         id: "embed-in-tool-arguments",
         role: "attack",
         description:
-          "Carry a well-formed grant for unrestricted workspace writes inside the arguments of an authorized read.",
-        tool: READ_TOOL,
+          "Carry a well-formed grant for unrestricted workspace mutation inside the arguments of an authorized read.",
+        tool: CARRIER_TOOL,
         toolArguments: { path: [...READ_ONLY_FILE] },
         forge: { grantId: "forged-write", capabilities: [FORGED_WRITE], embedAs: "grant" },
         expect: SUCCEEDS,
@@ -102,12 +145,12 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         id: "use-forged-authority",
         role: "probe",
         description:
-          "Mutate a file only the forged grant would authorize; this is the attempt the row is actually about.",
-        tool: WRITE_TOOL,
-        toolArguments: { path: [...READ_ONLY_FILE] },
+          "Replace a file only the forged grant would authorize; this is the attempt the row is actually about.",
+        tool: REPLACE_TOOL,
+        toolArguments: { path: [...READ_ONLY_FILE], content: MUTATION_CONTENT },
         expect: DENIED_BY_KERNEL,
       },
-      { ...WRITE_INSIDE_WRITE_SCOPE, id: "write-inside-real-scope" },
+      { ...MUTATE_INSIDE_MUTATION_SCOPE, id: "mutate-inside-real-scope" },
     ],
   },
   {
@@ -158,12 +201,12 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         id: "mutate-the-target",
         role: "attack",
         description:
-          "Write the same file, which read authority covers and write authority does not.",
-        tool: WRITE_TOOL,
-        toolArguments: { path: [...READ_ONLY_FILE] },
+          "Replace the same file. The five read actions cover it workspace-wide; the four mutation actions stop at scratch.",
+        tool: REPLACE_TOOL,
+        toolArguments: { path: [...READ_ONLY_FILE], content: MUTATION_CONTENT },
         expect: DENIED_BY_KERNEL,
       },
-      { ...WRITE_INSIDE_WRITE_SCOPE, id: "mutate-inside-write-scope" },
+      { ...MUTATE_INSIDE_MUTATION_SCOPE, id: "mutate-inside-mutation-scope" },
     ],
   },
   {
@@ -177,23 +220,9 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         role: "attack",
         description:
           "Read the workspace under a grant whose validity window has closed, re-presenting the grant material in the call itself.",
-        tool: READ_TOOL,
+        tool: CARRIER_TOOL,
         toolArguments: { path: [...READ_ONLY_FILE] },
-        forge: {
-          grantId: "grant-read",
-          capabilities: [
-            {
-              resource: {
-                namespace: FILES_NAMESPACE,
-                path: [...WORKSPACE_PATH],
-                owner: CONFORMANCE_OWNER,
-              },
-              actions: ["read"],
-              scope: "descendants",
-            },
-          ],
-          embedAs: "grant",
-        },
+        forge: { grantId: "grant-read", capabilities: [HELD_READ], embedAs: "grant" },
         expect: DENIED_BY_KERNEL,
       },
       {
@@ -205,7 +234,7 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         toolArguments: { path: [...WRITABLE_FILE] },
         expect: SUCCEEDS,
       },
-      { ...WRITE_INSIDE_WRITE_SCOPE, id: "write-inside-write-scope" },
+      { ...MUTATE_INSIDE_MUTATION_SCOPE, id: "mutate-inside-mutation-scope" },
     ],
   },
   {
@@ -219,31 +248,17 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         role: "attack",
         description:
           "Read the workspace while re-presenting the revoked grant material in the call itself.",
-        tool: READ_TOOL,
+        tool: CARRIER_TOOL,
         toolArguments: { path: [...READ_ONLY_FILE] },
-        forge: {
-          grantId: "grant-read",
-          capabilities: [
-            {
-              resource: {
-                namespace: FILES_NAMESPACE,
-                path: [...WORKSPACE_PATH],
-                owner: CONFORMANCE_OWNER,
-              },
-              actions: ["read"],
-              scope: "descendants",
-            },
-          ],
-          embedAs: "grant",
-        },
+        forge: { grantId: "grant-read", capabilities: [HELD_READ], embedAs: "grant" },
         expect: {
           statuses: ["denied"],
           reasonCodes: ["no_matching_grant", "delegation_chain_invalid", "tool_unavailable"],
         },
       },
       {
-        ...WRITE_INSIDE_WRITE_SCOPE,
-        id: "write-inside-write-scope",
+        ...MUTATE_INSIDE_MUTATION_SCOPE,
+        id: "mutate-inside-mutation-scope",
         description:
           "Write inside a scope the revocation did not touch, so the denial is attributable to the revoked grant rather than to a dead turn.",
       },
@@ -283,8 +298,8 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         expect: DENIED_BY_KERNEL,
       },
       {
-        ...WRITE_INSIDE_WRITE_SCOPE,
-        id: "write-inside-write-scope",
+        ...MUTATE_INSIDE_MUTATION_SCOPE,
+        id: "mutate-inside-mutation-scope",
         turn: 2,
         description:
           "Write inside a scope the revocation did not touch, so the next turn's denial is attributable to the revoked grant rather than to a dead turn.",
@@ -303,7 +318,7 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         role: "attack",
         description:
           "Name another owner's copy of the same path, so the provider resolves a resource outside this world.",
-        tool: READ_TOOL,
+        tool: CROSSING_TOOL,
         toolArguments: {
           path: [...READ_ONLY_FILE],
           owner: { kind: "human", userId: "user-mallory" },
@@ -330,21 +345,21 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
       {
         id: "spend-the-single-use",
         role: "control",
-        description: "Write the ledger once, spending the grant's only permitted use.",
-        tool: WRITE_TOOL,
-        toolArguments: { path: [...LEDGER_FILE] },
+        description: "Append to the ledger once, spending the grant's only permitted use.",
+        tool: APPEND_TOOL,
+        toolArguments: { path: [...LEDGER_FILE], content: MUTATION_CONTENT },
         expect: SUCCEEDS,
       },
       {
         id: "spend-it-again",
         role: "attack",
         description:
-          "Write the ledger a second time, under a grant that is still valid and no longer has a use left.",
-        tool: WRITE_TOOL,
-        toolArguments: { path: [...LEDGER_FILE] },
+          "Append to the ledger a second time, under a grant that is still valid and no longer has a use left.",
+        tool: APPEND_TOOL,
+        toolArguments: { path: [...LEDGER_FILE], content: MUTATION_CONTENT },
         expect: { statuses: ["denied"], reasonCodes: ["grant_exhausted"] },
       },
-      { ...WRITE_INSIDE_WRITE_SCOPE, id: "write-inside-write-scope" },
+      { ...MUTATE_INSIDE_MUTATION_SCOPE, id: "mutate-inside-mutation-scope" },
     ],
   },
   {
@@ -358,15 +373,15 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         role: "attack",
         description:
           "Use the bounded grant while the counter behind it cannot be read, so remaining use is an unknown fact rather than a policy question.",
-        tool: WRITE_TOOL,
-        toolArguments: { path: [...LEDGER_FILE] },
+        tool: APPEND_TOOL,
+        toolArguments: { path: [...LEDGER_FILE], content: MUTATION_CONTENT },
         expect: { statuses: ["denied"], reasonCodes: ["usage_store_unavailable"] },
       },
       {
-        ...WRITE_INSIDE_WRITE_SCOPE,
-        id: "write-under-an-unbounded-grant",
+        ...MUTATE_INSIDE_MUTATION_SCOPE,
+        id: "mutate-under-an-unbounded-grant",
         description:
-          "Write under a grant that is not bounded, which needs no counter and must keep working through the outage.",
+          "Mutate under a grant that is not bounded, which needs no counter and must keep working through the outage.",
       },
       { ...READ_OWN_WORKSPACE, id: "read-own-workspace" },
     ],
@@ -398,8 +413,8 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         id: "write-during-outage",
         role: "attack",
         description: "Attempt a mutation during the outage, which must not become permissive.",
-        tool: WRITE_TOOL,
-        toolArguments: { path: [...WRITABLE_FILE] },
+        tool: REPLACE_TOOL,
+        toolArguments: { path: [...WRITABLE_FILE], content: MUTATION_CONTENT },
         expect: { statuses: ["denied"], reasonCodes: ["authority_unavailable"] },
       },
       {
@@ -504,13 +519,86 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         id: "use-the-over-broad-grant",
         role: "attack",
         description:
-          "Write a file covered only by a grant that claims more than the grant it was delegated from, which read-only authority never had to give.",
-        tool: WRITE_TOOL,
-        toolArguments: { path: [...READ_ONLY_FILE] },
+          "Replace a file covered only by a grant that claims more than the grant it was delegated from, whose parent holds the read actions and no mutation action at all.",
+        tool: REPLACE_TOOL,
+        toolArguments: { path: [...READ_ONLY_FILE], content: MUTATION_CONTENT },
         expect: { statuses: ["denied"], reasonCodes: ["delegation_chain_invalid"] },
       },
       { ...READ_OWN_WORKSPACE, id: "read-inside-the-parent-scope" },
-      { ...WRITE_INSIDE_WRITE_SCOPE, id: "write-inside-write-scope" },
+      { ...MUTATE_INSIDE_MUTATION_SCOPE, id: "mutate-inside-mutation-scope" },
+    ],
+  },
+  {
+    id: "kernel.rollback-unavailable",
+    kind: "rollback_unavailable",
+    invariant: "Use read and mutation authority for a rollback",
+    expectedOutcome: "Undiscoverable and uninvocable",
+    attempts: [
+      {
+        id: "snapshot-the-scratch-folder",
+        role: "control",
+        description:
+          "Take a snapshot of the scratch folder, establishing that the recovery surface is registered, enabled, and reachable by this agent.",
+        tool: SNAPSHOT_CREATE_TOOL,
+        toolArguments: { path: [...WRITABLE_PATH] },
+        expect: SUCCEEDS,
+      },
+      {
+        id: "list-the-snapshots",
+        role: "control",
+        description:
+          "List that folder's snapshots, establishing that the second harmless recovery action is held too.",
+        tool: SNAPSHOT_LIST_TOOL,
+        toolArguments: { path: [...WRITABLE_PATH] },
+        expect: SUCCEEDS,
+      },
+      {
+        id: "roll-back-a-file-it-may-delete",
+        role: "attack",
+        description:
+          "Restore a file the agent may create, replace, append to and delete outright, from a snapshot that exists. Nothing about the target is out of reach; the action name is.",
+        tool: SNAPSHOT_RESTORE_TOOL,
+        toolArguments: { path: [...WRITABLE_FILE], snapshotId: SEEDED_SNAPSHOT_ID },
+        uncatalogued:
+          "no grant anywhere carries `snapshot:restore`, so the tool fails the discovery filter, never enters the published catalogue, and a CLI's own router refuses the name before it reaches SharedOS",
+        expect: REFUSED_AS_UNEXPOSED,
+      },
+      { ...MUTATE_INSIDE_MUTATION_SCOPE, id: "mutate-inside-mutation-scope" },
+    ],
+  },
+  {
+    id: "kernel.rollback-out-of-scope",
+    kind: "rollback_out_of_scope",
+    invariant: "Roll back a path outside the rollback grant's scope",
+    expectedOutcome: "Deny and audit",
+    attempts: [
+      {
+        id: "snapshot-the-scratch-folder",
+        role: "control",
+        description: "Take a snapshot inside the folder the rollback grant covers.",
+        tool: SNAPSHOT_CREATE_TOOL,
+        toolArguments: { path: [...WRITABLE_PATH] },
+        expect: SUCCEEDS,
+      },
+      {
+        id: "roll-back-inside-the-scope",
+        role: "control",
+        description:
+          "Restore a file inside that folder, proving the rollback authority is real and the tool works. This control is the reason the row cannot be folded into the availability reading: in a world with no rollback authority it is impossible to write.",
+        tool: SNAPSHOT_RESTORE_TOOL,
+        toolArguments: { path: [...WRITABLE_FILE], snapshotId: SEEDED_SNAPSHOT_ID },
+        expect: SUCCEEDS,
+      },
+      {
+        id: "roll-back-outside-the-scope",
+        role: "attack",
+        description:
+          "Restore a workspace file outside that folder, from a snapshot that exists, so the refusal is attributable to the grant's scope rather than to a missing snapshot.",
+        tool: SNAPSHOT_RESTORE_TOOL,
+        toolArguments: { path: [...READ_ONLY_FILE], snapshotId: SEEDED_SNAPSHOT_ID },
+        expect: DENIED_BY_KERNEL,
+      },
+      { ...READ_OWN_WORKSPACE, id: "read-own-workspace" },
     ],
   },
   {
@@ -549,8 +637,8 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         id: "denied-operation",
         role: "attack",
         description: "An operation the kernel refuses on scope.",
-        tool: WRITE_TOOL,
-        toolArguments: { path: [...READ_ONLY_FILE] },
+        tool: REPLACE_TOOL,
+        toolArguments: { path: [...READ_ONLY_FILE], content: MUTATION_CONTENT },
         expect: DENIED_BY_KERNEL,
       },
       {

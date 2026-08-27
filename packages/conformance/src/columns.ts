@@ -502,7 +502,9 @@ export function liveColumn(options: LiveColumnOptions): RuntimeColumn {
  * So the correlation is on what the record can actually show about a call: the
  * tool, and the resource the kernel resolved it to, taken in declared order with
  * each operation consumed at most once. A row whose attempt names a path is
- * matched only against an operation on that path.
+ * matched against an operation on that path, and only against a resource-less
+ * one once no exact match is left -- see the two passes below, and why an
+ * operation that never reached authorization must not outrank one that did.
  *
  * This is deliberately weaker than the scripted column's correlation and must
  * not be folded into the committed manifest. Two attempts on one tool and one
@@ -542,13 +544,27 @@ export function liveReceiptsFromRecord(
       }
 
       const wantedPath = declaredPath(attempt);
-      const index = unconsumed.findIndex(
-        (operation) =>
-          operation.tool === attempt.tool &&
-          (wantedPath === undefined ||
-            operation.resource === undefined ||
-            canonicalJson(operation.resource.path) === canonicalJson(wantedPath)),
-      );
+      // An operation the kernel never resolved a resource for is a fallback, not
+      // a peer of an exact match. It is resource-less precisely because it was
+      // refused before authorization -- `invalid_tool_arguments` on a call whose
+      // path never parsed -- so it carries no evidence about authority, and
+      // letting it match any path lets one fumbled call consume the attempt that
+      // the correctly-formed call was about to satisfy. Seen live: a harness that
+      // called `files.replace` with no `path`, retried it correctly, and was
+      // denied `no_matching_grant` on the retry had the row graded from the
+      // fumble. Exact first, then the resource-less remainder.
+      const matches = (operation: OperationOf<typeof turn.record>, exact: boolean): boolean =>
+        operation.tool === attempt.tool &&
+        (wantedPath === undefined
+          ? true
+          : operation.resource === undefined
+            ? !exact
+            : canonicalJson(operation.resource.path) === canonicalJson(wantedPath));
+
+      let index = unconsumed.findIndex((operation) => matches(operation, true));
+      if (index === -1) {
+        index = unconsumed.findIndex((operation) => matches(operation, false));
+      }
       if (index === -1) {
         return {
           ...base,
