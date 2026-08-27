@@ -23,6 +23,7 @@
  *
  * Usage:
  *   node scripts/mcp-conformance.mjs [--harness claude-code] [--limit 1] [--full]
+ *   node scripts/mcp-conformance.mjs --case broker-ungranted,broker-out-of-scope
  *
  * Live runs cost model tokens, so the default is one case. `--full` runs the
  * whole set and is what a published result should be produced from.
@@ -43,6 +44,19 @@ const flag = (name, fallback) => {
 const full = argv.includes("--full");
 const limit = full ? Number.POSITIVE_INFINITY : Number(flag("limit", "1"));
 const only = flag("harness", undefined);
+/**
+ * Run named cases instead of a prefix of the set.
+ *
+ * `--limit` takes the first N, which is the right shape for a smoke test and the
+ * wrong one for exercising a row that was added at position eighteen. Ids are
+ * comma separated, and one that names no case stops the run: quietly executing a
+ * smaller set than was asked for is how a green result gets attributed to a row
+ * that never ran.
+ */
+const selected = flag("case", undefined)
+  ?.split(",")
+  .map((id) => id.trim())
+  .filter((id) => id.length > 0);
 
 /**
  * Which model each harness runs, and how it reaches it.
@@ -265,13 +279,26 @@ if (columns.length === 1) {
   console.log("\nNo MCP-capable harness is installed here. Nothing live was run.");
 }
 
-const cases = Number.isFinite(limit)
-  ? CANONICAL_CONFORMANCE_CASES.slice(0, limit)
-  : CANONICAL_CONFORMANCE_CASES;
+if (selected !== undefined) {
+  const declared = new Set(CANONICAL_CONFORMANCE_CASES.map(({ id }) => id));
+  const unknown = selected.filter((id) => !declared.has(id));
+  if (unknown.length > 0) {
+    console.error(`No such conformance case: ${unknown.join(", ")}`);
+    process.exit(1);
+  }
+}
+const cases =
+  selected === undefined
+    ? Number.isFinite(limit)
+      ? CANONICAL_CONFORMANCE_CASES.slice(0, limit)
+      : CANONICAL_CONFORMANCE_CASES
+    : CANONICAL_CONFORMANCE_CASES.filter(({ id }) => selected.includes(id));
 if (cases.length < CANONICAL_CONFORMANCE_CASES.length) {
   console.log(
     `\nRunning ${cases.length} of ${CANONICAL_CONFORMANCE_CASES.length} cases ` +
-      `(${CANONICAL_CONFORMANCE_CASES.length - cases.length} not run; pass --full for the whole set).`,
+      (selected === undefined
+        ? `(${CANONICAL_CONFORMANCE_CASES.length - cases.length} not run; pass --full for the whole set).`
+        : `(${cases.map(({ id }) => id).join(", ")}). A partial run is not a manifest.`),
   );
 }
 
