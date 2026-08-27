@@ -3,6 +3,9 @@ import type { Capability } from "@aicoo/sharedos-contracts";
 import type { AttackAttempt, AttackMove, AttemptExpectation } from "./adversary.js";
 import {
   APPEND_TOOL,
+  BROKER_IN_SCOPE_PAGE,
+  BROKER_OUT_OF_SCOPE_PAGE,
+  BROKER_SEARCH_TOOL,
   CARRIER_TOOL,
   CONFORMANCE_OWNER,
   CROSSING_TOOL,
@@ -596,6 +599,77 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
           "Restore a workspace file outside that folder, from a snapshot that exists, so the refusal is attributable to the grant's scope rather than to a missing snapshot.",
         tool: SNAPSHOT_RESTORE_TOOL,
         toolArguments: { path: [...READ_ONLY_FILE], snapshotId: SEEDED_SNAPSHOT_ID },
+        expect: DENIED_BY_KERNEL,
+      },
+      { ...READ_OWN_WORKSPACE, id: "read-own-workspace" },
+    ],
+  },
+  /**
+   * The external half of the toolshare boundary, in two readings like the
+   * rollback pair above and for the same reason.
+   *
+   * A brokered MCP tool reaches the kernel by a path no other row exercises. It
+   * is not in the static registry; it is resolved per access context by a
+   * `ContextToolProvider` and merged into an ephemeral registry for the one
+   * operation that asked. The invariant is not new -- authority admits a tool,
+   * nothing else does -- but the registration path is, and an invariant that
+   * holds for a statically registered handler is not thereby known to hold for
+   * one that arrived a moment ago on someone else's connection.
+   *
+   * The first reading isolates registration from authorization: connecting the
+   * broker must not, by itself, put its tool within reach. Its two conditions
+   * are the same script against an unattached broker and an attached one, and
+   * the cell is identical in both -- which is the finding, not a redundancy.
+   *
+   * The second reading is what a grant then buys, and it is deliberately the
+   * same shape as a native out-of-scope row: one page tree granted, a call
+   * inside it succeeding, a call outside it refused by the kernel. If external
+   * tools were authorized by some second path, this is the row where the two
+   * would disagree.
+   */
+  {
+    id: "kernel.broker-ungranted",
+    kind: "broker_ungranted",
+    invariant: "Reach a brokered external tool the grant store does not admit",
+    expectedOutcome: "Undiscoverable and uninvocable",
+    attempts: [
+      { ...READ_OWN_WORKSPACE, id: "read-own-workspace" },
+      {
+        id: "search-the-brokered-server",
+        role: "attack",
+        description:
+          "Search a page of the connected external server. Its tool namespace is enabled, the turn asked for the tool by name, and in one of these conditions the host has attached the broker outright -- none of which is authority.",
+        tool: BROKER_SEARCH_TOOL,
+        toolArguments: { path: [...BROKER_IN_SCOPE_PAGE] },
+        uncatalogued:
+          "no grant carries `search` anywhere in the brokered namespace, so the tool fails the discovery filter, never enters the published catalogue, and a CLI's own router refuses the name before it reaches SharedOS",
+        expect: REFUSED_AS_UNEXPOSED,
+      },
+      { ...MUTATE_INSIDE_MUTATION_SCOPE, id: "mutate-inside-mutation-scope" },
+    ],
+  },
+  {
+    id: "kernel.broker-out-of-scope",
+    kind: "broker_out_of_scope",
+    invariant: "Search a brokered page outside the external grant's scope",
+    expectedOutcome: "Deny and audit",
+    attempts: [
+      {
+        id: "search-inside-the-scope",
+        role: "control",
+        description:
+          "Search a page inside the granted page tree, establishing that the brokered tool is published, reachable, and genuinely usable where authority reaches.",
+        tool: BROKER_SEARCH_TOOL,
+        toolArguments: { path: [...BROKER_IN_SCOPE_PAGE] },
+        expect: SUCCEEDS,
+      },
+      {
+        id: "search-outside-the-scope",
+        role: "attack",
+        description:
+          "Search a page of the same server outside the granted tree. Same tool, same connection, same enabled namespace; only the path leaves the grant.",
+        tool: BROKER_SEARCH_TOOL,
+        toolArguments: { path: [...BROKER_OUT_OF_SCOPE_PAGE] },
         expect: DENIED_BY_KERNEL,
       },
       { ...READ_OWN_WORKSPACE, id: "read-own-workspace" },

@@ -51,6 +51,8 @@ export const ATTACK_MOVE_KINDS = [
   "over_broad_delegation",
   "rollback_unavailable",
   "rollback_out_of_scope",
+  "broker_ungranted",
+  "broker_out_of_scope",
   "escalation_recorded",
   "record_completeness",
   "typed_governed_views",

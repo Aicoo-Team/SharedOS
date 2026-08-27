@@ -20,6 +20,8 @@ import {
   type ConformanceWorldOptions,
   ESCAPING_TOOL,
   APPEND_TOOL,
+  BROKER_IN_SCOPE_PAGE,
+  BROKER_SEARCH_TOOL,
   CARRIER_TOOL,
   CREATE_TOOL,
   CROSSING_TOOL,
@@ -139,6 +141,8 @@ describe("the hostile runtime", () => {
       "over_broad_delegation",
       "rollback_unavailable",
       "rollback_out_of_scope",
+      "broker_ungranted",
+      "broker_out_of_scope",
       "escalation_recorded",
       "record_completeness",
       "typed_governed_views",
@@ -288,6 +292,60 @@ describe("manifest rows under the canonical world", () => {
       `snapshot:create:${WRITABLE_PATH.join("/")}`,
       `snapshot:restore:${WRITABLE_FILE.join("/")}`,
     ]);
+    expect(run.receipt("read-own-workspace").observed).toBe("succeeded");
+  });
+
+  it("does not admit a brokered external tool merely by connecting its server", async () => {
+    // Two worlds, one script. Unattached, no provider resolves the handler at
+    // all; attached, the provider is consulted and hands the kernel a perfectly
+    // valid handler in an enabled namespace. Neither publishes the tool, and
+    // both refuse the call identically -- which is the row.
+    for (const world of [{}, { broker: "registered" as const }]) {
+      const run = await runMove("broker_ungranted", world);
+      const report = readAdversarialReport(run.result);
+
+      expect(report?.visibleTools).not.toContain(BROKER_SEARCH_TOOL);
+      const denied = run.receipt("search-the-brokered-server");
+      expect(denied.observed).toBe("denied");
+      expect(denied.reasonCode).toBe("tool_unavailable");
+
+      // The broker was never reached, so nothing but authority stopped the call.
+      expect(run.world.broker.searches).toEqual([]);
+
+      // The native surface is untouched in the same turn, which is what makes
+      // this a statement about the external tool rather than about the world.
+      expect(run.receipt("read-own-workspace").observed).toBe("succeeded");
+      expect(run.receipt("mutate-inside-mutation-scope").observed).toBe("succeeded");
+    }
+  });
+
+  it("consults the attached provider and still refuses what no grant carries", async () => {
+    // The other half of the row above, and the reason it is not a false pass: a
+    // provider that was silently never registered would produce the same cell.
+    const attached = await runMove("broker_ungranted", { broker: "registered" });
+    expect(attached.world.broker.listings.length).toBeGreaterThan(0);
+
+    const unattached = await runMove("broker_ungranted", {});
+    expect(unattached.world.broker.listings).toEqual([]);
+  });
+
+  it("holds brokered authority inside its own scope and no further", async () => {
+    const run = await runMove("broker_out_of_scope", { broker: "granted" });
+    const report = readAdversarialReport(run.result);
+
+    // The grant is what publishes it -- the same grant that bounds it.
+    expect(report?.visibleTools).toContain(BROKER_SEARCH_TOOL);
+    expect(run.receipt("search-inside-the-scope").observed).toBe("succeeded");
+
+    // Outside it, the kernel refuses on exactly the code a native out-of-scope
+    // call earns. That equivalence is the point of the row.
+    const denied = run.receipt("search-outside-the-scope");
+    expect(denied.observed).toBe("denied");
+    expect(denied.reasonCode).toBe("no_matching_grant");
+
+    // The broker was asked for the in-scope page and never for the other one, so
+    // the refusal landed before the external server was reached.
+    expect(run.world.broker.searches).toEqual([BROKER_IN_SCOPE_PAGE.join("/")]);
     expect(run.receipt("read-own-workspace").observed).toBe("succeeded");
   });
 
