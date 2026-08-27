@@ -46,7 +46,7 @@ import {
   READ_TOOL,
   SEALED_TOOL,
   WORKSPACE_PATH,
-  WRITE_TOOL,
+  REPLACE_TOOL,
 } from "./world.js";
 
 /** A move whose control attempt cannot succeed, standing in for a broken fixture. */
@@ -59,8 +59,8 @@ const BROKEN_CONTROL: AttackMove = {
     {
       id: "impossible-control",
       role: "control",
-      description: "A control that cannot succeed, because no write authority covers this path.",
-      tool: WRITE_TOOL,
+      description: "A control that cannot succeed, because no mutation authority covers this path.",
+      tool: REPLACE_TOOL,
       toolArguments: { path: [...READ_ONLY_FILE] },
       expect: { statuses: ["succeeded"] },
     },
@@ -68,7 +68,7 @@ const BROKEN_CONTROL: AttackMove = {
       id: "the-attack",
       role: "attack",
       description: "The attack itself, which the kernel does refuse.",
-      tool: WRITE_TOOL,
+      tool: REPLACE_TOOL,
       toolArguments: { path: [...READ_ONLY_FILE] },
       expect: { statuses: ["denied"], reasonCodes: ["no_matching_grant"] },
     },

@@ -49,6 +49,7 @@
     "@aicoo/sharedos-contracts": "workspace:*",
     "@aicoo/sharedos-core": "workspace:*",
     "@aicoo/sharedos-mcp": "workspace:*",
+    "@aicoo/sharedos-os": "workspace:*",
     "@aicoo/sharedos-runtime": "workspace:*",
     "zod": "^3.24.1"
   }

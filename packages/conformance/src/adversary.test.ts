@@ -19,14 +19,26 @@ import {
   type ConformanceWorld,
   type ConformanceWorldOptions,
   ESCAPING_TOOL,
+  APPEND_TOOL,
+  CARRIER_TOOL,
+  CREATE_TOOL,
+  CROSSING_TOOL,
+  DELETE_TOOL,
+  GREP_TOOL,
+  LIST_TOOL,
   MISMATCHED_TOOL,
+  SEARCH_TOOL,
+  SNAPSHOT_CREATE_TOOL,
+  SNAPSHOT_LIST_TOOL,
+  SNAPSHOT_RESTORE_TOOL,
+  STAT_TOOL,
   READ_GRANT,
   READ_TOOL,
   ROOT_FILES_GRANT,
   SEALED_TOOL,
   SEND_TOOL,
   UNREGISTERED_TOOL,
-  WRITE_TOOL,
+  REPLACE_TOOL,
 } from "./world.js";
 
 const HASH = "e".repeat(64);
@@ -182,7 +194,7 @@ describe("manifest rows under the canonical world", () => {
     const probe = run.receipt("use-forged-authority");
     expect(probe.observed).toBe("denied");
     expect(probe.reasonCode).toBe("no_matching_grant");
-    expect(run.receipt("write-inside-real-scope").observed).toBe("succeeded");
+    expect(run.receipt("mutate-inside-real-scope").observed).toBe("succeeded");
     expect(run.world.files.writes).toEqual(["Workspace/scratch/draft.md"]);
 
     // The forged grant reached the kernel as an argument and a payload, and
@@ -196,13 +208,28 @@ describe("manifest rows under the canonical world", () => {
     const run = await runMove("hidden_tool");
     const report = readAdversarialReport(run.result);
 
+    // The whole shipped file vocabulary except the one recovery action no grant
+    // carries, plus the fixtures, plus the message request tool. `files.purge`
+    // is registered and absent: its namespace is never enabled.
     expect(report?.visibleTools).toEqual([
-      ESCAPING_TOOL,
-      READ_TOOL,
+      APPEND_TOOL,
+      CREATE_TOOL,
+      DELETE_TOOL,
       MISMATCHED_TOOL,
-      WRITE_TOOL,
+      CROSSING_TOOL,
+      GREP_TOOL,
+      ESCAPING_TOOL,
+      LIST_TOOL,
+      CARRIER_TOOL,
+      READ_TOOL,
+      REPLACE_TOOL,
+      SEARCH_TOOL,
+      SNAPSHOT_CREATE_TOOL,
+      SNAPSHOT_LIST_TOOL,
+      STAT_TOOL,
       SEND_TOOL,
     ]);
+    expect(report?.visibleTools).not.toContain(SNAPSHOT_RESTORE_TOOL);
     expect(report?.visibleTools).not.toContain(SEALED_TOOL);
     expect(report?.visibleTools).not.toContain(UNREGISTERED_TOOL);
 
@@ -223,13 +250,13 @@ describe("manifest rows under the canonical world", () => {
     const denied = run.receipt("mutate-the-target");
     expect(denied.observed).toBe("denied");
     expect(denied.reasonCode).toBe("no_matching_grant");
-    expect(run.receipt("mutate-inside-write-scope").observed).toBe("succeeded");
+    expect(run.receipt("mutate-inside-mutation-scope").observed).toBe("succeeded");
     expect(run.world.files.writes).toEqual(["Workspace/scratch/draft.md"]);
 
     // "Deny and audit": the refusal is in the record, not only in the receipt.
     expect(run.record.execution.operations).toContainEqual(
       expect.objectContaining({
-        tool: WRITE_TOOL,
+        tool: REPLACE_TOOL,
         source: "kernel",
         outcome: "denied",
         reasonCode: "no_matching_grant",
@@ -249,7 +276,7 @@ describe("manifest rows under the canonical world", () => {
     // catalogue.
     expect(denied.reasonCode).toBe("no_matching_grant");
     expect(run.world.files.reads).toEqual([]);
-    expect(run.receipt("write-inside-write-scope").observed).toBe("succeeded");
+    expect(run.receipt("mutate-inside-mutation-scope").observed).toBe("succeeded");
   });
 
   it("invalidates a descendant when its ancestor is revoked", async () => {
@@ -260,7 +287,7 @@ describe("manifest rows under the canonical world", () => {
     expect(denied.reasonCode).toBe("delegation_chain_invalid");
     expect(run.world.files.reads).toEqual([]);
     // The write grant descends from a different ancestor, so the turn still acts.
-    expect(run.receipt("write-inside-write-scope").observed).toBe("succeeded");
+    expect(run.receipt("mutate-inside-mutation-scope").observed).toBe("succeeded");
     expect(
       run.record.execution.decisions.some(
         ({ reasonCode }) => reasonCode === "delegation_chain_invalid",
@@ -324,7 +351,7 @@ describe("manifest rows under the canonical world", () => {
       expect.objectContaining({ tool: READ_TOOL, source: "kernel", outcome: "succeeded" }),
     );
     expect(run.record.execution.operations).toContainEqual(
-      expect.objectContaining({ tool: WRITE_TOOL, source: "kernel", outcome: "denied" }),
+      expect.objectContaining({ tool: REPLACE_TOOL, source: "kernel", outcome: "denied" }),
     );
     // The escalation reach never becomes a kernel decision: the permission
     // filter refuses it inside the envelope, so only the envelope records it.
