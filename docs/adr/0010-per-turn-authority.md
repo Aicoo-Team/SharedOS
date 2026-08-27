@@ -1,6 +1,7 @@
 # ADR 0010: Resolve authority once per turn
 
-- Status: Accepted
+- Status: Accepted, amended by
+  `docs/adr/0016-expiry-is-instant-bound.md`
 - Date: 2026-08-21
 - Supersedes: the per-operation resolution decided in
   `docs/adr/0009-trusted-grant-source.md`
@@ -66,6 +67,11 @@ call and possibly changing its mind.
 
 ### Removals are frozen together
 
+> Amended by ADR 0016. Expiry is now decided at the instant of the operation;
+> everything else below still holds. The section is kept as written because the
+> reasoning that follows it — the fuse, and why the alternative was rejected —
+> is what ADR 0016 answers.
+
 Every way a grant leaves an actor's authority runs through one check,
 `grantIsActive`: not yet active, expired, revoked, or withdrawn from the
 requested purpose. That check is evaluated against `now` on the context carried
@@ -82,24 +88,28 @@ Setting it restores per-operation resolution exactly as ADR 0009 specified: the
 turn handle then reports the boundary outcome but holds nothing, and every
 operation resolves its own authority.
 
-It is off, and carries the open question it exists for:
+It is off, and carried the open question it existed for:
 
 > TBD Expiry with mid-turn grant refusal.
 
 Revocation is a store-side edit and is naturally a next-turn event, because
 SharedOS cannot see it without re-reading the store. Expiry is not: it is a
 property the grant already carried when the turn began, so refusing it mid-turn
-costs no store read and leaks no store state. The two are frozen together today
-only because they share one removal check. Separating them is a decision about
-what a turn is — whether a turn may outlive the validity window of the authority
-that admitted it — and is deferred rather than settled by implementation
-accident.
+costs no store read and leaks no store state. The two were frozen together only
+because they shared one removal check.
+
+ADR 0016 settled it: expiry is decided at the operation's instant and every
+other removal at the turn's, so a turn no longer outlives the validity window of
+the authority that admitted it. That needed nothing from this fuse, which stays
+off. What remains behind it is one behaviour and no open question — observing a
+store edit without waiting for the next turn.
 
 ## Consequences
 
 - A revocation recorded while a turn runs is observed by the next turn. A host
   whose revocation SLA is shorter than its maximum turn length must bound turn
-  length, not rely on the kernel.
+  length, not rely on the kernel. (Since ADR 0016 an _expiry_ is observed inside
+  the turn, so a short-lived grant is one way to bound it.)
 - One authority load per turn instead of _N + 2_. `cost.authorityLoads` falls to
   1 for a turn of any size, which changes the Table 6 _Capability
   authorization_ row from a per-call cost to a per-turn one.
@@ -132,11 +142,14 @@ callers and nested tool-handler calls resolving per operation.
 handler receives an `AccessContext` and nothing else. Threading a handle through
 the tool contract would put authority one refactor away from a provider.
 
-**Freeze the grant set but keep the operation's clock.** Rejected as a hybrid
-nobody can reason about: revocation would wait for the next turn while expiry
-still landed mid-turn, and the two are the same removal in the same check. If
-expiry should be refused mid-turn it should be by an explicit decision, which is
-what the fuse's TBD records.
+**Freeze the grant set but keep the operation's clock.** Rejected here as a
+hybrid nobody can reason about: revocation would wait for the next turn while
+expiry still landed mid-turn, and the two are the same removal in the same
+check. If expiry should be refused mid-turn it should be by an explicit
+decision, which is what the fuse's TBD recorded — and ADR 0016 is that decision.
+It adopts this alternative for expiry alone, on a rule this ADR did not have:
+the operation's clock may only narrow what the frozen grant set authorizes,
+never widen it.
 
 **Delete the per-operation path.** Rejected because the expiry question is open.
 A fuse that can be pulled makes the alternative testable; a deleted branch makes

@@ -15,22 +15,23 @@ export const MAX_RESOLVED_GRANTS = 256;
  * was refused at the next decision inside that same turn. That path is retained
  * in {@link SharedOSKernel} and is re-enabled by setting this to `true`.
  *
- * It is off because a turn must decide against one authority state. Authority
- * is now resolved once, at the turn boundary, and every grant removal --
- * revocation, expiry, purpose withdrawal -- is observed by the *next* turn. A
- * request therefore carries the authority it was admitted with, rather than
- * having authority resolved underneath it while it runs.
+ * It is off because a turn must decide against one *grant set*. Authority is
+ * resolved once, at the turn boundary, and a store-side edit -- a revocation, a
+ * withdrawn purpose -- is observed by the *next* turn. A request therefore
+ * carries the authority it was admitted with, rather than having authority
+ * resolved underneath it while it runs.
  *
- * TBD Expiry with mid-turn grant refusal.
+ * The fuse no longer covers expiry. ADR 0016 settled the question this constant
+ * used to carry as a TBD: expiry is a property the grant already held when the
+ * turn began, so honouring it part-way through costs no store read and leaks no
+ * store state, and `grantIsActive` in `internal.ts` now evaluates it against the
+ * instant of the operation while every other removal stays at the instant the
+ * turn's authority was resolved. Nothing about that needs this fuse, which is
+ * why it stays off.
  *
- * Expiry is the open question this fuse exists for. A revocation is a store-side
- * edit and is naturally a next-turn event: SharedOS cannot see it without
- * re-reading the store. An expiry is different -- it is a property the grant
- * already carried when the turn began, so refusing it mid-turn costs no store
- * read and leaks no store state. The two are frozen together today only because
- * they share one removal check -- `grantIsActive` in `internal.ts` -- which is
- * evaluated against the instant the turn's authority was resolved. Splitting them is a
- * semantic decision about what a turn is, not a mechanical one, and is deferred.
+ * What remains behind it is exactly one behaviour: seeing a store edit without
+ * waiting for the next turn. A host that needs a revocation to land inside a
+ * running turn, and will pay a store read per operation for it, sets this.
  */
 export const MID_TURN_AUTHORITY_REFRESH = false;
 
@@ -104,7 +105,9 @@ export type AuthorityUnavailableCode =
  * A content identifier for exactly the authority one decision was made against.
  *
  * With {@link MID_TURN_AUTHORITY_REFRESH} off, a turn resolves authority once
- * and every decision in it names the same snapshot. The per-decision field is
+ * and every decision in it names the same snapshot -- including a decision that
+ * refused an expired grant, because expiry narrows what a snapshot authorizes
+ * without changing which snapshot it is. The per-decision field is
  * kept rather than collapsed to a per-turn one because a host may still make
  * kernel calls outside any turn, and because re-enabling the fuse must not
  * change the shape of the evidence.

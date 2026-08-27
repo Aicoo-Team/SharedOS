@@ -243,6 +243,111 @@ describe("CapabilityAuthorizer", () => {
     await expect(store.getUsage("tenant-a\u0000grant", "victim")).resolves.toBe(0);
   });
 
+  describe("the operation instant", () => {
+    const LATER = "2026-08-03T10:00:00.000Z";
+    const EXPIRES_AT = "2026-08-03T09:30:00.000Z";
+    const READ = { resource: RESOURCE, action: "read" } as const;
+
+    it("decides expiry at the operation instant rather than the turn's", async () => {
+      const authorizer = new CapabilityAuthorizer();
+      const expiring = grant({
+        constraints: { purposes: ["prepare-update"], expiresAt: EXPIRES_AT },
+      });
+      const authority = context([expiring]);
+
+      await expect(authorizer.authorize(authority, READ)).resolves.toMatchObject({
+        allowed: true,
+      });
+      await expect(authorizer.authorize(authority, READ, { now: LATER })).resolves.toEqual({
+        allowed: false,
+        reasonCode: "no_matching_grant",
+      });
+    });
+
+    it("keeps revocation at the turn's instant, where the store edit was not seen", async () => {
+      const authorizer = new CapabilityAuthorizer();
+      // Recorded in the store after this turn was admitted. The turn holds the
+      // grant as it was loaded, so a later operation is still authorized.
+      const revoked = grant({ revokedAt: EXPIRES_AT });
+
+      await expect(
+        authorizer.authorize(context([revoked]), READ, { now: LATER }),
+      ).resolves.toMatchObject({ allowed: true });
+    });
+
+    it("keeps a validity window from opening at the operation instant", async () => {
+      const authorizer = new CapabilityAuthorizer();
+      const pending = grant({
+        constraints: { purposes: ["prepare-update"], notBefore: EXPIRES_AT },
+      });
+
+      await expect(authorizer.authorize(context([pending]), READ, { now: LATER })).resolves.toEqual(
+        { allowed: false, reasonCode: "no_matching_grant" },
+      );
+    });
+
+    it("filters discovery at the operation instant too", async () => {
+      const authorizer = new CapabilityAuthorizer();
+      const expiring = grant({
+        constraints: { purposes: ["prepare-update"], expiresAt: EXPIRES_AT },
+      });
+      const ceiling = {
+        resource: { namespace: "files", path: ["Workspace"], owner: OWNER },
+        action: "read",
+      };
+
+      await expect(authorizer.canDiscover(context([expiring]), ceiling)).resolves.toMatchObject({
+        allowed: true,
+      });
+      await expect(
+        authorizer.canDiscover(context([expiring]), ceiling, { now: LATER }),
+      ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+    });
+
+    it("invalidates a descendant when its ancestor expires mid-turn", async () => {
+      const parent = grant({
+        id: "grant-root",
+        subject: AUTHORITY,
+        constraints: {
+          purposes: ["prepare-update"],
+          delegationDepth: 1,
+          expiresAt: EXPIRES_AT,
+        },
+      });
+      const child = grant({
+        id: "grant-derived",
+        parentGrantId: "grant-root",
+        constraints: { purposes: ["prepare-update"], expiresAt: EXPIRES_AT },
+      });
+      const authorizer = new CapabilityAuthorizer({
+        delegationResolver: { resolve: async () => parent },
+      });
+
+      await expect(authorizer.authorize(context([child]), READ)).resolves.toMatchObject({
+        allowed: true,
+      });
+      // The child is refused on its own expiry before the chain is walked, so
+      // widen its window and leave the ancestor's closed: the denial is then
+      // attributable to the ancestor.
+      const outlivingChild = { ...child, constraints: { purposes: ["prepare-update"] } };
+      await expect(
+        authorizer.authorize(context([outlivingChild]), READ, { now: LATER }),
+      ).resolves.toMatchObject({
+        allowed: false,
+        reasonCode: "delegation_chain_invalid",
+        metadata: { delegation: { code: "parent_inactive", grantId: "grant-root" } },
+      });
+    });
+
+    it("refuses an unparsable operation instant rather than deciding at the turn's", async () => {
+      const authorizer = new CapabilityAuthorizer();
+
+      await expect(
+        authorizer.authorize(context([grant()]), READ, { now: "not-an-instant" }),
+      ).resolves.toEqual({ allowed: false, reasonCode: "invalid_context" });
+    });
+  });
+
   it("supports host verification of trusted grant material", async () => {
     const rejectAll: CapabilityGrantVerifier = {
       async verify() {

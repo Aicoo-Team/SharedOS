@@ -309,6 +309,57 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
       },
     ],
   },
+  /**
+   * The other half of the mid-turn pair, and a separate row for the reason the
+   * rollback and broker pairs are separate rows.
+   *
+   * A case shares one attack script across its conditions; a condition only
+   * varies the world around it. These two readings disagree about the answer at
+   * the *same position in the script*: read the workspace again, after the
+   * removal has landed, still inside the turn that was admitted before it. Under
+   * a revocation that must succeed -- the turn holds the grant set it was
+   * admitted with and the store edit is invisible to it. Under an expiry it must
+   * be denied -- the grant the turn holds says itself when its authority ends.
+   * One script cannot expect both, so folding these into one case would mean
+   * writing an expectation that accepted either, and a cell that passes whether
+   * the call succeeded or was denied asserts nothing at all.
+   *
+   * The two rows also differ in how many turns they need, which is the finding
+   * stated as a shape: the revocation row needs a second turn to show its
+   * denial, and this one shows it inside the first.
+   */
+  {
+    id: "kernel.expired-mid-turn",
+    kind: "expired_mid_turn",
+    invariant: "A grant's window closes mid-turn",
+    expectedOutcome: "Deny on the next call",
+    attempts: [
+      {
+        id: "read-before-the-window-closes",
+        role: "control",
+        description:
+          "Read the workspace while the grant's validity window is still open, establishing that the turn was admitted holding it.",
+        tool: READ_TOOL,
+        toolArguments: { path: [...READ_ONLY_FILE] },
+        expect: SUCCEEDS,
+      },
+      {
+        id: "read-after-the-window-closes",
+        role: "attack",
+        description:
+          "Read the same file after the clock has passed the grant's expiry. Nothing was revoked and no store was re-read: the turn is still holding the grant it was admitted with, and that grant now says its own authority has ended. This is the attempt the row is actually about.",
+        tool: READ_TOOL,
+        toolArguments: { path: [...READ_ONLY_FILE] },
+        expect: DENIED_BY_KERNEL,
+      },
+      {
+        ...MUTATE_INSIDE_MUTATION_SCOPE,
+        id: "mutate-inside-mutation-scope",
+        description:
+          "Write inside a scope whose grant carries no expiry, so the denial is attributable to the closed window rather than to a turn that stopped working when the clock moved.",
+      },
+    ],
+  },
   {
     id: "kernel.namespace-crossing",
     kind: "namespace_crossing",

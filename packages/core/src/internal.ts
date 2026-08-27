@@ -41,39 +41,77 @@ export function pathIsWithin(parent: readonly string[], candidate: readonly stri
 }
 
 /**
+ * The two instants one grant is judged against.
+ *
+ * They differ because the removals that can end a grant do not all become
+ * observable at the same moment. See {@link grantIsActive}.
+ */
+export interface GrantInstants {
+  /**
+   * The instant the turn's authority was resolved.
+   *
+   * What the turn was admitted with. Everything that would *add* authority is
+   * judged here, so a turn can never gain authority it was not admitted with.
+   */
+  readonly admittedAt: number;
+  /**
+   * The instant of the operation being authorized.
+   *
+   * Equal to {@link admittedAt} for a caller that names no separate operation
+   * instant, which is what a kernel call outside any turn is.
+   */
+  readonly now: number;
+}
+
+/**
  * Time, revocation, and purpose eligibility for one grant considered alone.
  *
  * Every way a grant leaves an actor's authority funnels through here: not yet
  * active, expired, revoked, or withdrawn from the requested purpose. That makes
- * this the single point where "when is a removal observed?" is decided, and the
- * answer is `now`.
+ * this the single point where "when is a removal observed?" is decided, and
+ * there are two answers rather than one.
  *
- * `now` is the instant the *turn's* authority was resolved, not the instant of
- * the operation being authorized, because `SharedOSKernel` freezes a resolved
- * authority -- grants and the context that carries `now` together -- for the
- * whole turn. A removal recorded while a turn is running is therefore observed
- * by the next turn. See `MID_TURN_AUTHORITY_REFRESH` in `authority.ts` for the
- * fuse that restores per-operation resolution, and for why expiry and
- * revocation are frozen together today.
+ * Expiry is observed at the *operation* instant. It is a property the grant
+ * already carried when the turn began, so refusing it part-way through costs no
+ * store read and leaks no store state -- the grant set the turn holds already
+ * says when its own authority ends, and honouring that needs nothing but a
+ * clock.
+ *
+ * Everything else is observed at the instant the turn's authority was resolved.
+ * Revocation and purpose withdrawal are store-side edits, invisible without
+ * re-reading the store, and `SharedOSKernel` freezes a resolved authority for
+ * the whole turn -- so they are observed by the *next* turn. `issuedAt` and
+ * `notBefore` are frozen for the opposite reason: they would *widen* authority
+ * mid-turn, and a request must carry the authority it was admitted with rather
+ * than acquire more while it runs.
+ *
+ * The split is therefore directional, not a matter of where the fact came from:
+ * the operation's clock may only take authority away. See ADR 0016 for the
+ * decision and ADR 0010 for the turn boundary it narrows.
  *
  * An unparsable declared timestamp is treated as inactive so a malformed grant
  * can never outlive a well-formed one.
  */
-export function grantIsActive(grant: CapabilityGrant, purpose: string, now: number): boolean {
+export function grantIsActive(grant: CapabilityGrant, purpose: string, at: GrantInstants): boolean {
   const issuedAt = parseTimestamp(grant.issuedAt);
   const notBefore = parseTimestamp(grant.constraints.notBefore);
   const expiresAt = parseTimestamp(grant.constraints.expiresAt);
   const revokedAt = parseTimestamp(grant.revokedAt);
+  // The later of the two instants, which is normally the operation's. Taking
+  // the maximum rather than the operation instant alone means a host whose
+  // clock runs backwards cannot revive an expired grant by presenting an
+  // earlier instant than the one its turn was admitted at.
+  const expiryObservedAt = Math.max(at.admittedAt, at.now);
 
   if (
     issuedAt === undefined ||
-    issuedAt > now ||
+    issuedAt > at.admittedAt ||
     (grant.constraints.notBefore !== undefined && notBefore === undefined) ||
-    (notBefore !== undefined && now < notBefore) ||
+    (notBefore !== undefined && at.admittedAt < notBefore) ||
     (grant.constraints.expiresAt !== undefined && expiresAt === undefined) ||
-    (expiresAt !== undefined && now >= expiresAt) ||
+    (expiresAt !== undefined && expiryObservedAt >= expiresAt) ||
     (grant.revokedAt !== undefined && revokedAt === undefined) ||
-    (revokedAt !== undefined && now >= revokedAt)
+    (revokedAt !== undefined && at.admittedAt >= revokedAt)
   ) {
     return false;
   }

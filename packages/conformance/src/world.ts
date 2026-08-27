@@ -40,6 +40,26 @@ export const CONFORMANCE_PURPOSE = "conformance-probe";
 export const CONFORMANCE_TRACE_ID = "trace-conformance";
 export const CONFORMANCE_NOW = "2026-08-18T09:00:00.000Z";
 
+/**
+ * How far a world's clock moves per mediated operation, when it moves at all.
+ *
+ * A second per operation, which is long enough that every instant in a record
+ * is legible on sight and short enough that a whole turn stays inside one
+ * minute of {@link CONFORMANCE_NOW}.
+ */
+export const CONFORMANCE_STEP_MS = 1000;
+
+/**
+ * The instant a world's clock reads after the given number of operations.
+ *
+ * Arithmetic rather than a table, so a condition arms an expiry in terms of the
+ * operation it should fall after and never in terms of a hand-written timestamp
+ * that has to be kept in step with one.
+ */
+export function conformanceInstant(operations: number): string {
+  return new Date(Date.parse(CONFORMANCE_NOW) + operations * CONFORMANCE_STEP_MS).toISOString();
+}
+
 export const CONFORMANCE_OWNER: Address = { kind: "human", userId: "user-alice" };
 /**
  * The intermediate delegate. Authority reaches the agent as owner -> orchestrator
@@ -1329,10 +1349,52 @@ class RecordingMessageRouter implements MessageRequestRouter {
 
 class RecordingAudit implements AuditSink {
   readonly events: AuditEvent[] = [];
+  readonly #observe: ((event: AuditEvent) => void) | undefined;
+
+  constructor(observe?: (event: AuditEvent) => void) {
+    this.#observe = observe;
+  }
 
   async record(event: AuditEvent): Promise<void> {
     await Promise.resolve();
     this.events.push(structuredClone(event));
+    this.#observe?.(event);
+  }
+}
+
+/**
+ * A clock that moves one step per mediated operation, and not otherwise.
+ *
+ * Nothing can expire *during* a turn when time does not move, and the frozen
+ * {@link CONFORMANCE_NOW} every other condition runs on is exactly that. This
+ * moves, and stays deterministic while doing it: the step is indexed on the
+ * operations the kernel actually completed, so one move set against one world
+ * produces the same instants every run, and re-running a row can never produce
+ * a different record because it happened at a different time of day.
+ *
+ * The index is read from the audit stream because that is where an operation is
+ * recorded -- one `tool.invoked` per tool call the kernel answered, written when
+ * the call ends. So the context stamped onto call `k` reads
+ * `conformanceInstant(k - 1)`: the clock stands still for the whole of a call
+ * and moves between calls, which is what makes a condition's `operations` count
+ * mean the thing it says rather than a count of however many events the
+ * envelope happened to emit.
+ *
+ * A turn's admission and its catalogue listing are deliberately not operations.
+ * They are the turn boundary, and a world that let them move the clock would
+ * arm expiries that landed before the runtime had done anything.
+ */
+class OperationIndexedClock {
+  #operations = 0;
+
+  observe(event: AuditEvent): void {
+    if (event.type === "tool.invoked") {
+      this.#operations += 1;
+    }
+  }
+
+  now(): string {
+    return conformanceInstant(this.#operations);
   }
 }
 
@@ -1346,6 +1408,28 @@ export interface ConformanceWorldOptions {
    * load, so the change lands while that turn is still running.
    */
   readonly revokedAfterTurn?: { readonly turn: number; readonly grantIds: readonly string[] };
+  /**
+   * Start the world's clock, and close these grants' validity windows after the
+   * given number of mediated operations.
+   *
+   * Deliberately not the shape {@link revokedAfterTurn} uses, and the difference
+   * is the claim. A revocation is armed by editing the store while the turn
+   * runs, which is why a turn holding its loaded grant set cannot see one. An
+   * expiry is written onto the grant by trusted setup *before* the turn, exactly
+   * as {@link expired} writes one that has already passed -- what changes while
+   * the turn runs is the clock, not the store. Arming it the other way would
+   * mutate a store the running turn is no longer reading and prove nothing.
+   *
+   * Arming this is also what starts the clock: every other condition runs on a
+   * frozen {@link CONFORMANCE_NOW}, so an expiry no clock ever reaches would not
+   * be an expiry. One step is one mediated operation: see
+   * {@link conformanceInstant} for the arithmetic, and {@link ConformanceWorld.clock}
+   * for the clock a turn against this world then runs on.
+   */
+  readonly expiresAfterOperations?: {
+    readonly operations: number;
+    readonly grantIds: readonly string[];
+  };
   /** Arm a grant-store outage that begins after this many successful loads. */
   readonly authorityFailsAfterLoads?: number;
   /** Issue the single-use ledger grant, without which nothing is bounded. */
@@ -1396,6 +1480,14 @@ export interface ConformanceWorldOptions {
 export interface ConformanceWorld {
   readonly kernel: SharedOSKernel;
   readonly context: AccessContext;
+  /**
+   * The clock a turn against this world runs on.
+   *
+   * Frozen at {@link CONFORMANCE_NOW} unless the condition armed an expiry that
+   * needs time to pass. An executor must be given this rather than the constant,
+   * or the world's armed condition can never occur.
+   */
+  readonly clock: () => string;
   readonly files: ConformanceFileStore;
   /** The brokered external server, so a row can see what it was actually asked. */
   readonly broker: ConformanceBrokerStore;
@@ -1465,11 +1557,25 @@ export function createConformanceWorld(
       }
     });
   }
+  if (options.expiresAfterOperations !== undefined) {
+    const { operations, grantIds } = options.expiresAfterOperations;
+    const expiresAt = conformanceInstant(operations);
+    for (const grantId of grantIds) {
+      grantSource.expire(grantId, expiresAt);
+      chain.expire(CONFORMANCE_NAMESPACE_ID, grantId, expiresAt);
+    }
+  }
   if (options.authorityFailsAfterLoads !== undefined) {
     grantSource.failAfterLoads(options.authorityFailsAfterLoads);
   }
 
-  const audit = new RecordingAudit();
+  const operationClock =
+    options.expiresAfterOperations === undefined ? undefined : new OperationIndexedClock();
+  const clock =
+    operationClock === undefined ? (): string => now : (): string => operationClock.now();
+  const audit = new RecordingAudit(
+    operationClock === undefined ? undefined : (event) => operationClock.observe(event),
+  );
   const transport = new RecordingTransport();
   const messageRouter = new RecordingMessageRouter(transport);
   const files = new ConformanceFileStore();
@@ -1544,6 +1650,7 @@ export function createConformanceWorld(
 
   return {
     kernel,
+    clock,
     context,
     files,
     broker,

@@ -112,7 +112,8 @@ For each concrete resource or tool operation, the kernel evaluates:
 3. Load authority from the trusted grant source, or deny.
 4. Ensure the request owner matches the access context owner.
 5. Ignore grants whose subject or issuer does not match the access context.
-6. Ignore grants that are not active, have expired, or have been revoked.
+6. Ignore grants that are not active or have been revoked as of the turn's
+   admission, and grants that have expired as of this operation.
 7. Match the declared purpose when the grant restricts purposes.
 8. Match resource namespace, owner, path scope, and exact action together.
 9. Validate the delegation chain of a derived grant, or deny.
@@ -223,7 +224,8 @@ the grant authorizes anything:
 - delegation depth decreases at each link, and a parent without delegation
   budget cannot be reissued at all;
 - a parent bounded by `maxUses` is not delegable at all;
-- revocation and expiry of an ancestor invalidate the usable chain;
+- revocation and expiry of an ancestor invalidate the usable chain, at the
+  turn's instant and this operation's respectively;
 - the full chain or a tamper-evident reference is retained in provenance.
 
 Ancestors are loaded from a trusted `DelegationChainResolver`, never from the
@@ -375,17 +377,29 @@ store is suitable only for tests or a guaranteed single-process host.
 Authority is loaded from the trusted source once, when a turn is admitted, and
 held for that turn. Every way a grant leaves an actor's authority -- not yet
 active, expired, revoked, or withdrawn from the requested purpose -- runs through
-one check evaluated against the instant the turn was admitted, so all four are
-observed by the **next** turn. A turn therefore carries the authority it was
-admitted with, rather than having authority resolved underneath it while it runs.
+one check, and that check is evaluated against **two** instants:
+
+- **Expiry** is decided at the instant of the operation. A grant whose validity
+  window closes while a turn is running is refused at the next decision in that
+  turn, without the store being read again.
+- **Revocation, purpose withdrawal, `issuedAt`, and `notBefore`** are decided at
+  the instant the turn was admitted, so they are observed by the **next** turn.
+
+The rule is directional: the operation's clock may only take authority away. A
+turn carries the grant set it was admitted with and never gains more while it
+runs, and a window that opens mid-turn is therefore not honoured until the next
+turn. An ancestor follows the same split, so an ancestor expiring mid-turn
+invalidates its descendants immediately and an ancestor revoked mid-turn does
+not. See `docs/adr/0016-expiry-is-instant-bound.md`.
 
 A host whose revocation SLA is shorter than its longest turn must bound turn
-length; the kernel will not cut a turn short. A host that additionally caches
-inside its `GrantSource` owns that staleness window on top.
+length; the kernel will not cut a turn short. Issuing short-lived grants is one
+way to bound it, because their expiry now lands inside the turn. A host that
+additionally caches inside its `GrantSource` owns that staleness window on top.
 
-The per-operation path is retained behind `MID_TURN_AUTHORITY_REFRESH`, together
-with the open question of whether expiry -- unlike revocation, a property the
-grant already carried at admission -- should still be refused mid-turn. See
+The per-operation path is retained behind `MID_TURN_AUTHORITY_REFRESH`. What
+remains behind it is one behaviour -- observing a store edit without waiting for
+the next turn -- and no open question. See
 `docs/adr/0010-per-turn-authority.md`.
 
 ## Audit requirements

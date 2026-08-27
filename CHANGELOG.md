@@ -56,6 +56,29 @@ each entry calls out what a host has to update.
   `issued_before_parent`, `id_collides_with_parent`, and — on the issuing side
   only — a refusal to pin an owner onto an unowned parent capability.
 
+### Changed — behaviour
+
+- **A grant that expires while a turn is running is now refused inside that
+  turn**, at the next decision, rather than at the next turn. Revocation,
+  purpose withdrawal, `issuedAt`, and `notBefore` are unchanged: they are still
+  decided at the instant the turn's authority was resolved, and are still
+  observed by the next turn. The rule separating them is directional — the
+  operation's clock may only take authority away, never hand any back — so a
+  turn still carries the grant set it was admitted with and can never gain more
+  while it runs. An ancestor follows the same split. See ADR 0016.
+
+  Nothing about a turn's authority load changes: no store is re-read,
+  `cost.authorityLoads` stays at 1 per turn, and a decision an expiry refused
+  names the same authority snapshot hash as the decision before it. Hosts
+  issuing short-lived grants should expect them to stop working part-way through
+  a long turn, which is what they asked for; hosts relying on a turn outliving
+  its grants' validity windows must widen those windows.
+
+  `CapabilityAuthorizer.authorize` and `canDiscover` take the operation instant
+  as a new optional `now`, and `validateDelegationChain` takes the admission
+  instant as a new optional `admittedAt`. Both default to the previous
+  behaviour, so a host calling either directly is unaffected until it opts in.
+
 ### Added
 
 - `messages.request`, a canonical recipient-scoped request/reply tool. The model
@@ -73,6 +96,15 @@ each entry calls out what a host has to update.
 - A conformance suite: every kernel guarantee is an attempted violation run by a
   scripted adversary, graded per runtime, with the case set and the world it runs
   against hashed separately. `pnpm conformance` regenerates it.
+- A conformance row for a validity window closing mid-turn, and the clock it
+  needs. Nothing can expire during a turn when time does not move, so a
+  condition may now arm `expiresAfterOperations`, which advances the world's
+  clock one step per mediated operation — indexed on the operations the kernel
+  recorded rather than on wall time, so repeats stay byte-identical. It is
+  opt-in per condition and every other condition still runs on the frozen
+  instant. The row is separate from `revoked-mid-turn` rather than a second
+  condition on it, because the two make the identical call at the identical
+  position and require opposite answers.
 - Escalation as a recorded outcome, per-turn authority resolution, and one
   refusal vocabulary across both enforcement boundaries. See ADRs 0008–0013.
 - `@aicoo/sharedos-mcp`: the permission-filtered catalogue served as an MCP

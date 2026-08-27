@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ToolCall } from "@aicoo/sharedos-contracts";
 
-import { HostileRuntime, type AttackMove } from "./adversary.js";
+import { HostileRuntime, moveTurnCount, type AttackMove } from "./adversary.js";
 import { hashJson } from "./hashing.js";
 import { judgeCase } from "./judge.js";
 import {
@@ -225,10 +225,11 @@ describe("the conformance suite", () => {
   it("declares one case per row of the conformance matrix", () => {
     // The matrix has seventeen rows; two more are declared for the structural
     // reinforcements it names but does not tabulate, two more give the recovery
-    // surface its own readings, and two more give the brokered external surface
-    // its own. A case set that drifts below this has stopped covering the
-    // document it claims to implement.
-    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(23);
+    // surface its own readings, two more give the brokered external surface its
+    // own, and one more gives the mid-turn row its expiry reading. A case set
+    // that drifts below this has stopped covering the document it claims to
+    // implement.
+    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(24);
     expect(new Set(CANONICAL_ATTACK_MOVES.map(({ kind }) => kind)).size).toBe(
       CANONICAL_ATTACK_MOVES.length,
     );
@@ -257,6 +258,30 @@ describe("the conformance suite", () => {
     ]);
   });
 
+  it("keeps a reading that needs a different answer as its own row", () => {
+    // The mid-turn pair, stated as the reason it is a pair. Both scripts make
+    // the same call at the same path at the same position, and disagree about
+    // what must come back: the revoked turn keeps the grant set it was admitted
+    // with, and the expired one does not, because the grant it holds says when
+    // its own authority ends. One case cannot carry both, and an expectation
+    // written to accept either would leave a passing cell unable to say which
+    // of the two behaviours it saw.
+    const attemptAt = (kind: Parameters<typeof canonicalMove>[0], index: number) =>
+      canonicalMove(kind).attempts[index];
+    const revoked = attemptAt("revoked_mid_turn", 1);
+    const expired = attemptAt("expired_mid_turn", 1);
+
+    expect(revoked?.tool).toBe(expired?.tool);
+    expect(revoked?.toolArguments).toEqual(expired?.toolArguments);
+    expect(revoked?.expect.statuses).toEqual(["succeeded"]);
+    expect(expired?.expect.statuses).toEqual(["denied"]);
+
+    // And the shapes differ in the way the finding does: the revocation needs a
+    // second turn to show its denial, the expiry shows it inside the first.
+    expect(moveTurnCount(canonicalMove("revoked_mid_turn"))).toBe(2);
+    expect(moveTurnCount(canonicalMove("expired_mid_turn"))).toBe(1);
+  });
+
   it("reports a declared but unimplemented row rather than omitting it", async () => {
     const declared = CANONICAL_CONFORMANCE_CASES.filter(
       ({ notImplemented }) => notImplemented !== undefined,
@@ -282,29 +307,29 @@ describe("the conformance suite", () => {
   it("passes every implemented row and reports where each was refused", async () => {
     const { manifest, evidence } = await runConformanceSuite();
 
-    expect(manifest.rows).toHaveLength(26);
+    expect(manifest.rows).toHaveLength(27);
     expect(manifest.columns).toHaveLength(5);
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
-    expect(cells).toHaveLength(130);
+    expect(cells).toHaveLength(135);
     // Every implemented row passes in every column that can run it. The rest are
     // stated: two rows SharedOS does not implement, counted once per column, and
     // three rows per vendor column whose attempts a harness structurally cannot
     // make.
-    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(108);
+    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(113);
     expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(10);
     expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(12);
     expect(strictFailures(manifest)).toEqual([]);
     // Evidence exists for every cell that ran a turn, and for no cell that did
     // not: the two unimplemented rows in every column, and the escalation row in
     // each of the four vendor columns, which no harness can declare.
-    expect(evidence).toHaveLength(116);
+    expect(evidence).toHaveLength(121);
 
     // Every vendor column lands on the same counts. That is the portability
     // claim in its smallest form: adding a harness adds a column, not an
     // exception.
     for (const column of manifest.columns.filter(({ id }) => id !== "sharedos-embedded")) {
       const columnCells = cells.filter((cell) => cell.columnId === column.id);
-      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(21);
+      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(22);
       expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(3);
       expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(2);
     }

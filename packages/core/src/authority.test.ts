@@ -308,7 +308,11 @@ describe("SharedOSKernel authority boundary", () => {
 });
 
 describe("SharedOSKernel turn-scoped authority", () => {
-  const kernelWith = (source: GrantSource, loads?: { count: number }): SharedOSKernel =>
+  const kernelWith = (
+    source: GrantSource,
+    loads?: { count: number },
+    events?: AuditEvent[],
+  ): SharedOSKernel =>
     new SharedOSKernel({
       grantSource: {
         load: async (accessContext, signal) => {
@@ -318,6 +322,9 @@ describe("SharedOSKernel turn-scoped authority", () => {
           return source.load(accessContext, signal);
         },
       },
+      ...(events === undefined
+        ? {}
+        : { audit: { record: async (event: AuditEvent) => void events.push(event) } }),
     });
 
   it("holds one authority state for the whole turn, however many decisions it makes", async () => {
@@ -356,22 +363,92 @@ describe("SharedOSKernel turn-scoped authority", () => {
     next.close();
   });
 
-  it("freezes expiry with revocation, because both are the same removal check", async () => {
+  it("observes an expiry the operation's own clock has passed, inside the turn", async () => {
     const expiring = grant({ constraints: { purposes: ["prepare-update"], expiresAt: NOW } });
     const kernel = kernelWith(staticSource([expiring]));
     const beforeExpiry = { ...context(), now: "2026-08-03T08:59:00.000Z" };
 
     const turn = await kernel.openTurnAuthority(beforeExpiry);
-    // The operation's own clock has passed the expiry; the turn's has not.
-    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+    // Admitted before the window closed, so the turn holds the grant.
+    await expect(kernel.authorize(beforeExpiry, READ_REQUEST)).resolves.toMatchObject({
       allowed: true,
     });
-    turn.close();
-
+    // Same turn, same held grant set, later operation. The window has closed and
+    // the grant is refused without the store being read again.
     await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
       allowed: false,
       reasonCode: "no_matching_grant",
     });
+    turn.close();
+  });
+
+  it("refuses an expired grant without re-reading the store", async () => {
+    const expiring = grant({ constraints: { purposes: ["prepare-update"], expiresAt: NOW } });
+    const loads = { count: 0 };
+    const kernel = kernelWith(staticSource([expiring]), loads);
+
+    const turn = await kernel.openTurnAuthority({ ...context(), now: "2026-08-03T08:59:00.000Z" });
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: false,
+    });
+    turn.close();
+
+    expect(loads.count).toBe(1);
+  });
+
+  it("names the turn's one snapshot on a decision an expiry narrowed", async () => {
+    const events: AuditEvent[] = [];
+    const expiring = grant({ constraints: { purposes: ["prepare-update"], expiresAt: NOW } });
+    const kernel = kernelWith(staticSource([expiring]), undefined, events);
+    const beforeExpiry = { ...context(), now: "2026-08-03T08:59:00.000Z" };
+
+    const turn = await kernel.openTurnAuthority(beforeExpiry);
+    await kernel.authorize(beforeExpiry, READ_REQUEST);
+    await kernel.authorize(context(), READ_REQUEST);
+    turn.close();
+
+    // Expiry narrows what one snapshot authorizes; it does not make a second
+    // authority state, so both decisions name the same hash.
+    const decisions = events.filter(({ type }) => type === "authorization.checked");
+    expect(decisions).toHaveLength(2);
+    expect(decisions[0]?.authorityHash).toBe(decisions[1]?.authorityHash);
+    expect(decisions[0]?.authorityHash).toEqual(expect.stringMatching(/^[0-9a-f]{64}$/));
+  });
+
+  it("does not let a validity window open mid-turn", async () => {
+    // The mirror of the expiry rule, and the reason the split is directional
+    // rather than a matter of where the fact came from: the operation's clock
+    // may take authority away and may never hand any back.
+    const pending = grant({
+      constraints: { purposes: ["prepare-update"], notBefore: "2026-08-03T09:30:00.000Z" },
+    });
+    const kernel = kernelWith(staticSource([pending]));
+    const afterNotBefore = { ...context(), now: "2026-08-03T10:00:00.000Z" };
+
+    const turn = await kernel.openTurnAuthority(context());
+    await expect(kernel.authorize(afterNotBefore, READ_REQUEST)).resolves.toMatchObject({
+      allowed: false,
+      reasonCode: "no_matching_grant",
+    });
+    turn.close();
+
+    // The next turn is admitted inside the window and holds it.
+    const next = await kernel.openTurnAuthority(afterNotBefore);
+    await expect(kernel.authorize(afterNotBefore, READ_REQUEST)).resolves.toMatchObject({
+      allowed: true,
+    });
+    next.close();
+  });
+
+  it("does not let an operation instant before the turn's revive an expired grant", async () => {
+    const expiring = grant({ constraints: { purposes: ["prepare-update"], expiresAt: NOW } });
+    const kernel = kernelWith(staticSource([expiring]));
+
+    const turn = await kernel.openTurnAuthority(context());
+    await expect(
+      kernel.authorize({ ...context(), now: "2026-08-03T08:30:00.000Z" }, READ_REQUEST),
+    ).resolves.toMatchObject({ allowed: false, reasonCode: "no_matching_grant" });
+    turn.close();
   });
 
   it("never answers one turn's operation from another turn's authority", async () => {

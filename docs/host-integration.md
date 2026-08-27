@@ -103,8 +103,11 @@ untrusted client and treat it as trusted identity. In particular:
 ### 1b. Implement the trusted grant source
 
 Authority enters SharedOS only through a `GrantSource`, which every kernel
-requires. The kernel calls it once per turn, so a grant revoked or expired while
-a turn is running is observed by the next turn:
+requires. The kernel calls it once per turn, so a grant _revoked_ while a turn is
+running is observed by the next turn. A grant that _expires_ while a turn is
+running is refused inside it: the expiry is already on the grant the turn holds,
+so honouring it needs no second load. See
+`docs/adr/0016-expiry-is-instant-bound.md`.
 
 ```ts
 import type { GrantSource } from "@aicoo/sharedos";

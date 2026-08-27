@@ -135,6 +135,7 @@ is the boundary between them and the agents that act on them.
 - [ADR 0013: The conformance matrix is the case set](adr/0013-matrix-is-the-case-set.md)
 - [ADR 0014: MCP is the toolshare boundary](adr/0014-mcp-toolshare.md)
 - [ADR 0015: One message purpose and recipient-owned execution](adr/0015-message-purpose-and-recipient-execution.md)
+- [ADR 0016: Expiry is instant-bound, revocation is snapshot-bound](adr/0016-expiry-is-instant-bound.md)
 
 ## Project governance
 

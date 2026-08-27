@@ -79,7 +79,10 @@ async function runMove(
   const runtime = new HostileRuntime([canonicalMove(kind)]);
   let sequence = 0;
   const result = await new SharedOSExecutor(world.kernel, runtime, {
-    clock: () => CONFORMANCE_NOW,
+    // The world's own clock, which is frozen unless the condition armed one
+    // that moves. Hard-coding the constant here would leave a row about a
+    // window closing mid-turn unable to run at all.
+    clock: world.clock,
     createId: () => `event-${(sequence += 1)}`,
   }).execute(world.request("execution-1"));
 
@@ -130,6 +133,7 @@ describe("the hostile runtime", () => {
       "expired_grant",
       "replayed_grant",
       "revoked_mid_turn",
+      "expired_mid_turn",
       "namespace_crossing",
       "bounded_grant_exhausted",
       "usage_store_unavailable",
@@ -399,6 +403,68 @@ describe("manifest rows under the canonical world", () => {
         ({ reasonCode }) => reasonCode === "delegation_chain_invalid",
       ),
     ).toBe(true);
+  });
+
+  it("keeps the world's clock frozen unless a condition asked for one that moves", async () => {
+    const run = await runMove("read_to_mutation");
+
+    // Every instant a turn against an unarmed world produces is the same one.
+    // If this ever stops holding, every committed artifact stops being
+    // comparable to the one beside it.
+    const instants = new Set(run.result.events.map(({ occurredAt }) => occurredAt));
+    expect([...instants]).toEqual([CONFORMANCE_NOW]);
+    expect(run.record.execution.decisions.map(({ at }) => at)).toEqual(
+      run.record.execution.decisions.map(() => CONFORMANCE_NOW),
+    );
+  });
+
+  it("closes a validity window inside the turn that was admitted holding it", async () => {
+    const run = await runMove("expired_mid_turn", {
+      expiresAfterOperations: { operations: 1, grantIds: [READ_GRANT] },
+    });
+
+    // The identical call, at the identical path, on either side of the expiry.
+    expect(run.receipt("read-before-the-window-closes").observed).toBe("succeeded");
+    const denied = run.receipt("read-after-the-window-closes");
+    expect(denied.observed).toBe("denied");
+    expect(denied.reasonCode).toBe("no_matching_grant");
+    // The turn is alive: a grant carrying no expiry is untouched.
+    expect(run.receipt("mutate-inside-mutation-scope").observed).toBe("succeeded");
+    // The provider served the first read and never saw the second.
+    expect(run.world.files.reads).toEqual([["Workspace", "policy.md"].join("/")]);
+  });
+
+  it("refuses the expired grant against the one authority state the turn holds", async () => {
+    const run = await runMove("expired_mid_turn", {
+      expiresAfterOperations: { operations: 1, grantIds: [READ_GRANT] },
+    });
+
+    // The distinction the row exists to draw. A revocation needs a second load
+    // to be seen; this needed none, so the denial cannot be attributed to the
+    // store being re-read behind the turn.
+    expect(run.record.cost.authorityLoads).toBe(1);
+    expect(run.record.authority.snapshots).toHaveLength(1);
+    for (const decision of run.record.execution.decisions) {
+      expect(decision.authorityHash).toBe(run.record.authority.stableAuthorityHash);
+    }
+  });
+
+  it("advances one step per mediated operation, and only there", async () => {
+    const run = await runMove("expired_mid_turn", {
+      expiresAfterOperations: { operations: 1, grantIds: [READ_GRANT] },
+    });
+
+    // Pinned rather than implied. A condition arms an expiry in operations, so
+    // what an operation *is* has to be a fact the suite states: the clock stands
+    // still for the whole of a call and moves between calls. If the envelope
+    // ever starts stamping instants somewhere else, this fails here rather than
+    // silently moving where an armed row's window falls.
+    expect(run.record.execution.decisions.map(({ at }) => at)).toEqual([
+      "2026-08-18T09:00:00.000Z", // admitting the turn, before any operation
+      "2026-08-18T09:00:00.000Z", // the first read, inside the window
+      "2026-08-18T09:00:01.000Z", // the second read, after it closed
+      "2026-08-18T09:00:02.000Z", // the mutation, on a grant with no window
+    ]);
   });
 
   it("refuses a resource in another owner's world and records the unreachable crossing", async () => {

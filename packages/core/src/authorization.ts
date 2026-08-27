@@ -15,6 +15,7 @@ import {
 } from "./delegation.js";
 import {
   addressesEqual,
+  type GrantInstants,
   grantIsActive,
   parseTimestamp,
   pathIsWithin,
@@ -66,7 +67,23 @@ export interface CapabilityGrantVerifier {
   verify(grant: CapabilityGrant, context: AccessContext): Promise<boolean>;
 }
 
-export interface AuthorizeOptions {
+/**
+ * The instant one decision is made at, when it is not the turn's own.
+ *
+ * `ResolvedAuthority.context` carries the instant the turn's authority was
+ * resolved, and that is what a turn is admitted against. A caller that knows the
+ * instant of the *operation* -- `SharedOSKernel` does, because the executor
+ * stamps a live context onto every call -- names it here, and a grant whose
+ * validity window has closed since admission is refused without re-reading the
+ * store. Omitting it decides at the turn's instant, which is what a kernel call
+ * outside any turn is. See `grantIsActive` in `internal.ts` for which removals
+ * move and which do not, and ADR 0016 for why.
+ */
+export interface AuthorizationInstantOptions {
+  readonly now?: string;
+}
+
+export interface AuthorizeOptions extends AuthorizationInstantOptions {
   /**
    * Consumption is reserved for execution. Discovery calls must leave this
    * false so merely viewing a catalog cannot spend a bounded grant.
@@ -131,7 +148,13 @@ export class CapabilityAuthorizer {
     request: AuthorizationRequest,
     options: AuthorizeOptions = {},
   ): Promise<AuthorizationDecision> {
-    return this.#decide(authority, request, capabilityMatches, options.consume ?? false);
+    return this.#decide(
+      authority,
+      request,
+      capabilityMatches,
+      options.consume ?? false,
+      options.now,
+    );
   }
 
   /**
@@ -142,8 +165,9 @@ export class CapabilityAuthorizer {
   async canDiscover(
     authority: ResolvedAuthority,
     ceiling: AuthorizationRequest,
+    options: AuthorizationInstantOptions = {},
   ): Promise<AuthorizationDecision> {
-    return this.#decide(authority, ceiling, capabilityIntersectsCeiling, false);
+    return this.#decide(authority, ceiling, capabilityIntersectsCeiling, false, options.now);
   }
 
   async #decide(
@@ -155,14 +179,25 @@ export class CapabilityAuthorizer {
       context: AccessContext,
     ) => boolean,
     consume: boolean,
+    operationNow: string | undefined,
   ): Promise<AuthorizationDecision> {
     const context = structuredClone(authority.context);
     const grants = structuredClone([...authority.grants]);
     request = structuredClone(request);
-    const now = parseTimestamp(context.now);
-    if (now === undefined || context.purpose.length === 0 || context.traceId.length === 0) {
+    const admittedAt = parseTimestamp(context.now);
+    // An unparsable operation instant is a broken context, not an absent one:
+    // falling back to the turn's instant would silently decide at a moment the
+    // caller did not ask for, which is the one thing naming an instant is for.
+    const now = operationNow === undefined ? admittedAt : parseTimestamp(operationNow);
+    if (
+      admittedAt === undefined ||
+      now === undefined ||
+      context.purpose.length === 0 ||
+      context.traceId.length === 0
+    ) {
       return deny("invalid_context");
     }
+    const at: GrantInstants = { admittedAt, now };
 
     if (
       request.action.length === 0 ||
@@ -176,7 +211,7 @@ export class CapabilityAuthorizer {
     let delegationFailure: DelegationFailure | undefined;
 
     for (const grant of grants) {
-      if (!(await this.#grantIsEligible(context, grant, now))) {
+      if (!(await this.#grantIsEligible(context, grant, at))) {
         continue;
       }
 
@@ -187,7 +222,7 @@ export class CapabilityAuthorizer {
         continue;
       }
 
-      const delegation = await this.#validateDelegation(context, grant, now);
+      const delegation = await this.#validateDelegation(context, grant, at);
       if (delegation.status !== "valid") {
         delegationFailure = worstDelegationFailure(delegationFailure, {
           status: delegation.status,
@@ -236,9 +271,10 @@ export class CapabilityAuthorizer {
   async #validateDelegation(
     context: AccessContext,
     grant: CapabilityGrant,
-    now: number,
+    at: GrantInstants,
   ): Promise<DelegationValidation> {
-    return validateDelegationChain(grant, context, now, {
+    return validateDelegationChain(grant, context, at.now, {
+      admittedAt: at.admittedAt,
       ...(this.#delegationResolver === undefined ? {} : { resolver: this.#delegationResolver }),
       ...(this.#maxDelegationChainLength === undefined
         ? {}
@@ -249,13 +285,13 @@ export class CapabilityAuthorizer {
   async #grantIsEligible(
     context: AccessContext,
     grant: CapabilityGrant,
-    now: number,
+    at: GrantInstants,
   ): Promise<boolean> {
     if (
       !addressesEqual(grant.subject, context.actor) ||
       !addressesEqual(grant.issuer, context.authority) ||
       grant.namespaceId !== context.namespaceId ||
-      !grantIsActive(grant, context.purpose, now)
+      !grantIsActive(grant, context.purpose, at)
     ) {
       return false;
     }
