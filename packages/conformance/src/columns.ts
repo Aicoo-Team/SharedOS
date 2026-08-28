@@ -8,6 +8,8 @@ import {
   deepseekProtocol,
   HarnessDriver,
   HarnessRuntime,
+  ModelDriver,
+  ModelRuntime,
   piFrameWriter,
   piProtocol,
   TranscriptTransport,
@@ -16,6 +18,7 @@ import {
   type HarnessProtocol,
   type HarnessTranscript,
   type HarnessTransport,
+  type ModelClient,
 } from "@aicoo/sharedos-adapters";
 import type { RuntimePlugin, RuntimeVisibleContext } from "@aicoo/sharedos-runtime";
 
@@ -488,6 +491,138 @@ export function liveColumn(options: LiveColumnOptions): RuntimeColumn {
       ),
     receipts: (move: AttackMove, turn: ColumnTurn) => liveReceiptsFromRecord(move, turn),
     limits: harnessLimits,
+  });
+}
+
+export interface ModelColumnOptions {
+  readonly id: string;
+  readonly label: string;
+  /**
+   * The model in the delegate seat.
+   *
+   * Supplied rather than constructed here so this package stays free of
+   * credentials and endpoints, exactly as the transport is for {@link liveColumn}.
+   */
+  readonly client: ModelClient;
+}
+
+/**
+ * A model API in the delegate seat, with no vendor between it and the kernel.
+ *
+ * The fourth thing a column can leave out, and the first that is not a piece of
+ * plumbing. A scripted column leaves out the transport. A live CLI column
+ * leaves out the catalogue. An MCP column leaves out neither but hands the turn
+ * loop to the vendor. This one leaves out the vendor: `StandardRuntime` owns
+ * the loop, the permission-filtered catalogue is rendered straight into the
+ * model's own tool-call shape, and every call the model asks for is
+ * re-authorized by the kernel.
+ *
+ * That separates two things every other live column confounds -- what the model
+ * does, and what the vendor's scaffolding makes the model do. It is the axis the
+ * manifest otherwise leaves unmeasured, and naming it is the point of the
+ * column; without that it reads as a redundant fifth sample.
+ *
+ * It is an addition to the scripted column and never a replacement for it, for
+ * a reason worth stating plainly. The scripted adversary is the reference:
+ * every declared attempt is issued, in order, every run, which is what makes
+ * "did the kernel refuse this the same way?" a question the other columns can
+ * be asked. A model chooses. Point one at the same rows and the rows a scripted
+ * driver carries alone -- an uncatalogued name, a call past the budget -- are
+ * simply not attempted, and the cells report `not exercised` rather than
+ * `pass`. Replacing the reference with this column would put `pnpm
+ * conformance:check` behind a model's choices.
+ *
+ * Graded under {@link modelLimits}, which unlike {@link mcpHarnessLimits}
+ * declares nothing about uncatalogued names, and the difference is structural
+ * rather than incidental. An MCP client refuses a name absent from its
+ * registered catalogue before the call is sent, so `tool_unavailable` is
+ * genuinely out of that column's reach. Nothing filters this one: the driver
+ * passes back whatever name the model emitted, so an uncatalogued call can be
+ * issued here -- and in the first live run one was, which is a result the
+ * manifest would have suppressed had the column declared the row unreachable.
+ */
+/**
+ * What a model in the delegate seat cannot be tested on, and why.
+ *
+ * Close to {@link harnessLimits} but not the same claims, and the differences
+ * are worth keeping rather than sharing one function and one wording.
+ *
+ * The step ceiling is identical, and identical for the identical reason: this
+ * column runs inside `StandardRuntime` too, whose loop stops at `maxSteps`, so
+ * a call past the budget is never issued and reporting the row failed would
+ * blame the kernel for a limit the runtime honoured first.
+ *
+ * The other two read differently once no vendor is involved. A harness cannot
+ * enumerate runtime surfaces because it is on the far side of a wire; a model
+ * driver cannot because `AgentTurnDriver` is handed a request and returns a
+ * decision, and is never given the `RuntimeHost` at all. And escalation is not
+ * missing here for want of a vendor frame -- there is no vendor -- but because
+ * `AgentTurnDecision` has no escalate variant, so no driver inside the standard
+ * loop can declare one. That is a stronger statement than the harness version
+ * and belongs to SharedOS rather than to any CLI.
+ *
+ * What is deliberately absent is `uncatalogued`. Nothing between this model and
+ * the envelope filters a tool name, so an invented one is issued and refused
+ * rather than being stopped by a client's own router. Declaring it unreachable
+ * would suppress a real result -- and in the first live run it did produce one.
+ */
+export function modelLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
+  const unreachable = new Map<string, string>();
+
+  for (const attempt of move.attempts) {
+    if (attempt.inspect !== undefined) {
+      unreachable.set(
+        attempt.id,
+        "a model driver is handed a turn request and returns a decision; the runtime surfaces this attempt enumerates are never passed to it",
+      );
+    }
+    if (attempt.overBudget === true && condition.requiresDeclaredSteps !== undefined) {
+      unreachable.set(
+        attempt.id,
+        "the standard turn loop this driver runs inside stops at its own step ceiling, so the call is never issued",
+      );
+    }
+  }
+
+  return {
+    ...(move.terminal === undefined
+      ? {}
+      : {
+          unsupported:
+            "an agent turn decision is a call, a completion, or a failure; no driver inside the standard loop can declare an escalation, which is a host decision",
+        }),
+    ...(unreachable.size === 0 ? {} : { unreachable }),
+  };
+}
+
+export function modelColumn(options: ModelColumnOptions): RuntimeColumn {
+  return Object.freeze({
+    id: options.id,
+    label: options.label,
+    create: (moves: readonly AttackMove[], create: RuntimeColumnOptions): RuntimePlugin =>
+      new ModelRuntime(
+        new ModelDriver({
+          manifest: {
+            id: `sharedos.conformance.${options.id}`,
+            version: "1.0.0",
+            protocolVersion: "1",
+            metadata: {
+              live: true,
+              driver: "model-api",
+              provider: options.client.provider,
+              catalogueDelivery: "in-band",
+            },
+          },
+          client: options.client,
+          prompt: () =>
+            movesToPrompt(moves, {
+              context: conformanceRuntimeContext(create.turn),
+              turn: create.turn,
+            }),
+        }),
+      ),
+    receipts: (move: AttackMove, turn: ColumnTurn) => liveReceiptsFromRecord(move, turn),
+    limits: modelLimits,
   });
 }
 

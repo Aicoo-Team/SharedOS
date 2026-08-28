@@ -16,9 +16,23 @@
  * measuring, and a harness reaching for its own `bash` instead of the catalogue
  * would be answering a different question anyway.
  *
+ * One column here is not a CLI. Given a model API key, the standard turn loop
+ * runs with the model itself in the delegate seat -- no vendor binary, no stdio,
+ * the permission-filtered catalogue rendered straight into the model's own
+ * tool-call shape. It is live in the sense that matters (a real model really
+ * chooses) and it is the only column that isolates the model from the vendor
+ * scaffolding around it. It is an addition to the scripted column, never a
+ * replacement: see `modelColumn`.
+ *
  * Usage:
  *   node scripts/live-conformance.mjs
  *   node scripts/live-conformance.mjs --case expired-mid-turn
+ *
+ * Environment:
+ *   SHAREDOS_MODEL_API_KEY   the model column's key (DEEPSEEK_API_KEY, DSH_API_KEY)
+ *   SHAREDOS_MODEL           model name          (default deepseek-v4-flash)
+ *   SHAREDOS_MODEL_BASE_URL  chat-completions root (default https://api.deepseek.com)
+ *   SHAREDOS_MODEL_PROVIDER  provider label      (default deepseek)
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -42,10 +56,14 @@ const {
 const { ChildProcessTransport, probeHarness } = await import(
   join(root, "packages", "adapters", "dist", "node.js")
 );
+const { OpenAiCompatibleModelClient } = await import(
+  join(root, "packages", "adapters", "dist", "index.js")
+);
 const {
   CANONICAL_CONFORMANCE_CASES,
   EMBEDDED_COLUMN,
   liveColumn,
+  modelColumn,
   runConformanceSuite,
   strictFailures,
 } = await import(join(root, "packages", "conformance", "dist", "index.js"));
@@ -217,16 +235,67 @@ for (const harness of HARNESSES) {
   );
 }
 
+/**
+ * The model column, when a key is available to run it.
+ *
+ * Nothing is probed for: there is no executable and no session to authenticate,
+ * so the only precondition is a credential. An absent key is reported exactly
+ * as an absent binary is -- the column does not run, and its absence is not a
+ * result about SharedOS.
+ */
+const modelApiKey =
+  process.env["SHAREDOS_MODEL_API_KEY"] ??
+  process.env["DEEPSEEK_API_KEY"] ??
+  process.env["DSH_API_KEY"];
+const modelName = process.env["SHAREDOS_MODEL"] ?? process.env["DSH_MODEL"] ?? "deepseek-v4-flash";
+const modelBaseUrl = process.env["SHAREDOS_MODEL_BASE_URL"] ?? "https://api.deepseek.com";
+const modelProvider = process.env["SHAREDOS_MODEL_PROVIDER"] ?? "deepseek";
+const MODEL_COLUMN_ID = "model-live";
+
+if (modelApiKey === undefined || modelApiKey.trim() === "") {
+  availability.push({
+    columnId: MODEL_COLUMN_ID,
+    label: `Standard (${modelName})`,
+    harness: "model",
+    available: false,
+    reason: "None of SHAREDOS_MODEL_API_KEY, DEEPSEEK_API_KEY, DSH_API_KEY is set.",
+  });
+} else {
+  availability.push({
+    columnId: MODEL_COLUMN_ID,
+    label: `Standard (${modelName})`,
+    harness: "model",
+    available: true,
+    detail: {
+      endpoint: `${modelBaseUrl}/chat/completions`,
+      model: modelName,
+      provider: modelProvider,
+    },
+  });
+  columns.push(
+    modelColumn({
+      id: MODEL_COLUMN_ID,
+      label: `Standard (${modelName})`,
+      client: new OpenAiCompatibleModelClient({
+        apiKey: modelApiKey,
+        model: modelName,
+        provider: modelProvider,
+        baseUrl: modelBaseUrl,
+      }),
+    }),
+  );
+}
+
 console.log("Harness availability");
 for (const entry of availability) {
   console.log(
-    `  ${entry.label.padEnd(12)} ${entry.available ? "available" : "not available"}` +
+    `  ${entry.label.padEnd(28)} ${entry.available ? "available" : "not available"}` +
       `${entry.reason === undefined ? "" : ` — ${entry.reason}`}`,
   );
 }
 
 if (columns.length === 1) {
-  console.log("\nNo vendor harness is installed here. Nothing live was run.");
+  console.log("\nNo vendor harness is installed and no model key is set. Nothing live was run.");
 }
 
 if (cases.length < CANONICAL_CONFORMANCE_CASES.length) {
@@ -272,12 +341,24 @@ for (const column of manifest.columns) {
  */
 const perColumn = new Map();
 for (const entry of evidence) {
-  const seen = perColumn.get(entry.columnId) ?? { turns: 0, operations: 0, outcomes: new Map() };
+  const seen = perColumn.get(entry.columnId) ?? {
+    turns: 0,
+    operations: 0,
+    outcomes: new Map(),
+    models: new Set(),
+  };
   for (const record of entry.records) {
     seen.turns += 1;
     seen.operations += record.execution.operations.length;
     const status = record.execution.status;
     seen.outcomes.set(status, (seen.outcomes.get(status) ?? 0) + 1);
+    // Which model actually answered, as the record has it. A column that names
+    // no model is not a failure -- the scripted one calls none -- but a column
+    // that names a different one than was configured is a result attributed to
+    // a model that never ran, and that has to be visible.
+    if (record.system.model !== undefined) {
+      seen.models.add(record.system.model);
+    }
   }
   perColumn.set(entry.columnId, seen);
 }
@@ -286,16 +367,20 @@ console.log("\nWhat each column's turns actually did");
 for (const column of manifest.columns) {
   const seen = perColumn.get(column.id);
   if (seen === undefined) {
-    console.log(`  ${column.label.padEnd(12)} no turns ran`);
+    console.log(`  ${column.label.padEnd(28)} no turns ran`);
     continue;
   }
   const outcomes = [...seen.outcomes.entries()]
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([status, count]) => `${status}×${count}`)
     .join(", ");
+  const models = [...seen.models];
   console.log(
-    `  ${column.label.padEnd(12)} ${seen.turns} turns, ` +
+    `  ${column.label.padEnd(28)} ${seen.turns} turns, ` +
       `${seen.operations} mediated operations, outcomes: ${outcomes}`,
+  );
+  console.log(
+    `  ${"".padEnd(28)} model: ` + (models.length === 0 ? "not declared" : models.join(", ")),
   );
 }
 
@@ -324,8 +409,10 @@ await writeFile(
           available,
           ...(reason === undefined ? {} : { reason }),
           ...(detail === undefined ? {} : { detail }),
-          command,
-          args,
+          // The model column has no binary to name. Recording the keys as
+          // absent rather than as `undefined` keeps a reader from concluding a
+          // spawn was attempted and left unrecorded.
+          ...(command === undefined ? {} : { command, args }),
         }),
       ),
       manifest,
