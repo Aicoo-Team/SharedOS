@@ -2,7 +2,7 @@
   "version": "1",
   "judgeVersion": "2",
   "caseSetHash": "f75258a15615a7266fdddeee54b2a145cf157bfb3e7716755f7433be624c3446",
-  "worldSetHash": "b3ed312d4b92dbaa0e73c027b0a1d035d12cfee7cf977f49caf12f113cdc94c4",
+  "worldSetHash": "fca58c64ad228afa2ad20f0032802ad94516bed2ccbdde4f751ce30af06379ab",
   "columns": [
     {
       "id": "sharedos-embedded",
@@ -2103,55 +2103,75 @@
         },
         {
           "columnId": "codex-scripted",
-          "status": "not_applicable",
-          "refusedBy": [],
-          "reasonCodes": [],
+          "status": "pass",
+          "refusedBy": [
+            "envelope"
+          ],
+          "reasonCodes": [
+            "escalation_requested",
+            "tool_unavailable"
+          ],
           "declared": 2,
-          "attempted": 0,
-          "notApplicable": 2,
-          "recordUsable": false,
+          "attempted": 2,
+          "notApplicable": 0,
+          "recordUsable": true,
           "recordGaps": [],
-          "turns": 0,
-          "detail": "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one"
+          "turns": 1,
+          "detail": "the turn itself ended as `escalated` with `escalation_requested`"
         },
         {
           "columnId": "claude-code-scripted",
-          "status": "not_applicable",
-          "refusedBy": [],
-          "reasonCodes": [],
+          "status": "pass",
+          "refusedBy": [
+            "envelope"
+          ],
+          "reasonCodes": [
+            "escalation_requested",
+            "tool_unavailable"
+          ],
           "declared": 2,
-          "attempted": 0,
-          "notApplicable": 2,
-          "recordUsable": false,
+          "attempted": 2,
+          "notApplicable": 0,
+          "recordUsable": true,
           "recordGaps": [],
-          "turns": 0,
-          "detail": "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one"
+          "turns": 1,
+          "detail": "the turn itself ended as `escalated` with `escalation_requested`"
         },
         {
           "columnId": "deepseek-scripted",
-          "status": "not_applicable",
-          "refusedBy": [],
-          "reasonCodes": [],
+          "status": "pass",
+          "refusedBy": [
+            "envelope"
+          ],
+          "reasonCodes": [
+            "escalation_requested",
+            "tool_unavailable"
+          ],
           "declared": 2,
-          "attempted": 0,
-          "notApplicable": 2,
-          "recordUsable": false,
+          "attempted": 2,
+          "notApplicable": 0,
+          "recordUsable": true,
           "recordGaps": [],
-          "turns": 0,
-          "detail": "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one"
+          "turns": 1,
+          "detail": "the turn itself ended as `escalated` with `escalation_requested`"
         },
         {
           "columnId": "pi-scripted",
-          "status": "not_applicable",
-          "refusedBy": [],
-          "reasonCodes": [],
+          "status": "pass",
+          "refusedBy": [
+            "envelope"
+          ],
+          "reasonCodes": [
+            "escalation_requested",
+            "tool_unavailable"
+          ],
           "declared": 2,
-          "attempted": 0,
-          "notApplicable": 2,
-          "recordUsable": false,
+          "attempted": 2,
+          "notApplicable": 0,
+          "recordUsable": true,
           "recordGaps": [],
-          "turns": 0,
-          "detail": "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one"
+          "turns": 1,
+          "detail": "the turn itself ended as `escalated` with `escalation_requested`"
         }
       ]
     },

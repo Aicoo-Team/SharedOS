@@ -7,12 +7,13 @@ import type {
   ToolDefinition,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
-import type {
-  AgentTurnDecision,
-  AgentTurnDriver,
-  AgentTurnInput,
-  AgentTurnRequest,
-  AgentTurnSession,
+import {
+  escalationRequest,
+  type AgentTurnDecision,
+  type AgentTurnDriver,
+  type AgentTurnInput,
+  type AgentTurnRequest,
+  type AgentTurnSession,
 } from "@aicoo/sharedos-runtime";
 
 import {
@@ -175,9 +176,8 @@ class ModelSession implements AgentTurnSession {
         toolCallId: input.result.callId,
         content: describeResult(input.result),
       });
-      const queued = this.#pending.shift();
-      if (queued !== undefined) {
-        return { type: "tool_call", call: this.#toolCall(queued) };
+      if (this.#pending.length > 0) {
+        return this.#release("");
       }
     }
 
@@ -199,14 +199,42 @@ class ModelSession implements AgentTurnSession {
     });
 
     this.#pending.push(...reply.toolCalls);
+    return this.#release(reply.text);
+  }
+
+  /**
+   * Hand the loop the next thing to do, escalation included.
+   *
+   * The escalate affordance is answered here rather than being turned into a
+   * `ToolCall`, so it never reaches the kernel: it is not an operation to
+   * authorize, it is the driver saying the turn is over and a human has to
+   * decide. Recognised by name off the catalogue -- the model picked a tool it
+   * was offered -- rather than read out of the prose around it, which would
+   * make the row measure a phrase instead of a choice.
+   *
+   * Anything queued behind it is dropped, and deliberately: the turn ends at an
+   * escalation, and running the calls the model asked for after it would
+   * execute work on the far side of a decision nobody has made yet.
+   */
+  #release(text: string): AgentTurnDecision {
     const next = this.#pending.shift();
     if (next === undefined) {
       return {
         type: "complete",
-        output: { text: reply.text } satisfies JsonValue,
+        output: { text } satisfies JsonValue,
         metadata: this.#metadata(),
       };
     }
+
+    const escalation = escalationRequest(
+      this.#codec.fromWire(next.name),
+      parseToolArguments(next.arguments),
+    );
+    if (escalation !== undefined) {
+      this.#pending.length = 0;
+      return { type: "escalate", reason: escalation, metadata: this.#metadata() };
+    }
+
     return { type: "tool_call", call: this.#toolCall(next) };
   }
 

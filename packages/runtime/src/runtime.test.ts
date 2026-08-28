@@ -135,6 +135,56 @@ describe("TurnExecutor", () => {
     );
   });
 
+  it("ends the turn as escalated when the driver asks for a human", async () => {
+    // The variant exists so a driver inside this loop can reach the terminal
+    // outcome `RuntimeTurnOutcome` has always declared. Without it a driver
+    // could only complete or fail, and every driven column reported the
+    // escalation row as structurally unavailable -- a limit of this type rather
+    // than of any vendor.
+    const session: AgentTurnSession = {
+      next: vi.fn<AgentTurnSession["next"]>(async () => ({
+        type: "escalate",
+        reason: "issuing a control-plane grant is outside this agent's authority",
+      })),
+    };
+    const driver: AgentTurnDriver = { open: async () => session };
+
+    const result = await new TurnExecutor(kernel(), driver, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+
+    expect(result.status).toBe("escalated");
+    expect(result.status === "escalated" ? result.escalation.reason : undefined).toBe(
+      "issuing a control-plane grant is outside this agent's authority",
+    );
+    // Escalation is not failure. A turn that asked and a turn that broke are
+    // different events, and collapsing them would lose the distinction the row
+    // exists to record.
+    expect(result.status).not.toBe("failed");
+  });
+
+  it("refuses an escalate decision whose reason is not a usable string", async () => {
+    const session: AgentTurnSession = {
+      next: vi.fn<AgentTurnSession["next"]>(
+        async () => ({ type: "escalate", reason: "  " }) as never,
+      ),
+    };
+    const driver: AgentTurnDriver = { open: async () => session };
+
+    const result = await new TurnExecutor(kernel(), driver, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+
+    // Bounded exactly as the outcome is. A decision that parsed here but not as
+    // an outcome would fail further in, where the cause is no longer visible.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "invalid_driver_decision",
+    );
+  });
+
   it("uses the registry's permission-filtered tool definition", async () => {
     let openedRequest: AgentTurnRequest | undefined;
     const session: AgentTurnSession = {

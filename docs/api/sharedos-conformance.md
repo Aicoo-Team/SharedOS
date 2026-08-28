@@ -279,7 +279,7 @@ something else honoured.
 
 ### ConformanceBrokerStore
 
-Defined in: [conformance/src/world.ts:1098](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1098)
+Defined in: [conformance/src/world.ts:1134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1134)
 
 The brokered external MCP server, as a host would supply one.
 
@@ -307,8 +307,8 @@ for one context and must not be a handle onto anything shared.
 
 | Property                                  | Modifier   | Type       | Default value | Description                                                                                                                                                                                                                                                                                                                                           | Defined in                                                                                                                |
 | ----------------------------------------- | ---------- | ---------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-listings"></a> `listings` | `readonly` | `string`[] | `[]`          | Every context the provider was resolved for. Recorded because the row that matters most is the one where attaching the broker changes nothing, and a provider that was silently never consulted would produce exactly that cell for the wrong reason. This is what separates "listed and then refused by the grant store" from "never listed at all". | [conformance/src/world.ts:1109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1109) |
-| <a id="property-searches"></a> `searches` | `readonly` | `string`[] | `[]`          | Every page the broker was actually asked for, in order.                                                                                                                                                                                                                                                                                               | [conformance/src/world.ts:1100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1100) |
+| <a id="property-listings"></a> `listings` | `readonly` | `string`[] | `[]`          | Every context the provider was resolved for. Recorded because the row that matters most is the one where attaching the broker changes nothing, and a provider that was silently never consulted would produce exactly that cell for the wrong reason. This is what separates "listed and then refused by the grant store" from "never listed at all". | [conformance/src/world.ts:1145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1145) |
+| <a id="property-searches"></a> `searches` | `readonly` | `string`[] | `[]`          | Every page the broker was actually asked for, in order.                                                                                                                                                                                                                                                                                               | [conformance/src/world.ts:1136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1136) |
 
 #### Methods
 
@@ -316,7 +316,7 @@ for one context and must not be a handle onto anything shared.
 
 > **provider**(): [`ContextToolProvider`](sharedos-core.md#contexttoolprovider)
 
-Defined in: [conformance/src/world.ts:1111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1111)
+Defined in: [conformance/src/world.ts:1147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1147)
 
 ###### Returns
 
@@ -326,7 +326,7 @@ Defined in: [conformance/src/world.ts:1111](https://github.com/Aicoo-Team/Shared
 
 ### ConformanceChainResolver
 
-Defined in: [conformance/src/world.ts:1244](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1244)
+Defined in: [conformance/src/world.ts:1280](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1280)
 
 Namespace-scoped ancestor lookup over every grant the fixture issued.
 
@@ -340,7 +340,7 @@ Namespace-scoped ancestor lookup over every grant the fixture issued.
 
 > **new ConformanceChainResolver**(`grants`): [`ConformanceChainResolver`](#conformancechainresolver)
 
-Defined in: [conformance/src/world.ts:1247](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1247)
+Defined in: [conformance/src/world.ts:1283](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1283)
 
 ###### Parameters
 
@@ -358,7 +358,7 @@ Defined in: [conformance/src/world.ts:1247](https://github.com/Aicoo-Team/Shared
 
 > **expire**(`namespaceId`, `grantId`, `expiresAt`): `this`
 
-Defined in: [conformance/src/world.ts:1262](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1262)
+Defined in: [conformance/src/world.ts:1298](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1298)
 
 ###### Parameters
 
@@ -376,7 +376,7 @@ Defined in: [conformance/src/world.ts:1262](https://github.com/Aicoo-Team/Shared
 
 > **resolve**(`namespaceId`, `grantId`): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: [conformance/src/world.ts:1274](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1274)
+Defined in: [conformance/src/world.ts:1310](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1310)
 
 ###### Parameters
 
@@ -397,7 +397,7 @@ Defined in: [conformance/src/world.ts:1274](https://github.com/Aicoo-Team/Shared
 
 > **revoke**(`namespaceId`, `grantId`, `revokedAt`): `this`
 
-Defined in: [conformance/src/world.ts:1253](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1253)
+Defined in: [conformance/src/world.ts:1289](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1289)
 
 ###### Parameters
 
@@ -415,7 +415,7 @@ Defined in: [conformance/src/world.ts:1253](https://github.com/Aicoo-Team/Shared
 
 ### ConformanceFileStore
 
-Defined in: [conformance/src/world.ts:698](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L698)
+Defined in: [conformance/src/world.ts:734](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L734)
 
 The world's file store.
 
@@ -439,9 +439,9 @@ boundary, so the fixture does not let it act like one.
 
 | Property                                      | Modifier   | Type       | Default value | Description                                                                  | Defined in                                                                                                              |
 | --------------------------------------------- | ---------- | ---------- | ------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-reads"></a> `reads`           | `readonly` | `string`[] | `[]`          | -                                                                            | [conformance/src/world.ts:699](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L699) |
-| <a id="property-recoveries"></a> `recoveries` | `readonly` | `string`[] | `[]`          | Recovery-surface calls, kept apart so a rollback row has its own observable. | [conformance/src/world.ts:702](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L702) |
-| <a id="property-writes"></a> `writes`         | `readonly` | `string`[] | `[]`          | -                                                                            | [conformance/src/world.ts:700](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L700) |
+| <a id="property-reads"></a> `reads`           | `readonly` | `string`[] | `[]`          | -                                                                            | [conformance/src/world.ts:735](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L735) |
+| <a id="property-recoveries"></a> `recoveries` | `readonly` | `string`[] | `[]`          | Recovery-surface calls, kept apart so a rollback row has its own observable. | [conformance/src/world.ts:738](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L738) |
+| <a id="property-writes"></a> `writes`         | `readonly` | `string`[] | `[]`          | -                                                                            | [conformance/src/world.ts:736](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L736) |
 
 #### Methods
 
@@ -449,7 +449,7 @@ boundary, so the fixture does not let it act like one.
 
 > **carrierHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [conformance/src/world.ts:852](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L852)
+Defined in: [conformance/src/world.ts:888](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L888)
 
 The open-schema read carrier. See [CARRIER\_TOOL](#carrier_tool) for why it exists.
 
@@ -464,7 +464,7 @@ tool does not is carry extra arguments through untouched.
 
 > **crossingHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [conformance/src/world.ts:895](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L895)
+Defined in: [conformance/src/world.ts:931](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L931)
 
 The owner-resolving read fixture. See [CROSSING\_TOOL](#crossing_tool) for why it exists.
 
@@ -476,7 +476,7 @@ The owner-resolving read fixture. See [CROSSING\_TOOL](#crossing_tool) for why i
 
 > **escapingHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [conformance/src/world.ts:940](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L940)
+Defined in: [conformance/src/world.ts:976](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L976)
 
 A tool that resolves a requirement outside the ceiling it declared.
 
@@ -494,7 +494,7 @@ own declaration merely because it wrote one down.
 
 > **mismatchedHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [conformance/src/world.ts:986](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L986)
+Defined in: [conformance/src/world.ts:1022](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1022)
 
 A tool whose handler answers a call the kernel never made.
 
@@ -512,7 +512,7 @@ that was authorized when its own was not.
 
 > **resourceProvider**(): [`ResourceProvider`](sharedos-core.md#resourceprovider)
 
-Defined in: [conformance/src/world.ts:731](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L731)
+Defined in: [conformance/src/world.ts:767](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L767)
 
 The host-owned provider the shipped file tools resolve against.
 
@@ -530,7 +530,7 @@ would be evidence about this fixture rather than about SharedOS.
 
 > **sealedHandler**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [conformance/src/world.ts:1025](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1025)
+Defined in: [conformance/src/world.ts:1061](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1061)
 
 A registered, permanently sealed tool. It lives in a namespace this world
 never enables, so it is real enough to guess at and never exposed.
@@ -543,7 +543,7 @@ never enables, so it is real enough to guess at and never exposed.
 
 ### ConformanceGrantSource
 
-Defined in: [conformance/src/world.ts:1153](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1153)
+Defined in: [conformance/src/world.ts:1189](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1189)
 
 A trusted grant store whose availability the fixture controls.
 
@@ -557,7 +557,7 @@ A trusted grant store whose availability the fixture controls.
 
 > **new ConformanceGrantSource**(`grants`): [`ConformanceGrantSource`](#conformancegrantsource)
 
-Defined in: [conformance/src/world.ts:1159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1159)
+Defined in: [conformance/src/world.ts:1195](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1195)
 
 ###### Parameters
 
@@ -577,7 +577,7 @@ Defined in: [conformance/src/world.ts:1159](https://github.com/Aicoo-Team/Shared
 
 > **get** **loads**(): `number`
 
-Defined in: [conformance/src/world.ts:1165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1165)
+Defined in: [conformance/src/world.ts:1201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1201)
 
 ###### Returns
 
@@ -589,7 +589,7 @@ Defined in: [conformance/src/world.ts:1165](https://github.com/Aicoo-Team/Shared
 
 > **afterLoads**(`count`, `action`): `this`
 
-Defined in: [conformance/src/world.ts:1212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1212)
+Defined in: [conformance/src/world.ts:1248](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1248)
 
 Run one trusted edit immediately after the given number of loads.
 
@@ -613,7 +613,7 @@ The edit is host-side and fires from the store, never from the adversary.
 
 > **expire**(`grantId`, `expiresAt`): `this`
 
-Defined in: [conformance/src/world.ts:1193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1193)
+Defined in: [conformance/src/world.ts:1229](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1229)
 
 Move a grant's expiry to an instant that has already passed.
 
@@ -632,7 +632,7 @@ Move a grant's expiry to an instant that has already passed.
 
 > **failAfterLoads**(`count`): `this`
 
-Defined in: [conformance/src/world.ts:1179](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1179)
+Defined in: [conformance/src/world.ts:1215](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1215)
 
 Fail every load after this many successful ones.
 
@@ -657,7 +657,7 @@ higher values meaningful again.
 
 > **load**(`context`): `Promise`\<readonly `object`[]\>
 
-Defined in: [conformance/src/world.ts:1217](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1217)
+Defined in: [conformance/src/world.ts:1253](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1253)
 
 ###### Parameters
 
@@ -685,7 +685,7 @@ Defined in: [conformance/src/world.ts:1217](https://github.com/Aicoo-Team/Shared
 
 > **revoke**(`grantId`, `revokedAt`): `this`
 
-Defined in: [conformance/src/world.ts:1184](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1184)
+Defined in: [conformance/src/world.ts:1220](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1220)
 
 ###### Parameters
 
@@ -1248,7 +1248,7 @@ Defined in: [conformance/src/judge.ts:36](https://github.com/Aicoo-Team/SharedOS
 
 ### ColumnLimits
 
-Defined in: [conformance/src/columns.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L39)
+Defined in: [conformance/src/columns.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L44)
 
 What one column cannot do, so a cell reports it instead of failing on it.
 
@@ -1256,15 +1256,15 @@ What one column cannot do, so a cell reports it instead of failing on it.
 
 | Property                                         | Modifier   | Type                                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Defined in                                                                                                                |
 | ------------------------------------------------ | ---------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-outofscope"></a> `outOfScope?`   | `readonly` | `string`                            | Set when SharedOS declares the row's guarantee does not reach this column. Different from every other field here, and the difference is the point. `unsupported` and `unreachable` are claims about the _harness_: it cannot make the attempt. This is a claim about _SharedOS_: the attempt is made, recorded, and answered -- and the answer is not graded, because the guarantee is declared not to apply on this path. The row is still run and its evidence still kept, so what the ungraded call actually did stays visible rather than being replaced by a symbol. | [conformance/src/columns.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L55) |
-| <a id="property-unreachable"></a> `unreachable?` | `readonly` | `ReadonlyMap`\<`string`, `string`\> | Attempt ids the column structurally cannot issue, mapped to why.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [conformance/src/columns.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L43) |
-| <a id="property-unsupported"></a> `unsupported?` | `readonly` | `string`                            | Set when the column structurally cannot run this row at all.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [conformance/src/columns.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L41) |
+| <a id="property-outofscope"></a> `outOfScope?`   | `readonly` | `string`                            | Set when SharedOS declares the row's guarantee does not reach this column. Different from every other field here, and the difference is the point. `unsupported` and `unreachable` are claims about the _harness_: it cannot make the attempt. This is a claim about _SharedOS_: the attempt is made, recorded, and answered -- and the answer is not graded, because the guarantee is declared not to apply on this path. The row is still run and its evidence still kept, so what the ungraded call actually did stays visible rather than being replaced by a symbol. | [conformance/src/columns.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L60) |
+| <a id="property-unreachable"></a> `unreachable?` | `readonly` | `ReadonlyMap`\<`string`, `string`\> | Attempt ids the column structurally cannot issue, mapped to why.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [conformance/src/columns.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L48) |
+| <a id="property-unsupported"></a> `unsupported?` | `readonly` | `string`                            | Set when the column structurally cannot run this row at all.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [conformance/src/columns.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L46) |
 
 ---
 
 ### ColumnTurn
 
-Defined in: [conformance/src/columns.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L59)
+Defined in: [conformance/src/columns.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L64)
 
 One turn a column ran, for a column that cannot report on itself.
 
@@ -1272,8 +1272,8 @@ One turn a column ran, for a column that cannot report on itself.
 
 | Property                                        | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Defined in                                                                                                                |
 | ----------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-executionid"></a> `executionId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/columns.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L60) |
-| <a id="property-record-1"></a> `record`         | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/columns.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L62) |
+| <a id="property-executionid"></a> `executionId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/columns.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L65) |
+| <a id="property-record-1"></a> `record`         | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/columns.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L67) |
 | `record.authority`                              | `public`   | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:256](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L256) |
 | `record.authority.actor`                        | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L107) |
 | `record.authority.namespaceId`                  | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L109) |
@@ -1358,7 +1358,7 @@ One turn a column ran, for a column that cannot report on itself.
 | `record.system.toolPolicy.managedMcp`           | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | contracts/dist/tool.d.ts:670                                                                                              |
 | `record.system.toolPolicy.mode`                 | `public`   | `"strict"` \| `"hybrid"`                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | contracts/dist/tool.d.ts:669                                                                                              |
 | `record.version`                                | `public`   | `"1"`                                                                                                                                                                                                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:252](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L252) |
-| <a id="property-turn"></a> `turn`               | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/columns.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L61) |
+| <a id="property-turn"></a> `turn`               | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/columns.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L66) |
 
 ---
 
@@ -1529,7 +1529,7 @@ Defined in: [conformance/src/runner.ts:105](https://github.com/Aicoo-Team/Shared
 
 ### ConformanceWorld
 
-Defined in: [conformance/src/world.ts:1480](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1480)
+Defined in: [conformance/src/world.ts:1516](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1516)
 
 A world plus the trusted controls that arm one adversarial condition in it.
 
@@ -1542,11 +1542,11 @@ separation is enforced by construction rather than by convention.
 
 | Property                                                    | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                                        | Defined in                                                                                                                |
 | ----------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-auditevents-1"></a> `auditEvents`           | `readonly` | readonly [`AuditEvent`](sharedos-core.md#auditevent)[]                                                                                                                                                     | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1496](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1496) |
-| <a id="property-broker"></a> `broker`                       | `readonly` | [`ConformanceBrokerStore`](#conformancebrokerstore)                                                                                                                                                        | The brokered external server, so a row can see what it was actually asked.                                                                                                                                                                                         | [conformance/src/world.ts:1493](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1493) |
-| <a id="property-chain"></a> `chain`                         | `readonly` | [`ConformanceChainResolver`](#conformancechainresolver)                                                                                                                                                    | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1495](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1495) |
-| <a id="property-clock"></a> `clock`                         | `readonly` | () => `string`                                                                                                                                                                                             | The clock a turn against this world runs on. Frozen at [CONFORMANCE\_NOW](#conformance_now) unless the condition armed an expiry that needs time to pass. An executor must be given this rather than the constant, or the world's armed condition can never occur. | [conformance/src/world.ts:1490](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1490) |
-| <a id="property-context"></a> `context`                     | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1482](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1482) |
+| <a id="property-auditevents-1"></a> `auditEvents`           | `readonly` | readonly [`AuditEvent`](sharedos-core.md#auditevent)[]                                                                                                                                                     | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1532](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1532) |
+| <a id="property-broker"></a> `broker`                       | `readonly` | [`ConformanceBrokerStore`](#conformancebrokerstore)                                                                                                                                                        | The brokered external server, so a row can see what it was actually asked.                                                                                                                                                                                         | [conformance/src/world.ts:1529](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1529) |
+| <a id="property-chain"></a> `chain`                         | `readonly` | [`ConformanceChainResolver`](#conformancechainresolver)                                                                                                                                                    | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1531](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1531) |
+| <a id="property-clock"></a> `clock`                         | `readonly` | () => `string`                                                                                                                                                                                             | The clock a turn against this world runs on. Frozen at [CONFORMANCE\_NOW](#conformance_now) unless the condition armed an expiry that needs time to pass. An executor must be given this rather than the constant, or the world's armed condition can never occur. | [conformance/src/world.ts:1526](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1526) |
+| <a id="property-context"></a> `context`                     | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1518](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1518) |
 | `context.actor`                                             | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                  | contracts/dist/access.d.ts:144                                                                                            |
 | `context.authority`                                         | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                  | contracts/dist/access.d.ts:157                                                                                            |
 | `context.enabledToolNamespaces`                             | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                                  | contracts/dist/access.d.ts:170                                                                                            |
@@ -1555,12 +1555,12 @@ separation is enforced by construction rather than by convention.
 | `context.owner`                                             | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                  | contracts/dist/access.d.ts:128                                                                                            |
 | `context.purpose`                                           | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                  | contracts/dist/access.d.ts:142                                                                                            |
 | `context.traceId`                                           | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                  | contracts/dist/access.d.ts:143                                                                                            |
-| <a id="property-deliveredmessages"></a> `deliveredMessages` | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1497](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1497) |
-| <a id="property-files"></a> `files`                         | `readonly` | [`ConformanceFileStore`](#conformancefilestore)                                                                                                                                                            | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1491](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1491) |
-| <a id="property-grants"></a> `grants`                       | `readonly` | readonly `object`[]                                                                                                                                                                                        | Every grant this condition actually issued, roots included.                                                                                                                                                                                                        | [conformance/src/world.ts:1500](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1500) |
-| <a id="property-grantsource"></a> `grantSource`             | `readonly` | [`ConformanceGrantSource`](#conformancegrantsource)                                                                                                                                                        | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1494](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1494) |
-| <a id="property-kernel"></a> `kernel`                       | `readonly` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)                                                                                                                                                        | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1481](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1481) |
-| <a id="property-tools"></a> `tools`                         | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1498](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1498) |
+| <a id="property-deliveredmessages"></a> `deliveredMessages` | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1533](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1533) |
+| <a id="property-files"></a> `files`                         | `readonly` | [`ConformanceFileStore`](#conformancefilestore)                                                                                                                                                            | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1527](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1527) |
+| <a id="property-grants"></a> `grants`                       | `readonly` | readonly `object`[]                                                                                                                                                                                        | Every grant this condition actually issued, roots included.                                                                                                                                                                                                        | [conformance/src/world.ts:1536](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1536) |
+| <a id="property-grantsource"></a> `grantSource`             | `readonly` | [`ConformanceGrantSource`](#conformancegrantsource)                                                                                                                                                        | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1530](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1530) |
+| <a id="property-kernel"></a> `kernel`                       | `readonly` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)                                                                                                                                                        | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1517](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1517) |
+| <a id="property-tools"></a> `tools`                         | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                                                                                                                                                                                                                                  | [conformance/src/world.ts:1534](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1534) |
 
 #### Methods
 
@@ -1568,7 +1568,7 @@ separation is enforced by construction rather than by convention.
 
 > **request**(`executionId`, `turn?`): `object`
 
-Defined in: [conformance/src/world.ts:1506](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1506)
+Defined in: [conformance/src/world.ts:1542](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1542)
 
 One turn's request. Turns after the first get their own trace, because a
 turn is identified by its trace and two turns sharing one would be a single
@@ -1729,7 +1729,7 @@ turn to the kernel and a single record to the evidence layer.
 
 ### ConformanceWorldInstrumentation
 
-Defined in: [conformance/src/world.ts:1518](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1518)
+Defined in: [conformance/src/world.ts:1554](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1554)
 
 Measurement wiring, kept out of [ConformanceWorldOptions](#conformanceworldoptions) on purpose.
 
@@ -1743,35 +1743,35 @@ stops meaning "the same world" and starts meaning "the same command line".
 
 | Property                             | Modifier   | Type                                    | Defined in                                                                                                                |
 | ------------------------------------ | ---------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-spans"></a> `spans?` | `readonly` | [`SpanSink`](sharedos-core.md#spansink) | [conformance/src/world.ts:1519](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1519) |
+| <a id="property-spans"></a> `spans?` | `readonly` | [`SpanSink`](sharedos-core.md#spansink) | [conformance/src/world.ts:1555](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1555) |
 
 ---
 
 ### ConformanceWorldOptions
 
-Defined in: [conformance/src/world.ts:1401](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1401)
+Defined in: [conformance/src/world.ts:1437](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1437)
 
 #### Properties
 
 | Property                                                                   | Modifier   | Type                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Defined in                                                                                                                |
 | -------------------------------------------------------------------------- | ---------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-authorityfailsafterloads"></a> `authorityFailsAfterLoads?` | `readonly` | `number`                      | Arm a grant-store outage that begins after this many successful loads.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | [conformance/src/world.ts:1434](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1434) |
-| <a id="property-bounded"></a> `bounded?`                                   | `readonly` | `boolean`                     | Issue the single-use ledger grant, without which nothing is bounded.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | [conformance/src/world.ts:1436](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1436) |
-| <a id="property-broker-1"></a> `broker?`                                   | `readonly` | `"registered"` \| `"granted"` | Attach the brokered external MCP server, and optionally grant against it. Three states, because the question these rows ask has three answers. Absent, no provider is registered and `notion.search` resolves to no handler at all. `registered` attaches the provider, so the handler exists for this context -- and nothing else changes, because no grant carries `search`. `granted` adds authority over one page tree, which is what finally publishes the tool and bounds it at the same time. The tool namespace is enabled in all three. Enablement is not authority, and leaving it constant is what makes a refusal attributable to the grant store rather than to a switch.                                                                                                                                                                                                                                                                                                                                                                                                    | [conformance/src/world.ts:1465](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1465) |
-| <a id="property-expired"></a> `expired?`                                   | `readonly` | readonly `string`[]           | Grant ids whose expiry is moved to an instant the turn has already passed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/world.ts:1405](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1405) |
-| <a id="property-expiresafteroperations"></a> `expiresAfterOperations?`     | `readonly` | `object`                      | Start the world's clock, and close these grants' validity windows after the given number of mediated operations. Deliberately not the shape [revokedAfterTurn](#property-revokedafterturn) uses, and the difference is the claim. A revocation is armed by editing the store while the turn runs, which is why a turn holding its loaded grant set cannot see one. An expiry is written onto the grant by trusted setup _before_ the turn, exactly as [expired](#property-expired) writes one that has already passed -- what changes while the turn runs is the clock, not the store. Arming it the other way would mutate a store the running turn is no longer reading and prove nothing. Arming this is also what starts the clock: every other condition runs on a frozen [CONFORMANCE\_NOW](#conformance_now), so an expiry no clock ever reaches would not be an expiry. One step is one mediated operation: see [conformanceInstant](#conformanceinstant) for the arithmetic, and [ConformanceWorld.clock](#property-clock) for the clock a turn against this world then runs on. | [conformance/src/world.ts:1429](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1429) |
-| `expiresAfterOperations.grantIds`                                          | `readonly` | readonly `string`[]           | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1431](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1431) |
-| `expiresAfterOperations.operations`                                        | `readonly` | `number`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1430](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1430) |
-| <a id="property-maxsteps"></a> `maxSteps?`                                 | `readonly` | `number`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1468](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1468) |
-| <a id="property-maxtoolcalls"></a> `maxToolCalls?`                         | `readonly` | `number`                      | Bound the turn below the number of calls its move declares.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [conformance/src/world.ts:1467](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1467) |
-| <a id="property-now"></a> `now?`                                           | `readonly` | `string`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1469](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1469) |
-| <a id="property-overbroaddelegation"></a> `overBroadDelegation?`           | `readonly` | `boolean`                     | Issue a grant claiming more than the grant it was delegated from.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1440](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1440) |
-| <a id="property-restorable"></a> `restorable?`                             | `readonly` | `boolean`                     | Issue rollback authority over `Workspace/scratch`, and nothing wider. Without it no grant anywhere carries `snapshot:restore`, so `files.snapshot.restore` fails the discovery filter and is absent from the published catalogue. Arming it publishes the tool, which changes what every call in this world is choosing from -- so it is a per-condition option rather than part of the standing agent authority.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1450](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1450) |
-| <a id="property-revoked"></a> `revoked?`                                   | `readonly` | readonly `string`[]           | Grant ids to revoke before the turn starts, as a host store would.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | [conformance/src/world.ts:1403](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1403) |
-| <a id="property-revokedafterturn"></a> `revokedAfterTurn?`                 | `readonly` | `object`                      | Grant ids revoked in the store immediately after the given turn's authority load, so the change lands while that turn is still running.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [conformance/src/world.ts:1410](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1410) |
-| `revokedAfterTurn.grantIds`                                                | `readonly` | readonly `string`[]           | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1410](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1410) |
-| `revokedAfterTurn.turn`                                                    | `readonly` | `number`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1410](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1410) |
-| <a id="property-usagestoreunavailable"></a> `usageStoreUnavailable?`       | `readonly` | `boolean`                     | Make the bounded-use counter unreachable. Implies [bounded](#property-bounded).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [conformance/src/world.ts:1438](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1438) |
+| <a id="property-authorityfailsafterloads"></a> `authorityFailsAfterLoads?` | `readonly` | `number`                      | Arm a grant-store outage that begins after this many successful loads.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | [conformance/src/world.ts:1470](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1470) |
+| <a id="property-bounded"></a> `bounded?`                                   | `readonly` | `boolean`                     | Issue the single-use ledger grant, without which nothing is bounded.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | [conformance/src/world.ts:1472](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1472) |
+| <a id="property-broker-1"></a> `broker?`                                   | `readonly` | `"registered"` \| `"granted"` | Attach the brokered external MCP server, and optionally grant against it. Three states, because the question these rows ask has three answers. Absent, no provider is registered and `notion.search` resolves to no handler at all. `registered` attaches the provider, so the handler exists for this context -- and nothing else changes, because no grant carries `search`. `granted` adds authority over one page tree, which is what finally publishes the tool and bounds it at the same time. The tool namespace is enabled in all three. Enablement is not authority, and leaving it constant is what makes a refusal attributable to the grant store rather than to a switch.                                                                                                                                                                                                                                                                                                                                                                                                    | [conformance/src/world.ts:1501](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1501) |
+| <a id="property-expired"></a> `expired?`                                   | `readonly` | readonly `string`[]           | Grant ids whose expiry is moved to an instant the turn has already passed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/world.ts:1441](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1441) |
+| <a id="property-expiresafteroperations"></a> `expiresAfterOperations?`     | `readonly` | `object`                      | Start the world's clock, and close these grants' validity windows after the given number of mediated operations. Deliberately not the shape [revokedAfterTurn](#property-revokedafterturn) uses, and the difference is the claim. A revocation is armed by editing the store while the turn runs, which is why a turn holding its loaded grant set cannot see one. An expiry is written onto the grant by trusted setup _before_ the turn, exactly as [expired](#property-expired) writes one that has already passed -- what changes while the turn runs is the clock, not the store. Arming it the other way would mutate a store the running turn is no longer reading and prove nothing. Arming this is also what starts the clock: every other condition runs on a frozen [CONFORMANCE\_NOW](#conformance_now), so an expiry no clock ever reaches would not be an expiry. One step is one mediated operation: see [conformanceInstant](#conformanceinstant) for the arithmetic, and [ConformanceWorld.clock](#property-clock) for the clock a turn against this world then runs on. | [conformance/src/world.ts:1465](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1465) |
+| `expiresAfterOperations.grantIds`                                          | `readonly` | readonly `string`[]           | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1467](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1467) |
+| `expiresAfterOperations.operations`                                        | `readonly` | `number`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1466](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1466) |
+| <a id="property-maxsteps"></a> `maxSteps?`                                 | `readonly` | `number`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1504](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1504) |
+| <a id="property-maxtoolcalls"></a> `maxToolCalls?`                         | `readonly` | `number`                      | Bound the turn below the number of calls its move declares.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [conformance/src/world.ts:1503](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1503) |
+| <a id="property-now"></a> `now?`                                           | `readonly` | `string`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1505](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1505) |
+| <a id="property-overbroaddelegation"></a> `overBroadDelegation?`           | `readonly` | `boolean`                     | Issue a grant claiming more than the grant it was delegated from.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1476](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1476) |
+| <a id="property-restorable"></a> `restorable?`                             | `readonly` | `boolean`                     | Issue rollback authority over `Workspace/scratch`, and nothing wider. Without it no grant anywhere carries `snapshot:restore`, so `files.snapshot.restore` fails the discovery filter and is absent from the published catalogue. Arming it publishes the tool, which changes what every call in this world is choosing from -- so it is a per-condition option rather than part of the standing agent authority.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1486](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1486) |
+| <a id="property-revoked"></a> `revoked?`                                   | `readonly` | readonly `string`[]           | Grant ids to revoke before the turn starts, as a host store would.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | [conformance/src/world.ts:1439](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1439) |
+| <a id="property-revokedafterturn"></a> `revokedAfterTurn?`                 | `readonly` | `object`                      | Grant ids revoked in the store immediately after the given turn's authority load, so the change lands while that turn is still running.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [conformance/src/world.ts:1446](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1446) |
+| `revokedAfterTurn.grantIds`                                                | `readonly` | readonly `string`[]           | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1446](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1446) |
+| `revokedAfterTurn.turn`                                                    | `readonly` | `number`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/world.ts:1446](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1446) |
+| <a id="property-usagestoreunavailable"></a> `usageStoreUnavailable?`       | `readonly` | `boolean`                     | Make the bounded-use counter unreachable. Implies [bounded](#property-bounded).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [conformance/src/world.ts:1474](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1474) |
 
 ---
 
@@ -1906,36 +1906,36 @@ Defined in: [conformance/src/judge.ts:71](https://github.com/Aicoo-Team/SharedOS
 
 ### LiveColumnOptions
 
-Defined in: [conformance/src/columns.ts:443](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L443)
+Defined in: [conformance/src/columns.ts:463](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L463)
 
 #### Properties
 
 | Property                                                | Modifier   | Type                                                                       | Description                                                                                                                                                                                  | Defined in                                                                                                                  |
 | ------------------------------------------------------- | ---------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-createtransport"></a> `createTransport` | `readonly` | (`options`) => [`HarnessTransport`](sharedos-adapters.md#harnesstransport) | Opens the real harness. Kept as a callback so this package stays host-neutral: the process transport that spawns a CLI is Node-only and belongs to the caller, not to the conformance suite. | [conformance/src/columns.ts:452](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L452) |
-| <a id="property-id-3"></a> `id`                         | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:444](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L444) |
-| <a id="property-label-1"></a> `label`                   | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:445](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L445) |
-| <a id="property-protocol"></a> `protocol`               | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)                  | -                                                                                                                                                                                            | [conformance/src/columns.ts:446](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L446) |
+| <a id="property-createtransport"></a> `createTransport` | `readonly` | (`options`) => [`HarnessTransport`](sharedos-adapters.md#harnesstransport) | Opens the real harness. Kept as a callback so this package stays host-neutral: the process transport that spawns a CLI is Node-only and belongs to the caller, not to the conformance suite. | [conformance/src/columns.ts:472](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L472) |
+| <a id="property-id-3"></a> `id`                         | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:464](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L464) |
+| <a id="property-label-1"></a> `label`                   | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:465](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L465) |
+| <a id="property-protocol"></a> `protocol`               | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)                  | -                                                                                                                                                                                            | [conformance/src/columns.ts:466](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L466) |
 
 ---
 
 ### McpColumnOptions
 
-Defined in: [conformance/src/columns.ts:334](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L334)
+Defined in: [conformance/src/columns.ts:348](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L348)
 
 #### Properties
 
 | Property                                            | Modifier   | Type                                                                | Description                                                                                                                                                                                                                                                   | Defined in                                                                                                                  |
 | --------------------------------------------------- | ---------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-createruntime"></a> `createRuntime` | `readonly` | (`options`) => [`RuntimePlugin`](sharedos-runtime.md#runtimeplugin) | Builds the MCP-connected runtime for one turn. A callback because starting a loopback server and spawning a CLI is Node-only and belongs to the caller, exactly as the process transport does for [liveColumn](#livecolumn). This package stays host-neutral. | [conformance/src/columns.ts:344](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L344) |
-| <a id="property-id-4"></a> `id`                     | `readonly` | `string`                                                            | -                                                                                                                                                                                                                                                             | [conformance/src/columns.ts:335](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L335) |
-| <a id="property-label-2"></a> `label`               | `readonly` | `string`                                                            | -                                                                                                                                                                                                                                                             | [conformance/src/columns.ts:336](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L336) |
+| <a id="property-createruntime"></a> `createRuntime` | `readonly` | (`options`) => [`RuntimePlugin`](sharedos-runtime.md#runtimeplugin) | Builds the MCP-connected runtime for one turn. A callback because starting a loopback server and spawning a CLI is Node-only and belongs to the caller, exactly as the process transport does for [liveColumn](#livecolumn). This package stays host-neutral. | [conformance/src/columns.ts:358](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L358) |
+| <a id="property-id-4"></a> `id`                     | `readonly` | `string`                                                            | -                                                                                                                                                                                                                                                             | [conformance/src/columns.ts:349](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L349) |
+| <a id="property-label-2"></a> `label`               | `readonly` | `string`                                                            | -                                                                                                                                                                                                                                                             | [conformance/src/columns.ts:350](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L350) |
 
 ---
 
 ### McpColumnRuntimeOptions
 
-Defined in: [conformance/src/columns.ts:329](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L329)
+Defined in: [conformance/src/columns.ts:343](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L343)
 
 #### Extends
 
@@ -1945,50 +1945,50 @@ Defined in: [conformance/src/columns.ts:329](https://github.com/Aicoo-Team/Share
 
 | Property                                          | Modifier   | Type           | Description                                                              | Inherited from                                                                           | Defined in                                                                                                                  |
 | ------------------------------------------------- | ---------- | -------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-executionid-1"></a> `executionId` | `readonly` | `string`       | The execution identifier of that turn.                                   | [`RuntimeColumnOptions`](#runtimecolumnoptions).[`executionId`](#property-executionid-3) | [conformance/src/columns.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L69)   |
-| <a id="property-prompt"></a> `prompt`             | `readonly` | () => `string` | The declared attempts, written out for a harness that runs its own loop. | -                                                                                        | [conformance/src/columns.ts:331](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L331) |
-| <a id="property-turn-2"></a> `turn`               | `readonly` | `number`       | Which turn of the case this plugin instance is running.                  | [`RuntimeColumnOptions`](#runtimecolumnoptions).[`turn`](#property-turn-5)               | [conformance/src/columns.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L67)   |
+| <a id="property-executionid-1"></a> `executionId` | `readonly` | `string`       | The execution identifier of that turn.                                   | [`RuntimeColumnOptions`](#runtimecolumnoptions).[`executionId`](#property-executionid-3) | [conformance/src/columns.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L74)   |
+| <a id="property-prompt"></a> `prompt`             | `readonly` | () => `string` | The declared attempts, written out for a harness that runs its own loop. | -                                                                                        | [conformance/src/columns.ts:345](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L345) |
+| <a id="property-turn-2"></a> `turn`               | `readonly` | `number`       | Which turn of the case this plugin instance is running.                  | [`RuntimeColumnOptions`](#runtimecolumnoptions).[`turn`](#property-turn-5)               | [conformance/src/columns.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L72)   |
 
 ---
 
 ### ModelColumnOptions
 
-Defined in: [conformance/src/columns.ts:497](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L497)
+Defined in: [conformance/src/columns.ts:517](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L517)
 
 #### Properties
 
 | Property                              | Modifier   | Type                                              | Description                                                                                                                                                                               | Defined in                                                                                                                  |
 | ------------------------------------- | ---------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-client"></a> `client` | `readonly` | [`ModelClient`](sharedos-adapters.md#modelclient) | The model in the delegate seat. Supplied rather than constructed here so this package stays free of credentials and endpoints, exactly as the transport is for [liveColumn](#livecolumn). | [conformance/src/columns.ts:506](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L506) |
-| <a id="property-id-5"></a> `id`       | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:498](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L498) |
-| <a id="property-label-3"></a> `label` | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:499](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L499) |
+| <a id="property-client"></a> `client` | `readonly` | [`ModelClient`](sharedos-adapters.md#modelclient) | The model in the delegate seat. Supplied rather than constructed here so this package stays free of credentials and endpoints, exactly as the transport is for [liveColumn](#livecolumn). | [conformance/src/columns.ts:526](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L526) |
+| <a id="property-id-5"></a> `id`       | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:518](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L518) |
+| <a id="property-label-3"></a> `label` | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:519](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L519) |
 
 ---
 
 ### MovePromptOptions
 
-Defined in: [conformance/src/columns.ts:732](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L732)
+Defined in: [conformance/src/columns.ts:747](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L747)
 
 #### Properties
 
 | Property                                  | Modifier   | Type                                                                 | Defined in                                                                                                                  |
 | ----------------------------------------- | ---------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-context-1"></a> `context` | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | [conformance/src/columns.ts:733](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L733) |
-| <a id="property-turn-3"></a> `turn`       | `readonly` | `number`                                                             | [conformance/src/columns.ts:734](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L734) |
+| <a id="property-context-1"></a> `context` | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | [conformance/src/columns.ts:748](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L748) |
+| <a id="property-turn-3"></a> `turn`       | `readonly` | `number`                                                             | [conformance/src/columns.ts:749](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L749) |
 
 ---
 
 ### MoveTranscriptOptions
 
-Defined in: [conformance/src/columns.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L225)
+Defined in: [conformance/src/columns.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L224)
 
 #### Properties
 
 | Property                                          | Modifier   | Type                                                                 | Defined in                                                                                                                  |
 | ------------------------------------------------- | ---------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-context-2"></a> `context`         | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | [conformance/src/columns.ts:228](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L228) |
-| <a id="property-executionid-2"></a> `executionId` | `readonly` | `string`                                                             | [conformance/src/columns.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L226) |
-| <a id="property-turn-4"></a> `turn`               | `readonly` | `number`                                                             | [conformance/src/columns.ts:227](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L227) |
+| <a id="property-context-2"></a> `context`         | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | [conformance/src/columns.ts:227](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L227) |
+| <a id="property-executionid-2"></a> `executionId` | `readonly` | `string`                                                             | [conformance/src/columns.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L225) |
+| <a id="property-turn-4"></a> `turn`               | `readonly` | `number`                                                             | [conformance/src/columns.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L226) |
 
 ---
 
@@ -2077,7 +2077,7 @@ Defined in: [conformance/src/runner.ts:196](https://github.com/Aicoo-Team/Shared
 
 ### RuntimeColumn
 
-Defined in: [conformance/src/columns.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L79)
+Defined in: [conformance/src/columns.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L84)
 
 One column of the manifest: an adapter occupying the delegate seat.
 
@@ -2089,8 +2089,8 @@ the kernel's guarantees should not depend on which driver is in the seat.
 
 | Property                              | Modifier   | Type     | Defined in                                                                                                                |
 | ------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-id-6"></a> `id`       | `readonly` | `string` | [conformance/src/columns.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L80) |
-| <a id="property-label-4"></a> `label` | `readonly` | `string` | [conformance/src/columns.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L81) |
+| <a id="property-id-6"></a> `id`       | `readonly` | `string` | [conformance/src/columns.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L85) |
+| <a id="property-label-4"></a> `label` | `readonly` | `string` | [conformance/src/columns.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L86) |
 
 #### Methods
 
@@ -2098,7 +2098,7 @@ the kernel's guarantees should not depend on which driver is in the seat.
 
 > **create**(`moves`, `options`): [`RuntimePlugin`](sharedos-runtime.md#runtimeplugin)
 
-Defined in: [conformance/src/columns.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L82)
+Defined in: [conformance/src/columns.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L87)
 
 ###### Parameters
 
@@ -2115,7 +2115,7 @@ Defined in: [conformance/src/columns.ts:82](https://github.com/Aicoo-Team/Shared
 
 > `optional` **limits**(`move`, `condition`): [`ColumnLimits`](#columnlimits)
 
-Defined in: [conformance/src/columns.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L92)
+Defined in: [conformance/src/columns.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L97)
 
 What this column structurally cannot do for one row under one condition.
 
@@ -2142,7 +2142,7 @@ What this column structurally cannot do for one row under one condition.
 
 > `optional` **receipts**(`move`, `turn`): readonly `object`[]
 
-Defined in: [conformance/src/columns.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L90)
+Defined in: [conformance/src/columns.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L95)
 
 Receipts for a turn, when the runtime in the seat cannot report on itself.
 
@@ -2173,7 +2173,7 @@ readonly `object`[]
 
 ### RuntimeColumnOptions
 
-Defined in: [conformance/src/columns.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L65)
+Defined in: [conformance/src/columns.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L70)
 
 #### Extended by
 
@@ -2183,23 +2183,23 @@ Defined in: [conformance/src/columns.ts:65](https://github.com/Aicoo-Team/Shared
 
 | Property                                          | Modifier   | Type     | Description                                             | Defined in                                                                                                                |
 | ------------------------------------------------- | ---------- | -------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-executionid-3"></a> `executionId` | `readonly` | `string` | The execution identifier of that turn.                  | [conformance/src/columns.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L69) |
-| <a id="property-turn-5"></a> `turn`               | `readonly` | `number` | Which turn of the case this plugin instance is running. | [conformance/src/columns.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L67) |
+| <a id="property-executionid-3"></a> `executionId` | `readonly` | `string` | The execution identifier of that turn.                  | [conformance/src/columns.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L74) |
+| <a id="property-turn-5"></a> `turn`               | `readonly` | `number` | Which turn of the case this plugin instance is running. | [conformance/src/columns.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L72) |
 
 ---
 
 ### ScriptedColumnOptions
 
-Defined in: [conformance/src/columns.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L147)
+Defined in: [conformance/src/columns.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L146)
 
 #### Properties
 
 | Property                                    | Modifier   | Type                                                            | Defined in                                                                                                                  |
 | ------------------------------------------- | ---------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-id-7"></a> `id`             | `readonly` | `string`                                                        | [conformance/src/columns.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L148) |
-| <a id="property-label-5"></a> `label`       | `readonly` | `string`                                                        | [conformance/src/columns.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L149) |
-| <a id="property-protocol-1"></a> `protocol` | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)       | [conformance/src/columns.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L150) |
-| <a id="property-writer"></a> `writer`       | `readonly` | [`HarnessFrameWriter`](sharedos-adapters.md#harnessframewriter) | [conformance/src/columns.ts:151](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L151) |
+| <a id="property-id-7"></a> `id`             | `readonly` | `string`                                                        | [conformance/src/columns.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L147) |
+| <a id="property-label-5"></a> `label`       | `readonly` | `string`                                                        | [conformance/src/columns.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L148) |
+| <a id="property-protocol-1"></a> `protocol` | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)       | [conformance/src/columns.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L149) |
+| <a id="property-writer"></a> `writer`       | `readonly` | [`HarnessFrameWriter`](sharedos-adapters.md#harnessframewriter) | [conformance/src/columns.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L150) |
 
 ---
 
@@ -2682,7 +2682,7 @@ The metadata key the terminal report is returned under.
 
 > `const` **APPEND\_TOOL**: `"files.append"` = `"files.append"`
 
-Defined in: [conformance/src/world.ts:105](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L105)
+Defined in: [conformance/src/world.ts:112](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L112)
 
 ---
 
@@ -2861,7 +2861,7 @@ of the wrong thing.
 
 > `const` **BROKER\_ACTION**: `"search"` = `"search"`
 
-Defined in: [conformance/src/world.ts:188](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L188)
+Defined in: [conformance/src/world.ts:195](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L195)
 
 ---
 
@@ -2869,7 +2869,7 @@ Defined in: [conformance/src/world.ts:188](https://github.com/Aicoo-Team/SharedO
 
 > `const` **BROKER\_GRANT**: `"grant-broker-search"` = `"grant-broker-search"`
 
-Defined in: [conformance/src/world.ts:194](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L194)
+Defined in: [conformance/src/world.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L201)
 
 ---
 
@@ -2877,7 +2877,7 @@ Defined in: [conformance/src/world.ts:194](https://github.com/Aicoo-Team/SharedO
 
 > `const` **BROKER\_GRANTED\_PATH**: readonly \[`"Handbook"`\]
 
-Defined in: [conformance/src/world.ts:190](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L190)
+Defined in: [conformance/src/world.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L197)
 
 The page tree the brokered grant covers, and one page inside it.
 
@@ -2887,7 +2887,7 @@ The page tree the brokered grant covers, and one page inside it.
 
 > `const` **BROKER\_IN\_SCOPE\_PAGE**: readonly \[`"Handbook"`, `"onboarding"`\]
 
-Defined in: [conformance/src/world.ts:191](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L191)
+Defined in: [conformance/src/world.ts:198](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L198)
 
 ---
 
@@ -2895,7 +2895,7 @@ Defined in: [conformance/src/world.ts:191](https://github.com/Aicoo-Team/SharedO
 
 > `const` **BROKER\_NAMESPACE**: `"notion"` = `"notion"`
 
-Defined in: [conformance/src/world.ts:185](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L185)
+Defined in: [conformance/src/world.ts:192](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L192)
 
 A brokered external MCP server, and the one tool it publishes.
 
@@ -2922,7 +2922,7 @@ enablement switch and is always attributable to authority.
 
 > `const` **BROKER\_OUT\_OF\_SCOPE\_PAGE**: readonly \[`"Payroll"`, `"salaries"`\]
 
-Defined in: [conformance/src/world.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L193)
+Defined in: [conformance/src/world.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L200)
 
 A page of the same brokered server that no grant reaches.
 
@@ -2932,7 +2932,7 @@ A page of the same brokered server that no grant reaches.
 
 > `const` **BROKER\_PROVIDER\_ID**: `"notion-mcp"` = `"notion-mcp"`
 
-Defined in: [conformance/src/world.ts:186](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L186)
+Defined in: [conformance/src/world.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L193)
 
 ---
 
@@ -2940,7 +2940,7 @@ Defined in: [conformance/src/world.ts:186](https://github.com/Aicoo-Team/SharedO
 
 > `const` **BROKER\_SEARCH\_TOOL**: `"notion.search"` = `"notion.search"`
 
-Defined in: [conformance/src/world.ts:187](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L187)
+Defined in: [conformance/src/world.ts:194](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L194)
 
 ---
 
@@ -2976,7 +2976,7 @@ Defined in: [conformance/src/suite.ts:73](https://github.com/Aicoo-Team/SharedOS
 
 > `const` **CARRIER\_TOOL**: `"files.open"` = `"files.open"`
 
-Defined in: [conformance/src/world.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L128)
+Defined in: [conformance/src/world.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L135)
 
 A read tool that carries whatever else the caller sent.
 
@@ -2998,7 +2998,7 @@ reach another world as a side effect.
 
 > `const` **CLAUDE\_CODE\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:204](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L204)
+Defined in: [conformance/src/columns.ts:203](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L203)
 
 ---
 
@@ -3006,7 +3006,7 @@ Defined in: [conformance/src/columns.ts:204](https://github.com/Aicoo-Team/Share
 
 > `const` **CODEX\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L197)
+Defined in: [conformance/src/columns.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L196)
 
 ---
 
@@ -3014,7 +3014,7 @@ Defined in: [conformance/src/columns.ts:197](https://github.com/Aicoo-Team/Share
 
 > `const` **CONFORMANCE\_AGENT**: `object`
 
-Defined in: [conformance/src/world.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L73)
+Defined in: [conformance/src/world.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L80)
 
 #### Type Declaration
 
@@ -3032,7 +3032,7 @@ Defined in: [conformance/src/world.ts:73](https://github.com/Aicoo-Team/SharedOS
 
 > `const` **CONFORMANCE\_NAMESPACE\_ID**: `"world-conformance"` = `"world-conformance"`
 
-Defined in: [conformance/src/world.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L38)
+Defined in: [conformance/src/world.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L45)
 
 The world every canonical conformance move is declared against.
 
@@ -3042,7 +3042,7 @@ The world every canonical conformance move is declared against.
 
 > `const` **CONFORMANCE\_NOW**: `"2026-08-18T09:00:00.000Z"` = `"2026-08-18T09:00:00.000Z"`
 
-Defined in: [conformance/src/world.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L41)
+Defined in: [conformance/src/world.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L48)
 
 ---
 
@@ -3050,7 +3050,7 @@ Defined in: [conformance/src/world.ts:41](https://github.com/Aicoo-Team/SharedOS
 
 > `const` **CONFORMANCE\_ORCHESTRATOR**: `object`
 
-Defined in: [conformance/src/world.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L69)
+Defined in: [conformance/src/world.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L76)
 
 The intermediate delegate. Authority reaches the agent as owner -> orchestrator
 -> agent, so revoking the owner's grant to the orchestrator is a real ancestor
@@ -3072,7 +3072,7 @@ revocation rather than a direct one.
 
 > `const` **CONFORMANCE\_OWNER**: [`Address`](sharedos-contracts.md#address)
 
-Defined in: [conformance/src/world.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L63)
+Defined in: [conformance/src/world.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L70)
 
 ---
 
@@ -3080,7 +3080,7 @@ Defined in: [conformance/src/world.ts:63](https://github.com/Aicoo-Team/SharedOS
 
 > `const` **CONFORMANCE\_PURPOSE**: `"conformance-probe"` = `"conformance-probe"`
 
-Defined in: [conformance/src/world.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L39)
+Defined in: [conformance/src/world.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L46)
 
 ---
 
@@ -3088,7 +3088,7 @@ Defined in: [conformance/src/world.ts:39](https://github.com/Aicoo-Team/SharedOS
 
 > `const` **CONFORMANCE\_STEP\_MS**: `1000` = `1000`
 
-Defined in: [conformance/src/world.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L50)
+Defined in: [conformance/src/world.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L57)
 
 How far a world's clock moves per mediated operation, when it moves at all.
 
@@ -3102,7 +3102,7 @@ minute of [CONFORMANCE\_NOW](#conformance_now).
 
 > `const` **CONFORMANCE\_TRACE\_ID**: `"trace-conformance"` = `"trace-conformance"`
 
-Defined in: [conformance/src/world.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L40)
+Defined in: [conformance/src/world.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L47)
 
 ---
 
@@ -3128,7 +3128,7 @@ Defined in: [conformance/src/record.ts:225](https://github.com/Aicoo-Team/Shared
 
 > `const` **CREATE\_TOOL**: `"files.create"` = `"files.create"`
 
-Defined in: [conformance/src/world.ts:103](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L103)
+Defined in: [conformance/src/world.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L110)
 
 ---
 
@@ -3136,7 +3136,7 @@ Defined in: [conformance/src/world.ts:103](https://github.com/Aicoo-Team/SharedO
 
 > `const` **CROSSING\_TOOL**: `"files.fetch"` = `"files.fetch"`
 
-Defined in: [conformance/src/world.ts:141](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L141)
+Defined in: [conformance/src/world.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L148)
 
 A read tool that resolves a caller-supplied owner.
 
@@ -3165,7 +3165,7 @@ One authorization decision, with the authority state it was made against.
 
 > `const` **DEEPSEEK\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L211)
+Defined in: [conformance/src/columns.ts:210](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L210)
 
 ---
 
@@ -3189,7 +3189,7 @@ column is a separate claim and is not made here.
 
 > `const` **DELETE\_TOOL**: `"files.delete"` = `"files.delete"`
 
-Defined in: [conformance/src/world.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L106)
+Defined in: [conformance/src/world.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L113)
 
 ---
 
@@ -3197,9 +3197,27 @@ Defined in: [conformance/src/world.ts:106](https://github.com/Aicoo-Team/SharedO
 
 > `const` **EMBEDDED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L96)
+Defined in: [conformance/src/columns.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L101)
 
 The in-process column: the SharedOS executor driving the scripted adversary.
+
+---
+
+### ESCALATION\_GRANT
+
+> `const` **ESCALATION\_GRANT**: `"grant-escalation"` = `"grant-escalation"`
+
+Defined in: [conformance/src/world.ts:319](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L319)
+
+Authority to end a turn by asking a human to decide.
+
+Escalation is published as a tool and is therefore permission-filtered like
+one: an agent holding no grant over it does not see it in the catalogue, and
+cannot escalate. That is the honest arrangement -- asking for a human is an
+affordance a host grants, not a capability every runtime has by existing --
+and it is why this grant is issued in the baseline world rather than armed by
+a condition. The escalation row would otherwise be testing whether the tool
+was visible rather than whether SharedOS records the request.
 
 ---
 
@@ -3207,7 +3225,7 @@ The in-process column: the SharedOS executor driving the scripted adversary.
 
 > `const` **ESCAPING\_TOOL**: `"files.index"` = `"files.index"`
 
-Defined in: [conformance/src/world.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L152)
+Defined in: [conformance/src/world.ts:159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L159)
 
 A tool that resolves a requirement outside the ceiling it declared.
 
@@ -3222,7 +3240,7 @@ stopped misbehaving.
 
 > `const` **EXECUTION\_RESOURCE\_NAMESPACE**: `"sharedos.execution"` = `"sharedos.execution"`
 
-Defined in: [conformance/src/world.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L82)
+Defined in: [conformance/src/world.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L89)
 
 ---
 
@@ -3268,7 +3286,7 @@ produce one `worldHash` before their agent results are comparable at all.
 
 > `const` **FILES\_ADMIN\_NAMESPACE**: `"files.admin"` = `"files.admin"`
 
-Defined in: [conformance/src/world.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L79)
+Defined in: [conformance/src/world.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L86)
 
 ---
 
@@ -3276,7 +3294,7 @@ Defined in: [conformance/src/world.ts:79](https://github.com/Aicoo-Team/SharedOS
 
 > `const` **FILES\_NAMESPACE**: `"files"` = `"files"`
 
-Defined in: [conformance/src/world.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L78)
+Defined in: [conformance/src/world.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L85)
 
 ---
 
@@ -3299,7 +3317,7 @@ here; everything else is filled in from what the runtime legitimately knows.
 
 > `const` **GREP\_TOOL**: `"files.grep"` = `"files.grep"`
 
-Defined in: [conformance/src/world.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L102)
+Defined in: [conformance/src/world.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L109)
 
 ---
 
@@ -3317,7 +3335,7 @@ Version of the grading rules, so a manifest names what produced it.
 
 > `const` **LEDGER\_FILE**: readonly \[`"Workspace"`, `"ledger"`, `"entry.md"`\]
 
-Defined in: [conformance/src/world.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L202)
+Defined in: [conformance/src/world.ts:209](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L209)
 
 ---
 
@@ -3325,7 +3343,7 @@ Defined in: [conformance/src/world.ts:202](https://github.com/Aicoo-Team/SharedO
 
 > `const` **LEDGER\_GRANT**: `"grant-ledger"` = `"grant-ledger"`
 
-Defined in: [conformance/src/world.ts:296](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L296)
+Defined in: [conformance/src/world.ts:303](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L303)
 
 A single-use write grant, armed only by the rows about bounded use.
 
@@ -3335,7 +3353,7 @@ A single-use write grant, armed only by the rows about bounded use.
 
 > `const` **LEDGER\_PATH**: readonly \[`"Workspace"`, `"ledger"`\]
 
-Defined in: [conformance/src/world.ts:199](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L199)
+Defined in: [conformance/src/world.ts:206](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L206)
 
 ---
 
@@ -3343,7 +3361,7 @@ Defined in: [conformance/src/world.ts:199](https://github.com/Aicoo-Team/SharedO
 
 > `const` **LIST\_TOOL**: `"files.list"` = `"files.list"`
 
-Defined in: [conformance/src/world.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L98)
+Defined in: [conformance/src/world.ts:105](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L105)
 
 The shipped file vocabulary, in the three surfaces `docs/host-integration.md`
 publishes it as.
@@ -3364,7 +3382,7 @@ distinctions are the ones the product exists to make.
 
 > `const` **MESSAGE\_GRANT**: `"grant-message"` = `"grant-message"`
 
-Defined in: [conformance/src/world.ts:268](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L268)
+Defined in: [conformance/src/world.ts:275](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L275)
 
 ---
 
@@ -3372,7 +3390,7 @@ Defined in: [conformance/src/world.ts:268](https://github.com/Aicoo-Team/SharedO
 
 > `const` **MESSAGES\_NAMESPACE**: `"messages"` = `"messages"`
 
-Defined in: [conformance/src/world.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L80)
+Defined in: [conformance/src/world.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L87)
 
 ---
 
@@ -3380,7 +3398,7 @@ Defined in: [conformance/src/world.ts:80](https://github.com/Aicoo-Team/SharedOS
 
 > `const` **MESSAGING\_RESOURCE\_NAMESPACE**: `"sharedos.messaging"` = `"sharedos.messaging"`
 
-Defined in: [conformance/src/world.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L81)
+Defined in: [conformance/src/world.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L88)
 
 ---
 
@@ -3388,7 +3406,7 @@ Defined in: [conformance/src/world.ts:81](https://github.com/Aicoo-Team/SharedOS
 
 > `const` **MISMATCHED\_TOOL**: `"files.describe"` = `"files.describe"`
 
-Defined in: [conformance/src/world.ts:161](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L161)
+Defined in: [conformance/src/world.ts:168](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L168)
 
 A tool whose handler answers a call the kernel never made.
 
@@ -3403,7 +3421,7 @@ shipped tool that does not behave like the shipped one.
 
 > `const` **MUTATION\_ACTIONS**: readonly \[`"create"`, `"replace"`, `"append"`, `"delete"`\]
 
-Defined in: [conformance/src/world.ts:221](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L221)
+Defined in: [conformance/src/world.ts:228](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L228)
 
 The shipped mutation surface.
 
@@ -3433,7 +3451,7 @@ stream. A record that read audit alone would under-report it.
 
 > `const` **OUT\_OF\_CEILING\_FILE**: readonly \[`"Vault"`, `"secrets.md"`\]
 
-Defined in: [conformance/src/world.ts:204](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L204)
+Defined in: [conformance/src/world.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L211)
 
 Outside every path the world's tools declare, and outside every grant.
 
@@ -3443,7 +3461,7 @@ Outside every path the world's tools declare, and outside every grant.
 
 > `const` **OVERBROAD\_GRANT**: `"grant-overbroad"` = `"grant-overbroad"`
 
-Defined in: [conformance/src/world.ts:298](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L298)
+Defined in: [conformance/src/world.ts:305](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L305)
 
 A grant claiming more than its parent holds, armed only by the row about it.
 
@@ -3453,7 +3471,7 @@ A grant claiming more than its parent holds, armed only by the row about it.
 
 > `const` **PI\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:218](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L218)
+Defined in: [conformance/src/columns.ts:217](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L217)
 
 ---
 
@@ -3461,7 +3479,7 @@ Defined in: [conformance/src/columns.ts:218](https://github.com/Aicoo-Team/Share
 
 > `const` **READ\_ACTIONS**: readonly \[`"list"`, `"stat"`, `"read"`, `"search"`, `"grep"`\]
 
-Defined in: [conformance/src/world.ts:212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L212)
+Defined in: [conformance/src/world.ts:219](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L219)
 
 The shipped read surface. Five actions, none of which changes anything.
 
@@ -3474,7 +3492,7 @@ genuinely has" has the same reach it had under the old single `read`.
 
 > `const` **READ\_GRANT**: `"grant-read"` = `"grant-read"`
 
-Defined in: [conformance/src/world.ts:266](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L266)
+Defined in: [conformance/src/world.ts:273](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L273)
 
 ---
 
@@ -3482,7 +3500,7 @@ Defined in: [conformance/src/world.ts:266](https://github.com/Aicoo-Team/SharedO
 
 > `const` **READ\_ONLY\_FILE**: readonly \[`"Workspace"`, `"policy.md"`\]
 
-Defined in: [conformance/src/world.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L200)
+Defined in: [conformance/src/world.ts:207](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L207)
 
 ---
 
@@ -3490,7 +3508,7 @@ Defined in: [conformance/src/world.ts:200](https://github.com/Aicoo-Team/SharedO
 
 > `const` **READ\_TOOL**: `"files.read"` = `"files.read"`
 
-Defined in: [conformance/src/world.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L100)
+Defined in: [conformance/src/world.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L107)
 
 ---
 
@@ -3498,7 +3516,7 @@ Defined in: [conformance/src/world.ts:100](https://github.com/Aicoo-Team/SharedO
 
 > `const` **REPLACE\_TOOL**: `"files.replace"` = `"files.replace"`
 
-Defined in: [conformance/src/world.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L104)
+Defined in: [conformance/src/world.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L111)
 
 ---
 
@@ -3506,7 +3524,7 @@ Defined in: [conformance/src/world.ts:104](https://github.com/Aicoo-Team/SharedO
 
 > `const` **RESTORE\_ACTION**: `"snapshot:restore"` = `"snapshot:restore"`
 
-Defined in: [conformance/src/world.ts:242](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L242)
+Defined in: [conformance/src/world.ts:249](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L249)
 
 The one recovery action that does roll something back.
 
@@ -3524,7 +3542,7 @@ read the scope gate, without either row's world contaminating the other's.
 
 > `const` **RESTORE\_GRANT**: `"grant-restore"` = `"grant-restore"`
 
-Defined in: [conformance/src/world.ts:279](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L279)
+Defined in: [conformance/src/world.ts:286](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L286)
 
 Rollback authority over the scratch folder alone.
 
@@ -3539,7 +3557,17 @@ scratch, and a rollback aimed anywhere else is refused by the kernel.
 
 > `const` **ROOT\_BROKER\_GRANT**: `"grant-root-broker-search"` = `"grant-root-broker-search"`
 
-Defined in: [conformance/src/world.ts:195](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L195)
+Defined in: [conformance/src/world.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L202)
+
+---
+
+### ROOT\_ESCALATION\_GRANT
+
+> `const` **ROOT\_ESCALATION\_GRANT**: `"grant-root-escalation"` = `"grant-root-escalation"`
+
+Defined in: [conformance/src/world.ts:307](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L307)
+
+The ancestor of the authority to ask a human to decide.
 
 ---
 
@@ -3547,7 +3575,7 @@ Defined in: [conformance/src/world.ts:195](https://github.com/Aicoo-Team/SharedO
 
 > `const` **ROOT\_EXECUTION\_GRANT**: `"grant-root-execution"` = `"grant-root-execution"`
 
-Defined in: [conformance/src/world.ts:251](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L251)
+Defined in: [conformance/src/world.ts:258](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L258)
 
 ---
 
@@ -3555,7 +3583,7 @@ Defined in: [conformance/src/world.ts:251](https://github.com/Aicoo-Team/SharedO
 
 > `const` **ROOT\_FILES\_GRANT**: `"grant-root-files"` = `"grant-root-files"`
 
-Defined in: [conformance/src/world.ts:248](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L248)
+Defined in: [conformance/src/world.ts:255](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L255)
 
 Grant identifiers the trusted fixture can arm conditions against.
 
@@ -3565,7 +3593,7 @@ Grant identifiers the trusted fixture can arm conditions against.
 
 > `const` **ROOT\_LEDGER\_GRANT**: `"grant-root-ledger"` = `"grant-root-ledger"`
 
-Defined in: [conformance/src/world.ts:250](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L250)
+Defined in: [conformance/src/world.ts:257](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L257)
 
 ---
 
@@ -3573,7 +3601,7 @@ Defined in: [conformance/src/world.ts:250](https://github.com/Aicoo-Team/SharedO
 
 > `const` **ROOT\_MESSAGING\_GRANT**: `"grant-root-messaging"` = `"grant-root-messaging"`
 
-Defined in: [conformance/src/world.ts:252](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L252)
+Defined in: [conformance/src/world.ts:259](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L259)
 
 ---
 
@@ -3581,7 +3609,7 @@ Defined in: [conformance/src/world.ts:252](https://github.com/Aicoo-Team/SharedO
 
 > `const` **ROOT\_RESTORE\_GRANT**: `"grant-root-restore"` = `"grant-root-restore"`
 
-Defined in: [conformance/src/world.ts:256](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L256)
+Defined in: [conformance/src/world.ts:263](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L263)
 
 The ancestor of rollback authority. Issued only when a condition arms it.
 
@@ -3591,7 +3619,7 @@ The ancestor of rollback authority. Issued only when a condition arms it.
 
 > `const` **ROOT\_SCRATCH\_GRANT**: `"grant-root-scratch"` = `"grant-root-scratch"`
 
-Defined in: [conformance/src/world.ts:249](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L249)
+Defined in: [conformance/src/world.ts:256](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L256)
 
 ---
 
@@ -3599,7 +3627,7 @@ Defined in: [conformance/src/world.ts:249](https://github.com/Aicoo-Team/SharedO
 
 > `const` **ROOT\_SEALED\_GRANT**: `"grant-root-sealed"` = `"grant-root-sealed"`
 
-Defined in: [conformance/src/world.ts:264](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L264)
+Defined in: [conformance/src/world.ts:271](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L271)
 
 The ancestor of the authority that reaches the sealed tool.
 
@@ -3613,7 +3641,7 @@ authority. See [SEALED\_GRANT](#sealed_grant).
 
 > `const` **ROOT\_SNAPSHOT\_GRANT**: `"grant-root-snapshot"` = `"grant-root-snapshot"`
 
-Defined in: [conformance/src/world.ts:254](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L254)
+Defined in: [conformance/src/world.ts:261](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L261)
 
 The ancestor of the two harmless snapshot actions.
 
@@ -3623,7 +3651,7 @@ The ancestor of the two harmless snapshot actions.
 
 > `const` **SCRATCH\_GRANT**: `"grant-scratch"` = `"grant-scratch"`
 
-Defined in: [conformance/src/world.ts:267](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L267)
+Defined in: [conformance/src/world.ts:274](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L274)
 
 ---
 
@@ -3631,7 +3659,7 @@ Defined in: [conformance/src/world.ts:267](https://github.com/Aicoo-Team/SharedO
 
 > `const` **SEALED\_GRANT**: `"grant-sealed"` = `"grant-sealed"`
 
-Defined in: [conformance/src/world.ts:294](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L294)
+Defined in: [conformance/src/world.ts:301](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L301)
 
 Authority for the sealed tool's exact requirement, held and never usable.
 
@@ -3652,7 +3680,7 @@ world, so holding it cannot widen any other row.
 
 > `const` **SEALED\_TOOL**: `"files.purge"` = `"files.purge"`
 
-Defined in: [conformance/src/world.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L143)
+Defined in: [conformance/src/world.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L150)
 
 Registered by the host, but in a namespace this context never enables.
 
@@ -3662,7 +3690,7 @@ Registered by the host, but in a namespace this context never enables.
 
 > `const` **SEARCH\_TOOL**: `"files.search"` = `"files.search"`
 
-Defined in: [conformance/src/world.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L101)
+Defined in: [conformance/src/world.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L108)
 
 ---
 
@@ -3670,7 +3698,7 @@ Defined in: [conformance/src/world.ts:101](https://github.com/Aicoo-Team/SharedO
 
 > `const` **SEEDED\_SNAPSHOT\_ID**: `"snapshot-1"` = `"snapshot-1"`
 
-Defined in: [conformance/src/world.ts:245](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L245)
+Defined in: [conformance/src/world.ts:252](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L252)
 
 The snapshot every seeded file already has, so a rollback has something to name.
 
@@ -3680,7 +3708,7 @@ The snapshot every seeded file already has, so a rollback has something to name.
 
 > `const` **SEND\_TOOL**: `"messages.request"` = `MESSAGE_REQUEST_TOOL_NAME`
 
-Defined in: [conformance/src/world.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L111)
+Defined in: [conformance/src/world.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L118)
 
 ---
 
@@ -3702,7 +3730,7 @@ ran.
 
 > `const` **SNAPSHOT\_ACTIONS**: readonly \[`"snapshot:create"`, `"snapshot:list"`\]
 
-Defined in: [conformance/src/world.ts:230](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L230)
+Defined in: [conformance/src/world.ts:237](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L237)
 
 The two recovery actions that roll nothing back.
 
@@ -3717,7 +3745,7 @@ harmless snapshot actions, and still cannot restore anything.
 
 > `const` **SNAPSHOT\_CREATE\_TOOL**: `"files.snapshot.create"` = `"files.snapshot.create"`
 
-Defined in: [conformance/src/world.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L107)
+Defined in: [conformance/src/world.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L114)
 
 ---
 
@@ -3725,7 +3753,7 @@ Defined in: [conformance/src/world.ts:107](https://github.com/Aicoo-Team/SharedO
 
 > `const` **SNAPSHOT\_GRANT**: `"grant-snapshot"` = `"grant-snapshot"`
 
-Defined in: [conformance/src/world.ts:270](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L270)
+Defined in: [conformance/src/world.ts:277](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L277)
 
 Workspace-wide authority for `snapshot:create` and `snapshot:list`, and nothing else.
 
@@ -3735,7 +3763,7 @@ Workspace-wide authority for `snapshot:create` and `snapshot:list`, and nothing 
 
 > `const` **SNAPSHOT\_LIST\_TOOL**: `"files.snapshot.list"` = `"files.snapshot.list"`
 
-Defined in: [conformance/src/world.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L108)
+Defined in: [conformance/src/world.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L115)
 
 ---
 
@@ -3743,7 +3771,7 @@ Defined in: [conformance/src/world.ts:108](https://github.com/Aicoo-Team/SharedO
 
 > `const` **SNAPSHOT\_RESTORE\_TOOL**: `"files.snapshot.restore"` = `"files.snapshot.restore"`
 
-Defined in: [conformance/src/world.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L109)
+Defined in: [conformance/src/world.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L116)
 
 ---
 
@@ -3751,7 +3779,7 @@ Defined in: [conformance/src/world.ts:109](https://github.com/Aicoo-Team/SharedO
 
 > `const` **STAT\_TOOL**: `"files.stat"` = `"files.stat"`
 
-Defined in: [conformance/src/world.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L99)
+Defined in: [conformance/src/world.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L106)
 
 ---
 
@@ -3800,7 +3828,7 @@ The four scripted adapters, paired with the frames that drive them.
 
 > `const` **TURN\_GRANT**: `"grant-turn"` = `"grant-turn"`
 
-Defined in: [conformance/src/world.ts:265](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L265)
+Defined in: [conformance/src/world.ts:272](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L272)
 
 ---
 
@@ -3808,7 +3836,7 @@ Defined in: [conformance/src/world.ts:265](https://github.com/Aicoo-Team/SharedO
 
 > `const` **UNREGISTERED\_TOOL**: `"admin.grant.issue"` = `"admin.grant.issue"`
 
-Defined in: [conformance/src/world.ts:163](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L163)
+Defined in: [conformance/src/world.ts:170](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L170)
 
 Registered nowhere. A plausible control-plane name for an attacker to guess.
 
@@ -3818,7 +3846,7 @@ Registered nowhere. A plausible control-plane name for an attacker to guess.
 
 > `const` **WORKSPACE\_PATH**: readonly \[`"Workspace"`\]
 
-Defined in: [conformance/src/world.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L197)
+Defined in: [conformance/src/world.ts:204](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L204)
 
 ---
 
@@ -3826,7 +3854,7 @@ Defined in: [conformance/src/world.ts:197](https://github.com/Aicoo-Team/SharedO
 
 > `const` **WRITABLE\_FILE**: readonly \[`"Workspace"`, `"scratch"`, `"draft.md"`\]
 
-Defined in: [conformance/src/world.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L201)
+Defined in: [conformance/src/world.ts:208](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L208)
 
 ---
 
@@ -3834,7 +3862,7 @@ Defined in: [conformance/src/world.ts:201](https://github.com/Aicoo-Team/SharedO
 
 > `const` **WRITABLE\_PATH**: readonly \[`"Workspace"`, `"scratch"`\]
 
-Defined in: [conformance/src/world.ts:198](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L198)
+Defined in: [conformance/src/world.ts:205](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L205)
 
 ## Functions
 
@@ -3842,7 +3870,7 @@ Defined in: [conformance/src/world.ts:198](https://github.com/Aicoo-Team/SharedO
 
 > **agentGrants**(): readonly `object`[]
 
-Defined in: [conformance/src/world.ts:396](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L396)
+Defined in: [conformance/src/world.ts:424](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L424)
 
 The acting agent's authority, attenuated from [rootGrants](#rootgrants).
 
@@ -4453,7 +4481,7 @@ readonly `object`[]
 
 > **boundedGrants**(): readonly `object`[]
 
-Defined in: [conformance/src/world.ts:458](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L458)
+Defined in: [conformance/src/world.ts:494](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L494)
 
 A single-use write grant over the ledger, armed by the rows about bounded use.
 
@@ -4473,7 +4501,7 @@ readonly `object`[]
 
 > **brokerGrants**(): readonly `object`[]
 
-Defined in: [conformance/src/world.ts:564](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L564)
+Defined in: [conformance/src/world.ts:600](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L600)
 
 Search authority over one page tree of the brokered server, and nothing wider.
 
@@ -4494,7 +4522,7 @@ readonly `object`[]
 
 > **brokerRootGrants**(): readonly `object`[]
 
-Defined in: [conformance/src/world.ts:580](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L580)
+Defined in: [conformance/src/world.ts:616](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L616)
 
 The ancestor [brokerGrants](#brokergrants) is attenuated from, armed with it.
 
@@ -4508,7 +4536,7 @@ readonly `object`[]
 
 > **brokerToolDefinition**(): `object`
 
-Defined in: [conformance/src/world.ts:1063](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1063)
+Defined in: [conformance/src/world.ts:1099](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1099)
 
 What the broker publishes, declared once.
 
@@ -4953,7 +4981,7 @@ invalidates any comparison of agent behaviour between them.
 
 > **conformanceInstant**(`operations`): `string`
 
-Defined in: [conformance/src/world.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L59)
+Defined in: [conformance/src/world.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L66)
 
 The instant a world's clock reads after the given number of operations.
 
@@ -4977,7 +5005,7 @@ that has to be kept in step with one.
 
 > **conformanceRuntimeContext**(`turn?`): [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext)
 
-Defined in: [conformance/src/world.ts:614](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L614)
+Defined in: [conformance/src/world.ts:650](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L650)
 
 The context a runtime plugin sees for one turn of the canonical world.
 
@@ -5001,7 +5029,7 @@ authority, because that is all a runtime is ever given.
 
 > **conformanceTraceId**(`turn?`): `string`
 
-Defined in: [conformance/src/world.ts:603](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L603)
+Defined in: [conformance/src/world.ts:639](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L639)
 
 The trace one turn of a case runs under.
 
@@ -5047,7 +5075,7 @@ Content identifier for any JSON-safe value, stable across key ordering.
 
 > **createConformanceWorld**(`options?`, `instrumentation?`): [`ConformanceWorld`](#conformanceworld)
 
-Defined in: [conformance/src/world.ts:1522](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1522)
+Defined in: [conformance/src/world.ts:1558](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L1558)
 
 #### Parameters
 
@@ -5066,12 +5094,14 @@ Defined in: [conformance/src/world.ts:1522](https://github.com/Aicoo-Team/Shared
 
 > **harnessLimits**(`move`, `condition`): [`ColumnLimits`](#columnlimits)
 
-Defined in: [conformance/src/columns.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L118)
+Defined in: [conformance/src/columns.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L125)
 
 Attempts a transcript-driven vendor harness cannot issue.
 
 Two shapes are out of reach, and both are properties of being a harness
-rather than of being recorded:
+rather than of being recorded. Escalation is no longer one of them: it is a
+catalogued tool now, so a driven harness ends the turn by calling it and the
+row is graded rather than declared unavailable.
 
 - An inspection attempt reads the surfaces the runtime was handed. A harness
   speaks tool calls over a wire and never sees a `RuntimeTurnRequest` or a
@@ -5189,7 +5219,7 @@ re-graded without re-running anything.
 
 > **liveColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:470](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L470)
+Defined in: [conformance/src/columns.ts:490](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L490)
 
 A vendor adapter driven by the vendor's own CLI, over the real wire.
 
@@ -5221,7 +5251,7 @@ something that did not happen.
 
 > **liveReceiptsFromRecord**(`move`, `turn`): readonly `object`[]
 
-Defined in: [conformance/src/columns.ts:653](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L653)
+Defined in: [conformance/src/columns.ts:668](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L668)
 
 Recover what a live turn attempted, correlating on the call rather than its id.
 
@@ -5271,7 +5301,7 @@ readonly `object`[]
 
 > **mcpColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:368](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L368)
+Defined in: [conformance/src/columns.ts:382](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L382)
 
 A vendor CLI running natively, against the SharedOS catalogue over MCP.
 
@@ -5309,15 +5339,21 @@ make the cell green would be measuring the prompt rather than the kernel.
 
 > **mcpHarnessLimits**(`move`, `condition`): [`ColumnLimits`](#columnlimits)
 
-Defined in: [conformance/src/columns.ts:414](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L414)
+Defined in: [conformance/src/columns.ts:434](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L434)
 
 What a natively-looping MCP harness cannot be tested on, and why.
 
 Three kinds, and they are not the same kind of claim.
 
-Two are structural facts about being a harness, shared with a driven one: a
-harness speaks tool calls over a wire and is never handed a `RuntimeHost` to
-enumerate, and no vendor frame means "ask a human to decide".
+Two are structural facts about being a harness. One is shared with a driven
+one: a harness speaks tool calls over a wire and is never handed a
+`RuntimeHost` to enumerate. The other is now this column's alone. Escalation
+is a catalogued tool, and a driven harness ends its turn by calling it --
+but on this path tool calls leave over MCP rather than over the driver's
+decision channel, so a call to the affordance arrives at `McpToolServer` and
+is answered by the kernel instead of terminating the turn. The affordance
+exists here and is visible in the served catalogue; what is missing is a way
+for a call to it to become the turn's ending.
 
 The third is structural too but belongs to the _client_, not to SharedOS. An
 attempt naming a tool no published catalogue contains is refused by the CLI's
@@ -5363,7 +5399,7 @@ claims an answer for it.
 
 > **modelColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:598](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L598)
+Defined in: [conformance/src/columns.ts:613](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L613)
 
 #### Parameters
 
@@ -5381,7 +5417,7 @@ Defined in: [conformance/src/columns.ts:598](https://github.com/Aicoo-Team/Share
 
 > **modelLimits**(`move`, `condition`): [`ColumnLimits`](#columnlimits)
 
-Defined in: [conformance/src/columns.ts:569](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L569)
+Defined in: [conformance/src/columns.ts:592](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L592)
 
 What a model in the delegate seat cannot be tested on, and why.
 
@@ -5393,14 +5429,17 @@ column runs inside `StandardRuntime` too, whose loop stops at `maxSteps`, so
 a call past the budget is never issued and reporting the row failed would
 blame the kernel for a limit the runtime honoured first.
 
-The other two read differently once no vendor is involved. A harness cannot
-enumerate runtime surfaces because it is on the far side of a wire; a model
-driver cannot because `AgentTurnDriver` is handed a request and returns a
-decision, and is never given the `RuntimeHost` at all. And escalation is not
-missing here for want of a vendor frame -- there is no vendor -- but because
-`AgentTurnDecision` has no escalate variant, so no driver inside the standard
-loop can declare one. That is a stronger statement than the harness version
-and belongs to SharedOS rather than to any CLI.
+The inspection reason reads differently once no vendor is involved. A harness
+cannot enumerate runtime surfaces because it is on the far side of a wire; a
+model driver cannot because `AgentTurnDriver` is handed a request and returns
+a decision, and is never given the `RuntimeHost` at all.
+
+Escalation is absent from this list on purpose. It used to be here, and the
+reason it was -- `AgentTurnDecision` could only complete or fail -- was a
+limit of SharedOS rather than of any column, which is exactly the kind of
+thing a `not_applicable` cell should never be quietly absorbing. The decision
+variant exists now and the affordance is catalogued, so the model chooses it
+or does not, and the row is graded either way.
 
 What is deliberately absent is `uncatalogued`. Nothing between this model and
 the envelope filters a tool name, so an invented one is issued and refused
@@ -5432,7 +5471,7 @@ would suppress a real result -- and in the first live run it did produce one.
 
 > **movesToPrompt**(`moves`, `options`): `string`
 
-Defined in: [conformance/src/columns.ts:750](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L750)
+Defined in: [conformance/src/columns.ts:765](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L765)
 
 The declared attempts, written out as instructions a live harness can follow.
 
@@ -5463,7 +5502,7 @@ try to paper over.
 
 > **movesToTranscript**(`writer`, `moves`, `options`): [`HarnessTranscript`](sharedos-adapters.md#harnesstranscript)
 
-Defined in: [conformance/src/columns.ts:240](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L240)
+Defined in: [conformance/src/columns.ts:239](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L239)
 
 Turn declared attempts into a scripted conversation.
 
@@ -5519,7 +5558,7 @@ How many turns a move's attempts are spread across.
 
 > **overBroadGrants**(): readonly `object`[]
 
-Defined in: [conformance/src/world.ts:485](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L485)
+Defined in: [conformance/src/world.ts:521](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L521)
 
 A grant that claims more than the grant it was delegated from.
 
@@ -5623,7 +5662,7 @@ readonly `object`[]
 
 > **receiptsFromRecord**(`move`, `turn`): readonly `object`[]
 
-Defined in: [conformance/src/columns.ts:287](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L287)
+Defined in: [conformance/src/columns.ts:301](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L301)
 
 Recover what a turn attempted from its execution record alone.
 
@@ -5708,7 +5747,7 @@ number alone cannot state.
 
 > **restoreGrants**(): readonly `object`[]
 
-Defined in: [conformance/src/world.ts:517](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L517)
+Defined in: [conformance/src/world.ts:553](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L553)
 
 Rollback authority over the scratch folder, armed by one condition.
 
@@ -5734,7 +5773,7 @@ readonly `object`[]
 
 > **restoreRootGrants**(): readonly `object`[]
 
-Defined in: [conformance/src/world.ts:540](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L540)
+Defined in: [conformance/src/world.ts:576](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L576)
 
 The ancestor [restoreGrants](#restoregrants) is attenuated from, armed with it.
 
@@ -5753,7 +5792,7 @@ readonly `object`[]
 
 > **rootGrants**(): readonly `object`[]
 
-Defined in: [conformance/src/world.ts:322](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L322)
+Defined in: [conformance/src/world.ts:343](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L343)
 
 Grants the owner issued to the orchestrator. They authorize nothing directly
 -- the acting agent is not their subject -- and exist only as the ancestors
@@ -5917,7 +5956,7 @@ number depend on how many calls the turn happened to make.
 
 > **scriptedColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:163](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L163)
+Defined in: [conformance/src/columns.ts:162](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L162)
 
 A vendor adapter driven by frames built from the move it is meant to attack.
 

@@ -14,6 +14,7 @@ import {
 } from "@aicoo/sharedos-contracts";
 
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
+import { escalationReason } from "./escalation.js";
 import type {
   RuntimeHost,
   RuntimePlugin,
@@ -27,7 +28,22 @@ export type AgentTurnInput =
 export type AgentTurnDecision =
   | { readonly type: "tool_call"; readonly call: ToolCall }
   | { readonly type: "complete"; readonly output: JsonValue; readonly metadata?: JsonObject }
-  | { readonly type: "fail"; readonly error: ProtocolError };
+  | { readonly type: "fail"; readonly error: ProtocolError }
+  /**
+   * End the turn by asking a human to decide.
+   *
+   * `RuntimeTurnOutcome` has carried an escalate variant from the start, but
+   * nothing running inside this loop could produce one: a driver could complete
+   * or fail and that was all. Escalation was therefore reachable only by a
+   * plugin that replaced the loop entirely, which is why every driven column
+   * reported the escalation row as structurally unavailable -- a limit of this
+   * type, not of any vendor.
+   *
+   * The reason is the driver's own words and is recorded verbatim. Nothing here
+   * advances the escalation: SharedOS records that a decision was asked for and
+   * grants nothing while it is pending.
+   */
+  | { readonly type: "escalate"; readonly reason: string; readonly metadata?: JsonObject };
 
 /** Backwards-compatible name for the context visible to a standard driver. */
 export type AgentVisibleContext = RuntimeVisibleContext;
@@ -113,6 +129,14 @@ export class StandardRuntime implements RuntimePlugin {
           closeOutcome = "failed";
           return decision;
         }
+        if (decision.type === "escalate") {
+          // Passed straight through, as `complete` and `fail` are. An escalated
+          // turn is a terminal outcome the envelope records and audits; it is
+          // not a failure, and reporting it as one would lose the distinction
+          // between a turn that broke and a turn that asked.
+          closeOutcome = "escalated";
+          return decision;
+        }
 
         const result = await host.invokeTool(decision.call, { step });
         nextInput = { type: "tool_result", result };
@@ -156,6 +180,22 @@ function parseAgentTurnDecision(value: unknown): AgentTurnDecision | undefined {
   if (candidate.type === "fail" && hasOnlyKeys(candidate, ["type", "error"])) {
     const error = ProtocolErrorSchema.safeParse(candidate.error);
     return error.success ? { type: "fail", error: error.data } : undefined;
+  }
+
+  if (candidate.type === "escalate" && hasOnlyKeys(candidate, ["type", "reason", "metadata"])) {
+    const reason = escalationReason(candidate.reason);
+    const metadata =
+      candidate.metadata === undefined
+        ? { success: true as const, data: undefined }
+        : JsonObjectSchema.safeParse(candidate.metadata);
+    if (reason === undefined || !metadata.success) {
+      return undefined;
+    }
+    return {
+      type: "escalate",
+      reason,
+      ...(metadata.data === undefined ? {} : { metadata: metadata.data }),
+    };
   }
 
   if (candidate.type === "complete" && hasOnlyKeys(candidate, ["type", "output", "metadata"])) {

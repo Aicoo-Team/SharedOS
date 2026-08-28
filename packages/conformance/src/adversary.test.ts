@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { ESCALATION_TOOL_NAME } from "@aicoo/sharedos-runtime";
+
 import type { ExecutionResult } from "@aicoo/sharedos-contracts";
 import { SharedOSExecutor } from "@aicoo/sharedos-runtime";
 
@@ -221,8 +223,10 @@ describe("manifest rows under the canonical world", () => {
     const report = readAdversarialReport(run.result);
 
     // The whole shipped file vocabulary except the one recovery action no grant
-    // carries, plus the fixtures, plus the message request tool. `files.purge`
-    // is registered and absent: its namespace is never enabled.
+    // carries, plus the fixtures, plus the message request tool, plus the
+    // escalation affordance -- which is catalogued and permission-filtered like
+    // any other tool and is visible here because the world grants it.
+    // `files.purge` is registered and absent: its namespace is never enabled.
     expect(report?.visibleTools).toEqual([
       APPEND_TOOL,
       CREATE_TOOL,
@@ -240,6 +244,7 @@ describe("manifest rows under the canonical world", () => {
       SNAPSHOT_LIST_TOOL,
       STAT_TOOL,
       SEND_TOOL,
+      ESCALATION_TOOL_NAME,
     ]);
     expect(report?.visibleTools).not.toContain(SNAPSHOT_RESTORE_TOOL);
     expect(report?.visibleTools).not.toContain(SEALED_TOOL);
