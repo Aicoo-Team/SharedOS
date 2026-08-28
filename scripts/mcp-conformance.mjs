@@ -352,6 +352,10 @@ for (const entry of evidence) {
     turns: 0,
     operations: 0,
     catalogHashes: new Set(),
+    // The same hashes, kept per case rather than pooled. Comparability is a
+    // claim about two columns seeing the same tools for the same case, and a
+    // pooled set cannot express it -- see the divergence check below.
+    catalogHashByCase: new Map(),
     toolCounts: new Set(),
     models: new Set(),
     outcomes: new Map(),
@@ -373,6 +377,9 @@ for (const entry of evidence) {
     if (record.system.catalogHash !== undefined) {
       seen.catalogHashes.add(record.system.catalogHash);
       seen.toolCounts.add(record.system.toolCount);
+      const forCase = seen.catalogHashByCase.get(entry.caseId) ?? new Set();
+      forCase.add(record.system.catalogHash);
+      seen.catalogHashByCase.set(entry.caseId, forCase);
     }
     if (record.system.model !== undefined) {
       seen.models.add(record.system.model);
@@ -460,11 +467,40 @@ if (sharedOsVersions.size > 1) {
   );
 }
 
-const publishedHashes = new Set([...perColumn.values()].flatMap((seen) => [...seen.catalogHashes]));
-if (publishedHashes.size > 1) {
+/**
+ * Comparability is a claim about columns, so it is checked per column.
+ *
+ * One run legitimately publishes several catalogues: the set is permission
+ * filtered per case, so a case that attaches a brokered tool serves a different
+ * hash than one that does not. Pooling every hash and counting them therefore
+ * warns on a run where every column was served exactly the same tools, which is
+ * the run the check exists to bless. What makes two columns comparable is that
+ * each saw the same catalogue *for the same case* -- so compare the sequence of
+ * hashes, case by case, and report the case where two columns first diverge.
+ */
+const signature = (hashes) =>
+  [...hashes]
+    .sort()
+    .map((hash) => `sha256:${hash.slice(0, 12)}…`)
+    .join("+");
+const catalogueByCase = new Map();
+for (const [columnId, seen] of perColumn) {
+  for (const [caseId, hashes] of seen.catalogHashByCase) {
+    const byColumn = catalogueByCase.get(caseId) ?? new Map();
+    byColumn.set(columnId, signature(hashes));
+    catalogueByCase.set(caseId, byColumn);
+  }
+}
+const divergent = [...catalogueByCase.entries()].filter(
+  ([, byColumn]) => new Set(byColumn.values()).size > 1,
+);
+if (divergent.length > 0) {
+  const [caseId, byColumn] = divergent[0];
   console.error(
-    `\nWARNING: ${publishedHashes.size} distinct catalogue hashes were served. ` +
-      "These columns were not given the same tool set and are not comparable.",
+    `\nWARNING: ${divergent.length} case(s) served a different catalogue to different ` +
+      "columns. Those columns were not given the same tool set and are not comparable. " +
+      `First: ${caseId} — ` +
+      [...byColumn.entries()].map(([columnId, sig]) => `${columnId} ${sig}`).join(", "),
   );
 }
 
@@ -503,6 +539,15 @@ await writeFile(
       catalogues: [...perColumn.entries()].map(([columnId, seen]) => ({
         columnId,
         catalogHashes: [...seen.catalogHashes].map((hash) => `sha256:${hash}`),
+        // The evidence behind the comparability check: which catalogue this
+        // column was served for each case. A pooled list cannot show that two
+        // columns saw the same tools for the same row.
+        catalogHashByCase: Object.fromEntries(
+          [...seen.catalogHashByCase].map(([caseId, hashes]) => [
+            caseId,
+            [...hashes].sort().map((hash) => `sha256:${hash}`),
+          ]),
+        ),
         toolCounts: [...seen.toolCounts],
         models: [...seen.models],
         calls: seen.calls,
