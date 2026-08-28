@@ -6,10 +6,11 @@
 
 ## Context
 
-ADR 0011 made escalation a third terminal outcome and published the affordance
-as a catalogued tool. A driver recognises `sharedos.escalate` by name and
-returns an `escalate` decision instead of a tool call, so the loop stops and the
-kernel is never asked. Both driver paths do this — `HarnessDriver` for a vendor
+ADR 0011 made escalation a third terminal outcome, and ADR 0017 published the
+affordance as a catalogued tool and gave `AgentTurnDecision` the variant that
+ends a turn on it. A driver recognises `sharedos.escalate` by name and returns
+an `escalate` decision instead of a tool call, so the loop stops and the kernel
+is never asked. Both driver paths do this — `HarnessDriver` for a vendor
 adapter, `ModelDriver` for a model in the delegate seat — and both pass the
 conformance row.
 
