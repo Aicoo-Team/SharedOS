@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import type {
   AccessContext,
   CapabilityGrant,
+  Capability,
   ExecutionRequest,
+  ExecutionResult,
   ResourceOperation,
   ResourceResult,
   ToolDefinition,
@@ -12,10 +14,20 @@ import {
   SharedOSKernel,
   ToolRegistry,
   agentExecutionCapability,
+  type AuditEvent,
+  type AuditSink,
   type GrantSource,
   type ResourceProvider,
+  type ToolHandler,
 } from "@aicoo/sharedos-core";
-import { SharedOSExecutor } from "@aicoo/sharedos-runtime";
+import {
+  ESCALATION_ACTION,
+  ESCALATION_RESOURCE_PATH,
+  ESCALATION_TOOL_DEFINITION,
+  ESCALATION_TOOL_NAMESPACE,
+  SharedOSExecutor,
+} from "@aicoo/sharedos-runtime";
+import { InMemoryAuditSink } from "@aicoo/sharedos-testkit";
 
 import { createMcpHarnessRuntime, type McpHarnessSpec } from "./mcp-runtime.js";
 import { claudeCodeProtocol } from "./claude-code/protocol.js";
@@ -70,7 +82,18 @@ const CONTEXT: AccessContext = {
   now: NOW,
 };
 
-function grants(): readonly CapabilityGrant[] {
+/** Authority to end a turn by asking a human, held only where a test says so. */
+const ESCALATION_CAPABILITY: Capability = {
+  resource: {
+    namespace: ESCALATION_TOOL_NAMESPACE,
+    path: [...ESCALATION_RESOURCE_PATH],
+    owner: OWNER,
+  },
+  actions: [ESCALATION_ACTION],
+  scope: "descendants",
+};
+
+function grants(escalation: boolean): readonly CapabilityGrant[] {
   return [
     {
       id: "grant-public",
@@ -84,6 +107,7 @@ function grants(): readonly CapabilityGrant[] {
           scope: "descendants",
         },
         agentExecutionCapability(DELEGATE, OWNER),
+        ...(escalation ? [ESCALATION_CAPABILITY] : []),
       ],
       constraints: { purposes: ["mcp-toolshare"] },
       issuedAt: "2020-01-01T00:00:00.000Z",
@@ -91,12 +115,43 @@ function grants(): readonly CapabilityGrant[] {
   ];
 }
 
-const grantSource: GrantSource = {
-  async load() {
-    await Promise.resolve();
-    return grants();
-  },
-};
+function grantSource(escalation: boolean): GrantSource {
+  return {
+    async load() {
+      await Promise.resolve();
+      return grants(escalation);
+    },
+  };
+}
+
+/**
+ * The affordance, registered the way a host registers it: catalogued,
+ * permission-filtered, and never executed.
+ *
+ * The handler fails on purpose, exactly as the conformance world's does.
+ * Reaching it means a call to the affordance was forwarded as an ordinary tool
+ * call instead of ending the turn, and a stub that returned success would let
+ * that pass for an escalation. Nothing here should ever reach it.
+ */
+function escalationHandler(): ToolHandler {
+  return {
+    definition: ESCALATION_TOOL_DEFINITION,
+    parseArguments: (arguments_) => arguments_,
+    invoke: async (accessContext, call) => {
+      await Promise.resolve();
+      return {
+        callId: call.id,
+        tool: call.tool,
+        status: "failed",
+        error: {
+          code: "escalation_not_terminated",
+          message: "The escalation affordance ends a turn and is never executed.",
+        },
+        completedAt: accessContext.now,
+      };
+    },
+  };
+}
 
 const provider: ResourceProvider = {
   namespace: "files",
@@ -111,7 +166,10 @@ const provider: ResourceProvider = {
   },
 };
 
-function kernel(): SharedOSKernel {
+function kernel(
+  options: { readonly escalation?: boolean; readonly audit?: AuditSink } = {},
+): SharedOSKernel {
+  const escalation = options.escalation === true;
   const tools = new ToolRegistry();
   tools.register({
     definition: READ_TOOL,
@@ -155,15 +213,24 @@ function kernel(): SharedOSKernel {
           };
     },
   });
-  return new SharedOSKernel({ grantSource, tools });
+  if (escalation) {
+    tools.register(escalationHandler());
+  }
+  return new SharedOSKernel({
+    grantSource: grantSource(escalation),
+    tools,
+    ...(options.audit === undefined ? {} : { audit: options.audit }),
+  });
 }
 
-function executionRequest(): ExecutionRequest {
+function executionRequest(escalation = false): ExecutionRequest {
   return {
     version: "1",
     executionId: "execution-1",
     agent: DELEGATE,
-    context: CONTEXT,
+    context: escalation
+      ? { ...CONTEXT, enabledToolNamespaces: ["files", ESCALATION_TOOL_NAMESPACE] }
+      : CONTEXT,
     message: {
       version: "1",
       id: "message-1",
@@ -174,7 +241,7 @@ function executionRequest(): ExecutionRequest {
       traceId: CONTEXT.traceId,
       createdAt: NOW,
     },
-    tools: [READ_TOOL],
+    tools: escalation ? [READ_TOOL, ESCALATION_TOOL_DEFINITION] : [READ_TOOL],
   };
 }
 
@@ -226,6 +293,10 @@ process.stdout.write(
     }),
   }) + "\\n",
 );
+
+// Repeated on stderr, which is the only copy that survives a turn ending as
+// escalated: that outcome carries a reason rather than the harness's output.
+process.stderr.write(JSON.stringify({ calls: seen }) + "\\n");
 `;
 
 function fakeHarness(calls: readonly unknown[]): McpHarnessSpec {
@@ -454,5 +525,144 @@ describe("a harness whose stdin is a session", () => {
     const result = await executor.execute(executionRequest());
 
     expect(result.events.filter(({ type }) => type === "tool.requested")).toHaveLength(0);
+  }, 30_000);
+});
+
+const ESCALATION_REASON = "issuing a control-plane grant is outside this agent's authority";
+const ASK = { name: "sharedos.escalate", arguments: { reason: ESCALATION_REASON } };
+const READ = { name: "files.read", arguments: { path: GRANTED } };
+
+interface AffordanceTurn {
+  readonly result: ExecutionResult;
+  /** What the harness itself saw come back, in call order. */
+  readonly seen: readonly Record<string, unknown>[];
+  readonly audited: readonly AuditEvent[];
+  readonly events: readonly string[];
+}
+
+async function runAffordance(
+  calls: readonly unknown[],
+  options: { readonly granted?: boolean } = {},
+): Promise<AffordanceTurn> {
+  const granted = options.granted !== false;
+  const audit = new InMemoryAuditSink();
+  const diagnostics: string[] = [];
+  const executor = new SharedOSExecutor(
+    kernel({ escalation: granted, audit }),
+    createMcpHarnessRuntime(fakeHarness(calls), {
+      clock: () => NOW,
+      onDiagnostic: (_harness, line) => diagnostics.push(line),
+    }),
+  );
+  const result = await executor.execute(executionRequest(granted));
+
+  let seen: Record<string, unknown>[] = [];
+  for (const line of diagnostics.flatMap((chunk) => chunk.split("\n"))) {
+    try {
+      const frame = JSON.parse(line) as { calls?: Record<string, unknown>[] };
+      if (Array.isArray(frame.calls)) {
+        seen = frame.calls;
+      }
+    } catch {
+      // Harness noise. The frame we want parses; nothing else has to.
+    }
+  }
+
+  return {
+    result,
+    seen,
+    audited: audit.events,
+    events: result.events.map(({ type }) => type),
+  };
+}
+
+function escalationOf(result: ExecutionResult): Extract<ExecutionResult, { status: "escalated" }> {
+  if (result.status !== "escalated") {
+    throw new Error(`the turn ended as ${result.status}, not escalated`);
+  }
+  return result;
+}
+
+function meta(call: Record<string, unknown> | undefined): Record<string, unknown> {
+  return (call?.["_meta"] ?? {}) as Record<string, unknown>;
+}
+
+/**
+ * The escalate affordance over MCP, where the harness owns the loop.
+ *
+ * A driver returns `escalate` and its loop stops. Here the ask arrives as a
+ * `tools/call` that expects an answer, from a process SharedOS cannot stop, so
+ * the claim under test is narrower and worth stating: the ask ends the turn as
+ * escalated, it never reaches the kernel, and everything after it is refused in
+ * a way the harness can read rather than one it would retry.
+ */
+describe("a harness that asks for a human over MCP", () => {
+  it("ends the turn as escalated, recorded once and granting nothing", async () => {
+    const turn = await runAffordance([READ, ASK]);
+    const { escalation } = escalationOf(turn.result);
+
+    expect(escalation.reason).toBe(ESCALATION_REASON);
+    expect(escalation.status).toBe("pending");
+    expect(escalation.reviewer).toEqual(OWNER);
+    expect(turn.events).toContain("turn.escalated");
+
+    const requested = turn.audited.filter(({ type }) => type === "escalation.requested");
+    expect(requested).toHaveLength(1);
+    expect(requested[0]?.outcome).toBe("escalated");
+  }, 30_000);
+
+  it("never puts the ask through the kernel", async () => {
+    const turn = await runAffordance([READ, ASK]);
+
+    // One `tool.requested`, for the read. An escalation is not an operation to
+    // authorize, so the registered handler -- which fails on sight -- is never
+    // reached, and the record carries no operation for the ask.
+    expect(turn.events.filter((type) => type === "tool.requested")).toHaveLength(1);
+    expect(turn.audited.some(({ reason }) => reason === "escalation_not_terminated")).toBe(false);
+  }, 30_000);
+
+  it("answers the ask in band, and says the turn is over", async () => {
+    const turn = await runAffordance([READ, ASK]);
+    const [, asked] = turn.seen;
+
+    expect(asked?.["isError"]).toBe(false);
+    expect(JSON.stringify(asked?.["content"])).toContain("make no further tool calls");
+  }, 30_000);
+
+  it("refuses a call made after the ask without failing the transport", async () => {
+    const turn = await runAffordance([READ, ASK, READ]);
+    const [, , afterwards] = turn.seen;
+
+    // A tool error, not JSON-RPC -32603. Closing the bridge would produce the
+    // latter, which carries nothing about authority and which harnesses retry.
+    expect(afterwards?.["isError"]).toBe(true);
+    expect(meta(afterwards)["sharedos/status"]).toBe("denied");
+    expect(meta(afterwards)["sharedos/code"]).toBe("escalation_pending");
+
+    // And it did not run: still one authorized call, the read before the ask.
+    expect(turn.events.filter((type) => type === "tool.requested")).toHaveLength(1);
+    expect(escalationOf(turn.result).metadata?.["callsAfterEscalation"]).toBe(1);
+  }, 30_000);
+
+  it("keeps what the harness itself reported the turn was", async () => {
+    const turn = await runAffordance([ASK]);
+
+    // The harness completed: it made its call, got an answer, and printed a
+    // success frame. Recording that beside the escalation is what keeps "asked,
+    // then finished cleanly" distinguishable from "asked, then crashed".
+    expect(escalationOf(turn.result).metadata?.["harnessOutcome"]).toBe("complete");
+  }, 30_000);
+
+  it("does not honour the affordance for a turn that was never granted it", async () => {
+    const turn = await runAffordance([ASK], { granted: false });
+    const [asked] = turn.seen;
+
+    // Skipping the envelope would skip its catalogue check too, so the grant is
+    // checked first: without it the name is passed through and refused like any
+    // other unpublished tool, and the turn ends the way the harness ended it.
+    expect(turn.result.status).toBe("succeeded");
+    expect(asked?.["isError"]).toBe(true);
+    expect(meta(asked)["sharedos/code"]).toBe("tool_unavailable");
+    expect(turn.events.filter((type) => type === "tool.requested")).toHaveLength(1);
   }, 30_000);
 });
