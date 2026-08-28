@@ -56,6 +56,21 @@ each entry calls out what a host has to update.
   `issued_before_parent`, `id_collides_with_parent`, and — on the issuing side
   only — a refusal to pin an owner onto an unowned parent capability.
 
+- **Repository tooling, not a published contract.** `pnpm conformance:live` is
+  now `pnpm conformance:native`, over `scripts/native-conformance.mjs`, writing
+  `native-conformance.json` and reading `SHAREDOS_NATIVE_CONFIG`. "Live" named
+  when a run happened rather than what it measured, and both live scripts drive
+  a real model over a real wire; what separates this one is that each vendor CLI
+  runs on its own stdio protocol, natively, where `mcp-conformance.mjs` reaches
+  the same binaries through MCP. The column ids `codex-live` and `model-live`
+  deliberately do not move: they are keys in artifacts already on disk.
+
+  The script also takes `--config` and `--harness`, as the MCP one already did.
+  Declaring `credentialVariables` makes the pinned key required, so a harness
+  that cannot reach it reports unavailable instead of authenticating somewhere
+  else -- on the operator's own subscription, say, producing a column that
+  cannot be published beside the others.
+
 ### Changed — behaviour
 
 - **A grant that expires while a turn is running is now refused inside that
@@ -136,6 +151,18 @@ each entry calls out what a host has to update.
   other live column confounds. It is an addition to the scripted column and
   never a replacement: a model chooses, so an attempt it declines leaves no
   operation and the cell reports not exercised rather than pass.
+- Escalation as something the occupant of the delegate seat can ask for, rather
+  than an outcome only a host-written runtime could reach. `AgentTurnDecision`
+  gains an escalate variant, and the ask itself is published as
+  `sharedos.escalate`: catalogued and permission-filtered like any other tool,
+  invisible to an agent holding no grant over it, and never invoked -- a driver
+  recognises the name and ends the turn on it. Asking for a human is an
+  affordance a host grants, so a host that publishes no escalation grant has
+  agents that cannot ask. See ADR 0017.
+- An optional `step` on `AgentTurnDecision.tool_call`. A driver that says
+  nothing is bounded exactly as before; one that names a step is refused for it
+  if the envelope disagrees, because declaring a step is a claim and not a
+  permission. See ADR 0017.
 - What enforcement costs, measured on both paths and reported in
   `docs/conformance/systems-cost.md`. `pnpm bench` regenerates it, against a
   monotonic clock added for the purpose — wall time is not a duration.
@@ -144,6 +171,16 @@ each entry calls out what a host has to update.
   published that version.
 
 ### Fixed
+
+- Catalogue comparability is compared per case and per column instead of pooled
+  across a whole run. The check warned whenever a run had served more than one
+  catalogue, which was right while a run served exactly one and wrong as soon as
+  the tool set became permission-filtered per case. Two columns are comparable
+  when each saw the same catalogue for the same case, so that is what is now
+  checked, and the warning names the first case where two columns actually
+  diverged. `catalogHashByCase` goes into the artifact beside the pooled list,
+  because a pooled list cannot show a reader that two columns saw the same tools
+  for the same row.
 
 - Five embedded build constants — the DeepSeek, Pi, and MCP adapter versions
   among them — were left at `0.1.0-alpha.0` while their packages moved. They
