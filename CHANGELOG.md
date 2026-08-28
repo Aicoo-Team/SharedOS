@@ -152,6 +152,15 @@ each entry calls out what a host has to update.
   nothing is bounded exactly as before; one that names a step is refused for it
   if the envelope disagrees, because declaring a step is a claim and not a
   permission. See ADR 0017.
+- The same ending over MCP, where the harness rather than SharedOS owns the
+  loop. A `tools/call` for the escalation affordance is recognised before it
+  becomes an operation: `EscalationLatch` wraps the one invoker every MCP call
+  already passes through, answers the ask, and the turn settles as `escalate`
+  once the harness has wound down. Calls made after the ask are refused in band
+  as `denied` with `escalation_pending`, rather than by closing the bridge --
+  closing it surfaces as a JSON-RPC internal error, which carries nothing about
+  authority and which harnesses retry into a frame limit. The grant is checked
+  first, so an agent without it gets `tool_unavailable`. See ADR 0018.
 - What enforcement costs, measured on both paths and reported in
   `docs/conformance/systems-cost.md`. `pnpm bench` regenerates it, against a
   monotonic clock added for the purpose — wall time is not a duration.
