@@ -25,9 +25,9 @@
  * replacement: see `modelColumn`.
  *
  * Usage:
- *   node scripts/live-conformance.mjs
- *   node scripts/live-conformance.mjs --case expired-mid-turn
- *   node scripts/live-conformance.mjs --config host.json --harness codex
+ *   node scripts/native-conformance.mjs
+ *   node scripts/native-conformance.mjs --case expired-mid-turn
+ *   node scripts/native-conformance.mjs --config host.json --harness codex
  *
  * Environment:
  *   SHAREDOS_MODEL_API_KEY   the model column's key (DEEPSEEK_API_KEY, DSH_API_KEY)
@@ -42,7 +42,7 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputDirectory = join(root, "artifacts", "conformance");
-const outputJson = join(outputDirectory, "live-conformance.json");
+const outputJson = join(outputDirectory, "native-conformance.json");
 
 const {
   CLAUDE_CODE_REQUIREMENTS,
@@ -134,7 +134,7 @@ const only = flag("harness", undefined);
  * *required* for the column, so a harness that cannot reach the pinned model
  * reports unavailable instead of running against a different one.
  */
-const configPath = flag("config", process.env["SHAREDOS_LIVE_CONFIG"]);
+const configPath = flag("config", process.env["SHAREDOS_NATIVE_CONFIG"]);
 const hostConfig =
   configPath === undefined ? {} : JSON.parse(await readFile(resolve(configPath), "utf8"));
 /** One string per column, recorded on the availability entry. SharedOS selects nothing. */
@@ -487,7 +487,7 @@ await writeFile(
   outputJson,
   `${JSON.stringify(
     {
-      kind: "live-transport-conformance",
+      kind: "native-transport-conformance",
       note:
         "Vendor columns here were driven by the installed CLI over its real stdio " +
         "transport. A column absent from `columns` was not installed and is not a " +

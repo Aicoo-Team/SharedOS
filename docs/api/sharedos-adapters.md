@@ -74,7 +74,7 @@ tool-using harness.
 
 What a transcript cannot cover is the transport binding: the exact command-line
 flags each CLI wants, and the outer envelope it wraps its frames in.
-`scripts/live-conformance.mjs` covers exactly that gap by spawning the installed
+`scripts/native-conformance.mjs` covers exactly that gap by spawning the installed
 CLI and parsing what the binary actually emits.
 
 | Layer                            | Status                                                       |

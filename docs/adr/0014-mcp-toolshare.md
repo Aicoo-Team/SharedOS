@@ -17,7 +17,7 @@ CLIs measured on 2026-08-21 (Codex 0.149.0, Claude Code 2.1.238, `dsh`
 0.1.1-rc.2, Pi 0.84.2) exposes its API layer or has any wire frame meaning "here
 is your tool catalogue".
 
-`live-conformance.mjs` adds the transport and inherits that gap. A live `claude
+`native-conformance.mjs` adds the transport and inherits that gap. A live `claude
 -p` instructed to call `files.read` reached for its own `Grep` and `ToolSearch`
 instead: 83 operations, all correctly refused `tool_unavailable`, and zero
 declared attempts issued. The column verified a transport binding and could not
