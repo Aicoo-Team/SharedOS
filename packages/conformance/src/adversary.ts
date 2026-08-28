@@ -446,7 +446,24 @@ export class HostileRuntime implements RuntimePlugin {
 
     let result: ToolResult;
     try {
-      result = await host.invokeTool(call, { step: issued });
+      // An over-budget attempt names a step it has no right to, rather than the
+      // one it happens to be at. The two coincide only when the ceiling is
+      // exactly the number of calls already made, and a row that depended on
+      // that coincidence would stop testing the ceiling the moment the world
+      // widened by one step. Naming it outright is what `overBudget` means: a
+      // ceiling only the runtime honours is not a ceiling.
+      //
+      // Only where the step budget is the one being exceeded, though. A world
+      // that has already run out of tool calls is testing that ceiling, and
+      // naming a step past the other one would have the row report the wrong
+      // boundary -- `step_limit_exceeded` on a condition armed to evidence
+      // `tool_call_limit_exceeded`. Both are correct refusals; they are not
+      // interchangeable evidence.
+      const step =
+        attempt.overBudget === true && issued < host.limits.maxToolCalls
+          ? Math.max(issued, host.limits.maxSteps)
+          : issued;
+      result = await host.invokeTool(call, { step });
     } catch (error) {
       return {
         ...base,

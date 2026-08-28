@@ -30,6 +30,16 @@ export interface HarnessDriverOptions {
   readonly prompt?: (request: AgentTurnRequest) => string;
   /** Guard against a harness that streams unrelated frames without end. */
   readonly maxIgnoredFrames?: number;
+  /**
+   * The step to declare for the nth call this turn releases, if any.
+   *
+   * `undefined` -- the default for every call -- leaves the step to the loop.
+   * It exists for the one thing a driven harness cannot otherwise express:
+   * reaching past its own budget. The loop's index stops at `maxSteps`, so a
+   * call at or past the ceiling can only be made by a driver that names the
+   * step itself, which makes the driver the attacker for that call.
+   */
+  readonly declareStep?: (index: number, request: AgentTurnRequest) => number | undefined;
 }
 
 const DEFAULT_MAX_IGNORED_FRAMES = 512;
@@ -54,6 +64,7 @@ export class HarnessDriver implements AgentTurnDriver {
   readonly #transport: HarnessTransport;
   readonly #prompt: (request: AgentTurnRequest) => string;
   readonly #maxIgnoredFrames: number;
+  readonly #declareStep: HarnessDriverOptions["declareStep"];
 
   constructor(options: HarnessDriverOptions) {
     this.manifest = options.manifest;
@@ -61,6 +72,7 @@ export class HarnessDriver implements AgentTurnDriver {
     this.#transport = options.transport;
     this.#prompt = options.prompt ?? defaultPrompt;
     this.#maxIgnoredFrames = options.maxIgnoredFrames ?? DEFAULT_MAX_IGNORED_FRAMES;
+    this.#declareStep = options.declareStep;
     if (!Number.isInteger(this.#maxIgnoredFrames) || this.#maxIgnoredFrames <= 0) {
       throw new TypeError("maxIgnoredFrames must be a positive integer");
     }
@@ -75,7 +87,9 @@ export class HarnessDriver implements AgentTurnDriver {
       ...(request.metadata === undefined ? {} : { metadata: request.metadata }),
     };
     const channel = await this.#transport.open(turn, signal);
-    return new HarnessSession(channel, this.#protocol, request, this.#maxIgnoredFrames);
+    return new HarnessSession(channel, this.#protocol, request, this.#maxIgnoredFrames, {
+      ...(this.#declareStep === undefined ? {} : { declareStep: this.#declareStep }),
+    });
   }
 }
 
@@ -94,17 +108,22 @@ class HarnessSession implements AgentTurnSession {
    */
   readonly #pending: HarnessStep[] = [];
   readonly #messages: string[] = [];
+  readonly #declareStep: HarnessDriverOptions["declareStep"];
+  /** Calls released to the loop this turn, which is what a step policy indexes. */
+  #released = 0;
 
   constructor(
     channel: HarnessChannel,
     protocol: HarnessProtocol,
     request: AgentTurnRequest,
     maxIgnoredFrames: number,
+    options: Pick<HarnessDriverOptions, "declareStep"> = {},
   ) {
     this.#channel = channel;
     this.#protocol = protocol;
     this.#request = request;
     this.#maxIgnoredFrames = maxIgnoredFrames;
+    this.#declareStep = options.declareStep;
   }
 
   async next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision> {
@@ -160,7 +179,14 @@ class HarnessSession implements AgentTurnSession {
       if (escalation !== undefined) {
         return { type: "escalate", reason: escalation };
       }
-      return { type: "tool_call", call: this.#toolCall(step.callId, step.tool, step.arguments) };
+      const index = this.#released;
+      this.#released += 1;
+      const declared = this.#declareStep?.(index, this.#request);
+      return {
+        type: "tool_call",
+        call: this.#toolCall(step.callId, step.tool, step.arguments),
+        ...(declared === undefined ? {} : { step: declared }),
+      };
     }
     return undefined;
   }

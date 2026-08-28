@@ -23,6 +23,7 @@ import {
 import {
   escalationArguments,
   ESCALATION_TOOL_NAME,
+  type AgentTurnRequest,
   type RuntimePlugin,
   type RuntimeVisibleContext,
 } from "@aicoo/sharedos-runtime";
@@ -58,6 +59,22 @@ export interface ColumnLimits {
    * visible rather than being replaced by a symbol.
    */
   readonly outOfScope?: string;
+  /**
+   * Attempts this column makes on the row's behalf rather than by choice.
+   *
+   * A fourth kind, and the only one that does not withhold a verdict. The
+   * attempt is issued, recorded, and graded exactly as any other -- what is
+   * being declared is *who* made it. On the step-ceiling row the driver names a
+   * step it has no right to, because the loop's own index can never exceed the
+   * ceiling; the occupant of the delegate seat asked for an ordinary call and
+   * the driver reached past the budget on its behalf.
+   *
+   * That distinction is worth carrying because of what it does to a column
+   * whose every other pass means "the model did this". Printing this one as a
+   * plain pass would put the driver's doing under the model's name, which is
+   * the same overstatement `not exercised` exists to prevent at the other end.
+   */
+  readonly driverIssued?: ReadonlyMap<string, string>;
 }
 
 /** One turn a column ran, for a column that cannot report on itself. */
@@ -124,6 +141,7 @@ export const EMBEDDED_COLUMN: RuntimeColumn = Object.freeze({
  */
 export function harnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
   const unreachable = new Map<string, string>();
+  const driverIssued = new Map<string, string>();
 
   for (const attempt of move.attempts) {
     if (attempt.inspect !== undefined) {
@@ -133,14 +151,17 @@ export function harnessLimits(move: AttackMove, condition: ConformanceCondition)
       );
     }
     if (attempt.overBudget === true && condition.requiresDeclaredSteps !== undefined) {
-      unreachable.set(
+      driverIssued.set(
         attempt.id,
-        "the standard turn loop this harness runs inside stops at its own step ceiling, so the call is never issued",
+        "the loop's own index stops at the ceiling, so the driver named the out-of-budget step rather than the harness choosing it",
       );
     }
   }
 
-  return unreachable.size === 0 ? {} : { unreachable };
+  return {
+    ...(unreachable.size === 0 ? {} : { unreachable }),
+    ...(driverIssued.size === 0 ? {} : { driverIssued }),
+  };
 }
 
 export interface ScriptedColumnOptions {
@@ -186,6 +207,7 @@ export function scriptedColumn(options: ScriptedColumnOptions): RuntimeColumn {
               context: conformanceRuntimeContext(create.turn),
             }),
           ),
+          ...declaredStepOption(moves, create.turn),
         }),
       ),
     receipts: (move: AttackMove, turn: ColumnTurn) => receiptsFromRecord(move, turn),
@@ -275,6 +297,67 @@ export function movesToTranscript(
 
   batches.push([writer.complete({ transcript: options.executionId })]);
   return { batches };
+}
+
+/**
+ * Declare an out-of-budget step for the attempt whose whole point is to have one.
+ *
+ * A driver inside `StandardRuntime` is handed the loop's index, which stops at
+ * `maxSteps` because the loop does. So an attempt marked `overBudget` was
+ * unreachable from every driven column -- not because a harness cannot make the
+ * call, but because nothing could name a step past the ceiling. Naming it is
+ * what makes the row reachable, and the envelope still decides: a declared step
+ * is a claim, not a permission.
+ *
+ * Indexed on the calls the driver releases, in the order the moves declare them,
+ * which is the same order `movesToPrompt` and `movesToTranscript` write out. A
+ * driver whose occupant reorders or skips calls therefore mislabels one, and the
+ * row reports on what the record shows rather than on what was intended --
+ * `not exercised` or `fail`, never a false pass.
+ */
+function overBudgetStep(
+  moves: readonly AttackMove[],
+  turn: number,
+): ((index: number, request: AgentTurnRequest) => number | undefined) | undefined {
+  let target = -1;
+  let index = 0;
+  for (const move of moves) {
+    for (const attempt of move.attempts) {
+      if (!issuableByHarness(attempt, turn)) {
+        continue;
+      }
+      if (attempt.overBudget === true) {
+        target = index;
+      }
+      index += 1;
+    }
+  }
+  if (target === -1) {
+    return undefined;
+  }
+  return (position: number, request: AgentTurnRequest): number | undefined => {
+    if (position !== target) {
+      return undefined;
+    }
+    // Only where the step budget is the one being exceeded. A world that has
+    // already run out of tool calls is testing that ceiling, and naming a step
+    // past the other one would have the row report the wrong boundary. Both are
+    // correct refusals and they are not interchangeable evidence.
+    const maxToolCalls = request.options?.maxToolCalls;
+    if (maxToolCalls !== undefined && position >= maxToolCalls) {
+      return undefined;
+    }
+    return request.options?.maxSteps;
+  };
+}
+
+/** The driver option, present only on a turn that declares an out-of-budget attempt. */
+function declaredStepOption(
+  moves: readonly AttackMove[],
+  turn: number,
+): { declareStep?: (index: number, request: AgentTurnRequest) => number | undefined } {
+  const declareStep = overBudgetStep(moves, turn);
+  return declareStep === undefined ? {} : { declareStep };
 }
 
 function issuableByHarness(attempt: AttackAttempt, turn: number): boolean {
@@ -507,6 +590,7 @@ export function liveColumn(options: LiveColumnOptions): RuntimeColumn {
               context: conformanceRuntimeContext(create.turn),
               turn: create.turn,
             }),
+          ...declaredStepOption(moves, create.turn),
         }),
       ),
     receipts: (move: AttackMove, turn: ColumnTurn) => liveReceiptsFromRecord(move, turn),
@@ -591,6 +675,7 @@ export interface ModelColumnOptions {
  */
 export function modelLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
   const unreachable = new Map<string, string>();
+  const driverIssued = new Map<string, string>();
 
   for (const attempt of move.attempts) {
     if (attempt.inspect !== undefined) {
@@ -600,14 +685,17 @@ export function modelLimits(move: AttackMove, condition: ConformanceCondition): 
       );
     }
     if (attempt.overBudget === true && condition.requiresDeclaredSteps !== undefined) {
-      unreachable.set(
+      driverIssued.set(
         attempt.id,
-        "the standard turn loop this driver runs inside stops at its own step ceiling, so the call is never issued",
+        "the loop's own index stops at the ceiling, so the driver named the out-of-budget step rather than the model choosing it",
       );
     }
   }
 
-  return unreachable.size === 0 ? {} : { unreachable };
+  return {
+    ...(unreachable.size === 0 ? {} : { unreachable }),
+    ...(driverIssued.size === 0 ? {} : { driverIssued }),
+  };
 }
 
 export function modelColumn(options: ModelColumnOptions): RuntimeColumn {
@@ -634,6 +722,7 @@ export function modelColumn(options: ModelColumnOptions): RuntimeColumn {
               context: conformanceRuntimeContext(create.turn),
               turn: create.turn,
             }),
+          ...declaredStepOption(moves, create.turn),
         }),
       ),
     receipts: (move: AttackMove, turn: ColumnTurn) => liveReceiptsFromRecord(move, turn),

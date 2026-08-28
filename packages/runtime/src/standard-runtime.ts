@@ -26,7 +26,26 @@ export type AgentTurnInput =
   { readonly type: "start" } | { readonly type: "tool_result"; readonly result: ToolResult };
 
 export type AgentTurnDecision =
-  | { readonly type: "tool_call"; readonly call: ToolCall }
+  | {
+      readonly type: "tool_call";
+      readonly call: ToolCall;
+      /**
+       * The step this call is made at, when the driver wants to say.
+       *
+       * The loop declares the position it is at, which is the right answer for
+       * a driver that simply asks for one call per turn of the loop. It is the
+       * wrong answer for a driver deliberately reaching past its budget: the
+       * loop's own index can never exceed `maxSteps`, because the loop stops
+       * there, so the envelope's step ceiling was unreachable from inside this
+       * runtime and every driven column reported the row as unavailable.
+       *
+       * Declaring it here makes the ceiling reachable and keeps it enforced:
+       * the envelope refuses a call at or past `maxSteps` whoever named the
+       * step, so a driver can claim a step it has no right to and be refused
+       * for it. A driver that says nothing is bounded exactly as before.
+       */
+      readonly step?: number;
+    }
   | { readonly type: "complete"; readonly output: JsonValue; readonly metadata?: JsonObject }
   /**
    * `metadata` rides on a failure exactly as it does on a completion. A turn
@@ -145,7 +164,10 @@ export class StandardRuntime implements RuntimePlugin {
           return decision;
         }
 
-        const result = await host.invokeTool(decision.call, { step });
+        // The driver's own step when it declared one, the loop's otherwise.
+        // The envelope decides either way; naming a step is not being granted
+        // it.
+        const result = await host.invokeTool(decision.call, { step: decision.step ?? step });
         nextInput = { type: "tool_result", result };
       }
 
@@ -179,9 +201,26 @@ function parseAgentTurnDecision(value: unknown): AgentTurnDecision | undefined {
   }
 
   const candidate = value as Record<string, unknown>;
-  if (candidate.type === "tool_call" && hasOnlyKeys(candidate, ["type", "call"])) {
+  if (candidate.type === "tool_call" && hasOnlyKeys(candidate, ["type", "call", "step"])) {
     const call = ToolCallSchema.safeParse(candidate.call);
-    return call.success ? { type: "tool_call", call: call.data } : undefined;
+    if (!call.success) {
+      return undefined;
+    }
+    if (candidate.step === undefined) {
+      return { type: "tool_call", call: call.data };
+    }
+    // A declared step is a position, so it is bounded the way the envelope's
+    // own is. Anything else is a malformed decision rather than an audacious
+    // one, and is refused here instead of reaching the envelope as a number it
+    // cannot compare.
+    if (
+      typeof candidate.step !== "number" ||
+      !Number.isInteger(candidate.step) ||
+      candidate.step < 0
+    ) {
+      return undefined;
+    }
+    return { type: "tool_call", call: call.data, step: candidate.step };
   }
 
   if (candidate.type === "fail" && hasOnlyKeys(candidate, ["type", "error", "metadata"])) {

@@ -95,10 +95,7 @@ function scriptedClient(replies: readonly ModelReply[]): ModelClient & {
   };
 }
 
-async function runWith(
-  client: ModelClient,
-  options: { maxSteps?: number; maxMalformedCalls?: number } = {},
-) {
+function testKernel() {
   const { kernel, audit } = createTestKernel({
     grants: [
       createTestGrant({
@@ -156,6 +153,14 @@ async function runWith(
       completedAt: context.now,
     }),
   });
+  return { kernel, audit };
+}
+
+async function runWith(
+  client: ModelClient,
+  options: { maxSteps?: number; maxMalformedCalls?: number } = {},
+) {
+  const { kernel, audit } = testKernel();
   const runtime = new ModelRuntime(
     new ModelDriver({
       manifest: MANIFEST,
@@ -166,6 +171,8 @@ async function runWith(
     }),
   );
   const result = await new SharedOSExecutor(kernel, runtime, { clock: () => NOW }).execute(
+    // Lowered per test rather than by arming a world, so a ceiling this narrow
+    // truncates exactly the turn that wants it and no other.
     options.maxSteps === undefined
       ? request()
       : { ...request(), options: { maxSteps: options.maxSteps } },
@@ -485,6 +492,68 @@ describe("a model driving a SharedOS turn", () => {
     // made a malformed call", which is the wrong record of what happened.
     expect(result.status).toBe("escalated");
     expect(calls).toEqual([]);
+  });
+
+  it("survives a turn truncated at the step ceiling, with no close handler to run", async () => {
+    // The abrupt-termination path: the loop exhausts its steps and returns
+    // through the `finally` that closes the session. `ModelSession` has no
+    // `close` -- there is no socket to release -- and `closeSession` guards
+    // `session?.close === undefined`, so this asserts the guard rather than
+    // assuming it.
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [{ id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+      },
+      {
+        text: "",
+        toolCalls: [{ id: "call-2", name: "files_read", arguments: '{"path":["Workspace","b"]}' }],
+      },
+    ]);
+    const session = await new ModelDriver({ manifest: MANIFEST, client }).open(
+      request() as never,
+      new AbortController().signal,
+    );
+    expect(session.close).toBeUndefined();
+
+    const { result, calls } = await runWith(client, { maxSteps: 1 });
+
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe("step_limit_exceeded");
+    // The work done before the ceiling is still recorded. A truncated turn that
+    // lost its operations would be indistinguishable from one that made none.
+    expect(calls).toEqual([{ callId: "call-1", tool: "files.read", status: "succeeded", step: 0 }]);
+  });
+
+  it("is refused by the envelope when it declares a step past the ceiling", async () => {
+    // The loop's own index stops at the ceiling, so this is the only way a
+    // driver inside it can reach the envelope's step bound. Declaring a step is
+    // a claim, not a permission: the envelope still decides.
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [{ id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const runtime = new ModelRuntime(
+      new ModelDriver({ manifest: MANIFEST, client, declareStep: () => 4 }),
+    );
+    const { kernel } = testKernel();
+    const result = await new SharedOSExecutor(kernel, runtime, { clock: () => NOW }).execute({
+      ...request(),
+      options: { maxSteps: 2 },
+    });
+
+    expect(completedCalls(result)).toEqual([
+      {
+        callId: "call-1",
+        tool: "files.read",
+        status: "denied",
+        code: "step_limit_exceeded",
+        step: 4,
+      },
+    ]);
   });
 
   it("fails the turn when the provider cannot be reached", async () => {
