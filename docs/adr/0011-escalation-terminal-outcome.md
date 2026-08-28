@@ -69,9 +69,11 @@ which is exactly what ADR 0009 closed.
   unlike a turn refused at the boundary an escalated turn did run.
 - The record-completeness row no longer calls an over-reach an escalation. It
   now names that attempt for what it is: an operation refused before the kernel.
-- A vendor harness column cannot produce one. No vendor frame means "ask a human
-  to decide", so the adapter columns report the row as not applicable with that
-  reason rather than failing it.
+- A vendor harness column produces one by calling the affordance, because it is
+  a catalogued tool rather than a frame the vendor protocol has to carry. See
+  ADR 0017. The MCP columns still report the row as not applicable: on that path
+  the ask arrives as a call the kernel answers, rather than as a decision that
+  ends the turn.
 
 ## Rejected alternatives
 
