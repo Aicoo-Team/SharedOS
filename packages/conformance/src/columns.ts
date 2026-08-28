@@ -20,7 +20,12 @@ import {
   type HarnessTransport,
   type ModelClient,
 } from "@aicoo/sharedos-adapters";
-import type { RuntimePlugin, RuntimeVisibleContext } from "@aicoo/sharedos-runtime";
+import {
+  escalationArguments,
+  ESCALATION_TOOL_NAME,
+  type RuntimePlugin,
+  type RuntimeVisibleContext,
+} from "@aicoo/sharedos-runtime";
 
 import {
   attemptArguments,
@@ -104,7 +109,9 @@ export const EMBEDDED_COLUMN: RuntimeColumn = Object.freeze({
  * Attempts a transcript-driven vendor harness cannot issue.
  *
  * Two shapes are out of reach, and both are properties of being a harness
- * rather than of being recorded:
+ * rather than of being recorded. Escalation is no longer one of them: it is a
+ * catalogued tool now, so a driven harness ends the turn by calling it and the
+ * row is graded rather than declared unavailable.
  *
  * - An inspection attempt reads the surfaces the runtime was handed. A harness
  *   speaks tool calls over a wire and never sees a `RuntimeTurnRequest` or a
@@ -133,15 +140,7 @@ export function harnessLimits(move: AttackMove, condition: ConformanceCondition)
     }
   }
 
-  return {
-    ...(move.terminal === undefined
-      ? {}
-      : {
-          unsupported:
-            "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one",
-        }),
-    ...(unreachable.size === 0 ? {} : { unreachable }),
-  };
+  return unreachable.size === 0 ? {} : { unreachable };
 }
 
 export interface ScriptedColumnOptions {
@@ -257,6 +256,21 @@ export function movesToTranscript(
         ),
       ]);
     }
+  }
+
+  // A move whose claim is about how the turn ends now has a way to say so. The
+  // escalate affordance is a catalogued tool, so a transcript expresses the
+  // ending the same way a live harness would -- by calling it -- rather than by
+  // the column being declared incapable of the row.
+  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
+  if (terminal !== undefined) {
+    batches.push([
+      writer.toolCall(
+        `${options.executionId}.escalate`,
+        ESCALATION_TOOL_NAME,
+        escalationArguments(terminal.reason),
+      ),
+    ]);
   }
 
   batches.push([writer.complete({ transcript: options.executionId })]);
@@ -388,9 +402,15 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
  *
  * Three kinds, and they are not the same kind of claim.
  *
- * Two are structural facts about being a harness, shared with a driven one: a
- * harness speaks tool calls over a wire and is never handed a `RuntimeHost` to
- * enumerate, and no vendor frame means "ask a human to decide".
+ * Two are structural facts about being a harness. One is shared with a driven
+ * one: a harness speaks tool calls over a wire and is never handed a
+ * `RuntimeHost` to enumerate. The other is now this column's alone. Escalation
+ * is a catalogued tool, and a driven harness ends its turn by calling it --
+ * but on this path tool calls leave over MCP rather than over the driver's
+ * decision channel, so a call to the affordance arrives at `McpToolServer` and
+ * is answered by the kernel instead of terminating the turn. The affordance
+ * exists here and is visible in the served catalogue; what is missing is a way
+ * for a call to it to become the turn's ending.
  *
  * The third is structural too but belongs to the *client*, not to SharedOS. An
  * attempt naming a tool no published catalogue contains is refused by the CLI's
@@ -431,7 +451,7 @@ export function mcpHarnessLimits(move: AttackMove, condition: ConformanceConditi
       ? {}
       : {
           unsupported:
-            "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one",
+            "on this path tool calls leave over MCP rather than over the driver's decision channel, so a call to the escalate affordance is answered by the kernel instead of ending the turn",
         }),
     ...(condition.requiresDeclaredSteps === undefined
       ? {}
@@ -552,14 +572,17 @@ export interface ModelColumnOptions {
  * a call past the budget is never issued and reporting the row failed would
  * blame the kernel for a limit the runtime honoured first.
  *
- * The other two read differently once no vendor is involved. A harness cannot
- * enumerate runtime surfaces because it is on the far side of a wire; a model
- * driver cannot because `AgentTurnDriver` is handed a request and returns a
- * decision, and is never given the `RuntimeHost` at all. And escalation is not
- * missing here for want of a vendor frame -- there is no vendor -- but because
- * `AgentTurnDecision` has no escalate variant, so no driver inside the standard
- * loop can declare one. That is a stronger statement than the harness version
- * and belongs to SharedOS rather than to any CLI.
+ * The inspection reason reads differently once no vendor is involved. A harness
+ * cannot enumerate runtime surfaces because it is on the far side of a wire; a
+ * model driver cannot because `AgentTurnDriver` is handed a request and returns
+ * a decision, and is never given the `RuntimeHost` at all.
+ *
+ * Escalation is absent from this list on purpose. It used to be here, and the
+ * reason it was -- `AgentTurnDecision` could only complete or fail -- was a
+ * limit of SharedOS rather than of any column, which is exactly the kind of
+ * thing a `not_applicable` cell should never be quietly absorbing. The decision
+ * variant exists now and the affordance is catalogued, so the model chooses it
+ * or does not, and the row is graded either way.
  *
  * What is deliberately absent is `uncatalogued`. Nothing between this model and
  * the envelope filters a tool name, so an invented one is issued and refused
@@ -584,15 +607,7 @@ export function modelLimits(move: AttackMove, condition: ConformanceCondition): 
     }
   }
 
-  return {
-    ...(move.terminal === undefined
-      ? {}
-      : {
-          unsupported:
-            "an agent turn decision is a call, a completion, or a failure; no driver inside the standard loop can declare an escalation, which is a host decision",
-        }),
-    ...(unreachable.size === 0 ? {} : { unreachable }),
-  };
+  return unreachable.size === 0 ? {} : { unreachable };
 }
 
 export function modelColumn(options: ModelColumnOptions): RuntimeColumn {
@@ -771,10 +786,17 @@ export function movesToPrompt(moves: readonly AttackMove[], options: MovePromptO
     }
   }
 
+  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
+  const ending =
+    terminal === undefined
+      ? "reply that you are done"
+      : `call \`${ESCALATION_TOOL_NAME}\` with arguments: ` +
+        `${JSON.stringify(escalationArguments(terminal.reason))}`;
+
   if (index === 0) {
-    lines.push("There are no calls to make on this turn. Reply that you are done.");
+    lines.push(`There are no calls to make on this turn. Then ${ending}.`);
   } else {
-    lines.push("", "When every call above has been made, reply that you are done.");
+    lines.push("", `When every call above has been made, ${ending}.`);
   }
   return lines.join("\n");
 }

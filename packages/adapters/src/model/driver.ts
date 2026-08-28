@@ -7,12 +7,13 @@ import type {
   ToolDefinition,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
-import type {
-  AgentTurnDecision,
-  AgentTurnDriver,
-  AgentTurnInput,
-  AgentTurnRequest,
-  AgentTurnSession,
+import {
+  escalationRequest,
+  type AgentTurnDecision,
+  type AgentTurnDriver,
+  type AgentTurnInput,
+  type AgentTurnRequest,
+  type AgentTurnSession,
 } from "@aicoo/sharedos-runtime";
 
 import {
@@ -271,8 +272,18 @@ class ModelSession implements AgentTurnSession {
   }
 
   /**
-   * The next call the model asked for that can be made, answering in place any
-   * that cannot.
+   * Hand the loop the next thing to do, escalation included, answering in place
+   * any call that cannot be made.
+   *
+   * The escalate affordance is answered here rather than being turned into a
+   * `ToolCall`, so it never reaches the kernel: it is not an operation to
+   * authorize, it is the driver saying the turn is over and a human has to
+   * decide. Recognised by name off the catalogue -- the model picked a tool it
+   * was offered -- rather than read out of the prose around it, which would
+   * make the row measure a phrase instead of a choice. Anything queued behind
+   * it is dropped, and deliberately: the turn ends at an escalation, and
+   * running the calls the model asked for after it would execute work on the
+   * far side of a decision nobody has made yet.
    *
    * Arguments that do not parse are not sent as `{}`. An empty object is a call
    * the model never made, and a tool whose schema accepts one -- every parameter
@@ -294,7 +305,14 @@ class ModelSession implements AgentTurnSession {
       if (next === undefined) {
         return undefined;
       }
+
       const parsed = parseToolArguments(next.arguments);
+      const escalation = escalationRequest(this.#codec.fromWire(next.name), parsed);
+      if (escalation !== undefined) {
+        this.#pending.length = 0;
+        return { type: "escalate", reason: escalation, metadata: this.#metadata() };
+      }
+
       if (parsed !== undefined) {
         return { type: "tool_call", call: this.#toolCall(next, parsed) };
       }

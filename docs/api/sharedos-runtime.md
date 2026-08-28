@@ -469,7 +469,7 @@ Defined in: [packages/runtime/src/executor.ts:147](https://github.com/Aicoo-Team
 
 ### StandardRuntime
 
-Defined in: [packages/runtime/src/standard-runtime.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L73)
+Defined in: [packages/runtime/src/standard-runtime.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L89)
 
 The reference SharedOS loop. Hosts may replace it with another RuntimePlugin.
 
@@ -483,7 +483,7 @@ The reference SharedOS loop. Hosts may replace it with another RuntimePlugin.
 
 > **new StandardRuntime**(`driver`, `options?`): [`StandardRuntime`](#standardruntime)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L78)
+Defined in: [packages/runtime/src/standard-runtime.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L94)
 
 ###### Parameters
 
@@ -500,7 +500,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:78](https://github.com/Aic
 
 | Property                                  | Modifier   | Type                                             | Default value               | Defined in                                                                                                                                   |
 | ----------------------------------------- | ---------- | ------------------------------------------------ | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | `STANDARD_RUNTIME_MANIFEST` | [packages/runtime/src/standard-runtime.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L74) |
+| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | `STANDARD_RUNTIME_MANIFEST` | [packages/runtime/src/standard-runtime.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L90) |
 | `manifest.id`                             | `public`   | `string`                                         | `undefined`                 | packages/contracts/dist/runtime.d.ts:9                                                                                                       |
 | `manifest.metadata?`                      | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | `undefined`                 | packages/contracts/dist/runtime.d.ts:12                                                                                                      |
 | `manifest.protocolVersion`                | `public`   | `"1"`                                            | `undefined`                 | packages/contracts/dist/runtime.d.ts:11                                                                                                      |
@@ -512,7 +512,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:78](https://github.com/Aic
 
 > **run**(`request`, `host`, `signal`): `Promise`\<\{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L86)
+Defined in: [packages/runtime/src/standard-runtime.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L102)
 
 ###### Parameters
 
@@ -655,7 +655,7 @@ Defined in: [packages/runtime/src/executor.ts:488](https://github.com/Aicoo-Team
 
 ### AgentTurnDriver
 
-Defined in: [packages/runtime/src/standard-runtime.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L51)
+Defined in: [packages/runtime/src/standard-runtime.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L67)
 
 Model/provider-specific code implements this port inside the standard runtime.
 
@@ -665,7 +665,7 @@ Model/provider-specific code implements this port inside the standard runtime.
 
 > **open**(`request`, `signal`): `Promise`\<[`AgentTurnSession`](#agentturnsession)>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L52)
+Defined in: [packages/runtime/src/standard-runtime.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L68)
 
 ###### Parameters
 
@@ -682,7 +682,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:52](https://github.com/Aic
 
 ### AgentTurnSession
 
-Defined in: [packages/runtime/src/standard-runtime.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L45)
+Defined in: [packages/runtime/src/standard-runtime.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L61)
 
 #### Methods
 
@@ -690,7 +690,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:45](https://github.com/Aic
 
 > `optional` **close**(`outcome`, `signal`): `void` \| `Promise`\<`void`>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L47)
+Defined in: [packages/runtime/src/standard-runtime.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L63)
 
 ###### Parameters
 
@@ -707,7 +707,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:47](https://github.com/Aic
 
 > **next**(`input`, `signal`): `Promise`\<[`AgentTurnDecision`](#agentturndecision)>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L46)
+Defined in: [packages/runtime/src/standard-runtime.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L62)
 
 ###### Parameters
 
@@ -898,7 +898,7 @@ Defined in: [packages/runtime/src/executor.ts:41](https://github.com/Aicoo-Team/
 
 ### StandardRuntimeOptions
 
-Defined in: [packages/runtime/src/standard-runtime.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L55)
+Defined in: [packages/runtime/src/standard-runtime.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L71)
 
 #### Extended by
 
@@ -908,7 +908,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:55](https://github.com/Aic
 
 | Property                                               | Type     | Defined in                                                                                                                                   |
 | ------------------------------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-closetimeoutms"></a> `closeTimeoutMs?` | `number` | [packages/runtime/src/standard-runtime.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L56) |
+| <a id="property-closetimeoutms"></a> `closeTimeoutMs?` | `number` | [packages/runtime/src/standard-runtime.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L72) |
 
 ---
 
@@ -985,7 +985,7 @@ Defined in: [packages/runtime/src/executor.ts:67](https://github.com/Aicoo-Team/
 | Property                                                           | Type                                    | Description                                                                                                                                                                                                                                         | Inherited from                                                                                               | Defined in                                                                                                                                   |
 | ------------------------------------------------------------------ | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="property-clock-1"></a> `clock?`                             | () => `string`                          | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`clock`](#property-clock)                             | [packages/runtime/src/executor.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L42)                 |
-| <a id="property-closetimeoutms-1"></a> `closeTimeoutMs?`           | `number`                                | -                                                                                                                                                                                                                                                   | [`StandardRuntimeOptions`](#standardruntimeoptions).[`closeTimeoutMs`](#property-closetimeoutms)             | [packages/runtime/src/standard-runtime.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L56) |
+| <a id="property-closetimeoutms-1"></a> `closeTimeoutMs?`           | `number`                                | -                                                                                                                                                                                                                                                   | [`StandardRuntimeOptions`](#standardruntimeoptions).[`closeTimeoutMs`](#property-closetimeoutms)             | [packages/runtime/src/standard-runtime.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L72) |
 | <a id="property-createid-1"></a> `createId?`                       | () => `string`                          | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`createId`](#property-createid)                       | [packages/runtime/src/executor.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L43)                 |
 | <a id="property-defaultmaxsteps-1"></a> `defaultMaxSteps?`         | `number`                                | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`defaultMaxSteps`](#property-defaultmaxsteps)         | [packages/runtime/src/executor.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L44)                 |
 | <a id="property-defaultmaxtoolcalls-1"></a> `defaultMaxToolCalls?` | `number`                                | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`defaultMaxToolCalls`](#property-defaultmaxtoolcalls) | [packages/runtime/src/executor.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L45)                 |
@@ -996,9 +996,9 @@ Defined in: [packages/runtime/src/executor.ts:67](https://github.com/Aicoo-Team/
 
 ### AgentTurnDecision
 
-> **AgentTurnDecision** = \{ `call`: [`ToolCall`](sharedos-contracts.md#toolcall); `type`: `"tool_call"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: [`ProtocolError`](sharedos-contracts.md#protocolerror); `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \}
+> **AgentTurnDecision** = \{ `call`: [`ToolCall`](sharedos-contracts.md#toolcall); `type`: `"tool_call"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: [`ProtocolError`](sharedos-contracts.md#protocolerror); `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}
 
-Defined in: [packages/runtime/src/standard-runtime.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L27)
+Defined in: [packages/runtime/src/standard-runtime.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L28)
 
 #### Union Members
 
@@ -1026,11 +1026,30 @@ need explaining.
 
 ---
 
+##### Type Literal
+
+\{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}
+
+End the turn by asking a human to decide.
+
+`RuntimeTurnOutcome` has carried an escalate variant from the start, but
+nothing running inside this loop could produce one: a driver could complete
+or fail and that was all. Escalation was therefore reachable only by a
+plugin that replaced the loop entirely, which is why every driven column
+reported the escalation row as structurally unavailable -- a limit of this
+type, not of any vendor.
+
+The reason is the driver's own words and is recorded verbatim. Nothing here
+advances the escalation: SharedOS records that a decision was asked for and
+grants nothing while it is pending.
+
+---
+
 ### AgentTurnInput
 
 > **AgentTurnInput** = \{ `type`: `"start"`; \} \| \{ `result`: [`ToolResult`](sharedos-contracts.md#toolresult); `type`: `"tool_result"`; \}
 
-Defined in: [packages/runtime/src/standard-runtime.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L24)
+Defined in: [packages/runtime/src/standard-runtime.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L25)
 
 ---
 
@@ -1038,7 +1057,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:24](https://github.com/Aic
 
 > **AgentTurnRequest** = [`RuntimeTurnRequest`](#runtimeturnrequest)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L43)
+Defined in: [packages/runtime/src/standard-runtime.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L59)
 
 Backwards-compatible name for the request visible to a standard driver.
 
@@ -1048,7 +1067,7 @@ Backwards-compatible name for the request visible to a standard driver.
 
 > **AgentVisibleContext** = [`RuntimeVisibleContext`](#runtimevisiblecontext)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L40)
+Defined in: [packages/runtime/src/standard-runtime.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L56)
 
 Backwards-compatible name for the context visible to a standard driver.
 
@@ -1085,11 +1104,73 @@ registries, namespace settings, or other host policy state.
 
 ## Variables
 
+### ESCALATION\_ACTION
+
+> `const` **ESCALATION\_ACTION**: `"request"` = `"request"`
+
+Defined in: [packages/runtime/src/escalation.ts:7](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L7)
+
+---
+
+### ESCALATION\_RESOURCE\_PATH
+
+> `const` **ESCALATION\_RESOURCE\_PATH**: readonly `string`[]
+
+Defined in: [packages/runtime/src/escalation.ts:6](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L6)
+
+The resource an escalation grant is written over.
+
+---
+
+### ESCALATION\_TOOL\_DEFINITION
+
+> `const` **ESCALATION\_TOOL\_DEFINITION**: [`ToolDefinition`](sharedos-contracts.md#tooldefinition)
+
+Defined in: [packages/runtime/src/escalation.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L30)
+
+The affordance a driver offers so escalation can be chosen rather than inferred.
+
+A turn that ends by asking a human to decide is a claim about SharedOS -- the
+request is recorded, audited, and grants nothing while it is pending -- and
+until now no driver inside the standard loop could make it. Adding the
+decision variant alone would not have been enough: the model still needs a way
+to _say_ it, and reading intent out of prose ("I should ask a human") would
+make the row measure a phrase rather than a choice.
+
+So it is published as a tool. It is permission-filtered like every other tool,
+which is the point -- escalation is an affordance a host grants, and an agent
+with no grant over it does not see it in the catalogue at all.
+
+It is nonetheless never invoked. A driver recognises the name and returns an
+escalate decision instead of a tool call, so nothing reaches the kernel; see
+[escalationRequest](#escalationrequest). The kernel-side handler a host registers exists to
+put the tool in the catalogue and to fail loudly if some driver forwards it
+anyway, because a call that quietly succeeded would record an escalation the
+envelope never terminated on.
+
+---
+
+### ESCALATION\_TOOL\_NAME
+
+> `const` **ESCALATION\_TOOL\_NAME**: `"sharedos.escalate"` = `"sharedos.escalate"`
+
+Defined in: [packages/runtime/src/escalation.ts:4](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L4)
+
+---
+
+### ESCALATION\_TOOL\_NAMESPACE
+
+> `const` **ESCALATION\_TOOL\_NAMESPACE**: `"sharedos"` = `"sharedos"`
+
+Defined in: [packages/runtime/src/escalation.ts:3](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L3)
+
+---
+
 ### STANDARD\_RUNTIME\_MANIFEST
 
 > `const` **STANDARD\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L62)
+Defined in: [packages/runtime/src/standard-runtime.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L78)
 
 ---
 
@@ -1097,6 +1178,81 @@ Defined in: [packages/runtime/src/standard-runtime.ts:62](https://github.com/Aic
 
 > `const` **STANDARD\_RUNTIME\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
 
-Defined in: [packages/runtime/src/standard-runtime.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L60)
+Defined in: [packages/runtime/src/standard-runtime.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L76)
 
 Kept equal to the synchronized package version by the release gate.
+
+## Functions
+
+### escalationArguments()
+
+> **escalationArguments**(`reason`): [`JsonObject`](sharedos-contracts.md#jsonobject)
+
+Defined in: [packages/runtime/src/escalation.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L81)
+
+The arguments an escalation is requested with, for a driver writing the call.
+
+#### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `reason`  | `string` |
+
+#### Returns
+
+[`JsonObject`](sharedos-contracts.md#jsonobject)
+
+---
+
+### escalationReason()
+
+> **escalationReason**(`value`): `string` \| `undefined`
+
+Defined in: [packages/runtime/src/escalation.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L92)
+
+A reason string bounded exactly as `RuntimeTurnOutcome`'s is.
+
+Checked here rather than with a schema because this package carries no
+validator of its own; the bounds are the contract's and are restated, not
+loosened, so a decision that parses here still parses as an outcome.
+
+#### Parameters
+
+| Parameter | Type      |
+| --------- | --------- |
+| `value`   | `unknown` |
+
+#### Returns
+
+`string` \| `undefined`
+
+---
+
+### escalationRequest()
+
+> **escalationRequest**(`tool`, `arguments_`): `string` \| `undefined`
+
+Defined in: [packages/runtime/src/escalation.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L71)
+
+Read an escalation out of a call a driver is about to make, if that is what it is.
+
+Returns the reason when the call names the affordance and carries a usable
+one, and `undefined` for anything else -- which a driver passes on unchanged,
+so a tool that merely resembles this one is still re-authorized by the kernel
+like any other.
+
+A call that names the affordance with unreadable arguments still escalates,
+under a reason saying so. The alternative is to forward it to a kernel that
+will refuse it, which turns "the driver asked for a human" into "the agent
+made a malformed call" -- the wrong record of what happened.
+
+#### Parameters
+
+| Parameter    | Type      |
+| ------------ | --------- |
+| `tool`       | `string`  |
+| `arguments_` | `unknown` |
+
+#### Returns
+
+`string` \| `undefined`

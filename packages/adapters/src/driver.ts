@@ -5,12 +5,13 @@ import type {
   RuntimeManifest,
   ToolCall,
 } from "@aicoo/sharedos-contracts";
-import type {
-  AgentTurnDecision,
-  AgentTurnDriver,
-  AgentTurnInput,
-  AgentTurnRequest,
-  AgentTurnSession,
+import {
+  escalationRequest,
+  type AgentTurnDecision,
+  type AgentTurnDriver,
+  type AgentTurnInput,
+  type AgentTurnRequest,
+  type AgentTurnSession,
 } from "@aicoo/sharedos-runtime";
 
 import type {
@@ -149,6 +150,15 @@ class HarnessSession implements AgentTurnSession {
           output: step.output ?? { text: this.#messages.join("\n") },
           ...(step.metadata === undefined ? {} : { metadata: step.metadata }),
         };
+      }
+      // The escalate affordance ends the turn here rather than becoming a
+      // `ToolCall`. It is published in the catalogue like any other tool and is
+      // permission-filtered like one, but there is nothing for the kernel to
+      // authorize: the harness is saying the turn is over and a human has to
+      // decide. Recognised by name, so escalation is a tool the harness chose.
+      const escalation = escalationRequest(step.tool, step.arguments);
+      if (escalation !== undefined) {
+        return { type: "escalate", reason: escalation };
       }
       return { type: "tool_call", call: this.#toolCall(step.callId, step.tool, step.arguments) };
     }

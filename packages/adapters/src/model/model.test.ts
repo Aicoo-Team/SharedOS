@@ -2,7 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { ExecutionRequest, ExecutionResult, ToolDefinition } from "@aicoo/sharedos-contracts";
 import { agentExecutionCapability } from "@aicoo/sharedos-core";
-import { SharedOSExecutor } from "@aicoo/sharedos-runtime";
+import {
+  ESCALATION_ACTION,
+  ESCALATION_RESOURCE_PATH,
+  ESCALATION_TOOL_DEFINITION,
+  ESCALATION_TOOL_NAMESPACE,
+  SharedOSExecutor,
+} from "@aicoo/sharedos-runtime";
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
 
 import {
@@ -48,7 +54,7 @@ function request(): ExecutionRequest {
     agent: AGENT,
     context: {
       namespaceId: "namespace-1",
-      enabledToolNamespaces: ["files"],
+      enabledToolNamespaces: ["files", ESCALATION_TOOL_NAMESPACE],
       actor: AGENT,
       authority: OWNER,
       owner: OWNER,
@@ -66,7 +72,7 @@ function request(): ExecutionRequest {
       traceId: "trace-1",
       createdAt: NOW,
     },
-    tools: [READ_TOOL],
+    tools: [READ_TOOL, ESCALATION_TOOL_DEFINITION],
   };
 }
 
@@ -101,6 +107,21 @@ async function runWith(
         purposes: ["test"],
       }),
       createTestGrant({
+        id: "grant-escalation",
+        capabilities: [
+          {
+            resource: {
+              namespace: ESCALATION_TOOL_NAMESPACE,
+              path: [...ESCALATION_RESOURCE_PATH],
+              owner: OWNER,
+            },
+            actions: [ESCALATION_ACTION],
+            scope: "descendants",
+          },
+        ],
+        purposes: ["test"],
+      }),
+      createTestGrant({
         id: "grant-files",
         capabilities: [
           {
@@ -112,6 +133,17 @@ async function runWith(
         purposes: ["test"],
       }),
     ],
+  });
+  kernel.registerTool({
+    definition: ESCALATION_TOOL_DEFINITION,
+    parseArguments: (arguments_) => arguments_,
+    invoke: async (context, call) => ({
+      callId: call.id,
+      tool: call.tool,
+      status: "failed",
+      error: { code: "escalation_not_terminated", message: "should never be invoked" },
+      completedAt: context.now,
+    }),
   });
   kernel.registerTool({
     definition: READ_TOOL,
@@ -202,6 +234,11 @@ describe("a model driving a SharedOS turn", () => {
         name: "files_read",
         description: READ_TOOL.description,
         parameters: READ_TOOL.inputSchema,
+      },
+      {
+        name: "sharedos_escalate",
+        description: ESCALATION_TOOL_DEFINITION.description,
+        parameters: ESCALATION_TOOL_DEFINITION.inputSchema,
       },
     ]);
   });
@@ -385,6 +422,69 @@ describe("a model driving a SharedOS turn", () => {
     expect(() => new ModelDriver({ manifest: MANIFEST, client, maxMalformedCalls: 0 })).toThrow(
       /positive integer/u,
     );
+  });
+
+  it("ends the turn when the model chooses the escalate affordance", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [
+          {
+            id: "call-1",
+            name: "sharedos_escalate",
+            arguments: '{"reason":"this needs authority I do not hold"}',
+          },
+        ],
+      },
+    ]);
+    const { result, calls } = await runWith(client);
+
+    expect(result.status).toBe("escalated");
+    expect(result.status === "escalated" ? result.escalation.reason : undefined).toBe(
+      "this needs authority I do not hold",
+    );
+    // Intercepted before it became a ToolCall: the kernel is never asked, and
+    // the registered handler -- which fails on purpose -- is never reached.
+    expect(calls).toEqual([]);
+  });
+
+  it("offers the escalate affordance as a tool rather than inferring it from prose", async () => {
+    const client = scriptedClient([{ text: "done", toolCalls: [] }]);
+    await runWith(client);
+
+    // Escalation is something the model picks off the catalogue. Reading intent
+    // out of an assistant message would make the row measure a phrase.
+    expect(client.seen[0]?.tools.map(({ name }) => name)).toContain("sharedos_escalate");
+  });
+
+  it("drops calls queued behind an escalation instead of running them after it", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [
+          { id: "call-1", name: "sharedos_escalate", arguments: '{"reason":"ask a human"}' },
+          { id: "call-2", name: "files_read", arguments: '{"path":["Workspace","a"]}' },
+        ],
+      },
+    ]);
+    const { result, calls } = await runWith(client);
+
+    // The turn ends at the escalation. Running what followed would do work on
+    // the far side of a decision nobody has made yet.
+    expect(result.status).toBe("escalated");
+    expect(calls).toEqual([]);
+  });
+
+  it("escalates on a malformed reason rather than forwarding the call to the kernel", async () => {
+    const client = scriptedClient([
+      { text: "", toolCalls: [{ id: "call-1", name: "sharedos_escalate", arguments: "not json" }] },
+    ]);
+    const { result, calls } = await runWith(client);
+
+    // Forwarding it would turn "the driver asked for a human" into "the agent
+    // made a malformed call", which is the wrong record of what happened.
+    expect(result.status).toBe("escalated");
+    expect(calls).toEqual([]);
   });
 
   it("fails the turn when the provider cannot be reached", async () => {
