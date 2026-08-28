@@ -89,6 +89,20 @@ export interface ModelDriverOptions {
   readonly client: ModelClient;
   /** Overrides how the turn message becomes the model's prompt. */
   readonly prompt?: (request: AgentTurnRequest) => string;
+  /**
+   * The step to declare for the nth call this turn releases, if any.
+   *
+   * Returning `undefined` -- the default for every call -- leaves the step to
+   * the loop, which is what a driver asking for one call at a time should do.
+   *
+   * It exists for the one thing a driver cannot otherwise express: reaching
+   * past its own budget. The loop's index stops at `maxSteps`, so a call at or
+   * past the ceiling can only be made by a driver that names the step itself.
+   * Supplying this makes the driver the attacker for that call, which is a
+   * different claim from the model choosing it, and a column that uses it
+   * should say so rather than letting the row read as a model's doing.
+   */
+  readonly declareStep?: (index: number, request: AgentTurnRequest) => number | undefined;
 }
 
 /**
@@ -116,11 +130,13 @@ export class ModelDriver implements AgentTurnDriver {
   readonly manifest: RuntimeManifest;
   readonly #client: ModelClient;
   readonly #prompt: (request: AgentTurnRequest) => string;
+  readonly #declareStep: ModelDriverOptions["declareStep"];
 
   constructor(options: ModelDriverOptions) {
     this.manifest = options.manifest;
     this.#client = options.client;
     this.#prompt = options.prompt ?? defaultPrompt;
+    this.#declareStep = options.declareStep;
   }
 
   open(request: AgentTurnRequest, _signal: AbortSignal): Promise<AgentTurnSession> {
@@ -131,7 +147,9 @@ export class ModelDriver implements AgentTurnDriver {
       parameters: tool.inputSchema,
     }));
     return Promise.resolve(
-      new ModelSession(this.#client, request, codec, tools, this.#prompt(request)),
+      new ModelSession(this.#client, request, codec, tools, this.#prompt(request), {
+        ...(this.#declareStep === undefined ? {} : { declareStep: this.#declareStep }),
+      }),
     );
   }
 }
@@ -153,7 +171,10 @@ class ModelSession implements AgentTurnSession {
    * audit trail in an order that never happened.
    */
   readonly #pending: ModelToolCall[] = [];
+  readonly #declareStep: ModelDriverOptions["declareStep"];
   #servedModel: string | undefined;
+  /** Calls released to the loop this turn, which is what a step policy indexes. */
+  #released = 0;
 
   constructor(
     client: ModelClient,
@@ -161,12 +182,14 @@ class ModelSession implements AgentTurnSession {
     codec: ToolNameCodec,
     tools: readonly ModelTool[],
     prompt: string,
+    options: Pick<ModelDriverOptions, "declareStep"> = {},
   ) {
     this.#client = client;
     this.#request = request;
     this.#codec = codec;
     this.#tools = tools;
     this.#messages = [{ role: "user", content: prompt }];
+    this.#declareStep = options.declareStep;
   }
 
   async next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision> {
@@ -235,7 +258,18 @@ class ModelSession implements AgentTurnSession {
       return { type: "escalate", reason: escalation, metadata: this.#metadata() };
     }
 
-    return { type: "tool_call", call: this.#toolCall(next) };
+    return this.#call(next);
+  }
+
+  #call(call: ModelToolCall): AgentTurnDecision {
+    const index = this.#released;
+    this.#released += 1;
+    const step = this.#declareStep?.(index, this.#request);
+    return {
+      type: "tool_call",
+      call: this.#toolCall(call),
+      ...(step === undefined ? {} : { step }),
+    };
   }
 
   /**

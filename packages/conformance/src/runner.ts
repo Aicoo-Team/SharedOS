@@ -58,6 +58,8 @@ export interface ConformanceCell {
   readonly notApplicable: number;
   readonly recordUsable: boolean;
   readonly recordGaps: readonly string[];
+  /** Adversarial attempts this column issued on the row's behalf, not by choice. */
+  readonly driverIssued: readonly string[];
   /** Turns run against one world for this cell. One unless the move spans more. */
   readonly turns: number;
   readonly detail?: string;
@@ -286,6 +288,7 @@ function declaredCell(
     notApplicable: status === "not_applicable" ? move.attempts.length : 0,
     recordUsable: false,
     recordGaps: [],
+    driverIssued: [],
     turns: 0,
     detail: reason,
   };
@@ -383,6 +386,7 @@ async function runCell(
     {
       ...(condition.expectTurn === undefined ? {} : { expectTurn: condition.expectTurn }),
       ...(limits.unreachable === undefined ? {} : { unreachable: limits.unreachable }),
+      ...(limits.driverIssued === undefined ? {} : { driverIssued: limits.driverIssued }),
     },
   );
 
@@ -401,6 +405,7 @@ async function runCell(
       reasonCodes: judgement.reasonCodes,
       declared: judgement.declared,
       attempted: judgement.attempted,
+      driverIssued: judgement.driverIssued,
       notApplicable: judgement.attempts.filter(({ status }) => status === "not_applicable").length,
       recordUsable: judgement.recordUsable,
       recordGaps: judgement.recordGaps,
@@ -537,6 +542,13 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
     "and SharedOS declares no guarantee over it on this path; it is not a pass, not",
     "a failure, and never averaged into either.",
     "",
+    "`pass (driver)` is a pass whose attack the column's driver had to issue. It",
+    "arises where the loop's own step index can never exceed the ceiling, so only a",
+    "driver naming its own step can reach the bound. The kernel refused the call and",
+    "the refusal is real; what differs is who made it. In a column where every other",
+    "pass means the harness or the model chose the call, printing this one plain",
+    "would put the driver's doing under their name.",
+    "",
     `| ${header.join(" | ")} |`,
     `| ${header.map(() => "---").join(" | ")} |`,
   ];
@@ -544,7 +556,7 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
   for (const row of manifest.rows) {
     const cells = columns.map(({ id }) => {
       const cell = row.cells.find((candidate) => candidate.columnId === id);
-      return cell === undefined ? "—" : statusLabel(cell.status);
+      return cell === undefined ? "—" : cellLabel(cell);
     });
     lines.push(
       `| ${[row.invariant, row.expectedOutcome, row.conditionId, ...cells].join(" | ")} |`,
@@ -583,6 +595,19 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
 
 function statusLabel(status: ConformanceStatus): string {
   return status.replaceAll("_", " ");
+}
+
+/**
+ * How one cell prints, attribution included.
+ *
+ * A pass whose attack the driver had to issue is marked rather than printed
+ * plain. In a column where every other pass means "the harness or model did
+ * this", an unmarked one here would read as the same claim, and it is not: the
+ * kernel refused the call, and the call was the driver's doing.
+ */
+function cellLabel(cell: ConformanceCell): string {
+  const label = statusLabel(cell.status);
+  return cell.status === "pass" && cell.driverIssued.length > 0 ? `${label} (driver)` : label;
 }
 
 function list(values: readonly string[], empty: string): string {

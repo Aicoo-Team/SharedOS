@@ -36,6 +36,15 @@ export interface ConformanceCondition {
    * against a guarantee SharedOS declares does not reach it. It is deliberately
    * *not* `not_applicable`, which would claim the harness could not make the
    * attempt, and deliberately not a pass.
+   *
+   * A column running *inside* the standard loop is a third case, and used to be
+   * folded into the second. It declares steps -- the loop declares them for it
+   * -- so the guarantee does reach it, but the loop's index stops at the ceiling
+   * and could never name a step past it. `AgentTurnDecision.tool_call` now
+   * carries an optional step, so the driver names one and the row is graded.
+   * The cell records that the driver issued it, because in such a column every
+   * other pass means the harness or the model chose the call and this one does
+   * not.
    */
   readonly requiresDeclaredSteps?: string;
 }
@@ -201,8 +210,19 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
       },
       {
         id: "step-ceiling",
-        description: "The turn is admitted with a budget of one step and eight tool calls.",
-        world: { maxToolCalls: 8, maxSteps: 1 },
+        description: "The turn is admitted with a budget of two steps and eight tool calls.",
+        // Two rather than one, and the extra step is not slack. The ceiling has
+        // to be reachable by a driver that does not own its loop, and such a
+        // driver gets one call per turn of the loop: at one step it makes the
+        // control call and the loop ends, so the attack was never issued and
+        // the row reported nothing. At two it makes both, names an
+        // out-of-budget step on the second, and is refused for it.
+        //
+        // Nothing else moves. The scripted adversary names a step past the
+        // ceiling for an over-budget attempt rather than the one it happens to
+        // be at, so it is refused at either width, and this is the only
+        // condition whose world changed.
+        world: { maxToolCalls: 8, maxSteps: 2 },
         requiresDeclaredSteps:
           "the step ceiling is enforced over the steps a runtime declares, and a driver that owns its own loop declares none; the turn is bounded by its tool-call ceiling instead",
       },
