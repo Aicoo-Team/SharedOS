@@ -111,6 +111,20 @@ each entry calls out what a host has to update.
   server, which is the boundary a vendor harness actually connects to, plus
   Codex, Claude Code, DeepSeek Harness, and Pi adapters in
   `@aicoo/sharedos-adapters`. See ADR 0014.
+- `ModelDriver` in `@aicoo/sharedos-adapters`: a model API in the delegate seat,
+  with no vendor CLI between it and the envelope. `StandardRuntime` still owns
+  the loop, still stops at `maxSteps`, and still re-authorizes every call; what
+  changes is only who occupies the seat. Dotted SharedOS names are mapped per
+  turn, from the catalogue rather than by guess, onto the `^[a-zA-Z0-9_-]+$` a
+  chat-completions provider constrains function names to — and a name the map
+  does not hold is passed through anyway, so a model that invents a tool
+  outside its catalogue reaches the envelope to be refused instead of being
+  filtered out where nothing records it.
+- A `model-live` conformance column built on that driver, which separates what
+  a model does from what a vendor's scaffolding makes it do — the axis every
+  other live column confounds. It is an addition to the scripted column and
+  never a replacement: a model chooses, so an attempt it declines leaves no
+  operation and the cell reports not exercised rather than pass.
 - What enforcement costs, measured on both paths and reported in
   `docs/conformance/systems-cost.md`. `pnpm bench` regenerates it, against a
   monotonic clock added for the purpose — wall time is not a duration.
