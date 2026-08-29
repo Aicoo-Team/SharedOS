@@ -12,7 +12,6 @@ import {
   type ResourceResult,
   type ToolCall,
   type ToolDefinition,
-  type ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
   type AuditEvent,
@@ -36,9 +35,9 @@ import { createFileTools } from "@aicoo/sharedos-os";
 import {
   ESCALATION_ACTION,
   ESCALATION_RESOURCE_PATH,
-  ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAMESPACE,
   type RuntimeVisibleContext,
+  createEscalationTool,
 } from "@aicoo/sharedos-runtime";
 
 /** The world every canonical conformance move is declared against. */
@@ -1650,7 +1649,9 @@ export function createConformanceWorld(
     files.escapingHandler(),
     files.mismatchedHandler(),
     files.sealedHandler(),
-    escalationHandler(),
+    // The escalation affordance, catalogued so the row can be reached and
+    // never invoked; the agent sees it because it holds ESCALATION_GRANT.
+    createEscalationTool(),
   ];
   for (const handler of handlers) {
     kernel.registerTool(handler);
@@ -1723,40 +1724,6 @@ export function createConformanceWorld(
         ...executionOptions,
       };
     },
-  };
-}
-
-/**
- * The escalation affordance, registered so it is catalogued -- and never invoked.
- *
- * A driver whose catalogue offers it recognises the name and returns an
- * escalate decision instead of a tool call, so the kernel is never asked.
- * Registering it anyway is what makes it a real, permission-filtered entry in
- * the catalogue rather than something a driver invents locally: the agent sees
- * it because it holds {@link ESCALATION_GRANT}, and an agent without that grant
- * neither sees it nor can end a turn on its name.
- *
- * The handler fails rather than succeeding, because reaching it means a driver
- * forwarded the call instead of terminating on it. A stub that returned success
- * would leave a record showing an escalation tool ran and a turn that completed
- * normally, which is precisely the confusion this affordance exists to remove.
- */
-function escalationHandler(): ToolHandler {
-  return {
-    definition: ESCALATION_TOOL_DEFINITION,
-    parseArguments: (arguments_) => arguments_,
-    invoke: (context: AccessContext, call: ToolCall): Promise<ToolResult> =>
-      Promise.resolve({
-        callId: call.id,
-        tool: call.tool,
-        status: "failed",
-        error: {
-          code: "escalation_not_terminated",
-          message:
-            "The escalation affordance ends a turn and is never executed; this driver forwarded it as a tool call.",
-        },
-        completedAt: context.now,
-      }),
   };
 }
 

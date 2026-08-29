@@ -182,6 +182,12 @@ each entry calls out what a host has to update.
   closing it surfaces as a JSON-RPC internal error, which carries nothing about
   authority and which harnesses retry into a frame limit. The grant is checked
   first, so an agent without it gets `tool_unavailable`. See ADR 0018.
+- `createEscalationTool()` in `@aicoo/sharedos-runtime`: the handler a host
+  registers so `sharedos.escalate` is catalogued. The definition was exported
+  and every host wrote the same failing handler by hand; the conformance world
+  and the adapter tests now register this one. It is never meant to run -- a
+  driver ends the turn on the name -- and fails with
+  `escalation_not_terminated` if a driver forwards the call anyway.
 - What enforcement costs, measured on both paths and reported in
   `docs/conformance/systems-cost.md`. `pnpm bench` regenerates it, against a
   monotonic clock added for the purpose — wall time is not a duration.

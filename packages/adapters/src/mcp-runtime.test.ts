@@ -18,7 +18,6 @@ import {
   type AuditSink,
   type GrantSource,
   type ResourceProvider,
-  type ToolHandler,
 } from "@aicoo/sharedos-core";
 import {
   ESCALATION_ACTION,
@@ -26,6 +25,7 @@ import {
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAMESPACE,
   SharedOSExecutor,
+  createEscalationTool,
 } from "@aicoo/sharedos-runtime";
 import { InMemoryAuditSink } from "@aicoo/sharedos-testkit";
 
@@ -124,35 +124,6 @@ function grantSource(escalation: boolean): GrantSource {
   };
 }
 
-/**
- * The affordance, registered the way a host registers it: catalogued,
- * permission-filtered, and never executed.
- *
- * The handler fails on purpose, exactly as the conformance world's does.
- * Reaching it means a call to the affordance was forwarded as an ordinary tool
- * call instead of ending the turn, and a stub that returned success would let
- * that pass for an escalation. Nothing here should ever reach it.
- */
-function escalationHandler(): ToolHandler {
-  return {
-    definition: ESCALATION_TOOL_DEFINITION,
-    parseArguments: (arguments_) => arguments_,
-    invoke: async (accessContext, call) => {
-      await Promise.resolve();
-      return {
-        callId: call.id,
-        tool: call.tool,
-        status: "failed",
-        error: {
-          code: "escalation_not_terminated",
-          message: "The escalation affordance ends a turn and is never executed.",
-        },
-        completedAt: accessContext.now,
-      };
-    },
-  };
-}
-
 const provider: ResourceProvider = {
   namespace: "files",
   async invoke(operation: ResourceOperation, _signal: AbortSignal): Promise<ResourceResult> {
@@ -223,7 +194,7 @@ function kernel(
     },
   });
   if (escalation) {
-    tools.register(escalationHandler());
+    tools.register(createEscalationTool());
   }
   return new SharedOSKernel({
     grantSource: grantSource(escalation),

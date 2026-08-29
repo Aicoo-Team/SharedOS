@@ -40,6 +40,8 @@ already defined.
 permission-filtered like any other tool, with `ESCALATION_TOOL_DEFINITION`,
 `ESCALATION_RESOURCE_PATH` and `ESCALATION_ACTION` exported from
 `@aicoo/sharedos-runtime`. An agent holding no grant over it does not see it.
+(Amended 2026-08-29: `createEscalationTool()` in the same package is the
+handler a host registers; the conformance world registers it too.)
 
 It is nonetheless never invoked. Both drivers recognise the name and return an
 escalate decision, so no `ToolCall` is built and the kernel is never asked. The
