@@ -125,7 +125,12 @@ each entry calls out what a host has to update.
   as a decision the model finished making, and the turn's token spend reaches
   the execution record as `cost.inputTokens` / `cost.outputTokens`. A `fail`
   decision now carries `metadata` as `complete` does, so a failed turn keeps
-  the model that answered and what it cost.
+  the model that answered and what it cost. A call whose arguments do not
+  parse is refused by the driver as `invalid_tool_arguments` and answered back
+  to the model, never sent as `{}` -- an empty object is a call the model did
+  not make, and a tool with every parameter optional would have run it. The
+  turn's metadata counts them as `malformedToolCalls`; past `maxMalformedCalls`
+  (default 8) the turn fails as `model_malformed_call_limit_exceeded`.
 - A `model-live` conformance column built on that driver, which separates what
   a model does from what a vendor's scaffolding makes it do — the axis every
   other live column confounds. It is an addition to the scripted column and

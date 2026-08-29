@@ -293,7 +293,7 @@ Defined in: [packages/adapters/src/runtime.ts:36](https://github.com/Aicoo-Team/
 
 ### ModelDriver
 
-Defined in: [packages/adapters/src/model/driver.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L115)
+Defined in: [packages/adapters/src/model/driver.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L126)
 
 A model API driven as a SharedOS agent turn.
 
@@ -325,7 +325,7 @@ the reason the deterministic column stays the reference.
 
 > **new ModelDriver**(`options`): [`ModelDriver`](#modeldriver)
 
-Defined in: [packages/adapters/src/model/driver.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L120)
+Defined in: [packages/adapters/src/model/driver.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L132)
 
 ###### Parameters
 
@@ -341,7 +341,7 @@ Defined in: [packages/adapters/src/model/driver.ts:120](https://github.com/Aicoo
 
 | Property                                    | Modifier   | Type                                             | Defined in                                                                                                                               |
 | ------------------------------------------- | ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest-2"></a> `manifest` | `readonly` | `object`                                         | [packages/adapters/src/model/driver.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L116) |
+| <a id="property-manifest-2"></a> `manifest` | `readonly` | `object`                                         | [packages/adapters/src/model/driver.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L127) |
 | `manifest.id`                               | `public`   | `string`                                         | packages/contracts/dist/runtime.d.ts:9                                                                                                   |
 | `manifest.metadata?`                        | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | packages/contracts/dist/runtime.d.ts:12                                                                                                  |
 | `manifest.protocolVersion`                  | `public`   | `"1"`                                            | packages/contracts/dist/runtime.d.ts:11                                                                                                  |
@@ -353,7 +353,7 @@ Defined in: [packages/adapters/src/model/driver.ts:120](https://github.com/Aicoo
 
 > **open**(`request`, `_signal`): `Promise`\<[`AgentTurnSession`](sharedos-runtime.md#agentturnsession)>\>
 
-Defined in: [packages/adapters/src/model/driver.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L126)
+Defined in: [packages/adapters/src/model/driver.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L142)
 
 ###### Parameters
 
@@ -1172,15 +1172,16 @@ Defined in: [packages/adapters/src/model/driver.ts:87](https://github.com/Aicoo-
 
 #### Properties
 
-| Property                                    | Modifier   | Type                                             | Description                                                | Defined in                                                                                                                             |
-| ------------------------------------------- | ---------- | ------------------------------------------------ | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-client"></a> `client`       | `readonly` | [`ModelClient`](#modelclient)                    | -                                                          | [packages/adapters/src/model/driver.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L89) |
-| <a id="property-manifest-5"></a> `manifest` | `readonly` | `object`                                         | -                                                          | [packages/adapters/src/model/driver.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L88) |
-| `manifest.id`                               | `public`   | `string`                                         | -                                                          | packages/contracts/dist/runtime.d.ts:9                                                                                                 |
-| `manifest.metadata?`                        | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                          | packages/contracts/dist/runtime.d.ts:12                                                                                                |
-| `manifest.protocolVersion`                  | `public`   | `"1"`                                            | -                                                          | packages/contracts/dist/runtime.d.ts:11                                                                                                |
-| `manifest.version`                          | `public`   | `string`                                         | -                                                          | packages/contracts/dist/runtime.d.ts:10                                                                                                |
-| <a id="property-prompt-2"></a> `prompt?`    | `readonly` | (`request`) => `string`                          | Overrides how the turn message becomes the model's prompt. | [packages/adapters/src/model/driver.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L91) |
+| Property                                                     | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                    | Defined in                                                                                                                               |
+| ------------------------------------------------------------ | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-client"></a> `client`                        | `readonly` | [`ModelClient`](#modelclient)                    | -                                                                                                                                                                                                                                                                                                                              | [packages/adapters/src/model/driver.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L89)   |
+| <a id="property-manifest-5"></a> `manifest`                  | `readonly` | `object`                                         | -                                                                                                                                                                                                                                                                                                                              | [packages/adapters/src/model/driver.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L88)   |
+| `manifest.id`                                                | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                              | packages/contracts/dist/runtime.d.ts:9                                                                                                   |
+| `manifest.metadata?`                                         | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                                                                                                                                                                                                                                                                              | packages/contracts/dist/runtime.d.ts:12                                                                                                  |
+| `manifest.protocolVersion`                                   | `public`   | `"1"`                                            | -                                                                                                                                                                                                                                                                                                                              | packages/contracts/dist/runtime.d.ts:11                                                                                                  |
+| `manifest.version`                                           | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                              | packages/contracts/dist/runtime.d.ts:10                                                                                                  |
+| <a id="property-maxmalformedcalls"></a> `maxMalformedCalls?` | `readonly` | `number`                                         | Guard against a model that never forms a readable call. A call whose arguments do not parse is refused by the driver and answered back to the model, which costs the turn no step; a model that kept producing them would otherwise be spoken to until the turn timed out. Past this many in one turn, the turn fails instead. | [packages/adapters/src/model/driver.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L100) |
+| <a id="property-prompt-2"></a> `prompt?`                     | `readonly` | (`request`) => `string`                          | Overrides how the turn message becomes the model's prompt.                                                                                                                                                                                                                                                                     | [packages/adapters/src/model/driver.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L91)   |
 
 ---
 

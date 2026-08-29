@@ -89,7 +89,18 @@ export interface ModelDriverOptions {
   readonly client: ModelClient;
   /** Overrides how the turn message becomes the model's prompt. */
   readonly prompt?: (request: AgentTurnRequest) => string;
+  /**
+   * Guard against a model that never forms a readable call.
+   *
+   * A call whose arguments do not parse is refused by the driver and answered
+   * back to the model, which costs the turn no step; a model that kept
+   * producing them would otherwise be spoken to until the turn timed out. Past
+   * this many in one turn, the turn fails instead.
+   */
+  readonly maxMalformedCalls?: number;
 }
+
+const DEFAULT_MAX_MALFORMED_CALLS = 8;
 
 /**
  * A model API driven as a SharedOS agent turn.
@@ -116,11 +127,16 @@ export class ModelDriver implements AgentTurnDriver {
   readonly manifest: RuntimeManifest;
   readonly #client: ModelClient;
   readonly #prompt: (request: AgentTurnRequest) => string;
+  readonly #maxMalformedCalls: number;
 
   constructor(options: ModelDriverOptions) {
     this.manifest = options.manifest;
     this.#client = options.client;
     this.#prompt = options.prompt ?? defaultPrompt;
+    this.#maxMalformedCalls = options.maxMalformedCalls ?? DEFAULT_MAX_MALFORMED_CALLS;
+    if (!Number.isInteger(this.#maxMalformedCalls) || this.#maxMalformedCalls <= 0) {
+      throw new TypeError("maxMalformedCalls must be a positive integer");
+    }
   }
 
   open(request: AgentTurnRequest, _signal: AbortSignal): Promise<AgentTurnSession> {
@@ -131,7 +147,14 @@ export class ModelDriver implements AgentTurnDriver {
       parameters: tool.inputSchema,
     }));
     return Promise.resolve(
-      new ModelSession(this.#client, request, codec, tools, this.#prompt(request)),
+      new ModelSession(
+        this.#client,
+        request,
+        codec,
+        tools,
+        this.#prompt(request),
+        this.#maxMalformedCalls,
+      ),
     );
   }
 }
@@ -153,12 +176,15 @@ class ModelSession implements AgentTurnSession {
    * audit trail in an order that never happened.
    */
   readonly #pending: ModelToolCall[] = [];
+  readonly #maxMalformedCalls: number;
   #servedModel: string | undefined;
   /** Why the last reply ended, in the provider's words, once one has. */
   #finishReason: string | undefined;
   /** Summed over every model call this turn; absent until a reply reports one. */
   #inputTokens: number | undefined;
   #outputTokens: number | undefined;
+  /** Calls refused here for unreadable arguments this turn. */
+  #malformed = 0;
 
   constructor(
     client: ModelClient,
@@ -166,12 +192,14 @@ class ModelSession implements AgentTurnSession {
     codec: ToolNameCodec,
     tools: readonly ModelTool[],
     prompt: string,
+    maxMalformedCalls: number,
   ) {
     this.#client = client;
     this.#request = request;
     this.#codec = codec;
     this.#tools = tools;
     this.#messages = [{ role: "user", content: prompt }];
+    this.#maxMalformedCalls = maxMalformedCalls;
   }
 
   async next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision> {
@@ -181,57 +209,110 @@ class ModelSession implements AgentTurnSession {
         toolCallId: input.result.callId,
         content: describeResult(input.result),
       });
-      const queued = this.#pending.shift();
-      if (queued !== undefined) {
-        return { type: "tool_call", call: this.#toolCall(queued) };
+    }
+
+    for (;;) {
+      const released = this.#release();
+      if (released !== undefined) {
+        return released;
       }
-    }
 
-    let reply;
-    try {
-      reply = await this.#client.complete({ messages: this.#messages, tools: this.#tools }, signal);
-    } catch (error) {
-      if (signal.aborted) {
-        throw error;
+      // Every call the last reply asked for has been answered -- by the kernel,
+      // or here for one that could not be made -- and only now is the model
+      // spoken to again: the wire format requires each call in an assistant
+      // message to be answered before the next assistant turn.
+      let reply: ModelReply;
+      try {
+        reply = await this.#client.complete(
+          { messages: this.#messages, tools: this.#tools },
+          signal,
+        );
+      } catch (error) {
+        if (signal.aborted) {
+          throw error;
+        }
+        return fail(
+          "model_call_failed",
+          `The model call failed: ${describe(error)}`,
+          this.#metadata(),
+        );
       }
-      return fail(
-        "model_call_failed",
-        `The model call failed: ${describe(error)}`,
-        this.#metadata(),
-      );
-    }
 
-    this.#account(reply);
-    if (reply.finishReason === "length") {
-      // The provider stopped the model, not the model itself. Nothing in a
-      // reply cut off at the token ceiling is a decision the model finished
-      // making: its calls may be incomplete and its silence is not a choice to
-      // stop. Releasing any of it would grade the cut as the model's doing,
-      // and completing the turn would grade it as the model choosing to end --
-      // both are the wrong record. The turn fails, under a code that says so.
-      return fail(
-        "model_output_truncated",
-        "The model's reply was cut off at the output token limit before it finished deciding.",
-        this.#metadata(),
-      );
-    }
+      this.#account(reply);
+      if (reply.finishReason === "length") {
+        // The provider stopped the model, not the model itself. Nothing in a
+        // reply cut off at the token ceiling is a decision the model finished
+        // making: its calls may be incomplete and its silence is not a choice
+        // to stop. Releasing any of it would grade the cut as the model's
+        // doing, and completing the turn would grade it as the model choosing
+        // to end -- both are the wrong record. The turn fails, under a code
+        // that says so.
+        return fail(
+          "model_output_truncated",
+          "The model's reply was cut off at the output token limit before it finished deciding.",
+          this.#metadata(),
+        );
+      }
 
-    this.#messages.push({
-      role: "assistant",
-      content: reply.text,
-      toolCalls: reply.toolCalls,
-    });
-
-    this.#pending.push(...reply.toolCalls);
-    const next = this.#pending.shift();
-    if (next === undefined) {
-      return {
-        type: "complete",
-        output: { text: reply.text } satisfies JsonValue,
-        metadata: this.#metadata(),
-      };
+      this.#messages.push({
+        role: "assistant",
+        content: reply.text,
+        toolCalls: reply.toolCalls,
+      });
+      if (reply.toolCalls.length === 0) {
+        return {
+          type: "complete",
+          output: { text: reply.text } satisfies JsonValue,
+          metadata: this.#metadata(),
+        };
+      }
+      this.#pending.push(...reply.toolCalls);
     }
-    return { type: "tool_call", call: this.#toolCall(next) };
+  }
+
+  /**
+   * The next call the model asked for that can be made, answering in place any
+   * that cannot.
+   *
+   * Arguments that do not parse are not sent as `{}`. An empty object is a call
+   * the model never made, and a tool whose schema accepts one -- every parameter
+   * optional -- would run it: the record would then show a call the model chose,
+   * made with arguments the driver invented. So the call is refused here, under
+   * the code the kernel uses for the same defect, and the refusal is answered
+   * straight back to the model so it can try again. No `ToolCall` is built and
+   * nothing reaches the envelope, so no operation appears in the record for it;
+   * what does appear is `malformedToolCalls` on the turn's metadata, the way
+   * `callsAfterEscalation` is carried on the MCP path.
+   *
+   * Refusing here costs the turn no step, so a model that never forms a
+   * readable call is bounded separately: past `maxMalformedCalls` in one turn
+   * the turn fails, rather than being spoken to until it times out.
+   */
+  #release(): AgentTurnDecision | undefined {
+    for (;;) {
+      const next = this.#pending.shift();
+      if (next === undefined) {
+        return undefined;
+      }
+      const parsed = parseToolArguments(next.arguments);
+      if (parsed !== undefined) {
+        return { type: "tool_call", call: this.#toolCall(next, parsed) };
+      }
+      this.#malformed += 1;
+      if (this.#malformed > this.#maxMalformedCalls) {
+        this.#pending.length = 0;
+        return fail(
+          "model_malformed_call_limit_exceeded",
+          "The model emitted too many calls whose arguments could not be read.",
+          this.#metadata(),
+        );
+      }
+      this.#messages.push({
+        role: "tool",
+        toolCallId: next.id,
+        content: describeResult(this.#refuse(next)),
+      });
+    }
   }
 
   /**
@@ -247,6 +328,7 @@ class ModelSession implements AgentTurnSession {
       model: this.#servedModel ?? this.#client.model,
       modelProvider: this.#client.provider,
       requestedModel: this.#client.model,
+      malformedToolCalls: this.#malformed,
       ...(this.#finishReason === undefined ? {} : { finishReason: this.#finishReason }),
       ...(this.#inputTokens === undefined ? {} : { inputTokens: this.#inputTokens }),
       ...(this.#outputTokens === undefined ? {} : { outputTokens: this.#outputTokens }),
@@ -272,16 +354,25 @@ class ModelSession implements AgentTurnSession {
     }
   }
 
-  #toolCall(call: ModelToolCall): ToolCall {
-    // Arguments that do not parse are sent as an empty object rather than
-    // dropped. The call was made and belongs in the record; the kernel refuses
-    // it on its own terms, which is a real outcome, whereas a call withheld
-    // here would read as a call the model never attempted.
-    const parsed = parseToolArguments(call.arguments);
+  /** The refusal the model is shown for a call it made with unreadable arguments. */
+  #refuse(call: ModelToolCall): ToolResult {
+    return {
+      callId: call.id,
+      tool: this.#codec.fromWire(call.name),
+      status: "failed",
+      error: {
+        code: "invalid_tool_arguments",
+        message: "The tool arguments were not a JSON object, so the call was not made.",
+      },
+      completedAt: this.#request.context.now,
+    };
+  }
+
+  #toolCall(call: ModelToolCall, arguments_: JsonObject): ToolCall {
     return {
       id: call.id,
       tool: this.#codec.fromWire(call.name),
-      arguments: parsed ?? {},
+      arguments: arguments_,
       traceId: this.#request.context.traceId,
       requestedAt: this.#request.context.now,
     };

@@ -89,7 +89,10 @@ function scriptedClient(replies: readonly ModelReply[]): ModelClient & {
   };
 }
 
-async function runWith(client: ModelClient) {
+async function runWith(
+  client: ModelClient,
+  options: { maxSteps?: number; maxMalformedCalls?: number } = {},
+) {
   const { kernel, audit } = createTestKernel({
     grants: [
       createTestGrant({
@@ -121,11 +124,38 @@ async function runWith(client: ModelClient) {
       completedAt: context.now,
     }),
   });
-  const runtime = new ModelRuntime(new ModelDriver({ manifest: MANIFEST, client }));
+  const runtime = new ModelRuntime(
+    new ModelDriver({
+      manifest: MANIFEST,
+      client,
+      ...(options.maxMalformedCalls === undefined
+        ? {}
+        : { maxMalformedCalls: options.maxMalformedCalls }),
+    }),
+  );
   const result = await new SharedOSExecutor(kernel, runtime, { clock: () => NOW }).execute(
-    request(),
+    options.maxSteps === undefined
+      ? request()
+      : { ...request(), options: { maxSteps: options.maxSteps } },
   );
   return { result, audit, calls: completedCalls(result) };
+}
+
+/** The tool messages the model was shown on its nth call, by the call they answer. */
+function toolMessagesShown(
+  client: { readonly seen: ModelCompletionRequest[] },
+  index: number,
+): { toolCallId: string; content: Record<string, unknown> }[] {
+  return (client.seen[index]?.messages ?? []).flatMap((message) =>
+    message.role === "tool"
+      ? [
+          {
+            toolCallId: message.toolCallId,
+            content: JSON.parse(message.content) as Record<string, unknown>,
+          },
+        ]
+      : [],
+  );
 }
 
 /** What the envelope recorded about each call, which is the stricter source. */
@@ -250,17 +280,111 @@ describe("a model driving a SharedOS turn", () => {
     expect(call?.status).not.toBe("succeeded");
   });
 
-  it("issues a call whose arguments did not parse rather than withholding it", async () => {
+  it("refuses a call whose arguments did not parse, and tells the model so", async () => {
     const client = scriptedClient([
       { text: "", toolCalls: [{ id: "call-1", name: "files_read", arguments: "not json" }] },
+      {
+        text: "",
+        toolCalls: [{ id: "call-2", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const { result, calls } = await runWith(client);
+
+    // Never sent as `{}`: an empty object is a call the model did not make, and
+    // a tool with every parameter optional would have run it. The refusal goes
+    // straight back to the model, under the kernel's code for the same defect,
+    // and the corrected retry is the only call the envelope ever sees.
+    expect(result.status).toBe("succeeded");
+    expect(calls).toEqual([{ callId: "call-2", tool: "files.read", status: "succeeded", step: 0 }]);
+    expect(toolMessagesShown(client, 1)).toEqual([
+      {
+        toolCallId: "call-1",
+        content: {
+          status: "failed",
+          error: { code: "invalid_tool_arguments", message: expect.stringContaining("not made") },
+        },
+      },
+    ]);
+    expect(result.metadata?.["malformedToolCalls"]).toBe(1);
+  });
+
+  it("charges no step for a call it refused", async () => {
+    // Two steps in the budget -- one for a call, one for the completion -- and
+    // the model fumbles before using either. Sent as `{}`, the fumble would
+    // have spent the first step and the turn would have ended at the ceiling;
+    // refused outside the loop, the corrected call and the completion both fit.
+    const client = scriptedClient([
+      { text: "", toolCalls: [{ id: "call-1", name: "files_read", arguments: "[1, 2]" }] },
+      {
+        text: "",
+        toolCalls: [{ id: "call-2", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const { result, calls } = await runWith(client, { maxSteps: 2 });
+
+    expect(result.status).toBe("succeeded");
+    expect(calls).toEqual([{ callId: "call-2", tool: "files.read", status: "succeeded", step: 0 }]);
+  });
+
+  it("answers every call in a reply before speaking again, refusals included", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [
+          { id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' },
+          { id: "call-2", name: "files_read", arguments: "not json" },
+          { id: "call-3", name: "files_read", arguments: '{"path":["Workspace","b"]}' },
+        ],
+      },
       { text: "done", toolCalls: [] },
     ]);
     const { calls } = await runWith(client);
 
-    // The call was made and belongs in the record; the kernel refuses it on its
-    // own terms. A withheld call would read as one the model never attempted.
-    expect(calls).toHaveLength(1);
-    expect(calls[0]?.tool).toBe("files.read");
+    // Two calls reached the envelope; the fumble between them was answered in
+    // its place, so the model saw one answer per call it made, in order.
+    expect(calls.map(({ callId }) => callId)).toEqual(["call-1", "call-3"]);
+    expect(toolMessagesShown(client, 1).map(({ toolCallId }) => toolCallId)).toEqual([
+      "call-1",
+      "call-2",
+      "call-3",
+    ]);
+    expect(client.seen).toHaveLength(2);
+  });
+
+  it("fails the turn when the model never forms a readable call", async () => {
+    const fumble = (id: string) => ({
+      text: "",
+      toolCalls: [{ id, name: "files_read", arguments: "still not json" }],
+    });
+    const client = scriptedClient([fumble("c1"), fumble("c2"), fumble("c3"), fumble("c4")]);
+    const { result, calls } = await runWith(client, { maxMalformedCalls: 3 });
+
+    // Refusing costs the turn no step, so this is bounded on its own: three
+    // fumbles are answered, the fourth ends the turn under a code that says
+    // what happened, rather than the model being asked until the turn times out.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "model_malformed_call_limit_exceeded",
+    );
+    expect(result.metadata?.["malformedToolCalls"]).toBe(4);
+    expect(calls).toEqual([]);
+    expect(client.seen).toHaveLength(4);
+  });
+
+  it("counts zero refused calls on a turn that made none", async () => {
+    const client = scriptedClient([{ text: "done", toolCalls: [] }]);
+    const { result } = await runWith(client);
+
+    expect(result.metadata?.["malformedToolCalls"]).toBe(0);
+  });
+
+  it("refuses to be built with a guard that is not a positive integer", () => {
+    const client = scriptedClient([]);
+    expect(() => new ModelDriver({ manifest: MANIFEST, client, maxMalformedCalls: 0 })).toThrow(
+      /positive integer/u,
+    );
   });
 
   it("fails the turn when the provider cannot be reached", async () => {
