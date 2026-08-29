@@ -320,7 +320,7 @@ subprocess it was opened for. Otherwise mint a short-lived execution token:
 
 ```ts
 const token = await mintExecutionToken(
-  { executionId, namespaceId, actor: "agent:agent-bob", catalogHash, expiresAt },
+  { executionId, namespaceId, actor: canonicalActor(agent), catalogHash, expiresAt },
   hostSecret,
 );
 const http = await createStreamableHttpMcpServer({
@@ -331,7 +331,10 @@ const http = await createStreamableHttpMcpServer({
 });
 ```
 
-The token identifies the broker session. It carries no grants and no
+`canonicalActor` renders an `Address` as `<kind>:<id>` — `agent:agent-bob` —
+which is the one string form a token's `actor` takes; it is compared by
+equality, never parsed back. The token identifies the broker session. It
+carries no grants and no
 capabilities: whoever presents it still receives exactly the catalogue that
 turn's `AccessContext` resolved, and every call is still authorized from the
 trusted grant source at the moment of the call. `catalogHash` is bound in so a

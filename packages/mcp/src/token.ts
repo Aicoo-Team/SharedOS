@@ -1,4 +1,5 @@
-import { canonicalJson } from "@aicoo/sharedos-core";
+import type { Address } from "@aicoo/sharedos-contracts";
+import { addressPath, canonicalJson } from "@aicoo/sharedos-core";
 import { z } from "zod";
 
 /**
@@ -20,7 +21,10 @@ export const ExecutionTokenClaimsSchema = z
   .object({
     executionId: z.string().min(1).max(256),
     namespaceId: z.string().min(1).max(256),
-    /** The acting principal in canonical string form, for example `agent:a-1`. */
+    /**
+     * The acting principal as {@link canonicalActor} renders it: `<kind>:<id>`,
+     * for example `agent:a-1`. Compared by equality, never parsed back.
+     */
     actor: z.string().min(1).max(512),
     catalogHash: z.string().regex(/^[0-9a-f]{64}$/u),
     /** RFC 3339. A token with no expiry is not issued. */
@@ -28,6 +32,18 @@ export const ExecutionTokenClaimsSchema = z
   })
   .strict();
 export type ExecutionTokenClaims = z.infer<typeof ExecutionTokenClaimsSchema>;
+
+/**
+ * The one string form of an address a token carries as its `actor`.
+ *
+ * `<kind>:<id>`, from the same `[kind, id]` pair `addressPath` derives for a
+ * recipient-scoped grant, so the two never spell an address differently. It is
+ * a label for equality, not an encoding: nothing parses it back into an
+ * `Address`, and a token is matched on the exact string it was minted with.
+ */
+export function canonicalActor(address: Address): string {
+  return addressPath(address).join(":");
+}
 
 export type ExecutionTokenRejection =
   "malformed" | "signature_mismatch" | "expired" | "claims_mismatch";

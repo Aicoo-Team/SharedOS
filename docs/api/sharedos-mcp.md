@@ -720,14 +720,14 @@ One harness-side rewrite, kept for diagnosis and never for authorization.
 
 ### VerifyExecutionTokenOptions
 
-Defined in: [mcp/src/token.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L60)
+Defined in: [mcp/src/token.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L76)
 
 #### Properties
 
 | Property                               | Modifier   | Type                                                                                                                                    | Description                                                         | Defined in                                                                                            |
 | -------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| <a id="property-expect"></a> `expect?` | `readonly` | `Partial`\<\{ `actor`: `string`; `catalogHash`: `string`; `executionId`: `string`; `expiresAt`: `string`; `namespaceId`: `string`; \}\> | Claims the session already knows, each of which must match exactly. | [mcp/src/token.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L64) |
-| <a id="property-now-1"></a> `now`      | `readonly` | `string`                                                                                                                                | The instant to judge expiry against. RFC 3339.                      | [mcp/src/token.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L62) |
+| <a id="property-expect"></a> `expect?` | `readonly` | `Partial`\<\{ `actor`: `string`; `catalogHash`: `string`; `executionId`: `string`; `expiresAt`: `string`; `namespaceId`: `string`; \}\> | Claims the session already knows, each of which must match exactly. | [mcp/src/token.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L80) |
+| <a id="property-now-1"></a> `now`      | `readonly` | `string`                                                                                                                                | The instant to judge expiry against. RFC 3339.                      | [mcp/src/token.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L78) |
 
 ## Type Aliases
 
@@ -743,7 +743,7 @@ Defined in: [mcp/src/protocol.ts:117](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **ExecutionTokenClaims** = `z.infer`\<_typeof_ [`ExecutionTokenClaimsSchema`](#executiontokenclaimsschema)>\>
 
-Defined in: [mcp/src/token.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L30)
+Defined in: [mcp/src/token.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L34)
 
 ---
 
@@ -751,7 +751,7 @@ Defined in: [mcp/src/token.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/ma
 
 > **ExecutionTokenRejection** = `"malformed"` \| `"signature_mismatch"` \| `"expired"` \| `"claims_mismatch"`
 
-Defined in: [mcp/src/token.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L32)
+Defined in: [mcp/src/token.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L48)
 
 ---
 
@@ -759,7 +759,7 @@ Defined in: [mcp/src/token.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/ma
 
 > **ExecutionTokenVerification** = \{ `claims`: [`ExecutionTokenClaims`](#executiontokenclaims); `valid`: `true`; \} \| \{ `reason`: [`ExecutionTokenRejection`](#executiontokenrejection); `valid`: `false`; \}
 
-Defined in: [mcp/src/token.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L35)
+Defined in: [mcp/src/token.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L51)
 
 ---
 
@@ -823,7 +823,7 @@ Defined in: [mcp/src/protocol.ts:110](https://github.com/Aicoo-Team/SharedOS/blo
 
 > `const` **ExecutionTokenClaimsSchema**: `ZodObject`\<\{ `actor`: `ZodString`; `catalogHash`: `ZodString`; `executionId`: `ZodString`; `expiresAt`: `ZodString`; `namespaceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `actor`: `string`; `catalogHash`: `string`; `executionId`: `string`; `expiresAt`: `string`; `namespaceId`: `string`; \}, \{ `actor`: `string`; `catalogHash`: `string`; `executionId`: `string`; `expiresAt`: `string`; `namespaceId`: `string`; \}\>
 
-Defined in: [mcp/src/token.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L19)
+Defined in: [mcp/src/token.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L20)
 
 What a short-lived execution token asserts.
 
@@ -968,6 +968,31 @@ Defined in: [mcp/src/protocol.ts:15](https://github.com/Aicoo-Team/SharedOS/blob
 Protocol revisions this server speaks, newest first.
 
 ## Functions
+
+### canonicalActor()
+
+> **canonicalActor**(`address`): `string`
+
+Defined in: [mcp/src/token.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L44)
+
+The one string form of an address a token carries as its `actor`.
+
+`<kind>:<id>`, from the same `[kind, id]` pair `addressPath` derives for a
+recipient-scoped grant, so the two never spell an address differently. It is
+a label for equality, not an encoding: nothing parses it back into an
+`Address`, and a token is matched on the exact string it was minted with.
+
+#### Parameters
+
+| Parameter | Type                                                                                                                                                                                                       |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `address` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} |
+
+#### Returns
+
+`string`
+
+---
 
 ### classifyTool()
 
@@ -1303,7 +1328,7 @@ long-running harness the host is supervising by other means.
 
 > **mintExecutionToken**(`claims`, `secret`): `Promise`\<`string`>\>
 
-Defined in: [mcp/src/token.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L47)
+Defined in: [mcp/src/token.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L63)
 
 Sign one execution token.
 
@@ -1314,15 +1339,15 @@ revoked by the host that deployed it.
 
 #### Parameters
 
-| Parameter            | Type                                                                                                                       | Description                                                             |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `claims`             | \{ `actor`: `string`; `catalogHash`: `string`; `executionId`: `string`; `expiresAt`: `string`; `namespaceId`: `string`; \} | -                                                                       |
-| `claims.actor`       | `string`                                                                                                                   | The acting principal in canonical string form, for example `agent:a-1`. |
-| `claims.catalogHash` | `string`                                                                                                                   | -                                                                       |
-| `claims.executionId` | `string`                                                                                                                   | -                                                                       |
-| `claims.expiresAt`   | `string`                                                                                                                   | RFC 3339. A token with no expiry is not issued.                         |
-| `claims.namespaceId` | `string`                                                                                                                   | -                                                                       |
-| `secret`             | `string`                                                                                                                   | -                                                                       |
+| Parameter            | Type                                                                                                                       | Description                                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `claims`             | \{ `actor`: `string`; `catalogHash`: `string`; `executionId`: `string`; `expiresAt`: `string`; `namespaceId`: `string`; \} | -                                                                                                                                                      |
+| `claims.actor`       | `string`                                                                                                                   | The acting principal as [canonicalActor](#canonicalactor) renders it: `<kind>:<id>`, for example `agent:a-1`. Compared by equality, never parsed back. |
+| `claims.catalogHash` | `string`                                                                                                                   | -                                                                                                                                                      |
+| `claims.executionId` | `string`                                                                                                                   | -                                                                                                                                                      |
+| `claims.expiresAt`   | `string`                                                                                                                   | RFC 3339. A token with no expiry is not issued.                                                                                                        |
+| `claims.namespaceId` | `string`                                                                                                                   | -                                                                                                                                                      |
+| `secret`             | `string`                                                                                                                   | -                                                                                                                                                      |
 
 #### Returns
 
@@ -1587,7 +1612,7 @@ A content identifier for the declared policy, for the run's `policyHash`.
 
 > **verifyExecutionToken**(`token`, `secret`, `options`): `Promise`\<[`ExecutionTokenVerification`](#executiontokenverification)>\>
 
-Defined in: [mcp/src/token.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L76)
+Defined in: [mcp/src/token.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L92)
 
 Verify a token, then check it against what the session already knows.
 

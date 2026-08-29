@@ -114,6 +114,11 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- `canonicalActor` in `@aicoo/sharedos-mcp`: the one string form of an
+  `Address` an execution token carries as `actor`, `<kind>:<id>`, from the same
+  pair `addressPath` derives for a recipient-scoped grant. The form was
+  described in a docblock example and defined nowhere.
+
 - `MCP_HARNESS_IDS` in `@aicoo/sharedos-mcp`, the one list `McpHarnessId` is
   derived from, and `CODEX_HARNESS_ID`, `CLAUDE_CODE_HARNESS_ID`,
   `DEEPSEEK_HARNESS_ID`, `PI_HARNESS_ID` in `@aicoo/sharedos-adapters`: each
