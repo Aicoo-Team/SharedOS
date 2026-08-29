@@ -214,9 +214,14 @@ each entry calls out what a host has to update.
   unpublished dependencies. `scripts/package-set.mjs` is now in dependency
   order, `release:check` refuses an order that is not, and `test:release`
   checks the order against the manifests.
-- The client example in the host integration guide passed a `token` option that
-  `SharedOSClientOptions` has never had. It is `headers`, which accepts a value
-  or an async function.
+- `SharedOSClientOptions.token` and `SharedOSCallOptions.purpose` were
+  undocumented: the HTTP reference listed only `headers`, and an earlier note
+  here said `token` had never existed. Both have been there since the client was
+  written. `token` is a value or an async function sent as a Bearer
+  `authorization` header, `headers` carries anything else, and per-call
+  `purpose` sets `x-sharedos-purpose`, the header the quickstart's
+  `resolveContext` reads. All three are now in the HTTP reference and the
+  client README.
 - Publish verification retried the same registry URL with default caching, so a
   CDN edge holding a pre-publish `404` made the whole window unwinnable and a
   successful release reported failure. It now backs off up to five minutes and

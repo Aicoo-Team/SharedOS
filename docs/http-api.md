@@ -114,7 +114,15 @@ appear, so a model driven by this list never learns it exists.
 ```
 
 `inputSchema` is JSON Schema and can be handed to a model as a tool definition
-unchanged.
+unchanged. The rest of the entry is the management projection: this route
+returns full `ToolDefinition`s, and `requiredCapability` is the discovery
+ceiling, not what any call will be authorized against, so it is not something
+a model should be told. A client that drives a model from this route projects
+with `publishToolCatalog` first — `name`, `description`, `inputSchema`,
+`outputSchema`, annotations, and `metadata.namespace` / `metadata.source` —
+which is the same `PublishedToolDefinition` the MCP boundary serves and what
+`ModelDriver` sends to a provider. See
+[what crosses the boundary](mcp-toolshare.md#what-crosses-the-boundary).
 
 ### `GET /v1/tools/namespaces` · `PUT /v1/tools/namespaces`
 
@@ -255,9 +263,11 @@ at admission and nothing runs.
 
 `status` is `succeeded`, `denied`, `failed`, `cancelled`, or `escalated` — the
 last carries an `escalation` and no `error`. `events` is
-append-only and ordered by `sequence`; the eight types are listed in
-[events](errors.md#execution-events). `options` is clamped by the server —
-`maxToolCalls` at most 10,000, `timeoutMs` at most 600,000.
+append-only and ordered by `sequence`; the nine types are listed in
+[events](errors.md#execution-events). `options` is validated, not clamped:
+`maxSteps` above 1,000, `maxToolCalls` above 10,000, or `timeoutMs` above
+600,000 is a `400 invalid_request`, the same limits the embedded schema
+enforces (see [contract limits](errors.md#contract-limits)).
 
 There is no streaming endpoint. A turn is one request/response, and the event
 list is returned with the result.
@@ -348,9 +358,14 @@ const sharedos = new SharedOSClient({
 | `sendMessage(envelope)`        | `POST /v1/messages`         |
 | `executeTurn(request)`         | `POST /v1/turns`            |
 
-Options are `{ baseUrl, fetch?, headers? }`, where `headers` is a value or an
-async function. Each call also takes `{ signal?, headers? }`. Failures throw
-`SharedOSClientError` with `status`, `code`, and `requestId`.
+Options are `{ baseUrl, token?, fetch?, headers? }`. `token` is a value or an
+async function and is sent as `authorization: Bearer <token>`, set after
+`headers`, so it wins if both name the header; `headers` is a value or an async
+function for anything else. Each call also takes `{ signal?, headers?, purpose? }`:
+`purpose` is sent as `x-sharedos-purpose`, a hint the server's `resolveContext`
+may read into the trusted context — as the quickstart's does — and never
+authority in itself. Failures throw `SharedOSClientError` with `status`,
+`code`, and `requestId`.
 
 ## Choosing this boundary
 
