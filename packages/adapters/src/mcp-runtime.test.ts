@@ -167,9 +167,15 @@ const provider: ResourceProvider = {
 };
 
 function kernel(
-  options: { readonly escalation?: boolean; readonly audit?: AuditSink } = {},
+  options: {
+    readonly escalation?: boolean;
+    readonly audit?: AuditSink;
+    /** Holds every read this long once admitted, so a later call can overtake it. */
+    readonly readDelayMs?: number;
+  } = {},
 ): SharedOSKernel {
   const escalation = options.escalation === true;
+  const readDelayMs = options.readDelayMs ?? 0;
   const tools = new ToolRegistry();
   tools.register({
     definition: READ_TOOL,
@@ -183,6 +189,9 @@ function kernel(
       action: "read",
     }),
     invoke: async (accessContext, call, signal) => {
+      if (readDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, readDelayMs));
+      }
       const result = await provider.invoke(
         {
           operationId: call.id,
@@ -273,9 +282,21 @@ const initialized = await rpc(1, "initialize", { protocolVersion: "2025-06-18" }
 const listed = await rpc(2, "tools/list", {});
 const seen = [];
 let next = 3;
+const issue = async ({ afterMs, ...params }) => {
+  if (afterMs) {
+    await new Promise((resolve) => setTimeout(resolve, afterMs));
+  }
+  const answered = await rpc(next++, "tools/call", params);
+  return answered.result ?? answered.error;
+};
 for (const call of calls) {
-  const answered = await rpc(next++, "tools/call", call);
-  seen.push(answered.result ?? answered.error);
+  // An array is a batch issued concurrently, answers kept in the batch's own
+  // order; \`afterMs\` holds one call back so the race is a race in one direction.
+  if (Array.isArray(call)) {
+    seen.push(...(await Promise.all(call.map(issue))));
+  } else {
+    seen.push(await issue(call));
+  }
 }
 
 process.stdout.write(
@@ -542,13 +563,17 @@ interface AffordanceTurn {
 
 async function runAffordance(
   calls: readonly unknown[],
-  options: { readonly granted?: boolean } = {},
+  options: { readonly granted?: boolean; readonly readDelayMs?: number } = {},
 ): Promise<AffordanceTurn> {
   const granted = options.granted !== false;
   const audit = new InMemoryAuditSink();
   const diagnostics: string[] = [];
   const executor = new SharedOSExecutor(
-    kernel({ escalation: granted, audit }),
+    kernel({
+      escalation: granted,
+      audit,
+      ...(options.readDelayMs === undefined ? {} : { readDelayMs: options.readDelayMs }),
+    }),
     createMcpHarnessRuntime(fakeHarness(calls), {
       clock: () => NOW,
       onDiagnostic: (_harness, line) => diagnostics.push(line),
@@ -651,6 +676,55 @@ describe("a harness that asks for a human over MCP", () => {
     // success frame. Recording that beside the escalation is what keeps "asked,
     // then finished cleanly" distinguishable from "asked, then crashed".
     expect(escalationOf(turn.result).metadata?.["harnessOutcome"]).toBe("complete");
+  }, 30_000);
+
+  it("escalates on an ask it cannot read rather than forwarding it to the kernel", async () => {
+    const fallback = "the turn asked for a human decision without saying what needs deciding";
+    const unreadable = await runAffordance([
+      { name: "sharedos.escalate", arguments: { reason: 42 } },
+    ]);
+    const empty = await runAffordance([{ name: "sharedos.escalate", arguments: {} }]);
+
+    // Same rule as the drivers: the harness asked for a human, and forwarding
+    // a malformed ask to a handler that fails would record "the agent made a
+    // malformed call" in place of "the turn asked". The ask is taken under a
+    // reason saying it carried none, and the handler is never reached.
+    for (const turn of [unreadable, empty]) {
+      expect(escalationOf(turn.result).escalation.reason).toBe(fallback);
+      expect(turn.seen[0]?.["isError"]).toBe(false);
+      expect(turn.events.filter((type) => type === "tool.requested")).toHaveLength(0);
+      expect(turn.audited.some(({ reason }) => reason === "escalation_not_terminated")).toBe(false);
+    }
+  }, 60_000);
+
+  it("refuses a second ask after the first, and keeps the first reason", async () => {
+    const turn = await runAffordance([ASK, { ...ASK, arguments: { reason: "asking again" } }]);
+    const [, again] = turn.seen;
+
+    // The latch is set once. A repeat is a call made after the ask like any
+    // other: refused in band as `escalation_pending`, counted, and the reason
+    // the turn ends on is the one it first asked with.
+    expect(again?.["isError"]).toBe(true);
+    expect(meta(again)["sharedos/code"]).toBe("escalation_pending");
+    expect(escalationOf(turn.result).escalation.reason).toBe(ESCALATION_REASON);
+    expect(escalationOf(turn.result).metadata?.["callsAfterEscalation"]).toBe(1);
+    expect(turn.audited.filter(({ type }) => type === "escalation.requested")).toHaveLength(1);
+  }, 30_000);
+
+  it("lets a call admitted before the ask finish, and does not count it as after", async () => {
+    // The read is issued first and held inside the kernel; the ask overtakes
+    // it. The latch decides at entry, so a call already past it when the ask
+    // lands was admitted on the turn's authority before anything was asked:
+    // it runs to completion and is not one of the calls "after" the ask.
+    const turn = await runAffordance([[READ, { ...ASK, afterMs: 60 }]], { readDelayMs: 400 });
+    const [read, asked] = turn.seen;
+
+    expect(read?.["isError"]).toBe(false);
+    expect(JSON.stringify(read?.["content"])).toContain("Work/Public");
+    expect(asked?.["isError"]).toBe(false);
+    expect(turn.result.status).toBe("escalated");
+    expect(escalationOf(turn.result).metadata?.["callsAfterEscalation"]).toBe(0);
+    expect(turn.events.filter((type) => type === "tool.requested")).toHaveLength(1);
   }, 30_000);
 
   it("does not honour the affordance for a turn that was never granted it", async () => {
