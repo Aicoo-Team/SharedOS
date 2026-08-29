@@ -54,8 +54,17 @@ in another world even if its resource namespace, path, and owner text are the
 same.
 
 Writes are never implied by reads. Search is never implied by list. Registering
-a tool does not imply permission to discover or invoke it. Wildcard actions, if
-enabled by a host, require the same complete resource and constraint match.
+a tool does not imply permission to discover or invoke it.
+
+One action is special. A capability whose `actions` lists the literal `"*"`
+covers every action on its resource. There is no switch that enables it: a host
+enables it by issuing such a grant, and should do so rarely, because ADR 0005
+keeps create, replace, append, and delete distinct precisely so that authority
+can be narrower than everything. It widens only the action test — resource,
+owner, scope, purpose, time window, and bounded use are matched exactly as for
+a named action — and delegation treats it as the widest action set: a derived
+grant may carry `"*"` only when its parent does. Nothing else expands;
+`snapshot:*` is an ordinary string that matches no action.
 
 ## Grant shape and constraints
 

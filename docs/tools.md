@@ -54,7 +54,9 @@ file tree, not separate permission systems ([ADR 0005](adr/0005-files-resource-p
 
 The **action** column is what a grant names. Granting `["search", "read"]`
 makes exactly `files.search` and `files.read` visible; the other ten do not
-appear in the catalog at all.
+appear in the catalog at all. The literal `"*"` is the one action that covers
+every other, so a grant listing it makes all twelve visible — see the
+[permission model](security/permission-model.md#capabilities-and-resources).
 
 `path` is an array of segments, at most 64, each at most 256 characters.
 Separators, traversal markers, and control characters are rejected by the

@@ -75,7 +75,11 @@ Walk these in order. Every one of them produces the identical code.
 6. **The path is not covered.** `scope: "exact"` matches only that path.
    `scope: "descendants"` matches the path and below — and segments are compared
    as segments, so `cell-3` never covers `cell-30`.
-7. **The action is not listed.** `actions` has no wildcard expansion.
+7. **The action is not listed.** Actions are matched literally, with one
+   exception: a grant whose `actions` contains the literal `"*"` covers every
+   action on its resource. Nothing else expands — `snapshot:*` is an ordinary
+   string that matches nothing — and `"*"` in a _request_ matches only a grant
+   that lists it.
 8. **A `grantVerifier` returned false or threw.** A throw is treated as false.
 9. **The capability is spread across grants.** One requirement must be satisfied
    by one grant. Path from one and action from another is refused deliberately.
