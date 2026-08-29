@@ -477,17 +477,28 @@ if (sharedOsVersions.size > 1) {
  * the run the check exists to bless. What makes two columns comparable is that
  * each saw the same catalogue *for the same case* -- so compare the sequence of
  * hashes, case by case, and report the case where two columns first diverge.
+ *
+ * Hashes are compared whole and printed short. Equality on a twelve-hex prefix
+ * would be a claim the check never made. And a column that published catalogues
+ * elsewhere in the run but recorded none for a case is named, rather than left
+ * out of that case's comparison: a case a column silently dropped out of would
+ * read as one it agreed on. `Standard` records no catalogue at all and takes
+ * part in neither.
  */
-const signature = (hashes) =>
-  [...hashes]
-    .sort()
+const catalogueSignature = (hashes) => [...hashes].sort().join("+");
+const shortSignature = (signature) =>
+  signature
+    .split("+")
     .map((hash) => `sha256:${hash.slice(0, 12)}…`)
     .join("+");
+const publishingColumns = [...perColumn]
+  .filter(([, seen]) => seen.catalogHashByCase.size > 0)
+  .map(([columnId]) => columnId);
 const catalogueByCase = new Map();
 for (const [columnId, seen] of perColumn) {
   for (const [caseId, hashes] of seen.catalogHashByCase) {
     const byColumn = catalogueByCase.get(caseId) ?? new Map();
-    byColumn.set(columnId, signature(hashes));
+    byColumn.set(columnId, catalogueSignature(hashes));
     catalogueByCase.set(caseId, byColumn);
   }
 }
@@ -500,7 +511,22 @@ if (divergent.length > 0) {
     `\nWARNING: ${divergent.length} case(s) served a different catalogue to different ` +
       "columns. Those columns were not given the same tool set and are not comparable. " +
       `First: ${caseId} — ` +
-      [...byColumn.entries()].map(([columnId, sig]) => `${columnId} ${sig}`).join(", "),
+      [...byColumn.entries()]
+        .map(([columnId, signature]) => `${columnId} ${shortSignature(signature)}`)
+        .join(", "),
+  );
+}
+const unrecorded = [...catalogueByCase.entries()]
+  .map(([caseId, byColumn]) => [
+    caseId,
+    publishingColumns.filter((columnId) => !byColumn.has(columnId)),
+  ])
+  .filter(([, missing]) => missing.length > 0);
+if (unrecorded.length > 0) {
+  console.error(
+    `\nWARNING: ${unrecorded.length} case(s) have a column that recorded no catalogue for ` +
+      "them, so that column is not compared there: " +
+      unrecorded.map(([caseId, missing]) => `${caseId} (${missing.join(", ")})`).join("; "),
   );
 }
 
