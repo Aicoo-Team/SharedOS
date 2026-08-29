@@ -19,7 +19,12 @@ import {
 } from "./columns.js";
 import { assembleExecutionRecord } from "./assemble.js";
 import { hashExperimentInputs, hashJson } from "./hashing.js";
-import { judgeCase, type ConformanceStatus, type EnforcementPoint } from "./judge.js";
+import {
+  JUDGE_VERSION,
+  judgeCase,
+  type ConformanceStatus,
+  type EnforcementPoint,
+} from "./judge.js";
 import type { ExecutionRecord } from "./record.js";
 import {
   CANONICAL_CONFORMANCE_CASES,
@@ -27,9 +32,6 @@ import {
   type ConformanceCondition,
 } from "./suite.js";
 import { createConformanceWorld, type ConformanceWorld } from "./world.js";
-
-/** Version of the grading rules, so a manifest names what produced it. */
-export const JUDGE_VERSION = "2";
 
 /**
  * The SharedOS build an execution record was produced by.

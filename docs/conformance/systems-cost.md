@@ -88,13 +88,13 @@ turn rather than once per call and is outside these figures.
 
 | Column | Parse + translate per call | Catalogue width | n |
 | --- | --- | --- | --- |
-| Std | — | 17 | — |
+| Standard | — | 17 | — |
 | Codex | 5.11 µs | 17 | 200 |
-| CC | 12.7 µs | 17 | 200 |
-| DS | 9.75 µs | 17 | 200 |
+| Claude Code | 12.7 µs | 17 | 200 |
+| DeepSeek | 9.75 µs | 17 | 200 |
 | Pi | 12.3 µs | 17 | 200 |
 
-Std's `—` is the absence of a translation layer, not a pending measurement.
+Standard's `—` is the absence of a translation layer, not a pending measurement.
 
 The width is the catalogue SharedOS served. A harness that republishes it
 behind a proxy tool of its own -- Pi's installed extension does -- changes what

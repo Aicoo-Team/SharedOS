@@ -18,11 +18,11 @@
     },
     {
       "id": "deepseek-scripted",
-      "label": "Deepseek"
+      "label": "DeepSeek"
     },
     {
       "id": "pi-scripted",
-      "label": "pi"
+      "label": "Pi"
     }
   ],
   "rows": [

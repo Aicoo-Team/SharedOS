@@ -238,14 +238,14 @@ export const CLAUDE_CODE_SCRIPTED_COLUMN: RuntimeColumn = scriptedColumn({
 
 export const DEEPSEEK_SCRIPTED_COLUMN: RuntimeColumn = scriptedColumn({
   id: "deepseek-scripted",
-  label: "Deepseek",
+  label: "DeepSeek",
   protocol: deepseekProtocol,
   writer: deepseekFrameWriter,
 });
 
 export const PI_SCRIPTED_COLUMN: RuntimeColumn = scriptedColumn({
   id: "pi-scripted",
-  label: "pi",
+  label: "Pi",
   protocol: piProtocol,
   writer: piFrameWriter,
 });

@@ -28,6 +28,13 @@ import {
   type AttackMove,
 } from "./adversary.js";
 import { assembleExecutionRecord } from "./assemble.js";
+import {
+  CLAUDE_CODE_SCRIPTED_COLUMN,
+  CODEX_SCRIPTED_COLUMN,
+  DEEPSEEK_SCRIPTED_COLUMN,
+  EMBEDDED_COLUMN,
+  PI_SCRIPTED_COLUMN,
+} from "./columns.js";
 import { hashExperimentInputs } from "./hashing.js";
 import type { ExecutionRecord } from "./record.js";
 import { SHAREDOS_VERSION } from "./runner.js";
@@ -836,22 +843,37 @@ export async function runTranslationPath(
   return measures;
 }
 
-/** The four scripted adapters, paired with the frames that drive them. */
+/**
+ * The four scripted adapters, paired with the frames that drive them.
+ *
+ * Ids and labels are the scripted columns' own, so a column is named the same
+ * way here as in the conformance manifest.
+ */
 export const TRANSLATION_SUBJECTS: readonly TranslationSubject[] = Object.freeze([
-  { columnId: "codex-scripted", label: "Codex", protocol: codexProtocol, writer: codexFrameWriter },
   {
-    columnId: "claude-code-scripted",
-    label: "CC",
+    columnId: CODEX_SCRIPTED_COLUMN.id,
+    label: CODEX_SCRIPTED_COLUMN.label,
+    protocol: codexProtocol,
+    writer: codexFrameWriter,
+  },
+  {
+    columnId: CLAUDE_CODE_SCRIPTED_COLUMN.id,
+    label: CLAUDE_CODE_SCRIPTED_COLUMN.label,
     protocol: claudeCodeProtocol,
     writer: claudeCodeFrameWriter,
   },
   {
-    columnId: "deepseek-scripted",
-    label: "DS",
+    columnId: DEEPSEEK_SCRIPTED_COLUMN.id,
+    label: DEEPSEEK_SCRIPTED_COLUMN.label,
     protocol: deepseekProtocol,
     writer: deepseekFrameWriter,
   },
-  { columnId: "pi-scripted", label: "Pi", protocol: piProtocol, writer: piFrameWriter },
+  {
+    columnId: PI_SCRIPTED_COLUMN.id,
+    label: PI_SCRIPTED_COLUMN.label,
+    protocol: piProtocol,
+    writer: piFrameWriter,
+  },
 ]);
 
 /** {@link BenchOptions} with every default already applied. */
@@ -1209,13 +1231,16 @@ export function renderSystemsCostReport(report: SystemsCostReport): string {
   lines.push("turn rather than once per call and is outside these figures.", "");
   lines.push("| Column | Parse + translate per call | Catalogue width | n |");
   lines.push("| --- | --- | --- | --- |");
-  lines.push(`| Std | — | ${report.structural.catalogueWidth} | — |`);
+  lines.push(`| ${EMBEDDED_COLUMN.label} | — | ${report.structural.catalogueWidth} | — |`);
   for (const entry of report.translation) {
     lines.push(
       `| ${entry.label} | ${micro(entry.latency.p50Ms)} | ${entry.catalogueWidth} | ${entry.latency.n} |`,
     );
   }
-  lines.push("", "Std's `—` is the absence of a translation layer, not a pending measurement.");
+  lines.push(
+    "",
+    `${EMBEDDED_COLUMN.label}'s \`—\` is the absence of a translation layer, not a pending measurement.`,
+  );
   lines.push("");
   lines.push("The width is the catalogue SharedOS served. A harness that republishes it");
   lines.push("behind a proxy tool of its own -- Pi's installed extension does -- changes what");

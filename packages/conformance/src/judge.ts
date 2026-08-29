@@ -3,6 +3,14 @@ import { checkRecordCompleteness } from "./completeness.js";
 import type { ExecutionRecord } from "./record.js";
 
 /**
+ * Version of the grading rules, so a manifest names what produced it.
+ *
+ * Lives beside the rules it versions: a change to how a cell is graded is a
+ * change to this file, and the bump belongs in the same diff.
+ */
+export const JUDGE_VERSION = "2";
+
+/**
  * What a manifest cell may report.
  *
  * `not_exercised` is not a softer failure. It says the attempt never reached

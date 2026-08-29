@@ -181,14 +181,14 @@ const DECLARED_HARNESSES = [
   },
   {
     spec: DEEPSEEK_MCP_HARNESS,
-    label: "Deepseek",
+    label: "DeepSeek",
     requirements: DEEPSEEK_REQUIREMENTS,
     policy: declareToolPolicy({ harnessLocal: ["shell", "apply_patch"] }),
     mcpSupport: "native",
   },
   {
     spec: PI_MCP_HARNESS,
-    label: "pi",
+    label: "Pi",
     requirements: PI_REQUIREMENTS,
     /** `--no-builtin-tools` leaves only the extension's proxy, which is not local. */
     policy: declareToolPolicy({ harnessLocal: [] }),
