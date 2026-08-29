@@ -11,7 +11,9 @@ import type { CapabilityGrant } from "@aicoo/sharedos-contracts";
 
 import {
   ESCALATION_REASON_MAX_LENGTH,
+  ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAME,
+  ESCALATION_TOOL_NAMESPACE,
   TurnExecutor,
   escalationReason,
   escalationRequest,
@@ -49,12 +51,15 @@ const context: AccessContext = {
   now,
 };
 
-function request(): ExecutionRequest {
+function request(options: { readonly escalation?: boolean } = {}): ExecutionRequest {
+  const escalation = options.escalation === true;
   return {
     version: "1",
     executionId: "execution-1",
     agent: receiver,
-    context,
+    context: escalation
+      ? { ...context, enabledToolNamespaces: ["files", ESCALATION_TOOL_NAMESPACE] }
+      : context,
     message: {
       version: "1",
       id: "message-1",
@@ -65,20 +70,25 @@ function request(): ExecutionRequest {
       traceId: context.traceId,
       createdAt: now,
     },
-    tools: [{ ...tool, description: "Caller-supplied description" }],
+    tools: [
+      { ...tool, description: "Caller-supplied description" },
+      ...(escalation ? [ESCALATION_TOOL_DEFINITION] : []),
+    ],
   };
 }
 
 function kernel(
   result?: ToolResult,
+  options: { readonly escalation?: boolean } = {},
 ): Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> {
+  const catalogue = options.escalation === true ? [tool, ESCALATION_TOOL_DEFINITION] : [tool];
   return {
     admitTurn: vi.fn(async () => ({
       allowed: true as const,
       reasonCode: "allowed" as const,
       matchedGrantId: "grant-turn",
     })),
-    listTools: vi.fn(async () => [tool]),
+    listTools: vi.fn(async () => catalogue),
     invokeTool: vi.fn(async (_context, call): Promise<ToolResult> => {
       return (
         result ?? {
@@ -153,10 +163,10 @@ describe("TurnExecutor", () => {
     };
     const driver: AgentTurnDriver = { open: async () => session };
 
-    const result = await new TurnExecutor(kernel(), driver, {
+    const result = await new TurnExecutor(kernel(undefined, { escalation: true }), driver, {
       clock: () => now,
       createId: () => "event-1",
-    }).execute(request());
+    }).execute(request({ escalation: true }));
 
     expect(result.status).toBe("escalated");
     expect(result.status === "escalated" ? result.escalation.reason : undefined).toBe(

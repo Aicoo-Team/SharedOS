@@ -13,7 +13,14 @@ import {
   SharedOSKernel,
   type ToolHandler,
 } from "@aicoo/sharedos-core";
-import { SharedOSExecutor, type RuntimePlugin } from "@aicoo/sharedos-runtime";
+import {
+  ESCALATION_ACTION,
+  ESCALATION_RESOURCE_PATH,
+  ESCALATION_TOOL_DEFINITION,
+  ESCALATION_TOOL_NAMESPACE,
+  SharedOSExecutor,
+  type RuntimePlugin,
+} from "@aicoo/sharedos-runtime";
 
 import { assembleExecutionRecord } from "./assemble.js";
 import { checkRecordCompleteness, checkRecordRedaction } from "./completeness.js";
@@ -256,29 +263,73 @@ describe("execution records from a real turn", () => {
     expect(checkRecordCompleteness(record).usable).toBe(true);
   });
 
-  it("emits a usable record for a turn that stopped to ask a human", async () => {
-    const escalating: RuntimePlugin = {
-      manifest: runtime.manifest,
-      async run() {
-        return { type: "escalate", reason: "issuing a grant is outside this agent's authority" };
+  /** A plugin that ends every turn by asking for a human, whatever it was granted. */
+  const escalating: RuntimePlugin = {
+    manifest: runtime.manifest,
+    async run() {
+      return { type: "escalate", reason: "issuing a grant is outside this agent's authority" };
+    },
+  };
+
+  const escalationGrant: CapabilityGrant = {
+    id: "grant-escalation",
+    namespaceId: "world-alpha",
+    subject: AGENT,
+    issuer: OWNER,
+    capabilities: [
+      {
+        resource: {
+          namespace: ESCALATION_TOOL_NAMESPACE,
+          path: [...ESCALATION_RESOURCE_PATH],
+          owner: OWNER,
+        },
+        actions: [ESCALATION_ACTION],
+        scope: "descendants",
       },
+    ],
+    constraints: { purposes: ["prepare-update"] },
+    issuedAt: "2026-08-03T08:00:00.000Z",
+  };
+
+  const escalationHandler: ToolHandler = {
+    definition: ESCALATION_TOOL_DEFINITION,
+    parseArguments: (arguments_) => arguments_,
+    invoke: async (access, call) => ({
+      callId: call.id,
+      tool: call.tool,
+      status: "failed",
+      error: { code: "escalation_not_terminated", message: "never invoked" },
+      completedAt: access.now,
+    }),
+  };
+
+  /** The request with the affordance among its tools and its namespace enabled. */
+  function escalationRequest(): ExecutionRequest {
+    return {
+      ...request(),
+      context: { ...context(), enabledToolNamespaces: ["files", ESCALATION_TOOL_NAMESPACE] },
+      tools: [READ_TOOL, ESCALATION_TOOL_DEFINITION],
     };
+  }
+
+  it("emits a usable record for a turn that stopped to ask a human", async () => {
     const audit: AuditEvent[] = [];
     const kernel = new SharedOSKernel({
       grantSource: {
         async load() {
-          return allowed;
+          return [...allowed, escalationGrant];
         },
       },
       audit: { record: async (event) => void audit.push(event) },
     });
     kernel.registerTool(readHandler);
+    kernel.registerTool(escalationHandler);
 
     const result = await new SharedOSExecutor(kernel, escalating, { clock: () => NOW }).execute(
-      request(),
+      escalationRequest(),
     );
     const record = assembleExecutionRecord({
-      request: request(),
+      request: escalationRequest(),
       result,
       auditEvents: audit,
       experiment,
@@ -291,6 +342,44 @@ describe("execution records from a real turn", () => {
     expect(record.execution.status).toBe("escalated");
     expect(record.execution.terminalReasonCode).toBe("escalation_requested");
     expect(record.execution.escalation).toMatchObject({ status: "pending" });
+    expect(checkRecordCompleteness(record).usable).toBe(true);
+    expect(checkRecordRedaction(record).clean).toBe(true);
+  });
+
+  it("records a turn that asked without the grant as failed, with nothing escalated", async () => {
+    const audit: AuditEvent[] = [];
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        async load() {
+          return allowed;
+        },
+      },
+      audit: { record: async (event) => void audit.push(event) },
+    });
+    kernel.registerTool(readHandler);
+    kernel.registerTool(escalationHandler);
+
+    // The tool exists in the world and is asked for; the grant that would put
+    // it in this agent's catalogue is what is missing.
+    const result = await new SharedOSExecutor(kernel, escalating, { clock: () => NOW }).execute(
+      escalationRequest(),
+    );
+    const record = assembleExecutionRecord({
+      request: escalationRequest(),
+      result,
+      auditEvents: audit,
+      experiment,
+      system,
+    });
+
+    // Refused by the envelope as any call outside the catalogue is, and the
+    // record says so: a failed turn under the envelope's own code, with no
+    // escalation on it and none in audit, because nothing reached the kernel.
+    expect(record.execution.status).toBe("failed");
+    expect(record.execution.terminalReasonCode).toBe("tool_unavailable");
+    expect(record.execution.escalation).toBeUndefined();
+    expect(record.execution.exposedTools).not.toContain(ESCALATION_TOOL_DEFINITION.name);
+    expect(audit.some(({ type }) => type === "escalation.requested")).toBe(false);
     expect(checkRecordCompleteness(record).usable).toBe(true);
     expect(checkRecordRedaction(record).clean).toBe(true);
   });

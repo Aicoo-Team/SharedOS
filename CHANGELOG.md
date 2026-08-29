@@ -158,8 +158,12 @@ each entry calls out what a host has to update.
   invisible to an agent holding no grant over it, and never invoked -- a driver
   whose turn's catalogue offers it recognises the name and ends the turn on it,
   and a call naming it on a turn that was never granted it is passed through to
-  be refused `tool_unavailable`. The reason is recorded as given, cut to the
-  outcome's 512-character bound rather than replaced when it runs past it.
+  be refused `tool_unavailable`. The envelope holds the same gate from outside:
+  `SharedOSExecutor` fails a turn `tool_unavailable` when any runtime plugin
+  returns `escalate` on a turn whose catalogue does not offer the affordance,
+  recording nothing, since nothing reached the kernel. The reason is recorded
+  as given, cut to the outcome's 512-character bound rather than replaced when
+  it runs past it.
   Asking for a human is an affordance a host grants, so a host that publishes
   no escalation grant has agents that cannot ask. See ADR 0017.
 - An optional `step` on `AgentTurnDecision.tool_call`. A driver that says

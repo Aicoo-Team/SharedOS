@@ -59,6 +59,18 @@ or remembered from another turn -- would end the turn `escalated` and deliver
 its text to the owner with no grant behind it, which is the alternative rejected
 below wearing a different hat.
 
+The envelope holds the same gate from outside. A replacement plugin is a
+replacement for exactly the driver's check, and a limit only the reference
+implementations honour is not a limit (ADR 0012), so `SharedOSExecutor` repeats
+it against the catalogue the turn was actually served: an `escalate` outcome
+from any runtime plugin whose turn's catalogue does not hold the affordance is
+refused, and the turn fails `tool_unavailable` -- the code the envelope already
+uses for a call outside the catalogue, from the same boundary. Nothing reached
+the kernel, so nothing is audited; as with every envelope refusal, the event
+stream (`turn.failed`) is the record. It is `failed` rather than a new status
+because a runtime returning an outcome it was not allowed to return is a
+runtime misbehaving, the case `invalid_runtime_outcome` already covers.
+
 **It may declare the step it is calling at.** `AgentTurnDecision.tool_call`
 carries an optional `step`, and `StandardRuntime` uses `decision.step ?? step`.
 A driver that says nothing is bounded exactly as before. One that names a step
