@@ -1,4 +1,5 @@
 import type { RuntimeManifest } from "@aicoo/sharedos-contracts";
+import type { McpHarnessId } from "@aicoo/sharedos-mcp";
 
 import { HarnessDriver, type HarnessDriverOptions } from "../driver.js";
 import { HarnessRuntime } from "../runtime.js";
@@ -8,6 +9,9 @@ import { CLAUDE_CODE_PROTOCOL_ID, claudeCodeProtocol } from "./protocol.js";
 
 export { CLAUDE_CODE_PROTOCOL_ID, claudeCodeProtocol } from "./protocol.js";
 
+/** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
+export const CLAUDE_CODE_HARNESS_ID = "claude-code" satisfies McpHarnessId;
+
 export const CLAUDE_CODE_ADAPTER_VERSION = "0.1.0-alpha.3";
 
 export const CLAUDE_CODE_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
@@ -16,7 +20,7 @@ export const CLAUDE_CODE_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   protocolVersion: "1",
   metadata: {
     package: "@aicoo/sharedos-adapters",
-    harness: "claude-code",
+    harness: CLAUDE_CODE_HARNESS_ID,
     wireProtocol: CLAUDE_CODE_PROTOCOL_ID,
     executionModel: "bounded-driver-loop",
   },
@@ -24,7 +28,7 @@ export const CLAUDE_CODE_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
 
 /** What a live Claude Code session needs before it can run. */
 export const CLAUDE_CODE_REQUIREMENTS: HarnessRequirements = Object.freeze({
-  harness: "claude-code",
+  harness: CLAUDE_CODE_HARNESS_ID,
   executable: "claude",
   credentialVariables: ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"],
   /** Claude Code can also authenticate from a stored subscription login. */

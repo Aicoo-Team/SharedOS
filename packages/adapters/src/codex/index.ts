@@ -1,4 +1,5 @@
 import type { RuntimeManifest } from "@aicoo/sharedos-contracts";
+import type { McpHarnessId } from "@aicoo/sharedos-mcp";
 
 import { HarnessDriver, type HarnessDriverOptions } from "../driver.js";
 import { HarnessRuntime } from "../runtime.js";
@@ -8,6 +9,9 @@ import { CODEX_PROTOCOL_ID, codexProtocol } from "./protocol.js";
 
 export { CODEX_PROTOCOL_ID, codexProtocol } from "./protocol.js";
 
+/** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
+export const CODEX_HARNESS_ID = "codex" satisfies McpHarnessId;
+
 export const CODEX_ADAPTER_VERSION = "0.1.0-alpha.3";
 
 export const CODEX_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
@@ -16,7 +20,7 @@ export const CODEX_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   protocolVersion: "1",
   metadata: {
     package: "@aicoo/sharedos-adapters",
-    harness: "codex",
+    harness: CODEX_HARNESS_ID,
     wireProtocol: CODEX_PROTOCOL_ID,
     executionModel: "bounded-driver-loop",
   },
@@ -24,7 +28,7 @@ export const CODEX_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
 
 /** What a live Codex session needs before it can run. */
 export const CODEX_REQUIREMENTS: HarnessRequirements = Object.freeze({
-  harness: "codex",
+  harness: CODEX_HARNESS_ID,
   executable: "codex",
   credentialVariables: ["OPENAI_API_KEY", "CODEX_API_KEY"],
   /** Codex can also authenticate from a stored `codex login` session. */
