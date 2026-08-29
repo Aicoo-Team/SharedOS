@@ -57,6 +57,11 @@ export interface AssembleExecutionRecordInput {
  */
 export function assembleExecutionRecord(input: AssembleExecutionRecordInput): ExecutionRecord {
   const { request, result } = input;
+  const reported = reportedTokens(result);
+  const tokens = {
+    inputTokens: input.cost?.inputTokens ?? reported.inputTokens,
+    outputTokens: input.cost?.outputTokens ?? reported.outputTokens,
+  };
   const audit = (input.auditEvents ?? []).filter(
     (event) => event.traceId === request.context.traceId,
   );
@@ -104,8 +109,8 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
       ...(input.cost?.infrastructureMs === undefined
         ? {}
         : { infrastructureMs: input.cost.infrastructureMs }),
-      ...(input.cost?.inputTokens === undefined ? {} : { inputTokens: input.cost.inputTokens }),
-      ...(input.cost?.outputTokens === undefined ? {} : { outputTokens: input.cost.outputTokens }),
+      ...(tokens.inputTokens === undefined ? {} : { inputTokens: tokens.inputTokens }),
+      ...(tokens.outputTokens === undefined ? {} : { outputTokens: tokens.outputTokens }),
       ...(input.cost?.metadata === undefined ? {} : { metadata: input.cost.metadata }),
     },
   };
@@ -175,6 +180,29 @@ function declaredModel(result: ExecutionResult): Partial<SystemIdentity> {
     ...(typeof model === "string" ? { model } : {}),
     ...(typeof provider === "string" ? { modelProvider: provider } : {}),
   };
+}
+
+/**
+ * The token cost the runtime itself reported, if it did.
+ *
+ * A model driver sums what the provider billed for each call onto the turn's
+ * outcome, and nothing else in the record can know it: the kernel sees calls,
+ * not tokens. Read under the same rule as the model and the catalogue -- a
+ * SharedOS fact the turn left behind, taken unless the caller's own `cost`
+ * says otherwise. A runtime that reported none leaves the fields absent, which
+ * `checkRecordCompleteness` names as a gap rather than reading as zero.
+ */
+function reportedTokens(result: ExecutionResult): ExecutionRecordCostInput {
+  const input = result.metadata?.["inputTokens"];
+  const output = result.metadata?.["outputTokens"];
+  return {
+    ...(isTokenCount(input) ? { inputTokens: input } : {}),
+    ...(isTokenCount(output) ? { outputTokens: output } : {}),
+  };
+}
+
+function isTokenCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
 }
 
 function runtimeManifestOf(result: ExecutionResult): RuntimeManifest {

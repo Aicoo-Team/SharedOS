@@ -1,0 +1,498 @@
+import { describe, expect, it, vi } from "vitest";
+
+import type { ExecutionRequest, ExecutionResult, ToolDefinition } from "@aicoo/sharedos-contracts";
+import { agentExecutionCapability } from "@aicoo/sharedos-core";
+import { SharedOSExecutor } from "@aicoo/sharedos-runtime";
+import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
+
+import {
+  ModelDriver,
+  ModelRuntime,
+  ToolNameCodec,
+  type ModelClient,
+  type ModelCompletionRequest,
+  type ModelReply,
+} from "./index.js";
+
+const NOW = "2026-08-18T09:00:00.000Z";
+const AGENT = { kind: "agent", agentId: "agent-1" } as const;
+const OWNER = { kind: "human", userId: "owner-1" } as const;
+
+const READ_TOOL: ToolDefinition = {
+  name: "files.read",
+  description: "Read one authorized file",
+  namespace: "files",
+  source: "sharedos",
+  readWrite: "read",
+  inputSchema: { type: "object", properties: { path: { type: "array" } } },
+  requiredCapability: { resource: { namespace: "files", path: ["Workspace"] }, action: "read" },
+  annotations: { readOnly: true },
+};
+
+const SNAPSHOT_TOOL: ToolDefinition = {
+  ...READ_TOOL,
+  name: "files.snapshot.list",
+  description: "List snapshots",
+};
+
+const MANIFEST = {
+  id: "sharedos.test.model",
+  version: "1.0.0",
+  protocolVersion: "1",
+} as const;
+
+function request(): ExecutionRequest {
+  return {
+    version: "1",
+    executionId: "execution-1",
+    agent: AGENT,
+    context: {
+      namespaceId: "namespace-1",
+      enabledToolNamespaces: ["files"],
+      actor: AGENT,
+      authority: OWNER,
+      owner: OWNER,
+      purpose: "test",
+      traceId: "trace-1",
+      now: NOW,
+    },
+    message: {
+      version: "1",
+      id: "message-1",
+      sender: AGENT,
+      receiver: AGENT,
+      purpose: "test",
+      payload: { text: "read the workspace" },
+      traceId: "trace-1",
+      createdAt: NOW,
+    },
+    tools: [READ_TOOL],
+  };
+}
+
+/** A model that answers with a scripted sequence, recording what it was asked. */
+function scriptedClient(replies: readonly ModelReply[]): ModelClient & {
+  readonly seen: ModelCompletionRequest[];
+} {
+  const seen: ModelCompletionRequest[] = [];
+  let index = 0;
+  return {
+    model: "test-model",
+    provider: "test-provider",
+    seen,
+    complete: async (completion: ModelCompletionRequest): Promise<ModelReply> => {
+      seen.push(structuredClone(completion) as ModelCompletionRequest);
+      const reply = replies[index] ?? { text: "done", toolCalls: [] };
+      index += 1;
+      return reply;
+    },
+  };
+}
+
+async function runWith(
+  client: ModelClient,
+  options: { maxSteps?: number; maxMalformedCalls?: number } = {},
+) {
+  const { kernel, audit } = createTestKernel({
+    grants: [
+      createTestGrant({
+        id: "grant-turn",
+        capabilities: [agentExecutionCapability(AGENT, OWNER)],
+        purposes: ["test"],
+      }),
+      createTestGrant({
+        id: "grant-files",
+        capabilities: [
+          {
+            resource: { namespace: "files", path: ["Workspace"], owner: OWNER },
+            actions: ["read"],
+            scope: "descendants",
+          },
+        ],
+        purposes: ["test"],
+      }),
+    ],
+  });
+  kernel.registerTool({
+    definition: READ_TOOL,
+    parseArguments: (arguments_) => arguments_,
+    invoke: async (context, call) => ({
+      callId: call.id,
+      tool: call.tool,
+      status: "succeeded",
+      output: { text: "file body" },
+      completedAt: context.now,
+    }),
+  });
+  const runtime = new ModelRuntime(
+    new ModelDriver({
+      manifest: MANIFEST,
+      client,
+      ...(options.maxMalformedCalls === undefined
+        ? {}
+        : { maxMalformedCalls: options.maxMalformedCalls }),
+    }),
+  );
+  const result = await new SharedOSExecutor(kernel, runtime, { clock: () => NOW }).execute(
+    options.maxSteps === undefined
+      ? request()
+      : { ...request(), options: { maxSteps: options.maxSteps } },
+  );
+  return { result, audit, calls: completedCalls(result) };
+}
+
+/** The tool messages the model was shown on its nth call, by the call they answer. */
+function toolMessagesShown(
+  client: { readonly seen: ModelCompletionRequest[] },
+  index: number,
+): { toolCallId: string; content: Record<string, unknown> }[] {
+  return (client.seen[index]?.messages ?? []).flatMap((message) =>
+    message.role === "tool"
+      ? [
+          {
+            toolCallId: message.toolCallId,
+            content: JSON.parse(message.content) as Record<string, unknown>,
+          },
+        ]
+      : [],
+  );
+}
+
+/** What the envelope recorded about each call, which is the stricter source. */
+function completedCalls(
+  result: ExecutionResult,
+): { callId: string; tool: string; status: string; step?: number }[] {
+  return result.events
+    .filter((event) => event.type === "tool.completed")
+    .map(
+      (event) =>
+        event.data as unknown as { callId: string; tool: string; status: string; step?: number },
+    );
+}
+
+describe("the model tool-name codec", () => {
+  it("round-trips a catalogued dotted name through the provider alphabet", () => {
+    const codec = new ToolNameCodec([READ_TOOL, SNAPSHOT_TOOL]);
+    expect(codec.toWire("files.read")).toBe("files_read");
+    expect(codec.toWire("files.snapshot.list")).toBe("files_snapshot_list");
+    expect(codec.fromWire("files_read")).toBe("files.read");
+    expect(codec.fromWire("files_snapshot_list")).toBe("files.snapshot.list");
+  });
+
+  it("decodes a name outside the catalogue rather than dropping it", () => {
+    // The uncatalogued attempt has to reach the envelope to be refused. A codec
+    // that returned undefined here would erase the attempt instead.
+    const codec = new ToolNameCodec([READ_TOOL]);
+    expect(codec.fromWire("admin_grant_issue")).toBe("admin.grant.issue");
+  });
+
+  it("refuses a catalogue two of whose names collapse onto one wire name", () => {
+    const underscored: ToolDefinition = { ...READ_TOOL, name: "files_read" };
+    expect(() => new ToolNameCodec([READ_TOOL, underscored])).toThrow(/ambiguous/u);
+  });
+});
+
+describe("a model driving a SharedOS turn", () => {
+  it("offers the permission-filtered catalogue in the model's own tool shape", async () => {
+    const client = scriptedClient([{ text: "done", toolCalls: [] }]);
+    await runWith(client);
+
+    expect(client.seen[0]?.tools).toEqual([
+      {
+        name: "files_read",
+        description: READ_TOOL.description,
+        parameters: READ_TOOL.inputSchema,
+      },
+    ]);
+  });
+
+  it("records the model the provider served, not the one that was asked for", async () => {
+    const client = scriptedClient([{ text: "done", toolCalls: [], model: "substituted-model" }]);
+    const { result } = await runWith(client);
+
+    expect(result.metadata?.["model"]).toBe("substituted-model");
+    expect(result.metadata?.["modelProvider"]).toBe("test-provider");
+    expect(result.metadata?.["requestedModel"]).toBe("test-model");
+  });
+
+  it("re-authorizes each call and mediates it through the kernel", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [{ id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const { result, calls } = await runWith(client);
+
+    expect(result.status).toBe("succeeded");
+    expect(calls).toEqual([{ callId: "call-1", tool: "files.read", status: "succeeded", step: 0 }]);
+  });
+
+  it("declares the step each call was made at, because it owns the loop", async () => {
+    // The property that separates this column from one where a vendor CLI owns
+    // the loop: SharedOS can still bound the turn by steps it declared itself.
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [{ id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+      },
+      {
+        text: "",
+        toolCalls: [{ id: "call-2", name: "files_read", arguments: '{"path":["Workspace","b"]}' }],
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const { calls } = await runWith(client);
+
+    expect(calls.map(({ step }) => step)).toEqual([0, 1]);
+  });
+
+  it("releases several calls from one reply one at a time, then speaks again", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [
+          { id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' },
+          { id: "call-2", name: "files_read", arguments: '{"path":["Workspace","b"]}' },
+        ],
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const { calls } = await runWith(client);
+
+    expect(calls).toHaveLength(2);
+    // Two calls, two results, and only then a second model call: the wire format
+    // requires every call in an assistant message to be answered first.
+    expect(client.seen).toHaveLength(2);
+    expect(client.seen[1]?.messages.filter(({ role }) => role === "tool")).toHaveLength(2);
+  });
+
+  it("passes an uncatalogued name through so the envelope can refuse it", async () => {
+    const client = scriptedClient([
+      { text: "", toolCalls: [{ id: "call-1", name: "admin_grant_issue", arguments: "{}" }] },
+      { text: "done", toolCalls: [] },
+    ]);
+    const { calls } = await runWith(client);
+
+    const [call] = calls;
+    expect(call?.tool).toBe("admin.grant.issue");
+    expect(call?.status).not.toBe("succeeded");
+  });
+
+  it("refuses a call whose arguments did not parse, and tells the model so", async () => {
+    const client = scriptedClient([
+      { text: "", toolCalls: [{ id: "call-1", name: "files_read", arguments: "not json" }] },
+      {
+        text: "",
+        toolCalls: [{ id: "call-2", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const { result, calls } = await runWith(client);
+
+    // Never sent as `{}`: an empty object is a call the model did not make, and
+    // a tool with every parameter optional would have run it. The refusal goes
+    // straight back to the model, under the kernel's code for the same defect,
+    // and the corrected retry is the only call the envelope ever sees.
+    expect(result.status).toBe("succeeded");
+    expect(calls).toEqual([{ callId: "call-2", tool: "files.read", status: "succeeded", step: 0 }]);
+    expect(toolMessagesShown(client, 1)).toEqual([
+      {
+        toolCallId: "call-1",
+        content: {
+          status: "failed",
+          error: { code: "invalid_tool_arguments", message: expect.stringContaining("not made") },
+        },
+      },
+    ]);
+    expect(result.metadata?.["malformedToolCalls"]).toBe(1);
+  });
+
+  it("charges no step for a call it refused", async () => {
+    // Two steps in the budget -- one for a call, one for the completion -- and
+    // the model fumbles before using either. Sent as `{}`, the fumble would
+    // have spent the first step and the turn would have ended at the ceiling;
+    // refused outside the loop, the corrected call and the completion both fit.
+    const client = scriptedClient([
+      { text: "", toolCalls: [{ id: "call-1", name: "files_read", arguments: "[1, 2]" }] },
+      {
+        text: "",
+        toolCalls: [{ id: "call-2", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const { result, calls } = await runWith(client, { maxSteps: 2 });
+
+    expect(result.status).toBe("succeeded");
+    expect(calls).toEqual([{ callId: "call-2", tool: "files.read", status: "succeeded", step: 0 }]);
+  });
+
+  it("answers every call in a reply before speaking again, refusals included", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [
+          { id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' },
+          { id: "call-2", name: "files_read", arguments: "not json" },
+          { id: "call-3", name: "files_read", arguments: '{"path":["Workspace","b"]}' },
+        ],
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const { calls } = await runWith(client);
+
+    // Two calls reached the envelope; the fumble between them was answered in
+    // its place, so the model saw one answer per call it made, in order.
+    expect(calls.map(({ callId }) => callId)).toEqual(["call-1", "call-3"]);
+    expect(toolMessagesShown(client, 1).map(({ toolCallId }) => toolCallId)).toEqual([
+      "call-1",
+      "call-2",
+      "call-3",
+    ]);
+    expect(client.seen).toHaveLength(2);
+  });
+
+  it("fails the turn when the model never forms a readable call", async () => {
+    const fumble = (id: string) => ({
+      text: "",
+      toolCalls: [{ id, name: "files_read", arguments: "still not json" }],
+    });
+    const client = scriptedClient([fumble("c1"), fumble("c2"), fumble("c3"), fumble("c4")]);
+    const { result, calls } = await runWith(client, { maxMalformedCalls: 3 });
+
+    // Refusing costs the turn no step, so this is bounded on its own: three
+    // fumbles are answered, the fourth ends the turn under a code that says
+    // what happened, rather than the model being asked until the turn times out.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "model_malformed_call_limit_exceeded",
+    );
+    expect(result.metadata?.["malformedToolCalls"]).toBe(4);
+    expect(calls).toEqual([]);
+    expect(client.seen).toHaveLength(4);
+  });
+
+  it("counts zero refused calls on a turn that made none", async () => {
+    const client = scriptedClient([{ text: "done", toolCalls: [] }]);
+    const { result } = await runWith(client);
+
+    expect(result.metadata?.["malformedToolCalls"]).toBe(0);
+  });
+
+  it("refuses to be built with a guard that is not a positive integer", () => {
+    const client = scriptedClient([]);
+    expect(() => new ModelDriver({ manifest: MANIFEST, client, maxMalformedCalls: 0 })).toThrow(
+      /positive integer/u,
+    );
+  });
+
+  it("fails the turn when the provider cannot be reached", async () => {
+    const client: ModelClient = {
+      model: "test-model",
+      provider: "test-provider",
+      complete: vi.fn(async () => {
+        throw new Error("connection reset");
+      }),
+    };
+    const { result } = await runWith(client);
+
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe("model_call_failed");
+  });
+
+  it("fails the turn when the provider cut the reply off, rather than grading the cut", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [{ id: "call-1", name: "files_read", arguments: '{"path":["Workspa' }],
+        finishReason: "length",
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const { result, calls } = await runWith(client);
+
+    // The provider ended the reply, not the model. Its half-written call is
+    // not released -- issuing it would grade the cut as the model's doing --
+    // and the turn does not complete as if the model had chosen to stop.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "model_output_truncated",
+    );
+    expect(result.metadata?.["finishReason"]).toBe("length");
+    expect(calls).toEqual([]);
+    expect(client.seen).toHaveLength(1);
+  });
+
+  it("records why the model stopped and what the provider billed for the turn", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [{ id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+        finishReason: "tool_calls",
+        usage: { inputTokens: 40, outputTokens: 12 },
+      },
+      {
+        text: "done",
+        toolCalls: [],
+        finishReason: "stop",
+        usage: { inputTokens: 70, outputTokens: 5 },
+      },
+    ]);
+    const { result } = await runWith(client);
+
+    expect(result.status).toBe("succeeded");
+    // Summed over both model calls: the cost on the record is the turn's, not
+    // the last reply's. The finish reason is the last reply's, because that is
+    // the one that ended the turn.
+    expect(result.metadata).toMatchObject({
+      finishReason: "stop",
+      inputTokens: 110,
+      outputTokens: 17,
+    });
+  });
+
+  it("leaves token cost absent when the provider reported none", async () => {
+    const client = scriptedClient([{ text: "done", toolCalls: [] }]);
+    const { result } = await runWith(client);
+
+    // Absent rather than zero. A zero is a claim about what was billed; an
+    // absence is the truth about what was reported, and the record's
+    // completeness check names it as a gap instead of reading it as free.
+    expect(result.metadata).not.toHaveProperty("inputTokens");
+    expect(result.metadata).not.toHaveProperty("outputTokens");
+    expect(result.metadata).not.toHaveProperty("finishReason");
+  });
+
+  it("keeps what the turn cost on a turn that failed", async () => {
+    let index = 0;
+    const client: ModelClient = {
+      model: "test-model",
+      provider: "test-provider",
+      complete: async () => {
+        index += 1;
+        if (index === 1) {
+          return {
+            text: "",
+            toolCalls: [
+              { id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' },
+            ],
+            usage: { inputTokens: 40, outputTokens: 12 },
+          };
+        }
+        throw new Error("connection reset");
+      },
+    };
+    const { result } = await runWith(client);
+
+    // The second model call failed; the first still happened and was billed.
+    // A record that dropped the spend on failure would know least about the
+    // turns that most need explaining.
+    expect(result.status).toBe("failed");
+    expect(result.metadata).toMatchObject({
+      model: "test-model",
+      inputTokens: 40,
+      outputTokens: 12,
+    });
+  });
+});

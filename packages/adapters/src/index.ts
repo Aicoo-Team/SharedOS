@@ -3,6 +3,7 @@ export * from "./codex/index.js";
 export * from "./deepseek/index.js";
 export * from "./driver.js";
 export * from "./harness.js";
+export * from "./model/index.js";
 export * from "./pi/index.js";
 export * from "./runtime.js";
 export * from "./transcript.js";

@@ -111,6 +111,31 @@ each entry calls out what a host has to update.
   server, which is the boundary a vendor harness actually connects to, plus
   Codex, Claude Code, DeepSeek Harness, and Pi adapters in
   `@aicoo/sharedos-adapters`. See ADR 0014.
+- `ModelDriver` in `@aicoo/sharedos-adapters`: a model API in the delegate seat,
+  with no vendor CLI between it and the envelope. `StandardRuntime` still owns
+  the loop, still stops at `maxSteps`, and still re-authorizes every call; what
+  changes is only who occupies the seat. Dotted SharedOS names are mapped per
+  turn, from the catalogue rather than by guess, onto the `^[a-zA-Z0-9_-]+$` a
+  chat-completions provider constrains function names to — and a name the map
+  does not hold is passed through anyway, so a model that invents a tool
+  outside its catalogue reaches the envelope to be refused instead of being
+  filtered out where nothing records it. The provider's `finish_reason` and
+  `usage` are read off every completion: a reply cut off at the output-token
+  ceiling fails the turn as `model_output_truncated` rather than being graded
+  as a decision the model finished making, and the turn's token spend reaches
+  the execution record as `cost.inputTokens` / `cost.outputTokens`. A `fail`
+  decision now carries `metadata` as `complete` does, so a failed turn keeps
+  the model that answered and what it cost. A call whose arguments do not
+  parse is refused by the driver as `invalid_tool_arguments` and answered back
+  to the model, never sent as `{}` -- an empty object is a call the model did
+  not make, and a tool with every parameter optional would have run it. The
+  turn's metadata counts them as `malformedToolCalls`; past `maxMalformedCalls`
+  (default 8) the turn fails as `model_malformed_call_limit_exceeded`.
+- A `model-live` conformance column built on that driver, which separates what
+  a model does from what a vendor's scaffolding makes it do — the axis every
+  other live column confounds. It is an addition to the scripted column and
+  never a replacement: a model chooses, so an attempt it declines leaves no
+  operation and the cell reports not exercised rather than pass.
 - What enforcement costs, measured on both paths and reported in
   `docs/conformance/systems-cost.md`. `pnpm bench` regenerates it, against a
   monotonic clock added for the purpose — wall time is not a duration.

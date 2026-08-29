@@ -27,7 +27,14 @@ export type AgentTurnInput =
 export type AgentTurnDecision =
   | { readonly type: "tool_call"; readonly call: ToolCall }
   | { readonly type: "complete"; readonly output: JsonValue; readonly metadata?: JsonObject }
-  | { readonly type: "fail"; readonly error: ProtocolError };
+  /**
+   * `metadata` rides on a failure exactly as it does on a completion. A turn
+   * that failed still ran: the model that answered, what it cost, and why it
+   * stopped are facts about the turn rather than about its ending, and a record
+   * that dropped them on failure would know least about the turns that most
+   * need explaining.
+   */
+  | { readonly type: "fail"; readonly error: ProtocolError; readonly metadata?: JsonObject };
 
 /** Backwards-compatible name for the context visible to a standard driver. */
 export type AgentVisibleContext = RuntimeVisibleContext;
@@ -153,9 +160,20 @@ function parseAgentTurnDecision(value: unknown): AgentTurnDecision | undefined {
     return call.success ? { type: "tool_call", call: call.data } : undefined;
   }
 
-  if (candidate.type === "fail" && hasOnlyKeys(candidate, ["type", "error"])) {
+  if (candidate.type === "fail" && hasOnlyKeys(candidate, ["type", "error", "metadata"])) {
     const error = ProtocolErrorSchema.safeParse(candidate.error);
-    return error.success ? { type: "fail", error: error.data } : undefined;
+    const metadata =
+      candidate.metadata === undefined
+        ? { success: true as const, data: undefined }
+        : JsonObjectSchema.safeParse(candidate.metadata);
+    if (!error.success || !metadata.success) {
+      return undefined;
+    }
+    return {
+      type: "fail",
+      error: error.data,
+      ...(metadata.data === undefined ? {} : { metadata: metadata.data }),
+    };
   }
 
   if (candidate.type === "complete" && hasOnlyKeys(candidate, ["type", "output", "metadata"])) {
