@@ -4,11 +4,12 @@
  * This is the column the other two deliberately do not claim.
  *
  * `conformance.mjs` is the scripted mode: the frame shapes are written in this
- * repository, the parsing is the adapter's, and the transport is left out. `native-conformance.mjs`
- * adds the transport but cannot add the catalogue, because no coding-agent CLI
- * accepts a host-supplied tool set on its own stdio protocol -- so a live harness
- * reaches for its own tools, every kernel row goes unexercised, and the column
- * verifies a binding rather than an invariant.
+ * repository, the parsing is the adapter's, and the transport is left out.
+ * `native-conformance.mjs` adds the transport, and runs the model column when a
+ * key is present, but cannot hand a CLI the catalogue: no coding-agent CLI
+ * accepts a host-supplied tool set on its own stdio protocol, so a live harness
+ * driven that way reaches for its own tools, every kernel row goes unexercised,
+ * and that column verifies a binding rather than an invariant.
  *
  * Here SharedOS serves the permission-filtered catalogue over MCP, which is the
  * one interface all three ecosystems accept a host-supplied tool set on. The CLI
@@ -24,6 +25,11 @@
  * Usage:
  *   node scripts/mcp-conformance.mjs [--harness claude-code] [--limit 1] [--full]
  *   node scripts/mcp-conformance.mjs --case broker-ungranted,broker-out-of-scope
+ *   node scripts/mcp-conformance.mjs --config host.json --full
+ *
+ * `--harness` names one column and stops the run if no installed harness has
+ * that id; `--limit N` runs the first N cases (default 1), `--full` all of them,
+ * `--case` named ones. `SHAREDOS_MCP_CONFIG` is the default for `--config`.
  *
  * Live runs cost model tokens, so the default is one case. `--full` runs the
  * whole set and is what a published result should be produced from.
@@ -172,7 +178,9 @@ const HARNESSES = [
     label: "pi",
     requirements: PI_REQUIREMENTS,
     /** `--no-builtin-tools` leaves the proxy tool the extension registers. */
-    policy: declareToolPolicy({ harnessLocal: [] }),
+    // The extension's own proxy tool, through which every catalogue call is
+    // made (ADR 0014 requires a harness-local tool to be named).
+    policy: declareToolPolicy({ harnessLocal: ["mcp"] }),
     /**
      * Pi ships no MCP client, so this column's MCP support came from an
      * extension the host chose to install. Recorded per column: a reader should
@@ -182,6 +190,13 @@ const HARNESSES = [
     mcpExtension: "pi-mcp-adapter",
   },
 ].filter((harness) => only === undefined || harness.spec.id === only);
+
+// Same rule as `--case`: a filter that quietly matched nothing would attribute a
+// green Standard-only run to a column that never ran.
+if (only !== undefined && HARNESSES.length === 0) {
+  console.error(`No such MCP harness: ${only}`);
+  process.exit(1);
+}
 
 const availability = [];
 const columns = [EMBEDDED_COLUMN];

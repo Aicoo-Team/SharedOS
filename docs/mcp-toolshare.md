@@ -257,8 +257,35 @@ plugin also has to be installed into the profile first — a patch activates a
 plugin, it does not fetch one:
 
 ```sh
-dsh plugin --profile headless add -w @deepseek-ai/dsh-mcp-client
+dsh plugin --profile headless add @deepseek-ai/dsh-mcp-client
 ```
+
+### What each launch turns off
+
+Every spec launches its CLI with the flags that keep a measurement honest. Each
+is a permission-_prompt_ or tool-set decision rather than an authorization one:
+what secures the run is that every call is re-authorized by the kernel.
+
+- **Claude Code.** `--strict-mcp-config` drops the machine's own MCP servers,
+  so a `strict` policy is checkable rather than merely declared, and the
+  disallowed-tools list removes the harness's own file and shell tools — a
+  probe that can edit files on the machine it is measuring is answering a
+  different question. `--allowedTools mcp__sharedos` auto-approves the server:
+  Claude separates prompting from authorization, and print mode has no human to
+  prompt.
+- **Codex.** `mcp_servers.sharedos.required=true` stops a run whose bridge
+  failed to start rather than continuing with Codex's own tools, which would
+  look like a harness that declined the catalogue.
+  `default_tools_approval_mode="approve"`, scoped to this one server, is the
+  same decision as Claude's `--allowedTools`: Codex's default `auto` mode asks a
+  human before any tool that is not read-only, `codex exec` has no human, and
+  the refusal would happen inside Codex with the kernel never consulted.
+- **DeepSeek Harness.** The plugin overlay sets `failOnStartupError: true` for
+  the reason Codex's server is `required`: a run that quietly continued with
+  only the harness's own tools would be a different finding.
+- **Pi.** `--mode rpc --no-session --no-builtin-tools`: a session-less RPC run
+  with Pi's own tools off, so what the model reaches is the extension's proxy
+  tool and nothing else.
 
 ### Pi needs an extension, and which one is your choice
 
@@ -283,17 +310,6 @@ bridge is an ordinary `tools/call` naming the canonical tool, authorized like an
 other. The manifest stamps `mcpSupport: "extension"` and names the extension, so
 a record says how the catalogue reached the harness rather than implying Pi did
 it itself.
-
-The launch flags remove what would otherwise confuse a measurement:
-`--strict-mcp-config` drops the machine's own MCP servers, so a `strict` policy
-is checkable rather than merely declared, and the disallowed-tools list removes
-the harness's own file and shell tools — a probe that can edit files on the
-machine it is measuring is answering a different question.
-
-`--allowedTools mcp__sharedos` auto-approves the server. That is a permission
-_prompt_ decision, not an authorization one: Claude separates the two, print mode
-has no human to prompt, and what secures the run is that every call is
-re-authorized by the kernel.
 
 ### Sandboxed or remote harnesses
 
@@ -325,11 +341,37 @@ stale sandbox cannot reconnect and call tools it was never shown.
 pnpm build
 pnpm conformance:mcp                                    # one case, every installed harness
 pnpm conformance:mcp -- --config ./run.json --full      # every case, one pinned model
+pnpm conformance:mcp -- --harness codex --case broker-ungranted,broker-out-of-scope
 ```
 
 Live runs cost model tokens, so the default is one case; `--full` runs the whole
 set and is what a published result should come from. Output lands in
 `artifacts/conformance/mcp-conformance.json`.
+
+| Flag or variable | Meaning                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------ |
+| `--full`         | Every case                                                                                             |
+| `--limit N`      | The first N cases (default 1): a smoke test, not a way to reach a row added at position eighteen       |
+| `--case a,b`     | Named cases; one that names no case stops the run                                                      |
+| `--harness id`   | One column — `claude-code`, `codex`, `deepseek`, or `pi`; an id no installed harness has stops the run |
+| `--config path`  | The operator's model and per-harness configuration (below); `SHAREDOS_MCP_CONFIG` is its default       |
+
+`pnpm conformance:native` (`scripts/native-conformance.mjs`) is the other live
+script: it drives each installed CLI as a harness over its own stdio, and runs
+the model column when a key is present. It shares `--case`, `--harness`, and
+`--config` (default `SHAREDOS_NATIVE_CONFIG`), has no `--limit` — it runs every
+case — and reads:
+
+| Variable                                                               | Meaning                                                                                                                         |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `SHAREDOS_MODEL_API_KEY`, else `DEEPSEEK_API_KEY` or `DSH_API_KEY`     | The model column's key; without one the column does not run                                                                     |
+| `SHAREDOS_MODEL`, `SHAREDOS_MODEL_BASE_URL`, `SHAREDOS_MODEL_PROVIDER` | The model column's model (default the config's `model.id`, else `deepseek-v4-flash`), chat-completions root, and provider label |
+| `DSH_RUNTIME_COMMAND`, `DSH_RUNTIME_CONFIG`, `DSH_RUNTIME_CWD`         | DeepSeek Harness's JSON-RPC runtime (default `dsh-jsonrpc-agent`), its plugin composition, and its working directory            |
+| `DSH_PROVIDER`, `DSH_MODEL`                                            | What that runtime is told at `initialize` (default `deepseek-official`, `deepseek-v4-flash`)                                    |
+
+The scripted suite, `pnpm conformance` (`scripts/conformance.mjs`), takes
+`--check` and `--strict` — what `conformance:check` passes — and `--no-build`,
+which skips the package build when `dist` is already current.
 
 ### Holding the model constant
 

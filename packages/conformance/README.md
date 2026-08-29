@@ -184,7 +184,8 @@ same way a real regression does.
 standing result rather than a regression: the row is declared, its absence is
 stated in the manifest, and failing on it would only pressure someone into
 deleting the row. The script prints the count on every run so the gap stays in
-view.
+view. `pnpm conformance -- --no-build` skips the package build when `dist` is
+already current; `conformance:check` always builds.
 
 Two more scripts run columns the committed manifest deliberately does not
 include, because their results depend on what is installed and on a model's

@@ -49,9 +49,11 @@ import {
  */
 export const BENCH_VERSION = "1";
 
-/** How many attempts the bench workload issues per turn. */
+/** What the bench drives per turn. */
 export interface BenchWorkload {
+  /** Conformance case ids, as `docs/conformance/kernel-conformance.md` names them. */
   readonly caseIds: readonly string[];
+  /** Attempts a harness can actually put on a wire, not attempts declared. */
   readonly callsPerTurn: number;
   readonly warmupTurns: number;
   readonly measuredTurns: number;
@@ -310,14 +312,19 @@ export function attributable(
 export function benchMoves(
   cases: readonly ConformanceCase[] = CANONICAL_CONFORMANCE_CASES,
 ): readonly AttackMove[] {
-  return cases
-    .filter(
-      (kase) =>
-        kase.notImplemented === undefined &&
-        kase.move.terminal === undefined &&
-        kase.conditions.some((condition) => condition.id === "baseline"),
-    )
-    .map((kase) => kase.move);
+  return benchCases(cases).map((kase) => kase.move);
+}
+
+/** The cases those moves come from: implemented, non-terminal, and run under the baseline. */
+export function benchCases(
+  cases: readonly ConformanceCase[] = CANONICAL_CONFORMANCE_CASES,
+): readonly ConformanceCase[] {
+  return cases.filter(
+    (kase) =>
+      kase.notImplemented === undefined &&
+      kase.move.terminal === undefined &&
+      kase.conditions.some((condition) => condition.id === "baseline"),
+  );
 }
 
 /** The attempts of those moves a harness can actually put on a wire. */
@@ -870,7 +877,8 @@ export async function runSystemsCostBench(options: BenchOptions = {}): Promise<S
     warmupTurns: options.warmupTurns ?? DEFAULT_OPTIONS.warmupTurns,
     measuredTurns: options.measuredTurns ?? DEFAULT_OPTIONS.measuredTurns,
   };
-  const moves = benchMoves();
+  const cases = benchCases();
+  const moves = cases.map((kase) => kase.move);
   const attempts = benchAttempts(moves);
 
   const inProcess = await runInProcessPath(moves, settings);
@@ -908,7 +916,7 @@ export async function runSystemsCostBench(options: BenchOptions = {}): Promise<S
     benchVersion: BENCH_VERSION,
     sharedOsVersion: SHAREDOS_VERSION,
     workload: {
-      caseIds: moves.map(({ id }) => id),
+      caseIds: cases.map(({ id }) => id),
       callsPerTurn: attempts.length,
       warmupTurns: settings.warmupTurns,
       measuredTurns: settings.measuredTurns,
@@ -1119,7 +1127,7 @@ export function renderSystemsCostReport(report: SystemsCostReport): string {
     "",
     `- SharedOS: \`${report.sharedOsVersion}\``,
     `- Measurement rules: version \`${report.benchVersion}\``,
-    `- Workload: ${report.workload.callsPerTurn} declared attempts per turn, ` +
+    `- Workload: ${report.workload.callsPerTurn} issuable attempts per turn, ` +
       `${report.workload.measuredTurns} measured turns after ${report.workload.warmupTurns} discarded`,
     `- Cases: ${report.workload.caseIds.map((id) => `\`${id}\``).join(", ")}`,
     ...(report.environment === undefined
