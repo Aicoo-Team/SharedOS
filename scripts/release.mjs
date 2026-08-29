@@ -182,6 +182,7 @@ function verifyEmbeddedVersions(version_) {
     },
     { path: ["packages", "adapters", "src", "pi", "index.ts"], name: "PI_ADAPTER_VERSION" },
     { path: ["packages", "adapters", "src", "mcp-runtime.ts"], name: "MCP_ADAPTER_VERSION" },
+    { path: ["packages", "mcp", "src", "server.ts"], name: "MCP_SERVER_VERSION" },
     { path: ["packages", "conformance", "src", "runner.ts"], name: "SHAREDOS_VERSION" },
   ];
 

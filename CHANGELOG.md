@@ -205,6 +205,9 @@ each entry calls out what a host has to update.
   among them — were left at `0.1.0-alpha.0` while their packages moved. They
   name the build that produced an execution record, so a stale one misattributes
   evidence. `release:check` guarded two of the seven and now guards all of them.
+  An eighth, the version the MCP server reports in `initialize.serverInfo` when
+  built without `serverInfo`, was still `0.1.0-alpha.0`; it is now
+  `MCP_SERVER_VERSION`, exported from `@aicoo/sharedos-mcp` and guarded too.
 - The publish order listed `@aicoo/sharedos-conformance` ahead of
   `@aicoo/sharedos-mcp` and `@aicoo/sharedos-adapters`, both of which it depends
   on, so a run that stopped part-way could leave it on the registry with
