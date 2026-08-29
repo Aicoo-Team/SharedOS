@@ -439,7 +439,7 @@ Any permission-related change must answer:
 - Where is the authenticated actor established?
 - How is the world/tenant boundary bound and checked?
 - Can two grants accidentally combine into broader authority?
-- Is expiry/revocation checked at the side effect?
+- Is expiry checked at the side effect, and revocation at the turn's admission?
 - Is bounded use atomic across instances?
 - Are discovery and invocation both gated?
 - Are allow and deny paths tested?
