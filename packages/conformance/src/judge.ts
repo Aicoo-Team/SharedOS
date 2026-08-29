@@ -44,6 +44,15 @@ export interface CaseJudgement {
   readonly recordUsable: boolean;
   /** Field paths of the record's required gaps; empty when the record is usable. */
   readonly recordGaps: readonly string[];
+  /**
+   * Adversarial attempts the column issued on the row's behalf, in declared order.
+   *
+   * Empty for almost every cell. Where it is not, the pass is still a pass --
+   * the kernel refused what it was asked to refuse -- but the asking was the
+   * driver's, not the seat occupant's, and a reader comparing columns needs to
+   * see that rather than infer it.
+   */
+  readonly driverIssued: readonly string[];
   readonly detail?: string;
 }
 
@@ -82,6 +91,8 @@ export interface JudgeCaseOptions {
    * the receipt.
    */
   readonly unreachable?: ReadonlyMap<string, string>;
+  /** Attempt ids the column issued on the row's behalf rather than by choice. */
+  readonly driverIssued?: ReadonlyMap<string, string>;
 }
 
 /**
@@ -165,6 +176,13 @@ export function judgeCase(
     attempted: attempts.filter(({ attempted }) => attempted).length,
     recordUsable: completeness.usable,
     recordGaps,
+    // Only the attempts that were actually issued. A declaration that a driver
+    // would have named the step is not evidence that it did, and a cell that
+    // claimed the attribution for an attempt nobody made would be describing a
+    // call that never happened.
+    driverIssued: attempts
+      .filter(({ attemptId, attempted }) => attempted && options.driverIssued?.has(attemptId))
+      .map(({ attemptId }) => attemptId),
     ...(detail === undefined ? {} : { detail }),
   };
 }

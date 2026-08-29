@@ -17,7 +17,7 @@
     "conformance": "node scripts/conformance.mjs",
     "conformance:check": "node scripts/conformance.mjs --check --strict",
     "conformance:mcp": "node scripts/mcp-conformance.mjs",
-    "conformance:live": "node scripts/live-conformance.mjs",
+    "conformance:native": "node scripts/native-conformance.mjs",
     "bench": "node scripts/bench.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

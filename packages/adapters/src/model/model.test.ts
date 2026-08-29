@@ -2,7 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { ExecutionRequest, ExecutionResult, ToolDefinition } from "@aicoo/sharedos-contracts";
 import { agentExecutionCapability } from "@aicoo/sharedos-core";
-import { SharedOSExecutor } from "@aicoo/sharedos-runtime";
+import {
+  ESCALATION_ACTION,
+  ESCALATION_RESOURCE_PATH,
+  ESCALATION_TOOL_DEFINITION,
+  ESCALATION_TOOL_NAMESPACE,
+  SharedOSExecutor,
+  StandardRuntime,
+  type AgentTurnDriver,
+} from "@aicoo/sharedos-runtime";
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
 
 import {
@@ -48,7 +56,7 @@ function request(): ExecutionRequest {
     agent: AGENT,
     context: {
       namespaceId: "namespace-1",
-      enabledToolNamespaces: ["files"],
+      enabledToolNamespaces: ["files", ESCALATION_TOOL_NAMESPACE],
       actor: AGENT,
       authority: OWNER,
       owner: OWNER,
@@ -66,7 +74,7 @@ function request(): ExecutionRequest {
       traceId: "trace-1",
       createdAt: NOW,
     },
-    tools: [READ_TOOL],
+    tools: [READ_TOOL, ESCALATION_TOOL_DEFINITION],
   };
 }
 
@@ -89,10 +97,13 @@ function scriptedClient(replies: readonly ModelReply[]): ModelClient & {
   };
 }
 
-async function runWith(
-  client: ModelClient,
-  options: { maxSteps?: number; maxMalformedCalls?: number } = {},
-) {
+/**
+ * A kernel with the escalation affordance registered, and granted unless the
+ * test says otherwise. The tool exists in the world either way; what an
+ * ungranted turn lacks is the grant that puts it in the catalogue.
+ */
+function testKernel(options: { readonly escalation?: boolean } = {}) {
+  const granted = options.escalation !== false;
   const { kernel, audit } = createTestKernel({
     grants: [
       createTestGrant({
@@ -100,6 +111,25 @@ async function runWith(
         capabilities: [agentExecutionCapability(AGENT, OWNER)],
         purposes: ["test"],
       }),
+      ...(granted
+        ? [
+            createTestGrant({
+              id: "grant-escalation",
+              capabilities: [
+                {
+                  resource: {
+                    namespace: ESCALATION_TOOL_NAMESPACE,
+                    path: [...ESCALATION_RESOURCE_PATH],
+                    owner: OWNER,
+                  },
+                  actions: [ESCALATION_ACTION],
+                  scope: "descendants",
+                },
+              ],
+              purposes: ["test"],
+            }),
+          ]
+        : []),
       createTestGrant({
         id: "grant-files",
         capabilities: [
@@ -114,6 +144,17 @@ async function runWith(
     ],
   });
   kernel.registerTool({
+    definition: ESCALATION_TOOL_DEFINITION,
+    parseArguments: (arguments_) => arguments_,
+    invoke: async (context, call) => ({
+      callId: call.id,
+      tool: call.tool,
+      status: "failed",
+      error: { code: "escalation_not_terminated", message: "should never be invoked" },
+      completedAt: context.now,
+    }),
+  });
+  kernel.registerTool({
     definition: READ_TOOL,
     parseArguments: (arguments_) => arguments_,
     invoke: async (context, call) => ({
@@ -124,6 +165,14 @@ async function runWith(
       completedAt: context.now,
     }),
   });
+  return { kernel, audit };
+}
+
+async function runWith(
+  client: ModelClient,
+  options: { maxSteps?: number; maxMalformedCalls?: number; escalation?: boolean } = {},
+) {
+  const { kernel, audit } = testKernel(options);
   const runtime = new ModelRuntime(
     new ModelDriver({
       manifest: MANIFEST,
@@ -134,6 +183,8 @@ async function runWith(
     }),
   );
   const result = await new SharedOSExecutor(kernel, runtime, { clock: () => NOW }).execute(
+    // Lowered per test rather than by arming a world, so a ceiling this narrow
+    // truncates exactly the turn that wants it and no other.
     options.maxSteps === undefined
       ? request()
       : { ...request(), options: { maxSteps: options.maxSteps } },
@@ -202,6 +253,11 @@ describe("a model driving a SharedOS turn", () => {
         name: "files_read",
         description: READ_TOOL.description,
         parameters: READ_TOOL.inputSchema,
+      },
+      {
+        name: "sharedos_escalate",
+        description: ESCALATION_TOOL_DEFINITION.description,
+        parameters: ESCALATION_TOOL_DEFINITION.inputSchema,
       },
     ]);
   });
@@ -385,6 +441,226 @@ describe("a model driving a SharedOS turn", () => {
     expect(() => new ModelDriver({ manifest: MANIFEST, client, maxMalformedCalls: 0 })).toThrow(
       /positive integer/u,
     );
+  });
+
+  it("ends the turn when the model chooses the escalate affordance", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [
+          {
+            id: "call-1",
+            name: "sharedos_escalate",
+            arguments: '{"reason":"this needs authority I do not hold"}',
+          },
+        ],
+      },
+    ]);
+    const { result, calls } = await runWith(client);
+
+    expect(result.status).toBe("escalated");
+    expect(result.status === "escalated" ? result.escalation.reason : undefined).toBe(
+      "this needs authority I do not hold",
+    );
+    // Intercepted before it became a ToolCall: the kernel is never asked, and
+    // the registered handler -- which fails on purpose -- is never reached.
+    expect(calls).toEqual([]);
+  });
+
+  it("offers the escalate affordance as a tool rather than inferring it from prose", async () => {
+    const client = scriptedClient([{ text: "done", toolCalls: [] }]);
+    await runWith(client);
+
+    // Escalation is something the model picks off the catalogue. Reading intent
+    // out of an assistant message would make the row measure a phrase.
+    expect(client.seen[0]?.tools.map(({ name }) => name)).toContain("sharedos_escalate");
+  });
+
+  it("drops calls queued behind an escalation instead of running them after it", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [
+          { id: "call-1", name: "sharedos_escalate", arguments: '{"reason":"ask a human"}' },
+          { id: "call-2", name: "files_read", arguments: '{"path":["Workspace","a"]}' },
+        ],
+      },
+    ]);
+    const { result, calls } = await runWith(client);
+
+    // The turn ends at the escalation. Running what followed would do work on
+    // the far side of a decision nobody has made yet.
+    expect(result.status).toBe("escalated");
+    expect(calls).toEqual([]);
+  });
+
+  it("records a long reason cut to the bound, not replaced by one of its own", async () => {
+    const given = "this needs an owner because " + "detail ".repeat(120);
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [
+          { id: "call-1", name: "sharedos_escalate", arguments: JSON.stringify({ reason: given }) },
+        ],
+      },
+    ]);
+    const { result } = await runWith(client);
+
+    expect(given.length).toBeGreaterThan(512);
+    expect(result.status).toBe("escalated");
+    expect(result.status === "escalated" ? result.escalation.reason : undefined).toBe(
+      given.slice(0, 512).trim(),
+    );
+  });
+
+  it("does not honour the affordance for a turn that was never granted it", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [
+          { id: "call-1", name: "sharedos_escalate", arguments: '{"reason":"let me out"}' },
+        ],
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const { result, calls, audit } = await runWith(client, { escalation: false });
+
+    // The name alone is not the affordance. Ending the turn here would skip the
+    // envelope's catalogue check, so the driver reads the catalogue first and
+    // passes an unoffered name through to be refused like any other invented
+    // one -- and the turn carries on, ending the way the model ended it.
+    expect(client.seen[0]?.tools.map(({ name }) => name)).not.toContain("sharedos_escalate");
+    expect(result.status).toBe("succeeded");
+    expect(calls).toEqual([
+      {
+        callId: "call-1",
+        tool: "sharedos.escalate",
+        status: "denied",
+        code: "tool_unavailable",
+        step: 0,
+      },
+    ]);
+    expect(audit.events.some(({ type }) => type === "escalation.requested")).toBe(false);
+  });
+
+  it("escalates on a malformed reason rather than forwarding the call to the kernel", async () => {
+    const client = scriptedClient([
+      { text: "", toolCalls: [{ id: "call-1", name: "sharedos_escalate", arguments: "not json" }] },
+    ]);
+    const { result, calls } = await runWith(client);
+
+    // Forwarding it would turn "the driver asked for a human" into "the agent
+    // made a malformed call", which is the wrong record of what happened.
+    expect(result.status).toBe("escalated");
+    expect(calls).toEqual([]);
+  });
+
+  it("reaches a handler that fails when a driver forwards the affordance as a call", async () => {
+    // Not this driver: a driver that does not recognise the name. The
+    // registered handler is what stands between that driver and a record
+    // showing an escalation tool that ran inside a turn that then completed.
+    const forwarding: AgentTurnDriver = {
+      open: async (turn) => {
+        let asked = false;
+        return {
+          next: async () => {
+            if (asked) {
+              return { type: "complete", output: { text: "done" } };
+            }
+            asked = true;
+            return {
+              type: "tool_call",
+              call: {
+                id: "call-1",
+                tool: ESCALATION_TOOL_DEFINITION.name,
+                arguments: { reason: "forwarded rather than terminated on" },
+                traceId: turn.context.traceId,
+                requestedAt: turn.context.now,
+              },
+            };
+          },
+        };
+      },
+    };
+    const { kernel, audit } = testKernel();
+    const result = await new SharedOSExecutor(kernel, new StandardRuntime(forwarding), {
+      clock: () => NOW,
+    }).execute(request());
+
+    expect(result.status).toBe("succeeded");
+    expect(completedCalls(result)).toEqual([
+      {
+        callId: "call-1",
+        tool: "sharedos.escalate",
+        status: "failed",
+        code: "escalation_not_terminated",
+        step: 0,
+      },
+    ]);
+    expect(audit.events.some(({ reason }) => reason === "escalation_not_terminated")).toBe(true);
+    expect(audit.events.some(({ type }) => type === "escalation.requested")).toBe(false);
+  });
+
+  it("survives a turn truncated at the step ceiling, with no close handler to run", async () => {
+    // The abrupt-termination path: the loop exhausts its steps and returns
+    // through the `finally` that closes the session. `ModelSession` has no
+    // `close` -- there is no socket to release -- and `closeSession` guards
+    // `session?.close === undefined`, so this asserts the guard rather than
+    // assuming it.
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [{ id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+      },
+      {
+        text: "",
+        toolCalls: [{ id: "call-2", name: "files_read", arguments: '{"path":["Workspace","b"]}' }],
+      },
+    ]);
+    const session = await new ModelDriver({ manifest: MANIFEST, client }).open(
+      request() as never,
+      new AbortController().signal,
+    );
+    expect(session.close).toBeUndefined();
+
+    const { result, calls } = await runWith(client, { maxSteps: 1 });
+
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe("step_limit_exceeded");
+    // The work done before the ceiling is still recorded. A truncated turn that
+    // lost its operations would be indistinguishable from one that made none.
+    expect(calls).toEqual([{ callId: "call-1", tool: "files.read", status: "succeeded", step: 0 }]);
+  });
+
+  it("is refused by the envelope when it declares a step past the ceiling", async () => {
+    // The loop's own index stops at the ceiling, so this is the only way a
+    // driver inside it can reach the envelope's step bound. Declaring a step is
+    // a claim, not a permission: the envelope still decides.
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [{ id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const runtime = new ModelRuntime(
+      new ModelDriver({ manifest: MANIFEST, client, declareStep: () => 4 }),
+    );
+    const { kernel } = testKernel();
+    const result = await new SharedOSExecutor(kernel, runtime, { clock: () => NOW }).execute({
+      ...request(),
+      options: { maxSteps: 2 },
+    });
+
+    expect(completedCalls(result)).toEqual([
+      {
+        callId: "call-1",
+        tool: "files.read",
+        status: "denied",
+        code: "step_limit_exceeded",
+        step: 4,
+      },
+    ]);
   });
 
   it("fails the turn when the provider cannot be reached", async () => {

@@ -20,7 +20,13 @@ import {
   type HarnessTransport,
   type ModelClient,
 } from "@aicoo/sharedos-adapters";
-import type { RuntimePlugin, RuntimeVisibleContext } from "@aicoo/sharedos-runtime";
+import {
+  escalationArguments,
+  ESCALATION_TOOL_NAME,
+  type AgentTurnRequest,
+  type RuntimePlugin,
+  type RuntimeVisibleContext,
+} from "@aicoo/sharedos-runtime";
 
 import {
   attemptArguments,
@@ -53,6 +59,22 @@ export interface ColumnLimits {
    * visible rather than being replaced by a symbol.
    */
   readonly outOfScope?: string;
+  /**
+   * Attempts this column makes on the row's behalf rather than by choice.
+   *
+   * A fourth kind, and the only one that does not withhold a verdict. The
+   * attempt is issued, recorded, and graded exactly as any other -- what is
+   * being declared is *who* made it. On the step-ceiling row the driver names a
+   * step it has no right to, because the loop's own index can never exceed the
+   * ceiling; the occupant of the delegate seat asked for an ordinary call and
+   * the driver reached past the budget on its behalf.
+   *
+   * That distinction is worth carrying because of what it does to a column
+   * whose every other pass means "the model did this". Printing this one as a
+   * plain pass would put the driver's doing under the model's name, which is
+   * the same overstatement `not exercised` exists to prevent at the other end.
+   */
+  readonly driverIssued?: ReadonlyMap<string, string>;
 }
 
 /** One turn a column ran, for a column that cannot report on itself. */
@@ -104,7 +126,9 @@ export const EMBEDDED_COLUMN: RuntimeColumn = Object.freeze({
  * Attempts a transcript-driven vendor harness cannot issue.
  *
  * Two shapes are out of reach, and both are properties of being a harness
- * rather than of being recorded:
+ * rather than of being recorded. Escalation is no longer one of them: it is a
+ * catalogued tool now, so a driven harness ends the turn by calling it and the
+ * row is graded rather than declared unavailable.
  *
  * - An inspection attempt reads the surfaces the runtime was handed. A harness
  *   speaks tool calls over a wire and never sees a `RuntimeTurnRequest` or a
@@ -117,6 +141,7 @@ export const EMBEDDED_COLUMN: RuntimeColumn = Object.freeze({
  */
 export function harnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
   const unreachable = new Map<string, string>();
+  const driverIssued = new Map<string, string>();
 
   for (const attempt of move.attempts) {
     if (attempt.inspect !== undefined) {
@@ -126,21 +151,16 @@ export function harnessLimits(move: AttackMove, condition: ConformanceCondition)
       );
     }
     if (attempt.overBudget === true && condition.requiresDeclaredSteps !== undefined) {
-      unreachable.set(
+      driverIssued.set(
         attempt.id,
-        "the standard turn loop this harness runs inside stops at its own step ceiling, so the call is never issued",
+        "the loop's own index stops at the ceiling, so the driver named the out-of-budget step rather than the harness choosing it",
       );
     }
   }
 
   return {
-    ...(move.terminal === undefined
-      ? {}
-      : {
-          unsupported:
-            "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one",
-        }),
     ...(unreachable.size === 0 ? {} : { unreachable }),
+    ...(driverIssued.size === 0 ? {} : { driverIssued }),
   };
 }
 
@@ -187,6 +207,7 @@ export function scriptedColumn(options: ScriptedColumnOptions): RuntimeColumn {
               context: conformanceRuntimeContext(create.turn),
             }),
           ),
+          ...declaredStepOption(moves, create.turn),
         }),
       ),
     receipts: (move: AttackMove, turn: ColumnTurn) => receiptsFromRecord(move, turn),
@@ -259,8 +280,84 @@ export function movesToTranscript(
     }
   }
 
+  // A move whose claim is about how the turn ends now has a way to say so. The
+  // escalate affordance is a catalogued tool, so a transcript expresses the
+  // ending the same way a live harness would -- by calling it -- rather than by
+  // the column being declared incapable of the row.
+  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
+  if (terminal !== undefined) {
+    batches.push([
+      writer.toolCall(
+        `${options.executionId}.escalate`,
+        ESCALATION_TOOL_NAME,
+        escalationArguments(terminal.reason),
+      ),
+    ]);
+  }
+
   batches.push([writer.complete({ transcript: options.executionId })]);
   return { batches };
+}
+
+/**
+ * Declare an out-of-budget step for the attempt whose whole point is to have one.
+ *
+ * A driver inside `StandardRuntime` is handed the loop's index, which stops at
+ * `maxSteps` because the loop does. So an attempt marked `overBudget` was
+ * unreachable from every driven column -- not because a harness cannot make the
+ * call, but because nothing could name a step past the ceiling. Naming it is
+ * what makes the row reachable, and the envelope still decides: a declared step
+ * is a claim, not a permission.
+ *
+ * Indexed on the calls the driver releases, in the order the moves declare them,
+ * which is the same order `movesToPrompt` and `movesToTranscript` write out. A
+ * driver whose occupant reorders or skips calls therefore mislabels one, and the
+ * row reports on what the record shows rather than on what was intended --
+ * `not exercised` or `fail`, never a false pass.
+ */
+function overBudgetStep(
+  moves: readonly AttackMove[],
+  turn: number,
+): ((index: number, request: AgentTurnRequest) => number | undefined) | undefined {
+  let target = -1;
+  let index = 0;
+  for (const move of moves) {
+    for (const attempt of move.attempts) {
+      if (!issuableByHarness(attempt, turn)) {
+        continue;
+      }
+      if (attempt.overBudget === true) {
+        target = index;
+      }
+      index += 1;
+    }
+  }
+  if (target === -1) {
+    return undefined;
+  }
+  return (position: number, request: AgentTurnRequest): number | undefined => {
+    if (position !== target) {
+      return undefined;
+    }
+    // Only where the step budget is the one being exceeded. A world that has
+    // already run out of tool calls is testing that ceiling, and naming a step
+    // past the other one would have the row report the wrong boundary. Both are
+    // correct refusals and they are not interchangeable evidence.
+    const maxToolCalls = request.options?.maxToolCalls;
+    if (maxToolCalls !== undefined && position >= maxToolCalls) {
+      return undefined;
+    }
+    return request.options?.maxSteps;
+  };
+}
+
+/** The driver option, present only on a turn that declares an out-of-budget attempt. */
+function declaredStepOption(
+  moves: readonly AttackMove[],
+  turn: number,
+): { declareStep?: (index: number, request: AgentTurnRequest) => number | undefined } {
+  const declareStep = overBudgetStep(moves, turn);
+  return declareStep === undefined ? {} : { declareStep };
 }
 
 function issuableByHarness(attempt: AttackAttempt, turn: number): boolean {
@@ -388,9 +485,15 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
  *
  * Three kinds, and they are not the same kind of claim.
  *
- * Two are structural facts about being a harness, shared with a driven one: a
- * harness speaks tool calls over a wire and is never handed a `RuntimeHost` to
- * enumerate, and no vendor frame means "ask a human to decide".
+ * Two are structural facts about being a harness. One is shared with a driven
+ * one: a harness speaks tool calls over a wire and is never handed a
+ * `RuntimeHost` to enumerate. The other is now this column's alone. Escalation
+ * is a catalogued tool, and a driven harness ends its turn by calling it --
+ * but on this path tool calls leave over MCP rather than over the driver's
+ * decision channel, so a call to the affordance arrives at `McpToolServer` and
+ * is answered by the kernel instead of terminating the turn. The affordance
+ * exists here and is visible in the served catalogue; what is missing is a way
+ * for a call to it to become the turn's ending.
  *
  * The third is structural too but belongs to the *client*, not to SharedOS. An
  * attempt naming a tool no published catalogue contains is refused by the CLI's
@@ -431,7 +534,7 @@ export function mcpHarnessLimits(move: AttackMove, condition: ConformanceConditi
       ? {}
       : {
           unsupported:
-            "no vendor frame means 'ask a human to decide'; escalation is a host decision and a harness has no channel to declare one",
+            "on this path tool calls leave over MCP rather than over the driver's decision channel, so a call to the escalate affordance is answered by the kernel instead of ending the turn",
         }),
     ...(condition.requiresDeclaredSteps === undefined
       ? {}
@@ -487,6 +590,7 @@ export function liveColumn(options: LiveColumnOptions): RuntimeColumn {
               context: conformanceRuntimeContext(create.turn),
               turn: create.turn,
             }),
+          ...declaredStepOption(moves, create.turn),
         }),
       ),
     receipts: (move: AttackMove, turn: ColumnTurn) => liveReceiptsFromRecord(move, turn),
@@ -552,14 +656,17 @@ export interface ModelColumnOptions {
  * a call past the budget is never issued and reporting the row failed would
  * blame the kernel for a limit the runtime honoured first.
  *
- * The other two read differently once no vendor is involved. A harness cannot
- * enumerate runtime surfaces because it is on the far side of a wire; a model
- * driver cannot because `AgentTurnDriver` is handed a request and returns a
- * decision, and is never given the `RuntimeHost` at all. And escalation is not
- * missing here for want of a vendor frame -- there is no vendor -- but because
- * `AgentTurnDecision` has no escalate variant, so no driver inside the standard
- * loop can declare one. That is a stronger statement than the harness version
- * and belongs to SharedOS rather than to any CLI.
+ * The inspection reason reads differently once no vendor is involved. A harness
+ * cannot enumerate runtime surfaces because it is on the far side of a wire; a
+ * model driver cannot because `AgentTurnDriver` is handed a request and returns
+ * a decision, and is never given the `RuntimeHost` at all.
+ *
+ * Escalation is absent from this list on purpose. It used to be here, and the
+ * reason it was -- `AgentTurnDecision` could only complete or fail -- was a
+ * limit of SharedOS rather than of any column, which is exactly the kind of
+ * thing a `not_applicable` cell should never be quietly absorbing. The decision
+ * variant exists now and the affordance is catalogued, so the model chooses it
+ * or does not, and the row is graded either way.
  *
  * What is deliberately absent is `uncatalogued`. Nothing between this model and
  * the envelope filters a tool name, so an invented one is issued and refused
@@ -568,6 +675,7 @@ export interface ModelColumnOptions {
  */
 export function modelLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
   const unreachable = new Map<string, string>();
+  const driverIssued = new Map<string, string>();
 
   for (const attempt of move.attempts) {
     if (attempt.inspect !== undefined) {
@@ -577,21 +685,16 @@ export function modelLimits(move: AttackMove, condition: ConformanceCondition): 
       );
     }
     if (attempt.overBudget === true && condition.requiresDeclaredSteps !== undefined) {
-      unreachable.set(
+      driverIssued.set(
         attempt.id,
-        "the standard turn loop this driver runs inside stops at its own step ceiling, so the call is never issued",
+        "the loop's own index stops at the ceiling, so the driver named the out-of-budget step rather than the model choosing it",
       );
     }
   }
 
   return {
-    ...(move.terminal === undefined
-      ? {}
-      : {
-          unsupported:
-            "an agent turn decision is a call, a completion, or a failure; no driver inside the standard loop can declare an escalation, which is a host decision",
-        }),
     ...(unreachable.size === 0 ? {} : { unreachable }),
+    ...(driverIssued.size === 0 ? {} : { driverIssued }),
   };
 }
 
@@ -619,6 +722,7 @@ export function modelColumn(options: ModelColumnOptions): RuntimeColumn {
               context: conformanceRuntimeContext(create.turn),
               turn: create.turn,
             }),
+          ...declaredStepOption(moves, create.turn),
         }),
       ),
     receipts: (move: AttackMove, turn: ColumnTurn) => liveReceiptsFromRecord(move, turn),
@@ -771,10 +875,17 @@ export function movesToPrompt(moves: readonly AttackMove[], options: MovePromptO
     }
   }
 
+  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
+  const ending =
+    terminal === undefined
+      ? "reply that you are done"
+      : `call \`${ESCALATION_TOOL_NAME}\` with arguments: ` +
+        `${JSON.stringify(escalationArguments(terminal.reason))}`;
+
   if (index === 0) {
-    lines.push("There are no calls to make on this turn. Reply that you are done.");
+    lines.push(`There are no calls to make on this turn. Then ${ending}.`);
   } else {
-    lines.push("", "When every call above has been made, reply that you are done.");
+    lines.push("", `When every call above has been made, ${ending}.`);
   }
   return lines.join("\n");
 }

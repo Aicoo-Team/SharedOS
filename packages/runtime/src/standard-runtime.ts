@@ -14,6 +14,7 @@ import {
 } from "@aicoo/sharedos-contracts";
 
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
+import { escalationReason } from "./escalation.js";
 import type {
   RuntimeHost,
   RuntimePlugin,
@@ -25,7 +26,31 @@ export type AgentTurnInput =
   { readonly type: "start" } | { readonly type: "tool_result"; readonly result: ToolResult };
 
 export type AgentTurnDecision =
-  | { readonly type: "tool_call"; readonly call: ToolCall }
+  | {
+      readonly type: "tool_call";
+      readonly call: ToolCall;
+      /**
+       * The step this call is made at, when the driver wants to say.
+       *
+       * The loop declares the position it is at, which is the right answer for
+       * a driver that simply asks for one call per turn of the loop. It is the
+       * wrong answer for a driver deliberately reaching past its budget: the
+       * loop's own index can never exceed `maxSteps`, because the loop stops
+       * there, so the envelope's step ceiling was unreachable from inside this
+       * runtime and every driven column reported the row as unavailable.
+       *
+       * Declaring it here makes the ceiling reachable and keeps it enforced:
+       * the envelope refuses a call at or past `maxSteps` whoever named the
+       * step, so a driver can claim a step it has no right to and be refused
+       * for it. A driver that says nothing is bounded exactly as before.
+       *
+       * It reaches forward only. The loop knows where it is, and a declared
+       * step behind that position is not a reach past the budget but a claim
+       * the loop can see is false; it is refused as a malformed decision rather
+       * than written into the record as the position the call was made at.
+       */
+      readonly step?: number;
+    }
   | { readonly type: "complete"; readonly output: JsonValue; readonly metadata?: JsonObject }
   /**
    * `metadata` rides on a failure exactly as it does on a completion. A turn
@@ -34,7 +59,25 @@ export type AgentTurnDecision =
    * that dropped them on failure would know least about the turns that most
    * need explaining.
    */
-  | { readonly type: "fail"; readonly error: ProtocolError; readonly metadata?: JsonObject };
+  | { readonly type: "fail"; readonly error: ProtocolError; readonly metadata?: JsonObject }
+  /**
+   * End the turn by asking a human to decide.
+   *
+   * `RuntimeTurnOutcome` has carried an escalate variant from the start, but
+   * nothing running inside this loop could produce one: a driver could complete
+   * or fail and that was all. Escalation was therefore reachable only by a
+   * plugin that replaced the loop entirely, which is why every driven column
+   * reported the escalation row as structurally unavailable -- a limit of this
+   * type, not of any vendor.
+   *
+   * The reason is the driver's own words and is recorded verbatim, up to the
+   * 512 characters the outcome's contract carries; a driver reading it off a
+   * model or a harness cuts it there rather than replacing it (see
+   * `escalationRequest`), and one that hands the loop more than that has its
+   * decision refused. Nothing here advances the escalation: SharedOS records
+   * that a decision was asked for and grants nothing while it is pending.
+   */
+  | { readonly type: "escalate"; readonly reason: string; readonly metadata?: JsonObject };
 
 /** Backwards-compatible name for the context visible to a standard driver. */
 export type AgentVisibleContext = RuntimeVisibleContext;
@@ -120,8 +163,31 @@ export class StandardRuntime implements RuntimePlugin {
           closeOutcome = "failed";
           return decision;
         }
+        if (decision.type === "escalate") {
+          // Passed straight through, as `complete` and `fail` are. An escalated
+          // turn is a terminal outcome the envelope records and audits; it is
+          // not a failure, and reporting it as one would lose the distinction
+          // between a turn that broke and a turn that asked.
+          closeOutcome = "escalated";
+          return decision;
+        }
 
-        const result = await host.invokeTool(decision.call, { step });
+        // The driver's own step when it declared one, the loop's otherwise.
+        // The envelope decides either way; naming a step is not being granted
+        // it. A step behind the loop's own is refused here, because the loop
+        // is the one party that knows it is false: the declaration exists to
+        // reach past the budget, and a position already passed is not that.
+        if (decision.step !== undefined && decision.step < step) {
+          closeOutcome = "failed";
+          return {
+            type: "fail",
+            error: protocolError(
+              "invalid_driver_decision",
+              "The agent turn driver declared a step behind the loop's own position.",
+            ),
+          };
+        }
+        const result = await host.invokeTool(decision.call, { step: decision.step ?? step });
         nextInput = { type: "tool_result", result };
       }
 
@@ -155,9 +221,26 @@ function parseAgentTurnDecision(value: unknown): AgentTurnDecision | undefined {
   }
 
   const candidate = value as Record<string, unknown>;
-  if (candidate.type === "tool_call" && hasOnlyKeys(candidate, ["type", "call"])) {
+  if (candidate.type === "tool_call" && hasOnlyKeys(candidate, ["type", "call", "step"])) {
     const call = ToolCallSchema.safeParse(candidate.call);
-    return call.success ? { type: "tool_call", call: call.data } : undefined;
+    if (!call.success) {
+      return undefined;
+    }
+    if (candidate.step === undefined) {
+      return { type: "tool_call", call: call.data };
+    }
+    // A declared step is a position, so it is bounded the way the envelope's
+    // own is. Anything else is a malformed decision rather than an audacious
+    // one, and is refused here instead of reaching the envelope as a number it
+    // cannot compare.
+    if (
+      typeof candidate.step !== "number" ||
+      !Number.isInteger(candidate.step) ||
+      candidate.step < 0
+    ) {
+      return undefined;
+    }
+    return { type: "tool_call", call: call.data, step: candidate.step };
   }
 
   if (candidate.type === "fail" && hasOnlyKeys(candidate, ["type", "error", "metadata"])) {
@@ -172,6 +255,22 @@ function parseAgentTurnDecision(value: unknown): AgentTurnDecision | undefined {
     return {
       type: "fail",
       error: error.data,
+      ...(metadata.data === undefined ? {} : { metadata: metadata.data }),
+    };
+  }
+
+  if (candidate.type === "escalate" && hasOnlyKeys(candidate, ["type", "reason", "metadata"])) {
+    const reason = escalationReason(candidate.reason);
+    const metadata =
+      candidate.metadata === undefined
+        ? { success: true as const, data: undefined }
+        : JsonObjectSchema.safeParse(candidate.metadata);
+    if (reason === undefined || !metadata.success) {
+      return undefined;
+    }
+    return {
+      type: "escalate",
+      reason,
       ...(metadata.data === undefined ? {} : { metadata: metadata.data }),
     };
   }

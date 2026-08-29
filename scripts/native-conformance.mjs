@@ -25,8 +25,9 @@
  * replacement: see `modelColumn`.
  *
  * Usage:
- *   node scripts/live-conformance.mjs
- *   node scripts/live-conformance.mjs --case expired-mid-turn
+ *   node scripts/native-conformance.mjs
+ *   node scripts/native-conformance.mjs --case expired-mid-turn
+ *   node scripts/native-conformance.mjs --config host.json --harness codex
  *
  * Environment:
  *   SHAREDOS_MODEL_API_KEY   the model column's key (DEEPSEEK_API_KEY, DSH_API_KEY)
@@ -34,14 +35,14 @@
  *   SHAREDOS_MODEL_BASE_URL  chat-completions root (default https://api.deepseek.com)
  *   SHAREDOS_MODEL_PROVIDER  provider label      (default deepseek)
  */
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputDirectory = join(root, "artifacts", "conformance");
-const outputJson = join(outputDirectory, "live-conformance.json");
+const outputJson = join(outputDirectory, "native-conformance.json");
 
 const {
   CLAUDE_CODE_REQUIREMENTS,
@@ -106,6 +107,53 @@ const cases =
     : CANONICAL_CONFORMANCE_CASES.filter(({ id }) => selected.includes(id));
 
 /**
+ * Run one column instead of all of them. Same flag, same meaning, as
+ * `mcp-conformance.mjs`.
+ *
+ * An id naming no column stops the run, for the reason `--case` does: quietly
+ * falling back to a Standard-only run would attribute a green result to columns
+ * that never ran.
+ */
+const only = flag("harness", undefined);
+
+/**
+ * Which model each vendor CLI runs, and how it reaches it.
+ *
+ * The same operator-supplied file `mcp-conformance.mjs` takes, and for the same
+ * reason: provider names, base URLs, credentials and per-vendor flags belong to
+ * whoever is running the experiment, not to this repository.
+ *
+ * Without it every CLI here authenticates however it normally would -- which for
+ * a comparison is the wrong default twice over. A stored session login reaches
+ * the provider that harness usually uses rather than the one the run pinned, so
+ * the columns are not comparable to each other; and on a machine where the
+ * operator is themselves a subscriber, an unpinned column spends their own
+ * subscription on a result that cannot be published beside the others.
+ *
+ * `credentialVariables` is what stops that quietly: it makes the named variable
+ * *required* for the column, so a harness that cannot reach the pinned model
+ * reports unavailable instead of running against a different one.
+ */
+const configPath = flag("config", process.env["SHAREDOS_NATIVE_CONFIG"]);
+const hostConfig =
+  configPath === undefined ? {} : JSON.parse(await readFile(resolve(configPath), "utf8"));
+/** One string per column, recorded on the availability entry. SharedOS selects nothing. */
+const model = hostConfig.model;
+/** `${VAR}` is read from the ambient environment, so a config file holds no credential. */
+const expand = (value) =>
+  String(value).replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/gu, (_, name) => process.env[name] ?? "");
+const harnessConfig = (id) => {
+  const entry = hostConfig.harnesses?.[id] ?? {};
+  return {
+    ...entry,
+    ...(entry.env === undefined
+      ? {}
+      : { env: Object.fromEntries(Object.entries(entry.env).map(([k, v]) => [k, expand(v)])) }),
+    ...(entry.args === undefined ? {} : { args: entry.args.map((arg) => expand(arg)) }),
+  };
+};
+
+/**
  * How each harness is launched, and how the turn's prompt reaches it.
  *
  * Every entry carries the flags that keep the harness's own tools out of the
@@ -119,9 +167,15 @@ const HARNESSES = [
     harness: "codex",
     protocol: codexProtocol,
     requirements: CODEX_REQUIREMENTS,
-    launch: () => ({
+    /**
+     * `-` is positional and means "read the prompt from stdin", so the
+     * operator's `-c` overrides have to be spliced in ahead of it rather than
+     * appended. Codex needs no `codex login` for a non-OpenAI provider: the
+     * provider block names the variable the key is read from.
+     */
+    launch: (extra = []) => ({
       command: CODEX_REQUIREMENTS.executable,
-      args: ["exec", "--json", "--skip-git-repo-check", "-"],
+      args: ["exec", "--json", "--skip-git-repo-check", ...extra, "-"],
       openingFrame: (request) => ({ type: "user_input", text: request.prompt }),
     }),
   },
@@ -131,7 +185,7 @@ const HARNESSES = [
     harness: "claude-code",
     protocol: claudeCodeProtocol,
     requirements: CLAUDE_CODE_REQUIREMENTS,
-    launch: () => ({
+    launch: (extra = []) => ({
       command: CLAUDE_CODE_REQUIREMENTS.executable,
       args: [
         "-p",
@@ -147,6 +201,7 @@ const HARNESSES = [
         "Bash,Edit,Write,Read,NotebookEdit,Task,WebFetch,WebSearch",
         "--max-turns",
         "6",
+        ...extra,
       ],
       openingFrame: (request) => ({
         type: "user",
@@ -166,10 +221,14 @@ const HARNESSES = [
      * runtime is a separate bin over a plugin composition the host supplies, so
      * both are read from the environment rather than guessed at.
      */
-    launch: () => ({
+    launch: (extra = []) => ({
       command: process.env["DSH_RUNTIME_COMMAND"] ?? "dsh-jsonrpc-agent",
-      args:
-        process.env["DSH_RUNTIME_CONFIG"] === undefined ? [] : [process.env["DSH_RUNTIME_CONFIG"]],
+      args: [
+        ...(process.env["DSH_RUNTIME_CONFIG"] === undefined
+          ? []
+          : [process.env["DSH_RUNTIME_CONFIG"]]),
+        ...extra,
+      ],
       ...(process.env["DSH_RUNTIME_CWD"] === undefined
         ? {}
         : { cwd: process.env["DSH_RUNTIME_CWD"] }),
@@ -203,9 +262,9 @@ const HARNESSES = [
     harness: "pi",
     protocol: piProtocol,
     requirements: PI_REQUIREMENTS,
-    launch: () => ({
+    launch: (extra = []) => ({
       command: PI_REQUIREMENTS.executable,
-      args: ["--mode", "rpc", "--no-session", "--no-tools"],
+      args: ["--mode", "rpc", "--no-session", "--no-tools", ...extra],
       openingFrame: (request) => ({
         id: request.executionId,
         type: "prompt",
@@ -215,22 +274,54 @@ const HARNESSES = [
   },
 ];
 
+if (only !== undefined) {
+  const declared = [...HARNESSES.map(({ harness }) => harness), "model"];
+  if (!declared.includes(only)) {
+    console.error(`No such harness: ${only}. Declared: ${declared.join(", ")}.`);
+    process.exit(1);
+  }
+}
+
 const availability = [];
 const columns = [EMBEDDED_COLUMN];
 
-for (const harness of HARNESSES) {
-  const probe = await probeHarness(harness.requirements);
-  availability.push({ ...harness.launch(), ...probe, columnId: harness.id, label: harness.label });
+for (const harness of HARNESSES.filter(({ harness: id }) => only === undefined || id === only)) {
+  const host = harnessConfig(harness.harness);
+  // A pinned model usually moves the credential to a different variable than the
+  // harness's own default, so the host config may override what counts as one --
+  // and declaring it makes it required, which is the point. See `harnessConfig`.
+  const requirements =
+    host.credentialVariables === undefined
+      ? harness.requirements
+      : {
+          ...harness.requirements,
+          credentialVariables: host.credentialVariables,
+          credentialsOptional: false,
+        };
+  const probe = await probeHarness(requirements);
+  const launch = harness.launch(host.args ?? []);
+  availability.push({
+    ...launch,
+    ...probe,
+    columnId: harness.id,
+    label: harness.label,
+    ...(model === undefined ? {} : { model }),
+  });
   if (!probe.available) {
     continue;
   }
-  const launch = harness.launch();
   columns.push(
     liveColumn({
       id: harness.id,
       label: harness.label,
       protocol: harness.protocol,
-      createTransport: () => new ChildProcessTransport(launch),
+      createTransport: () =>
+        new ChildProcessTransport({
+          ...launch,
+          // Opaque, from the operator's configuration. It reaches the child
+          // process on top of the ambient environment and selects nothing here.
+          ...(host.env === undefined ? {} : { env: host.env }),
+        }),
     }),
   );
 }
@@ -247,12 +338,17 @@ const modelApiKey =
   process.env["SHAREDOS_MODEL_API_KEY"] ??
   process.env["DEEPSEEK_API_KEY"] ??
   process.env["DSH_API_KEY"];
-const modelName = process.env["SHAREDOS_MODEL"] ?? process.env["DSH_MODEL"] ?? "deepseek-v4-flash";
+const modelName =
+  process.env["SHAREDOS_MODEL"] ?? process.env["DSH_MODEL"] ?? model?.id ?? "deepseek-v4-flash";
 const modelBaseUrl = process.env["SHAREDOS_MODEL_BASE_URL"] ?? "https://api.deepseek.com";
-const modelProvider = process.env["SHAREDOS_MODEL_PROVIDER"] ?? "deepseek";
+const modelProvider = process.env["SHAREDOS_MODEL_PROVIDER"] ?? model?.provider ?? "deepseek";
 const MODEL_COLUMN_ID = "model-live";
 
-if (modelApiKey === undefined || modelApiKey.trim() === "") {
+if (only !== undefined && only !== "model") {
+  // Filtered out by `--harness`. Nothing is pushed: a column that was not asked
+  // for is not an absent one, and reporting it as unavailable would read as a
+  // missing credential.
+} else if (modelApiKey === undefined || modelApiKey.trim() === "") {
   availability.push({
     columnId: MODEL_COLUMN_ID,
     label: `Standard (${modelName})`,
@@ -391,7 +487,7 @@ await writeFile(
   outputJson,
   `${JSON.stringify(
     {
-      kind: "live-transport-conformance",
+      kind: "native-transport-conformance",
       note:
         "Vendor columns here were driven by the installed CLI over its real stdio " +
         "transport. A column absent from `columns` was not installed and is not a " +

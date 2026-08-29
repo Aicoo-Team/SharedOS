@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { ESCALATION_TOOL_NAME } from "@aicoo/sharedos-runtime";
+
 import type { ToolCall } from "@aicoo/sharedos-contracts";
 
 import { HostileRuntime, moveTurnCount, type AttackMove } from "./adversary.js";
@@ -37,7 +39,11 @@ import {
   strictFailures,
   worldSetIdentity,
 } from "./runner.js";
-import { CANONICAL_CONFORMANCE_CASES, type ConformanceCase } from "./suite.js";
+import {
+  CANONICAL_CONFORMANCE_CASES,
+  type ConformanceCase,
+  type ConformanceCondition,
+} from "./suite.js";
 import {
   conformanceRuntimeContext,
   createConformanceWorld,
@@ -313,24 +319,29 @@ describe("the conformance suite", () => {
     expect(cells).toHaveLength(135);
     // Every implemented row passes in every column that can run it. The rest are
     // stated: two rows SharedOS does not implement, counted once per column, and
-    // three rows per vendor column whose attempts a harness structurally cannot
-    // make.
-    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(113);
+    // one row per vendor column whose attempt a harness structurally cannot
+    // make -- reading the runtime surfaces it is never handed. Two others used
+    // to sit here and no longer do, and neither was a fact about harnesses:
+    // escalation is a catalogued tool now, and the step ceiling is reachable
+    // once a driver can name its own step.
+    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(121);
     expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(10);
-    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(12);
+    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(4);
     expect(strictFailures(manifest)).toEqual([]);
     // Evidence exists for every cell that ran a turn, and for no cell that did
-    // not: the two unimplemented rows in every column, and the escalation row in
-    // each of the four vendor columns, which no harness can declare.
-    expect(evidence).toHaveLength(121);
+    // not: the two unimplemented rows in every column. The escalation row now
+    // runs everywhere, so it leaves evidence everywhere too. The step-ceiling
+    // row always did -- an unreachable *attempt* still runs its turn, unlike an
+    // unsupported row, which is why that change moved cells without moving this.
+    expect(evidence).toHaveLength(125);
 
     // Every vendor column lands on the same counts. That is the portability
     // claim in its smallest form: adding a harness adds a column, not an
     // exception.
     for (const column of manifest.columns.filter(({ id }) => id !== "sharedos-embedded")) {
       const columnCells = cells.filter((cell) => cell.columnId === column.id);
-      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(22);
-      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(3);
+      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(24);
+      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(1);
       expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(2);
     }
 
@@ -457,6 +468,96 @@ describe("the conformance suite", () => {
     ]);
   });
 
+  it("ends a driven turn on the escalate affordance rather than declaring it unavailable", async () => {
+    const byId = (id: string) =>
+      CANONICAL_CONFORMANCE_CASES.find((kase) => kase.id === id) as ConformanceCase;
+    const { manifest, evidence } = await runConformanceSuite({
+      cases: [byId("escalation")],
+      columns: [EMBEDDED_COLUMN, CODEX_SCRIPTED_COLUMN],
+    });
+
+    // The row a harness could not put until escalation became something a
+    // driver could say. Both columns now reach the same terminal outcome, which
+    // is the portability claim this row was previously unable to make at all.
+    expect(manifest.rows[0]?.cells.map(({ status }) => status)).toEqual(["pass", "pass"]);
+    for (const entry of evidence) {
+      expect(entry.records[0]?.execution.status).toBe("escalated");
+      expect(entry.records[0]?.execution.terminalReasonCode).toBe("escalation_requested");
+    }
+    // The affordance never became a kernel operation in either column: it ends
+    // the turn in the driver, so no `sharedos.escalate` call is recorded.
+    for (const entry of evidence) {
+      expect(
+        entry.records.flatMap(({ execution }) => execution.operations.map(({ tool }) => tool)),
+      ).not.toContain(ESCALATION_TOOL_NAME);
+    }
+    expect(strictFailures(manifest)).toEqual([]);
+  });
+
+  it("keeps the record usable when a turn is truncated at the step ceiling", async () => {
+    const budget = CANONICAL_CONFORMANCE_CASES.find(
+      (kase) => kase.id === "budget-exceeded",
+    ) as ConformanceCase;
+    const shipped = budget.conditions.find(
+      ({ id }) => id === "step-ceiling",
+    ) as ConformanceCondition;
+    // Lowered here rather than in the suite, so only this assertion runs against
+    // a ceiling too narrow to reach the attack. One step gives a driven column a
+    // single call: it makes the control and the loop ends underneath it.
+    const truncated: ConformanceCase = {
+      ...budget,
+      conditions: [{ ...shipped, id: "truncated", world: { maxToolCalls: 8, maxSteps: 1 } }],
+    };
+
+    const { manifest, evidence } = await runConformanceSuite({
+      cases: [truncated],
+      columns: [CODEX_SCRIPTED_COLUMN],
+    });
+    const cell = manifest.rows[0]?.cells[0];
+    const record = evidence[0]?.records[0];
+
+    // The turn really was cut off mid-flight.
+    expect(record?.execution.status).toBe("failed");
+    expect(record?.execution.terminalReasonCode).toBe("step_limit_exceeded");
+    expect(cell?.status).toBe("not_exercised");
+
+    // And this is the part worth asserting. Abrupt termination is where record
+    // assembly is most likely to leave holes -- no terminal outcome, operations
+    // without their completions, events cut off mid-sequence -- and a test that
+    // stopped at the status above would pass just as cleanly whether the record
+    // was complete-and-untested or malformed-and-unreadable. These two say the
+    // evidence survived the truncation rather than that the row had nothing to
+    // report.
+    expect(cell?.recordUsable).toBe(true);
+    expect(cell?.recordGaps).toEqual([]);
+    // The work done before the ceiling is still there to be read.
+    expect(record?.execution.operations.map(({ tool, outcome }) => [tool, outcome])).toEqual([
+      ["files.read", "succeeded"],
+    ]);
+  });
+
+  it("says when a pass was the driver's doing rather than the seat occupant's", async () => {
+    const budget = CANONICAL_CONFORMANCE_CASES.find(
+      (kase) => kase.id === "budget-exceeded",
+    ) as ConformanceCase;
+    const { manifest } = await runConformanceSuite({
+      cases: [
+        { ...budget, conditions: budget.conditions.filter(({ id }) => id === "step-ceiling") },
+      ],
+      columns: [EMBEDDED_COLUMN, CODEX_SCRIPTED_COLUMN],
+    });
+    const [embedded, scripted] = manifest.rows[0]?.cells ?? [];
+
+    expect([embedded?.status, scripted?.status]).toEqual(["pass", "pass"]);
+    // The scripted adversary owns its loop and reaches past its budget by
+    // choice. A driven column cannot: the loop's index stops at the ceiling, so
+    // the driver named the out-of-budget step on its behalf. Both passes are
+    // real and they are not the same claim, which is why only one is marked.
+    expect(embedded?.driverIssued).toEqual([]);
+    expect(scripted?.driverIssued).toEqual(["call-past-the-budget"]);
+    expect(renderConformanceSummary(manifest)).toContain("pass (driver)");
+  });
+
   it("reports what a vendor column cannot do instead of failing it", async () => {
     const byId = (id: string) =>
       CANONICAL_CONFORMANCE_CASES.find((kase) => kase.id === id) as ConformanceCase;
@@ -467,11 +568,12 @@ describe("the conformance suite", () => {
 
     const [inspection, escalation] = manifest.rows;
     expect(inspection?.cells.map(({ status }) => status)).toEqual(["pass", "not_applicable"]);
-    expect(escalation?.cells.map(({ status }) => status)).toEqual(["pass", "not_applicable"]);
-    // Both say why, because "not applicable" with no reason is
+    // Escalation is no longer among them: the affordance is catalogued, so the
+    // harness ends its turn by calling it and the row is graded.
+    expect(escalation?.cells.map(({ status }) => status)).toEqual(["pass", "pass"]);
+    // The one that remains says why, because "not applicable" with no reason is
     // indistinguishable from a row nobody bothered to run.
     expect(inspection?.cells[1]?.detail).toMatch(/never handed the runtime surfaces/u);
-    expect(escalation?.cells[1]?.detail).toMatch(/escalation is a host decision/u);
     expect(strictFailures(manifest)).toEqual([]);
   });
 

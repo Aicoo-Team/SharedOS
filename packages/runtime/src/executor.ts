@@ -24,6 +24,7 @@ import {
 import { SPAN, measure, type SpanSink } from "@aicoo/sharedos-core";
 import type { SharedOSKernel, TurnAuthorityScope } from "@aicoo/sharedos-core";
 
+import { ESCALATION_TOOL_NAME } from "./escalation.js";
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
 import type {
   RuntimeHost,
@@ -380,6 +381,36 @@ export class SharedOSExecutor implements TurnExecutionPort {
       }
 
       if (outcome.data.type === "escalate") {
+        // The ask is gated by the catalogue, and the envelope holds that gate
+        // from outside the plugin. The standard loop's drivers and the MCP
+        // latch each read their turn's catalogue before ending a turn on the
+        // name, but a replacement plugin is a replacement for exactly that
+        // check, and a limit only the reference implementations honour is not
+        // a limit. So it is repeated here, against the catalogue this turn was
+        // actually served: a plugin escalating on a turn that holds no grant
+        // over the affordance is refused as any call outside the catalogue is,
+        // under the same code from the same boundary, and the turn fails --
+        // a runtime returning an outcome it was not allowed to return is a
+        // runtime misbehaving, as with `invalid_runtime_outcome`. Nothing
+        // reached the kernel, so nothing is audited; the event stream is where
+        // an envelope refusal lives.
+        if (!effectiveToolNames.has(ESCALATION_TOOL_NAME)) {
+          const error = protocolError(
+            "tool_unavailable",
+            "The runtime ended the turn by escalation, but this turn's catalogue does not offer the affordance.",
+          );
+          emit("turn.failed", { code: error.code });
+          return resultFor(
+            request,
+            events,
+            startedAt,
+            this.#clock(),
+            "failed",
+            error,
+            runtimeResultMetadata(this.#manifest, outcome.data),
+          );
+        }
+
         // The escalation is recorded through the kernel, which owns audit, and
         // then the turn ends. Nothing here waits for a reviewer: resolving an
         // escalation means issuing a grant to the trusted store, which the next

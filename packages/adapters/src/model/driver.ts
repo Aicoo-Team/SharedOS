@@ -7,12 +7,14 @@ import type {
   ToolDefinition,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
-import type {
-  AgentTurnDecision,
-  AgentTurnDriver,
-  AgentTurnInput,
-  AgentTurnRequest,
-  AgentTurnSession,
+import {
+  ESCALATION_TOOL_NAME,
+  escalationRequest,
+  type AgentTurnDecision,
+  type AgentTurnDriver,
+  type AgentTurnInput,
+  type AgentTurnRequest,
+  type AgentTurnSession,
 } from "@aicoo/sharedos-runtime";
 
 import {
@@ -98,6 +100,20 @@ export interface ModelDriverOptions {
    * this many in one turn, the turn fails instead.
    */
   readonly maxMalformedCalls?: number;
+  /**
+   * The step to declare for the nth call this turn releases, if any.
+   *
+   * Returning `undefined` -- the default for every call -- leaves the step to
+   * the loop, which is what a driver asking for one call at a time should do.
+   *
+   * It exists for the one thing a driver cannot otherwise express: reaching
+   * past its own budget. The loop's index stops at `maxSteps`, so a call at or
+   * past the ceiling can only be made by a driver that names the step itself.
+   * Supplying this makes the driver the attacker for that call, which is a
+   * different claim from the model choosing it, and a column that uses it
+   * should say so rather than letting the row read as a model's doing.
+   */
+  readonly declareStep?: (index: number, request: AgentTurnRequest) => number | undefined;
 }
 
 const DEFAULT_MAX_MALFORMED_CALLS = 8;
@@ -128,6 +144,7 @@ export class ModelDriver implements AgentTurnDriver {
   readonly #client: ModelClient;
   readonly #prompt: (request: AgentTurnRequest) => string;
   readonly #maxMalformedCalls: number;
+  readonly #declareStep: ModelDriverOptions["declareStep"];
 
   constructor(options: ModelDriverOptions) {
     this.manifest = options.manifest;
@@ -137,6 +154,7 @@ export class ModelDriver implements AgentTurnDriver {
     if (!Number.isInteger(this.#maxMalformedCalls) || this.#maxMalformedCalls <= 0) {
       throw new TypeError("maxMalformedCalls must be a positive integer");
     }
+    this.#declareStep = options.declareStep;
   }
 
   open(request: AgentTurnRequest, _signal: AbortSignal): Promise<AgentTurnSession> {
@@ -147,14 +165,10 @@ export class ModelDriver implements AgentTurnDriver {
       parameters: tool.inputSchema,
     }));
     return Promise.resolve(
-      new ModelSession(
-        this.#client,
-        request,
-        codec,
-        tools,
-        this.#prompt(request),
-        this.#maxMalformedCalls,
-      ),
+      new ModelSession(this.#client, request, codec, tools, this.#prompt(request), {
+        maxMalformedCalls: this.#maxMalformedCalls,
+        ...(this.#declareStep === undefined ? {} : { declareStep: this.#declareStep }),
+      }),
     );
   }
 }
@@ -177,6 +191,9 @@ class ModelSession implements AgentTurnSession {
    */
   readonly #pending: ModelToolCall[] = [];
   readonly #maxMalformedCalls: number;
+  readonly #declareStep: ModelDriverOptions["declareStep"];
+  /** Whether this turn's catalogue offers the escalate affordance at all. */
+  readonly #offered: boolean;
   #servedModel: string | undefined;
   /** Why the last reply ended, in the provider's words, once one has. */
   #finishReason: string | undefined;
@@ -185,6 +202,8 @@ class ModelSession implements AgentTurnSession {
   #outputTokens: number | undefined;
   /** Calls refused here for unreadable arguments this turn. */
   #malformed = 0;
+  /** Calls released to the loop this turn, which is what a step policy indexes. */
+  #released = 0;
 
   constructor(
     client: ModelClient,
@@ -192,14 +211,16 @@ class ModelSession implements AgentTurnSession {
     codec: ToolNameCodec,
     tools: readonly ModelTool[],
     prompt: string,
-    maxMalformedCalls: number,
+    options: Pick<ModelDriverOptions, "declareStep"> & { readonly maxMalformedCalls: number },
   ) {
     this.#client = client;
     this.#request = request;
     this.#codec = codec;
     this.#tools = tools;
     this.#messages = [{ role: "user", content: prompt }];
-    this.#maxMalformedCalls = maxMalformedCalls;
+    this.#maxMalformedCalls = options.maxMalformedCalls;
+    this.#declareStep = options.declareStep;
+    this.#offered = request.tools.some((tool) => tool.name === ESCALATION_TOOL_NAME);
   }
 
   async next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision> {
@@ -271,8 +292,26 @@ class ModelSession implements AgentTurnSession {
   }
 
   /**
-   * The next call the model asked for that can be made, answering in place any
-   * that cannot.
+   * Hand the loop the next thing to do, escalation included, answering in place
+   * any call that cannot be made.
+   *
+   * The escalate affordance is answered here rather than being turned into a
+   * `ToolCall`, so it never reaches the kernel: it is not an operation to
+   * authorize, it is the driver saying the turn is over and a human has to
+   * decide. Recognised by name off the catalogue -- the model picked a tool it
+   * was offered -- rather than read out of the prose around it, which would
+   * make the row measure a phrase instead of a choice. Anything queued behind
+   * it is dropped, and deliberately: the turn ends at an escalation, and
+   * running the calls the model asked for after it would execute work on the
+   * far side of a decision nobody has made yet.
+   *
+   * "Off the catalogue" is load-bearing. Ending the turn here skips the
+   * envelope, and with it the envelope's check that the tool was published to
+   * this agent, so the catalogue is read first: a model that emits the name
+   * without having been offered it -- a hallucinated tool, or one remembered
+   * from another turn -- has its call passed through to be refused
+   * `tool_unavailable` like any other invented name. Without that, any model
+   * could reach the owner on the strength of a string no host granted.
    *
    * Arguments that do not parse are not sent as `{}`. An empty object is a call
    * the model never made, and a tool whose schema accepts one -- every parameter
@@ -294,9 +333,18 @@ class ModelSession implements AgentTurnSession {
       if (next === undefined) {
         return undefined;
       }
+
       const parsed = parseToolArguments(next.arguments);
+      const escalation = this.#offered
+        ? escalationRequest(this.#codec.fromWire(next.name), parsed)
+        : undefined;
+      if (escalation !== undefined) {
+        this.#pending.length = 0;
+        return { type: "escalate", reason: escalation, metadata: this.#metadata() };
+      }
+
       if (parsed !== undefined) {
-        return { type: "tool_call", call: this.#toolCall(next, parsed) };
+        return this.#call(next, parsed);
       }
       this.#malformed += 1;
       if (this.#malformed > this.#maxMalformedCalls) {
@@ -352,6 +400,17 @@ class ModelSession implements AgentTurnSession {
     if (reply.usage?.outputTokens !== undefined) {
       this.#outputTokens = (this.#outputTokens ?? 0) + reply.usage.outputTokens;
     }
+  }
+
+  #call(call: ModelToolCall, arguments_: JsonObject): AgentTurnDecision {
+    const index = this.#released;
+    this.#released += 1;
+    const step = this.#declareStep?.(index, this.#request);
+    return {
+      type: "tool_call",
+      call: this.#toolCall(call, arguments_),
+      ...(step === undefined ? {} : { step }),
+    };
   }
 
   /** The refusal the model is shown for a call it made with unreadable arguments. */

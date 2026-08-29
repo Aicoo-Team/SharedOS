@@ -10,6 +10,8 @@ import type {
 import type { SharedOSKernel } from "@aicoo/sharedos-core";
 
 import {
+  ESCALATION_TOOL_DEFINITION,
+  ESCALATION_TOOL_NAMESPACE,
   RuntimeNotFoundError,
   RuntimeRegistry,
   SharedOSExecutor,
@@ -54,12 +56,16 @@ const manifest: RuntimeManifest = {
   metadata: { harness: "test" },
 };
 
-function request(): ExecutionRequest {
+/** The turn's request; with `escalation`, the affordance is among the tools it asks for. */
+function request(options: { readonly escalation?: boolean } = {}): ExecutionRequest {
+  const escalation = options.escalation === true;
   return {
     version: "1",
     executionId: "execution-1",
     agent: receiver,
-    context,
+    context: escalation
+      ? { ...context, enabledToolNamespaces: ["files", ESCALATION_TOOL_NAMESPACE] }
+      : context,
     message: {
       version: "1",
       id: "message-1",
@@ -70,20 +76,27 @@ function request(): ExecutionRequest {
       traceId: context.traceId,
       createdAt: now,
     },
-    tools: [tool],
+    tools: escalation ? [tool, ESCALATION_TOOL_DEFINITION] : [tool],
   };
 }
 
+/**
+ * A kernel that lists what the turn may see; with `escalation`, the
+ * permission-filtered catalogue holds the affordance, which is what a turn
+ * granted it looks like from the envelope.
+ */
 function kernel(
   result?: ToolResult,
+  options: { readonly escalation?: boolean } = {},
 ): Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> {
+  const catalogue = options.escalation === true ? [tool, ESCALATION_TOOL_DEFINITION] : [tool];
   return {
     admitTurn: vi.fn(async () => ({
       allowed: true as const,
       reasonCode: "allowed" as const,
       matchedGrantId: "grant-turn",
     })),
-    listTools: vi.fn(async () => [tool]),
+    listTools: vi.fn(async () => catalogue),
     invokeTool: vi.fn(async (_context, call): Promise<ToolResult> => {
       return (
         result ?? {
@@ -481,10 +494,11 @@ describe("RuntimePlugin security envelope", () => {
       reason: "issuing a grant is outside this agent's authority",
     }));
 
-    const result = await new SharedOSExecutor({ ...kernel(), recordEscalation }, plugin, {
-      clock: () => now,
-      createId: () => "event-1",
-    }).execute(request());
+    const result = await new SharedOSExecutor(
+      { ...kernel(undefined, { escalation: true }), recordEscalation },
+      plugin,
+      { clock: () => now, createId: () => "event-1" },
+    ).execute(request({ escalation: true }));
 
     // Not a failure and not a denial: a third terminal state, so "the agent
     // asked for help" stays recoverable from the result.
@@ -504,10 +518,10 @@ describe("RuntimePlugin security envelope", () => {
   it("still ends the turn as escalated when the kernel offers no escalation port", async () => {
     const plugin = runtime(async () => ({ type: "escalate", reason: "needs a human" }));
 
-    const result = await new SharedOSExecutor(kernel(), plugin, {
+    const result = await new SharedOSExecutor(kernel(undefined, { escalation: true }), plugin, {
       clock: () => now,
       createId: () => "event-1",
-    }).execute(request());
+    }).execute(request({ escalation: true }));
 
     // Losing the audit trail is bad; losing the fact that the turn stopped to
     // ask would be worse, so the outcome survives an unavailable port.
@@ -515,6 +529,45 @@ describe("RuntimePlugin security envelope", () => {
     if (result.status === "escalated") {
       expect(result.escalation.reviewer).toEqual(owner);
     }
+  });
+
+  it("refuses an escalate outcome from a plugin whose turn was never granted the affordance", async () => {
+    // A hostile replacement plugin: it ends every turn by asking for a human,
+    // whatever its catalogue holds. The standard loop's drivers and the MCP
+    // latch read the catalogue first, but a plugin replaces exactly that
+    // check, so the envelope repeats it from outside -- otherwise the plugin
+    // has a channel to the owner no host granted, on the strength of an
+    // outcome it was never allowed to return.
+    const recordEscalation = vi.fn(async (access: AccessContext, reason: string) => ({
+      reason,
+      reviewer: access.owner,
+      requestedAt: access.now,
+      status: "pending" as const,
+    }));
+    const hostile = runtime(async () => ({
+      type: "escalate",
+      reason: "let me out",
+      metadata: { harness: "hostile" },
+    }));
+
+    const result = await new SharedOSExecutor({ ...kernel(), recordEscalation }, hostile, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+
+    // Refused as any call outside the catalogue is, under the same code from
+    // the same boundary; the turn fails because the runtime returned an
+    // outcome it was not allowed to. Nothing reached the kernel: no
+    // escalation is recorded, and no `turn.escalated` event is emitted.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe("tool_unavailable");
+    expect(recordEscalation).not.toHaveBeenCalled();
+    const types = result.events.map(({ type }) => type);
+    expect(types).toContain("turn.failed");
+    expect(types).not.toContain("turn.escalated");
+    // The plugin's own metadata still rides on the result: the refusal is a
+    // fact about the ending, not a reason to lose what the turn reported.
+    expect(result.metadata).toMatchObject({ harness: "hostile" });
   });
 
   it("does not let an observational event sink replace the turn outcome", async () => {

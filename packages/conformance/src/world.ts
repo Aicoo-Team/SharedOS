@@ -12,6 +12,7 @@ import {
   type ResourceResult,
   type ToolCall,
   type ToolDefinition,
+  type ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
   type AuditEvent,
@@ -32,7 +33,13 @@ import {
   type ToolHandler,
 } from "@aicoo/sharedos-core";
 import { createFileTools } from "@aicoo/sharedos-os";
-import type { RuntimeVisibleContext } from "@aicoo/sharedos-runtime";
+import {
+  ESCALATION_ACTION,
+  ESCALATION_RESOURCE_PATH,
+  ESCALATION_TOOL_DEFINITION,
+  ESCALATION_TOOL_NAMESPACE,
+  type RuntimeVisibleContext,
+} from "@aicoo/sharedos-runtime";
 
 /** The world every canonical conformance move is declared against. */
 export const CONFORMANCE_NAMESPACE_ID = "world-conformance";
@@ -296,6 +303,20 @@ export const SEALED_GRANT = "grant-sealed";
 export const LEDGER_GRANT = "grant-ledger";
 /** A grant claiming more than its parent holds, armed only by the row about it. */
 export const OVERBROAD_GRANT = "grant-overbroad";
+/** The ancestor of the authority to ask a human to decide. */
+export const ROOT_ESCALATION_GRANT = "grant-root-escalation";
+/**
+ * Authority to end a turn by asking a human to decide.
+ *
+ * Escalation is published as a tool and is therefore permission-filtered like
+ * one: an agent holding no grant over it does not see it in the catalogue, and
+ * cannot escalate. That is the honest arrangement -- asking for a human is an
+ * affordance a host grants, not a capability every runtime has by existing --
+ * and it is why this grant is issued in the baseline world rather than armed by
+ * a condition. The escalation row would otherwise be testing whether the tool
+ * was visible rather than whether SharedOS records the request.
+ */
+export const ESCALATION_GRANT = "grant-escalation";
 
 const ISSUED_AT = "2026-08-18T08:00:00.000Z";
 
@@ -359,6 +380,13 @@ export function rootGrants(): readonly CapabilityGrant[] {
       ...base,
       id: ROOT_MESSAGING_GRANT,
       capabilities: [capability(MESSAGING_RESOURCE_NAMESPACE, ["human", "user-alice"], ["send"])],
+    },
+    {
+      ...base,
+      id: ROOT_ESCALATION_GRANT,
+      capabilities: [
+        capability(ESCALATION_TOOL_NAMESPACE, ESCALATION_RESOURCE_PATH, [ESCALATION_ACTION]),
+      ],
     },
     {
       ...base,
@@ -430,6 +458,14 @@ export function agentGrants(): readonly CapabilityGrant[] {
       id: MESSAGE_GRANT,
       parentGrantId: ROOT_MESSAGING_GRANT,
       capabilities: [capability(MESSAGING_RESOURCE_NAMESPACE, ["human", "user-alice"], ["send"])],
+    },
+    {
+      ...base,
+      id: ESCALATION_GRANT,
+      parentGrantId: ROOT_ESCALATION_GRANT,
+      capabilities: [
+        capability(ESCALATION_TOOL_NAMESPACE, ESCALATION_RESOURCE_PATH, [ESCALATION_ACTION]),
+      ],
     },
     {
       ...base,
@@ -1614,6 +1650,7 @@ export function createConformanceWorld(
     files.escapingHandler(),
     files.mismatchedHandler(),
     files.sealedHandler(),
+    escalationHandler(),
   ];
   for (const handler of handlers) {
     kernel.registerTool(handler);
@@ -1624,7 +1661,12 @@ export function createConformanceWorld(
 
   const context: AccessContext = {
     namespaceId: CONFORMANCE_NAMESPACE_ID,
-    enabledToolNamespaces: [FILES_NAMESPACE, MESSAGES_NAMESPACE, BROKER_NAMESPACE],
+    enabledToolNamespaces: [
+      FILES_NAMESPACE,
+      MESSAGES_NAMESPACE,
+      BROKER_NAMESPACE,
+      ESCALATION_TOOL_NAMESPACE,
+    ],
     actor: CONFORMANCE_AGENT,
     authority: CONFORMANCE_ORCHESTRATOR,
     owner: CONFORMANCE_OWNER,
@@ -1681,6 +1723,40 @@ export function createConformanceWorld(
         ...executionOptions,
       };
     },
+  };
+}
+
+/**
+ * The escalation affordance, registered so it is catalogued -- and never invoked.
+ *
+ * A driver whose catalogue offers it recognises the name and returns an
+ * escalate decision instead of a tool call, so the kernel is never asked.
+ * Registering it anyway is what makes it a real, permission-filtered entry in
+ * the catalogue rather than something a driver invents locally: the agent sees
+ * it because it holds {@link ESCALATION_GRANT}, and an agent without that grant
+ * neither sees it nor can end a turn on its name.
+ *
+ * The handler fails rather than succeeding, because reaching it means a driver
+ * forwarded the call instead of terminating on it. A stub that returned success
+ * would leave a record showing an escalation tool ran and a turn that completed
+ * normally, which is precisely the confusion this affordance exists to remove.
+ */
+function escalationHandler(): ToolHandler {
+  return {
+    definition: ESCALATION_TOOL_DEFINITION,
+    parseArguments: (arguments_) => arguments_,
+    invoke: (context: AccessContext, call: ToolCall): Promise<ToolResult> =>
+      Promise.resolve({
+        callId: call.id,
+        tool: call.tool,
+        status: "failed",
+        error: {
+          code: "escalation_not_terminated",
+          message:
+            "The escalation affordance ends a turn and is never executed; this driver forwarded it as a tool call.",
+        },
+        completedAt: context.now,
+      }),
   };
 }
 
