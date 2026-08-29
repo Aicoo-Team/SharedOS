@@ -742,6 +742,8 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         description:
           "Reach for the authority the turn will then escalate about, so the escalation follows a refusal rather than standing on its own.",
         tool: UNREGISTERED_TOOL,
+        uncatalogued:
+          "the host never registered this tool, so no `tools/list` contains it and a CLI's own router refuses the name before it reaches SharedOS",
         expect: REFUSED_AS_UNEXPOSED,
       },
       { ...READ_OWN_WORKSPACE, id: "read-own-workspace" },

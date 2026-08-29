@@ -9,18 +9,27 @@ import type {
   ProtocolError,
   RuntimeManifest,
   RuntimeTurnOutcome,
+  ToolCall,
+  ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
   McpToolServer,
   claudeAgentSdkMcpOptions,
   harnessMcpConfigFile,
   openToolBridge,
+  type BridgeToolInvoker,
   type HarnessMcpConfigFile,
   type HarnessMcpConnection,
   type SharedOSToolBridge,
 } from "@aicoo/sharedos-mcp";
 import { createStreamableHttpMcpServer } from "@aicoo/sharedos-mcp/node";
-import type { RuntimeHost, RuntimePlugin, RuntimeTurnRequest } from "@aicoo/sharedos-runtime";
+import {
+  ESCALATION_TOOL_NAME,
+  escalationRequest,
+  type RuntimeHost,
+  type RuntimePlugin,
+  type RuntimeTurnRequest,
+} from "@aicoo/sharedos-runtime";
 
 import type { HarnessProtocol } from "./harness.js";
 import { claudeCodeProtocol } from "./claude-code/protocol.js";
@@ -141,6 +150,14 @@ export interface McpHarnessRuntimeOptions {
    * reported would make it invisible.
    */
   readonly model?: { readonly id: string; readonly provider?: string };
+  /**
+   * Where a result this runtime mints itself takes its instant from.
+   *
+   * Only {@link EscalationLatch} mints any; every other result is the kernel's
+   * and carries the kernel's clock. Injectable for the reason the executor's is:
+   * an instant a test cannot fix is an instant it cannot assert on.
+   */
+  readonly clock?: () => string;
 }
 
 const MAX_DIAGNOSTIC_CHARS = 8_192;
@@ -167,11 +184,16 @@ export function createMcpHarnessRuntime(
       host: RuntimeHost,
       signal: AbortSignal,
     ): Promise<RuntimeTurnOutcome> {
+      const escalation = new EscalationLatch(
+        request,
+        host,
+        options.clock ?? (() => new Date().toISOString()),
+      );
       const bridge: SharedOSToolBridge = openToolBridge({
         executionId: request.executionId,
         context: { traceId: request.context.traceId, now: request.context.now },
         tools: request.tools,
-        host,
+        host: escalation,
       });
       const server = new McpToolServer({
         invoker: bridge,
@@ -212,13 +234,10 @@ export function createMcpHarnessRuntime(
         };
         const outcome = await runHarness(spec, launch, signal, options);
         const catalogHash = await bridgeCatalogHash(bridge, signal);
-        return {
-          ...outcome,
-          metadata: {
-            ...outcome.metadata,
-            ...harnessMetadata(spec, connection, bridge, catalogHash, options.model),
-          },
-        };
+        return escalation.settle(outcome, {
+          ...outcome.metadata,
+          ...harnessMetadata(spec, connection, bridge, catalogHash, options.model),
+        });
       } finally {
         // Step 7 of the lifecycle. Order matters: the bridge is shut before the
         // port is, so a harness still mid-call is refused by a closed bridge
@@ -229,6 +248,145 @@ export function createMcpHarnessRuntime(
       }
     },
   };
+}
+
+/**
+ * The turn's ending, recovered from a call that could never have returned one.
+ *
+ * A driver returns `escalate` as its next decision and the loop simply stops.
+ * Nothing on this path can: the harness owns its loop, and its calls arrive as
+ * `tools/call` frames that expect a result back. So the affordance is recognised
+ * at the one place every MCP call already passes through -- the invoker the
+ * bridge was opened over -- and the turn's outcome is settled from it once the
+ * harness has wound down.
+ *
+ * It lives in this package rather than in `@aicoo/sharedos-mcp` deliberately.
+ * `BridgeToolInvoker` is one method wide, and the bridge says why: it makes it
+ * impossible for the MCP surface to reach any part of the turn machinery other
+ * than the one that re-authorizes. Wrapping that invoker keeps the claim true.
+ * The bridge still has exactly one thing it can do with a call, and what ends a
+ * turn stays with the adapter that returns the outcome.
+ *
+ * Nothing here reaches the kernel. An escalation is not an operation to
+ * authorize -- it is the turn saying it is over -- so it leaves no operation in
+ * the record, which is the same absence a driver's escalation leaves.
+ */
+class EscalationLatch implements BridgeToolInvoker {
+  readonly #host: BridgeToolInvoker;
+  readonly #clock: () => string;
+  /** Whether this turn was granted the affordance at all. */
+  readonly #offered: boolean;
+  #reason: string | undefined;
+  #afterwards = 0;
+
+  constructor(request: RuntimeTurnRequest, host: BridgeToolInvoker, clock: () => string) {
+    this.#host = host;
+    this.#clock = clock;
+    // Read from the turn's own catalogue, because skipping the envelope skips
+    // its effective-catalogue check with it. A call naming the affordance
+    // without holding it is passed through and refused `tool_unavailable` like
+    // any other unpublished name -- the same rule both native drivers apply
+    // before ending a turn on the name.
+    this.#offered = request.tools.some((tool) => tool.name === ESCALATION_TOOL_NAME);
+  }
+
+  async invokeTool(call: ToolCall, options?: { readonly step?: number }): Promise<ToolResult> {
+    if (this.#reason !== undefined) {
+      this.#afterwards += 1;
+      return this.#refuse(call);
+    }
+    const reason = this.#offered ? escalationRequest(call.tool, call.arguments) : undefined;
+    if (reason === undefined) {
+      return this.#host.invokeTool(call, options);
+    }
+    this.#reason = reason;
+    return this.#accept(call, reason);
+  }
+
+  /**
+   * The outcome the turn ends on, and what the harness thought it was.
+   *
+   * The harness's own ending is kept rather than discarded. "The CLI reported
+   * success after asking for a human" and "the CLI crashed after asking for a
+   * human" are different runs, and an escalation that replaced both would say
+   * the same thing about each.
+   */
+  settle(outcome: RuntimeTurnOutcome, metadata: JsonObject): RuntimeTurnOutcome {
+    if (this.#reason === undefined) {
+      return { ...outcome, metadata };
+    }
+    return {
+      type: "escalate",
+      reason: this.#reason,
+      metadata: {
+        ...metadata,
+        harnessOutcome: outcome.type,
+        ...(outcome.type === "fail" ? { harnessErrorCode: outcome.error.code } : {}),
+        callsAfterEscalation: this.#afterwards,
+      },
+    };
+  }
+
+  /**
+   * Answer the ask itself, and say plainly that the turn is over.
+   *
+   * `succeeded`, because the ask was taken: reporting the one call that worked
+   * as an error would tell a harness to try again. The instruction rides in
+   * the output because there is nowhere else to put it -- the catalogue is
+   * fixed for the turn, `listChanged` is false, and this server never pushes,
+   * so this result is the only chance SharedOS gets to tell a harness to stop.
+   *
+   * The note promises recording in the future tense on purpose. The
+   * escalation is recorded by the executor when the turn settles, not here;
+   * a throw between this answer and `settle` would otherwise have told the
+   * harness something that never happened.
+   */
+  #accept(call: ToolCall, reason: string): ToolResult {
+    return {
+      callId: call.id,
+      tool: call.tool,
+      status: "succeeded",
+      output: {
+        escalated: true,
+        reason,
+        note:
+          "This turn is over: make no further tool calls. " +
+          "The request will be recorded for a human reviewer when the turn ends.",
+      },
+      completedAt: this.#clock(),
+    };
+  }
+
+  /**
+   * Refuse a call made after the ask, in band.
+   *
+   * The obvious alternative is to close the bridge, and it is wrong. A closed
+   * bridge throws, `McpToolServer` cannot tell that throw from any other, and
+   * the harness is answered with JSON-RPC `-32603` -- a transport fault carrying
+   * nothing about authority, which most harnesses retry and some abandon the
+   * turn over. `toCallToolResult`'s rule holds here too: a refusal is a tool
+   * result, never a transport error. The door stays open and answers "no",
+   * which a harness can read, report, and stop on.
+   *
+   * `denied` rather than `failed` because nothing broke -- SharedOS declined to
+   * run it. Nothing runs on the far side of a decision nobody has made yet, and
+   * because these calls never reach the envelope they are counted here instead
+   * of vanishing between the harness's transcript and a record with no
+   * operation for them.
+   */
+  #refuse(call: ToolCall): ToolResult {
+    return {
+      callId: call.id,
+      tool: call.tool,
+      status: "denied",
+      error: {
+        code: "escalation_pending",
+        message: "This turn ended by asking a human to decide; nothing further runs on it.",
+        retryable: false,
+      },
+      completedAt: this.#clock(),
+    };
+  }
 }
 
 async function bridgeCatalogHash(

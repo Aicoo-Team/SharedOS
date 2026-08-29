@@ -483,19 +483,13 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
 /**
  * What a natively-looping MCP harness cannot be tested on, and why.
  *
- * Three kinds, and they are not the same kind of claim.
+ * Two kinds, and a third thing that is not a limit at all.
  *
- * Two are structural facts about being a harness. One is shared with a driven
+ * The first is a structural fact about being a harness, shared with a driven
  * one: a harness speaks tool calls over a wire and is never handed a
- * `RuntimeHost` to enumerate. The other is now this column's alone. Escalation
- * is a catalogued tool, and a driven harness ends its turn by calling it --
- * but on this path tool calls leave over MCP rather than over the driver's
- * decision channel, so a call to the affordance arrives at `McpToolServer` and
- * is answered by the kernel instead of terminating the turn. The affordance
- * exists here and is visible in the served catalogue; what is missing is a way
- * for a call to it to become the turn's ending.
+ * `RuntimeHost` to enumerate.
  *
- * The third is structural too but belongs to the *client*, not to SharedOS. An
+ * The second is structural too but belongs to the *client*, not to SharedOS. An
  * attempt naming a tool no published catalogue contains is refused by the CLI's
  * own tool router before it reaches the bridge -- Codex logs
  * `error=unsupported call: admin.grant.issue` -- so `tool_unavailable` is
@@ -504,7 +498,7 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
  * unknown name straight through. The scripted columns own the loop and
  * are the only ones that exercise it.
  *
- * The fourth is not a limit of the harness at all. Where a condition declares
+ * The third is not a limit of the harness at all. Where a condition declares
  * `requiresDeclaredSteps`, SharedOS is stating that the guarantee holds only
  * while it owns the turn loop, and the row is reported `out_of_scope`: the
  * attempt is still issued and recorded, and simply not graded. A driven harness
@@ -513,6 +507,17 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
  * Neither is a pass, and the two must not be collapsed: one says the attempt
  * could not be made, the other says the attempt was made and SharedOS no longer
  * claims an answer for it.
+ *
+ * Escalation was among these and is not any more. A call to the affordance still
+ * leaves over MCP rather than over a driver's decision channel, so the turn's
+ * ending has to be recovered from the call instead of returned by it:
+ * `createMcpHarnessRuntime` recognises the name at the invoker the bridge was
+ * opened over, answers it, refuses everything after it in band, and settles the
+ * turn as `escalate`. The row is graded here like any other. What it costs is
+ * worth stating where the cells are read rather than only in the code: on a
+ * driven column the turn never continues, and here SharedOS stops answering and
+ * lets the harness wind down, with the harness's own ending kept in the
+ * record's metadata.
  */
 export function mcpHarnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
   const unreachable = new Map<string, string>();
@@ -530,12 +535,6 @@ export function mcpHarnessLimits(move: AttackMove, condition: ConformanceConditi
   }
 
   return {
-    ...(move.terminal === undefined
-      ? {}
-      : {
-          unsupported:
-            "on this path tool calls leave over MCP rather than over the driver's decision channel, so a call to the escalate affordance is answered by the kernel instead of ending the turn",
-        }),
     ...(condition.requiresDeclaredSteps === undefined
       ? {}
       : { outOfScope: condition.requiresDeclaredSteps }),

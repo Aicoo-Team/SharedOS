@@ -71,9 +71,8 @@ which is exactly what ADR 0009 closed.
   now names that attempt for what it is: an operation refused before the kernel.
 - A vendor harness column produces one by calling the affordance, because it is
   a catalogued tool rather than a frame the vendor protocol has to carry. See
-  ADR 0017. The MCP columns still report the row as not applicable: on that path
-  the ask arrives as a call the kernel answers, rather than as a decision that
-  ends the turn.
+  ADR 0017. The MCP columns reach the same ending by a different route, since
+  the harness owns the loop there and the ask arrives as a call; see ADR 0018.
 
 ## Rejected alternatives
 
