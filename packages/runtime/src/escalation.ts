@@ -75,9 +75,9 @@ export const ESCALATION_TOOL_DEFINITION: ToolDefinition = Object.freeze({
  * It exists to put {@link ESCALATION_TOOL_DEFINITION} in the permission-filtered
  * catalogue, where an agent sees it only when its context enables the
  * `sharedos` tool namespace and it holds a grant over `sharedos` /
- * `["escalation"]` / `request`. It is never meant to run: a driver recognises
- * the name (see {@link escalationRequest}) and ends the turn `escalated`
- * instead of forwarding a call. If a driver forwards it anyway, the handler
+ * `["escalation"]` / `request`. It is never meant to run: a driver whose turn's
+ * catalogue offers it recognises the name (see {@link escalationRequest}) and
+ * ends the turn `escalated` instead of forwarding a call. If a driver forwards it anyway, the handler
  * fails with `escalation_not_terminated` rather than succeeding, because a call
  * that quietly succeeded would leave a record of an escalation tool that ran
  * and a turn that completed normally -- the confusion the affordance exists to

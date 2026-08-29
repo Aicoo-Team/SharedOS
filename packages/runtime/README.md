@@ -56,11 +56,14 @@ and it holds a grant over resource `sharedos` / `["escalation"]`, action
 and `ESCALATION_ACTION`. A host that issues no such grant has agents that cannot
 escalate, which is the intended arrangement.
 
-The tool is never executed. A driver recognises the name with
-`escalationRequest(tool, arguments)` and returns `{ type: "escalate", reason }`
-instead of a tool call; `StandardRuntime` settles the turn as `escalated`, the
-envelope records `escalation.requested`, and nothing is granted while the ask is
-pending. The registered handler exists to put the tool in the catalogue and to
+The tool is never executed. A driver whose turn's catalogue offers it
+recognises the name with `escalationRequest(tool, arguments)` and returns
+`{ type: "escalate", reason }` instead of a tool call; `StandardRuntime` settles
+the turn as `escalated`, the envelope records `escalation.requested`, and
+nothing is granted while the ask is pending. Without the grant the name is
+passed through and refused `tool_unavailable`, and `SharedOSExecutor` refuses an
+`escalate` outcome from any plugin on such a turn — the catalogue gates the
+name, not the driver's goodwill. The registered handler exists to put the tool in the catalogue and to
 fail — `escalation_not_terminated` — if a driver forwards the call anyway. Over
 MCP the bridge answers the ask itself and refuses later calls on that turn with
 `escalation_pending` (ADR 0018).

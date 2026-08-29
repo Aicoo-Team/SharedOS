@@ -113,11 +113,15 @@ End the turn by asking a human to decide
 | Namespace    | `sharedos`                                                                              |
 | Capability   | `sharedos` / `["escalation"]` / `request`, owner the context's owner                    |
 
-The tool is catalogued and never executed. A driver recognises the name
-(`escalationRequest`) and ends the turn `escalated` instead of making the call,
-the kernel records `escalation.requested`, and nothing is granted while the ask
-is pending. The registered handler fails with `escalation_not_terminated` if a
-driver forwards the call anyway. Over MCP the bridge answers the ask itself and
+The tool is catalogued and never executed. A driver whose turn's catalogue
+offers it recognises the name (`escalationRequest`) and ends the turn
+`escalated` instead of making the call, the kernel records
+`escalation.requested`, and nothing is granted while the ask is pending. Without
+the grant the name is passed through and refused `tool_unavailable` like any
+other unpublished tool, and the envelope refuses an `escalate` outcome from any
+runtime plugin on such a turn (ADR 0017, "The catalogue gates the name"). The
+registered handler fails with `escalation_not_terminated` if a driver forwards
+the call anyway. Over MCP the bridge answers the ask itself and
 refuses later calls on that turn with `escalation_pending`
 ([ADR 0018](adr/0018-escalation-over-mcp.md)). A host that issues no
 escalation grant has agents that cannot escalate; that is the intended
