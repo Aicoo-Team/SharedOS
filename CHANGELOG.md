@@ -10,6 +10,13 @@ each entry calls out what a host has to update.
 
 ### Changed — breaking
 
+- **`InMemoryGrantChainResolver` and `UnavailableGrantChainResolver` in
+  `@aicoo/sharedos-testkit` are renamed** `InMemoryDelegationChainResolver` and
+  `UnavailableDelegationChainResolver`, after the port they implement. The port
+  was renamed from `GrantChainResolver` to `DelegationChainResolver` in this
+  release and the fixtures kept the old name. Rename the import; nothing else
+  changes.
+
 - **Messages now have one policy-bound reason: `purpose`.** The redundant
   `MessageEnvelope.intent` field is removed, and strict parsing rejects legacy
   envelopes that still carry it. Outbound sends execute as their sender; an
