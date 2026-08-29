@@ -63,7 +63,11 @@ below wearing a different hat.
 carries an optional `step`, and `StandardRuntime` uses `decision.step ?? step`.
 A driver that says nothing is bounded exactly as before. One that names a step
 is refused for it if the envelope disagrees, because **declaring a step is a
-claim, not a permission**: nothing a driver says widens what it may do.
+claim, not a permission**: nothing a driver says widens what it may do. The
+claim reaches forward only: `StandardRuntime` refuses a declared step behind its
+own position as a malformed decision (`invalid_driver_decision`), since the
+declaration exists to reach past the budget and a position the loop has already
+passed is not that -- it is a claim the loop can see is false.
 
 **A call the driver reached for is attributed to the driver.** Where the seat's
 occupant asked for an ordinary call and the driver reached past the budget on
@@ -90,6 +94,15 @@ driver's doing under their name.
   is now true of them specifically: on that path tool calls leave over MCP
   rather than over the driver's decision channel, so a call to the affordance is
   answered by the kernel instead of ending the turn.
+- Below the ceiling, the record carries the step as the runtime declared it.
+  The envelope enforces the ceiling and the distinct-step count (ADR 0012), not
+  the truth of a position: a replacement plugin's steps are its own claim about
+  its own loop, and `tool.requested` / `tool.completed` record that claim,
+  which is what `RuntimeToolInvocationOptions.step` has always meant. The
+  attribution of a reach past the budget to the driver rather than the seat's
+  occupant lives in the conformance report -- `ColumnLimits.driverIssued`,
+  `pass (driver)` -- not in the runtime record, and this is the intended split:
+  the record says what position was declared, the report says who declared it.
 - One condition's world widened: the step ceiling row runs at two steps rather
   than one, because a driven column gets one call per turn of the loop and at
   one step the loop ended underneath the attack. It is the only condition whose

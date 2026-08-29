@@ -212,6 +212,39 @@ describe("TurnExecutor", () => {
     );
   });
 
+  it("refuses a declared step behind the loop's own position", async () => {
+    // The declaration exists to reach past the budget. A driver naming a step
+    // the loop has already passed is making a claim the loop can see is false,
+    // and the record would otherwise carry it as the position of the call.
+    const call = (id: string) => ({
+      id,
+      tool: tool.name,
+      arguments: { query: "status" },
+      traceId: context.traceId,
+      requestedAt: now,
+    });
+    const next = vi
+      .fn<AgentTurnSession["next"]>()
+      .mockResolvedValueOnce({ type: "tool_call", call: call("call-1"), step: 1 })
+      .mockResolvedValueOnce({ type: "tool_call", call: call("call-2"), step: 0 })
+      .mockResolvedValue({ type: "complete", output: { ok: true } });
+    const runtimeKernel = kernel();
+
+    const result = await new TurnExecutor(
+      runtimeKernel,
+      { open: async () => ({ next }) },
+      { clock: () => now, createId: () => "event-1" },
+    ).execute(request());
+
+    // The first call reached forward (1 at position 0) and went through; the
+    // second reached back (0 at position 1) and ended the turn.
+    expect(runtimeKernel.invokeTool).toHaveBeenCalledTimes(1);
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "invalid_driver_decision",
+    );
+  });
+
   it("uses the registry's permission-filtered tool definition", async () => {
     let openedRequest: AgentTurnRequest | undefined;
     const session: AgentTurnSession = {

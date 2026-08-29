@@ -43,6 +43,11 @@ export type AgentTurnDecision =
        * the envelope refuses a call at or past `maxSteps` whoever named the
        * step, so a driver can claim a step it has no right to and be refused
        * for it. A driver that says nothing is bounded exactly as before.
+       *
+       * It reaches forward only. The loop knows where it is, and a declared
+       * step behind that position is not a reach past the budget but a claim
+       * the loop can see is false; it is refused as a malformed decision rather
+       * than written into the record as the position the call was made at.
        */
       readonly step?: number;
     }
@@ -169,7 +174,19 @@ export class StandardRuntime implements RuntimePlugin {
 
         // The driver's own step when it declared one, the loop's otherwise.
         // The envelope decides either way; naming a step is not being granted
-        // it.
+        // it. A step behind the loop's own is refused here, because the loop
+        // is the one party that knows it is false: the declaration exists to
+        // reach past the budget, and a position already passed is not that.
+        if (decision.step !== undefined && decision.step < step) {
+          closeOutcome = "failed";
+          return {
+            type: "fail",
+            error: protocolError(
+              "invalid_driver_decision",
+              "The agent turn driver declared a step behind the loop's own position.",
+            ),
+          };
+        }
         const result = await host.invokeTool(decision.call, { step: decision.step ?? step });
         nextInput = { type: "tool_result", result };
       }
