@@ -10,7 +10,11 @@ import { SharedOSKernel } from "@aicoo/sharedos-core";
 import type { CapabilityGrant } from "@aicoo/sharedos-contracts";
 
 import {
+  ESCALATION_REASON_MAX_LENGTH,
+  ESCALATION_TOOL_NAME,
   TurnExecutor,
+  escalationReason,
+  escalationRequest,
   type AgentTurnDriver,
   type AgentTurnRequest,
   type AgentTurnSession,
@@ -179,6 +183,29 @@ describe("TurnExecutor", () => {
 
     // Bounded exactly as the outcome is. A decision that parsed here but not as
     // an outcome would fail further in, where the cause is no longer visible.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "invalid_driver_decision",
+    );
+  });
+
+  it("refuses an escalate decision whose reason runs past the outcome's bound", async () => {
+    const session: AgentTurnSession = {
+      next: vi.fn<AgentTurnSession["next"]>(async () => ({
+        type: "escalate",
+        reason: "x".repeat(ESCALATION_REASON_MAX_LENGTH + 1),
+      })),
+    };
+    const driver: AgentTurnDriver = { open: async () => session };
+
+    const result = await new TurnExecutor(kernel(), driver, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+
+    // A decision is code, not input. A driver handing the loop more than the
+    // outcome carries has a bug, and refusing the decision is how it is found;
+    // the recogniser a driver reads model output through is what cuts.
     expect(result.status).toBe("failed");
     expect(result.status === "failed" ? result.error.code : undefined).toBe(
       "invalid_driver_decision",
@@ -560,5 +587,50 @@ describe("turn-scoped authority", () => {
       error: { code: "no_matching_grant" },
     });
     expect(loads).toBe(2);
+  });
+});
+
+describe("recognising an escalation in a call", () => {
+  it("keeps the reason as given, cut to the bound rather than replaced", () => {
+    const given = "needs an owner: " + "y".repeat(ESCALATION_REASON_MAX_LENGTH * 2);
+    const recognised = escalationRequest(ESCALATION_TOOL_NAME, { reason: given });
+
+    // The occupant's own words, and the first 512 of them: replacing the whole
+    // reason with the canned fallback would record that nothing was said.
+    expect(recognised).toBe(given.slice(0, ESCALATION_REASON_MAX_LENGTH));
+    expect(recognised).toHaveLength(ESCALATION_REASON_MAX_LENGTH);
+    expect(escalationRequest(ESCALATION_TOOL_NAME, { reason: "  short  " })).toBe("short");
+  });
+
+  it("does not cut through a surrogate pair at the bound", () => {
+    const reason = "z".repeat(ESCALATION_REASON_MAX_LENGTH - 1) + "\u{1F600}" + "tail";
+    const recognised = escalationRequest(ESCALATION_TOOL_NAME, { reason });
+
+    expect(recognised).toBe("z".repeat(ESCALATION_REASON_MAX_LENGTH - 1));
+    expect(recognised).not.toMatch(/[\uD800-\uDBFF]$/u);
+  });
+
+  it("escalates under a reason of its own when the call carries none it can read", () => {
+    const fallback = "the turn asked for a human decision without saying what needs deciding";
+
+    expect(escalationRequest(ESCALATION_TOOL_NAME, {})).toBe(fallback);
+    expect(escalationRequest(ESCALATION_TOOL_NAME, { reason: "   " })).toBe(fallback);
+    expect(escalationRequest(ESCALATION_TOOL_NAME, { reason: 42 })).toBe(fallback);
+    expect(escalationRequest(ESCALATION_TOOL_NAME, "not an object")).toBe(fallback);
+    expect(escalationRequest(ESCALATION_TOOL_NAME, undefined)).toBe(fallback);
+  });
+
+  it("recognises nothing but the affordance's own name", () => {
+    expect(escalationRequest("files.read", { reason: "please" })).toBeUndefined();
+    expect(escalationRequest("sharedos.escalate.now", { reason: "please" })).toBeUndefined();
+  });
+
+  it("bounds a decision's reason strictly, as the outcome does", () => {
+    expect(escalationReason("x".repeat(ESCALATION_REASON_MAX_LENGTH))).toHaveLength(
+      ESCALATION_REASON_MAX_LENGTH,
+    );
+    expect(escalationReason("x".repeat(ESCALATION_REASON_MAX_LENGTH + 1))).toBeUndefined();
+    expect(escalationReason("   ")).toBeUndefined();
+    expect(escalationReason(7)).toBeUndefined();
   });
 });

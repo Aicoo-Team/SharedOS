@@ -494,6 +494,25 @@ describe("a model driving a SharedOS turn", () => {
     expect(calls).toEqual([]);
   });
 
+  it("records a long reason cut to the bound, not replaced by one of its own", async () => {
+    const given = "this needs an owner because " + "detail ".repeat(120);
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [
+          { id: "call-1", name: "sharedos_escalate", arguments: JSON.stringify({ reason: given }) },
+        ],
+      },
+    ]);
+    const { result } = await runWith(client);
+
+    expect(given.length).toBeGreaterThan(512);
+    expect(result.status).toBe("escalated");
+    expect(result.status === "escalated" ? result.escalation.reason : undefined).toBe(
+      given.slice(0, 512).trim(),
+    );
+  });
+
   it("does not honour the affordance for a turn that was never granted it", async () => {
     const client = scriptedClient([
       {

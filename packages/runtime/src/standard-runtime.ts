@@ -65,9 +65,12 @@ export type AgentTurnDecision =
    * reported the escalation row as structurally unavailable -- a limit of this
    * type, not of any vendor.
    *
-   * The reason is the driver's own words and is recorded verbatim. Nothing here
-   * advances the escalation: SharedOS records that a decision was asked for and
-   * grants nothing while it is pending.
+   * The reason is the driver's own words and is recorded verbatim, up to the
+   * 512 characters the outcome's contract carries; a driver reading it off a
+   * model or a harness cuts it there rather than replacing it (see
+   * `escalationRequest`), and one that hands the loop more than that has its
+   * decision refused. Nothing here advances the escalation: SharedOS records
+   * that a decision was asked for and grants nothing while it is pending.
    */
   | { readonly type: "escalate"; readonly reason: string; readonly metadata?: JsonObject };
 
