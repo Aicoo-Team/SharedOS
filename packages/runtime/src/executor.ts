@@ -660,7 +660,7 @@ function resultFor(
     metadata,
   };
 
-  return status === "cancelled" ? { ...base, status, error } : { ...base, status, error };
+  return { ...base, status, error };
 }
 
 function cancelledResult(

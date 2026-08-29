@@ -735,7 +735,7 @@ Defined in: [mcp/src/token.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/ma
 
 > **CallToolParams** = `z.infer`\<_typeof_ [`CallToolParamsSchema`](#calltoolparamsschema)>\>
 
-Defined in: [mcp/src/protocol.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L122)
+Defined in: [mcp/src/protocol.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L117)
 
 ---
 
@@ -815,7 +815,7 @@ Defined in: [mcp/src/harness-config.ts:184](https://github.com/Aicoo-Team/Shared
 
 > `const` **CallToolParamsSchema**: `ZodObject`\<\{ `_meta`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `arguments`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `name`: `ZodString`; \}, `"passthrough"`, `ZodTypeAny`, `objectOutputType`\<\{ `_meta`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `arguments`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `name`: `ZodString`; \}, `ZodTypeAny`, `"passthrough"`>\>, `objectInputType`\<\{ `_meta`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `arguments`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `name`: `ZodString`; \}, `ZodTypeAny`, `"passthrough"`>>\>\>
 
-Defined in: [mcp/src/protocol.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L115)
+Defined in: [mcp/src/protocol.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L110)
 
 ---
 
@@ -927,14 +927,6 @@ Defined in: [mcp/src/protocol.ts:21](https://github.com/Aicoo-Team/SharedOS/blob
 
 ---
 
-### ListToolsParamsSchema
-
-> `const` **ListToolsParamsSchema**: `ZodOptional`\<`ZodObject`\<\{ `cursor`: `ZodOptional`\<`ZodString`>\>; \}, `"passthrough"`, `ZodTypeAny`, `objectOutputType`\<\{ `cursor`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>\>, `objectInputType`\<\{ `cursor`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>>>\>\>\>
-
-Defined in: [mcp/src/protocol.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L110)
-
----
-
 ### MCP\_SERVER\_VERSION
 
 > `const` **MCP\_SERVER\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
@@ -971,7 +963,7 @@ Protocol revisions this server speaks, newest first.
 
 > **classifyTool**(`policy`, `publishedNames`, `tool`): `"managed"` \| `"harness_local"` \| `"external_direct"` \| `undefined`
 
-Defined in: [mcp/src/policy.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/policy.ts#L74)
+Defined in: [mcp/src/policy.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/policy.ts#L61)
 
 Which class a tool the harness called belongs to.
 
@@ -1299,7 +1291,7 @@ revoked by the host that deployed it.
 
 > **negotiateProtocolVersion**(`requested`): `string`
 
-Defined in: [mcp/src/protocol.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L132)
+Defined in: [mcp/src/protocol.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L127)
 
 Negotiate a protocol revision.
 
@@ -1344,7 +1336,7 @@ Open a turn-scoped bridge over the execution envelope.
 
 > **parseToolPolicy**(`value`): `object`
 
-Defined in: [mcp/src/policy.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/policy.ts#L50)
+Defined in: [mcp/src/policy.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/policy.ts#L37)
 
 #### Parameters
 
@@ -1448,48 +1440,6 @@ the permission-filtered catalogue, so it can never widen authority.
 
 ---
 
-### strictToolPolicy()
-
-> **strictToolPolicy**(`harnessLocal?`): `object`
-
-Defined in: [mcp/src/policy.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/policy.ts#L46)
-
-The strictest policy a live harness can honestly declare.
-
-Not the empty policy: every CLI in scope keeps some tools it will not give up,
-and pretending otherwise would be the exact misdeclaration this type exists to
-prevent. What `strict` asserts is narrower and checkable -- that no
-independently configured external server was reachable, so every effect
-outside the harness's own sandbox went through SharedOS.
-
-#### Parameters
-
-| Parameter      | Type                | Default value |
-| -------------- | ------------------- | ------------- |
-| `harnessLocal` | readonly `string`[] | `[]`          |
-
-#### Returns
-
-`object`
-
-##### externalDirect
-
-> **externalDirect**: `string`[]
-
-##### harnessLocal
-
-> **harnessLocal**: `string`[]
-
-##### managedMcp
-
-> **managedMcp**: `string`[]
-
-##### mode
-
-> **mode**: `"strict"` \| `"hybrid"`
-
----
-
 ### toCallToolResult()
 
 > **toCallToolResult**(`result`, `published?`): [`JsonObject`](sharedos-contracts.md#jsonobject)
@@ -1570,7 +1520,7 @@ One published tool in MCP's own shape.
 
 > **toolPolicyHash**(`policy`): `Promise`\<`string`>\>
 
-Defined in: [mcp/src/policy.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/policy.ts#L92)
+Defined in: [mcp/src/policy.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/policy.ts#L79)
 
 A content identifier for the declared policy, for the run's `policyHash`.
 
