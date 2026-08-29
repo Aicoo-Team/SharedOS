@@ -6,7 +6,8 @@
 
 # @aicoo/sharedos-adapters
 
-Codex, Claude Code, DeepSeek Harness, and Pi runtime adapters for SharedOS.
+Codex, Claude Code, DeepSeek Harness, and Pi as SharedOS runtimes, and a model
+API in the same seat.
 
 An adapter is translation and nothing else. The turn loop, the
 permission-filtered tool catalogue, per-call re-authorization, and audit all
@@ -21,7 +22,10 @@ import { ChildProcessTransport } from "@aicoo/sharedos-adapters/node";
 const codex = createCodexRuntime({
   transport: new ChildProcessTransport({
     command: "codex",
-    args: ["exec", "--json"],
+    // `-` makes `codex exec` read its prompt from stdin, which is where the
+    // opening frame goes. Without both, nothing reaches Codex.
+    args: ["exec", "--json", "--skip-git-repo-check", "-"],
+    openingFrame: (request) => ({ type: "user_input", text: request.prompt }),
   }),
 });
 const turns = new SharedOSExecutor(kernel, codex);
@@ -34,7 +38,23 @@ onto every execution record, and `StandardRuntime` reports itself as
 the reference loop. Comparing harnesses depends on each column's evidence naming
 the harness that produced it.
 
-## The three pieces
+## Four ways to occupy the seat
+
+| Path                    | What is in the delegate seat                                       | Entry points                                                                                                           |
+| ----------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Driven harness          | A vendor CLI, run one turn at a time by SharedOS's own loop        | `createCodexRuntime`, `createClaudeCodeRuntime`, `createDeepseekRuntime`, `createPiRuntime`; `HarnessRuntime`          |
+| Driven model            | A model API, with no vendor between it and the kernel              | `ModelDriver`, `ModelRuntime`, `OpenAiCompatibleModelClient`                                                           |
+| Native harness over MCP | A vendor CLI running its own loop, with the catalogue served to it | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                          |
+| Transcript              | Supplied vendor frames, for testing the translation without a CLI  | `TranscriptTransport`, `HarnessTranscript`, and the `*FrameWriter`s that render a declared attempt in a vendor's shape |
+
+The first two run inside `StandardRuntime`: SharedOS owns the loop, renders the
+permission-filtered catalogue into the harness's or the model's own tool shape,
+and mediates every call. The third hands the loop to the vendor and serves the
+catalogue over the Model Context Protocol instead; it is documented in
+`docs/mcp-toolshare.md`. All of them converge on
+`RuntimeHost.invokeTool`, which is the only place a tool is executed.
+
+## The three pieces of a driven harness
 
 An adapter is assembled from parts that are replaceable independently, which is
 what lets the translation be verified without the vendor's CLI present.
@@ -45,98 +65,120 @@ what lets the translation be verified without the vendor's CLI present.
 | `HarnessTransport` | How the harness is reached: a subprocess, an HTTP session, a supplied transcript  |
 | `HarnessDriver`    | An `AgentTurnDriver` that joins the two and hands every tool call to the envelope |
 
+`ModelDriver` is the same shape with the protocol folded in: the catalogue is
+rendered straight into the model's tool-call format, and a `ModelClient` stands
+where the transport does.
+
 ## What the adapter must not do
 
-Tool calls are passed to the envelope exactly as the harness emitted them,
-including names that are not in the catalogue.
+Tool calls are passed to the envelope as the harness emitted them, including
+names that are not in the catalogue.
 
 Filtering them in the adapter would be the adapter quietly enforcing policy, and
 worse, it would erase the attempt: a guess at an unexposed tool has to reach the
 envelope to be refused and recorded. An adapter that silently dropped it would
 make a harness that tried look identical to one that did not.
 
+The one call that does not reach the envelope is the escalation affordance. A
+call naming `sharedos.escalate` on a turn whose catalogue offers it ends the
+turn `escalated` with the reason the harness gave, because asking for a human is
+an ending rather than a tool (ADR 0011, 0017). The catalogue gates the name: on
+a turn that was never granted the affordance the call is passed through like any
+other and refused `tool_unavailable`.
+
 For the same reason a refusal is reported back to the harness as an ordinary
 tool result carrying its reason code, not as a transport error. The harness needs
-to know it was refused so it can choose differently.
+to know it was refused so it can choose differently. A model whose call
+arguments are not a JSON object is answered the same way, `invalid_tool_arguments`,
+and never sent `{}` in their place.
 
 Tool calls arriving together in one frame are executed one at a time. SharedOS
 re-authorizes every call separately, so serialising them is the conservative
 order and the one whose audit trail matches what actually happened.
+
+## Who executes the tools
+
+The four harnesses do not agree on this, and the difference decides what a
+driven column can claim.
+
+| Harness     | Catalogue reaches the harness by                           | Tool executed by  |
+| ----------- | ---------------------------------------------------------- | ----------------- |
+| Codex       | `function` declarations, on the wire                       | The host          |
+| Claude Code | `input_schema` tools, on the wire                          | The host          |
+| DeepSeek    | Out of band — its `dsh-mcp-client` plugin, over MCP        | The host, via MCP |
+| Pi          | Out of band — an MCP extension, or `defineTool` in the SDK | The host, via MCP |
+
+Codex and Claude Code carry a tool catalogue in the protocol itself. DeepSeek
+Harness and Pi run their own tools and have no wire frame that means "here is
+your catalogue", so their driven adapters stamp `catalogueDelivery: "out-of-band"`
+onto every execution record they produce: a column whose catalogue arrived out
+of band is making a narrower claim than one whose catalogue was on the wire, and
+that belongs in the evidence rather than in a footnote.
+
+It is also why a native run of `dsh` or `pi` over stdio leaves the kernel rows
+`not exercised`: the driver can carry the transport but not the catalogue. The
+MCP path is what closes that gap. `createMcpHarnessRuntime` serves the
+permission-filtered catalogue over MCP to a CLI running natively, and all four
+CLIs have run the whole case set against it; the runs and what they showed are
+recorded in ADR 0014 and ADR 0018.
 
 ## Verification status
 
 The translation code is exercised end to end against supplied transcripts, which
 run the real protocol modules through a real kernel and a real execution
 envelope. Nothing in this package captures a vendor session: a transcript is
-whatever its caller hands it, and the conformance suite writes its own. `TranscriptTransport` replays vendor frames batch by batch, releasing
-the next batch only once a result has been written, which is the shape of every
+whatever its caller hands it, and the conformance suite writes its own.
+`TranscriptTransport` replays vendor frames in batches and releases the next
+batch only once a result has been written, which is the shape of every
 tool-using harness.
 
-What a transcript cannot cover is the transport binding: the exact command-line
-flags each CLI wants, and the outer envelope it wraps its frames in.
-`scripts/native-conformance.mjs` covers exactly that gap by spawning the installed
-CLI and parsing what the binary actually emits.
+What a transcript cannot cover is the transport binding — the exact command-line
+flags each CLI wants, and the outer envelope it wraps its frames in — and what a
+model actually chooses. Two scripts cover exactly those gaps:
 
-| Layer                            | Status                                                       |
-| -------------------------------- | ------------------------------------------------------------ |
-| SharedOS side of the translation | Verified by tests                                            |
-| Codex function-call shapes       | Targets the OpenAI Responses function-calling protocol       |
-| Claude Code content blocks       | Targets Anthropic message content blocks                     |
-| DeepSeek session-log events      | Targets the harness's `tool/call` + `turn/end` vocabulary    |
-| Pi RPC messages                  | Targets Pi's assembled `AssistantMessage` content            |
-| Claude Code stream-json envelope | Verified live against `claude` 2.1.238                       |
-| Pi RPC envelope                  | Verified live against `pi` 0.84.2                            |
-| Codex / DeepSeek CLI invocation  | **Verify against a live CLI** — neither was installable here |
+- `scripts/native-conformance.mjs` spawns each installed CLI as a driven
+  harness, and runs the model column when a key is present;
+- `scripts/mcp-conformance.mjs` runs each installed CLI natively against the
+  catalogue over MCP.
 
-## Who executes the tools
-
-The four harnesses do not agree on this, and the difference decides how much a
-column can claim.
-
-| Harness     | Catalogue reaches the harness by     | Tool executed by      |
-| ----------- | ------------------------------------ | --------------------- |
-| Codex       | `function` declarations, on the wire | The host              |
-| Claude Code | `input_schema` tools, on the wire    | The host              |
-| DeepSeek    | Out of band — an MCP server          | The host, via MCP     |
-| Pi          | Out of band — `defineTool`, no MCP   | The host, via the SDK |
-
-Codex and Claude Code carry a tool catalogue in the protocol itself. DeepSeek
-Harness and Pi run their own tools and have no wire frame that means "here is
-your catalogue", so a host that wants the permission-filtered one delivered must
-use the harness's own out-of-band path. Both adapters therefore stamp
-`catalogueDelivery: "out-of-band"` onto every execution record they produce: a
-column whose catalogue arrived out of band is making a narrower claim than one
-whose catalogue was on the wire, and that belongs in the evidence rather than in
-a footnote.
-
-This is also why a live conformance run needs more than a live transport. The
-transport is verified; delivering the catalogue to a live `claude` or `dsh`
-session needs an MCP bridge that does not exist yet, and until it does a live
-column's rows are `not exercised` rather than passing.
+Both report a harness that is absent, unauthenticated, or emitting shapes the
+adapter does not parse as `not exercised`, never as a pass and never as a kernel
+failure. The version each run drove is the harness's own to report, so it is
+recorded in the run's artifact under `artifacts/conformance/` rather than
+pinned here.
 
 ## Availability
 
-`probeCodex`, `probeClaudeCode`, `probeDeepseek`, and `probePi` report whether a
-harness can run here, and say why not when it cannot:
+`probeHarness` reports whether a harness can run here, and says why not when it
+cannot. `probeCodex`, `probeClaudeCode`, `probeDeepseek`, and `probePi` are the
+same call with each adapter's `*_REQUIREMENTS` supplied:
 
 ```ts
 import { probeClaudeCode } from "@aicoo/sharedos-adapters/node";
 
 const availability = await probeClaudeCode();
 // { harness: "claude-code", available: false, reason: "The claude executable is not on PATH." }
+// or { harness: "claude-code", available: true, version: "…" }
 ```
 
 Every one of these harnesses can authenticate from a stored login as well as from
-an environment variable, so a probe treats credentials as optional and reports
-which one it found. Conformance runs should use this to mark a column as not
-exercised rather than as failing: an absent harness is not evidence about
-SharedOS.
+an environment variable, so a probe treats credentials as optional unless the
+requirements say otherwise, and reports which one it found. Conformance runs use
+this to mark a column as not exercised rather than as failing: an absent harness
+is not evidence about SharedOS.
+
+## Reason codes
+
+The codes an adapter ends a turn with — `harness_*`, `model_*` — and the one it
+answers in band on the MCP path, `escalation_pending`, are listed with the rest
+in `docs/errors.md`.
 
 ## Host neutrality
 
-The main entry point has no Node dependency. `ChildProcessTransport` and the
-availability probes are published from `@aicoo/sharedos-adapters/node`, because
-spawning a CLI and reading `PATH` are host concerns rather than protocol ones.
+The main entry point has no Node dependency. `ChildProcessTransport`, the
+availability probes, and the MCP harness runtime are published from
+`@aicoo/sharedos-adapters/node`, because spawning a CLI, reading `PATH`, and
+opening a loopback server are host concerns rather than protocol ones.
 
 ## Classes
 
@@ -1591,7 +1633,7 @@ Defined in: [packages/adapters/src/pi/index.ts:11](https://github.com/Aicoo-Team
 
 > `const` **PI\_PROTOCOL\_ID**: `"pi.rpc.jsonl"` = `"pi.rpc.jsonl"`
 
-Defined in: [packages/adapters/src/pi/protocol.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L29)
+Defined in: [packages/adapters/src/pi/protocol.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L30)
 
 Pi speaks newline-delimited JSON events in its RPC mode (`pi --mode rpc`).
 
@@ -1605,10 +1647,11 @@ authoritative, and reading both would issue every call twice.
 Two asymmetries are worth stating plainly, because both are properties of the
 harness rather than of this adapter:
 
-- Pi does not declare tools on the RPC wire, and has no MCP support at all.
-  Its path for a host-supplied tool is `defineTool` through the SDK or an
-  extension, so [HarnessProtocol.describeTools](#describetools) renders that shape and no frame is
-  emitted for it.
+- Pi does not declare tools on the RPC wire, and ships no MCP client of its
+  own. Its path for a host-supplied tool is `defineTool` through the SDK, or
+  an extension such as `pi-mcp-adapter`, which is how the MCP column reaches
+  it; [HarnessProtocol.describeTools](#describetools) renders the `defineTool` shape and
+  no frame is emitted for it.
 - Pi executes its own tools. `tool_execution_start` announces a call Pi is
   already running, not a request for the host to run one, so it is not read
   as a tool call. The `toolCall` content block -- the model's actual request
@@ -1648,7 +1691,7 @@ Frames in the RPC message shape Pi speaks.
 
 > `const` **piProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/pi/protocol.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L85)
+Defined in: [packages/adapters/src/pi/protocol.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L86)
 
 ## Functions
 
