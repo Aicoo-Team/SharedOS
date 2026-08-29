@@ -89,7 +89,9 @@ through a configured verifier. An HTTP caller cannot make a request authorized
 by attaching an arbitrary grant object to its payload.
 
 `CapabilityRequest` expresses requested authority for a consent workflow. It is
-not usable authority until an eligible issuer turns it into a trusted grant.
+not usable authority until an eligible issuer turns it into a trusted grant. No
+SharedOS port accepts one yet; the issuing workflow is the host's today (see
+[open items](../open-items.md)).
 
 ## Where authority comes from
 

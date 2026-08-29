@@ -484,6 +484,8 @@ export class SharedOSExecutor implements TurnExecutionPort {
 /**
  * Compatibility facade for the original driver-based API. New harnesses should
  * implement RuntimePlugin and use SharedOSExecutor directly.
+ *
+ * Retained pending a deprecation decision; see `docs/open-items.md`.
  */
 export class TurnExecutor implements TurnExecutionPort {
   readonly #executor: SharedOSExecutor;

@@ -141,6 +141,8 @@ is the boundary between them and the agents that act on them.
 
 - [Contributing](../CONTRIBUTING.md)
 - [Security policy](../SECURITY.md)
+- [Open items for review](open-items.md) — declared surface kept pending a
+  decision, with the decision each needs
 
 The repository is in `0.x` development. If code and documentation disagree on a
 security invariant, treat that as a defect: do not weaken enforcement silently.

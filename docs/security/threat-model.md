@@ -115,9 +115,10 @@ boundaries to prevent hidden policy channels.
 ### Agent-to-agent messaging
 
 A trusted sender identity does not make payload instructions safe. Forwarding a
-message does not forward permission. Each hop records provenance and performs a
-new routing decision; every requested resource or tool operation is separately
-authorized.
+message does not forward permission. Each hop is a new routing decision, and
+every requested resource or tool operation is separately authorized. The
+envelope's optional `provenance` is metadata a host may attach; the kernel does
+not record hops itself (see [open items](../open-items.md)).
 
 Executing the receiving agent is also a side effect: it requires a
 recipient-scoped `sharedos.execution` + `invoke` grant before the model driver is

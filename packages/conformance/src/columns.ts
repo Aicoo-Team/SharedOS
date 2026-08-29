@@ -43,7 +43,10 @@ import { conformanceRuntimeContext } from "./world.js";
 
 /** What one column cannot do, so a cell reports it instead of failing on it. */
 export interface ColumnLimits {
-  /** Set when the column structurally cannot run this row at all. */
+  /**
+   * Set when the column structurally cannot run this row at all. No committed
+   * column sets it; see `docs/open-items.md`.
+   */
   readonly unsupported?: string;
   /** Attempt ids the column structurally cannot issue, mapped to why. */
   readonly unreachable?: ReadonlyMap<string, string>;

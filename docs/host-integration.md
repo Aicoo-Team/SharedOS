@@ -18,7 +18,7 @@ host identity + policy + state
      trusted AccessContext
              |
              v
- SharedOS kernel + TurnExecutor
+ SharedOS kernel + SharedOSExecutor
       |                 |
       v                 v
  files / live tools   agent driver

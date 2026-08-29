@@ -1225,7 +1225,7 @@ Defined in: [packages/core/src/tool-registry.ts:37](https://github.com/Aicoo-Tea
 
 ### TrustedAuthorityResolver
 
-Defined in: [packages/core/src/authority.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L147)
+Defined in: [packages/core/src/authority.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L149)
 
 Loads and validates authority for one access context.
 
@@ -1238,7 +1238,7 @@ against a partially trusted authority set.
 
 > **new TrustedAuthorityResolver**(`source`): [`TrustedAuthorityResolver`](#trustedauthorityresolver)
 
-Defined in: [packages/core/src/authority.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L152)
+Defined in: [packages/core/src/authority.ts:154](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L154)
 
 ###### Parameters
 
@@ -1256,7 +1256,7 @@ Defined in: [packages/core/src/authority.ts:152](https://github.com/Aicoo-Team/S
 
 > **resolve**(`context`, `signal`): `Promise`\<[`AuthorityResolution`](#authorityresolution)>\>
 
-Defined in: [packages/core/src/authority.ts:159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L159)
+Defined in: [packages/core/src/authority.ts:161](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L161)
 
 ###### Parameters
 
@@ -1339,7 +1339,7 @@ Defined in: [packages/core/src/audit.ts:53](https://github.com/Aicoo-Team/Shared
 
 ### AuthoritySnapshot
 
-Defined in: [packages/core/src/authority.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L115)
+Defined in: [packages/core/src/authority.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L117)
 
 A content identifier for exactly the authority one decision was made against.
 
@@ -1355,10 +1355,10 @@ change the shape of the evidence.
 
 | Property                                      | Modifier   | Type                | Description                                                          | Defined in                                                                                                                 |
 | --------------------------------------------- | ---------- | ------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-grantcount"></a> `grantCount` | `readonly` | `number`            | -                                                                    | [packages/core/src/authority.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L119) |
-| <a id="property-grantids"></a> `grantIds`     | `readonly` | readonly `string`[] | -                                                                    | [packages/core/src/authority.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L118) |
-| <a id="property-hash"></a> `hash`             | `readonly` | `string`            | SHA-256 over the canonical, order-independent form of the grant set. | [packages/core/src/authority.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L117) |
-| <a id="property-loadedat"></a> `loadedAt`     | `readonly` | `string`            | -                                                                    | [packages/core/src/authority.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L120) |
+| <a id="property-grantcount"></a> `grantCount` | `readonly` | `number`            | -                                                                    | [packages/core/src/authority.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L121) |
+| <a id="property-grantids"></a> `grantIds`     | `readonly` | readonly `string`[] | -                                                                    | [packages/core/src/authority.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L120) |
+| <a id="property-hash"></a> `hash`             | `readonly` | `string`            | SHA-256 over the canonical, order-independent form of the grant set. | [packages/core/src/authority.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L119) |
+| <a id="property-loadedat"></a> `loadedAt`     | `readonly` | `string`            | -                                                                    | [packages/core/src/authority.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L122) |
 
 ---
 
@@ -1605,7 +1605,7 @@ Defined in: [packages/core/src/delegation.ts:290](https://github.com/Aicoo-Team/
 
 ### GrantSource
 
-Defined in: [packages/core/src/authority.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L93)
+Defined in: [packages/core/src/authority.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L95)
 
 The trusted boundary that loads authoritative grants.
 
@@ -1625,7 +1625,7 @@ fail-closed denial; it never falls back to a cached or caller-supplied set.
 
 > **load**(`context`, `signal`): `Promise`\<readonly `object`[]\>
 
-Defined in: [packages/core/src/authority.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L94)
+Defined in: [packages/core/src/authority.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L96)
 
 ###### Parameters
 
@@ -1849,7 +1849,7 @@ Defined in: [packages/core/src/message-service.ts:28](https://github.com/Aicoo-T
 
 ### ResolvedAuthority
 
-Defined in: [packages/core/src/authority.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L131)
+Defined in: [packages/core/src/authority.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L133)
 
 An access context together with the authority a trusted source produced for
 it.
@@ -1862,7 +1862,7 @@ message transport, or runtime that expects an `AccessContext`.
 
 | Property                                  | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                                 |
 | ----------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-context"></a> `context`   | `readonly` | `object`                                                                                                                                                                                                   | [packages/core/src/authority.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L132) |
+| <a id="property-context"></a> `context`   | `readonly` | `object`                                                                                                                                                                                                   | [packages/core/src/authority.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L134) |
 | `context.actor`                           | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/access.d.ts:144                                                                                    |
 | `context.authority`                       | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/access.d.ts:157                                                                                    |
 | `context.enabledToolNamespaces`           | `public`   | `string`[]                                                                                                                                                                                                 | packages/contracts/dist/access.d.ts:170                                                                                    |
@@ -1871,8 +1871,8 @@ message transport, or runtime that expects an `AccessContext`.
 | `context.owner`                           | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/access.d.ts:128                                                                                    |
 | `context.purpose`                         | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/access.d.ts:142                                                                                    |
 | `context.traceId`                         | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/access.d.ts:143                                                                                    |
-| <a id="property-grants"></a> `grants`     | `readonly` | readonly `object`[]                                                                                                                                                                                        | [packages/core/src/authority.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L133) |
-| <a id="property-snapshot"></a> `snapshot` | `readonly` | [`AuthoritySnapshot`](#authoritysnapshot)                                                                                                                                                                  | [packages/core/src/authority.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L134) |
+| <a id="property-grants"></a> `grants`     | `readonly` | readonly `object`[]                                                                                                                                                                                        | [packages/core/src/authority.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L135) |
+| <a id="property-snapshot"></a> `snapshot` | `readonly` | [`AuthoritySnapshot`](#authoritysnapshot)                                                                                                                                                                  | [packages/core/src/authority.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L136) |
 
 ---
 
@@ -2191,7 +2191,7 @@ every denial rate by the cases where the system correctly asked for help.
 
 > **AuthorityResolution** = \{ `authority`: [`ResolvedAuthority`](#resolvedauthority); `status`: `"resolved"`; \} \| \{ `code`: [`AuthorityUnavailableCode`](#authorityunavailablecode); `status`: `"unavailable"`; \}
 
-Defined in: [packages/core/src/authority.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L137)
+Defined in: [packages/core/src/authority.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L139)
 
 ---
 
@@ -2199,7 +2199,7 @@ Defined in: [packages/core/src/authority.ts:137](https://github.com/Aicoo-Team/S
 
 > **AuthorityUnavailableCode** = `"grant_source_failed"` \| `"invalid_grant_material"` \| `"grant_scope_mismatch"` \| `"grant_limit_exceeded"`
 
-Defined in: [packages/core/src/authority.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L98)
+Defined in: [packages/core/src/authority.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L100)
 
 Why authority could not be established for one decision.
 
@@ -2287,7 +2287,7 @@ Defined in: [packages/core/src/spans.ts:188](https://github.com/Aicoo-Team/Share
 
 > **TurnAuthorityScope** = `object`
 
-Defined in: [packages/core/src/authority.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L71)
+Defined in: [packages/core/src/authority.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L73)
 
 A handle on one turn's frozen authority.
 
@@ -2307,7 +2307,7 @@ any later operation that presents the same turn identity.
 
 > `readonly` `optional` **code?**: [`AuthorityUnavailableCode`](#authorityunavailablecode)
 
-Defined in: [packages/core/src/authority.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L76)
+Defined in: [packages/core/src/authority.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L78)
 
 Present when it was not.
 
@@ -2315,7 +2315,7 @@ Present when it was not.
 
 > `readonly` `optional` **snapshot?**: [`AuthoritySnapshot`](#authoritysnapshot)
 
-Defined in: [packages/core/src/authority.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L74)
+Defined in: [packages/core/src/authority.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L76)
 
 Present when authority was established.
 
@@ -2323,7 +2323,7 @@ Present when authority was established.
 
 > `readonly` **status**: `"resolved"` \| `"unavailable"`
 
-Defined in: [packages/core/src/authority.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L72)
+Defined in: [packages/core/src/authority.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L74)
 
 #### Methods
 
@@ -2331,7 +2331,7 @@ Defined in: [packages/core/src/authority.ts:72](https://github.com/Aicoo-Team/Sh
 
 > **close**(): `void`
 
-Defined in: [packages/core/src/authority.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L77)
+Defined in: [packages/core/src/authority.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L79)
 
 ###### Returns
 
@@ -2455,7 +2455,7 @@ Defined in: [packages/core/src/message-service.ts:12](https://github.com/Aicoo-T
 
 > `const` **MID\_TURN\_AUTHORITY\_REFRESH**: `false` = `false`
 
-Defined in: [packages/core/src/authority.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L36)
+Defined in: [packages/core/src/authority.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L38)
 
 The fuse over per-operation authority resolution. Off.
 
@@ -2479,8 +2479,10 @@ turn's authority was resolved. Nothing about that needs this fuse, which is
 why it stays off.
 
 What remains behind it is exactly one behaviour: seeing a store edit without
-waiting for the next turn. A host that needs a revocation to land inside a
-running turn, and will pay a store read per operation for it, sets this.
+waiting for the next turn. A host cannot set it: it is an exported constant,
+a build-time switch for this package's maintainers, and turning it on means
+patching the package. Whether it becomes a kernel option, with the store read
+per operation that implies, is an open item (`docs/open-items.md`).
 
 ---
 
@@ -3270,7 +3272,7 @@ Defined in: [packages/core/src/resource-registry.ts:50](https://github.com/Aicoo
 
 > **turnAuthorityKey**(`context`): `string`
 
-Defined in: [packages/core/src/authority.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L47)
+Defined in: [packages/core/src/authority.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L49)
 
 The identity a turn's frozen authority is held against.
 

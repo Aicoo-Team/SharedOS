@@ -36,7 +36,8 @@ const turns = new SharedOSExecutor(kernel, runtime, {
 const result = await turns.execute(executionRequest);
 ```
 
-The original API remains available as a compatibility shorthand:
+The original API remains available as a compatibility shorthand, retained
+pending a deprecation decision (`docs/open-items.md`):
 
 ```ts
 import { TurnExecutor } from "@aicoo/sharedos-runtime";
@@ -564,10 +565,12 @@ Defined in: [packages/runtime/src/standard-runtime.ts:129](https://github.com/Ai
 
 ### TurnExecutor
 
-Defined in: [packages/runtime/src/executor.ts:488](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L488)
+Defined in: [packages/runtime/src/executor.ts:490](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L490)
 
 Compatibility facade for the original driver-based API. New harnesses should
 implement RuntimePlugin and use SharedOSExecutor directly.
+
+Retained pending a deprecation decision; see `docs/open-items.md`.
 
 #### Implements
 
@@ -579,7 +582,7 @@ implement RuntimePlugin and use SharedOSExecutor directly.
 
 > **new TurnExecutor**(`kernel`, `driver`, `options?`): [`TurnExecutor`](#turnexecutor)
 
-Defined in: [packages/runtime/src/executor.ts:491](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L491)
+Defined in: [packages/runtime/src/executor.ts:493](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L493)
 
 ###### Parameters
 
@@ -601,7 +604,7 @@ Defined in: [packages/runtime/src/executor.ts:491](https://github.com/Aicoo-Team
 
 > **get** **runtimeManifest**(): `object`
 
-Defined in: [packages/runtime/src/executor.ts:515](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L515)
+Defined in: [packages/runtime/src/executor.ts:517](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L517)
 
 ###### Returns
 
@@ -629,7 +632,7 @@ Defined in: [packages/runtime/src/executor.ts:515](https://github.com/Aicoo-Team
 
 > **execute**(`input`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/runtime/src/executor.ts:519](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L519)
+Defined in: [packages/runtime/src/executor.ts:521](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L521)
 
 ###### Parameters
 
