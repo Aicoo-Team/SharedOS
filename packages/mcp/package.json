@@ -54,7 +54,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@aicoo/sharedos-os": "workspace:*",
-    "@aicoo/sharedos-testkit": "workspace:*"
+    "@aicoo/sharedos-os": "workspace:*"
   }
 }
