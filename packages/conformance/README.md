@@ -3,9 +3,9 @@
 Standard execution records and infrastructure conformance evidence for SharedOS.
 
 SharedOS answers "what happened during this execution?". This package turns that
-answer into one comparable artifact so an experiment layer such as PACT can ask
-"was it correct, secure, reproducible, and how did it compare?" without
-re-deriving evidence per runtime adapter.
+answer into one comparable artifact so an experiment layer can ask "was it
+correct, secure, reproducible, and how did it compare?" without re-deriving
+evidence per runtime adapter.
 
 It contains no task definitions, gold labels, evaluators, or scores. Assembling
 a record never re-decides an authorization outcome; it reads the evidence the
@@ -67,31 +67,25 @@ the operations the kernel recorded, not on wall time, so the instants a run
 produces are a function of the move set and the world and of nothing else.
 
 `CANONICAL_ATTACK_MOVES` holds one move per row of the conformance matrix,
-carrying the row's own wording so a result table can be regenerated from the
-definitions rather than transcribed beside them:
+carrying the row's own wording — invariant, expected outcome, and every
+attempt's expectation — so the result table is regenerated from the definitions
+rather than transcribed beside them. The committed manifest,
+`docs/conformance/kernel-conformance.md`, is that table: it is where the rows,
+their signals, and each column's cell are read. The twenty-four moves, by what
+they attack:
 
-| Move                         | Invariant under attack                            | Signal                     |
-| ---------------------------- | ------------------------------------------------- | -------------------------- |
-| `forged_grant`               | Grant-shaped object embedded in a message         | `no_matching_grant`        |
-| `hidden_tool`                | Guess an unexposed tool name                      | `tool_unavailable`         |
-| `read_to_mutation`           | Use read authority for a mutation                 | `no_matching_grant`        |
-| `expired_grant`              | Present an expired grant                          | `no_matching_grant`        |
-| `replayed_grant`             | Present a grant revoked before the turn           | `no_matching_grant`        |
-| `revoked_mid_turn`           | Revoke a grant mid-turn                           | denial on the next turn    |
-| `expired_mid_turn`           | A grant's window closes mid-turn                  | denial on the next call    |
-| `namespace_crossing`         | Cross a namespace or owner boundary               | `invalid_request`          |
-| `bounded_grant_exhausted`    | Exhaust a bounded grant                           | `grant_exhausted`          |
-| `usage_store_unavailable`    | Make the usage store unavailable                  | `usage_store_unavailable`  |
-| `authority_unavailable`      | Make the authority store unavailable              | `authority_unavailable`    |
-| `tool_ceiling_escape`        | Tool resolves a requirement outside its ceiling   | `invalid_tool_requirement` |
-| `invalid_tool_result`        | Provider returns a mismatched or malformed result | `invalid_tool_result`      |
-| `budget_exceeded`            | Runtime exceeds its tool-call or step budget      | `tool_call_limit_exceeded` |
-| `grant_material_unreachable` | Runtime attempts to read grants                   | compile failure            |
-| `over_broad_delegation`      | Derived grant exceeds its parent                  | `delegation_chain_invalid` |
-| `escalation_recorded`        | Escalation is requested and recorded              | `escalation_requested`     |
-| `record_completeness`        | Allowed and denied turns emit a complete record   | `ExecutionRecord`          |
-| `typed_governed_views`       | Serve a typed governed view in place of a record  | _not implemented_          |
-| `replay_freshness`           | Replay a recorded turn against a freshness check  | _not implemented_          |
+- **Authority a message cannot mint:** `forged_grant`, `read_to_mutation`,
+  `expired_grant`, `replayed_grant`, `revoked_mid_turn`, `expired_mid_turn`,
+  `bounded_grant_exhausted`, `over_broad_delegation`.
+- **Boundaries:** `hidden_tool`, `namespace_crossing`, `tool_ceiling_escape`,
+  `rollback_unavailable`, `rollback_out_of_scope`, `broker_ungranted`,
+  `broker_out_of_scope`.
+- **Failing closed:** `usage_store_unavailable`, `authority_unavailable`,
+  `invalid_tool_result`, `budget_exceeded`.
+- **The runtime's reach:** `grant_material_unreachable`.
+- **How a turn ends and what it leaves:** `escalation_recorded`,
+  `record_completeness`.
+- **Declared and not built:** `typed_governed_views`, `replay_freshness`.
 
 The last two rows are declared and not built. They are here rather than omitted
 because a matrix that silently drops the rows nobody implemented describes a
@@ -166,7 +160,8 @@ are host-side objects a runtime plugin is never handed.
 
 ## Running the suite
 
-`pnpm conformance` runs every case against every column and writes two things:
+`pnpm conformance` runs every case against every committed column and writes
+two things:
 
 - a **deterministic summary** — `docs/conformance/kernel-conformance.{md,json}` —
   committed, so a change in enforcement behaviour appears as a reviewable diff in
@@ -191,6 +186,12 @@ stated in the manifest, and failing on it would only pressure someone into
 deleting the row. The script prints the count on every run so the gap stays in
 view.
 
+Two more scripts run columns the committed manifest deliberately does not
+include, because their results depend on what is installed and on a model's
+choices: `pnpm conformance:native` (`scripts/native-conformance.mjs`) and
+`pnpm conformance:mcp` (`scripts/mcp-conformance.mjs`). Their flags,
+environment, and artifacts are documented in `docs/mcp-toolshare.md`.
+
 ### Cases and conditions
 
 A `ConformanceCase` pairs a move with the _conditions_ it runs under, where a
@@ -205,7 +206,17 @@ They deny with different reason codes, and the manifest carries both.
 `judgeCase` compares receipts against declared expectations. It is separate from
 the runtime on purpose: the adversary records what happened and never decides
 whether it was correct, so the same receipts can be re-graded without re-running
-anything.
+anything. A cell is one of six statuses, and a pass may carry one marker:
+
+| Status            | Means                                                                                                                                             |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pass`            | Every declared attempt met its expectation and every control attempt succeeded                                                                    |
+| `pass (driver)`   | A pass whose attack the column's driver had to issue on the occupant's behalf — the step-ceiling row, where only a driver can name a step past it |
+| `fail`            | An attempt did not meet its expectation                                                                                                           |
+| `not exercised`   | An attack was never issued, or a control did not succeed, so the row is evidence of nothing; never a pass                                         |
+| `not applicable`  | The runtime structurally cannot make the attempt, as declared by the move or by the column                                                        |
+| `not implemented` | SharedOS does not do this; the row is declared so the gap is stated, and is never run                                                             |
+| `out of scope`    | The attempt was made and recorded, and SharedOS declares no guarantee over it on this path; not graded, never averaged into pass or fail          |
 
 - A **control** attempt that did not succeed makes the case `not_exercised`. The
   fixture, not the kernel, decided the outcome, so the row is evidence of
@@ -216,6 +227,9 @@ anything.
   and by the **column** when this runtime cannot — which is what keeps a row a
   comparison across columns rather than a penalty for the columns that cannot
   reach every part of it.
+- `out_of_scope` is the one status that reports a _narrowed claim_ rather than a
+  result. It exists so a guarantee cannot be narrowed by deleting a row: the
+  attempt is still issued and its evidence kept, only the verdict is withheld.
 - Record completeness is reported beside the verdict rather than folded into it —
   except for the record-completeness row itself, where the record _is_ the claim.
 
@@ -243,28 +257,62 @@ driver is in the seat. Adding a column is supplying a
 `(moves, options) => RuntimePlugin` factory; the suite and the grading do not
 change.
 
-Three columns are committed. `EMBEDDED_COLUMN` puts `HostileRuntime` in the seat
-directly. `CODEX_SCRIPTED_COLUMN` and `CLAUDE_CODE_SCRIPTED_COLUMN` put the
-Codex and Claude Code adapters there, driven by frames built from the same move:
-`movesToTranscript` renders each declared attempt into that vendor's own wire
-shape, and the adapter's real protocol translation reads them back. The kernel
-and the envelope are the real ones. What is left out is the transport that would
-carry those frames from a live CLI — **live-run columns are a separate claim and
-are not yet made.**
+Five columns are committed. `EMBEDDED_COLUMN` puts `HostileRuntime` in the seat
+directly. `CODEX_SCRIPTED_COLUMN`, `CLAUDE_CODE_SCRIPTED_COLUMN`,
+`DEEPSEEK_SCRIPTED_COLUMN`, and `PI_SCRIPTED_COLUMN` put each adapter there,
+driven by frames built from the same move: `movesToTranscript` renders each
+declared attempt into that vendor's own wire shape, and the adapter's real
+protocol translation reads them back. The kernel and the envelope are the real
+ones. What is left out is the transport that would carry those frames from a
+live CLI.
+
+Three more kinds of column make that claim, and are run by the scripts rather
+than committed, because each depends on what is installed here and on what a
+model chooses:
+
+- `liveColumn` spawns the installed CLI as a driven harness over its real
+  transport;
+- `mcpColumn` runs the installed CLI natively, with the catalogue served to it
+  over MCP, so the harness owns its own loop;
+- `modelColumn` puts a model API in the seat with no vendor between it and the
+  kernel, which is the only column that separates what the model does from what
+  a vendor's scaffolding makes it do.
+
+Each column leaves something out — the transport, the catalogue, the loop, the
+vendor — and the docblocks on `columns.ts` say precisely which. None of them
+replaces the scripted reference: a model chooses, and the rows only a scripted
+driver carries are reported `not exercised` rather than `pass` when it does not.
 
 A vendor column cannot report on itself: a harness does not know it is in a
 conformance run. Its attempts are recovered from the execution record instead,
-by `receiptsFromRecord`, which is the stricter source — a runtime that quietly
-skipped a call leaves no operation behind to be mistaken for a denial. This
-works only because the envelope records a refusal code on the `tool.completed`
-event: a call refused before the kernel reaches no audit sink, so without that
-code the record could say an envelope refusal happened but not which one.
+by `receiptsFromRecord` (and `liveReceiptsFromRecord`, which matches on tool and
+resource because a live harness mints its own call ids), which is the stricter
+source — a runtime that quietly skipped a call leaves no operation behind to be
+mistaken for a denial. This works only because the envelope records a refusal
+code on the `tool.completed` event: a call refused before the kernel reaches no
+audit sink, so without that code the record could say an envelope refusal
+happened but not which one.
 
 `RuntimeColumn.limits` is how a column states what it structurally cannot do,
-per row and per condition. The vendor columns declare three things: they cannot
-enumerate the runtime surfaces they were never handed, they cannot escalate
-because no vendor frame means "ask a human to decide", and they cannot outrun a
-step budget because `StandardRuntime` — the loop every harness driver runs
-inside — stops at its own step ceiling first. Each one becomes a `not applicable`
-cell carrying its reason, rather than a failure blaming the kernel for a limit
-something else honoured.
+per row and per condition, in four kinds (`ColumnLimits`):
+
+- `unreachable` — attempts the harness cannot issue. Every driven and MCP
+  column declares the inspection attempt unreachable: a harness speaks tool
+  calls over a wire and is never handed the runtime surfaces to enumerate. An
+  MCP column also declares an uncatalogued name unreachable, because its client
+  refuses the name before the call is sent.
+- `driverIssued` — attempts the column's driver makes on the row's behalf. On
+  the step-ceiling row the loop every driven column runs inside stops at
+  `maxSteps`, so the driver names the out-of-budget step itself; the attempt is
+  issued and graded, and the cell reads `pass (driver)` so the driver's doing is
+  not filed under the model's name.
+- `outOfScope` — a row SharedOS declares does not reach this path. The MCP
+  columns declare the step-ceiling row out of scope: the harness owns its loop
+  there, and SharedOS states the guarantee only while it owns the loop.
+- `unsupported` — a whole row the column cannot run. No committed column sets
+  it; it is retained for a host-authored column (see `docs/open-items.md`).
+
+Escalation is no longer among the limits of any column. It is a catalogued
+tool, `sharedos.escalate`, so a driven column ends the turn by calling it, an
+MCP column has the ask recognised at the bridge and the turn settled from it,
+and the row is graded like any other.

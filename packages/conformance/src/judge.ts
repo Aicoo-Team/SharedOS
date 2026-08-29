@@ -78,7 +78,10 @@ export interface TurnExpectation {
 }
 
 export interface JudgeCaseOptions {
-  /** Set when the condition is expected to refuse the turn before it runs. */
+  /**
+   * Set when the row is graded on how the turn ends as well as on its attempts:
+   * refused before it runs, or ended by escalation.
+   */
   readonly expectTurn?: TurnExpectation;
   /**
    * Attempt ids the runtime under test structurally cannot issue, mapped to why.
