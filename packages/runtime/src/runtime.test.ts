@@ -189,6 +189,28 @@ describe("TurnExecutor", () => {
     );
   });
 
+  it("refuses an escalate decision whose metadata is not an object", async () => {
+    const session: AgentTurnSession = {
+      next: vi.fn<AgentTurnSession["next"]>(
+        async () =>
+          ({ type: "escalate", reason: "needs an owner", metadata: "not an object" }) as never,
+      ),
+    };
+    const driver: AgentTurnDriver = { open: async () => session };
+
+    const result = await new TurnExecutor(kernel(), driver, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+
+    // Parsed exactly as `complete`'s metadata is. An escalation whose metadata
+    // failed further in would surface as a runtime failure with the cause gone.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "invalid_driver_decision",
+    );
+  });
+
   it("refuses an escalate decision whose reason runs past the outcome's bound", async () => {
     const session: AgentTurnSession = {
       next: vi.fn<AgentTurnSession["next"]>(async () => ({
