@@ -132,6 +132,10 @@ The contract is narrow on purpose:
 - return only grants issued to `access.actor` by `access.authority` inside
   `access.namespaceId`; anything else is treated as an unavailable source, not
   as partial authority;
+- apply the host ceiling here. Product or organization policy that reduces an
+  actor's authority is expressed by not returning the grant it forbids (and by
+  not enabling the namespaces it forbids); SharedOS applies no policy of its
+  own on top of what the source returns;
 - return material that satisfies `CapabilityGrantSchema`, including signature or
   revocation verification the host requires;
 - throw when the store is unreachable. SharedOS converts that into a fail-closed
