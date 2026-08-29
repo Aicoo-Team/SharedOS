@@ -188,3 +188,14 @@ export function escalationReason(value: unknown): string | undefined {
     ? undefined
     : trimmed;
 }
+
+/**
+ * Whether a turn's catalogue offers the affordance.
+ *
+ * The gate on honouring the name (ADR 0017, "The catalogue gates the name"):
+ * a driver reads it from the same `tools` it offered the seat's occupant, and
+ * the executor from the catalogue the turn was actually served.
+ */
+export function escalationOffered(tools: ReadonlyArray<{ readonly name: string }>): boolean {
+  return tools.some((tool) => tool.name === ESCALATION_TOOL_NAME);
+}

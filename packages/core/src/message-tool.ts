@@ -16,6 +16,7 @@ import {
   type MessageRequestRouter,
 } from "./message-service.js";
 import type { ToolHandler } from "./tool-registry.js";
+import { deepFreeze, throwIfAborted } from "./internal.js";
 
 export const MESSAGE_TOOL_NAMESPACE = "messages";
 export const MESSAGE_REQUEST_TOOL_NAME = "messages.request";
@@ -253,20 +254,4 @@ function failedResult(
     completedAt,
     error: { code, message, retryable: false },
   };
-}
-
-function throwIfAborted(signal: AbortSignal): void {
-  if (signal.aborted) {
-    throw signal.reason ?? new Error("operation aborted");
-  }
-}
-
-function deepFreeze<T>(value: T): T {
-  if (value !== null && typeof value === "object") {
-    for (const child of Object.values(value)) {
-      deepFreeze(child);
-    }
-    Object.freeze(value);
-  }
-  return value;
 }

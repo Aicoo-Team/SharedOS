@@ -6,7 +6,6 @@ import { createInterface } from "node:readline";
 
 import type {
   JsonObject,
-  ProtocolError,
   RuntimeManifest,
   RuntimeTurnOutcome,
   ToolCall,
@@ -26,7 +25,7 @@ import {
 } from "@aicoo/sharedos-mcp";
 import { createStreamableHttpMcpServer } from "@aicoo/sharedos-mcp/node";
 import {
-  ESCALATION_TOOL_NAME,
+  escalationOffered,
   escalationRequest,
   type RuntimeHost,
   type RuntimePlugin,
@@ -42,6 +41,7 @@ import { DEEPSEEK_HARNESS_ID } from "./deepseek/index.js";
 import { deepseekProtocol } from "./deepseek/protocol.js";
 import { PI_HARNESS_ID } from "./pi/index.js";
 import { piProtocol } from "./pi/protocol.js";
+import { defaultPrompt, failed } from "./internal.js";
 
 /**
  * A vendor harness run natively, against the SharedOS catalogue over MCP.
@@ -296,7 +296,7 @@ class EscalationLatch implements BridgeToolInvoker {
     // without holding it is passed through and refused `tool_unavailable` like
     // any other unpublished name -- the same rule both native drivers apply
     // before ending a turn on the name.
-    this.#offered = request.tools.some((tool) => tool.name === ESCALATION_TOOL_NAME);
+    this.#offered = escalationOffered(request.tools);
   }
 
   async invokeTool(call: ToolCall, options?: { readonly step?: number }): Promise<ToolResult> {
@@ -574,7 +574,7 @@ async function runHarness(
 
   signal.throwIfAborted();
   if (exit.error !== undefined) {
-    return fail("harness_not_started", `The ${spec.id} CLI could not be started.`);
+    return failed("harness_not_started", `The ${spec.id} CLI could not be started.`);
   }
   if (terminal !== undefined) {
     return terminal;
@@ -585,29 +585,10 @@ async function runHarness(
     // as a failure the harness never declared.
     return { type: "complete", output: { text: messages.join("\n") } };
   }
-  return fail(
+  return failed(
     "harness_exited_without_outcome",
     `The ${spec.id} CLI exited with code ${String(exit.code)} without completing the turn.`,
   );
-}
-
-function fail(code: string, message: string): RuntimeTurnOutcome {
-  const error: ProtocolError = { code, message, retryable: false };
-  return { type: "fail", error };
-}
-
-function defaultPrompt(request: RuntimeTurnRequest): string {
-  const payload = request.message.payload;
-  if (typeof payload === "string") {
-    return payload;
-  }
-  if (payload !== null && typeof payload === "object" && !Array.isArray(payload)) {
-    const text = (payload as JsonObject)["text"];
-    if (typeof text === "string") {
-      return text;
-    }
-  }
-  return JSON.stringify(payload);
 }
 
 /** Two minutes of silence from a session harness is a stall, not a long step. */

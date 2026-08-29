@@ -1085,7 +1085,7 @@ Defined in: [conformance/src/bench.ts:69](https://github.com/Aicoo-Team/SharedOS
 
 ### BenchSettings
 
-Defined in: [conformance/src/bench.ts:880](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L880)
+Defined in: [conformance/src/bench.ts:870](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L870)
 
 [BenchOptions](#benchoptions) with every default already applied.
 
@@ -1093,8 +1093,8 @@ Defined in: [conformance/src/bench.ts:880](https://github.com/Aicoo-Team/SharedO
 
 | Property                                              | Modifier   | Type     | Defined in                                                                                                              |
 | ----------------------------------------------------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-measuredturns-1"></a> `measuredTurns` | `readonly` | `number` | [conformance/src/bench.ts:882](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L882) |
-| <a id="property-warmupturns-1"></a> `warmupTurns`     | `readonly` | `number` | [conformance/src/bench.ts:881](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L881) |
+| <a id="property-measuredturns-1"></a> `measuredTurns` | `readonly` | `number` | [conformance/src/bench.ts:872](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L872) |
+| <a id="property-warmupturns-1"></a> `warmupTurns`     | `readonly` | `number` | [conformance/src/bench.ts:871](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L871) |
 
 ---
 
@@ -2035,17 +2035,17 @@ Defined in: [conformance/src/columns.ts:253](https://github.com/Aicoo-Team/Share
 
 ### PathRun
 
-Defined in: [conformance/src/bench.ts:458](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L458)
+Defined in: [conformance/src/bench.ts:448](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L448)
 
 #### Properties
 
 | Property                                                      | Modifier   | Type                                       | Defined in                                                                                                              |
 | ------------------------------------------------------------- | ---------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-cataloguewidth"></a> `catalogueWidth`         | `readonly` | `number`                                   | [conformance/src/bench.ts:463](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L463) |
-| <a id="property-cataloguewirebytes"></a> `catalogueWireBytes` | `readonly` | `number`                                   | [conformance/src/bench.ts:462](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L462) |
-| <a id="property-spans-1"></a> `spans`                         | `readonly` | readonly [`Span`](sharedos-core.md#span)[] | [conformance/src/bench.ts:459](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L459) |
-| <a id="property-turns-1"></a> `turns`                         | `readonly` | readonly [`TurnOutcome`](#turnoutcome)[]   | [conformance/src/bench.ts:460](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L460) |
-| <a id="property-wirebytespercall"></a> `wireBytesPerCall`     | `readonly` | readonly `number`[]                        | [conformance/src/bench.ts:461](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L461) |
+| <a id="property-cataloguewidth"></a> `catalogueWidth`         | `readonly` | `number`                                   | [conformance/src/bench.ts:453](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L453) |
+| <a id="property-cataloguewirebytes"></a> `catalogueWireBytes` | `readonly` | `number`                                   | [conformance/src/bench.ts:452](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L452) |
+| <a id="property-spans-1"></a> `spans`                         | `readonly` | readonly [`Span`](sharedos-core.md#span)[] | [conformance/src/bench.ts:449](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L449) |
+| <a id="property-turns-1"></a> `turns`                         | `readonly` | readonly [`TurnOutcome`](#turnoutcome)[]   | [conformance/src/bench.ts:450](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L450) |
+| <a id="property-wirebytespercall"></a> `wireBytesPerCall`     | `readonly` | readonly `number`[]                        | [conformance/src/bench.ts:451](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L451) |
 
 ---
 
@@ -2065,14 +2065,14 @@ Defined in: [conformance/src/completeness.ts:11](https://github.com/Aicoo-Team/S
 
 ### RecordWriteRun
 
-Defined in: [conformance/src/bench.ts:701](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L701)
+Defined in: [conformance/src/bench.ts:691](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L691)
 
 #### Properties
 
 | Property                                        | Modifier   | Type                | Defined in                                                                                                              |
 | ----------------------------------------------- | ---------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-durations"></a> `durations`     | `readonly` | readonly `number`[] | [conformance/src/bench.ts:702](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L702) |
-| <a id="property-recordbytes"></a> `recordBytes` | `readonly` | readonly `number`[] | [conformance/src/bench.ts:703](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L703) |
+| <a id="property-durations"></a> `durations`     | `readonly` | readonly `number`[] | [conformance/src/bench.ts:692](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L692) |
+| <a id="property-recordbytes"></a> `recordBytes` | `readonly` | readonly `number`[] | [conformance/src/bench.ts:693](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L693) |
 
 ---
 
@@ -2319,16 +2319,16 @@ One harness adapter's translation cost, measured with no model in any span.
 
 ### TranslationSubject
 
-Defined in: [conformance/src/bench.ts:775](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L775)
+Defined in: [conformance/src/bench.ts:765](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L765)
 
 #### Properties
 
 | Property                                    | Modifier   | Type                                                            | Defined in                                                                                                              |
 | ------------------------------------------- | ---------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-columnid-4"></a> `columnId` | `readonly` | `string`                                                        | [conformance/src/bench.ts:776](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L776) |
-| <a id="property-label-7"></a> `label`       | `readonly` | `string`                                                        | [conformance/src/bench.ts:777](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L777) |
-| <a id="property-protocol-2"></a> `protocol` | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)       | [conformance/src/bench.ts:778](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L778) |
-| <a id="property-writer-1"></a> `writer`     | `readonly` | [`HarnessFrameWriter`](sharedos-adapters.md#harnessframewriter) | [conformance/src/bench.ts:779](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L779) |
+| <a id="property-columnid-4"></a> `columnId` | `readonly` | `string`                                                        | [conformance/src/bench.ts:766](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L766) |
+| <a id="property-label-7"></a> `label`       | `readonly` | `string`                                                        | [conformance/src/bench.ts:767](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L767) |
+| <a id="property-protocol-2"></a> `protocol` | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)       | [conformance/src/bench.ts:768](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L768) |
+| <a id="property-writer-1"></a> `writer`     | `readonly` | [`HarnessFrameWriter`](sharedos-adapters.md#harnessframewriter) | [conformance/src/bench.ts:769](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L769) |
 
 ---
 
@@ -3862,7 +3862,7 @@ Everything that must match before two runs are comparable.
 
 > `const` **TRANSLATION\_SUBJECTS**: readonly [`TranslationSubject`](#translationsubject)[]
 
-Defined in: [conformance/src/bench.ts:852](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L852)
+Defined in: [conformance/src/bench.ts:842](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L842)
 
 The four scripted adapters, paired with the frames that drive them.
 
@@ -5834,7 +5834,7 @@ Render the manifest as a stable Markdown document.
 
 > **renderSystemsCostReport**(`report`): `string`
 
-Defined in: [conformance/src/bench.ts:1141](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L1141)
+Defined in: [conformance/src/bench.ts:1131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L1131)
 
 Render the report as a stable Markdown document.
 
@@ -5949,7 +5949,7 @@ manifest every time.
 
 > **runInProcessPath**(`moves`, `options`): `Promise`\<[`PathRun`](#pathrun)>\>
 
-Defined in: [conformance/src/bench.ts:470](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L470)
+Defined in: [conformance/src/bench.ts:460](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L460)
 
 The in-process path: the scripted adversary in the delegate seat, one fixed
 world, and no model anywhere in the loop.
@@ -5971,7 +5971,7 @@ world, and no model anywhere in the loop.
 
 > **runRecordWritePath**(`moves`, `options`): `Promise`\<[`RecordWriteRun`](#recordwriterun)>\>
 
-Defined in: [conformance/src/bench.ts:715](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L715)
+Defined in: [conformance/src/bench.ts:705](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L705)
 
 One record assembled, validated, and serialized.
 
@@ -5998,7 +5998,7 @@ not serialized was not written.
 
 > **runSystemsCostBench**(`options?`): `Promise`\<[`SystemsCostReport`](#systemscostreport)>\>
 
-Defined in: [conformance/src/bench.ts:897](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L897)
+Defined in: [conformance/src/bench.ts:887](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L887)
 
 Measure what enforcement costs, apart from what the model costs.
 
@@ -6022,7 +6022,7 @@ difference between them is the toolshare boundary and nothing else.
 
 > **runToolsharePath**(`moves`, `options`): `Promise`\<[`PathRun`](#pathrun)>\>
 
-Defined in: [conformance/src/bench.ts:639](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L639)
+Defined in: [conformance/src/bench.ts:629](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L629)
 
 #### Parameters
 
@@ -6041,7 +6041,7 @@ Defined in: [conformance/src/bench.ts:639](https://github.com/Aicoo-Team/SharedO
 
 > **runTranslationPath**(`subjects`, `moves`, `options`, `catalogueWidth`): `Promise`\<readonly [`TranslationMeasure`](#translationmeasure)[]\>
 
-Defined in: [conformance/src/bench.ts:791](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L791)
+Defined in: [conformance/src/bench.ts:781](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L781)
 
 The adapter layer, measured with no model in any span.
 
@@ -6183,7 +6183,7 @@ member.
 
 > **timerOverhead**(`samples?`): [`Distribution`](#distribution)
 
-Defined in: [conformance/src/bench.ts:692](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L692)
+Defined in: [conformance/src/bench.ts:682](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L682)
 
 What the timing instrument itself costs, measured the same way it measures.
 

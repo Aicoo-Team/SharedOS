@@ -80,6 +80,11 @@ each entry calls out what a host has to update.
 
 ### Changed — behaviour
 
+- A failure an adapter ends its turn with — `harness_*`, `model_*` — now carries
+  `retryable: false` on the driver path as it already did on the MCP path; the
+  field was simply absent before. Nothing an adapter fails on is retryable:
+  asking the harness or the model again asks the same thing.
+
 - `codexMcpConfig` now emits `default_tools_approval_mode = "approve"` beside
   `required = true`, the setting the conformance launch has always passed as an
   override. Codex's default `auto` mode asks a human before any tool that is not
@@ -113,6 +118,13 @@ each entry calls out what a host has to update.
   behaviour, so a host calling either directly is unaffected until it opts in.
 
 ### Added
+
+- `DriverRuntime` in `@aicoo/sharedos-adapters`: the one implementation behind
+  `HarnessRuntime` and `ModelRuntime`, which are now its two named forms. A host
+  installing another driver under its own identity uses it directly.
+- `escalationOffered(tools)` in `@aicoo/sharedos-runtime`: the catalogue gate on
+  honouring `sharedos.escalate`, shared by the three adapters and the executor
+  instead of each spelling the check.
 
 - `canonicalActor` in `@aicoo/sharedos-mcp`: the one string form of an
   `Address` an execution token carries as `actor`, `<kind>:<id>`, from the same

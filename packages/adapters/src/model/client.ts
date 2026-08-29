@@ -1,4 +1,6 @@
-import { JsonObjectSchema, type JsonObject } from "@aicoo/sharedos-contracts";
+import type { JsonObject } from "@aicoo/sharedos-contracts";
+
+export { parseToolArguments } from "../internal.js";
 import { z } from "zod";
 
 /**
@@ -360,19 +362,4 @@ function delay(ms: number, signal: AbortSignal): Promise<void> {
 
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-/** Argument blobs are model output, so they are parsed rather than trusted. */
-export function parseToolArguments(raw: string): JsonObject | undefined {
-  if (raw.trim() === "") {
-    return {};
-  }
-  let value: unknown;
-  try {
-    value = JSON.parse(raw);
-  } catch {
-    return undefined;
-  }
-  const parsed = JsonObjectSchema.safeParse(value);
-  return parsed.success ? parsed.data : undefined;
 }

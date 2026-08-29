@@ -373,17 +373,7 @@ export interface TurnOutcome {
   readonly auditEvents: number;
 }
 
-/**
- * One measured turn, and everything about it that is not a duration.
- *
- * The byte figures are differences rather than sums: the marginal cost of a
- * call is what the record loses when its operations and events are removed, and
- * the marginal cost of a decision is what the record and the audit stream lose
- * when the decisions are. Differencing is used because the members do not
- * partition the serialization -- separators, keys, and array structure belong to
- * no single member -- and a sum over members would quietly under-report every
- * row by the punctuation between them.
- */
+/** One measured turn; the byte figures are explained on {@link TurnOutcome}. */
 async function runTurn(
   world: ConformanceWorld,
   runtime: RuntimePlugin,

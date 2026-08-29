@@ -62,6 +62,7 @@ import { SPAN, measure, type SpanSink } from "./spans.js";
 import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
 import { DuplicateRegistrationError, MissingRegistrationError } from "./errors.js";
+import { deepFreeze, throwIfAborted } from "./internal.js";
 
 export interface SharedOSKernelOptions {
   /**
@@ -1441,20 +1442,4 @@ let fallbackSignal: AbortSignal | undefined;
 function neverAbortedSignal(): AbortSignal {
   fallbackSignal ??= new AbortController().signal;
   return fallbackSignal;
-}
-
-function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted) {
-    throw signal.reason ?? new Error("operation aborted");
-  }
-}
-
-function deepFreeze<T>(value: T): T {
-  if (value !== null && typeof value === "object") {
-    for (const child of Object.values(value)) {
-      deepFreeze(child);
-    }
-    Object.freeze(value);
-  }
-  return value;
 }
