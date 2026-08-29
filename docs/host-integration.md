@@ -251,6 +251,31 @@ Invoking the target agent is a separate capability. Use
 `agentExecutionCapability(targetAgent, owner)` when issuing that grant. A
 message addressed to the target agent is never sufficient by itself.
 
+Asking for a human is a capability too. Register the affordance once, enable
+the `sharedos` tool namespace for the contexts that may use it, and grant it to
+the agents that may ask:
+
+```ts
+import { createEscalationTool } from "@aicoo/sharedos";
+
+kernel.registerTool(createEscalationTool());
+
+const mayEscalate = {
+  resource: {
+    namespace: "sharedos",
+    path: ["escalation"],
+    owner: { kind: "human", userId: "owner-1" },
+  },
+  actions: ["request"],
+  scope: "exact",
+} as const;
+```
+
+An agent without that grant does not see `sharedos.escalate` in its catalogue
+and cannot escalate. The tool is never executed — a driver ends the turn on the
+name — so the handler only fails if a driver forwards the call; see
+[kernel-supplied tools](tools.md#kernel-supplied-tools).
+
 ### 5. Add native, connector, or MCP tools
 
 Live systems such as calendar, email, GitHub, and Notion remain tools because
@@ -317,6 +342,15 @@ For an inbound Bob → Alice message, `targetAgent` and `context.actor` are both
 Alice. The envelope sender remains Bob for provenance; it is not the actor whose
 grants are used by Alice's turn. Purpose and trace must match the trusted
 recipient context.
+
+The driver receives the same full `ToolDefinition`s the request listed,
+`requiredCapability` included. That field is the discovery ceiling, not what a
+call will be authorized against, and it is not something a model should be
+told: a driver that talks to a model provider projects first with
+`publishToolCatalog`, which yields the `PublishedToolDefinition` the MCP
+boundary serves and what `ModelDriver` sends. The
+[HTTP reference](http-api.md#get-v1tools) states the same rule for
+`GET /v1/tools`.
 
 `TurnExecutor(kernel, agentDriver)` remains a compatibility shorthand for this
 standard composition.

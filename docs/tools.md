@@ -1,7 +1,8 @@
 # Tool catalog
 
 A tool is how a model reaches live state or performs an action. SharedOS ships
-one plane of them — `files` — and a registry for yours.
+one plane of them — `files` — two affordances of its own — `messages.request`
+and `sharedos.escalate` — and a registry for yours.
 
 ## Three gates, all required
 
@@ -75,6 +76,58 @@ against one is not portable to the other.
 
 If that matters to you, pin the host you integrate with and treat the shape as
 that host's contract, not SharedOS's. Constraining these outputs is open work.
+
+## Kernel-supplied tools
+
+Two tools come from SharedOS itself rather than from a resource provider. Both
+pass the same three gates as everything else, and neither is available until a
+host opens all three.
+
+### `messages.request`
+
+Send a request to another agent and wait for its durable reply
+([ADR 0015](adr/0015-message-purpose-and-recipient-execution.md)).
+
+| Gate         | What satisfies it                                                                                                                                              |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Registration | The kernel registers it itself, into each context's catalogue, once both `messageTransport` and `messageRequestRouter` are configured                          |
+| Namespace    | `messages`                                                                                                                                                     |
+| Capability   | `sharedos.messaging` / `[<kind>, <id>]` of the recipient / `send` — resolved per call by `RecipientScopedMessageCapabilityResolver`, owner the context's owner |
+
+The model supplies only `recipient` and a JSON-safe `payload`. Sender, purpose,
+trace, timestamp, and message id come from trusted context (`createMessageId`
+is the host's), the recipient-scoped send capability is consumed exactly once,
+and the reply is validated against the request before its payload is exposed.
+A grant for one recipient makes exactly that recipient reachable, and the host
+then runs the recipient as its own turn under its own grants — see the
+[host integration guide](host-integration.md#3-build-the-kernel-and-register-file-tools).
+
+### `sharedos.escalate`
+
+End the turn by asking a human to decide
+([ADR 0017](adr/0017-driver-declared-turn-control.md)).
+
+| Gate         | What satisfies it                                                                       |
+| ------------ | --------------------------------------------------------------------------------------- |
+| Registration | The host: `kernel.registerTool(createEscalationTool())`, from `@aicoo/sharedos-runtime` |
+| Namespace    | `sharedos`                                                                              |
+| Capability   | `sharedos` / `["escalation"]` / `request`, owner the context's owner                    |
+
+The tool is catalogued and never executed. A driver recognises the name
+(`escalationRequest`) and ends the turn `escalated` instead of making the call,
+the kernel records `escalation.requested`, and nothing is granted while the ask
+is pending. The registered handler fails with `escalation_not_terminated` if a
+driver forwards the call anyway. Over MCP the bridge answers the ask itself and
+refuses later calls on that turn with `escalation_pending`
+([ADR 0018](adr/0018-escalation-over-mcp.md)). A host that issues no
+escalation grant has agents that cannot escalate; that is the intended
+arrangement, not a gap.
+
+The resource namespace is `sharedos`, not `sharedos.escalation`, and that is
+deliberate. `sharedos.messaging` and `sharedos.execution` are planes with
+resources of their own; `sharedos` is the namespace for things about SharedOS
+itself, of which escalation — at path `["escalation"]` — is today the only one.
+The tool namespace, the second gate, is also `sharedos`.
 
 ## Registering your own tool
 
