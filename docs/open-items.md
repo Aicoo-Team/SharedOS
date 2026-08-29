@@ -1,7 +1,7 @@
 # Open items for review
 
-Declarations the `3aa07e3` audit found exported, tested, and documented but
-wired to nothing, or set by nothing, and that were kept rather than removed
+Declarations an audit of the repository found exported, tested, and documented
+but wired to nothing, or set by nothing, and that were kept rather than removed
 because each carries a design intent someone may still want. Each row names the
 decision that would close it. The dead surface with no such intent was removed
 instead (changelog, `0.1.0-alpha.3`, "Removed").
@@ -35,5 +35,5 @@ have no unit test); `OpenAiCompatibleModelClientOptions.maxOutputTokens`,
 the `callsAfterEscalation`, `harnessOutcome`, and `harnessErrorCode` metadata
 (reach `ExecutionResult.metadata`, surface in no published artifact);
 `catalogueDelivery` manifest metadata; `ChildProcessChannel.stderr`;
-`ToolAliasRecord.at`. The audit report, kept with the project documentation
-outside this repository, has the evidence for each in its A2 table.
+`ToolAliasRecord.at`. Each is a declaration with no in-repo writer or reader;
+`git grep` on the name is the evidence.
