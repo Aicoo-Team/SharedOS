@@ -47,7 +47,9 @@ opened over, and settles the turn from it.
 - The affordance is honoured only when the turn's catalogue contains it.
   Skipping the envelope skips its effective-catalogue check with it, so the
   grant is checked first and an ungranted name is passed straight through to be
-  refused `tool_unavailable`.
+  refused `tool_unavailable`. This is the same rule the native drivers apply
+  (ADR 0017, "The catalogue gates the name"); it was written here first, and
+  the drivers were brought up to it.
 
 The interception lives in `packages/adapters`, not in `packages/mcp`.
 `BridgeToolInvoker` is one method wide so that the MCP surface cannot reach any

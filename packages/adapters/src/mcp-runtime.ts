@@ -285,8 +285,8 @@ class EscalationLatch implements BridgeToolInvoker {
     // Read from the turn's own catalogue, because skipping the envelope skips
     // its effective-catalogue check with it. A call naming the affordance
     // without holding it is passed through and refused `tool_unavailable` like
-    // any other unpublished name, which makes this path stricter than a
-    // driver's -- a driver recognises the name and nothing else.
+    // any other unpublished name -- the same rule both native drivers apply
+    // before ending a turn on the name.
     this.#offered = request.tools.some((tool) => tool.name === ESCALATION_TOOL_NAME);
   }
 
@@ -330,11 +330,16 @@ class EscalationLatch implements BridgeToolInvoker {
   /**
    * Answer the ask itself, and say plainly that the turn is over.
    *
-   * `succeeded`, because the request was recorded: reporting the one call that
-   * worked as an error would tell a harness to try again. The instruction rides
-   * in the output because there is nowhere else to put it -- the catalogue is
-   * fixed for the turn, `listChanged` is false, and this server never pushes, so
-   * this result is the only chance SharedOS gets to tell a harness to stop.
+   * `succeeded`, because the ask was taken: reporting the one call that worked
+   * as an error would tell a harness to try again. The instruction rides in
+   * the output because there is nowhere else to put it -- the catalogue is
+   * fixed for the turn, `listChanged` is false, and this server never pushes,
+   * so this result is the only chance SharedOS gets to tell a harness to stop.
+   *
+   * The note promises recording in the future tense on purpose. The
+   * escalation is recorded by the executor when the turn settles, not here;
+   * a throw between this answer and `settle` would otherwise have told the
+   * harness something that never happened.
    */
   #accept(call: ToolCall, reason: string): ToolResult {
     return {
@@ -344,7 +349,9 @@ class EscalationLatch implements BridgeToolInvoker {
       output: {
         escalated: true,
         reason,
-        note: "Recorded for a human reviewer. This turn is over: make no further tool calls.",
+        note:
+          "This turn is over: make no further tool calls. " +
+          "The request will be recorded for a human reviewer when the turn ends.",
       },
       completedAt: this.#clock(),
     };
