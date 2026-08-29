@@ -19,6 +19,7 @@ import {
   parseToolArguments,
   type ModelClient,
   type ModelMessage,
+  type ModelReply,
   type ModelTool,
   type ModelToolCall,
 } from "./client.js";
@@ -153,6 +154,11 @@ class ModelSession implements AgentTurnSession {
    */
   readonly #pending: ModelToolCall[] = [];
   #servedModel: string | undefined;
+  /** Why the last reply ended, in the provider's words, once one has. */
+  #finishReason: string | undefined;
+  /** Summed over every model call this turn; absent until a reply reports one. */
+  #inputTokens: number | undefined;
+  #outputTokens: number | undefined;
 
   constructor(
     client: ModelClient,
@@ -188,10 +194,28 @@ class ModelSession implements AgentTurnSession {
       if (signal.aborted) {
         throw error;
       }
-      return fail("model_call_failed", `The model call failed: ${describe(error)}`);
+      return fail(
+        "model_call_failed",
+        `The model call failed: ${describe(error)}`,
+        this.#metadata(),
+      );
     }
 
-    this.#servedModel = reply.model ?? this.#servedModel;
+    this.#account(reply);
+    if (reply.finishReason === "length") {
+      // The provider stopped the model, not the model itself. Nothing in a
+      // reply cut off at the token ceiling is a decision the model finished
+      // making: its calls may be incomplete and its silence is not a choice to
+      // stop. Releasing any of it would grade the cut as the model's doing,
+      // and completing the turn would grade it as the model choosing to end --
+      // both are the wrong record. The turn fails, under a code that says so.
+      return fail(
+        "model_output_truncated",
+        "The model's reply was cut off at the output token limit before it finished deciding.",
+        this.#metadata(),
+      );
+    }
+
     this.#messages.push({
       role: "assistant",
       content: reply.text,
@@ -223,7 +247,29 @@ class ModelSession implements AgentTurnSession {
       model: this.#servedModel ?? this.#client.model,
       modelProvider: this.#client.provider,
       requestedModel: this.#client.model,
+      ...(this.#finishReason === undefined ? {} : { finishReason: this.#finishReason }),
+      ...(this.#inputTokens === undefined ? {} : { inputTokens: this.#inputTokens }),
+      ...(this.#outputTokens === undefined ? {} : { outputTokens: this.#outputTokens }),
     };
+  }
+
+  /**
+   * Keep what the provider said about a reply, beyond its content.
+   *
+   * The model it served, why it stopped, and what it billed. Token counts are
+   * summed across the turn's calls so the record carries the turn's spend; a
+   * provider that reports none leaves the fields absent rather than zero,
+   * because a zero would be a claim and an absence is the truth.
+   */
+  #account(reply: ModelReply): void {
+    this.#servedModel = reply.model ?? this.#servedModel;
+    this.#finishReason = reply.finishReason ?? this.#finishReason;
+    if (reply.usage?.inputTokens !== undefined) {
+      this.#inputTokens = (this.#inputTokens ?? 0) + reply.usage.inputTokens;
+    }
+    if (reply.usage?.outputTokens !== undefined) {
+      this.#outputTokens = (this.#outputTokens ?? 0) + reply.usage.outputTokens;
+    }
   }
 
   #toolCall(call: ModelToolCall): ToolCall {
@@ -253,9 +299,9 @@ function describeResult(result: ToolResult): string {
   });
 }
 
-function fail(code: string, message: string): AgentTurnDecision {
+function fail(code: string, message: string, metadata: JsonObject): AgentTurnDecision {
   const error: ProtocolError = { code, message };
-  return { type: "fail", error };
+  return { type: "fail", error, metadata };
 }
 
 function describe(error: unknown): string {

@@ -276,4 +276,99 @@ describe("a model driving a SharedOS turn", () => {
     expect(result.status).toBe("failed");
     expect(result.status === "failed" ? result.error.code : undefined).toBe("model_call_failed");
   });
+
+  it("fails the turn when the provider cut the reply off, rather than grading the cut", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [{ id: "call-1", name: "files_read", arguments: '{"path":["Workspa' }],
+        finishReason: "length",
+      },
+      { text: "done", toolCalls: [] },
+    ]);
+    const { result, calls } = await runWith(client);
+
+    // The provider ended the reply, not the model. Its half-written call is
+    // not released -- issuing it would grade the cut as the model's doing --
+    // and the turn does not complete as if the model had chosen to stop.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "model_output_truncated",
+    );
+    expect(result.metadata?.["finishReason"]).toBe("length");
+    expect(calls).toEqual([]);
+    expect(client.seen).toHaveLength(1);
+  });
+
+  it("records why the model stopped and what the provider billed for the turn", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [{ id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+        finishReason: "tool_calls",
+        usage: { inputTokens: 40, outputTokens: 12 },
+      },
+      {
+        text: "done",
+        toolCalls: [],
+        finishReason: "stop",
+        usage: { inputTokens: 70, outputTokens: 5 },
+      },
+    ]);
+    const { result } = await runWith(client);
+
+    expect(result.status).toBe("succeeded");
+    // Summed over both model calls: the cost on the record is the turn's, not
+    // the last reply's. The finish reason is the last reply's, because that is
+    // the one that ended the turn.
+    expect(result.metadata).toMatchObject({
+      finishReason: "stop",
+      inputTokens: 110,
+      outputTokens: 17,
+    });
+  });
+
+  it("leaves token cost absent when the provider reported none", async () => {
+    const client = scriptedClient([{ text: "done", toolCalls: [] }]);
+    const { result } = await runWith(client);
+
+    // Absent rather than zero. A zero is a claim about what was billed; an
+    // absence is the truth about what was reported, and the record's
+    // completeness check names it as a gap instead of reading it as free.
+    expect(result.metadata).not.toHaveProperty("inputTokens");
+    expect(result.metadata).not.toHaveProperty("outputTokens");
+    expect(result.metadata).not.toHaveProperty("finishReason");
+  });
+
+  it("keeps what the turn cost on a turn that failed", async () => {
+    let index = 0;
+    const client: ModelClient = {
+      model: "test-model",
+      provider: "test-provider",
+      complete: async () => {
+        index += 1;
+        if (index === 1) {
+          return {
+            text: "",
+            toolCalls: [
+              { id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' },
+            ],
+            usage: { inputTokens: 40, outputTokens: 12 },
+          };
+        }
+        throw new Error("connection reset");
+      },
+    };
+    const { result } = await runWith(client);
+
+    // The second model call failed; the first still happened and was billed.
+    // A record that dropped the spend on failure would know least about the
+    // turns that most need explaining.
+    expect(result.status).toBe("failed");
+    expect(result.metadata).toMatchObject({
+      model: "test-model",
+      inputTokens: 40,
+      outputTokens: 12,
+    });
+  });
 });

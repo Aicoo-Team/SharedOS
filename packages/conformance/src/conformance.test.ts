@@ -312,6 +312,51 @@ describe("execution record assembly", () => {
       }),
     ).toThrow("carries no runtime provenance");
   });
+
+  it("takes the token cost the runtime reported, unless the caller knows better", () => {
+    // A model driver sums what the provider billed onto the outcome; nothing
+    // else in the record can know it. It is read like the served model is: a
+    // fact the turn left behind, taken unless the caller's own `cost` says
+    // otherwise.
+    const reported = result({
+      metadata: {
+        runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "1" },
+        inputTokens: 110,
+        outputTokens: 17,
+      },
+    });
+
+    expect(
+      assembleExecutionRecord({ request: request(), result: reported, experiment, system }).cost,
+    ).toMatchObject({ inputTokens: 110, outputTokens: 17 });
+    expect(
+      assembleExecutionRecord({
+        request: request(),
+        result: reported,
+        experiment,
+        system,
+        cost: { inputTokens: 120 },
+      }).cost,
+    ).toMatchObject({ inputTokens: 120, outputTokens: 17 });
+  });
+
+  it("ignores a reported token count that is not a count", () => {
+    const record = assembleExecutionRecord({
+      request: request(),
+      result: result({
+        metadata: {
+          runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "1" },
+          inputTokens: "lots",
+          outputTokens: -1,
+        },
+      }),
+      experiment,
+      system,
+    });
+
+    expect(record.cost).not.toHaveProperty("inputTokens");
+    expect(record.cost).not.toHaveProperty("outputTokens");
+  });
 });
 
 describe("record completeness", () => {

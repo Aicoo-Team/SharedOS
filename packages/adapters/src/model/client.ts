@@ -44,10 +44,28 @@ export interface ModelCompletionRequest {
   readonly tools: readonly ModelTool[];
 }
 
+/** What a provider billed for one reply, when it said. */
+export interface ModelUsage {
+  readonly inputTokens?: number;
+  readonly outputTokens?: number;
+}
+
 /** What the model answered with. */
 export interface ModelReply {
   readonly text: string;
   readonly toolCalls: readonly ModelToolCall[];
+  /**
+   * Why generation stopped, in the provider's own vocabulary.
+   *
+   * `stop` and `tool_calls` are the model ending its reply; `length` is the
+   * provider ending it at the output-token ceiling. Carried because the two are
+   * different facts about the same reply: a completion that was cut off mid-way
+   * looks, without this, exactly like a completion the model chose to end, and
+   * a record whose purpose is honest attribution has to tell them apart.
+   */
+  readonly finishReason?: string;
+  /** Absent when the provider reported no usage; never estimated. */
+  readonly usage?: ModelUsage;
   /**
    * The model the provider says actually answered.
    *
@@ -101,6 +119,7 @@ const ChatCompletionSchema = z.object({
   choices: z
     .array(
       z.object({
+        finish_reason: z.string().nullish(),
         message: z.object({
           content: z.string().nullish(),
           tool_calls: z
@@ -118,6 +137,12 @@ const ChatCompletionSchema = z.object({
       }),
     )
     .min(1),
+  usage: z
+    .object({
+      prompt_tokens: z.number().int().nonnegative().optional(),
+      completion_tokens: z.number().int().nonnegative().optional(),
+    })
+    .nullish(),
 });
 
 export interface OpenAiCompatibleModelClientOptions {
@@ -141,7 +166,13 @@ export interface OpenAiCompatibleModelClientOptions {
   readonly fetch?: typeof globalThis.fetch;
 }
 
-const DEFAULT_MAX_OUTPUT_TOKENS = 1_024;
+/**
+ * Room for a tool-heavy turn. A reply that hits this ceiling is not a decision
+ * the model finished making, and the driver fails the turn on it rather than
+ * grading the cut as a choice; the ceiling is set so that a turn issuing
+ * several calls with JSON arguments does not reach it in ordinary use.
+ */
+const DEFAULT_MAX_OUTPUT_TOKENS = 4_096;
 const DEFAULT_REQUEST_TIMEOUT_MS = 120_000;
 /**
  * One retry, on the failures that are worth retrying.
@@ -263,6 +294,7 @@ export class OpenAiCompatibleModelClient implements ModelClient {
 
     const [choice] = parsed.data.choices;
     const message = choice?.message;
+    const usage = parsed.data.usage;
     return {
       text: message?.content ?? "",
       toolCalls: (message?.tool_calls ?? []).map((call) => ({
@@ -271,6 +303,17 @@ export class OpenAiCompatibleModelClient implements ModelClient {
         arguments: call.function.arguments,
       })),
       ...(parsed.data.model === undefined ? {} : { model: parsed.data.model }),
+      ...(typeof choice?.finish_reason === "string" ? { finishReason: choice.finish_reason } : {}),
+      ...(usage === undefined || usage === null
+        ? {}
+        : {
+            usage: {
+              ...(usage.prompt_tokens === undefined ? {} : { inputTokens: usage.prompt_tokens }),
+              ...(usage.completion_tokens === undefined
+                ? {}
+                : { outputTokens: usage.completion_tokens }),
+            },
+          }),
     };
   }
 }

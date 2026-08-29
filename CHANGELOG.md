@@ -119,7 +119,13 @@ each entry calls out what a host has to update.
   chat-completions provider constrains function names to — and a name the map
   does not hold is passed through anyway, so a model that invents a tool
   outside its catalogue reaches the envelope to be refused instead of being
-  filtered out where nothing records it.
+  filtered out where nothing records it. The provider's `finish_reason` and
+  `usage` are read off every completion: a reply cut off at the output-token
+  ceiling fails the turn as `model_output_truncated` rather than being graded
+  as a decision the model finished making, and the turn's token spend reaches
+  the execution record as `cost.inputTokens` / `cost.outputTokens`. A `fail`
+  decision now carries `metadata` as `complete` does, so a failed turn keeps
+  the model that answered and what it cost.
 - A `model-live` conformance column built on that driver, which separates what
   a model does from what a vendor's scaffolding makes it do — the axis every
   other live column confounds. It is an addition to the scripted column and

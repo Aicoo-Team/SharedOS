@@ -293,7 +293,7 @@ Defined in: [packages/adapters/src/runtime.ts:36](https://github.com/Aicoo-Team/
 
 ### ModelDriver
 
-Defined in: [packages/adapters/src/model/driver.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L114)
+Defined in: [packages/adapters/src/model/driver.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L115)
 
 A model API driven as a SharedOS agent turn.
 
@@ -325,7 +325,7 @@ the reason the deterministic column stays the reference.
 
 > **new ModelDriver**(`options`): [`ModelDriver`](#modeldriver)
 
-Defined in: [packages/adapters/src/model/driver.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L119)
+Defined in: [packages/adapters/src/model/driver.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L120)
 
 ###### Parameters
 
@@ -341,7 +341,7 @@ Defined in: [packages/adapters/src/model/driver.ts:119](https://github.com/Aicoo
 
 | Property                                    | Modifier   | Type                                             | Defined in                                                                                                                               |
 | ------------------------------------------- | ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest-2"></a> `manifest` | `readonly` | `object`                                         | [packages/adapters/src/model/driver.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L115) |
+| <a id="property-manifest-2"></a> `manifest` | `readonly` | `object`                                         | [packages/adapters/src/model/driver.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L116) |
 | `manifest.id`                               | `public`   | `string`                                         | packages/contracts/dist/runtime.d.ts:9                                                                                                   |
 | `manifest.metadata?`                        | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | packages/contracts/dist/runtime.d.ts:12                                                                                                  |
 | `manifest.protocolVersion`                  | `public`   | `"1"`                                            | packages/contracts/dist/runtime.d.ts:11                                                                                                  |
@@ -353,7 +353,7 @@ Defined in: [packages/adapters/src/model/driver.ts:119](https://github.com/Aicoo
 
 > **open**(`request`, `_signal`): `Promise`\<[`AgentTurnSession`](sharedos-runtime.md#agentturnsession)>\>
 
-Defined in: [packages/adapters/src/model/driver.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L125)
+Defined in: [packages/adapters/src/model/driver.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L126)
 
 ###### Parameters
 
@@ -374,7 +374,7 @@ Defined in: [packages/adapters/src/model/driver.ts:125](https://github.com/Aicoo
 
 ### ModelRequestError
 
-Defined in: [packages/adapters/src/model/client.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L80)
+Defined in: [packages/adapters/src/model/client.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L98)
 
 A model call that did not produce an answer. Carries no response body.
 
@@ -388,7 +388,7 @@ A model call that did not produce an answer. Carries no response body.
 
 > **new ModelRequestError**(`message`, `status?`): [`ModelRequestError`](#modelrequesterror)
 
-Defined in: [packages/adapters/src/model/client.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L83)
+Defined in: [packages/adapters/src/model/client.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L101)
 
 ###### Parameters
 
@@ -413,7 +413,7 @@ Defined in: [packages/adapters/src/model/client.ts:83](https://github.com/Aicoo-
 | <a id="property-message"></a> `message`                 | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077                                                    |
 | <a id="property-name"></a> `name`                       | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name`            | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1076                                                    |
 | <a id="property-stack"></a> `stack?`                    | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078                                                    |
-| <a id="property-status"></a> `status?`                  | `readonly` | `number`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | [packages/adapters/src/model/client.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L81) |
+| <a id="property-status"></a> `status?`                  | `readonly` | `number`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | [packages/adapters/src/model/client.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L99) |
 | <a id="property-stacktracelimit"></a> `stackTraceLimit` | `static`   | `number`  | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68                                                      |
 
 #### Methods
@@ -587,7 +587,7 @@ Defined in: [packages/adapters/src/model/runtime.ts:34](https://github.com/Aicoo
 
 ### OpenAiCompatibleModelClient
 
-Defined in: [packages/adapters/src/model/client.ts:165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L165)
+Defined in: [packages/adapters/src/model/client.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L196)
 
 A chat-completions client for any provider speaking the OpenAI wire shape.
 
@@ -606,7 +606,7 @@ than a second client.
 
 > **new OpenAiCompatibleModelClient**(`options`): [`OpenAiCompatibleModelClient`](#openaicompatiblemodelclient)
 
-Defined in: [packages/adapters/src/model/client.ts:175](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L175)
+Defined in: [packages/adapters/src/model/client.ts:206](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L206)
 
 ###### Parameters
 
@@ -622,8 +622,8 @@ Defined in: [packages/adapters/src/model/client.ts:175](https://github.com/Aicoo
 
 | Property                                  | Modifier   | Type     | Description                                                              | Defined in                                                                                                                               |
 | ----------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-model"></a> `model`       | `readonly` | `string` | The model this client was configured to ask for.                         | [packages/adapters/src/model/client.ts:166](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L166) |
-| <a id="property-provider"></a> `provider` | `readonly` | `string` | The provider that serves it, recorded alongside the model on every turn. | [packages/adapters/src/model/client.ts:167](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L167) |
+| <a id="property-model"></a> `model`       | `readonly` | `string` | The model this client was configured to ask for.                         | [packages/adapters/src/model/client.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L197) |
+| <a id="property-provider"></a> `provider` | `readonly` | `string` | The provider that serves it, recorded alongside the model on every turn. | [packages/adapters/src/model/client.ts:198](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L198) |
 
 #### Methods
 
@@ -631,7 +631,7 @@ Defined in: [packages/adapters/src/model/client.ts:175](https://github.com/Aicoo
 
 > **complete**(`request`, `signal`): `Promise`\<[`ModelReply`](#modelreply)>\>
 
-Defined in: [packages/adapters/src/model/client.ts:189](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L189)
+Defined in: [packages/adapters/src/model/client.ts:220](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L220)
 
 ###### Parameters
 
@@ -652,7 +652,7 @@ Defined in: [packages/adapters/src/model/client.ts:189](https://github.com/Aicoo
 
 ### ToolNameCodec
 
-Defined in: [packages/adapters/src/model/driver.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L51)
+Defined in: [packages/adapters/src/model/driver.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L52)
 
 How a SharedOS tool name is spoken to a model, and read back.
 
@@ -674,7 +674,7 @@ a tool that was never tried, not as a tool that was refused.
 
 > **new ToolNameCodec**(`tools`): [`ToolNameCodec`](#toolnamecodec)
 
-Defined in: [packages/adapters/src/model/driver.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L55)
+Defined in: [packages/adapters/src/model/driver.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L56)
 
 ###### Parameters
 
@@ -692,7 +692,7 @@ Defined in: [packages/adapters/src/model/driver.ts:55](https://github.com/Aicoo-
 
 > **fromWire**(`name`): `string`
 
-Defined in: [packages/adapters/src/model/driver.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L81)
+Defined in: [packages/adapters/src/model/driver.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L82)
 
 ###### Parameters
 
@@ -708,7 +708,7 @@ Defined in: [packages/adapters/src/model/driver.ts:81](https://github.com/Aicoo-
 
 > **toWire**(`name`): `string`
 
-Defined in: [packages/adapters/src/model/driver.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L77)
+Defined in: [packages/adapters/src/model/driver.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L78)
 
 ###### Parameters
 
@@ -1115,7 +1115,7 @@ Everything a harness needs to start one turn.
 
 ### ModelClient
 
-Defined in: [packages/adapters/src/model/client.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L71)
+Defined in: [packages/adapters/src/model/client.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L89)
 
 A model API in the SharedOS driver seat.
 
@@ -1129,8 +1129,8 @@ interface and no new enforcement path.
 
 | Property                                    | Modifier   | Type     | Description                                                              | Defined in                                                                                                                             |
 | ------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-model-1"></a> `model`       | `readonly` | `string` | The model this client was configured to ask for.                         | [packages/adapters/src/model/client.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L73) |
-| <a id="property-provider-1"></a> `provider` | `readonly` | `string` | The provider that serves it, recorded alongside the model on every turn. | [packages/adapters/src/model/client.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L75) |
+| <a id="property-model-1"></a> `model`       | `readonly` | `string` | The model this client was configured to ask for.                         | [packages/adapters/src/model/client.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L91) |
+| <a id="property-provider-1"></a> `provider` | `readonly` | `string` | The provider that serves it, recorded alongside the model on every turn. | [packages/adapters/src/model/client.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L93) |
 
 #### Methods
 
@@ -1138,7 +1138,7 @@ interface and no new enforcement path.
 
 > **complete**(`request`, `signal`): `Promise`\<[`ModelReply`](#modelreply)>\>
 
-Defined in: [packages/adapters/src/model/client.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L76)
+Defined in: [packages/adapters/src/model/client.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L94)
 
 ###### Parameters
 
@@ -1168,35 +1168,37 @@ Defined in: [packages/adapters/src/model/client.ts:42](https://github.com/Aicoo-
 
 ### ModelDriverOptions
 
-Defined in: [packages/adapters/src/model/driver.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L86)
+Defined in: [packages/adapters/src/model/driver.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L87)
 
 #### Properties
 
 | Property                                    | Modifier   | Type                                             | Description                                                | Defined in                                                                                                                             |
 | ------------------------------------------- | ---------- | ------------------------------------------------ | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-client"></a> `client`       | `readonly` | [`ModelClient`](#modelclient)                    | -                                                          | [packages/adapters/src/model/driver.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L88) |
-| <a id="property-manifest-5"></a> `manifest` | `readonly` | `object`                                         | -                                                          | [packages/adapters/src/model/driver.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L87) |
+| <a id="property-client"></a> `client`       | `readonly` | [`ModelClient`](#modelclient)                    | -                                                          | [packages/adapters/src/model/driver.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L89) |
+| <a id="property-manifest-5"></a> `manifest` | `readonly` | `object`                                         | -                                                          | [packages/adapters/src/model/driver.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L88) |
 | `manifest.id`                               | `public`   | `string`                                         | -                                                          | packages/contracts/dist/runtime.d.ts:9                                                                                                 |
 | `manifest.metadata?`                        | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                          | packages/contracts/dist/runtime.d.ts:12                                                                                                |
 | `manifest.protocolVersion`                  | `public`   | `"1"`                                            | -                                                          | packages/contracts/dist/runtime.d.ts:11                                                                                                |
 | `manifest.version`                          | `public`   | `string`                                         | -                                                          | packages/contracts/dist/runtime.d.ts:10                                                                                                |
-| <a id="property-prompt-2"></a> `prompt?`    | `readonly` | (`request`) => `string`                          | Overrides how the turn message becomes the model's prompt. | [packages/adapters/src/model/driver.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L90) |
+| <a id="property-prompt-2"></a> `prompt?`    | `readonly` | (`request`) => `string`                          | Overrides how the turn message becomes the model's prompt. | [packages/adapters/src/model/driver.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L91) |
 
 ---
 
 ### ModelReply
 
-Defined in: [packages/adapters/src/model/client.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L48)
+Defined in: [packages/adapters/src/model/client.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L54)
 
 What the model answered with.
 
 #### Properties
 
-| Property                                    | Modifier   | Type                                         | Description                                                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                             |
-| ------------------------------------------- | ---------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-model-2"></a> `model?`      | `readonly` | `string`                                     | The model the provider says actually answered. Recorded separately from the one that was asked for because they differ: DeepSeek maps an unrecognised name onto a default rather than rejecting it, so a run configured for one model can be served by another. The record should say what answered, which is the weaker claim and the honest one. | [packages/adapters/src/model/client.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L59) |
-| <a id="property-text"></a> `text`           | `readonly` | `string`                                     | -                                                                                                                                                                                                                                                                                                                                                  | [packages/adapters/src/model/client.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L49) |
-| <a id="property-toolcalls"></a> `toolCalls` | `readonly` | readonly [`ModelToolCall`](#modeltoolcall)[] | -                                                                                                                                                                                                                                                                                                                                                  | [packages/adapters/src/model/client.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L50) |
+| Property                                           | Modifier   | Type                                         | Description                                                                                                                                                                                                                                                                                                                                                                                                                               | Defined in                                                                                                                             |
+| -------------------------------------------------- | ---------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-finishreason"></a> `finishReason?` | `readonly` | `string`                                     | Why generation stopped, in the provider's own vocabulary. `stop` and `tool_calls` are the model ending its reply; `length` is the provider ending it at the output-token ceiling. Carried because the two are different facts about the same reply: a completion that was cut off mid-way looks, without this, exactly like a completion the model chose to end, and a record whose purpose is honest attribution has to tell them apart. | [packages/adapters/src/model/client.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L66) |
+| <a id="property-model-2"></a> `model?`             | `readonly` | `string`                                     | The model the provider says actually answered. Recorded separately from the one that was asked for because they differ: DeepSeek maps an unrecognised name onto a default rather than rejecting it, so a run configured for one model can be served by another. The record should say what answered, which is the weaker claim and the honest one.                                                                                        | [packages/adapters/src/model/client.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L77) |
+| <a id="property-text"></a> `text`                  | `readonly` | `string`                                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L55) |
+| <a id="property-toolcalls"></a> `toolCalls`        | `readonly` | readonly [`ModelToolCall`](#modeltoolcall)[] | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L56) |
+| <a id="property-usage"></a> `usage?`               | `readonly` | [`ModelUsage`](#modelusage)                  | Absent when the provider reported no usage; never estimated.                                                                                                                                                                                                                                                                                                                                                                              | [packages/adapters/src/model/client.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L68) |
 
 ---
 
@@ -1237,22 +1239,37 @@ an unrecognised name means is a policy question that belongs to the driver.
 
 ---
 
+### ModelUsage
+
+Defined in: [packages/adapters/src/model/client.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L48)
+
+What a provider billed for one reply, when it said.
+
+#### Properties
+
+| Property                                           | Modifier   | Type     | Defined in                                                                                                                             |
+| -------------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-inputtokens"></a> `inputTokens?`   | `readonly` | `number` | [packages/adapters/src/model/client.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L49) |
+| <a id="property-outputtokens"></a> `outputTokens?` | `readonly` | `number` | [packages/adapters/src/model/client.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L50) |
+
+---
+
 ### OpenAiCompatibleModelClientOptions
 
-Defined in: [packages/adapters/src/model/client.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L123)
+Defined in: [packages/adapters/src/model/client.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L148)
 
 #### Properties
 
 | Property                                                   | Modifier   | Type                                                                                           | Description                                                                                                                                                                                                                                                                              | Defined in                                                                                                                               |
 | ---------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-apikey"></a> `apiKey`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                        | [packages/adapters/src/model/client.ts:124](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L124) |
-| <a id="property-baseurl"></a> `baseUrl`                    | `readonly` | `string`                                                                                       | The chat-completions root, without a trailing slash.                                                                                                                                                                                                                                     | [packages/adapters/src/model/client.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L129) |
-| <a id="property-fetch"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                    | [packages/adapters/src/model/client.ts:141](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L141) |
-| <a id="property-maxoutputtokens"></a> `maxOutputTokens?`   | `readonly` | `number`                                                                                       | -                                                                                                                                                                                                                                                                                        | [packages/adapters/src/model/client.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L130) |
-| <a id="property-model-3"></a> `model`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                        | [packages/adapters/src/model/client.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L125) |
-| <a id="property-provider-2"></a> `provider`                | `readonly` | `string`                                                                                       | Names the provider on every record this client's turns produce.                                                                                                                                                                                                                          | [packages/adapters/src/model/client.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L127) |
-| <a id="property-requesttimeoutms"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one model call may take, independently of the turn's own budget.                                                                                                                                                                                                                | [packages/adapters/src/model/client.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L139) |
-| <a id="property-temperature"></a> `temperature?`           | `readonly` | `number`                                                                                       | Left at zero by default, which reduces variation between runs but does not remove it. This column is not deterministic and must not be described as if it were: a temperature of zero is not a seed, and the same prompt can still produce a different call sequence on a different day. | [packages/adapters/src/model/client.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L137) |
+| <a id="property-apikey"></a> `apiKey`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                        | [packages/adapters/src/model/client.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L149) |
+| <a id="property-baseurl"></a> `baseUrl`                    | `readonly` | `string`                                                                                       | The chat-completions root, without a trailing slash.                                                                                                                                                                                                                                     | [packages/adapters/src/model/client.ts:154](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L154) |
+| <a id="property-fetch"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                    | [packages/adapters/src/model/client.ts:166](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L166) |
+| <a id="property-maxoutputtokens"></a> `maxOutputTokens?`   | `readonly` | `number`                                                                                       | -                                                                                                                                                                                                                                                                                        | [packages/adapters/src/model/client.ts:155](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L155) |
+| <a id="property-model-3"></a> `model`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                        | [packages/adapters/src/model/client.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L150) |
+| <a id="property-provider-2"></a> `provider`                | `readonly` | `string`                                                                                       | Names the provider on every record this client's turns produce.                                                                                                                                                                                                                          | [packages/adapters/src/model/client.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L152) |
+| <a id="property-requesttimeoutms"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one model call may take, independently of the turn's own budget.                                                                                                                                                                                                                | [packages/adapters/src/model/client.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L164) |
+| <a id="property-temperature"></a> `temperature?`           | `readonly` | `number`                                                                                       | Left at zero by default, which reduces variation between runs but does not remove it. This column is not deterministic and must not be described as if it were: a temperature of zero is not a seed, and the same prompt can still produce a different call sequence on a different day. | [packages/adapters/src/model/client.ts:162](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L162) |
 
 ## Type Aliases
 
@@ -1832,7 +1849,7 @@ this form files a turn's evidence under the harness that produced it.
 
 > **parseToolArguments**(`raw`): [`JsonObject`](sharedos-contracts.md#jsonobject) \| `undefined`
 
-Defined in: [packages/adapters/src/model/client.ts:323](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L323)
+Defined in: [packages/adapters/src/model/client.ts:366](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L366)
 
 Argument blobs are model output, so they are parsed rather than trusted.
 

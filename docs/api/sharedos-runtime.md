@@ -469,7 +469,7 @@ Defined in: [packages/runtime/src/executor.ts:147](https://github.com/Aicoo-Team
 
 ### StandardRuntime
 
-Defined in: [packages/runtime/src/standard-runtime.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L66)
+Defined in: [packages/runtime/src/standard-runtime.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L73)
 
 The reference SharedOS loop. Hosts may replace it with another RuntimePlugin.
 
@@ -483,7 +483,7 @@ The reference SharedOS loop. Hosts may replace it with another RuntimePlugin.
 
 > **new StandardRuntime**(`driver`, `options?`): [`StandardRuntime`](#standardruntime)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L71)
+Defined in: [packages/runtime/src/standard-runtime.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L78)
 
 ###### Parameters
 
@@ -500,7 +500,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:71](https://github.com/Aic
 
 | Property                                  | Modifier   | Type                                             | Default value               | Defined in                                                                                                                                   |
 | ----------------------------------------- | ---------- | ------------------------------------------------ | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | `STANDARD_RUNTIME_MANIFEST` | [packages/runtime/src/standard-runtime.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L67) |
+| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | `STANDARD_RUNTIME_MANIFEST` | [packages/runtime/src/standard-runtime.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L74) |
 | `manifest.id`                             | `public`   | `string`                                         | `undefined`                 | packages/contracts/dist/runtime.d.ts:9                                                                                                       |
 | `manifest.metadata?`                      | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | `undefined`                 | packages/contracts/dist/runtime.d.ts:12                                                                                                      |
 | `manifest.protocolVersion`                | `public`   | `"1"`                                            | `undefined`                 | packages/contracts/dist/runtime.d.ts:11                                                                                                      |
@@ -512,7 +512,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:71](https://github.com/Aic
 
 > **run**(`request`, `host`, `signal`): `Promise`\<\{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L79)
+Defined in: [packages/runtime/src/standard-runtime.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L86)
 
 ###### Parameters
 
@@ -655,7 +655,7 @@ Defined in: [packages/runtime/src/executor.ts:488](https://github.com/Aicoo-Team
 
 ### AgentTurnDriver
 
-Defined in: [packages/runtime/src/standard-runtime.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L44)
+Defined in: [packages/runtime/src/standard-runtime.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L51)
 
 Model/provider-specific code implements this port inside the standard runtime.
 
@@ -665,7 +665,7 @@ Model/provider-specific code implements this port inside the standard runtime.
 
 > **open**(`request`, `signal`): `Promise`\<[`AgentTurnSession`](#agentturnsession)>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L45)
+Defined in: [packages/runtime/src/standard-runtime.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L52)
 
 ###### Parameters
 
@@ -682,7 +682,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:45](https://github.com/Aic
 
 ### AgentTurnSession
 
-Defined in: [packages/runtime/src/standard-runtime.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L38)
+Defined in: [packages/runtime/src/standard-runtime.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L45)
 
 #### Methods
 
@@ -690,7 +690,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:38](https://github.com/Aic
 
 > `optional` **close**(`outcome`, `signal`): `void` \| `Promise`\<`void`>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L40)
+Defined in: [packages/runtime/src/standard-runtime.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L47)
 
 ###### Parameters
 
@@ -707,7 +707,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:40](https://github.com/Aic
 
 > **next**(`input`, `signal`): `Promise`\<[`AgentTurnDecision`](#agentturndecision)>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L39)
+Defined in: [packages/runtime/src/standard-runtime.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L46)
 
 ###### Parameters
 
@@ -898,7 +898,7 @@ Defined in: [packages/runtime/src/executor.ts:41](https://github.com/Aicoo-Team/
 
 ### StandardRuntimeOptions
 
-Defined in: [packages/runtime/src/standard-runtime.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L48)
+Defined in: [packages/runtime/src/standard-runtime.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L55)
 
 #### Extended by
 
@@ -908,7 +908,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:48](https://github.com/Aic
 
 | Property                                               | Type     | Defined in                                                                                                                                   |
 | ------------------------------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-closetimeoutms"></a> `closeTimeoutMs?` | `number` | [packages/runtime/src/standard-runtime.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L49) |
+| <a id="property-closetimeoutms"></a> `closeTimeoutMs?` | `number` | [packages/runtime/src/standard-runtime.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L56) |
 
 ---
 
@@ -985,7 +985,7 @@ Defined in: [packages/runtime/src/executor.ts:67](https://github.com/Aicoo-Team/
 | Property                                                           | Type                                    | Description                                                                                                                                                                                                                                         | Inherited from                                                                                               | Defined in                                                                                                                                   |
 | ------------------------------------------------------------------ | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="property-clock-1"></a> `clock?`                             | () => `string`                          | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`clock`](#property-clock)                             | [packages/runtime/src/executor.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L42)                 |
-| <a id="property-closetimeoutms-1"></a> `closeTimeoutMs?`           | `number`                                | -                                                                                                                                                                                                                                                   | [`StandardRuntimeOptions`](#standardruntimeoptions).[`closeTimeoutMs`](#property-closetimeoutms)             | [packages/runtime/src/standard-runtime.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L49) |
+| <a id="property-closetimeoutms-1"></a> `closeTimeoutMs?`           | `number`                                | -                                                                                                                                                                                                                                                   | [`StandardRuntimeOptions`](#standardruntimeoptions).[`closeTimeoutMs`](#property-closetimeoutms)             | [packages/runtime/src/standard-runtime.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L56) |
 | <a id="property-createid-1"></a> `createId?`                       | () => `string`                          | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`createId`](#property-createid)                       | [packages/runtime/src/executor.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L43)                 |
 | <a id="property-defaultmaxsteps-1"></a> `defaultMaxSteps?`         | `number`                                | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`defaultMaxSteps`](#property-defaultmaxsteps)         | [packages/runtime/src/executor.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L44)                 |
 | <a id="property-defaultmaxtoolcalls-1"></a> `defaultMaxToolCalls?` | `number`                                | -                                                                                                                                                                                                                                                   | [`SharedOSExecutorOptions`](#sharedosexecutoroptions).[`defaultMaxToolCalls`](#property-defaultmaxtoolcalls) | [packages/runtime/src/executor.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L45)                 |
@@ -996,9 +996,33 @@ Defined in: [packages/runtime/src/executor.ts:67](https://github.com/Aicoo-Team/
 
 ### AgentTurnDecision
 
-> **AgentTurnDecision** = \{ `call`: [`ToolCall`](sharedos-contracts.md#toolcall); `type`: `"tool_call"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: [`ProtocolError`](sharedos-contracts.md#protocolerror); `type`: `"fail"`; \}
+> **AgentTurnDecision** = \{ `call`: [`ToolCall`](sharedos-contracts.md#toolcall); `type`: `"tool_call"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: [`ProtocolError`](sharedos-contracts.md#protocolerror); `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \}
 
 Defined in: [packages/runtime/src/standard-runtime.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L27)
+
+#### Union Members
+
+##### Type Literal
+
+\{ `call`: [`ToolCall`](sharedos-contracts.md#toolcall); `type`: `"tool_call"`; \}
+
+---
+
+##### Type Literal
+
+\{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \}
+
+---
+
+##### Type Literal
+
+\{ `error`: [`ProtocolError`](sharedos-contracts.md#protocolerror); `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \}
+
+`metadata` rides on a failure exactly as it does on a completion. A turn
+that failed still ran: the model that answered, what it cost, and why it
+stopped are facts about the turn rather than about its ending, and a record
+that dropped them on failure would know least about the turns that most
+need explaining.
 
 ---
 
@@ -1014,7 +1038,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:24](https://github.com/Aic
 
 > **AgentTurnRequest** = [`RuntimeTurnRequest`](#runtimeturnrequest)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L36)
+Defined in: [packages/runtime/src/standard-runtime.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L43)
 
 Backwards-compatible name for the request visible to a standard driver.
 
@@ -1024,7 +1048,7 @@ Backwards-compatible name for the request visible to a standard driver.
 
 > **AgentVisibleContext** = [`RuntimeVisibleContext`](#runtimevisiblecontext)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L33)
+Defined in: [packages/runtime/src/standard-runtime.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L40)
 
 Backwards-compatible name for the context visible to a standard driver.
 
@@ -1065,7 +1089,7 @@ registries, namespace settings, or other host policy state.
 
 > `const` **STANDARD\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L55)
+Defined in: [packages/runtime/src/standard-runtime.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L62)
 
 ---
 
@@ -1073,6 +1097,6 @@ Defined in: [packages/runtime/src/standard-runtime.ts:55](https://github.com/Aic
 
 > `const` **STANDARD\_RUNTIME\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
 
-Defined in: [packages/runtime/src/standard-runtime.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L53)
+Defined in: [packages/runtime/src/standard-runtime.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L60)
 
 Kept equal to the synchronized package version by the release gate.
