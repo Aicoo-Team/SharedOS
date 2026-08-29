@@ -19,10 +19,9 @@ const VERIFY_BASE_DELAY_MS = 3_000;
 const VERIFY_MAX_DELAY_MS = 30_000;
 const command = process.argv[2] ?? "check";
 const isPublish = command === "publish";
-const allowPrivate = process.argv.includes("--allow-private");
 
-if (!new Set(["check", "publish"]).has(command) || (allowPrivate && isPublish)) {
-  throw new Error("Usage: node scripts/release.mjs check [--allow-private] | publish");
+if (!new Set(["check", "publish"]).has(command)) {
+  throw new Error("Usage: node scripts/release.mjs check | publish");
 }
 
 const packages = packageDirectories.map(readPackage);
@@ -44,7 +43,7 @@ if (typeof version !== "string" || !/^0\.\d+\.\d+-[0-9A-Za-z.-]+$/.test(version)
   throw new Error(`Expected a 0.x prerelease version, received ${String(version)}.`);
 }
 
-verifyReleaseMetadata(packages, allowPrivate);
+verifyReleaseMetadata(packages);
 verifyEmbeddedVersions(version);
 
 run("pnpm", ["check"], repositoryRoot);
@@ -117,25 +116,19 @@ function readPackage(directory) {
   return { directory, packageDirectory, manifest };
 }
 
-function verifyReleaseMetadata(packageEntries, allowPrivatePackages) {
+function verifyReleaseMetadata(packageEntries) {
   const rootLicense = join(repositoryRoot, "LICENSE");
-  if (!allowPrivatePackages && !existsSync(rootLicense)) {
+  if (!existsSync(rootLicense)) {
     throw new Error("A repository LICENSE is required before publishing.");
   }
 
-  const expectedLicense = existsSync(rootLicense) ? readFileSync(rootLicense, "utf8") : undefined;
+  const expectedLicense = readFileSync(rootLicense, "utf8");
   for (const { directory, packageDirectory, manifest } of packageEntries) {
-    if (allowPrivatePackages) {
-      if (manifest.private !== true || manifest.license !== "UNLICENSED") {
-        throw new Error(`${manifest.name} is not in the expected private preparation state.`);
-      }
-    } else {
-      if (manifest.private === true) {
-        throw new Error(`${manifest.name} is still private.`);
-      }
-      if (!manifest.license || manifest.license === "UNLICENSED") {
-        throw new Error(`${manifest.name} has no distributable license.`);
-      }
+    if (manifest.private === true) {
+      throw new Error(`${manifest.name} is still private.`);
+    }
+    if (!manifest.license || manifest.license === "UNLICENSED") {
+      throw new Error(`${manifest.name} has no distributable license.`);
     }
     if (manifest.publishConfig?.access !== "public") {
       throw new Error(`${manifest.name} must publish with public access.`);
@@ -148,10 +141,10 @@ function verifyReleaseMetadata(packageEntries, allowPrivatePackages) {
     }
 
     const packageLicense = join(packageDirectory, "LICENSE");
-    if (!allowPrivatePackages && !existsSync(packageLicense)) {
+    if (!existsSync(packageLicense)) {
       throw new Error(`${manifest.name} is missing packages/${directory}/LICENSE.`);
     }
-    if (!allowPrivatePackages && readFileSync(packageLicense, "utf8") !== expectedLicense) {
+    if (readFileSync(packageLicense, "utf8") !== expectedLicense) {
       throw new Error(`${manifest.name} does not contain the canonical repository license.`);
     }
   }

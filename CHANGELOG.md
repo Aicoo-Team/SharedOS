@@ -195,6 +195,15 @@ each entry calls out what a host has to update.
   whole package set in one command, refusing to act unless every package has
   published that version.
 
+### Removed
+
+- `release:check:private`, and the `--allow-private` flag on
+  `scripts/release.mjs` behind it. The flag required every package to be
+  `private: true` under an `UNLICENSED` license, the preparation state the
+  packages left before `0.1.0-alpha.0` was published; with all eleven public
+  and Apache-2.0, the command could only throw. `release:check` is the one
+  release check.
+
 ### Fixed
 
 - Catalogue comparability is compared per case and per column instead of pooled

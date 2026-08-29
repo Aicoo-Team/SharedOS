@@ -32,7 +32,6 @@
     "pack:check": "node scripts/pack-preview.mjs --check",
     "pack:lint": "pnpm build && node scripts/package-lint.mjs",
     "release:check": "node scripts/release.mjs check",
-    "release:check:private": "node scripts/release.mjs check --allow-private",
     "release:publish": "node scripts/release.mjs publish",
     "release:promote-latest": "node scripts/promote-latest.mjs",
     "test:watch": "vitest",
