@@ -1,6 +1,6 @@
 # npm release runbook
 
-SharedOS publishes eight public ESM packages at one synchronized prerelease
+SharedOS publishes eleven public ESM packages at one synchronized prerelease
 version. `@aicoo/sharedos` is the recommended entry point; the other packages let
 hosts choose a smaller dependency surface. Prereleases use the `next` dist-tag,
 so an alpha never becomes `latest` accidentally.
@@ -19,9 +19,18 @@ deprecate the old one with a migration message, and support an overlap window.
 5. `@aicoo/sharedos-client`
 6. `@aicoo/sharedos-http`
 7. `@aicoo/sharedos-testkit`
-8. `@aicoo/sharedos`
+8. `@aicoo/sharedos-mcp`
+9. `@aicoo/sharedos-adapters`
+10. `@aicoo/sharedos-conformance`
+11. `@aicoo/sharedos`
 
-The release script publishes in dependency order. If a run stops after only
+The order is the one in `scripts/package-set.mjs`, and it is a dependency
+order: every package appears after everything it depends on, so a run that
+stops part-way never leaves a package on the registry ahead of one it needs.
+`pnpm release:check` refuses to run against an order that breaks this, and
+`pnpm test:release` checks it against the package manifests.
+
+The release script publishes in that order. If a run stops after only
 some packages reach npm, rerunning it verifies the registry archive's npm
 integrity, skips packages whose canonical packed contents match, and resumes the
 missing packages. It refuses to reuse a version when the contents differ.
@@ -81,7 +90,7 @@ SHAREDOS_RELEASE_CONFIRM=v0.1.0-alpha.0 pnpm release:publish
 and that commit to be contained in `origin/main`. It always publishes with
 public access to the official npm registry under the `next` dist-tag.
 
-After all eight packages exist, configure `release.yml` as their trusted
+After all eleven packages exist, configure `release.yml` as their trusted
 publisher on npm and then push the tag:
 
 ```bash

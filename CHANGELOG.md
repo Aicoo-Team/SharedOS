@@ -205,6 +205,12 @@ each entry calls out what a host has to update.
   among them — were left at `0.1.0-alpha.0` while their packages moved. They
   name the build that produced an execution record, so a stale one misattributes
   evidence. `release:check` guarded two of the seven and now guards all of them.
+- The publish order listed `@aicoo/sharedos-conformance` ahead of
+  `@aicoo/sharedos-mcp` and `@aicoo/sharedos-adapters`, both of which it depends
+  on, so a run that stopped part-way could leave it on the registry with
+  unpublished dependencies. `scripts/package-set.mjs` is now in dependency
+  order, `release:check` refuses an order that is not, and `test:release`
+  checks the order against the manifests.
 - The client example in the host integration guide passed a `token` option that
   `SharedOSClientOptions` has never had. It is `headers`, which accepts a value
   or an async function.

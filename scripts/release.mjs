@@ -4,7 +4,12 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { packageContentDigest, registryPackageContentDigest } from "./package-archive.mjs";
-import { npmRegistry, packageDirectories, prereleaseTag } from "./package-set.mjs";
+import {
+  npmRegistry,
+  packageDirectories,
+  prereleaseTag,
+  publishOrderViolations,
+} from "./package-set.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -21,6 +26,11 @@ if (!new Set(["check", "publish"]).has(command) || (allowPrivate && isPublish)) 
 }
 
 const packages = packageDirectories.map(readPackage);
+const orderViolations = publishOrderViolations(packages.map(({ manifest }) => manifest));
+if (orderViolations.length > 0) {
+  throw new Error(`The package set is not in publish order:\n  ${orderViolations.join("\n  ")}`);
+}
+
 const versions = new Set(packages.map(({ manifest }) => manifest.version));
 
 if (versions.size !== 1) {
