@@ -8,6 +8,7 @@ import type {
   ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
+  ESCALATION_TOOL_NAME,
   escalationRequest,
   type AgentTurnDecision,
   type AgentTurnDriver,
@@ -191,6 +192,8 @@ class ModelSession implements AgentTurnSession {
   readonly #pending: ModelToolCall[] = [];
   readonly #maxMalformedCalls: number;
   readonly #declareStep: ModelDriverOptions["declareStep"];
+  /** Whether this turn's catalogue offers the escalate affordance at all. */
+  readonly #offered: boolean;
   #servedModel: string | undefined;
   /** Why the last reply ended, in the provider's words, once one has. */
   #finishReason: string | undefined;
@@ -217,6 +220,7 @@ class ModelSession implements AgentTurnSession {
     this.#messages = [{ role: "user", content: prompt }];
     this.#maxMalformedCalls = options.maxMalformedCalls;
     this.#declareStep = options.declareStep;
+    this.#offered = request.tools.some((tool) => tool.name === ESCALATION_TOOL_NAME);
   }
 
   async next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision> {
@@ -301,6 +305,14 @@ class ModelSession implements AgentTurnSession {
    * running the calls the model asked for after it would execute work on the
    * far side of a decision nobody has made yet.
    *
+   * "Off the catalogue" is load-bearing. Ending the turn here skips the
+   * envelope, and with it the envelope's check that the tool was published to
+   * this agent, so the catalogue is read first: a model that emits the name
+   * without having been offered it -- a hallucinated tool, or one remembered
+   * from another turn -- has its call passed through to be refused
+   * `tool_unavailable` like any other invented name. Without that, any model
+   * could reach the owner on the strength of a string no host granted.
+   *
    * Arguments that do not parse are not sent as `{}`. An empty object is a call
    * the model never made, and a tool whose schema accepts one -- every parameter
    * optional -- would run it: the record would then show a call the model chose,
@@ -323,7 +335,9 @@ class ModelSession implements AgentTurnSession {
       }
 
       const parsed = parseToolArguments(next.arguments);
-      const escalation = escalationRequest(this.#codec.fromWire(next.name), parsed);
+      const escalation = this.#offered
+        ? escalationRequest(this.#codec.fromWire(next.name), parsed)
+        : undefined;
       if (escalation !== undefined) {
         this.#pending.length = 0;
         return { type: "escalate", reason: escalation, metadata: this.#metadata() };

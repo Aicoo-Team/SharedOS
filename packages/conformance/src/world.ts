@@ -1729,11 +1729,12 @@ export function createConformanceWorld(
 /**
  * The escalation affordance, registered so it is catalogued -- and never invoked.
  *
- * A driver recognises the name and returns an escalate decision instead of a
- * tool call, so the kernel is never asked. Registering it anyway is what makes
- * it a real, permission-filtered entry in the catalogue rather than something a
- * driver invents locally: the agent sees it because it holds
- * {@link ESCALATION_GRANT}, and an agent without that grant would not.
+ * A driver whose catalogue offers it recognises the name and returns an
+ * escalate decision instead of a tool call, so the kernel is never asked.
+ * Registering it anyway is what makes it a real, permission-filtered entry in
+ * the catalogue rather than something a driver invents locally: the agent sees
+ * it because it holds {@link ESCALATION_GRANT}, and an agent without that grant
+ * neither sees it nor can end a turn on its name.
  *
  * The handler fails rather than succeeding, because reaching it means a driver
  * forwarded the call instead of terminating on it. A stub that returned success

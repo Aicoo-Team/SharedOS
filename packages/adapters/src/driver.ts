@@ -6,6 +6,7 @@ import type {
   ToolCall,
 } from "@aicoo/sharedos-contracts";
 import {
+  ESCALATION_TOOL_NAME,
   escalationRequest,
   type AgentTurnDecision,
   type AgentTurnDriver,
@@ -109,6 +110,8 @@ class HarnessSession implements AgentTurnSession {
   readonly #pending: HarnessStep[] = [];
   readonly #messages: string[] = [];
   readonly #declareStep: HarnessDriverOptions["declareStep"];
+  /** Whether this turn's catalogue offers the escalate affordance at all. */
+  readonly #offered: boolean;
   /** Calls released to the loop this turn, which is what a step policy indexes. */
   #released = 0;
 
@@ -124,6 +127,7 @@ class HarnessSession implements AgentTurnSession {
     this.#request = request;
     this.#maxIgnoredFrames = maxIgnoredFrames;
     this.#declareStep = options.declareStep;
+    this.#offered = request.tools.some((tool) => tool.name === ESCALATION_TOOL_NAME);
   }
 
   async next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision> {
@@ -174,8 +178,15 @@ class HarnessSession implements AgentTurnSession {
       // `ToolCall`. It is published in the catalogue like any other tool and is
       // permission-filtered like one, but there is nothing for the kernel to
       // authorize: the harness is saying the turn is over and a human has to
-      // decide. Recognised by name, so escalation is a tool the harness chose.
-      const escalation = escalationRequest(step.tool, step.arguments);
+      // decide. Recognised by name, so escalation is a tool the harness chose --
+      // and only when this turn's catalogue offers it. Ending the turn here
+      // skips the envelope, and with it the envelope's check that the tool was
+      // published to this agent, so the catalogue is read first: a harness that
+      // names the affordance without holding it has its call passed through to
+      // be refused `tool_unavailable` like any other unpublished name. Anything
+      // less would hand every harness a channel to the owner that no host
+      // granted, on the strength of a string.
+      const escalation = this.#offered ? escalationRequest(step.tool, step.arguments) : undefined;
       if (escalation !== undefined) {
         return { type: "escalate", reason: escalation };
       }

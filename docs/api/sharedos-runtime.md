@@ -1152,7 +1152,7 @@ The resource an escalation grant is written over.
 
 > `const` **ESCALATION\_TOOL\_DEFINITION**: [`ToolDefinition`](sharedos-contracts.md#tooldefinition)
 
-Defined in: [packages/runtime/src/escalation.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L30)
+Defined in: [packages/runtime/src/escalation.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L37)
 
 The affordance a driver offers so escalation can be chosen rather than inferred.
 
@@ -1167,12 +1167,19 @@ So it is published as a tool. It is permission-filtered like every other tool,
 which is the point -- escalation is an affordance a host grants, and an agent
 with no grant over it does not see it in the catalogue at all.
 
-It is nonetheless never invoked. A driver recognises the name and returns an
-escalate decision instead of a tool call, so nothing reaches the kernel; see
-[escalationRequest](#escalationrequest). The kernel-side handler a host registers exists to
-put the tool in the catalogue and to fail loudly if some driver forwards it
-anyway, because a call that quietly succeeded would record an escalation the
-envelope never terminated on.
+It is nonetheless never invoked. A driver whose turn was offered the tool
+recognises the name and returns an escalate decision instead of a tool call,
+so nothing reaches the kernel; see [escalationRequest](#escalationrequest). The kernel-side
+handler a host registers exists to put the tool in the catalogue and to fail
+loudly if some driver forwards it anyway, because a call that quietly
+succeeded would record an escalation the envelope never terminated on.
+
+The filtering is what gates the affordance, and a driver has to honour it
+itself: ending a turn on the name skips the envelope, and with it the
+envelope's check that the tool was published to this agent. So every driver
+that recognises the name reads its turn's catalogue first, and a name the
+catalogue does not hold is passed through to be refused `tool_unavailable`
+like any other unpublished tool.
 
 ---
 
@@ -1214,7 +1221,7 @@ Kept equal to the synchronized package version by the release gate.
 
 > **escalationArguments**(`reason`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/runtime/src/escalation.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L81)
+Defined in: [packages/runtime/src/escalation.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L93)
 
 The arguments an escalation is requested with, for a driver writing the call.
 
@@ -1234,7 +1241,7 @@ The arguments an escalation is requested with, for a driver writing the call.
 
 > **escalationReason**(`value`): `string` \| `undefined`
 
-Defined in: [packages/runtime/src/escalation.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L92)
+Defined in: [packages/runtime/src/escalation.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L104)
 
 A reason string bounded exactly as `RuntimeTurnOutcome`'s is.
 
@@ -1258,7 +1265,7 @@ loosened, so a decision that parses here still parses as an outcome.
 
 > **escalationRequest**(`tool`, `arguments_`): `string` \| `undefined`
 
-Defined in: [packages/runtime/src/escalation.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L71)
+Defined in: [packages/runtime/src/escalation.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L83)
 
 Read an escalation out of a call a driver is about to make, if that is what it is.
 
@@ -1266,6 +1273,11 @@ Returns the reason when the call names the affordance and carries a usable
 one, and `undefined` for anything else -- which a driver passes on unchanged,
 so a tool that merely resembles this one is still re-authorized by the kernel
 like any other.
+
+This recognises the name and nothing else. Whether the turn was offered the
+tool is the caller's check to make, from its own `RuntimeTurnRequest.tools`,
+before asking; a caller that honours the name unconditionally has given
+every agent the affordance regardless of grant.
 
 A call that names the affordance with unreadable arguments still escalates,
 under a reason saying so. The alternative is to forward it to a kernel that

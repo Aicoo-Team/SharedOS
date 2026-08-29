@@ -7,7 +7,14 @@ import type {
   ToolResult,
 } from "@aicoo/sharedos-contracts";
 import { agentExecutionCapability } from "@aicoo/sharedos-core";
-import { SharedOSExecutor, StandardRuntime } from "@aicoo/sharedos-runtime";
+import {
+  ESCALATION_ACTION,
+  ESCALATION_RESOURCE_PATH,
+  ESCALATION_TOOL_DEFINITION,
+  ESCALATION_TOOL_NAMESPACE,
+  SharedOSExecutor,
+  StandardRuntime,
+} from "@aicoo/sharedos-runtime";
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
 
 import {
@@ -60,13 +67,32 @@ const READ_TOOL: ToolDefinition = {
   annotations: { readOnly: true },
 };
 
-function grants() {
+function grants(escalation = false) {
   return [
     createTestGrant({
       id: "grant-turn",
       capabilities: [agentExecutionCapability(AGENT, OWNER)],
       purposes: ["test"],
     }),
+    ...(escalation
+      ? [
+          createTestGrant({
+            id: "grant-escalation",
+            capabilities: [
+              {
+                resource: {
+                  namespace: ESCALATION_TOOL_NAMESPACE,
+                  path: [...ESCALATION_RESOURCE_PATH],
+                  owner: OWNER,
+                },
+                actions: [ESCALATION_ACTION],
+                scope: "descendants",
+              },
+            ],
+            purposes: ["test"],
+          }),
+        ]
+      : []),
     createTestGrant({
       id: "grant-files",
       capabilities: [
@@ -81,14 +107,14 @@ function grants() {
   ];
 }
 
-function request(): ExecutionRequest {
+function request(escalation = false): ExecutionRequest {
   return {
     version: "1",
     executionId: "execution-1",
     agent: AGENT,
     context: {
       namespaceId: "namespace-1",
-      enabledToolNamespaces: ["files"],
+      enabledToolNamespaces: escalation ? ["files", ESCALATION_TOOL_NAMESPACE] : ["files"],
       actor: AGENT,
       authority: OWNER,
       owner: OWNER,
@@ -106,12 +132,21 @@ function request(): ExecutionRequest {
       traceId: "trace-1",
       createdAt: NOW,
     },
-    tools: [READ_TOOL],
+    tools: escalation ? [READ_TOOL, ESCALATION_TOOL_DEFINITION] : [READ_TOOL],
   };
 }
 
-async function runWith(driver: ConstructorParameters<typeof StandardRuntime>[0]) {
-  const { kernel, audit } = createTestKernel({ grants: grants() });
+/**
+ * Run one turn. With `escalation`, the affordance is registered, granted, and
+ * its namespace enabled; without it the tool is still registered in the world,
+ * so what an ungranted turn lacks is exactly the grant.
+ */
+async function runWith(
+  driver: ConstructorParameters<typeof StandardRuntime>[0],
+  options: { readonly escalation?: boolean } = {},
+) {
+  const escalation = options.escalation === true;
+  const { kernel, audit } = createTestKernel({ grants: grants(escalation) });
   kernel.registerTool({
     definition: READ_TOOL,
     parseArguments: (arguments_) => arguments_,
@@ -123,9 +158,20 @@ async function runWith(driver: ConstructorParameters<typeof StandardRuntime>[0])
       completedAt: context.now,
     }),
   });
+  kernel.registerTool({
+    definition: ESCALATION_TOOL_DEFINITION,
+    parseArguments: (arguments_) => arguments_,
+    invoke: async (context, call) => ({
+      callId: call.id,
+      tool: call.tool,
+      status: "failed",
+      error: { code: "escalation_not_terminated", message: "should never be invoked" },
+      completedAt: context.now,
+    }),
+  });
   const result = await new SharedOSExecutor(kernel, new StandardRuntime(driver), {
     clock: () => NOW,
-  }).execute(request());
+  }).execute(request(escalation));
   return { result, audit };
 }
 
@@ -394,6 +440,59 @@ describe("a harness driven as a SharedOS turn", () => {
     const { result } = await runWith(createClaudeCodeDriver({ transport }));
 
     expect(result.status).toBe("failed");
+  });
+});
+
+describe("a harness asking for a human", () => {
+  const ask = (reason: string): HarnessTranscript => ({
+    batches: [
+      [
+        {
+          type: "function_call",
+          call_id: "call-1",
+          name: "sharedos.escalate",
+          arguments: JSON.stringify({ reason }),
+        },
+      ],
+      [{ type: "response.completed", response: { output_text: "asked" } }],
+    ],
+  });
+
+  it("ends the turn as escalated when the catalogue offers the affordance", async () => {
+    const transport = new TranscriptTransport(ask("this needs an owner's decision"));
+    const { result, audit } = await runWith(createCodexDriver({ transport }), {
+      escalation: true,
+    });
+
+    expect(result.status).toBe("escalated");
+    expect(result.status === "escalated" ? result.escalation.reason : undefined).toBe(
+      "this needs an owner's decision",
+    );
+    // Terminated on, never forwarded: no call reached the kernel and the
+    // handler that fails on sight was not run.
+    expect(result.events.filter(({ type }) => type === "tool.requested")).toHaveLength(0);
+    expect(audit.events.some(({ type }) => type === "escalation.requested")).toBe(true);
+    expect(transport.written).toHaveLength(0);
+  });
+
+  it("does not honour the affordance for a turn that was never granted it", async () => {
+    const transport = new TranscriptTransport(ask("let me out"));
+    const { result, audit } = await runWith(createCodexDriver({ transport }));
+
+    // Ending the turn on the name would skip the envelope's catalogue check,
+    // so the driver reads the catalogue first. Without the grant the call is
+    // passed through and refused like any other unpublished name, the harness
+    // is told so, and the turn ends the way the harness ended it.
+    expect(result.status).toBe("succeeded");
+    const completed = result.events.filter(({ type }) => type === "tool.completed");
+    expect(completed[0]?.data).toMatchObject({
+      tool: "sharedos.escalate",
+      status: "denied",
+      code: "tool_unavailable",
+    });
+    expect(audit.events.some(({ type }) => type === "escalation.requested")).toBe(false);
+    const written = transport.written[0] as { output: string };
+    expect(JSON.parse(written.output)).toMatchObject({ status: "denied" });
   });
 });
 

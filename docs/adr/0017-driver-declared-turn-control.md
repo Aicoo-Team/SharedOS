@@ -48,6 +48,17 @@ registered handler exists to put the tool in the catalogue and to fail loudly --
 that quietly succeeded would record an escalation the envelope never terminated
 on.
 
+**The catalogue gates the name.** Ending a turn on the name skips the envelope,
+and with it the envelope's check that the tool was published to this agent. So
+a driver honours the name only when its turn's catalogue holds
+`sharedos.escalate`, read from the same `RuntimeTurnRequest.tools` it offered
+the seat's occupant; a call naming the affordance on a turn that was never
+granted it is passed through and refused `tool_unavailable` like any other
+unpublished tool. Without this, a model that emitted the fixed name -- guessed,
+or remembered from another turn -- would end the turn `escalated` and deliver
+its text to the owner with no grant behind it, which is the alternative rejected
+below wearing a different hat.
+
 **It may declare the step it is calling at.** `AgentTurnDecision.tool_call`
 carries an optional `step`, and `StandardRuntime` uses `decision.step ?? step`.
 A driver that says nothing is bounded exactly as before. One that names a step

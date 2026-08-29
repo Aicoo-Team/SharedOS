@@ -156,9 +156,11 @@ each entry calls out what a host has to update.
   gains an escalate variant, and the ask itself is published as
   `sharedos.escalate`: catalogued and permission-filtered like any other tool,
   invisible to an agent holding no grant over it, and never invoked -- a driver
-  recognises the name and ends the turn on it. Asking for a human is an
-  affordance a host grants, so a host that publishes no escalation grant has
-  agents that cannot ask. See ADR 0017.
+  whose turn's catalogue offers it recognises the name and ends the turn on it,
+  and a call naming it on a turn that was never granted it is passed through to
+  be refused `tool_unavailable`. Asking for a human is an affordance a host
+  grants, so a host that publishes no escalation grant has agents that cannot
+  ask. See ADR 0017.
 - An optional `step` on `AgentTurnDecision.tool_call`. A driver that says
   nothing is bounded exactly as before; one that names a step is refused for it
   if the envelope disagrees, because declaring a step is a claim and not a
