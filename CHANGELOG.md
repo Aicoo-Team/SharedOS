@@ -186,8 +186,17 @@ each entry calls out what a host has to update.
   code and the PKCE verifier the server generated, which is then exchanged at
   the ordinary token endpoint. `SubscriptionOAuthProfile` gains `issuerUrl`,
   from which every path is derived, and `codeExchangeEncoding`, because the same
-  endpoint takes a refresh as JSON and a code exchange as a form. See ADR 0020,
-  which amends ADR 0019's "SharedOS runs no authorization flow".
+  endpoint takes a refresh as JSON and a code exchange as a form.
+  A login can also be ended: `revokeSubscriptionLogin` hands the refresh token
+  back at the provider (the access token only when there is no refresh token),
+  `forgetCodexLogin` removes the stored session while leaving any API key in the
+  same file alone, and `logoutCodexSubscription` does the first and then the
+  second -- that order, so a failed revocation leaves the login intact and
+  retryable rather than leaving a live session nothing can name.
+  `pnpm login:subscription --logout` is the operator surface, and
+  `--logout --local` forgets without telling the provider, named for what it
+  does. See ADR 0020, which amends ADR 0019's "SharedOS runs no authorization
+  flow".
 - **The model seat speaks a second wire shape.** `OpenAiResponsesModelClient`
   is OpenAI's Responses API, which is what a ChatGPT subscription's endpoint
   speaks and what `OpenAiCompatibleModelClient` could not reach. Both extend

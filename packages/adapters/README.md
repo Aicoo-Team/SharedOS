@@ -122,7 +122,7 @@ const runtime = new ModelRuntime(
 );
 ```
 
-### Signing in without the vendor's CLI
+### Signing in and out without the vendor's CLI
 
 A login can be read, or obtained. Reading one is
 `createCodexSubscriptionCredential`, above: whatever `codex login` left behind.
@@ -158,6 +158,25 @@ an authorization code plus the PKCE verifier the _server_ generated, which is
 then exchanged at the ordinary token endpoint. The flow here is written to the
 vendor's own implementation, because for this grant that is the specification
 (ADR 0020).
+
+Signing out is `pnpm login:subscription --logout`, or
+`logoutCodexSubscription` in code. It tells the provider first and deletes the
+stored session second, and that order is the point: deleting a login forgets it
+here, it does not stop it working, and the refresh token is what keeps a
+subscription session alive anywhere a copy of it survives — a backup, a
+container image, a shell history.
+
+| Call                      | What it ends                                                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `revokeSubscriptionLogin` | The session, at the provider. Hands back the refresh token, or the access token when there is no refresh token |
+| `forgetCodexLogin`        | The stored copy, and only the session — an API key in the same file is left alone                              |
+| `logoutCodexSubscription` | Both, in that order                                                                                            |
+
+A failed revocation refuses to forget, so the log-out stays retryable rather
+than leaving a live session that this machine can no longer name.
+`--logout --local` is the escape hatch for a machine being decommissioned or an
+endpoint that is down; it is named for what it does, because calling a local
+delete a log-out is the mistake this whole path exists to avoid.
 
 SharedOS still holds no client secret, never sees a password — the provider's
 page does — opens no browser, and starts no listener. Renewed sessions are

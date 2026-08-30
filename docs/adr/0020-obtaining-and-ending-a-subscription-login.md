@@ -1,4 +1,4 @@
-# ADR 0020: SharedOS may obtain a subscription login, by device code
+# ADR 0020: SharedOS may obtain a subscription login, and end it
 
 - Status: Accepted
 - Date: 2026-08-30
@@ -65,6 +65,28 @@ JSON and a code exchange as `application/x-www-form-urlencoded`, which is what
 the vendor's client does. Assuming the two matched would send one of them in a
 shape no client has ever tested against that server.
 
+**A login can be ended, and ending it means telling the provider.**
+`revokeSubscriptionLogin` hands the refresh token back at the provider's
+revocation endpoint -- the access token only if there is no refresh token, since
+revoking a refresh token ends the session and revoking an access token ends one
+token. `forgetCodexLogin` removes the stored session and nothing else in the
+file, because that file can also hold an API key a person did not ask to lose.
+`logoutCodexSubscription` does the first and then the second, and
+`pnpm login:subscription --logout` is the operator surface.
+
+The order is the decision. Revoking first means a failure leaves the login
+intact and the log-out retryable; forgetting first would leave a live session
+that this machine can no longer name, let alone revoke. So a failed revocation
+refuses to forget, and `--logout --local` is the separate, explicitly-named
+escape hatch for a machine being decommissioned or an endpoint that is down --
+named `--local` rather than `--force` because what it does is forget, and
+calling that a log-out is the mistake the whole path exists to avoid.
+
+The revocation endpoint is declared on the profile rather than derived from the
+token endpoint. Revocation is the one call whose absence is silent -- a login
+nobody revoked simply keeps working -- so a guessed path would let a failed
+log-out look like a completed one.
+
 **What SharedOS still never does.** It holds no client secret -- the client is
 public, and PKCE is what makes that safe. It never sees a password: the
 provider's own page does. It opens no browser and starts no listener, because a
@@ -91,8 +113,14 @@ a setting and someone filing a bug.
   CLI. `pnpm login:subscription`, a code typed on a phone, and
   `SHAREDOS_MODEL_AUTH=codex-subscription` is the whole path.
 - SharedOS now writes the vendor's login file rather than only reading it. It
-  already did on renewal (ADR 0019); this makes it the file's first author too,
-  and the same atomic write and `0600` mode apply.
+  already did on renewal (ADR 0019); this makes it the file's first author and
+  the thing that removes its session, under the same atomic write and `0600`
+  mode.
+- A host that ends a login gets to know which half succeeded.
+  `SubscriptionLogout` reports what was revoked and whether anything was
+  forgotten, and carries the failure when `force` forgot a login the provider
+  was never told about. A log-out that half worked should not be reported as one
+  that worked.
 - One more thing can go stale when the vendor changes: these endpoints are not a
   published contract, and a client written to an implementation follows that
   implementation. The endpoints are named in one profile and one module, and a

@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   ModelCredentialError,
   OPENAI_SUBSCRIPTION_PROFILE,
+  postJson,
   requestTokenGrant,
   type SubscriptionOAuthProfile,
   type SubscriptionTokens,
@@ -59,7 +60,6 @@ const DeviceCodeSchema = z.object({
 /** The provider's own ceiling: a user code is dead a quarter of an hour later. */
 const DEFAULT_TIMEOUT_MS = 15 * 60 * 1_000;
 const DEFAULT_INTERVAL_MS = 5_000;
-const REQUEST_TIMEOUT_MS = 30_000;
 
 export interface DeviceAuthorizationOptions extends TokenGrantOptions {
   /** Default {@link OPENAI_SUBSCRIPTION_PROFILE}. */
@@ -105,10 +105,11 @@ export async function requestDeviceAuthorization(
   const issuer = issuerOf(profile);
   const requestedAt = (options.now ?? nowIso)();
 
-  const response = await post(
+  const response = await postJson(
     `${issuer}/api/accounts/deviceauth/usercode`,
     { client_id: profile.clientId },
     options,
+    "the device authorization endpoint",
   );
   if (!response.ok) {
     // A 404 here is not a missing route, it is a refused capability: the
@@ -132,15 +133,16 @@ export async function requestDeviceAuthorization(
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const intervalMs = Math.max(intervalOf(parsed.data.interval), options.minimumIntervalMs ?? 0);
 
+  const expiresAt = instantAfter(requestedAt, timeoutMs);
   return {
     userCode,
     verificationUri: `${issuer}/codex/device`,
-    expiresAt: instantAfter(requestedAt, timeoutMs),
+    expiresAt,
     intervalMs,
     wait: (signal: AbortSignal): Promise<SubscriptionTokens> =>
       wait(
         { deviceAuthId: parsed.data.device_auth_id, userCode, intervalMs },
-        { ...options, profile, issuer, expiresAt: instantAfter(requestedAt, timeoutMs) },
+        { ...options, profile, issuer, expiresAt },
         signal,
       ),
   };
@@ -170,11 +172,27 @@ async function wait(
       throw new ModelCredentialError("the device code expired before the login was authorized");
     }
 
-    const response = await post(
-      `${context.issuer}/api/accounts/deviceauth/token`,
-      { device_auth_id: device.deviceAuthId, user_code: device.userCode },
-      context,
-    );
+    let response: Response;
+    try {
+      response = await postJson(
+        `${context.issuer}/api/accounts/deviceauth/token`,
+        { device_auth_id: device.deviceAuthId, user_code: device.userCode },
+        context,
+        "the device authorization endpoint",
+      );
+    } catch (error) {
+      // A dropped packet is not a failed login. Somebody has already typed the
+      // code by now, and ending their login on one unreachable poll -- of the
+      // dozens this makes over a quarter of an hour -- would be this client
+      // giving up on their behalf. Only a transport failure is retried, which
+      // is the one this can tell apart: it carries no status, because no server
+      // answered. The deadline above is what stops the retrying.
+      if (!(error instanceof ModelCredentialError) || error.status !== undefined) {
+        throw error;
+      }
+      await sleep(device.intervalMs, signal);
+      continue;
+    }
 
     if (response.ok) {
       const parsed = DeviceCodeSchema.safeParse(await response.json().catch(() => undefined));
@@ -239,26 +257,6 @@ async function exchange(
   return grant.tokens;
 }
 
-async function post(
-  url: string,
-  body: Readonly<Record<string, string>>,
-  options: TokenGrantOptions,
-): Promise<Response> {
-  const fetchImplementation = options.fetch ?? globalThis.fetch.bind(globalThis);
-  try {
-    return await fetchImplementation(url, {
-      method: "POST",
-      headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS),
-    });
-  } catch (error) {
-    throw new ModelCredentialError(
-      `the device authorization endpoint could not be reached: ${describe(error)}`,
-    );
-  }
-}
-
 function issuerOf(profile: SubscriptionOAuthProfile): string {
   const issuer = profile.issuerUrl;
   if (issuer === undefined) {
@@ -305,8 +303,4 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
     };
     signal.addEventListener("abort", onAbort, { once: true });
   });
-}
-
-function describe(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

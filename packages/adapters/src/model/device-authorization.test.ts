@@ -196,6 +196,24 @@ describe("waiting for a device login", () => {
     expect(error?.message).not.toContain("SECRET");
   });
 
+  it("keeps polling through a dropped connection, and stops at the deadline", async () => {
+    const fetch = vi
+      .fn<Fetch>()
+      .mockResolvedValueOnce(json(USER_CODE))
+      .mockRejectedValueOnce(new Error("ECONNRESET"))
+      .mockResolvedValueOnce(json(AUTHORIZED))
+      .mockResolvedValueOnce(json(TOKENS));
+    vi.useFakeTimers();
+
+    const login = await begin(fetch);
+    const pending = login.wait(signal());
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    // Somebody has already typed the code by now. Ending their login on one
+    // unreachable poll would be this client giving up on their behalf.
+    expect((await pending).accessToken).toBe("access-1");
+  });
+
   it("refuses an authorization it cannot read", async () => {
     const fetch = vi
       .fn<Fetch>()

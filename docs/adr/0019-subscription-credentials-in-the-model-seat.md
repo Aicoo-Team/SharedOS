@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-08-30
-- Amended by: `docs/adr/0020-obtaining-a-subscription-login.md`, for the
+- Amended by: `docs/adr/0020-obtaining-and-ending-a-subscription-login.md`, for the
   "SharedOS runs no authorization flow" decision
 
 ## Context

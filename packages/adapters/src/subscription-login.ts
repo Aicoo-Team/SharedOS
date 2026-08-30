@@ -5,9 +5,13 @@ import { z } from "zod";
 
 import {
   accountCodeFromIdToken,
+  ModelCredentialError,
   OPENAI_SUBSCRIPTION_PROFILE,
+  revokeSubscriptionLogin,
   SubscriptionOAuthCredential,
+  type RevocationOptions,
   type SubscriptionOAuthCredentialOptions,
+  type SubscriptionRevocation,
   type SubscriptionTokens,
 } from "./model/index.js";
 
@@ -19,6 +23,12 @@ import {
  * performed yet is obtained by device code -- `requestDeviceAuthorization`,
  * host-neutral, in the main entry point -- which needs no browser on this
  * machine and no vendor CLI installed.
+ *
+ * One way out, in two halves that are not interchangeable.
+ * {@link logoutCodexSubscription} tells the provider first and forgets the file
+ * second, because only the first of those ends the session: a login this
+ * machine has deleted is still a working login anywhere a copy of the refresh
+ * token survives.
  *
  * Both end at the same {@link SubscriptionTokens}, so what consumes a login
  * cannot tell which produced it (ADR 0020).
@@ -140,6 +150,90 @@ export async function createCodexSubscriptionCredential(
   });
 }
 
+export interface SubscriptionLogoutOptions extends StoredLoginOptions, RevocationOptions {
+  /**
+   * Forget the login even when the provider could not be told. Default false.
+   *
+   * The default refuses to forget, and it is the safer of the two: a file this
+   * deleted while the revocation failed is a live session with nothing left
+   * pointing at it, which cannot be retried and cannot be audited. Force it for
+   * the case where that is the lesser problem -- a machine being decommissioned,
+   * an endpoint that is down -- and the failure comes back in the result rather
+   * than being swallowed.
+   */
+  readonly force?: boolean;
+}
+
+/** What a log-out actually managed to do. */
+export interface SubscriptionLogout {
+  /** Which token the provider was handed back, or that there was none. */
+  readonly revoked: SubscriptionRevocation;
+  /** Whether a session was removed from the login file. */
+  readonly forgotten: boolean;
+  /** Present when `force` forgot a login the provider was never told about. */
+  readonly failure?: ModelCredentialError;
+}
+
+/**
+ * End a subscription login: at the provider, then here.
+ *
+ * That order is the whole design. Revoking first means a failure leaves the
+ * login intact and the log-out retryable; forgetting first would leave a live
+ * session that this machine can no longer name, let alone revoke.
+ *
+ * A machine with no login to end is not an error. It reports that nothing was
+ * revoked and nothing was forgotten, which is the honest answer and the one a
+ * script can print without pretending something happened.
+ */
+export async function logoutCodexSubscription(
+  options: SubscriptionLogoutOptions = {},
+): Promise<SubscriptionLogout> {
+  const tokens = await readCodexLogin(options);
+  if (tokens === undefined) {
+    return { revoked: "nothing", forgotten: false };
+  }
+
+  let revoked: SubscriptionRevocation = "nothing";
+  let failure: ModelCredentialError | undefined;
+  try {
+    revoked = await revokeSubscriptionLogin(tokens, options);
+  } catch (error) {
+    if (options.force !== true) {
+      throw error;
+    }
+    failure =
+      error instanceof ModelCredentialError
+        ? error
+        : new ModelCredentialError(
+            `the login could not be revoked: ${error instanceof Error ? error.message : String(error)}`,
+          );
+  }
+
+  const forgotten = await forgetCodexLogin(options);
+  return { revoked, forgotten, ...(failure === undefined ? {} : { failure }) };
+}
+
+/**
+ * Remove the stored session, and nothing else in the file.
+ *
+ * The vendor's login file is not only a session: it can hold an API key, which
+ * is a different credential a person did not ask to lose. So the session is
+ * removed and the rest of the file is written back unchanged, rather than the
+ * file being deleted.
+ *
+ * `false` means there was nothing to forget -- no file, or a file with no
+ * session -- and nothing was written.
+ */
+export async function forgetCodexLogin(options: StoredLoginOptions = {}): Promise<boolean> {
+  return rewriteLoginFile(loginPath(options), (existing) => {
+    if (existing["tokens"] === undefined && existing["last_refresh"] === undefined) {
+      return undefined;
+    }
+    const { tokens: _tokens, last_refresh: _lastRefresh, ...rest } = existing;
+    return rest;
+  });
+}
+
 /** Write a login where the vendor's own tools will find it. */
 export async function saveCodexLogin(
   tokens: SubscriptionTokens,
@@ -153,31 +247,50 @@ export async function saveCodexLogin(
 /**
  * Put a renewed session back where the vendor keeps it.
  *
- * Written through a temporary file in the same directory and renamed over the
- * original, because the alternative is a truncated login: a process that dies
- * mid-write would leave the user unable to renew and unable to see why. Every
- * field the file already had is preserved -- this rewrites the session, and the
- * rest of the file is the vendor's business.
+ * Every field the file already had is preserved: this rewrites the session, and
+ * the rest of the file is the vendor's business.
  */
 async function writeCodexLogin(path: string, tokens: SubscriptionTokens): Promise<void> {
-  const existing = ((await readLoginFile(path)) ?? {}) as Record<string, unknown>;
-  const session = (existing["tokens"] ?? {}) as Record<string, unknown>;
-  const updated = {
-    ...existing,
-    tokens: {
-      ...session,
-      access_token: tokens.accessToken,
-      ...(tokens.refreshToken === undefined ? {} : { refresh_token: tokens.refreshToken }),
-      ...(tokens.accountCode === undefined ? {} : { account_id: tokens.accountCode }),
-    },
-    last_refresh: new Date().toISOString(),
-  };
+  await rewriteLoginFile(path, (existing) => {
+    const session = (existing["tokens"] ?? {}) as Record<string, unknown>;
+    return {
+      ...existing,
+      tokens: {
+        ...session,
+        access_token: tokens.accessToken,
+        ...(tokens.refreshToken === undefined ? {} : { refresh_token: tokens.refreshToken }),
+        ...(tokens.accountCode === undefined ? {} : { account_id: tokens.accountCode }),
+      },
+      last_refresh: new Date().toISOString(),
+    };
+  });
+}
+
+/**
+ * Read the login file, change it, and put it back atomically.
+ *
+ * Written through a temporary file in the same directory and renamed over the
+ * original, because the alternative is a truncated login: a process that dies
+ * mid-write would leave the user unable to renew and unable to see why. A
+ * transform that returns `undefined` means there was nothing to do, and nothing
+ * is written -- which is how forgetting a login that was never there avoids
+ * creating a file to hold its absence.
+ */
+async function rewriteLoginFile(
+  path: string,
+  transform: (existing: Record<string, unknown>) => Record<string, unknown> | undefined,
+): Promise<boolean> {
+  const updated = transform(((await readLoginFile(path)) ?? {}) as Record<string, unknown>);
+  if (updated === undefined) {
+    return false;
+  }
   const temporary = join(dirname(path), `.auth.json.${String(process.pid)}.tmp`);
   // 0600 on the temporary file, not on the rename: the file holds a live
   // session from the instant it is written, and widening it for even one
   // syscall is a window nothing here needs to open.
   await writeFile(temporary, `${JSON.stringify(updated, undefined, 2)}\n`, { mode: 0o600 });
   await rename(temporary, path);
+  return true;
 }
 
 async function readLoginFile(path: string): Promise<unknown> {

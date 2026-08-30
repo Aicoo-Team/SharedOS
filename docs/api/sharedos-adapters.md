@@ -132,7 +132,7 @@ const runtime = new ModelRuntime(
 );
 ```
 
-### Signing in without the vendor's CLI
+### Signing in and out without the vendor's CLI
 
 A login can be read, or obtained. Reading one is
 `createCodexSubscriptionCredential`, above: whatever `codex login` left behind.
@@ -168,6 +168,25 @@ an authorization code plus the PKCE verifier the _server_ generated, which is
 then exchanged at the ordinary token endpoint. The flow here is written to the
 vendor's own implementation, because for this grant that is the specification
 (ADR 0020).
+
+Signing out is `pnpm login:subscription --logout`, or
+`logoutCodexSubscription` in code. It tells the provider first and deletes the
+stored session second, and that order is the point: deleting a login forgets it
+here, it does not stop it working, and the refresh token is what keeps a
+subscription session alive anywhere a copy of it survives — a backup, a
+container image, a shell history.
+
+| Call                      | What it ends                                                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `revokeSubscriptionLogin` | The session, at the provider. Hands back the refresh token, or the access token when there is no refresh token |
+| `forgetCodexLogin`        | The stored copy, and only the session — an API key in the same file is left alone                              |
+| `logoutCodexSubscription` | Both, in that order                                                                                            |
+
+A failed revocation refuses to forget, so the log-out stays retryable rather
+than leaving a live session that this machine can no longer name.
+`--logout --local` is the escape hatch for a machine being decommissioned or an
+endpoint that is down; it is named for what it does, because calling a local
+delete a log-out is the mistake this whole path exists to avoid.
 
 SharedOS still holds no client secret, never sees a password — the provider's
 page does — opens no browser, and starts no listener. Renewed sessions are
@@ -1301,7 +1320,7 @@ Defined in: [packages/adapters/src/model/client.ts:245](https://github.com/Aicoo
 
 ### SubscriptionOAuthCredential
 
-Defined in: [packages/adapters/src/model/credential.ts:368](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L368)
+Defined in: [packages/adapters/src/model/credential.ts:474](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L474)
 
 A subscription in the model seat.
 
@@ -1327,7 +1346,7 @@ that says nothing about SharedOS.
 
 > **new SubscriptionOAuthCredential**(`options`): [`SubscriptionOAuthCredential`](#subscriptionoauthcredential)
 
-Defined in: [packages/adapters/src/model/credential.ts:388](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L388)
+Defined in: [packages/adapters/src/model/credential.ts:494](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L494)
 
 ###### Parameters
 
@@ -1343,7 +1362,7 @@ Defined in: [packages/adapters/src/model/credential.ts:388](https://github.com/A
 
 | Property                              | Modifier   | Type                   | Default value          | Description                                                              | Defined in                                                                                                                                       |
 | ------------------------------------- | ---------- | ---------------------- | ---------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-scheme"></a> `scheme` | `readonly` | `"subscription_oauth"` | `"subscription_oauth"` | How a call authenticates, in one word, for the record. Never the secret. | [packages/adapters/src/model/credential.ts:369](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L369) |
+| <a id="property-scheme"></a> `scheme` | `readonly` | `"subscription_oauth"` | `"subscription_oauth"` | How a call authenticates, in one word, for the record. Never the secret. | [packages/adapters/src/model/credential.ts:475](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L475) |
 
 #### Accessors
 
@@ -1353,7 +1372,7 @@ Defined in: [packages/adapters/src/model/credential.ts:388](https://github.com/A
 
 > **get** **tokens**(): [`SubscriptionTokens`](#subscriptiontokens)
 
-Defined in: [packages/adapters/src/model/credential.ts:403](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L403)
+Defined in: [packages/adapters/src/model/credential.ts:509](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L509)
 
 The tokens as they now stand, for a host persisting them itself.
 
@@ -1367,7 +1386,7 @@ The tokens as they now stand, for a host persisting them itself.
 
 > **describe**(): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/adapters/src/model/credential.ts:431](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L431)
+Defined in: [packages/adapters/src/model/credential.ts:537](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L537)
 
 What may be recorded about how this call authenticated.
 
@@ -1389,7 +1408,7 @@ weaker claim.
 
 > **headers**(`signal`): `Promise`\<`Readonly`\<`Record`\<`string`, `string`>>>\>\>\>
 
-Defined in: [packages/adapters/src/model/credential.ts:407](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L407)
+Defined in: [packages/adapters/src/model/credential.ts:513](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L513)
 
 The headers one call presents, resolved at the instant of that call.
 
@@ -1418,7 +1437,7 @@ renewed here, and a window that has not opened yet is never widened.
 
 > **renew**(`signal`): `Promise`\<`boolean`>\>
 
-Defined in: [packages/adapters/src/model/credential.ts:425](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L425)
+Defined in: [packages/adapters/src/model/credential.ts:531](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L531)
 
 One chance to renew, after the provider refused the call as
 unauthenticated.
@@ -1655,7 +1674,7 @@ Defined in: [packages/adapters/src/transcript.ts:39](https://github.com/Aicoo-Te
 
 ### DeviceAuthorization
 
-Defined in: packages/adapters/src/model/device-authorization.ts:80
+Defined in: [packages/adapters/src/model/device-authorization.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/device-authorization.ts#L80)
 
 A login a person has been asked to complete somewhere else.
 
@@ -1665,12 +1684,12 @@ print, and where that text goes is not a library's decision.
 
 #### Properties
 
-| Property                                                | Modifier   | Type     | Description                                       | Defined in                                             |
-| ------------------------------------------------------- | ---------- | -------- | ------------------------------------------------- | ------------------------------------------------------ |
-| <a id="property-expiresat"></a> `expiresAt`             | `readonly` | `string` | RFC 3339. After this they start again.            | packages/adapters/src/model/device-authorization.ts:86 |
-| <a id="property-intervalms"></a> `intervalMs`           | `readonly` | `number` | How often this asks, as the provider asked it to. | packages/adapters/src/model/device-authorization.ts:88 |
-| <a id="property-usercode"></a> `userCode`               | `readonly` | `string` | Short, and theirs to type.                        | packages/adapters/src/model/device-authorization.ts:82 |
-| <a id="property-verificationuri"></a> `verificationUri` | `readonly` | `string` | The page they type it into.                       | packages/adapters/src/model/device-authorization.ts:84 |
+| Property                                                | Modifier   | Type     | Description                                       | Defined in                                                                                                                                                         |
+| ------------------------------------------------------- | ---------- | -------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-expiresat"></a> `expiresAt`             | `readonly` | `string` | RFC 3339. After this they start again.            | [packages/adapters/src/model/device-authorization.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/device-authorization.ts#L86) |
+| <a id="property-intervalms"></a> `intervalMs`           | `readonly` | `number` | How often this asks, as the provider asked it to. | [packages/adapters/src/model/device-authorization.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/device-authorization.ts#L88) |
+| <a id="property-usercode"></a> `userCode`               | `readonly` | `string` | Short, and theirs to type.                        | [packages/adapters/src/model/device-authorization.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/device-authorization.ts#L82) |
+| <a id="property-verificationuri"></a> `verificationUri` | `readonly` | `string` | The page they type it into.                       | [packages/adapters/src/model/device-authorization.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/device-authorization.ts#L84) |
 
 #### Methods
 
@@ -1678,7 +1697,7 @@ print, and where that text goes is not a library's decision.
 
 > **wait**(`signal`): `Promise`\<[`SubscriptionTokens`](#subscriptiontokens)>\>
 
-Defined in: packages/adapters/src/model/device-authorization.ts:90
+Defined in: [packages/adapters/src/model/device-authorization.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/device-authorization.ts#L90)
 
 Poll until they finish, the code dies, or the caller gives up.
 
@@ -1696,7 +1715,7 @@ Poll until they finish, the code dies, or the caller gives up.
 
 ### DeviceAuthorizationOptions
 
-Defined in: packages/adapters/src/model/device-authorization.ts:64
+Defined in: [packages/adapters/src/model/device-authorization.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/device-authorization.ts#L64)
 
 #### Extends
 
@@ -1704,17 +1723,17 @@ Defined in: packages/adapters/src/model/device-authorization.ts:64
 
 #### Properties
 
-| Property                                                     | Modifier   | Type                                                                                           | Description                                                                  | Inherited from                                                                               | Defined in                                                                                                                                       |
-| ------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-accountcode"></a> `accountCode?`             | `readonly` | `string`                                                                                       | Kept when the response does not repeat it.                                   | [`TokenGrantOptions`](#tokengrantoptions).[`accountCode`](#property-accountcode-3)           | [packages/adapters/src/model/credential.ts:248](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L248) |
-| <a id="property-encoding"></a> `encoding?`                   | `readonly` | `"form"` \| `"json"`                                                                           | Overrides the profile's default encoding, for a grant that differs.          | [`TokenGrantOptions`](#tokengrantoptions).[`encoding`](#property-encoding-2)                 | [packages/adapters/src/model/credential.ts:240](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L240) |
-| <a id="property-fetch"></a> `fetch?`                         | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                        | [`TokenGrantOptions`](#tokengrantoptions).[`fetch`](#property-fetch-5)                       | [packages/adapters/src/model/credential.ts:250](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L250) |
-| <a id="property-minimumintervalms"></a> `minimumIntervalMs?` | `readonly` | `number`                                                                                       | A floor under the provider's polling interval.                               | -                                                                                            | packages/adapters/src/model/device-authorization.ts:68                                                                                           |
-| <a id="property-now"></a> `now?`                             | `readonly` | () => `string`                                                                                 | The clock, RFC 3339. Injected for tests, which must not depend on real time. | [`TokenGrantOptions`](#tokengrantoptions).[`now`](#property-now-2)                           | [packages/adapters/src/model/credential.ts:244](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L244) |
-| <a id="property-profile"></a> `profile?`                     | `readonly` | [`SubscriptionOAuthProfile`](#subscriptionoauthprofile)                                        | Default [OPENAI\_SUBSCRIPTION\_PROFILE](#openai_subscription_profile).       | -                                                                                            | packages/adapters/src/model/device-authorization.ts:66                                                                                           |
-| <a id="property-refreshtoken"></a> `refreshToken?`           | `readonly` | `string`                                                                                       | Kept when the response does not repeat it, so a login survives an exchange.  | [`TokenGrantOptions`](#tokengrantoptions).[`refreshToken`](#property-refreshtoken-2)         | [packages/adapters/src/model/credential.ts:246](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L246) |
-| <a id="property-requesttimeoutms"></a> `requestTimeoutMs?`   | `readonly` | `number`                                                                                       | How long one token exchange may take. Default 30s.                           | [`TokenGrantOptions`](#tokengrantoptions).[`requestTimeoutMs`](#property-requesttimeoutms-5) | [packages/adapters/src/model/credential.ts:242](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L242) |
-| <a id="property-timeoutms"></a> `timeoutMs?`                 | `readonly` | `number`                                                                                       | How long the person has. Default 15 minutes, which is the provider's.        | -                                                                                            | packages/adapters/src/model/device-authorization.ts:70                                                                                           |
+| Property                                                     | Modifier   | Type                                                                                           | Description                                                                  | Inherited from                                                                               | Defined in                                                                                                                                                         |
+| ------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-accountcode"></a> `accountCode?`             | `readonly` | `string`                                                                                       | Kept when the response does not repeat it.                                   | [`TokenGrantOptions`](#tokengrantoptions).[`accountCode`](#property-accountcode-4)           | [packages/adapters/src/model/credential.ts:259](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L259)                   |
+| <a id="property-encoding"></a> `encoding?`                   | `readonly` | `"form"` \| `"json"`                                                                           | Overrides the profile's default encoding, for a grant that differs.          | [`TokenGrantOptions`](#tokengrantoptions).[`encoding`](#property-encoding-3)                 | [packages/adapters/src/model/credential.ts:251](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L251)                   |
+| <a id="property-fetch"></a> `fetch?`                         | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                        | [`TokenGrantOptions`](#tokengrantoptions).[`fetch`](#property-fetch-6)                       | [packages/adapters/src/model/credential.ts:261](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L261)                   |
+| <a id="property-minimumintervalms"></a> `minimumIntervalMs?` | `readonly` | `number`                                                                                       | A floor under the provider's polling interval.                               | -                                                                                            | [packages/adapters/src/model/device-authorization.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/device-authorization.ts#L68) |
+| <a id="property-now"></a> `now?`                             | `readonly` | () => `string`                                                                                 | The clock, RFC 3339. Injected for tests, which must not depend on real time. | [`TokenGrantOptions`](#tokengrantoptions).[`now`](#property-now-3)                           | [packages/adapters/src/model/credential.ts:255](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L255)                   |
+| <a id="property-profile"></a> `profile?`                     | `readonly` | [`SubscriptionOAuthProfile`](#subscriptionoauthprofile)                                        | Default [OPENAI\_SUBSCRIPTION\_PROFILE](#openai_subscription_profile).       | -                                                                                            | [packages/adapters/src/model/device-authorization.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/device-authorization.ts#L66) |
+| <a id="property-refreshtoken"></a> `refreshToken?`           | `readonly` | `string`                                                                                       | Kept when the response does not repeat it, so a login survives an exchange.  | [`TokenGrantOptions`](#tokengrantoptions).[`refreshToken`](#property-refreshtoken-3)         | [packages/adapters/src/model/credential.ts:257](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L257)                   |
+| <a id="property-requesttimeoutms"></a> `requestTimeoutMs?`   | `readonly` | `number`                                                                                       | How long one token exchange may take. Default 30s.                           | [`TokenGrantOptions`](#tokengrantoptions).[`requestTimeoutMs`](#property-requesttimeoutms-6) | [packages/adapters/src/model/credential.ts:253](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L253)                   |
+| <a id="property-timeoutms"></a> `timeoutMs?`                 | `readonly` | `number`                                                                                       | How long the person has. Default 15 minutes, which is the provider's.        | -                                                                                            | [packages/adapters/src/model/device-authorization.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/device-authorization.ts#L70) |
 
 ---
 
@@ -2382,22 +2401,44 @@ Defined in: [packages/adapters/src/model/responses.ts:67](https://github.com/Aic
 
 ---
 
+### RevocationOptions
+
+Defined in: [packages/adapters/src/model/credential.ts:373](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L373)
+
+#### Extends
+
+- [`TokenGrantOptions`](#tokengrantoptions)
+
+#### Properties
+
+| Property                                                     | Modifier   | Type                                                                                           | Description                                                                  | Inherited from                                                                               | Defined in                                                                                                                                       |
+| ------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-accountcode-1"></a> `accountCode?`           | `readonly` | `string`                                                                                       | Kept when the response does not repeat it.                                   | [`TokenGrantOptions`](#tokengrantoptions).[`accountCode`](#property-accountcode-4)           | [packages/adapters/src/model/credential.ts:259](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L259) |
+| <a id="property-encoding-1"></a> `encoding?`                 | `readonly` | `"form"` \| `"json"`                                                                           | Overrides the profile's default encoding, for a grant that differs.          | [`TokenGrantOptions`](#tokengrantoptions).[`encoding`](#property-encoding-3)                 | [packages/adapters/src/model/credential.ts:251](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L251) |
+| <a id="property-fetch-4"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                        | [`TokenGrantOptions`](#tokengrantoptions).[`fetch`](#property-fetch-6)                       | [packages/adapters/src/model/credential.ts:261](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L261) |
+| <a id="property-now-1"></a> `now?`                           | `readonly` | () => `string`                                                                                 | The clock, RFC 3339. Injected for tests, which must not depend on real time. | [`TokenGrantOptions`](#tokengrantoptions).[`now`](#property-now-3)                           | [packages/adapters/src/model/credential.ts:255](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L255) |
+| <a id="property-profile-1"></a> `profile?`                   | `readonly` | [`SubscriptionOAuthProfile`](#subscriptionoauthprofile)                                        | Default [OPENAI\_SUBSCRIPTION\_PROFILE](#openai_subscription_profile).       | -                                                                                            | [packages/adapters/src/model/credential.ts:375](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L375) |
+| <a id="property-refreshtoken-1"></a> `refreshToken?`         | `readonly` | `string`                                                                                       | Kept when the response does not repeat it, so a login survives an exchange.  | [`TokenGrantOptions`](#tokengrantoptions).[`refreshToken`](#property-refreshtoken-3)         | [packages/adapters/src/model/credential.ts:257](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L257) |
+| <a id="property-requesttimeoutms-4"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one token exchange may take. Default 30s.                           | [`TokenGrantOptions`](#tokengrantoptions).[`requestTimeoutMs`](#property-requesttimeoutms-6) | [packages/adapters/src/model/credential.ts:253](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L253) |
+
+---
+
 ### SubscriptionOAuthCredentialOptions
 
-Defined in: [packages/adapters/src/model/credential.ts:189](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L189)
+Defined in: [packages/adapters/src/model/credential.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L200)
 
 #### Properties
 
 | Property                                                     | Modifier   | Type                                                                                           | Description                                                                                                                                                                                                                                                                                                                                                                       | Defined in                                                                                                                                       |
 | ------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-accountcode-1"></a> `accountCode?`           | `readonly` | `string`                                                                                       | Overrides the account code the login carried, for a multi-account login.                                                                                                                                                                                                                                                                                                          | [packages/adapters/src/model/credential.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L193) |
-| <a id="property-fetch-4"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                                                                                                             | [packages/adapters/src/model/credential.ts:217](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L217) |
-| <a id="property-now-1"></a> `now?`                           | `readonly` | () => `string`                                                                                 | The clock, RFC 3339. Injected for tests, which must not depend on real time.                                                                                                                                                                                                                                                                                                      | [packages/adapters/src/model/credential.ts:215](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L215) |
-| <a id="property-onrefresh"></a> `onRefresh?`                 | `readonly` | (`tokens`) => `void` \| `Promise`\<`void`\>                                                    | Where renewed tokens go. Providers rotate the refresh token on every exchange, so a host that does not persist what comes back has a login that works until the process exits and then cannot be renewed at all. SharedOS stores nothing itself: this is the host's sink, called with the whole set, and a failure in it is not allowed to fail the model call that triggered it. | [packages/adapters/src/model/credential.ts:213](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L213) |
-| <a id="property-profile-1"></a> `profile`                    | `readonly` | [`SubscriptionOAuthProfile`](#subscriptionoauthprofile)                                        | -                                                                                                                                                                                                                                                                                                                                                                                 | [packages/adapters/src/model/credential.ts:190](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L190) |
-| <a id="property-refreshskewms"></a> `refreshSkewMs?`         | `readonly` | `number`                                                                                       | How long before expiry a token is renewed anyway. Default 60s. A token that is valid when the request is written can still be expired when the provider reads it. The skew renews early rather than discovering that as a failed turn.                                                                                                                                            | [packages/adapters/src/model/credential.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L201) |
-| <a id="property-requesttimeoutms-4"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one token exchange may take. Default 30s.                                                                                                                                                                                                                                                                                                                                | [packages/adapters/src/model/credential.ts:203](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L203) |
-| <a id="property-tokens"></a> `tokens`                        | `readonly` | [`SubscriptionTokens`](#subscriptiontokens)                                                    | -                                                                                                                                                                                                                                                                                                                                                                                 | [packages/adapters/src/model/credential.ts:191](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L191) |
+| <a id="property-accountcode-2"></a> `accountCode?`           | `readonly` | `string`                                                                                       | Overrides the account code the login carried, for a multi-account login.                                                                                                                                                                                                                                                                                                          | [packages/adapters/src/model/credential.ts:204](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L204) |
+| <a id="property-fetch-5"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                                                                                                             | [packages/adapters/src/model/credential.ts:228](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L228) |
+| <a id="property-now-2"></a> `now?`                           | `readonly` | () => `string`                                                                                 | The clock, RFC 3339. Injected for tests, which must not depend on real time.                                                                                                                                                                                                                                                                                                      | [packages/adapters/src/model/credential.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L226) |
+| <a id="property-onrefresh"></a> `onRefresh?`                 | `readonly` | (`tokens`) => `void` \| `Promise`\<`void`\>                                                    | Where renewed tokens go. Providers rotate the refresh token on every exchange, so a host that does not persist what comes back has a login that works until the process exits and then cannot be renewed at all. SharedOS stores nothing itself: this is the host's sink, called with the whole set, and a failure in it is not allowed to fail the model call that triggered it. | [packages/adapters/src/model/credential.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L224) |
+| <a id="property-profile-2"></a> `profile`                    | `readonly` | [`SubscriptionOAuthProfile`](#subscriptionoauthprofile)                                        | -                                                                                                                                                                                                                                                                                                                                                                                 | [packages/adapters/src/model/credential.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L201) |
+| <a id="property-refreshskewms"></a> `refreshSkewMs?`         | `readonly` | `number`                                                                                       | How long before expiry a token is renewed anyway. Default 60s. A token that is valid when the request is written can still be expired when the provider reads it. The skew renews early rather than discovering that as a failed turn.                                                                                                                                            | [packages/adapters/src/model/credential.ts:212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L212) |
+| <a id="property-requesttimeoutms-5"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one token exchange may take. Default 30s.                                                                                                                                                                                                                                                                                                                                | [packages/adapters/src/model/credential.ts:214](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L214) |
+| <a id="property-tokens"></a> `tokens`                        | `readonly` | [`SubscriptionTokens`](#subscriptiontokens)                                                    | -                                                                                                                                                                                                                                                                                                                                                                                 | [packages/adapters/src/model/credential.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L202) |
 
 ---
 
@@ -2415,20 +2456,21 @@ is a second one of these, and no second credential class.
 
 | Property                                                           | Modifier   | Type                                         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Defined in                                                                                                                                       |
 | ------------------------------------------------------------------ | ---------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-accountheader"></a> `accountHeader`                | `readonly` | `string`                                     | The header the provider reads the subscription's account code from. Subscription plans are billed per account, and the access token alone does not always say which one: a login that covers several workspaces issues one token and expects the account to be named alongside it.                                                                                                                                                                           | [packages/adapters/src/model/credential.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L121) |
-| <a id="property-clientid"></a> `clientId`                          | `readonly` | `string`                                     | The public client the login was performed by.                                                                                                                                                                                                                                                                                                                                                                                                                | [packages/adapters/src/model/credential.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L113) |
-| <a id="property-codeexchangeencoding"></a> `codeExchangeEncoding?` | `readonly` | `"form"` \| `"json"`                         | How it wants the body of an authorization-code exchange, when that differs. It does differ, and not as an oversight: OpenAI's own client posts a refresh as JSON and a code exchange as `application/x-www-form-urlencoded` to the same endpoint. Declared separately rather than assumed equal, because assuming would mean one of the two grants is sent in an encoding no client has ever tested against that server.                                     | [packages/adapters/src/model/credential.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L133) |
-| <a id="property-encoding-1"></a> `encoding?`                       | `readonly` | `"form"` \| `"json"`                         | How the token endpoint wants its request body. RFC 6749 says `form`.                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/credential.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L123) |
-| <a id="property-headers-3"></a> `headers?`                         | `readonly` | `Readonly`\<`Record`\<`string`, `string`\>\> | Constant headers the provider requires on a subscription call.                                                                                                                                                                                                                                                                                                                                                                                               | [packages/adapters/src/model/credential.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L135) |
+| <a id="property-accountheader"></a> `accountHeader`                | `readonly` | `string`                                     | The header the provider reads the subscription's account code from. Subscription plans are billed per account, and the access token alone does not always say which one: a login that covers several workspaces issues one token and expects the account to be named alongside it.                                                                                                                                                                           | [packages/adapters/src/model/credential.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L131) |
+| <a id="property-clientid"></a> `clientId`                          | `readonly` | `string`                                     | The public client the login was performed by.                                                                                                                                                                                                                                                                                                                                                                                                                | [packages/adapters/src/model/credential.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L123) |
+| <a id="property-codeexchangeencoding"></a> `codeExchangeEncoding?` | `readonly` | `"form"` \| `"json"`                         | How it wants the body of an authorization-code exchange, when that differs. It does differ, and not as an oversight: OpenAI's own client posts a refresh as JSON and a code exchange as `application/x-www-form-urlencoded` to the same endpoint. Declared separately rather than assumed equal, because assuming would mean one of the two grants is sent in an encoding no client has ever tested against that server.                                     | [packages/adapters/src/model/credential.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L143) |
+| <a id="property-encoding-2"></a> `encoding?`                       | `readonly` | `"form"` \| `"json"`                         | How the token endpoint wants its request body. RFC 6749 says `form`.                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/credential.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L133) |
+| <a id="property-headers-3"></a> `headers?`                         | `readonly` | `Readonly`\<`Record`\<`string`, `string`\>\> | Constant headers the provider requires on a subscription call.                                                                                                                                                                                                                                                                                                                                                                                               | [packages/adapters/src/model/credential.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L145) |
 | <a id="property-id-2"></a> `id`                                    | `readonly` | `string`                                     | Names the issuer on every record this credential's turns produce.                                                                                                                                                                                                                                                                                                                                                                                            | [packages/adapters/src/model/credential.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L98)   |
 | <a id="property-issuerurl"></a> `issuerUrl?`                       | `readonly` | `string`                                     | The issuer root, from which a device login derives every path it needs. One field rather than four because that is how the provider treats it: the route chosen for the issuer is reused for the device-auth endpoints, the callback it redirects to, and the token exchange, and resolving them separately would let a host point half a login at one host and half at another. Absent on a profile with no device login. See `requestDeviceAuthorization`. | [packages/adapters/src/model/credential.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L111) |
+| <a id="property-revocationurl"></a> `revocationUrl?`               | `readonly` | `string`                                     | Where a login is handed back, for a host ending one. Named rather than derived. Revocation is the one call whose absence is silent -- a login nobody revoked simply stays live -- so a profile that guessed at the path would let a failed log-out look like a completed one. Absent on a profile whose provider publishes no revocation endpoint, and `revokeSubscriptionLogin` says so rather than posting hopefully.                                      | [packages/adapters/src/model/credential.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L121) |
 | <a id="property-tokenurl"></a> `tokenUrl`                          | `readonly` | `string`                                     | The OAuth token endpoint, which is where a refresh is exchanged.                                                                                                                                                                                                                                                                                                                                                                                             | [packages/adapters/src/model/credential.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L100) |
 
 ---
 
 ### SubscriptionTokens
 
-Defined in: [packages/adapters/src/model/credential.ts:173](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L173)
+Defined in: [packages/adapters/src/model/credential.ts:184](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L184)
 
 One subscription login, as it is held between calls and persisted between
 runs.
@@ -2441,31 +2483,32 @@ that has to go back to the store.
 
 | Property                                             | Modifier   | Type     | Description                                                                                                                                                                                                                                              | Defined in                                                                                                                                       |
 | ---------------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-accesstoken"></a> `accessToken`      | `readonly` | `string` | -                                                                                                                                                                                                                                                        | [packages/adapters/src/model/credential.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L174) |
-| <a id="property-accountcode-2"></a> `accountCode?`   | `readonly` | `string` | The subscription account this login pays from, when the login carried one. Called a code rather than an id because that is what it is to SharedOS: an opaque string copied into a header. Nothing here parses it, compares it, or treats it as identity. | [packages/adapters/src/model/credential.ts:186](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L186) |
-| <a id="property-expiresat-1"></a> `expiresAt?`       | `readonly` | `string` | RFC 3339. Absent when the provider did not say when it ends.                                                                                                                                                                                             | [packages/adapters/src/model/credential.ts:178](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L178) |
-| <a id="property-refreshtoken-1"></a> `refreshToken?` | `readonly` | `string` | Absent on a login that cannot be renewed; the credential then cannot either.                                                                                                                                                                             | [packages/adapters/src/model/credential.ts:176](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L176) |
+| <a id="property-accesstoken"></a> `accessToken`      | `readonly` | `string` | -                                                                                                                                                                                                                                                        | [packages/adapters/src/model/credential.ts:185](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L185) |
+| <a id="property-accountcode-3"></a> `accountCode?`   | `readonly` | `string` | The subscription account this login pays from, when the login carried one. Called a code rather than an id because that is what it is to SharedOS: an opaque string copied into a header. Nothing here parses it, compares it, or treats it as identity. | [packages/adapters/src/model/credential.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L197) |
+| <a id="property-expiresat-1"></a> `expiresAt?`       | `readonly` | `string` | RFC 3339. Absent when the provider did not say when it ends.                                                                                                                                                                                             | [packages/adapters/src/model/credential.ts:189](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L189) |
+| <a id="property-refreshtoken-2"></a> `refreshToken?` | `readonly` | `string` | Absent on a login that cannot be renewed; the credential then cannot either.                                                                                                                                                                             | [packages/adapters/src/model/credential.ts:187](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L187) |
 
 ---
 
 ### TokenGrantOptions
 
-Defined in: [packages/adapters/src/model/credential.ts:238](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L238)
+Defined in: [packages/adapters/src/model/credential.ts:249](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L249)
 
 #### Extended by
 
+- [`RevocationOptions`](#revocationoptions)
 - [`DeviceAuthorizationOptions`](#deviceauthorizationoptions)
 
 #### Properties
 
 | Property                                                     | Modifier   | Type                                                                                           | Description                                                                  | Defined in                                                                                                                                       |
 | ------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-accountcode-3"></a> `accountCode?`           | `readonly` | `string`                                                                                       | Kept when the response does not repeat it.                                   | [packages/adapters/src/model/credential.ts:248](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L248) |
-| <a id="property-encoding-2"></a> `encoding?`                 | `readonly` | `"form"` \| `"json"`                                                                           | Overrides the profile's default encoding, for a grant that differs.          | [packages/adapters/src/model/credential.ts:240](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L240) |
-| <a id="property-fetch-5"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                        | [packages/adapters/src/model/credential.ts:250](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L250) |
-| <a id="property-now-2"></a> `now?`                           | `readonly` | () => `string`                                                                                 | The clock, RFC 3339. Injected for tests, which must not depend on real time. | [packages/adapters/src/model/credential.ts:244](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L244) |
-| <a id="property-refreshtoken-2"></a> `refreshToken?`         | `readonly` | `string`                                                                                       | Kept when the response does not repeat it, so a login survives an exchange.  | [packages/adapters/src/model/credential.ts:246](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L246) |
-| <a id="property-requesttimeoutms-5"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one token exchange may take. Default 30s.                           | [packages/adapters/src/model/credential.ts:242](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L242) |
+| <a id="property-accountcode-4"></a> `accountCode?`           | `readonly` | `string`                                                                                       | Kept when the response does not repeat it.                                   | [packages/adapters/src/model/credential.ts:259](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L259) |
+| <a id="property-encoding-3"></a> `encoding?`                 | `readonly` | `"form"` \| `"json"`                                                                           | Overrides the profile's default encoding, for a grant that differs.          | [packages/adapters/src/model/credential.ts:251](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L251) |
+| <a id="property-fetch-6"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                        | [packages/adapters/src/model/credential.ts:261](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L261) |
+| <a id="property-now-3"></a> `now?`                           | `readonly` | () => `string`                                                                                 | The clock, RFC 3339. Injected for tests, which must not depend on real time. | [packages/adapters/src/model/credential.ts:255](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L255) |
+| <a id="property-refreshtoken-3"></a> `refreshToken?`         | `readonly` | `string`                                                                                       | Kept when the response does not repeat it, so a login survives an exchange.  | [packages/adapters/src/model/credential.ts:257](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L257) |
+| <a id="property-requesttimeoutms-6"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one token exchange may take. Default 30s.                           | [packages/adapters/src/model/credential.ts:253](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L253) |
 
 ---
 
@@ -2592,11 +2635,21 @@ Defined in: [packages/adapters/src/pi/index.ts:49](https://github.com/Aicoo-Team
 
 ---
 
+### SubscriptionRevocation
+
+> **SubscriptionRevocation** = `"refresh_token"` \| `"access_token"` \| `"nothing"`
+
+Defined in: [packages/adapters/src/model/credential.ts:371](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L371)
+
+Which token a log-out handed back, or that there was none to hand back.
+
+---
+
 ### TokenGrant
 
 > **TokenGrant** = \{ `granted`: `true`; `tokens`: [`SubscriptionTokens`](#subscriptiontokens); \} \| \{ `code?`: `string`; `granted`: `false`; `status`: `number`; \}
 
-Defined in: [packages/adapters/src/model/credential.ts:261](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L261)
+Defined in: [packages/adapters/src/model/credential.ts:272](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L272)
 
 What one call to a token endpoint produced.
 
@@ -2834,7 +2887,7 @@ Defined in: [packages/adapters/src/deepseek/protocol.ts:107](https://github.com/
 
 > `const` **OPENAI\_SUBSCRIPTION\_PROFILE**: [`SubscriptionOAuthProfile`](#subscriptionoauthprofile)
 
-Defined in: [packages/adapters/src/model/credential.ts:155](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L155)
+Defined in: [packages/adapters/src/model/credential.ts:165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L165)
 
 The OpenAI login, whether a vendor CLI performed it or SharedOS did.
 
@@ -2942,7 +2995,7 @@ Defined in: [packages/adapters/src/pi/protocol.ts:86](https://github.com/Aicoo-T
 
 > **accountCodeFromIdToken**(`idToken`): `string` \| `undefined`
 
-Defined in: [packages/adapters/src/model/credential.ts:545](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L545)
+Defined in: [packages/adapters/src/model/credential.ts:651](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L651)
 
 The account code an OpenAI id token carries, when it carries one.
 
@@ -3209,11 +3262,39 @@ object is refused as `undefined`.
 
 ---
 
+### postJson()
+
+> **postJson**(`url`, `body`, `options`, `subject`): `Promise`\<`Response`>\>
+
+Defined in: [packages/adapters/src/model/credential.ts:351](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L351)
+
+POST one JSON document, with this package's deadline and its error wording.
+
+The transport half of every call that is not a token grant -- a device
+request, a poll, a revocation. `subject` names the endpoint in the one error
+a caller can act on, because "could not be reached" is only useful when it
+says what could not be reached.
+
+#### Parameters
+
+| Parameter | Type                                         |
+| --------- | -------------------------------------------- |
+| `url`     | `string`                                     |
+| `body`    | `Readonly`\<`Record`\<`string`, `string`\>\> |
+| `options` | [`TokenGrantOptions`](#tokengrantoptions)    |
+| `subject` | `string`                                     |
+
+#### Returns
+
+`Promise`\<`Response`\>
+
+---
+
 ### requestDeviceAuthorization()
 
 > **requestDeviceAuthorization**(`options?`): `Promise`\<[`DeviceAuthorization`](#deviceauthorization)>\>
 
-Defined in: packages/adapters/src/model/device-authorization.ts:101
+Defined in: [packages/adapters/src/model/device-authorization.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/device-authorization.ts#L101)
 
 Ask the provider to start a device login.
 
@@ -3238,7 +3319,7 @@ cannot tell which flow obtained them.
 
 > **requestTokenGrant**(`profile`, `parameters`, `options?`): `Promise`\<[`TokenGrant`](#tokengrant)>\>
 
-Defined in: [packages/adapters/src/model/credential.ts:273](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L273)
+Defined in: [packages/adapters/src/model/credential.ts:284](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L284)
 
 The one place a token endpoint is asked for anything.
 
@@ -3258,3 +3339,36 @@ response body never escapes are decided once.
 #### Returns
 
 `Promise`\<[`TokenGrant`](#tokengrant)\>
+
+---
+
+### revokeSubscriptionLogin()
+
+> **revokeSubscriptionLogin**(`tokens`, `options?`): `Promise`\<[`SubscriptionRevocation`](#subscriptionrevocation)>\>
+
+Defined in: [packages/adapters/src/model/credential.ts:393](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L393)
+
+End a login at the provider, which is the only place it can be ended.
+
+Deleting a stored login forgets it here; it does not stop it working. The
+refresh token is what keeps a subscription session alive, and until the
+provider is told, a copy of that token -- in a backup, in a container image,
+in a shell history -- is still a working login. So this is the half of a
+log-out that matters, and forgetting the file is the half that is merely
+tidy.
+
+The refresh token is offered when there is one, because revoking it ends the
+session; an access token is the fallback, and ends only itself. The client id
+travels with the first and not the second, which is what the provider's own
+client does.
+
+#### Parameters
+
+| Parameter | Type                                        |
+| --------- | ------------------------------------------- |
+| `tokens`  | [`SubscriptionTokens`](#subscriptiontokens) |
+| `options` | [`RevocationOptions`](#revocationoptions)   |
+
+#### Returns
+
+`Promise`\<[`SubscriptionRevocation`](#subscriptionrevocation)\>

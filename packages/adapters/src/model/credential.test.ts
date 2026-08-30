@@ -5,6 +5,7 @@ import {
   apiKeyCredential,
   ModelCredentialError,
   OPENAI_SUBSCRIPTION_PROFILE,
+  revokeSubscriptionLogin,
   SubscriptionOAuthCredential,
   type SubscriptionOAuthCredentialOptions,
   type SubscriptionOAuthProfile,
@@ -347,6 +348,81 @@ describe("a subscription credential", () => {
   it("refuses to be built without an access token", () => {
     expect(() => credential(vi.fn<Fetch>(), { tokens: { accessToken: "  " } })).toThrow(
       /access token/u,
+    );
+  });
+});
+
+describe("revoking a subscription login", () => {
+  const revoked = (fetch: Fetch, tokens = TOKENS, options = {}) =>
+    revokeSubscriptionLogin(tokens, { fetch, ...options });
+
+  it("hands back the refresh token, which is the one that ends the session", async () => {
+    const fetch = vi.fn<Fetch>(async () => new Response("", { status: 200 }));
+
+    expect(await revoked(fetch)).toBe("refresh_token");
+    expect(fetch.mock.calls[0]?.[0]).toBe("https://auth.openai.com/oauth/revoke");
+    expect(JSON.parse(fetch.mock.calls[0]?.[1]?.body as string)).toEqual({
+      token: "refresh-1",
+      token_type_hint: "refresh_token",
+      client_id: OPENAI_SUBSCRIPTION_PROFILE.clientId,
+    });
+  });
+
+  it("falls back to the access token, and without the client id", async () => {
+    const fetch = vi.fn<Fetch>(async () => new Response("", { status: 200 }));
+
+    // Revoking an access token ends that token and nothing else. It is the
+    // weaker log-out, and it is what a login with no refresh token has.
+    expect(await revoked(fetch, { accessToken: "access-1" })).toBe("access_token");
+    expect(JSON.parse(fetch.mock.calls[0]?.[1]?.body as string)).toEqual({
+      token: "access-1",
+      token_type_hint: "access_token",
+    });
+  });
+
+  it("asks for nothing when there is nothing to revoke", async () => {
+    const fetch = vi.fn<Fetch>();
+
+    expect(await revoked(fetch, { accessToken: "  " })).toBe("nothing");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a refusal's status and code, never its body", async () => {
+    const fetch = vi.fn<Fetch>(
+      async () =>
+        new Response(JSON.stringify({ error: "invalid_token", detail: "token refresh-1" }), {
+          status: 400,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+
+    const error = await revoked(fetch).then(
+      () => undefined,
+      (thrown: unknown) => thrown as ModelCredentialError,
+    );
+
+    expect(error?.message).toBe("the revocation endpoint answered 400 (invalid_token)");
+    expect(error?.message).not.toContain("refresh-1");
+    expect(error?.status).toBe(400);
+  });
+
+  it("refuses a profile whose provider publishes no revocation endpoint", async () => {
+    const profile = { ...OPENAI_SUBSCRIPTION_PROFILE, revocationUrl: undefined };
+
+    // A log-out that posted hopefully at a guessed path would report a failure
+    // to end a session as a session ended.
+    await expect(revoked(vi.fn<Fetch>(), TOKENS, { profile })).rejects.toThrow(
+      /declares no revocation endpoint/u,
+    );
+  });
+
+  it("names the endpoint it could not reach", async () => {
+    const fetch = vi.fn<Fetch>(async () => {
+      throw new Error("ECONNREFUSED");
+    });
+
+    await expect(revoked(fetch)).rejects.toThrow(
+      /the revocation endpoint could not be reached: ECONNREFUSED/u,
     );
   });
 });

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -6,6 +6,8 @@ import { describe, expect, it, vi } from "vitest";
 import {
   codexLoginPath,
   createCodexSubscriptionCredential,
+  forgetCodexLogin,
+  logoutCodexSubscription,
   readCodexLogin,
 } from "./subscription-login.js";
 
@@ -128,5 +130,77 @@ describe("a Codex subscription credential", () => {
     await credential?.renew(signal());
 
     expect(JSON.parse(await readFile(path, "utf8"))).toEqual(SESSION);
+  });
+});
+
+describe("ending a subscription login", () => {
+  const ok = (): Response => new Response("", { status: 200 });
+
+  it("removes the session and leaves every other credential in the file", async () => {
+    const path = await login(SESSION);
+
+    expect(await forgetCodexLogin({ path })).toBe(true);
+
+    // The file can hold an API key, which is a different credential a person
+    // did not ask to lose, so the session goes and the file stays.
+    const written = JSON.parse(await readFile(path, "utf8")) as Record<string, unknown>;
+    expect(written).toEqual({ OPENAI_API_KEY: null });
+    expect((await stat(path)).mode & 0o777).toBe(0o600);
+  });
+
+  it("writes nothing when there is nothing to forget", async () => {
+    const missing = join(tmpdir(), "sharedos-absent", "auth.json");
+
+    expect(await forgetCodexLogin({ path: missing })).toBe(false);
+    expect(await forgetCodexLogin({ path: await login({ OPENAI_API_KEY: "sk-1" }) })).toBe(false);
+    // Forgetting a login that was never there must not create a file to hold
+    // its absence.
+    await expect(access(missing)).rejects.toThrow();
+  });
+
+  it("tells the provider first and forgets second", async () => {
+    const path = await login(SESSION);
+    const fetch = vi.fn<Fetch>(async () => ok());
+
+    const outcome = await logoutCodexSubscription({ path, fetch });
+
+    expect(outcome).toEqual({ revoked: "refresh_token", forgotten: true });
+    expect(JSON.parse(await readFile(path, "utf8"))).toEqual({ OPENAI_API_KEY: null });
+  });
+
+  it("reports a machine with no login as having nothing to end", async () => {
+    const fetch = vi.fn<Fetch>();
+
+    const outcome = await logoutCodexSubscription({
+      path: join(tmpdir(), "sharedos-absent", "auth.json"),
+      fetch,
+    });
+
+    expect(outcome).toEqual({ revoked: "nothing", forgotten: false });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("keeps the login when the provider could not be told", async () => {
+    const path = await login(SESSION);
+    const fetch = vi.fn<Fetch>(async () => new Response("", { status: 500 }));
+
+    await expect(logoutCodexSubscription({ path, fetch })).rejects.toThrow(
+      /the revocation endpoint answered 500/u,
+    );
+    // Left in place on purpose: a file deleted while the revocation failed is a
+    // live session with nothing left pointing at it.
+    expect(await readCodexLogin({ path })).toMatchObject({ refreshToken: "refresh-1" });
+  });
+
+  it("forgets anyway when forced, and says what it could not do", async () => {
+    const path = await login(SESSION);
+    const fetch = vi.fn<Fetch>(async () => new Response("", { status: 500 }));
+
+    const outcome = await logoutCodexSubscription({ path, fetch, force: true });
+
+    expect(outcome.revoked).toBe("nothing");
+    expect(outcome.forgotten).toBe(true);
+    expect(outcome.failure?.message).toMatch(/the revocation endpoint answered 500/u);
+    expect(await readCodexLogin({ path })).toBeUndefined();
   });
 });

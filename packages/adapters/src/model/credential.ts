@@ -109,6 +109,16 @@ export interface SubscriptionOAuthProfile {
    * See `requestDeviceAuthorization`.
    */
   readonly issuerUrl?: string;
+  /**
+   * Where a login is handed back, for a host ending one.
+   *
+   * Named rather than derived. Revocation is the one call whose absence is
+   * silent -- a login nobody revoked simply stays live -- so a profile that
+   * guessed at the path would let a failed log-out look like a completed one.
+   * Absent on a profile whose provider publishes no revocation endpoint, and
+   * `revokeSubscriptionLogin` says so rather than posting hopefully.
+   */
+  readonly revocationUrl?: string;
   /** The public client the login was performed by. */
   readonly clientId: string;
   /**
@@ -156,6 +166,7 @@ export const OPENAI_SUBSCRIPTION_PROFILE: SubscriptionOAuthProfile = Object.free
   id: "openai-chatgpt",
   issuerUrl: "https://auth.openai.com",
   tokenUrl: "https://auth.openai.com/oauth/token",
+  revocationUrl: "https://auth.openai.com/oauth/revoke",
   clientId: "app_EMoamEEZ73f0CkXaXp7hrann",
   accountHeader: "chatgpt-account-id",
   encoding: "json",
@@ -327,6 +338,101 @@ export async function requestTokenGrant(
       ),
     },
   };
+}
+
+/**
+ * POST one JSON document, with this package's deadline and its error wording.
+ *
+ * The transport half of every call that is not a token grant -- a device
+ * request, a poll, a revocation. `subject` names the endpoint in the one error
+ * a caller can act on, because "could not be reached" is only useful when it
+ * says what could not be reached.
+ */
+export async function postJson(
+  url: string,
+  body: Readonly<Record<string, string>>,
+  options: TokenGrantOptions,
+  subject: string,
+): Promise<Response> {
+  const fetchImplementation = options.fetch ?? globalThis.fetch.bind(globalThis);
+  try {
+    return await fetchImplementation(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(options.requestTimeoutMs ?? DEFAULT_TOKEN_REQUEST_TIMEOUT_MS),
+    });
+  } catch (error) {
+    throw new ModelCredentialError(`${subject} could not be reached: ${describe(error)}`);
+  }
+}
+
+/** Which token a log-out handed back, or that there was none to hand back. */
+export type SubscriptionRevocation = "refresh_token" | "access_token" | "nothing";
+
+export interface RevocationOptions extends TokenGrantOptions {
+  /** Default {@link OPENAI_SUBSCRIPTION_PROFILE}. */
+  readonly profile?: SubscriptionOAuthProfile;
+}
+
+/**
+ * End a login at the provider, which is the only place it can be ended.
+ *
+ * Deleting a stored login forgets it here; it does not stop it working. The
+ * refresh token is what keeps a subscription session alive, and until the
+ * provider is told, a copy of that token -- in a backup, in a container image,
+ * in a shell history -- is still a working login. So this is the half of a
+ * log-out that matters, and forgetting the file is the half that is merely
+ * tidy.
+ *
+ * The refresh token is offered when there is one, because revoking it ends the
+ * session; an access token is the fallback, and ends only itself. The client id
+ * travels with the first and not the second, which is what the provider's own
+ * client does.
+ */
+export async function revokeSubscriptionLogin(
+  tokens: SubscriptionTokens,
+  options: RevocationOptions = {},
+): Promise<SubscriptionRevocation> {
+  const profile = options.profile ?? OPENAI_SUBSCRIPTION_PROFILE;
+  const endpoint = profile.revocationUrl;
+  if (endpoint === undefined) {
+    throw new ModelCredentialError(`the ${profile.id} profile declares no revocation endpoint`);
+  }
+
+  const hint: SubscriptionRevocation =
+    tokens.refreshToken !== undefined && tokens.refreshToken.trim() !== ""
+      ? "refresh_token"
+      : tokens.accessToken.trim() === ""
+        ? "nothing"
+        : "access_token";
+  if (hint === "nothing") {
+    return hint;
+  }
+
+  const response = await postJson(
+    endpoint,
+    {
+      token: hint === "refresh_token" ? (tokens.refreshToken ?? "") : tokens.accessToken,
+      token_type_hint: hint,
+      ...(hint === "refresh_token" ? { client_id: profile.clientId } : {}),
+    },
+    options,
+    "the revocation endpoint",
+  );
+
+  if (!response.ok) {
+    throw new ModelCredentialError(
+      `the revocation endpoint answered ${String(response.status)}${refusalSuffix(await readError(response))}`,
+      response.status,
+    );
+  }
+  return hint;
+}
+
+function refusalSuffix(error: string | undefined): string {
+  const { code } = refusalCode(error);
+  return code === undefined ? "" : ` (${code})`;
 }
 
 /**
