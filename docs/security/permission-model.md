@@ -424,8 +424,9 @@ additionally caches inside its `GrantSource` owns that staleness window on top.
 
 The per-operation path is retained behind `MID_TURN_AUTHORITY_REFRESH`. What
 remains behind it is one behaviour -- observing a store edit without waiting for
-the next turn -- and no open question. See
-`docs/adr/0010-per-turn-authority.md`.
+the next turn -- and no open question about what it governs; whether the fuse
+becomes a kernel option is an open item (see [open items](../open-items.md)).
+See `docs/adr/0010-per-turn-authority.md`.
 
 ## Audit requirements
 

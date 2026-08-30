@@ -506,6 +506,7 @@ export class TurnExecutor implements TurnExecutionPort {
       ...(options.defaultTimeoutMs === undefined
         ? {}
         : { defaultTimeoutMs: options.defaultTimeoutMs }),
+      ...(options.spans === undefined ? {} : { spans: options.spans }),
     };
     this.#executor = new SharedOSExecutor(
       kernel,
