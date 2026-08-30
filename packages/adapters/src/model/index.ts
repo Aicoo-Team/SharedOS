@@ -1,6 +1,7 @@
 export * from "./chat-completions.js";
 export * from "./client.js";
 export * from "./credential.js";
+export * from "./device-authorization.js";
 export * from "./responses.js";
 export * from "./driver.js";
 export * from "./runtime.js";

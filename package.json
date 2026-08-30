@@ -18,6 +18,7 @@
     "conformance:check": "node scripts/conformance.mjs --check --strict",
     "conformance:mcp": "node scripts/mcp-conformance.mjs",
     "conformance:native": "node scripts/native-conformance.mjs",
+    "login:subscription": "node scripts/subscription-login.mjs",
     "bench": "node scripts/bench.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

@@ -42,7 +42,7 @@
  *                            requires beyond the credential; unparseable JSON
  *                            reports the column unavailable rather than running
  *                            it without them
- *   SHAREDOS_MODEL           model name          (default DSH_MODEL, else the config's model.id, else deepseek-v4-flash; on the Responses wire, the config's model.id, else gpt-5-codex)
+ *   SHAREDOS_MODEL           model name          (default DSH_MODEL, else the config's model.id, else deepseek-v4-flash; on the Responses wire, the config's model.id, else gpt-5.6)
  *   SHAREDOS_MODEL_BASE_URL  API root            (default https://api.deepseek.com; on the Responses wire, https://chatgpt.com/backend-api/codex under a subscription, else https://api.openai.com/v1)
  *   SHAREDOS_MODEL_PROVIDER  provider label      (default the config's model.provider, else deepseek; on the Responses wire, openai)
  *   SHAREDOS_NATIVE_CONFIG   default for --config
@@ -385,7 +385,7 @@ const modelWire =
   (modelAuth === "codex-subscription" ? "responses" : "chat-completions");
 const responsesWire = modelWire === "responses";
 const modelName = responsesWire
-  ? (process.env["SHAREDOS_MODEL"] ?? model?.id ?? "gpt-5-codex")
+  ? (process.env["SHAREDOS_MODEL"] ?? model?.id ?? "gpt-5.6")
   : (process.env["SHAREDOS_MODEL"] ?? process.env["DSH_MODEL"] ?? model?.id ?? "deepseek-v4-flash");
 const modelBaseUrl =
   process.env["SHAREDOS_MODEL_BASE_URL"] ??

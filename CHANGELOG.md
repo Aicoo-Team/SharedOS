@@ -170,6 +170,24 @@ each entry calls out what a host has to update.
   token and never the account code. `scripts/native-conformance.mjs` takes
   `SHAREDOS_MODEL_AUTH=codex-subscription` and reports an absent login the way
   it reports an absent binary. Hosts on an API key change nothing. See ADR 0019.
+- **A subscription can be signed in to without the vendor's CLI.**
+  `requestDeviceAuthorization` in `@aicoo/sharedos-adapters` runs a device
+  login: the provider issues a short code, the person types it into a page on
+  any device with a browser, and this machine polls until they are done. What it
+  produces is the same `SubscriptionTokens` a stored login yields, so nothing
+  downstream can tell which produced it, and `pnpm login:subscription` writes it
+  where the vendor's own tools look. No vendor binary is installed, no browser
+  is opened, no listener is started, no client secret is held, and no password
+  is seen -- the provider's own page sees that.
+  It is deliberately not RFC 8628. That grant's discovery document reports this
+  provider as having no device login at all; the flow it does have lives under
+  the issuer's account server, spells a pending login `403`/`404` rather than
+  `authorization_pending`, and answers a finished poll with an authorization
+  code and the PKCE verifier the server generated, which is then exchanged at
+  the ordinary token endpoint. `SubscriptionOAuthProfile` gains `issuerUrl`,
+  from which every path is derived, and `codeExchangeEncoding`, because the same
+  endpoint takes a refresh as JSON and a code exchange as a form. See ADR 0020,
+  which amends ADR 0019's "SharedOS runs no authorization flow".
 - **The model seat speaks a second wire shape.** `OpenAiResponsesModelClient`
   is OpenAI's Responses API, which is what a ChatGPT subscription's endpoint
   speaks and what `OpenAiCompatibleModelClient` could not reach. Both extend

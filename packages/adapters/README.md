@@ -114,7 +114,7 @@ const runtime = new ModelRuntime(
     manifest,
     client: new OpenAiCompatibleModelClient({
       credential,
-      model: "gpt-5-codex",
+      model: "gpt-5.6",
       provider: "openai",
       baseUrl: "https://api.openai.com/v1",
     }),
@@ -122,12 +122,48 @@ const runtime = new ModelRuntime(
 );
 ```
 
-SharedOS runs no authorization flow. There is no browser to open, no client
-secret to hold and no password to see: the user logs in with the vendor's own
-command, and `createCodexSubscriptionCredential` reads the file that command
-wrote. Renewed sessions are written back, because providers rotate the refresh
-token on every exchange and a run that does not persist what came back leaves
-the vendor's own CLI unable to log in.
+### Signing in without the vendor's CLI
+
+A login can be read, or obtained. Reading one is
+`createCodexSubscriptionCredential`, above: whatever `codex login` left behind.
+Obtaining one is a device login, which needs no vendor binary installed and no
+browser on this machine.
+
+```
+$ pnpm login:subscription
+
+Sign in to your subscription:
+
+  1. Open  https://auth.openai.com/codex/device
+  2. Enter this one-time code:  ABCD-1234
+```
+
+The person types that code on whatever device has a browser; this machine only
+polls. The login lands in the file the vendor's own tools read, so everything
+downstream — including `SHAREDOS_MODEL_AUTH=codex-subscription` — finds it where
+it already looks. In code it is `requestDeviceAuthorization`, which returns the
+code, the page, and a `wait` that resolves to the same `SubscriptionTokens` a
+stored login yields.
+
+Device login is off by default on a ChatGPT account; a person turns it on in
+their security settings, or an admin does for a workspace. Until then the
+provider answers with a `404`, and that is reported as the refused capability it
+is rather than as a missing route.
+
+It is deliberately not RFC 8628. That standard's discovery document says this
+provider has no device login, and following it would fail at the first request:
+the endpoints live under the issuer's account server, a pending login is spelled
+`403` or `404` rather than `authorization_pending`, and a finished poll returns
+an authorization code plus the PKCE verifier the _server_ generated, which is
+then exchanged at the ordinary token endpoint. The flow here is written to the
+vendor's own implementation, because for this grant that is the specification
+(ADR 0020).
+
+SharedOS still holds no client secret, never sees a password — the provider's
+page does — opens no browser, and starts no listener. Renewed sessions are
+written back, because providers rotate the refresh token on every exchange and a
+run that does not persist what came back leaves the vendor's own CLI unable to
+log in.
 
 Three properties are worth stating plainly, because each of them is a decision
 rather than an implementation detail.

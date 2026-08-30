@@ -98,6 +98,17 @@ export interface SubscriptionOAuthProfile {
   readonly id: string;
   /** The OAuth token endpoint, which is where a refresh is exchanged. */
   readonly tokenUrl: string;
+  /**
+   * The issuer root, from which a device login derives every path it needs.
+   *
+   * One field rather than four because that is how the provider treats it: the
+   * route chosen for the issuer is reused for the device-auth endpoints, the
+   * callback it redirects to, and the token exchange, and resolving them
+   * separately would let a host point half a login at one host and half at
+   * another. Absent on a profile with no device login.
+   * See `requestDeviceAuthorization`.
+   */
+  readonly issuerUrl?: string;
   /** The public client the login was performed by. */
   readonly clientId: string;
   /**
@@ -110,29 +121,45 @@ export interface SubscriptionOAuthProfile {
   readonly accountHeader: string;
   /** How the token endpoint wants its request body. RFC 6749 says `form`. */
   readonly encoding?: "form" | "json";
+  /**
+   * How it wants the body of an authorization-code exchange, when that differs.
+   *
+   * It does differ, and not as an oversight: OpenAI's own client posts a
+   * refresh as JSON and a code exchange as `application/x-www-form-urlencoded`
+   * to the same endpoint. Declared separately rather than assumed equal,
+   * because assuming would mean one of the two grants is sent in an encoding no
+   * client has ever tested against that server.
+   */
+  readonly codeExchangeEncoding?: "form" | "json";
   /** Constant headers the provider requires on a subscription call. */
   readonly headers?: Readonly<Record<string, string>>;
 }
 
 /**
- * The OpenAI login a `codex login` session leaves behind.
+ * The OpenAI login, whether a vendor CLI performed it or SharedOS did.
  *
  * The client id is the public one Codex authorizes with; there is no secret in
  * a PKCE flow, which is what makes it publishable here.
  *
- * What this profile does *not* claim is that ChatGPT's own Codex backend can be
- * driven from {@link OpenAiCompatibleModelClient}. That endpoint speaks the
- * Responses API, and this client speaks chat-completions; the profile
- * authenticates a subscription against any chat-completions endpoint that
- * accepts these tokens, and pointing `baseUrl` at the Codex backend would fail
- * on the wire shape rather than on the credential.
+ * Every value is the one OpenAI's own client uses, taken from
+ * `codex-rs/login` rather than from a specification. That matters twice over.
+ * The device login is not RFC 8628 -- it is the provider's own protocol under
+ * `/api/accounts/deviceauth`, which is why the OpenID discovery document at
+ * `https://auth.openai.com/.well-known/openid-configuration` advertises no
+ * `device_authorization_endpoint` and why reading that document is not enough
+ * to know whether a provider has a device login. And that document names
+ * `/api/accounts/authorize` and `/api/accounts/oauth/token` where the working
+ * client uses `/oauth/token`; the working client wins, because an untested
+ * endpoint fails as a broken login.
  */
 export const OPENAI_SUBSCRIPTION_PROFILE: SubscriptionOAuthProfile = Object.freeze({
   id: "openai-chatgpt",
+  issuerUrl: "https://auth.openai.com",
   tokenUrl: "https://auth.openai.com/oauth/token",
   clientId: "app_EMoamEEZ73f0CkXaXp7hrann",
   accountHeader: "chatgpt-account-id",
   encoding: "json",
+  codeExchangeEncoding: "form",
 });
 
 /**
@@ -207,6 +234,121 @@ const TokenResponseSchema = z.object({
   id_token: z.string().min(1).optional(),
   account_id: z.string().min(1).optional(),
 });
+
+export interface TokenGrantOptions {
+  /** Overrides the profile's default encoding, for a grant that differs. */
+  readonly encoding?: "form" | "json";
+  /** How long one token exchange may take. Default 30s. */
+  readonly requestTimeoutMs?: number;
+  /** The clock, RFC 3339. Injected for tests, which must not depend on real time. */
+  readonly now?: () => string;
+  /** Kept when the response does not repeat it, so a login survives an exchange. */
+  readonly refreshToken?: string;
+  /** Kept when the response does not repeat it. */
+  readonly accountCode?: string;
+  /** Injected for tests, which must never reach a network. */
+  readonly fetch?: typeof globalThis.fetch;
+}
+
+/**
+ * What one call to a token endpoint produced.
+ *
+ * A refusal is a value rather than an exception because a device login polls a
+ * token endpoint that answers `400 authorization_pending` on purpose, several
+ * times, before it ever succeeds. Throwing on that would make the ordinary path
+ * of one grant the exception path of another.
+ */
+export type TokenGrant =
+  | { readonly granted: true; readonly tokens: SubscriptionTokens }
+  | { readonly granted: false; readonly status: number; readonly code?: string };
+
+/**
+ * The one place a token endpoint is asked for anything.
+ *
+ * Every grant this package performs -- a refresh, a device authorization, an
+ * authorization code -- differs only in the parameters it posts, so the
+ * encoding, the timeout, the schema, the expiry arithmetic, and the rule that a
+ * response body never escapes are decided once.
+ */
+export async function requestTokenGrant(
+  profile: SubscriptionOAuthProfile,
+  parameters: Readonly<Record<string, string>>,
+  options: TokenGrantOptions = {},
+): Promise<TokenGrant> {
+  const encoding = options.encoding ?? profile.encoding ?? "form";
+  const now = options.now ?? ((): string => new Date().toISOString());
+  const requestedAt = now();
+  const fetchImplementation = options.fetch ?? globalThis.fetch.bind(globalThis);
+
+  let response: Response;
+  try {
+    response = await fetchImplementation(profile.tokenUrl, {
+      method: "POST",
+      headers: {
+        "content-type":
+          encoding === "json" ? "application/json" : "application/x-www-form-urlencoded",
+        accept: "application/json",
+      },
+      body:
+        encoding === "json"
+          ? JSON.stringify(parameters)
+          : new URLSearchParams(parameters).toString(),
+      signal: AbortSignal.timeout(options.requestTimeoutMs ?? DEFAULT_TOKEN_REQUEST_TIMEOUT_MS),
+    });
+  } catch (error) {
+    throw new ModelCredentialError(
+      `the subscription token endpoint could not be reached: ${describe(error)}`,
+    );
+  }
+
+  if (!response.ok) {
+    return { granted: false, status: response.status, ...refusalCode(await readError(response)) };
+  }
+
+  const parsed = TokenResponseSchema.safeParse(await response.json().catch(() => undefined));
+  if (!parsed.success) {
+    throw new ModelCredentialError("the subscription token endpoint returned an unreadable token");
+  }
+  return {
+    granted: true,
+    tokens: {
+      accessToken: parsed.data.access_token,
+      // A provider that rotates the refresh token replaces it; one that does not
+      // keeps the login working rather than dropping the only way to renew.
+      ...refreshOf(parsed.data.refresh_token ?? options.refreshToken),
+      ...expiryOf(parsed.data.expires_in, requestedAt),
+      // The code in force, not only the one this response happened to repeat: a
+      // provider that names the account once and not again must not leave the
+      // host persisting a session that has forgotten which account it pays.
+      ...accountOf(
+        parsed.data.account_id ??
+          accountCodeFromIdToken(parsed.data.id_token) ??
+          options.accountCode,
+      ),
+    },
+  };
+}
+
+/**
+ * The `error` field of a refused grant, and nothing else from the body.
+ *
+ * OAuth defines these as a fixed vocabulary -- `authorization_pending`,
+ * `slow_down`, `invalid_grant` -- and a device login cannot be driven without
+ * reading them. So exactly one field is read, and only when it looks like one of
+ * those codes: a provider that answers with prose, or that quotes the request
+ * back, hands over something that does not match and is dropped. The rule that
+ * a response body never leaves this package survives, because a value that
+ * matches carries no request in it.
+ */
+function refusalCode(error: string | undefined): { readonly code?: string } {
+  return error !== undefined && /^[a-z][a-z_]{0,62}$/u.test(error) ? { code: error } : {};
+}
+
+async function readError(response: Response): Promise<string | undefined> {
+  const body: unknown = await response.json().catch(() => undefined);
+  const parsed = z.object({ error: z.string() }).safeParse(body);
+  return parsed.success ? parsed.data.error : undefined;
+}
 
 /**
  * A subscription in the model seat.
@@ -333,66 +475,29 @@ export class SubscriptionOAuthCredential implements ModelCredential {
   }
 
   async #exchangeRefreshToken(refreshToken: string): Promise<SubscriptionTokens> {
-    const encoding = this.#profile.encoding ?? "form";
-    const parameters = {
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-      client_id: this.#profile.clientId,
-    };
-    const requestedAt = this.#now();
-
-    let response: Response;
-    try {
-      response = await this.#fetch(this.#profile.tokenUrl, {
-        method: "POST",
-        headers: {
-          "content-type":
-            encoding === "json" ? "application/json" : "application/x-www-form-urlencoded",
-          accept: "application/json",
-        },
-        body:
-          encoding === "json"
-            ? JSON.stringify(parameters)
-            : new URLSearchParams(parameters).toString(),
-        signal: AbortSignal.timeout(this.#requestTimeoutMs),
-      });
-    } catch (error) {
+    const grant = await requestTokenGrant(
+      this.#profile,
+      {
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: this.#profile.clientId,
+      },
+      {
+        refreshToken,
+        requestTimeoutMs: this.#requestTimeoutMs,
+        now: this.#now,
+        fetch: this.#fetch,
+        ...(this.#accountCode === undefined ? {} : { accountCode: this.#accountCode }),
+      },
+    );
+    if (!grant.granted) {
       throw new ModelCredentialError(
-        `the subscription token endpoint could not be reached: ${describe(error)}`,
+        `the subscription token endpoint answered ${String(grant.status)}${grant.code === undefined ? "" : ` (${grant.code})`}`,
+        grant.status,
       );
     }
 
-    if (!response.ok) {
-      // Read and discarded, like the completion client does with a provider
-      // error: a token endpoint quotes the request back, and the request is a
-      // refresh token.
-      await response.text().catch(() => "");
-      throw new ModelCredentialError(
-        `the subscription token endpoint answered ${String(response.status)}`,
-        response.status,
-      );
-    }
-
-    const parsed = TokenResponseSchema.safeParse(await response.json().catch(() => undefined));
-    if (!parsed.success) {
-      throw new ModelCredentialError(
-        "the subscription token endpoint returned an unreadable token",
-      );
-    }
-
-    const renewed: SubscriptionTokens = {
-      accessToken: parsed.data.access_token,
-      // A provider that rotates the refresh token replaces it; one that does not
-      // keeps the login working rather than dropping the only way to renew.
-      refreshToken: parsed.data.refresh_token ?? refreshToken,
-      ...expiryOf(parsed.data.expires_in, requestedAt),
-      // The code in force, not only the one this response happened to repeat: a
-      // provider that names the account once and not again must not leave the
-      // host persisting a session that has forgotten which account it pays.
-      ...accountOf(
-        parsed.data.account_id ?? accountCodeFromIdToken(parsed.data.id_token) ?? this.#accountCode,
-      ),
-    };
+    const renewed = grant.tokens;
     this.#tokens = renewed;
     this.#accountCode = renewed.accountCode ?? this.#accountCode;
     // The sink is the host's code. A store that is full, locked, or read-only is
@@ -419,6 +524,10 @@ function expiryOf(expiresIn: number | undefined, requestedAt: string): Partial<S
 
 function accountOf(accountCode: string | undefined): Partial<SubscriptionTokens> {
   return accountCode === undefined ? {} : { accountCode };
+}
+
+function refreshOf(refreshToken: string | undefined): Partial<SubscriptionTokens> {
+  return refreshToken === undefined ? {} : { refreshToken };
 }
 
 /**

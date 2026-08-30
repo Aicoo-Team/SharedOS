@@ -78,7 +78,7 @@ function client(
 ): OpenAiResponsesModelClient {
   return new OpenAiResponsesModelClient({
     apiKey: "secret-key",
-    model: "gpt-5-codex",
+    model: "gpt-5.6",
     provider: "openai",
     baseUrl: "https://chatgpt.com/backend-api/codex/",
     fetch,
@@ -126,7 +126,7 @@ describe("the Responses client", () => {
 
     expect(fetch.mock.calls[0]?.[0]).toBe("https://chatgpt.com/backend-api/codex/responses");
     expect(JSON.parse(requestInit(fetch).body as string)).toEqual({
-      model: "gpt-5-codex",
+      model: "gpt-5.6",
       input: [
         { type: "message", role: "system", content: [{ type: "input_text", text: "be brief" }] },
         {
@@ -386,7 +386,7 @@ describe("the Responses client", () => {
 
     const subscribed = new OpenAiResponsesModelClient({
       credential,
-      model: "gpt-5-codex",
+      model: "gpt-5.6",
       provider: "openai",
       baseUrl: "https://chatgpt.com/backend-api/codex",
       headers: { originator: "sharedos" },

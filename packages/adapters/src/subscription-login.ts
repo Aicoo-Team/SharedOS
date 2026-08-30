@@ -12,14 +12,21 @@ import {
 } from "./model/index.js";
 
 /**
- * Reading the login a vendor CLI already performed.
+ * Obtaining a subscription login, and reading the one a vendor CLI left behind.
  *
- * SharedOS runs no authorization flow. There is no browser to open, no client
- * secret to hold, and no password to see: the user logs in with the vendor's
- * own command, and what is read here is the file that command wrote. That keeps
- * the trust boundary where it already was -- the subscription belongs to the
- * user and their provider -- and it means a login can be revoked the way the
- * vendor documents, without SharedOS holding anything that would survive it.
+ * Two ways in, and neither holds a secret of SharedOS's own. A login some
+ * vendor command already performed is read off disk. A login nobody has
+ * performed yet is obtained by device code -- `requestDeviceAuthorization`,
+ * host-neutral, in the main entry point -- which needs no browser on this
+ * machine and no vendor CLI installed.
+ *
+ * Both end at the same {@link SubscriptionTokens}, so what consumes a login
+ * cannot tell which produced it (ADR 0020).
+ *
+ * What stays true either way: SharedOS is a public client with no secret, it
+ * never sees a password -- the provider's own page does -- and a login it
+ * obtained is revoked exactly where the provider documents, because there is
+ * nothing else holding it open.
  *
  * Node only. Published from `@aicoo/sharedos-adapters/node` so the main entry
  * point stays host-neutral.
@@ -131,6 +138,16 @@ export async function createCodexSubscriptionCredential(
     tokens,
     ...(persist === false ? {} : { onRefresh: (renewed) => writeCodexLogin(path, renewed) }),
   });
+}
+
+/** Write a login where the vendor's own tools will find it. */
+export async function saveCodexLogin(
+  tokens: SubscriptionTokens,
+  options: StoredLoginOptions = {},
+): Promise<string> {
+  const path = loginPath(options);
+  await writeCodexLogin(path, tokens);
+  return path;
 }
 
 /**
