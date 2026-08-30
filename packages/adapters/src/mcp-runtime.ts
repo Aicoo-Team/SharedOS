@@ -684,11 +684,16 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
       // launch and an emitted `config.toml` cannot disagree. Why each setting is
       // there -- `required`, and the approval mode that keeps a run with no
       // human from refusing every write inside Codex -- is on
-      // `codexMcpServerSettings`.
-      ...codexMcpServerSettings(connection).flatMap(([key, value]) => [
-        "-c",
-        `mcp_servers.${connection.name ?? SHAREDOS_MCP_SERVER_NAME}.${key}=${value}`,
-      ]),
+      // `codexMcpServerSettings`. The bearer token is the one setting left to
+      // the file: a command line is readable by every local process, so a
+      // bridge that requires a token is reached through the `config.toml`
+      // `codexMcpConfig` emits, which this launch does not write.
+      ...codexMcpServerSettings(connection)
+        .filter(([key]) => key !== "bearer_token")
+        .flatMap(([key, value]) => [
+          "-c",
+          `mcp_servers.${connection.name ?? SHAREDOS_MCP_SERVER_NAME}.${key}=${value}`,
+        ]),
       prompt,
     ],
     cwd: workspace,

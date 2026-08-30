@@ -786,4 +786,31 @@ describe("the Codex spec", () => {
       expect(emitted).toContain(`${key} = ${value}`);
     }
   });
+
+  it("keeps a bearer token off the command line", () => {
+    const connection = { url: "http://127.0.0.1:41234/mcp", token: "secret-bridge-token" };
+    const { context, ...request } = executionRequest();
+    const launch = CODEX_MCP_HARNESS.launch({
+      prompt: "read both files",
+      connection,
+      workspace: "/tmp/sharedos-test",
+      configPaths: {},
+      request: {
+        ...request,
+        context: {
+          actor: context.actor,
+          owner: context.owner,
+          namespaceId: context.namespaceId,
+          purpose: context.purpose,
+          traceId: context.traceId,
+          now: context.now,
+        },
+      },
+    });
+
+    expect(codexMcpServerSettings(connection).map(([key]) => key)).toContain("bearer_token");
+    expect(codexMcpConfig(connection)).toContain('bearer_token = "secret-bridge-token"');
+    expect(launch.args.some((arg) => arg.includes("secret-bridge-token"))).toBe(false);
+    expect(launch.args.some((arg) => arg.includes("bearer_token"))).toBe(false);
+  });
 });

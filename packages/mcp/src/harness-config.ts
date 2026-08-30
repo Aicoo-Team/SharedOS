@@ -46,7 +46,9 @@ const DEFAULT_TIMEOUT_SEC = 120;
  *
  * One list serves both forms Codex accepts -- the `[mcp_servers.<name>]` table
  * {@link codexMcpConfig} emits, and the `-c mcp_servers.<name>.<key>=<value>`
- * overrides a launch passes -- so the two cannot disagree.
+ * overrides a launch passes -- so the two cannot disagree. `bearer_token`,
+ * present only when the connection carries one, belongs to the file alone: a
+ * launch keeps it off the command line.
  *
  * `required = true` is deliberate. A Codex run whose SharedOS server failed to
  * start should not quietly continue with only its own tools -- that run would
