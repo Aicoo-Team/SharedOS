@@ -32,7 +32,7 @@ import {
   CLAUDE_CODE_SCRIPTED_COLUMN,
   CODEX_SCRIPTED_COLUMN,
   DEEPSEEK_SCRIPTED_COLUMN,
-  EMBEDDED_COLUMN,
+  ADVERSARY_COLUMN,
   PI_SCRIPTED_COLUMN,
 } from "./columns.js";
 import { hashExperimentInputs } from "./hashing.js";
@@ -1221,7 +1221,7 @@ export function renderSystemsCostReport(report: SystemsCostReport): string {
   lines.push("turn rather than once per call and is outside these figures.", "");
   lines.push("| Column | Parse + translate per call | Catalogue width | n |");
   lines.push("| --- | --- | --- | --- |");
-  lines.push(`| ${EMBEDDED_COLUMN.label} | — | ${report.structural.catalogueWidth} | — |`);
+  lines.push(`| ${ADVERSARY_COLUMN.label} | — | ${report.structural.catalogueWidth} | — |`);
   for (const entry of report.translation) {
     lines.push(
       `| ${entry.label} | ${micro(entry.latency.p50Ms)} | ${entry.catalogueWidth} | ${entry.latency.n} |`,
@@ -1229,7 +1229,7 @@ export function renderSystemsCostReport(report: SystemsCostReport): string {
   }
   lines.push(
     "",
-    `${EMBEDDED_COLUMN.label}'s \`—\` is the absence of a translation layer, not a pending measurement.`,
+    `${ADVERSARY_COLUMN.label}'s \`—\` is the absence of a translation layer, not a pending measurement.`,
   );
   lines.push("");
   lines.push("The width is the catalogue SharedOS served. A harness that republishes it");

@@ -67,7 +67,7 @@ const { OpenAiCompatibleModelClient } = await import(
 );
 const {
   CANONICAL_CONFORMANCE_CASES,
-  EMBEDDED_COLUMN,
+  ADVERSARY_COLUMN,
   liveColumn,
   modelColumn,
   runConformanceSuite,
@@ -116,7 +116,7 @@ const cases =
  * `mcp-conformance.mjs`.
  *
  * An id naming no column stops the run, for the reason `--case` does: quietly
- * falling back to a Standard-only run would attribute a green result to columns
+ * falling back to an Adversary-only run would attribute a green result to columns
  * that never ran.
  */
 const only = flag("harness", undefined);
@@ -288,7 +288,7 @@ if (only !== undefined) {
 }
 
 const availability = [];
-const columns = [EMBEDDED_COLUMN];
+const columns = [ADVERSARY_COLUMN];
 
 for (const harness of HARNESSES.filter(({ harness: id }) => only === undefined || id === only)) {
   const host = harnessConfig(harness.harness);
@@ -486,7 +486,7 @@ for (const column of manifest.columns) {
 }
 
 const failures = strictFailures(manifest);
-const liveColumns = manifest.columns.filter(({ id }) => id !== EMBEDDED_COLUMN.id);
+const liveColumns = manifest.columns.filter(({ id }) => id !== ADVERSARY_COLUMN.id);
 await mkdir(outputDirectory, { recursive: true });
 await writeFile(
   outputJson,

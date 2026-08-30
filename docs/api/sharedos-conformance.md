@@ -252,31 +252,49 @@ driver is in the seat. Adding a column is supplying a
 `(moves, options) => RuntimePlugin` factory; the suite and the grading do not
 change.
 
-Five columns are committed. `EMBEDDED_COLUMN` puts `HostileRuntime` in the seat
-directly. `CODEX_SCRIPTED_COLUMN`, `CLAUDE_CODE_SCRIPTED_COLUMN`,
-`DEEPSEEK_SCRIPTED_COLUMN`, and `PI_SCRIPTED_COLUMN` put each adapter there,
-driven by frames built from the same move: `movesToTranscript` renders each
-declared attempt into that vendor's own wire shape, and the adapter's real
-protocol translation reads them back. The kernel and the envelope are the real
-ones. What is left out is the transport that would carry those frames from a
-live CLI.
+Six columns are committed, and the first two are different kinds of thing.
 
-Three more kinds of column make that claim, and are run by the scripts rather
-than committed, because each depends on what is installed here and on what a
-model chooses:
+- `ADVERSARY_COLUMN` (`Adversary`) puts `HostileRuntime` in the seat directly: a
+  plugin that owns its outcome, issues every declared attempt itself, and calls
+  the host without a driver or a catalogue rendering in between. It is the
+  reference every other cell is read against, and the only column that can put
+  the ungranted-escalation row. It is not the native harness.
+- `MODEL_SCRIPTED_COLUMN` (`Standard`) is the native harness: `ModelRuntime`,
+  which is `StandardRuntime` with the model driver in the seat and the
+  permission-filtered catalogue rendered into the model's own tool-call shape.
+  In the committed manifest a transcript stands where the provider would —
+  `movesToModelTranscript` writes each declared attempt as a model reply in the
+  wire alphabet a provider accepts, `TranscriptModelClient` replays it, and the
+  driver's real codec, argument parsing, and escalation recognition read it back.
+  What is left out is the model. It is graded under `modelLimits`, the same
+  limits the live model column carries, because every one of them is the
+  driver's rather than the provider's.
+- `CODEX_SCRIPTED_COLUMN`, `CLAUDE_CODE_SCRIPTED_COLUMN`,
+  `DEEPSEEK_SCRIPTED_COLUMN`, and `PI_SCRIPTED_COLUMN` put each vendor adapter
+  there, driven by frames built from the same move: `movesToTranscript` renders
+  each declared attempt into that vendor's own wire shape, and the adapter's
+  real protocol translation reads them back. What is left out is the transport
+  that would carry those frames from a live CLI.
+
+In every column the kernel and the envelope are the real ones.
+
+Three more kinds of column make the live claim, and are run by the scripts
+rather than committed, because each depends on what is installed here and on
+what a model chooses:
 
 - `liveColumn` spawns the installed CLI as a driven harness over its real
   transport;
 - `mcpColumn` runs the installed CLI natively, with the catalogue served to it
   over MCP, so the harness owns its own loop;
 - `modelColumn` puts a model API in the seat with no vendor between it and the
-  kernel, which is the only column that separates what the model does from what
-  a vendor's scaffolding makes it do.
+  kernel — the live mode of `Standard`, and the only column that separates what
+  the model does from what a vendor's scaffolding makes it do.
 
 Each column leaves something out — the transport, the catalogue, the loop, the
-vendor — and the docblocks on `columns.ts` say precisely which. None of them
-replaces the scripted reference: a model chooses, and the rows only a scripted
-driver carries are reported `not exercised` rather than `pass` when it does not.
+vendor, the model — and the docblocks on `columns.ts` say precisely which. None
+of them replaces the scripted reference: a model chooses, and the rows only a
+scripted driver carries are reported `not exercised` rather than `pass` when it
+does not.
 
 A vendor column cannot report on itself: a harness does not know it is in a
 conformance run. Its attempts are recovered from the execution record instead,
@@ -307,7 +325,7 @@ per row and per condition, in four kinds (`ColumnLimits`):
 - `unsupported` — a whole row the column cannot run. Every driven, MCP, and
   model column sets it on the ungranted-escalation row: only a plugin that owns
   its outcome can end a turn with an `escalate` the catalogue did not offer, so
-  the row runs on Standard alone and reads `not applicable` elsewhere, with the
+  the row runs on Adversary alone and reads `not applicable` elsewhere, with the
   reason.
 
 Escalation is no longer among the limits of any column. It is a catalogued
@@ -1291,7 +1309,7 @@ Defined in: [conformance/src/judge.ts:47](https://github.com/Aicoo-Team/SharedOS
 
 ### ColumnLimits
 
-Defined in: [conformance/src/columns.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L45)
+Defined in: [conformance/src/columns.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L49)
 
 What one column cannot do, so a cell reports it instead of failing on it.
 
@@ -1299,16 +1317,16 @@ What one column cannot do, so a cell reports it instead of failing on it.
 
 | Property                                             | Modifier   | Type                                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Defined in                                                                                                                |
 | ---------------------------------------------------- | ---------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-driverissued-1"></a> `driverIssued?` | `readonly` | `ReadonlyMap`\<`string`, `string`\> | Attempts this column makes on the row's behalf rather than by choice. A fourth kind, and the only one that does not withhold a verdict. The attempt is issued, recorded, and graded exactly as any other -- what is being declared is _who_ made it. On the step-ceiling row the driver names a step it has no right to, because the loop's own index can never exceed the ceiling; the occupant of the delegate seat asked for an ordinary call and the driver reached past the budget on its behalf. That distinction is worth carrying because of what it does to a column whose every other pass means "the model did this". Printing this one as a plain pass would put the driver's doing under the model's name, which is the same overstatement `not exercised` exists to prevent at the other end. | [conformance/src/columns.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L86) |
-| <a id="property-outofscope"></a> `outOfScope?`       | `readonly` | `string`                            | Set when SharedOS declares the row's guarantee does not reach this column. Different from every other field here, and the difference is the point. `unsupported` and `unreachable` are claims about the _harness_: it cannot make the attempt. This is a claim about _SharedOS_: the attempt is made, recorded, and answered -- and the answer is not graded, because the guarantee is declared not to apply on this path. The row is still run and its evidence still kept, so what the ungraded call actually did stays visible rather than being replaced by a symbol.                                                                                                                                                                                                                                   | [conformance/src/columns.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L70) |
-| <a id="property-unreachable"></a> `unreachable?`     | `readonly` | `ReadonlyMap`\<`string`, `string`\> | Attempt ids the column structurally cannot issue, mapped to why.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | [conformance/src/columns.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L58) |
-| <a id="property-unsupported"></a> `unsupported?`     | `readonly` | `string`                            | Set when the column structurally cannot run this row at all, and why. Every driven, MCP, and model column sets it on the ungranted-escalation row: only a plugin that owns its outcome can end a turn with an `escalate` the catalogue did not offer, and each of those columns reads the catalogue before it will. The cell reads `not applicable` with the reason, and the row is not run for that column, so it leaves no evidence -- unlike an unreachable _attempt_, whose turn still runs.                                                                                                                                                                                                                                                                                                            | [conformance/src/columns.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L56) |
+| <a id="property-driverissued-1"></a> `driverIssued?` | `readonly` | `ReadonlyMap`\<`string`, `string`\> | Attempts this column makes on the row's behalf rather than by choice. A fourth kind, and the only one that does not withhold a verdict. The attempt is issued, recorded, and graded exactly as any other -- what is being declared is _who_ made it. On the step-ceiling row the driver names a step it has no right to, because the loop's own index can never exceed the ceiling; the occupant of the delegate seat asked for an ordinary call and the driver reached past the budget on its behalf. That distinction is worth carrying because of what it does to a column whose every other pass means "the model did this". Printing this one as a plain pass would put the driver's doing under the model's name, which is the same overstatement `not exercised` exists to prevent at the other end. | [conformance/src/columns.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L90) |
+| <a id="property-outofscope"></a> `outOfScope?`       | `readonly` | `string`                            | Set when SharedOS declares the row's guarantee does not reach this column. Different from every other field here, and the difference is the point. `unsupported` and `unreachable` are claims about the _harness_: it cannot make the attempt. This is a claim about _SharedOS_: the attempt is made, recorded, and answered -- and the answer is not graded, because the guarantee is declared not to apply on this path. The row is still run and its evidence still kept, so what the ungraded call actually did stays visible rather than being replaced by a symbol.                                                                                                                                                                                                                                   | [conformance/src/columns.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L74) |
+| <a id="property-unreachable"></a> `unreachable?`     | `readonly` | `ReadonlyMap`\<`string`, `string`\> | Attempt ids the column structurally cannot issue, mapped to why.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | [conformance/src/columns.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L62) |
+| <a id="property-unsupported"></a> `unsupported?`     | `readonly` | `string`                            | Set when the column structurally cannot run this row at all, and why. Every driven, MCP, and model column sets it on the ungranted-escalation row: only a plugin that owns its outcome can end a turn with an `escalate` the catalogue did not offer, and each of those columns reads the catalogue before it will. The cell reads `not applicable` with the reason, and the row is not run for that column, so it leaves no evidence -- unlike an unreachable _attempt_, whose turn still runs.                                                                                                                                                                                                                                                                                                            | [conformance/src/columns.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L60) |
 
 ---
 
 ### ColumnTurn
 
-Defined in: [conformance/src/columns.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L90)
+Defined in: [conformance/src/columns.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L94)
 
 One turn a column ran, for a column that cannot report on itself.
 
@@ -1316,8 +1334,8 @@ One turn a column ran, for a column that cannot report on itself.
 
 | Property                                        | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Defined in                                                                                                                |
 | ----------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-executionid"></a> `executionId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/columns.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L91) |
-| <a id="property-record-1"></a> `record`         | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/columns.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L93) |
+| <a id="property-executionid"></a> `executionId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/columns.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L95) |
+| <a id="property-record-1"></a> `record`         | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/columns.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L97) |
 | `record.authority`                              | `public`   | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:256](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L256) |
 | `record.authority.actor`                        | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L107) |
 | `record.authority.namespaceId`                  | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L109) |
@@ -1402,7 +1420,7 @@ One turn a column ran, for a column that cannot report on itself.
 | `record.system.toolPolicy.managedMcp`           | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | contracts/dist/tool.d.ts:670                                                                                              |
 | `record.system.toolPolicy.mode`                 | `public`   | `"strict"` \| `"hybrid"`                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | contracts/dist/tool.d.ts:669                                                                                              |
 | `record.version`                                | `public`   | `"1"`                                                                                                                                                                                                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:252](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L252) |
-| <a id="property-turn"></a> `turn`               | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/columns.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L92) |
+| <a id="property-turn"></a> `turn`               | `readonly` | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/columns.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L96) |
 
 ---
 
@@ -1453,7 +1471,7 @@ both would overstate the result.
 
 ### ConformanceCell
 
-Defined in: [conformance/src/runner.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L52)
+Defined in: [conformance/src/runner.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L53)
 
 One cell of the manifest.
 
@@ -1465,18 +1483,18 @@ so a committed manifest diffs only when enforcement behaviour changes.
 
 | Property                                            | Modifier   | Type                                               | Description                                                                 | Defined in                                                                                                              |
 | --------------------------------------------------- | ---------- | -------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-attempted-2"></a> `attempted`       | `readonly` | `number`                                           | -                                                                           | [conformance/src/runner.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L58) |
-| <a id="property-columnid"></a> `columnId`           | `readonly` | `string`                                           | -                                                                           | [conformance/src/runner.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L53) |
-| <a id="property-declared-1"></a> `declared`         | `readonly` | `number`                                           | -                                                                           | [conformance/src/runner.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L57) |
-| <a id="property-detail-3"></a> `detail?`            | `readonly` | `string`                                           | -                                                                           | [conformance/src/runner.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L67) |
-| <a id="property-driverissued-2"></a> `driverIssued` | `readonly` | readonly `string`[]                                | Adversarial attempts this column issued on the row's behalf, not by choice. | [conformance/src/runner.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L64) |
-| <a id="property-notapplicable"></a> `notApplicable` | `readonly` | `number`                                           | Attempts a runtime structurally cannot make, declared rather than omitted.  | [conformance/src/runner.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L60) |
-| <a id="property-reasoncodes-1"></a> `reasonCodes`   | `readonly` | readonly `string`[]                                | -                                                                           | [conformance/src/runner.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L56) |
-| <a id="property-recordgaps-1"></a> `recordGaps`     | `readonly` | readonly `string`[]                                | -                                                                           | [conformance/src/runner.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L62) |
-| <a id="property-recordusable-1"></a> `recordUsable` | `readonly` | `boolean`                                          | -                                                                           | [conformance/src/runner.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L61) |
-| <a id="property-refusedby-2"></a> `refusedBy`       | `readonly` | readonly [`EnforcementPoint`](#enforcementpoint)[] | -                                                                           | [conformance/src/runner.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L55) |
-| <a id="property-status-2"></a> `status`             | `readonly` | [`ConformanceStatus`](#conformancestatus)          | -                                                                           | [conformance/src/runner.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L54) |
-| <a id="property-turns"></a> `turns`                 | `readonly` | `number`                                           | Turns run against one world for this cell. One unless the move spans more.  | [conformance/src/runner.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L66) |
+| <a id="property-attempted-2"></a> `attempted`       | `readonly` | `number`                                           | -                                                                           | [conformance/src/runner.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L59) |
+| <a id="property-columnid"></a> `columnId`           | `readonly` | `string`                                           | -                                                                           | [conformance/src/runner.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L54) |
+| <a id="property-declared-1"></a> `declared`         | `readonly` | `number`                                           | -                                                                           | [conformance/src/runner.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L58) |
+| <a id="property-detail-3"></a> `detail?`            | `readonly` | `string`                                           | -                                                                           | [conformance/src/runner.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L68) |
+| <a id="property-driverissued-2"></a> `driverIssued` | `readonly` | readonly `string`[]                                | Adversarial attempts this column issued on the row's behalf, not by choice. | [conformance/src/runner.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L65) |
+| <a id="property-notapplicable"></a> `notApplicable` | `readonly` | `number`                                           | Attempts a runtime structurally cannot make, declared rather than omitted.  | [conformance/src/runner.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L61) |
+| <a id="property-reasoncodes-1"></a> `reasonCodes`   | `readonly` | readonly `string`[]                                | -                                                                           | [conformance/src/runner.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L57) |
+| <a id="property-recordgaps-1"></a> `recordGaps`     | `readonly` | readonly `string`[]                                | -                                                                           | [conformance/src/runner.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L63) |
+| <a id="property-recordusable-1"></a> `recordUsable` | `readonly` | `boolean`                                          | -                                                                           | [conformance/src/runner.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L62) |
+| <a id="property-refusedby-2"></a> `refusedBy`       | `readonly` | readonly [`EnforcementPoint`](#enforcementpoint)[] | -                                                                           | [conformance/src/runner.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L56) |
+| <a id="property-status-2"></a> `status`             | `readonly` | [`ConformanceStatus`](#conformancestatus)          | -                                                                           | [conformance/src/runner.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L55) |
+| <a id="property-turns"></a> `turns`                 | `readonly` | `number`                                           | Turns run against one world for this cell. One unless the move spans more.  | [conformance/src/runner.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L67) |
 
 ---
 
@@ -1503,7 +1521,7 @@ and so no part of it is reachable from the runtime that will be attacking.
 
 ### ConformanceEvidence
 
-Defined in: [conformance/src/runner.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L95)
+Defined in: [conformance/src/runner.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L96)
 
 Everything behind one cell. Large, and expected to churn on runtime metadata.
 
@@ -1511,12 +1529,12 @@ Everything behind one cell. Large, and expected to churn on runtime metadata.
 
 | Property                                        | Modifier   | Type                                                                                                                                                                                                | Description                                                                                                                                                         | Defined in                                                                                                                |
 | ----------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-caseid"></a> `caseId`           | `readonly` | `string`                                                                                                                                                                                            | -                                                                                                                                                                   | [conformance/src/runner.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L96)   |
-| <a id="property-columnid-1"></a> `columnId`     | `readonly` | `string`                                                                                                                                                                                            | -                                                                                                                                                                   | [conformance/src/runner.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L98)   |
-| <a id="property-conditionid"></a> `conditionId` | `readonly` | `string`                                                                                                                                                                                            | -                                                                                                                                                                   | [conformance/src/runner.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L97)   |
-| <a id="property-records"></a> `records`         | `readonly` | readonly `object`[]                                                                                                                                                                                 | One record per turn, in order. A row about what the next turn sees produces two, and keeping both is what lets the claim be re-checked without re-running anything. | [conformance/src/runner.ts:105](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L105) |
-| <a id="property-reports"></a> `reports`         | `readonly` | readonly (\{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \} \| `undefined`)[] | -                                                                                                                                                                   | [conformance/src/runner.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L106) |
-| <a id="property-runtime"></a> `runtime`         | `readonly` | `object`                                                                                                                                                                                            | -                                                                                                                                                                   | [conformance/src/runner.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L99)   |
+| <a id="property-caseid"></a> `caseId`           | `readonly` | `string`                                                                                                                                                                                            | -                                                                                                                                                                   | [conformance/src/runner.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L97)   |
+| <a id="property-columnid-1"></a> `columnId`     | `readonly` | `string`                                                                                                                                                                                            | -                                                                                                                                                                   | [conformance/src/runner.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L99)   |
+| <a id="property-conditionid"></a> `conditionId` | `readonly` | `string`                                                                                                                                                                                            | -                                                                                                                                                                   | [conformance/src/runner.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L98)   |
+| <a id="property-records"></a> `records`         | `readonly` | readonly `object`[]                                                                                                                                                                                 | One record per turn, in order. A row about what the next turn sees produces two, and keeping both is what lets the claim be re-checked without re-running anything. | [conformance/src/runner.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L106) |
+| <a id="property-reports"></a> `reports`         | `readonly` | readonly (\{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \} \| `undefined`)[] | -                                                                                                                                                                   | [conformance/src/runner.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L107) |
+| <a id="property-runtime"></a> `runtime`         | `readonly` | `object`                                                                                                                                                                                            | -                                                                                                                                                                   | [conformance/src/runner.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L100) |
 | `runtime.id`                                    | `public`   | `string`                                                                                                                                                                                            | -                                                                                                                                                                   | contracts/dist/runtime.d.ts:9                                                                                             |
 | `runtime.metadata?`                             | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                    | -                                                                                                                                                                   | contracts/dist/runtime.d.ts:12                                                                                            |
 | `runtime.protocolVersion`                       | `public`   | `"1"`                                                                                                                                                                                               | -                                                                                                                                                                   | contracts/dist/runtime.d.ts:11                                                                                            |
@@ -1526,49 +1544,49 @@ Everything behind one cell. Large, and expected to churn on runtime metadata.
 
 ### ConformanceManifest
 
-Defined in: [conformance/src/runner.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L80)
+Defined in: [conformance/src/runner.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L81)
 
 #### Properties
 
 | Property                                          | Modifier   | Type                                           | Description                                                                                                                        | Defined in                                                                                                              |
 | ------------------------------------------------- | ---------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-casesethash"></a> `caseSetHash`   | `readonly` | `string`                                       | Hash of the case definitions this manifest was produced from.                                                                      | [conformance/src/runner.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L84) |
-| <a id="property-columns"></a> `columns`           | `readonly` | readonly `object`[]                            | -                                                                                                                                  | [conformance/src/runner.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L90) |
-| <a id="property-judgeversion"></a> `judgeVersion` | `readonly` | `string`                                       | -                                                                                                                                  | [conformance/src/runner.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L82) |
-| <a id="property-rows"></a> `rows`                 | `readonly` | readonly [`ConformanceRow`](#conformancerow)[] | -                                                                                                                                  | [conformance/src/runner.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L91) |
-| <a id="property-version"></a> `version`           | `readonly` | `"1"`                                          | -                                                                                                                                  | [conformance/src/runner.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L81) |
-| <a id="property-worldsethash"></a> `worldSetHash` | `readonly` | `string`                                       | Hash of the worlds those cases were run against. Separate from the case set on purpose; see [worldSetIdentity](#worldsetidentity). | [conformance/src/runner.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L89) |
+| <a id="property-casesethash"></a> `caseSetHash`   | `readonly` | `string`                                       | Hash of the case definitions this manifest was produced from.                                                                      | [conformance/src/runner.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L85) |
+| <a id="property-columns"></a> `columns`           | `readonly` | readonly `object`[]                            | -                                                                                                                                  | [conformance/src/runner.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L91) |
+| <a id="property-judgeversion"></a> `judgeVersion` | `readonly` | `string`                                       | -                                                                                                                                  | [conformance/src/runner.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L83) |
+| <a id="property-rows"></a> `rows`                 | `readonly` | readonly [`ConformanceRow`](#conformancerow)[] | -                                                                                                                                  | [conformance/src/runner.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L92) |
+| <a id="property-version"></a> `version`           | `readonly` | `"1"`                                          | -                                                                                                                                  | [conformance/src/runner.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L82) |
+| <a id="property-worldsethash"></a> `worldSetHash` | `readonly` | `string`                                       | Hash of the worlds those cases were run against. Separate from the case set on purpose; see [worldSetIdentity](#worldsetidentity). | [conformance/src/runner.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L90) |
 
 ---
 
 ### ConformanceRow
 
-Defined in: [conformance/src/runner.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L70)
+Defined in: [conformance/src/runner.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L71)
 
 #### Properties
 
 | Property                                                | Modifier   | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Defined in                                                                                                              |
 | ------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-caseid-1"></a> `caseId`                 | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/runner.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L71) |
-| <a id="property-cells"></a> `cells`                     | `readonly` | readonly [`ConformanceCell`](#conformancecell)[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | [conformance/src/runner.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L77) |
-| <a id="property-condition"></a> `condition`             | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/runner.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L76) |
-| <a id="property-conditionid-1"></a> `conditionId`       | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/runner.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L72) |
-| <a id="property-expectedoutcome"></a> `expectedOutcome` | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/runner.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L75) |
-| <a id="property-invariant"></a> `invariant`             | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/runner.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L74) |
-| <a id="property-kind"></a> `kind`                       | `readonly` | `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"expired_grant"` \| `"replayed_grant"` \| `"revoked_mid_turn"` \| `"expired_mid_turn"` \| `"namespace_crossing"` \| `"bounded_grant_exhausted"` \| `"usage_store_unavailable"` \| `"authority_unavailable"` \| `"tool_ceiling_escape"` \| `"invalid_tool_result"` \| `"budget_exceeded"` \| `"grant_material_unreachable"` \| `"over_broad_delegation"` \| `"rollback_unavailable"` \| `"rollback_out_of_scope"` \| `"broker_ungranted"` \| `"broker_out_of_scope"` \| `"escalation_recorded"` \| `"escalation_refused"` \| `"record_completeness"` \| `"typed_governed_views"` \| `"replay_freshness"` | [conformance/src/runner.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L73) |
+| <a id="property-caseid-1"></a> `caseId`                 | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/runner.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L72) |
+| <a id="property-cells"></a> `cells`                     | `readonly` | readonly [`ConformanceCell`](#conformancecell)[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | [conformance/src/runner.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L78) |
+| <a id="property-condition"></a> `condition`             | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/runner.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L77) |
+| <a id="property-conditionid-1"></a> `conditionId`       | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/runner.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L73) |
+| <a id="property-expectedoutcome"></a> `expectedOutcome` | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/runner.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L76) |
+| <a id="property-invariant"></a> `invariant`             | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/runner.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L75) |
+| <a id="property-kind"></a> `kind`                       | `readonly` | `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"expired_grant"` \| `"replayed_grant"` \| `"revoked_mid_turn"` \| `"expired_mid_turn"` \| `"namespace_crossing"` \| `"bounded_grant_exhausted"` \| `"usage_store_unavailable"` \| `"authority_unavailable"` \| `"tool_ceiling_escape"` \| `"invalid_tool_result"` \| `"budget_exceeded"` \| `"grant_material_unreachable"` \| `"over_broad_delegation"` \| `"rollback_unavailable"` \| `"rollback_out_of_scope"` \| `"broker_ungranted"` \| `"broker_out_of_scope"` \| `"escalation_recorded"` \| `"escalation_refused"` \| `"record_completeness"` \| `"typed_governed_views"` \| `"replay_freshness"` | [conformance/src/runner.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L74) |
 
 ---
 
 ### ConformanceRun
 
-Defined in: [conformance/src/runner.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L109)
+Defined in: [conformance/src/runner.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L110)
 
 #### Properties
 
 | Property                                    | Modifier   | Type                                                     | Defined in                                                                                                                |
 | ------------------------------------------- | ---------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-evidence"></a> `evidence`   | `readonly` | readonly [`ConformanceEvidence`](#conformanceevidence)[] | [conformance/src/runner.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L111) |
-| <a id="property-manifest-1"></a> `manifest` | `readonly` | [`ConformanceManifest`](#conformancemanifest)            | [conformance/src/runner.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L110) |
+| <a id="property-evidence"></a> `evidence`   | `readonly` | readonly [`ConformanceEvidence`](#conformanceevidence)[] | [conformance/src/runner.ts:112](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L112) |
+| <a id="property-manifest-1"></a> `manifest` | `readonly` | [`ConformanceManifest`](#conformancemanifest)            | [conformance/src/runner.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L111) |
 
 ---
 
@@ -1953,36 +1971,36 @@ Defined in: [conformance/src/judge.ts:91](https://github.com/Aicoo-Team/SharedOS
 
 ### LiveColumnOptions
 
-Defined in: [conformance/src/columns.ts:573](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L573)
+Defined in: [conformance/src/columns.ts:732](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L732)
 
 #### Properties
 
 | Property                                                | Modifier   | Type                                                                       | Description                                                                                                                                                                                  | Defined in                                                                                                                  |
 | ------------------------------------------------------- | ---------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-createtransport"></a> `createTransport` | `readonly` | (`options`) => [`HarnessTransport`](sharedos-adapters.md#harnesstransport) | Opens the real harness. Kept as a callback so this package stays host-neutral: the process transport that spawns a CLI is Node-only and belongs to the caller, not to the conformance suite. | [conformance/src/columns.ts:582](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L582) |
-| <a id="property-id-3"></a> `id`                         | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:574](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L574) |
-| <a id="property-label-1"></a> `label`                   | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:575](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L575) |
-| <a id="property-protocol"></a> `protocol`               | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)                  | -                                                                                                                                                                                            | [conformance/src/columns.ts:576](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L576) |
+| <a id="property-createtransport"></a> `createTransport` | `readonly` | (`options`) => [`HarnessTransport`](sharedos-adapters.md#harnesstransport) | Opens the real harness. Kept as a callback so this package stays host-neutral: the process transport that spawns a CLI is Node-only and belongs to the caller, not to the conformance suite. | [conformance/src/columns.ts:741](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L741) |
+| <a id="property-id-3"></a> `id`                         | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:733](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L733) |
+| <a id="property-label-1"></a> `label`                   | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:734](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L734) |
+| <a id="property-protocol"></a> `protocol`               | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)                  | -                                                                                                                                                                                            | [conformance/src/columns.ts:735](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L735) |
 
 ---
 
 ### McpColumnOptions
 
-Defined in: [conformance/src/columns.ts:450](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L450)
+Defined in: [conformance/src/columns.ts:609](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L609)
 
 #### Properties
 
 | Property                                            | Modifier   | Type                                                                | Description                                                                                                                                                                                                                                                   | Defined in                                                                                                                  |
 | --------------------------------------------------- | ---------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-createruntime"></a> `createRuntime` | `readonly` | (`options`) => [`RuntimePlugin`](sharedos-runtime.md#runtimeplugin) | Builds the MCP-connected runtime for one turn. A callback because starting a loopback server and spawning a CLI is Node-only and belongs to the caller, exactly as the process transport does for [liveColumn](#livecolumn). This package stays host-neutral. | [conformance/src/columns.ts:460](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L460) |
-| <a id="property-id-4"></a> `id`                     | `readonly` | `string`                                                            | -                                                                                                                                                                                                                                                             | [conformance/src/columns.ts:451](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L451) |
-| <a id="property-label-2"></a> `label`               | `readonly` | `string`                                                            | -                                                                                                                                                                                                                                                             | [conformance/src/columns.ts:452](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L452) |
+| <a id="property-createruntime"></a> `createRuntime` | `readonly` | (`options`) => [`RuntimePlugin`](sharedos-runtime.md#runtimeplugin) | Builds the MCP-connected runtime for one turn. A callback because starting a loopback server and spawning a CLI is Node-only and belongs to the caller, exactly as the process transport does for [liveColumn](#livecolumn). This package stays host-neutral. | [conformance/src/columns.ts:619](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L619) |
+| <a id="property-id-4"></a> `id`                     | `readonly` | `string`                                                            | -                                                                                                                                                                                                                                                             | [conformance/src/columns.ts:610](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L610) |
+| <a id="property-label-2"></a> `label`               | `readonly` | `string`                                                            | -                                                                                                                                                                                                                                                             | [conformance/src/columns.ts:611](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L611) |
 
 ---
 
 ### McpColumnRuntimeOptions
 
-Defined in: [conformance/src/columns.ts:445](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L445)
+Defined in: [conformance/src/columns.ts:604](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L604)
 
 #### Extends
 
@@ -1992,50 +2010,50 @@ Defined in: [conformance/src/columns.ts:445](https://github.com/Aicoo-Team/Share
 
 | Property                                          | Modifier   | Type           | Description                                                              | Inherited from                                                                           | Defined in                                                                                                                  |
 | ------------------------------------------------- | ---------- | -------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-executionid-1"></a> `executionId` | `readonly` | `string`       | The execution identifier of that turn.                                   | [`RuntimeColumnOptions`](#runtimecolumnoptions).[`executionId`](#property-executionid-3) | [conformance/src/columns.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L100) |
-| <a id="property-prompt"></a> `prompt`             | `readonly` | () => `string` | The declared attempts, written out for a harness that runs its own loop. | -                                                                                        | [conformance/src/columns.ts:447](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L447) |
-| <a id="property-turn-2"></a> `turn`               | `readonly` | `number`       | Which turn of the case this plugin instance is running.                  | [`RuntimeColumnOptions`](#runtimecolumnoptions).[`turn`](#property-turn-5)               | [conformance/src/columns.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L98)   |
+| <a id="property-executionid-1"></a> `executionId` | `readonly` | `string`       | The execution identifier of that turn.                                   | [`RuntimeColumnOptions`](#runtimecolumnoptions).[`executionId`](#property-executionid-3) | [conformance/src/columns.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L104) |
+| <a id="property-prompt"></a> `prompt`             | `readonly` | () => `string` | The declared attempts, written out for a harness that runs its own loop. | -                                                                                        | [conformance/src/columns.ts:606](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L606) |
+| <a id="property-turn-2"></a> `turn`               | `readonly` | `number`       | Which turn of the case this plugin instance is running.                  | [`RuntimeColumnOptions`](#runtimecolumnoptions).[`turn`](#property-turn-5)               | [conformance/src/columns.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L102) |
 
 ---
 
 ### ModelColumnOptions
 
-Defined in: [conformance/src/columns.ts:628](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L628)
+Defined in: [conformance/src/columns.ts:787](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L787)
 
 #### Properties
 
 | Property                              | Modifier   | Type                                              | Description                                                                                                                                                                               | Defined in                                                                                                                  |
 | ------------------------------------- | ---------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-client"></a> `client` | `readonly` | [`ModelClient`](sharedos-adapters.md#modelclient) | The model in the delegate seat. Supplied rather than constructed here so this package stays free of credentials and endpoints, exactly as the transport is for [liveColumn](#livecolumn). | [conformance/src/columns.ts:637](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L637) |
-| <a id="property-id-5"></a> `id`       | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:629](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L629) |
-| <a id="property-label-3"></a> `label` | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:630](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L630) |
+| <a id="property-client"></a> `client` | `readonly` | [`ModelClient`](sharedos-adapters.md#modelclient) | The model in the delegate seat. Supplied rather than constructed here so this package stays free of credentials and endpoints, exactly as the transport is for [liveColumn](#livecolumn). | [conformance/src/columns.ts:796](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L796) |
+| <a id="property-id-5"></a> `id`       | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:788](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L788) |
+| <a id="property-label-3"></a> `label` | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:789](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L789) |
 
 ---
 
 ### MovePromptOptions
 
-Defined in: [conformance/src/columns.ts:872](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L872)
+Defined in: [conformance/src/columns.ts:1037](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1037)
 
 #### Properties
 
-| Property                                  | Modifier   | Type                                                                 | Defined in                                                                                                                  |
-| ----------------------------------------- | ---------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-context-1"></a> `context` | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | [conformance/src/columns.ts:873](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L873) |
-| <a id="property-turn-3"></a> `turn`       | `readonly` | `number`                                                             | [conformance/src/columns.ts:874](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L874) |
+| Property                                  | Modifier   | Type                                                                 | Defined in                                                                                                                    |
+| ----------------------------------------- | ---------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-context-1"></a> `context` | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | [conformance/src/columns.ts:1038](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1038) |
+| <a id="property-turn-3"></a> `turn`       | `readonly` | `number`                                                             | [conformance/src/columns.ts:1039](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1039) |
 
 ---
 
 ### MoveTranscriptOptions
 
-Defined in: [conformance/src/columns.ts:265](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L265)
+Defined in: [conformance/src/columns.ts:287](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L287)
 
 #### Properties
 
 | Property                                          | Modifier   | Type                                                                 | Defined in                                                                                                                  |
 | ------------------------------------------------- | ---------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-context-2"></a> `context`         | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | [conformance/src/columns.ts:268](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L268) |
-| <a id="property-executionid-2"></a> `executionId` | `readonly` | `string`                                                             | [conformance/src/columns.ts:266](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L266) |
-| <a id="property-turn-4"></a> `turn`               | `readonly` | `number`                                                             | [conformance/src/columns.ts:267](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L267) |
+| <a id="property-context-2"></a> `context`         | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | [conformance/src/columns.ts:290](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L290) |
+| <a id="property-executionid-2"></a> `executionId` | `readonly` | `string`                                                             | [conformance/src/columns.ts:288](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L288) |
+| <a id="property-turn-4"></a> `turn`               | `readonly` | `number`                                                             | [conformance/src/columns.ts:289](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L289) |
 
 ---
 
@@ -2111,20 +2129,20 @@ Defined in: [conformance/src/hashing.ts:49](https://github.com/Aicoo-Team/Shared
 
 ### RunConformanceSuiteOptions
 
-Defined in: [conformance/src/runner.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L200)
+Defined in: [conformance/src/runner.ts:203](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L203)
 
 #### Properties
 
 | Property                                   | Modifier   | Type                                             | Defined in                                                                                                                |
 | ------------------------------------------ | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-cases"></a> `cases?`       | `readonly` | readonly [`ConformanceCase`](#conformancecase)[] | [conformance/src/runner.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L201) |
-| <a id="property-columns-1"></a> `columns?` | `readonly` | readonly [`RuntimeColumn`](#runtimecolumn)[]     | [conformance/src/runner.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L202) |
+| <a id="property-cases"></a> `cases?`       | `readonly` | readonly [`ConformanceCase`](#conformancecase)[] | [conformance/src/runner.ts:204](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L204) |
+| <a id="property-columns-1"></a> `columns?` | `readonly` | readonly [`RuntimeColumn`](#runtimecolumn)[]     | [conformance/src/runner.ts:205](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L205) |
 
 ---
 
 ### RuntimeColumn
 
-Defined in: [conformance/src/columns.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L110)
+Defined in: [conformance/src/columns.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L114)
 
 One column of the manifest: an adapter occupying the delegate seat.
 
@@ -2136,8 +2154,8 @@ the kernel's guarantees should not depend on which driver is in the seat.
 
 | Property                              | Modifier   | Type     | Defined in                                                                                                                  |
 | ------------------------------------- | ---------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-id-6"></a> `id`       | `readonly` | `string` | [conformance/src/columns.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L111) |
-| <a id="property-label-4"></a> `label` | `readonly` | `string` | [conformance/src/columns.ts:112](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L112) |
+| <a id="property-id-6"></a> `id`       | `readonly` | `string` | [conformance/src/columns.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L115) |
+| <a id="property-label-4"></a> `label` | `readonly` | `string` | [conformance/src/columns.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L116) |
 
 #### Methods
 
@@ -2145,7 +2163,7 @@ the kernel's guarantees should not depend on which driver is in the seat.
 
 > **create**(`moves`, `options`): [`RuntimePlugin`](sharedos-runtime.md#runtimeplugin)
 
-Defined in: [conformance/src/columns.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L113)
+Defined in: [conformance/src/columns.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L117)
 
 ###### Parameters
 
@@ -2162,7 +2180,7 @@ Defined in: [conformance/src/columns.ts:113](https://github.com/Aicoo-Team/Share
 
 > `optional` **limits**(`move`, `condition`): [`ColumnLimits`](#columnlimits)
 
-Defined in: [conformance/src/columns.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L123)
+Defined in: [conformance/src/columns.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L128)
 
 What this column structurally cannot do for one row under one condition.
 
@@ -2189,13 +2207,14 @@ What this column structurally cannot do for one row under one condition.
 
 > `optional` **receipts**(`move`, `turn`): readonly `object`[]
 
-Defined in: [conformance/src/columns.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L121)
+Defined in: [conformance/src/columns.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L126)
 
 Receipts for a turn, when the runtime in the seat cannot report on itself.
 
-The scripted adversary emits its own; a vendor harness replaying recorded
-frames does not know it is in a conformance run, so its attempts are
-recovered from the execution record instead.
+The scripted adversary emits its own; a driver -- a vendor harness replaying
+frames, or the native harness replaying model replies -- does not know it
+is in a conformance run, so its attempts are recovered from the execution
+record instead.
 
 ###### Parameters
 
@@ -2220,7 +2239,7 @@ readonly `object`[]
 
 ### RuntimeColumnOptions
 
-Defined in: [conformance/src/columns.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L96)
+Defined in: [conformance/src/columns.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L100)
 
 #### Extended by
 
@@ -2230,39 +2249,39 @@ Defined in: [conformance/src/columns.ts:96](https://github.com/Aicoo-Team/Shared
 
 | Property                                          | Modifier   | Type     | Description                                             | Defined in                                                                                                                  |
 | ------------------------------------------------- | ---------- | -------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-executionid-3"></a> `executionId` | `readonly` | `string` | The execution identifier of that turn.                  | [conformance/src/columns.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L100) |
-| <a id="property-turn-5"></a> `turn`               | `readonly` | `number` | Which turn of the case this plugin instance is running. | [conformance/src/columns.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L98)   |
+| <a id="property-executionid-3"></a> `executionId` | `readonly` | `string` | The execution identifier of that turn.                  | [conformance/src/columns.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L104) |
+| <a id="property-turn-5"></a> `turn`               | `readonly` | `number` | Which turn of the case this plugin instance is running. | [conformance/src/columns.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L102) |
 
 ---
 
 ### ScriptedColumnOptions
 
-Defined in: [conformance/src/columns.ts:184](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L184)
+Defined in: [conformance/src/columns.ts:206](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L206)
 
 #### Properties
 
 | Property                                    | Modifier   | Type                                                            | Defined in                                                                                                                  |
 | ------------------------------------------- | ---------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-id-7"></a> `id`             | `readonly` | `string`                                                        | [conformance/src/columns.ts:185](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L185) |
-| <a id="property-label-5"></a> `label`       | `readonly` | `string`                                                        | [conformance/src/columns.ts:186](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L186) |
-| <a id="property-protocol-1"></a> `protocol` | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)       | [conformance/src/columns.ts:187](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L187) |
-| <a id="property-writer"></a> `writer`       | `readonly` | [`HarnessFrameWriter`](sharedos-adapters.md#harnessframewriter) | [conformance/src/columns.ts:188](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L188) |
+| <a id="property-id-7"></a> `id`             | `readonly` | `string`                                                        | [conformance/src/columns.ts:207](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L207) |
+| <a id="property-label-5"></a> `label`       | `readonly` | `string`                                                        | [conformance/src/columns.ts:208](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L208) |
+| <a id="property-protocol-1"></a> `protocol` | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)       | [conformance/src/columns.ts:209](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L209) |
+| <a id="property-writer"></a> `writer`       | `readonly` | [`HarnessFrameWriter`](sharedos-adapters.md#harnessframewriter) | [conformance/src/columns.ts:210](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L210) |
 
 ---
 
 ### StrictFailure
 
-Defined in: [conformance/src/runner.ts:453](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L453)
+Defined in: [conformance/src/runner.ts:456](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L456)
 
 #### Properties
 
 | Property                                          | Modifier   | Type                                      | Defined in                                                                                                                |
 | ------------------------------------------------- | ---------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-caseid-2"></a> `caseId`           | `readonly` | `string`                                  | [conformance/src/runner.ts:454](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L454) |
-| <a id="property-columnid-2"></a> `columnId`       | `readonly` | `string`                                  | [conformance/src/runner.ts:456](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L456) |
-| <a id="property-conditionid-2"></a> `conditionId` | `readonly` | `string`                                  | [conformance/src/runner.ts:455](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L455) |
-| <a id="property-detail-5"></a> `detail`           | `readonly` | `string`                                  | [conformance/src/runner.ts:458](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L458) |
-| <a id="property-status-4"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus) | [conformance/src/runner.ts:457](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L457) |
+| <a id="property-caseid-2"></a> `caseId`           | `readonly` | `string`                                  | [conformance/src/runner.ts:457](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L457) |
+| <a id="property-columnid-2"></a> `columnId`       | `readonly` | `string`                                  | [conformance/src/runner.ts:459](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L459) |
+| <a id="property-conditionid-2"></a> `conditionId` | `readonly` | `string`                                  | [conformance/src/runner.ts:458](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L458) |
+| <a id="property-detail-5"></a> `detail`           | `readonly` | `string`                                  | [conformance/src/runner.ts:461](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L461) |
+| <a id="property-status-4"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus) | [conformance/src/runner.ts:460](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L460) |
 
 ---
 
@@ -2715,6 +2734,31 @@ Defined in: [conformance/src/adversary.ts:253](https://github.com/Aicoo-Team/Sha
 
 ---
 
+### ADVERSARY\_COLUMN
+
+> `const` **ADVERSARY\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
+
+Defined in: [conformance/src/columns.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L149)
+
+The reference column: `HostileRuntime` in the seat, owning its own outcome.
+
+The adversary is a plugin rather than a driver, and that is what the column
+is for. It issues every declared attempt itself, in order, every run, and
+returns whatever ending the row declares whether or not the catalogue offered
+it -- which is why it is the one column that can put the ungranted-escalation
+row, and why it is the fixed point every other column's cell is read against:
+"did the kernel refuse this the same way?" is a question only a column that
+always makes the attempt can anchor.
+
+It is not the native harness. Nothing here passes through `StandardRuntime`,
+a driver, or a catalogue rendering; the plugin calls `host.invokeTool`
+directly. The harness SharedOS ships is a separate column,
+[MODEL\_SCRIPTED\_COLUMN](#model_scripted_column), and the two must not be read as one: this one
+says what the kernel does to an attempt, that one says what the shipped loop
+does with it on the way.
+
+---
+
 ### ADVERSARY\_METADATA\_KEY
 
 > `const` **ADVERSARY\_METADATA\_KEY**: `"conformance"` = `"conformance"`
@@ -3045,7 +3089,7 @@ reach another world as a side effect.
 
 > `const` **CLAUDE\_CODE\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:244](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L244)
+Defined in: [conformance/src/columns.ts:266](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L266)
 
 ---
 
@@ -3053,7 +3097,7 @@ Defined in: [conformance/src/columns.ts:244](https://github.com/Aicoo-Team/Share
 
 > `const` **CODEX\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:237](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L237)
+Defined in: [conformance/src/columns.ts:259](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L259)
 
 ---
 
@@ -3212,7 +3256,7 @@ One authorization decision, with the authority state it was made against.
 
 > `const` **DEEPSEEK\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:251](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L251)
+Defined in: [conformance/src/columns.ts:273](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L273)
 
 ---
 
@@ -3220,15 +3264,16 @@ Defined in: [conformance/src/columns.ts:251](https://github.com/Aicoo-Team/Share
 
 > `const` **DEFAULT\_COLUMNS**: readonly [`RuntimeColumn`](#runtimecolumn)[]
 
-Defined in: [conformance/src/runner.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L123)
+Defined in: [conformance/src/runner.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L125)
 
 The columns a committed manifest is produced from.
 
-The scripted adversary in the SharedOS executor, plus each vendor adapter
-driven by scripted frames. The vendor columns exercise the adapter's own
-protocol translation against the real kernel and envelope; the transport that
-would carry the frames from a live CLI is the one part left out, so a live
-column is a separate claim and is not made here.
+The scripted adversary in the SharedOS executor; the native harness with a
+transcript in the model's seat; and each vendor adapter driven by scripted
+frames. The native and vendor columns exercise their driver's own translation
+against the real kernel and envelope; what is left out is the provider or the
+transport that would have produced the frames, so a live column is a separate
+claim and is not made here.
 
 ---
 
@@ -3237,16 +3282,6 @@ column is a separate claim and is not made here.
 > `const` **DELETE\_TOOL**: `"files.delete"` = `"files.delete"`
 
 Defined in: [conformance/src/world.ts:112](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/world.ts#L112)
-
----
-
-### EMBEDDED\_COLUMN
-
-> `const` **EMBEDDED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
-
-Defined in: [conformance/src/columns.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L127)
-
-The in-process column: the SharedOS executor driving the scripted adversary.
 
 ---
 
@@ -3470,6 +3505,37 @@ shipped tool that does not behave like the shipped one.
 
 ---
 
+### MODEL\_SCRIPTED\_COLUMN
+
+> `const` **MODEL\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
+
+Defined in: [conformance/src/columns.ts:448](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L448)
+
+The native harness in its scripted mode: `ModelRuntime` with a transcript in
+the provider's place.
+
+`StandardRuntime` owns the loop, `ModelDriver` renders the permission-
+filtered catalogue into the model's tool-call shape and decodes what comes
+back, and the kernel and envelope are the real ones. What is scripted is the
+one thing a live run gets from a provider: the replies. So this column is to
+[modelColumn](#modelcolumn) what a vendor's scripted column is to its live one -- the
+same driver, the same translation, the same limits, with the network and the
+model's choices taken out -- and it is what lets the manifest commit a cell
+for the harness SharedOS ships at all, since a live model chooses and a
+committed manifest cannot depend on a choice.
+
+It is not the reference column and is not meant to be. The adversary is a
+plugin that owns its outcome; this one reaches the envelope through a driver,
+so it carries a driver's limits under [modelLimits](#modellimits): the inspection
+attempt is never handed to it, the out-of-budget step is the driver's to
+name, and an ungranted `escalate` is passed through as a call rather than
+returned as an outcome. Those are facts about the native harness, and putting
+them in a committed cell is the point -- the shipped loop is graded under the
+same rules as every vendor's, beside them, rather than standing in for the
+kernel it runs on.
+
+---
+
 ### MUTATION\_ACTIONS
 
 > `const` **MUTATION\_ACTIONS**: readonly \[`"create"`, `"replace"`, `"append"`, `"delete"`\]
@@ -3524,7 +3590,7 @@ A grant claiming more than its parent holds, armed only by the row about it.
 
 > `const` **PI\_SCRIPTED\_COLUMN**: [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:258](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L258)
+Defined in: [conformance/src/columns.ts:280](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L280)
 
 ---
 
@@ -3769,7 +3835,7 @@ Defined in: [conformance/src/world.ts:117](https://github.com/Aicoo-Team/SharedO
 
 > `const` **SHAREDOS\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
 
-Defined in: [conformance/src/runner.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L43)
+Defined in: [conformance/src/runner.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L44)
 
 The SharedOS build an execution record was produced by.
 
@@ -4779,7 +4845,7 @@ Set when the row is about how the turn terminates rather than a call in it.
 
 > **caseSetIdentity**(`cases`): `unknown`
 
-Defined in: [conformance/src/runner.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L150)
+Defined in: [conformance/src/runner.ts:153](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L153)
 
 What the case-set hash is taken over: the declarations, without the prose.
 
@@ -5170,7 +5236,7 @@ Defined in: [conformance/src/world.ts:1569](https://github.com/Aicoo-Team/Shared
 
 > **harnessLimits**(`move`, `condition`): [`ColumnLimits`](#columnlimits)
 
-Defined in: [conformance/src/columns.ts:153](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L153)
+Defined in: [conformance/src/columns.ts:175](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L175)
 
 Attempts a transcript-driven vendor harness cannot issue.
 
@@ -5297,7 +5363,7 @@ re-graded without re-running anything.
 
 > **liveColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:600](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L600)
+Defined in: [conformance/src/columns.ts:759](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L759)
 
 A vendor adapter driven by the vendor's own CLI, over the real wire.
 
@@ -5329,7 +5395,7 @@ something that did not happen.
 
 > **liveReceiptsFromRecord**(`move`, `turn`): readonly `object`[]
 
-Defined in: [conformance/src/columns.ts:793](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L793)
+Defined in: [conformance/src/columns.ts:958](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L958)
 
 Recover what a live turn attempted, correlating on the call rather than its id.
 
@@ -5379,7 +5445,7 @@ readonly `object`[]
 
 > **mcpColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:486](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L486)
+Defined in: [conformance/src/columns.ts:645](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L645)
 
 A vendor CLI running natively, against the SharedOS catalogue over MCP.
 
@@ -5419,7 +5485,7 @@ make the cell green would be measuring the prompt rather than the kernel.
 
 > **mcpHarnessLimits**(`move`, `condition`): [`ColumnLimits`](#columnlimits)
 
-Defined in: [conformance/src/columns.ts:544](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L544)
+Defined in: [conformance/src/columns.ts:703](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L703)
 
 What a natively-looping MCP harness cannot be tested on, and why.
 
@@ -5485,7 +5551,7 @@ record's metadata.
 
 > **modelColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:737](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L737)
+Defined in: [conformance/src/columns.ts:902](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L902)
 
 A model API in the delegate seat, with no vendor between it and the kernel.
 
@@ -5511,7 +5577,9 @@ does not choose to make is simply not attempted, and the cell reports `not
 exercised` rather than `pass`; the step past the budget is the one attempt
 the driver makes on the model's behalf, and it is marked so the cell reads
 `pass (driver)`. Replacing the reference with this column would put `pnpm
-conformance:check` behind a model's choices.
+conformance:check` behind a model's choices. Its scripted mode,
+[MODEL\_SCRIPTED\_COLUMN](#model_scripted_column), is what the manifest commits instead: the same
+driver with a transcript where the provider would be.
 
 Graded under [modelLimits](#modellimits), which unlike [mcpHarnessLimits](#mcpharnesslimits)
 declares nothing about uncatalogued names, and the difference is structural
@@ -5538,9 +5606,13 @@ manifest would have suppressed had the column declared the row unreachable.
 
 > **modelLimits**(`move`, `condition`): [`ColumnLimits`](#columnlimits)
 
-Defined in: [conformance/src/columns.ts:670](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L670)
+Defined in: [conformance/src/columns.ts:833](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L833)
 
 What a model in the delegate seat cannot be tested on, and why.
+
+Shared by the scripted and the live model column, because every limit here
+is the driver's rather than the provider's: a transcript in the seat is
+handed exactly what a model is, and can reach exactly as far.
 
 Close to [harnessLimits](#harnesslimits) but not the same claims, and the differences
 are worth keeping rather than sharing one function and one wording.
@@ -5590,11 +5662,48 @@ would suppress a real result -- and in the first live run it did produce one.
 
 ---
 
+### movesToModelTranscript()
+
+> **movesToModelTranscript**(`moves`, `options`): [`ModelTranscript`](sharedos-adapters.md#modeltranscript)
+
+Defined in: [conformance/src/columns.ts:362](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L362)
+
+Turn declared attempts into a scripted model conversation.
+
+The model-seat counterpart of [movesToTranscript](#movestotranscript), making the same
+choices for the same reasons: one call per reply, because the driver answers
+every call in a reply before it speaks to the model again, and a closing
+reply with no calls so the turn ends by the model completing rather than by
+the recording running out. Attempts a driver cannot issue -- another turn's,
+a declared-unreachable one, an inspection -- get no reply, so they produce no
+receipt and are graded as unreached rather than as denied.
+
+Names are written in the wire alphabet a provider accepts, exactly as a live
+reply would carry them, and the driver's own codec is what turns them back
+into catalogue names. That includes the best-effort path for a name the
+catalogue does not hold, which is how an uncatalogued attempt reaches the
+envelope here as it does live. Call ids are the attempt's own, so receipts
+are recovered by the exact correlation a scripted column has and a live one
+lacks.
+
+#### Parameters
+
+| Parameter | Type                                              |
+| --------- | ------------------------------------------------- |
+| `moves`   | readonly `object`[]                               |
+| `options` | [`MoveTranscriptOptions`](#movetranscriptoptions) |
+
+#### Returns
+
+[`ModelTranscript`](sharedos-adapters.md#modeltranscript)
+
+---
+
 ### movesToPrompt()
 
 > **movesToPrompt**(`moves`, `options`): `string`
 
-Defined in: [conformance/src/columns.ts:890](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L890)
+Defined in: [conformance/src/columns.ts:1055](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1055)
 
 The declared attempts, written out as instructions a live harness can follow.
 
@@ -5625,7 +5734,7 @@ try to paper over.
 
 > **movesToTranscript**(`writer`, `moves`, `options`): [`HarnessTranscript`](sharedos-adapters.md#harnesstranscript)
 
-Defined in: [conformance/src/columns.ts:280](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L280)
+Defined in: [conformance/src/columns.ts:302](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L302)
 
 Turn declared attempts into a scripted conversation.
 
@@ -5785,7 +5894,7 @@ readonly `object`[]
 
 > **receiptsFromRecord**(`move`, `turn`): readonly `object`[]
 
-Defined in: [conformance/src/columns.ts:403](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L403)
+Defined in: [conformance/src/columns.ts:562](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L562)
 
 Recover what a turn attempted from its execution record alone.
 
@@ -5823,7 +5932,7 @@ readonly `object`[]
 
 > **renderConformanceSummary**(`manifest`): `string`
 
-Defined in: [conformance/src/runner.ts:499](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L499)
+Defined in: [conformance/src/runner.ts:502](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L502)
 
 Render the manifest as a stable Markdown document.
 
@@ -5934,7 +6043,7 @@ readonly `object`[]
 
 > **runConformanceSuite**(`options?`): `Promise`\<[`ConformanceRun`](#conformancerun)>\>
 
-Defined in: [conformance/src/runner.ts:212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L212)
+Defined in: [conformance/src/runner.ts:215](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L215)
 
 Run every case under every column and grade the result.
 
@@ -6079,7 +6188,7 @@ number depend on how many calls the turn happened to make.
 
 > **scriptedColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L202)
+Defined in: [conformance/src/columns.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L224)
 
 A vendor adapter driven by frames built from the move it is meant to attack.
 
@@ -6125,7 +6234,7 @@ Defined in: core/dist/hashing.d.ts:11
 
 > **strictFailures**(`manifest`): readonly [`StrictFailure`](#strictfailure)[]
 
-Defined in: [conformance/src/runner.ts:480](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L480)
+Defined in: [conformance/src/runner.ts:483](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L483)
 
 Cells that must break a build.
 
@@ -6218,7 +6327,7 @@ would produce a number that is neither the operation nor the measurement.
 
 > **worldSetIdentity**(`cases`): `unknown`
 
-Defined in: [conformance/src/runner.ts:190](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L190)
+Defined in: [conformance/src/runner.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L193)
 
 What the world-set hash is taken over: the worlds those cases materialise.
 

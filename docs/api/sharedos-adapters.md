@@ -40,12 +40,12 @@ the harness that produced it.
 
 ## Four ways to occupy the seat
 
-| Path                    | What is in the delegate seat                                       | Entry points                                                                                                           |
-| ----------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Driven harness          | A vendor CLI, run one turn at a time by SharedOS's own loop        | `createCodexRuntime`, `createClaudeCodeRuntime`, `createDeepseekRuntime`, `createPiRuntime`; `HarnessRuntime`          |
-| Driven model            | A model API, with no vendor between it and the kernel              | `ModelDriver`, `ModelRuntime`, `OpenAiCompatibleModelClient`                                                           |
-| Native harness over MCP | A vendor CLI running its own loop, with the catalogue served to it | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                          |
-| Transcript              | Supplied vendor frames, for testing the translation without a CLI  | `TranscriptTransport`, `HarnessTranscript`, and the `*FrameWriter`s that render a declared attempt in a vendor's shape |
+| Path                    | What is in the delegate seat                                                                     | Entry points                                                                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Driven harness          | A vendor CLI, run one turn at a time by SharedOS's own loop                                      | `createCodexRuntime`, `createClaudeCodeRuntime`, `createDeepseekRuntime`, `createPiRuntime`; `HarnessRuntime`                                                                         |
+| Driven model            | A model API, with no vendor between it and the kernel                                            | `ModelDriver`, `ModelRuntime`, `OpenAiCompatibleModelClient`; `TranscriptModelClient` for a scripted reply sequence                                                                   |
+| Native harness over MCP | A vendor CLI running its own loop, with the catalogue served to it                               | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                                                                                         |
+| Transcript              | Supplied vendor frames or model replies, for testing the translation without a CLI or a provider | `TranscriptTransport`, `HarnessTranscript`, and the `*FrameWriter`s that render a declared attempt in a vendor's shape; `TranscriptModelClient`, `ModelTranscript` for the model seat |
 
 The first two run inside `StandardRuntime`: SharedOS owns the loop, renders the
 permission-filtered catalogue into the harness's or the model's own tool shape,
@@ -132,7 +132,11 @@ envelope. Nothing in this package captures a vendor session: a transcript is
 whatever its caller hands it, and the conformance suite writes its own.
 `TranscriptTransport` replays vendor frames in batches and releases the next
 batch only once a result has been written, which is the shape of every
-tool-using harness.
+tool-using harness. `TranscriptModelClient` is its counterpart for the model
+seat: it replays supplied replies through the real `ModelDriver`, one reply per
+model call, and treats a spent transcript as an error rather than a completion,
+so a script that ends too early fails the turn instead of reading as a model
+choosing to stop.
 
 What a transcript cannot cover is the transport binding — the exact command-line
 flags each CLI wants, and the outer envelope it wraps its frames in — and what a
@@ -772,7 +776,7 @@ Defined in: [packages/adapters/src/model/client.ts:222](https://github.com/Aicoo
 
 ###### Implementation of
 
-[`ModelClient`](#modelclient).[`complete`](#complete-2)
+[`ModelClient`](#modelclient).[`complete`](#complete-3)
 
 ---
 
@@ -845,6 +849,81 @@ Defined in: [packages/adapters/src/model/driver.ts:79](https://github.com/Aicoo-
 ###### Returns
 
 `string`
+
+---
+
+### TranscriptModelClient
+
+Defined in: [packages/adapters/src/model/transcript.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L38)
+
+Replays a supplied conversation through the real model driver.
+
+This is how the native harness is verified without a provider or a
+credential present, and it is the exact counterpart of `TranscriptTransport`
+for a vendor harness. The replies are the caller's, written in the model's
+own tool-call shape; the name decoding, argument parsing, escalation
+recognition, and step accounting are the driver's; and the only thing left
+unexercised is the provider that would have produced the replies.
+
+A spent transcript is an error rather than a completion. A live provider
+always answers; a recording that has run out has nothing to say, and
+answering "done" on its behalf would grade a script that ended too early as
+a model choosing to stop. The driver fails the turn `model_call_failed`,
+which is the visible result.
+
+#### Implements
+
+- [`ModelClient`](#modelclient)
+
+#### Constructors
+
+##### Constructor
+
+> **new TranscriptModelClient**(`transcript`, `options?`): [`TranscriptModelClient`](#transcriptmodelclient)
+
+Defined in: [packages/adapters/src/model/transcript.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L46)
+
+###### Parameters
+
+| Parameter    | Type                                                            |
+| ------------ | --------------------------------------------------------------- |
+| `transcript` | [`ModelTranscript`](#modeltranscript)                           |
+| `options`    | [`TranscriptModelClientOptions`](#transcriptmodelclientoptions) |
+
+###### Returns
+
+[`TranscriptModelClient`](#transcriptmodelclient)
+
+#### Properties
+
+| Property                                    | Modifier   | Type                                                  | Default value | Description                                                              | Defined in                                                                                                                                     |
+| ------------------------------------------- | ---------- | ----------------------------------------------------- | ------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-model-1"></a> `model`       | `readonly` | `string`                                              | `undefined`   | The model this client was configured to ask for.                         | [packages/adapters/src/model/transcript.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L39) |
+| <a id="property-provider-1"></a> `provider` | `readonly` | `string`                                              | `undefined`   | The provider that serves it, recorded alongside the model on every turn. | [packages/adapters/src/model/transcript.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L40) |
+| <a id="property-seen"></a> `seen`           | `readonly` | [`ModelCompletionRequest`](#modelcompletionrequest)[] | `[]`          | Every request the driver made, in order, for a test to read back.        | [packages/adapters/src/model/transcript.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L42) |
+
+#### Methods
+
+##### complete()
+
+> **complete**(`request`, `signal`): `Promise`\<[`ModelReply`](#modelreply)>\>
+
+Defined in: [packages/adapters/src/model/transcript.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L55)
+
+###### Parameters
+
+| Parameter | Type                                                |
+| --------- | --------------------------------------------------- |
+| `request` | [`ModelCompletionRequest`](#modelcompletionrequest) |
+| `signal`  | `AbortSignal`                                       |
+
+###### Returns
+
+`Promise`\<[`ModelReply`](#modelreply)\>
+
+###### Implementation of
+
+[`ModelClient`](#modelclient).[`complete`](#complete-3)
 
 ---
 
@@ -1256,8 +1335,8 @@ interface and no new enforcement path.
 
 | Property                                    | Modifier   | Type     | Description                                                              | Defined in                                                                                                                             |
 | ------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-model-1"></a> `model`       | `readonly` | `string` | The model this client was configured to ask for.                         | [packages/adapters/src/model/client.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L93) |
-| <a id="property-provider-1"></a> `provider` | `readonly` | `string` | The provider that serves it, recorded alongside the model on every turn. | [packages/adapters/src/model/client.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L95) |
+| <a id="property-model-2"></a> `model`       | `readonly` | `string` | The model this client was configured to ask for.                         | [packages/adapters/src/model/client.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L93) |
+| <a id="property-provider-2"></a> `provider` | `readonly` | `string` | The provider that serves it, recorded alongside the model on every turn. | [packages/adapters/src/model/client.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L95) |
 
 #### Methods
 
@@ -1324,7 +1403,7 @@ What the model answered with.
 | Property                                           | Modifier   | Type                                         | Description                                                                                                                                                                                                                                                                                                                                                                                                                               | Defined in                                                                                                                             |
 | -------------------------------------------------- | ---------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="property-finishreason"></a> `finishReason?` | `readonly` | `string`                                     | Why generation stopped, in the provider's own vocabulary. `stop` and `tool_calls` are the model ending its reply; `length` is the provider ending it at the output-token ceiling. Carried because the two are different facts about the same reply: a completion that was cut off mid-way looks, without this, exactly like a completion the model chose to end, and a record whose purpose is honest attribution has to tell them apart. | [packages/adapters/src/model/client.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L68) |
-| <a id="property-model-2"></a> `model?`             | `readonly` | `string`                                     | The model the provider says actually answered. Recorded separately from the one that was asked for because they differ: DeepSeek maps an unrecognised name onto a default rather than rejecting it, so a run configured for one model can be served by another. The record should say what answered, which is the weaker claim and the honest one.                                                                                        | [packages/adapters/src/model/client.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L79) |
+| <a id="property-model-3"></a> `model?`             | `readonly` | `string`                                     | The model the provider says actually answered. Recorded separately from the one that was asked for because they differ: DeepSeek maps an unrecognised name onto a default rather than rejecting it, so a run configured for one model can be served by another. The record should say what answered, which is the weaker claim and the honest one.                                                                                        | [packages/adapters/src/model/client.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L79) |
 | <a id="property-text"></a> `text`                  | `readonly` | `string`                                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L57) |
 | <a id="property-toolcalls"></a> `toolCalls`        | `readonly` | readonly [`ModelToolCall`](#modeltoolcall)[] | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L58) |
 | <a id="property-usage"></a> `usage?`               | `readonly` | [`ModelUsage`](#modelusage)                  | Absent when the provider reported no usage; never estimated.                                                                                                                                                                                                                                                                                                                                                                              | [packages/adapters/src/model/client.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L70) |
@@ -1368,6 +1447,25 @@ an unrecognised name means is a policy question that belongs to the driver.
 
 ---
 
+### ModelTranscript
+
+Defined in: [packages/adapters/src/model/transcript.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L11)
+
+A model conversation, supplied by its caller.
+
+One reply per model call. The first reply answers the opening prompt, and
+each later reply is released only once every tool call in the reply before
+it has been answered -- which is what the driver already requires of a live
+provider, so a transcript exercises the same code path a live model does.
+
+#### Properties
+
+| Property                                | Modifier   | Type                                   | Defined in                                                                                                                                     |
+| --------------------------------------- | ---------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-replies"></a> `replies` | `readonly` | readonly [`ModelReply`](#modelreply)[] | [packages/adapters/src/model/transcript.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L12) |
+
+---
+
 ### ModelUsage
 
 Defined in: [packages/adapters/src/model/client.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L50)
@@ -1395,10 +1493,23 @@ Defined in: [packages/adapters/src/model/client.ts:150](https://github.com/Aicoo
 | <a id="property-baseurl"></a> `baseUrl`                    | `readonly` | `string`                                                                                       | The chat-completions root, without a trailing slash.                                                                                                                                                                                                                                     | [packages/adapters/src/model/client.ts:156](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L156) |
 | <a id="property-fetch"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                    | [packages/adapters/src/model/client.ts:168](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L168) |
 | <a id="property-maxoutputtokens"></a> `maxOutputTokens?`   | `readonly` | `number`                                                                                       | -                                                                                                                                                                                                                                                                                        | [packages/adapters/src/model/client.ts:157](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L157) |
-| <a id="property-model-3"></a> `model`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                        | [packages/adapters/src/model/client.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L152) |
-| <a id="property-provider-2"></a> `provider`                | `readonly` | `string`                                                                                       | Names the provider on every record this client's turns produce.                                                                                                                                                                                                                          | [packages/adapters/src/model/client.ts:154](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L154) |
+| <a id="property-model-4"></a> `model`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                        | [packages/adapters/src/model/client.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L152) |
+| <a id="property-provider-3"></a> `provider`                | `readonly` | `string`                                                                                       | Names the provider on every record this client's turns produce.                                                                                                                                                                                                                          | [packages/adapters/src/model/client.ts:154](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L154) |
 | <a id="property-requesttimeoutms"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one model call may take, independently of the turn's own budget.                                                                                                                                                                                                                | [packages/adapters/src/model/client.ts:166](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L166) |
 | <a id="property-temperature"></a> `temperature?`           | `readonly` | `number`                                                                                       | Left at zero by default, which reduces variation between runs but does not remove it. This column is not deterministic and must not be described as if it were: a temperature of zero is not a seed, and the same prompt can still produce a different call sequence on a different day. | [packages/adapters/src/model/client.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L164) |
+
+---
+
+### TranscriptModelClientOptions
+
+Defined in: [packages/adapters/src/model/transcript.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L15)
+
+#### Properties
+
+| Property                                     | Modifier   | Type     | Description                                                      | Defined in                                                                                                                                     |
+| -------------------------------------------- | ---------- | -------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-model-5"></a> `model?`       | `readonly` | `string` | What the record names as the model; defaults to `transcript`.    | [packages/adapters/src/model/transcript.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L17) |
+| <a id="property-provider-4"></a> `provider?` | `readonly` | `string` | What the record names as the provider; defaults to `transcript`. | [packages/adapters/src/model/transcript.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L19) |
 
 ## Type Aliases
 
