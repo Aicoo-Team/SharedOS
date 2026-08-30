@@ -12,7 +12,8 @@
  * and that column verifies a binding rather than an invariant.
  *
  * Here SharedOS serves the permission-filtered catalogue over MCP, which is the
- * one interface all three ecosystems accept a host-supplied tool set on. The CLI
+ * one interface every harness here accepts a host-supplied tool set on -- Pi
+ * through an extension. The CLI
  * runs natively with its own loop and whatever model it is configured with,
  * discovers the catalogue with its own MCP client, and every call it makes
  * returns through
@@ -27,9 +28,11 @@
  *   node scripts/mcp-conformance.mjs --case broker-ungranted,broker-out-of-scope
  *   node scripts/mcp-conformance.mjs --config host.json --full
  *
- * `--harness` names one column and stops the run if no installed harness has
- * that id; `--limit N` runs the first N cases (default 1), `--full` all of them,
- * `--case` named ones. `SHAREDOS_MCP_CONFIG` is the default for `--config`.
+ * `--harness` names one column; an id that names no column stops the run, and
+ * a named harness that is not installed is reported `not available` like any
+ * other. `--limit N` runs the first N cases (default 1; `0` probes the harnesses
+ * and runs none), `--full` all of them, `--case` named ones.
+ * `SHAREDOS_MCP_CONFIG` is the default for `--config`.
  *
  * Live runs cost model tokens, so the default is one case. `--full` runs the
  * whole set and is what a published result should be produced from.
@@ -48,7 +51,14 @@ const flag = (name, fallback) => {
   return index === -1 ? fallback : (argv[index + 1] ?? fallback);
 };
 const full = argv.includes("--full");
-const limit = full ? Number.POSITIVE_INFINITY : Number(flag("limit", "1"));
+const limitFlag = flag("limit", "1");
+const limit = full ? Number.POSITIVE_INFINITY : Number(limitFlag);
+if (!full && (!Number.isInteger(limit) || limit < 0)) {
+  // `Number("two")` is NaN, which is not finite, and a non-finite limit meant
+  // the whole set: a typo would have run every case at live-model cost.
+  console.error(`--limit takes a whole number of cases, received ${limitFlag}`);
+  process.exit(1);
+}
 const only = flag("harness", undefined);
 /**
  * Run named cases instead of a prefix of the set.
@@ -149,9 +159,12 @@ const {
  * Every entry is `strict`: the launch flags drop the machine's own MCP servers,
  * so the only brokered tools in the run are the ones SharedOS published. The
  * `harnessLocal` list is what the CLI will not give up, and it is named because a
- * run that claimed an empty local surface would be misdeclaring itself.
+ * run that claimed an empty local surface would be misdeclaring itself. Pi's is
+ * empty and not misdeclared: `--no-builtin-tools` drops every tool of its own,
+ * and the extension's `mcp` proxy is the catalogue's conduit rather than a local
+ * effect -- every call through it reaches the bridge naming the canonical tool.
  */
-const HARNESSES = [
+const DECLARED_HARNESSES = [
   {
     spec: CLAUDE_CODE_MCP_HARNESS,
     label: "Claude Code",
@@ -177,10 +190,8 @@ const HARNESSES = [
     spec: PI_MCP_HARNESS,
     label: "pi",
     requirements: PI_REQUIREMENTS,
-    /** `--no-builtin-tools` leaves the proxy tool the extension registers. */
-    // The extension's own proxy tool, through which every catalogue call is
-    // made (ADR 0014 requires a harness-local tool to be named).
-    policy: declareToolPolicy({ harnessLocal: ["mcp"] }),
+    /** `--no-builtin-tools` leaves only the extension's proxy, which is not local. */
+    policy: declareToolPolicy({ harnessLocal: [] }),
     /**
      * Pi ships no MCP client, so this column's MCP support came from an
      * extension the host chose to install. Recorded per column: a reader should
@@ -189,14 +200,21 @@ const HARNESSES = [
     mcpSupport: "extension",
     mcpExtension: "pi-mcp-adapter",
   },
-].filter((harness) => only === undefined || harness.spec.id === only);
+];
 
-// Same rule as `--case`: a filter that quietly matched nothing would attribute a
-// green Standard-only run to a column that never ran.
-if (only !== undefined && HARNESSES.length === 0) {
-  console.error(`No such MCP harness: ${only}`);
-  process.exit(1);
+// Same rule as `--case`, and the same check as `native-conformance.mjs`: a
+// filter that quietly matched nothing would attribute a green Standard-only run
+// to a column that never ran.
+if (only !== undefined) {
+  const declared = DECLARED_HARNESSES.map(({ spec }) => spec.id);
+  if (!declared.includes(only)) {
+    console.error(`No such MCP harness: ${only}. Declared: ${declared.join(", ")}.`);
+    process.exit(1);
+  }
 }
+const HARNESSES = DECLARED_HARNESSES.filter(
+  (harness) => only === undefined || harness.spec.id === only,
+);
 
 const availability = [];
 const columns = [EMBEDDED_COLUMN];
