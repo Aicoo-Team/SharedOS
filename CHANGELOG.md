@@ -137,6 +137,29 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **The native harness can run on a subscription.** `ModelCredential` in
+  `@aicoo/sharedos-adapters` is how a model client authenticates, and
+  `OpenAiCompatibleModelClient` now takes an `apiKey` or a `credential`, never
+  both. `apiKeyCredential` is the constant key it always had.
+  `SubscriptionOAuthCredential` is the case a string could not express: an
+  access token that expires, renewed against the provider's token endpoint with
+  a refresh token the exchange rotates, presented alongside the code of the
+  account the plan bills, in a header the provider names. Headers are resolved
+  at the instant of each call rather than when the client was built, so a turn
+  cannot outlive the window it started in (ADR 0016's rule, one layer out), and
+  a 401 buys exactly one renewal and one retry. `createCodexSubscriptionCredential`
+  in `@aicoo/sharedos-adapters/node` reads the login `codex login` already
+  stored and writes renewed sessions back, because the refresh token rotates and
+  a run that does not persist it leaves the vendor's own CLI unable to log in.
+  SharedOS runs no authorization flow, holds no client secret, and sees no
+  password. A credential authenticates and grants nothing: the catalogue, the
+  calls, and the audit are still resolved from the `GrantSource` first, and the
+  account code is copied into a header and never read as identity or authority.
+  A turn now records how its seat authenticated, as `auth` on the driver's
+  metadata -- scheme, issuer, and whether the seat was account-scoped, never a
+  token and never the account code. `scripts/native-conformance.mjs` takes
+  `SHAREDOS_MODEL_AUTH=codex-subscription` and reports an absent login the way
+  it reports an absent binary. Hosts on an API key change nothing. See ADR 0019.
 - **The native harness has a committed conformance column.** `Standard`
   (`MODEL_SCRIPTED_COLUMN`, id `model-scripted`) is `ModelRuntime` —
   `StandardRuntime` with the model driver in the seat and the

@@ -3,6 +3,8 @@ import type { JsonObject } from "@aicoo/sharedos-contracts";
 export { parseToolArguments } from "../internal.js";
 import { z } from "zod";
 
+import { apiKeyCredential, type ModelCredential } from "./credential.js";
+
 /**
  * One tool call a model asked for, exactly as it came off the wire.
  *
@@ -93,6 +95,17 @@ export interface ModelClient {
   readonly model: string;
   /** The provider that serves it, recorded alongside the model on every turn. */
   readonly provider: string;
+  /**
+   * How this client authenticates, when it authenticates at all.
+   *
+   * Carried onto the turn's metadata for the same reason the served model is: a
+   * run on a metered API key and a run on somebody's subscription are different
+   * claims about where the answers came from, and a record that cannot tell
+   * them apart cannot say which one it is evidence of. It holds identifiers and
+   * shapes only -- see {@link ModelCredential.describe} -- and a client that
+   * presents nothing, such as a transcript, leaves it absent.
+   */
+  readonly auth?: JsonObject;
   complete(request: ModelCompletionRequest, signal: AbortSignal): Promise<ModelReply>;
 }
 
@@ -148,7 +161,18 @@ const ChatCompletionSchema = z.object({
 });
 
 export interface OpenAiCompatibleModelClientOptions {
-  readonly apiKey: string;
+  /**
+   * A metered account's key. Supply this or {@link credential}, never both.
+   */
+  readonly apiKey?: string;
+  /**
+   * How calls authenticate, for anything a constant key cannot express.
+   *
+   * A subscription is the case this exists for: an access token that expires,
+   * renewed against the provider's token endpoint, presented alongside the code
+   * of the account the plan bills. See {@link SubscriptionOAuthCredential}.
+   */
+  readonly credential?: ModelCredential;
   readonly model: string;
   /** Names the provider on every record this client's turns produce. */
   readonly provider: string;
@@ -198,7 +222,8 @@ const RETRY_DELAY_MS = 1_500;
 export class OpenAiCompatibleModelClient implements ModelClient {
   readonly model: string;
   readonly provider: string;
-  readonly #apiKey: string;
+  readonly auth: JsonObject;
+  readonly #credential: ModelCredential;
   readonly #baseUrl: string;
   readonly #maxOutputTokens: number;
   readonly #temperature: number;
@@ -206,12 +231,18 @@ export class OpenAiCompatibleModelClient implements ModelClient {
   readonly #fetch: typeof globalThis.fetch;
 
   constructor(options: OpenAiCompatibleModelClientOptions) {
-    if (options.apiKey.trim() === "") {
-      throw new TypeError("A model client needs an API key");
+    if (options.apiKey !== undefined && options.credential !== undefined) {
+      // Two ways to authenticate is one too many: whichever lost would be a
+      // credential a host configured and this client silently ignored.
+      throw new TypeError("A model client takes an API key or a credential, not both");
+    }
+    if (options.apiKey === undefined && options.credential === undefined) {
+      throw new TypeError("A model client needs an API key or a credential");
     }
     this.model = options.model;
     this.provider = options.provider;
-    this.#apiKey = options.apiKey;
+    this.#credential = options.credential ?? apiKeyCredential(options.apiKey ?? "");
+    this.auth = this.#credential.describe();
     this.#baseUrl = options.baseUrl.replace(/\/+$/u, "");
     this.#maxOutputTokens = options.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
     this.#temperature = options.temperature ?? 0;
@@ -240,6 +271,42 @@ export class OpenAiCompatibleModelClient implements ModelClient {
       temperature: this.#temperature,
     });
 
+    try {
+      return await this.#attempt(body, signal);
+    } catch (error) {
+      // A credential that can renew gets exactly one chance to, and only on the
+      // status that means the credential was the problem. Renewing on a 403
+      // would retry a subscription that authenticated fine and is not entitled
+      // to this model, and renewing more than once would spend refresh tokens
+      // against a provider that has already said no.
+      if (
+        signal.aborted ||
+        !(error instanceof ModelRequestError) ||
+        error.status !== 401 ||
+        !(await this.#renew(signal))
+      ) {
+        throw error;
+      }
+      return await this.#attempt(body, signal);
+    }
+  }
+
+  /** Renew, treating a credential that cannot as a credential that did not. */
+  async #renew(signal: AbortSignal): Promise<boolean> {
+    try {
+      return (await this.#credential.renew?.(signal)) ?? false;
+    } catch (error) {
+      if (signal.aborted) {
+        throw error;
+      }
+      // The renewal failed on its own terms. The call keeps the provider's
+      // 401 as its answer, which is the failure a caller can act on; the
+      // renewal error would name the token endpoint instead.
+      return false;
+    }
+  }
+
+  async #attempt(body: string, signal: AbortSignal): Promise<ModelReply> {
     let lastError: ModelRequestError | undefined;
     for (let attempt = 1; attempt <= RETRYABLE_ATTEMPTS; attempt += 1) {
       try {
@@ -268,11 +335,15 @@ export class OpenAiCompatibleModelClient implements ModelClient {
     // one ends a single hung request so a stalled connection is a failed call
     // rather than a failed run.
     const deadline = AbortSignal.timeout(this.#requestTimeoutMs);
+    // Resolved per call, not per client. A subscription token expires while a
+    // turn is running, and the instant that decides whether it still holds is
+    // the one the call is made at.
+    const authorization = await this.#credential.headers(signal);
     const response = await this.#fetch(`${this.#baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        authorization: `Bearer ${this.#apiKey}`,
+        ...authorization,
       },
       body,
       signal: AbortSignal.any([signal, deadline]),

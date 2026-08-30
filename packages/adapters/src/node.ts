@@ -18,6 +18,7 @@ import type {
 } from "./harness.js";
 
 export * from "./mcp-runtime.js";
+export * from "./subscription-login.js";
 
 export interface ChildProcessTransportOptions {
   readonly command: string;

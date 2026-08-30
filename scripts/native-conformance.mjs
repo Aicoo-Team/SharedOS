@@ -16,7 +16,7 @@
  * measuring, and a harness reaching for its own `bash` instead of the catalogue
  * would be answering a different question anyway.
  *
- * One column here is not a CLI. Given a model API key, the standard turn loop
+ * One column here is not a CLI. Given a model credential, the standard turn loop
  * runs with the model itself in the delegate seat -- no vendor binary, no stdio,
  * the permission-filtered catalogue rendered straight into the model's own
  * tool-call shape. It is live in the sense that matters (a real model really
@@ -31,6 +31,10 @@
  *
  * Environment:
  *   SHAREDOS_MODEL_API_KEY   the model column's key (DEEPSEEK_API_KEY, DSH_API_KEY)
+ *   SHAREDOS_MODEL_AUTH      `api-key` (default) or `codex-subscription`, which
+ *                            authenticates from the login `codex login` stored
+ *                            and needs no key. The endpoint must still speak
+ *                            chat-completions; SHAREDOS_MODEL_BASE_URL names it.
  *   SHAREDOS_MODEL           model name          (default DSH_MODEL, else the config's model.id, else deepseek-v4-flash)
  *   SHAREDOS_MODEL_BASE_URL  chat-completions root (default https://api.deepseek.com)
  *   SHAREDOS_MODEL_PROVIDER  provider label      (default the config's model.provider, else deepseek)
@@ -59,7 +63,7 @@ const {
   deepseekProtocol,
   piProtocol,
 } = await import(join(root, "packages", "adapters", "dist", "index.js"));
-const { ChildProcessTransport, probeHarness } = await import(
+const { ChildProcessTransport, createCodexSubscriptionCredential, probeHarness } = await import(
   join(root, "packages", "adapters", "dist", "node.js")
 );
 const { OpenAiCompatibleModelClient } = await import(
@@ -332,17 +336,33 @@ for (const harness of HARNESSES.filter(({ harness: id }) => only === undefined |
 }
 
 /**
- * The model column, when a key is available to run it.
+ * The model column, when a credential is available to run it.
  *
- * Nothing is probed for: there is no executable and no session to authenticate,
- * so the only precondition is a credential. An absent key is reported exactly
- * as an absent binary is -- the column does not run, and its absence is not a
- * result about SharedOS.
+ * Nothing is probed for: there is no executable to find, so the only
+ * precondition is something to authenticate with. An absent credential is
+ * reported exactly as an absent binary is -- the column does not run, and its
+ * absence is not a result about SharedOS.
+ *
+ * Two kinds of credential reach the same seat. A metered key is a constant. A
+ * subscription is a login some vendor CLI already performed, read off disk and
+ * renewed against the provider's token endpoint; it is the same column either
+ * way, and the record says which one answered.
  */
+const modelAuth = process.env["SHAREDOS_MODEL_AUTH"] ?? "api-key";
 const modelApiKey =
   process.env["SHAREDOS_MODEL_API_KEY"] ??
   process.env["DEEPSEEK_API_KEY"] ??
   process.env["DSH_API_KEY"];
+const subscription =
+  modelAuth === "codex-subscription" ? await createCodexSubscriptionCredential() : undefined;
+const modelCredentialMissing =
+  modelAuth === "codex-subscription"
+    ? subscription === undefined
+      ? "No Codex login was found. Run `codex login` first, or unset SHAREDOS_MODEL_AUTH."
+      : undefined
+    : modelApiKey === undefined || modelApiKey.trim() === ""
+      ? "None of SHAREDOS_MODEL_API_KEY, DEEPSEEK_API_KEY, DSH_API_KEY is set."
+      : undefined;
 const modelName =
   process.env["SHAREDOS_MODEL"] ?? process.env["DSH_MODEL"] ?? model?.id ?? "deepseek-v4-flash";
 const modelBaseUrl = process.env["SHAREDOS_MODEL_BASE_URL"] ?? "https://api.deepseek.com";
@@ -353,13 +373,13 @@ if (only !== undefined && only !== "model") {
   // Filtered out by `--harness`. Nothing is pushed: a column that was not asked
   // for is not an absent one, and reporting it as unavailable would read as a
   // missing credential.
-} else if (modelApiKey === undefined || modelApiKey.trim() === "") {
+} else if (modelCredentialMissing !== undefined) {
   availability.push({
     columnId: MODEL_COLUMN_ID,
     label: `Standard (${modelName})`,
     harness: "model",
     available: false,
-    reason: "None of SHAREDOS_MODEL_API_KEY, DEEPSEEK_API_KEY, DSH_API_KEY is set.",
+    reason: modelCredentialMissing,
   });
 } else {
   availability.push({
@@ -371,6 +391,7 @@ if (only !== undefined && only !== "model") {
       endpoint: `${modelBaseUrl}/chat/completions`,
       model: modelName,
       provider: modelProvider,
+      auth: modelAuth,
     },
   });
   columns.push(
@@ -378,7 +399,7 @@ if (only !== undefined && only !== "model") {
       id: MODEL_COLUMN_ID,
       label: `Standard (${modelName})`,
       client: new OpenAiCompatibleModelClient({
-        apiKey: modelApiKey,
+        ...(subscription === undefined ? { apiKey: modelApiKey } : { credential: subscription }),
         model: modelName,
         provider: modelProvider,
         baseUrl: modelBaseUrl,
@@ -396,7 +417,9 @@ for (const entry of availability) {
 }
 
 if (columns.length === 1) {
-  console.log("\nNo vendor harness is installed and no model key is set. Nothing live was run.");
+  console.log(
+    "\nNo vendor harness is installed and no model credential is available. Nothing live was run.",
+  );
 }
 
 if (cases.length < CANONICAL_CONFORMANCE_CASES.length) {

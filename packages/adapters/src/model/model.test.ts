@@ -262,6 +262,27 @@ describe("a model driving a SharedOS turn", () => {
     expect(result.metadata?.["requestedModel"]).toBe("test-model");
   });
 
+  it("records how the seat authenticated, and nothing when it did not", async () => {
+    const anonymous = scriptedClient([{ text: "done", toolCalls: [] }]);
+    const subscription = {
+      ...scriptedClient([{ text: "done", toolCalls: [] }]),
+      auth: { scheme: "subscription_oauth", issuer: "openai-chatgpt", accountScoped: true },
+    };
+
+    const plain = await runWith(anonymous);
+    const paid = await runWith(subscription);
+
+    // A run on a metered key and a run on somebody's subscription are different
+    // claims about where the answers came from. The description is the client's
+    // own and carries no token and no account code.
+    expect(plain.result.metadata).not.toHaveProperty("auth");
+    expect(paid.result.metadata?.["auth"]).toEqual({
+      scheme: "subscription_oauth",
+      issuer: "openai-chatgpt",
+      accountScoped: true,
+    });
+  });
+
   it("re-authorizes each call and mediates it through the kernel", async () => {
     const client = scriptedClient([
       {

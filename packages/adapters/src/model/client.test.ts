@@ -7,6 +7,7 @@ import {
   type ModelCompletionRequest,
   type OpenAiCompatibleModelClientOptions,
 } from "./client.js";
+import { ModelCredentialError, type ModelCredential } from "./credential.js";
 
 const REQUEST: ModelCompletionRequest = {
   messages: [
@@ -292,6 +293,148 @@ describe("the chat-completions client", () => {
 
   it("refuses to be built without a key", () => {
     expect(() => client(vi.fn<Fetch>(), { apiKey: "  " })).toThrow(/API key/u);
+  });
+});
+
+describe("the chat-completions client on a credential", () => {
+  /** A credential whose renewals are observable and whose secret changes. */
+  function subscription(renewals: readonly boolean[] = [true]): ModelCredential & {
+    readonly renew: ReturnType<typeof vi.fn>;
+  } {
+    let token = "access-1";
+    let renewal = 0;
+    const renew = vi.fn(async () => {
+      const changed = renewals[renewal] ?? false;
+      renewal += 1;
+      if (changed) {
+        token = `access-${String(renewal + 1)}`;
+      }
+      return changed;
+    });
+    return {
+      scheme: "subscription_oauth",
+      headers: async () => ({ authorization: `Bearer ${token}`, "chatgpt-account-id": "acct-9" }),
+      renew,
+      describe: () => ({ scheme: "subscription_oauth", issuer: "openai-chatgpt" }),
+    };
+  }
+
+  /** The same client, authenticating by credential rather than by key. */
+  function onCredential(fetch: Fetch, credential: ModelCredential): OpenAiCompatibleModelClient {
+    return new OpenAiCompatibleModelClient({
+      credential,
+      model: "requested-model",
+      provider: "test-provider",
+      baseUrl: "https://provider.example/v1/",
+      fetch,
+    });
+  }
+
+  it("presents whatever the credential says, resolved for that call", async () => {
+    const fetch = vi.fn<Fetch>(async () => respond(COMPLETION));
+
+    await onCredential(fetch, subscription()).complete(REQUEST, signal());
+
+    expect(requestInit(fetch).headers).toEqual({
+      "content-type": "application/json",
+      authorization: "Bearer access-1",
+      "chatgpt-account-id": "acct-9",
+    });
+  });
+
+  it("renews once on a 401 and asks again with the new token", async () => {
+    const fetch = vi
+      .fn<Fetch>()
+      .mockResolvedValueOnce(respond("expired", 401))
+      .mockResolvedValueOnce(respond(COMPLETION));
+    const credential = subscription();
+
+    const reply = await onCredential(fetch, credential).complete(REQUEST, signal());
+
+    expect(credential.renew).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect((requestInit(fetch, 1).headers as Record<string, string>)["authorization"]).toBe(
+      "Bearer access-2",
+    );
+    expect(reply.model).toBe("served-model");
+  });
+
+  it("renews at most once, whatever the second answer is", async () => {
+    const fetch = vi.fn<Fetch>(async () => respond("expired", 401));
+    const credential = subscription([true, true]);
+
+    await expect(onCredential(fetch, credential).complete(REQUEST, signal())).rejects.toMatchObject(
+      { status: 401 },
+    );
+
+    // A provider that refuses a freshly renewed token is refusing the account,
+    // not the token. Renewing again would spend refresh tokens against a
+    // provider that has already said no.
+    expect(credential.renew).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not ask again when the credential says nothing changed", async () => {
+    const fetch = vi.fn<Fetch>(async () => respond("expired", 401));
+    const credential = subscription([false]);
+
+    await expect(onCredential(fetch, credential).complete(REQUEST, signal())).rejects.toMatchObject(
+      { status: 401 },
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the provider's 401 as the answer when the renewal itself fails", async () => {
+    const fetch = vi.fn<Fetch>(async () => respond("expired", 401));
+    const credential = {
+      ...subscription(),
+      renew: async (): Promise<boolean> => {
+        throw new ModelCredentialError("the subscription token endpoint answered 400", 400);
+      },
+    };
+
+    const error = await onCredential(fetch, credential)
+      .complete(REQUEST, signal())
+      .then(
+        () => undefined,
+        (thrown: unknown) => thrown as ModelRequestError,
+      );
+
+    // The failure a caller can act on is the one the model call got. The
+    // renewal error would name the token endpoint instead, which is a different
+    // question from why this turn has no answer.
+    expect(error).toBeInstanceOf(ModelRequestError);
+    expect(error?.status).toBe(401);
+  });
+
+  it("does not renew a static key, because a 401 on a constant is a misconfiguration", async () => {
+    const fetch = vi.fn<Fetch>(async () => respond("wrong key", 401));
+
+    await expect(client(fetch).complete(REQUEST, signal())).rejects.toMatchObject({ status: 401 });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports how it authenticated, without the secret", () => {
+    expect(client(vi.fn<Fetch>()).auth).toEqual({ scheme: "api_key" });
+    expect(onCredential(vi.fn<Fetch>(), subscription()).auth).toEqual({
+      scheme: "subscription_oauth",
+      issuer: "openai-chatgpt",
+    });
+  });
+
+  it("refuses two ways to authenticate, and refuses none", () => {
+    // Whichever lost would be a credential a host configured and this client
+    // silently ignored.
+    expect(() => client(vi.fn<Fetch>(), { credential: subscription() })).toThrow(/not both/u);
+    expect(
+      () =>
+        new OpenAiCompatibleModelClient({
+          model: "requested-model",
+          provider: "test-provider",
+          baseUrl: "https://provider.example/v1/",
+          fetch: vi.fn<Fetch>(),
+        }),
+    ).toThrow(/API key or a credential/u);
   });
 });
 

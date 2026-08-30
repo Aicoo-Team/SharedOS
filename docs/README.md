@@ -138,6 +138,7 @@ is the boundary between them and the agents that act on them.
 - [ADR 0016: Expiry is instant-bound, revocation is snapshot-bound](adr/0016-expiry-is-instant-bound.md)
 - [ADR 0017: What a driver may declare about its own turn](adr/0017-driver-declared-turn-control.md)
 - [ADR 0018: Escalation over MCP is recovered from the call, not returned by it](adr/0018-escalation-over-mcp.md)
+- [ADR 0019: A subscription authenticates the model seat, and grants nothing](adr/0019-subscription-credentials-in-the-model-seat.md)
 
 ## Project governance
 

@@ -363,13 +363,14 @@ set and is what a published result should come from. Output lands in
 
 `pnpm conformance:native` (`scripts/native-conformance.mjs`) is the other live
 script: it drives each installed CLI as a harness over its own stdio, and runs
-the model column when a key is present. It shares `--case`, `--harness` (which
+the model column when a credential is present. It shares `--case`, `--harness` (which
 also takes `model`, for the model column alone), and `--config` (default
 `SHAREDOS_NATIVE_CONFIG`), has no `--limit` — it runs every case — and reads:
 
 | Variable                                                               | Meaning                                                                                                                                                                                                                                         |
 | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `SHAREDOS_MODEL_API_KEY`, else `DEEPSEEK_API_KEY` or `DSH_API_KEY`     | The model column's key; without one the column does not run                                                                                                                                                                                     |
+| `SHAREDOS_MODEL_AUTH`                                                  | `api-key` (default) or `codex-subscription`, which authenticates from the login `codex login` stored and needs no key; an absent login is reported the way an absent binary is. The endpoint must still speak chat-completions (ADR 0019)       |
 | `SHAREDOS_MODEL`, `SHAREDOS_MODEL_BASE_URL`, `SHAREDOS_MODEL_PROVIDER` | The model column's model (default `DSH_MODEL`, else the config's `model.id`, else `deepseek-v4-flash`), chat-completions root (default `https://api.deepseek.com`), and provider label (default the config's `model.provider`, else `deepseek`) |
 | `DSH_RUNTIME_COMMAND`, `DSH_RUNTIME_CONFIG`, `DSH_RUNTIME_CWD`         | DeepSeek Harness's JSON-RPC runtime (default `dsh-jsonrpc-agent`), its plugin composition, and its working directory                                                                                                                            |
 | `DSH_PROVIDER`, `DSH_MODEL`                                            | What that runtime is told at `initialize` (default `deepseek-official`, `deepseek-v4-flash`)                                                                                                                                                    |

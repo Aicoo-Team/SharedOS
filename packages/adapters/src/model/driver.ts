@@ -369,6 +369,11 @@ class ModelSession implements AgentTurnSession {
    * substitute: DeepSeek answers an unrecognised name with a default instead of
    * rejecting it, and a record naming the model that was asked for would be
    * evidence attributed to a model that never ran.
+   *
+   * `auth` is the same kind of fact about the same turn: what the client
+   * presented to be allowed to ask. It is the client's own description, which
+   * carries no token and no account code, and it is absent for a client that
+   * presents nothing at all.
    */
   #metadata(): JsonObject {
     return {
@@ -376,6 +381,7 @@ class ModelSession implements AgentTurnSession {
       modelProvider: this.#client.provider,
       requestedModel: this.#client.model,
       malformedToolCalls: this.#malformed,
+      ...(this.#client.auth === undefined ? {} : { auth: this.#client.auth }),
       ...(this.#finishReason === undefined ? {} : { finishReason: this.#finishReason }),
       ...(this.#inputTokens === undefined ? {} : { inputTokens: this.#inputTokens }),
       ...(this.#outputTokens === undefined ? {} : { outputTokens: this.#outputTokens }),

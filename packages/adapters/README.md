@@ -34,12 +34,12 @@ the harness that produced it.
 
 ## Four ways to occupy the seat
 
-| Path                    | What is in the delegate seat                                                                     | Entry points                                                                                                                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Driven harness          | A vendor CLI, run one turn at a time by SharedOS's own loop                                      | `createCodexRuntime`, `createClaudeCodeRuntime`, `createDeepseekRuntime`, `createPiRuntime`; `HarnessRuntime`                                                                         |
-| Driven model            | A model API, with no vendor between it and the kernel                                            | `ModelDriver`, `ModelRuntime`, `OpenAiCompatibleModelClient`; `TranscriptModelClient` for a scripted reply sequence                                                                   |
-| Native harness over MCP | A vendor CLI running its own loop, with the catalogue served to it                               | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                                                                                         |
-| Transcript              | Supplied vendor frames or model replies, for testing the translation without a CLI or a provider | `TranscriptTransport`, `HarnessTranscript`, and the `*FrameWriter`s that render a declared attempt in a vendor's shape; `TranscriptModelClient`, `ModelTranscript` for the model seat |
+| Path                    | What is in the delegate seat                                                                     | Entry points                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Driven harness          | A vendor CLI, run one turn at a time by SharedOS's own loop                                      | `createCodexRuntime`, `createClaudeCodeRuntime`, `createDeepseekRuntime`, `createPiRuntime`; `HarnessRuntime`                                                                               |
+| Driven model            | A model API, with no vendor between it and the kernel                                            | `ModelDriver`, `ModelRuntime`, `OpenAiCompatibleModelClient`; `apiKeyCredential` or `SubscriptionOAuthCredential` to authenticate it; `TranscriptModelClient` for a scripted reply sequence |
+| Native harness over MCP | A vendor CLI running its own loop, with the catalogue served to it                               | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                                                                                               |
+| Transcript              | Supplied vendor frames or model replies, for testing the translation without a CLI or a provider | `TranscriptTransport`, `HarnessTranscript`, and the `*FrameWriter`s that render a declared attempt in a vendor's shape; `TranscriptModelClient`, `ModelTranscript` for the model seat       |
 
 The first two run inside `StandardRuntime`: SharedOS owns the loop, renders the
 permission-filtered catalogue into the harness's or the model's own tool shape,
@@ -90,6 +90,73 @@ Tool calls arriving together in one frame are executed one at a time. SharedOS
 re-authorizes every call separately, so serialising them is the conservative
 order and the one whose audit trail matches what actually happened.
 
+## Authenticating the model seat
+
+A model client presents a `ModelCredential`, and there are two kinds.
+
+| Credential                    | What the provider recognises                                                       | Renews |
+| ----------------------------- | ---------------------------------------------------------------------------------- | ------ |
+| `apiKeyCredential`            | A metered account, by a constant key                                               | No     |
+| `SubscriptionOAuthCredential` | A person with a plan, by an OAuth access token and the account code the plan bills | Yes    |
+
+The subscription case is the reason the interface exists. A key is a constant;
+a subscription token expires, is renewed against the provider's token endpoint,
+and travels with the code of the account the call is billed to in a header the
+provider names — `chatgpt-account-id`, for the login `codex login` leaves behind.
+
+```ts
+import { OpenAiCompatibleModelClient, ModelDriver, ModelRuntime } from "@aicoo/sharedos-adapters";
+import { createCodexSubscriptionCredential } from "@aicoo/sharedos-adapters/node";
+
+const credential = await createCodexSubscriptionCredential();
+const runtime = new ModelRuntime(
+  new ModelDriver({
+    manifest,
+    client: new OpenAiCompatibleModelClient({
+      credential,
+      model: "gpt-5-codex",
+      provider: "openai",
+      baseUrl: "https://api.openai.com/v1",
+    }),
+  }),
+);
+```
+
+SharedOS runs no authorization flow. There is no browser to open, no client
+secret to hold and no password to see: the user logs in with the vendor's own
+command, and `createCodexSubscriptionCredential` reads the file that command
+wrote. Renewed sessions are written back, because providers rotate the refresh
+token on every exchange and a run that does not persist what came back leaves
+the vendor's own CLI unable to log in.
+
+Three properties are worth stating plainly, because each of them is a decision
+rather than an implementation detail.
+
+**A credential is authentication, never authority.** It decides whether the
+provider will answer, and nothing else. The catalogue this turn sees, the calls
+it may make, and the audit it leaves are resolved from the `GrantSource` before
+any credential is consulted. A subscription that pays for the model does not
+vouch for the agent using it, and no header this presents can widen a grant.
+
+**Headers are resolved per call, at the instant of the call.** A turn that
+begins inside the token's validity window can outlive it, and the rule is the
+one ADR 0016 states for grants: the operation's clock may only take away. A
+token that has expired by the time a call is made is renewed before the call;
+a window that has not opened yet is never widened.
+
+**Nothing secret reaches a record.** `ModelCredential.describe` publishes the
+scheme, the issuer, and whether the seat was account-scoped — never a token and
+never the account code, which is a stable personal identifier and would
+otherwise land in artifacts that get committed and compared. `ModelDriver` puts
+that description on the turn's metadata as `auth`, so a run on somebody's
+subscription is distinguishable from a run on a metered key.
+
+One limit, stated rather than papered over: `OpenAiCompatibleModelClient`
+speaks chat-completions, and ChatGPT's own Codex backend speaks the Responses
+API. The credential authenticates a subscription against any chat-completions
+endpoint that accepts these tokens; pointing `baseUrl` at the Codex backend
+fails on the wire shape, not on the credential.
+
 ## Who executes the tools
 
 The four harnesses do not agree on this, and the difference decides what a
@@ -137,7 +204,8 @@ flags each CLI wants, and the outer envelope it wraps its frames in — and what
 model actually chooses. Two scripts cover exactly those gaps:
 
 - `scripts/native-conformance.mjs` spawns each installed CLI as a driven
-  harness, and runs the model column when a key is present;
+  harness, and runs the model column when a credential is present — a key, or
+  with `SHAREDOS_MODEL_AUTH=codex-subscription`, a stored Codex login;
 - `scripts/mcp-conformance.mjs` runs each installed CLI natively against the
   catalogue over MCP.
 
