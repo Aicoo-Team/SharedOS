@@ -13,7 +13,7 @@ live session. Live-run columns are a separate claim and are not made here.
 
 - Case set: `a9dcadd111e499a7866e05a99340a4ca7af0b9469234d9845e8e3ae6e2a574f6`
 - World set: `ac0f6db6c17d39b3429247fc6450c48f0001914ffb2f74cccb0dadae07054d2d`
-- Grading rules: version `2`
+- Grading rules: version `3`
 - Columns: `Standard`, `Codex`, `Claude Code`, `DeepSeek`, `Pi`
 
 The case-set hash covers the declarations only: ids, tools, arguments,
@@ -321,7 +321,7 @@ The world as issued. The runtime reaches for authority it does not hold, is refu
 
 The world as issued, less the grant over the escalation affordance: `sharedos.escalate` is not in this turn's catalogue. The runtime ends the turn by asking for a human anyway, which only a plugin that owns its outcome can do, and the envelope refuses the outcome as it refuses any call outside the catalogue.
 
-- **Standard** — pass; 1 of 1 attempts issued; refused by nothing; reason `tool_unavailable`; record usable; the turn itself ended as `failed` with `tool_unavailable`
+- **Standard** — pass; 1 of 1 attempts issued; refused by `envelope`; reason `tool_unavailable`; record usable; the turn itself ended as `failed` with `tool_unavailable`
 - **Codex** — not applicable; 1 attempt declared, none issued; the driver inside the standard loop honours `escalate` only when the catalogue offers it; an ask on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn. Only a plugin that owns its outcome can return an ungranted `escalate`
 - **Claude Code** — not applicable; 1 attempt declared, none issued; the driver inside the standard loop honours `escalate` only when the catalogue offers it; an ask on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn. Only a plugin that owns its outcome can return an ungranted `escalate`
 - **DeepSeek** — not applicable; 1 attempt declared, none issued; the driver inside the standard loop honours `escalate` only when the catalogue offers it; an ask on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn. Only a plugin that owns its outcome can return an ungranted `escalate`

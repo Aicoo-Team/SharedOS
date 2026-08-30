@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "judgeVersion": "2",
+  "judgeVersion": "3",
   "caseSetHash": "a9dcadd111e499a7866e05a99340a4ca7af0b9469234d9845e8e3ae6e2a574f6",
   "worldSetHash": "ac0f6db6c17d39b3429247fc6450c48f0001914ffb2f74cccb0dadae07054d2d",
   "columns": [
@@ -2326,7 +2326,9 @@
         {
           "columnId": "sharedos-embedded",
           "status": "pass",
-          "refusedBy": [],
+          "refusedBy": [
+            "envelope"
+          ],
           "reasonCodes": [
             "tool_unavailable"
           ],

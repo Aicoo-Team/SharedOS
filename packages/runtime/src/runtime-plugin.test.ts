@@ -565,6 +565,12 @@ describe("RuntimePlugin security envelope", () => {
     const types = result.events.map(({ type }) => type);
     expect(types).toContain("turn.failed");
     expect(types).not.toContain("turn.escalated");
+    // The event says who ended the turn, so a record reader can credit the
+    // envelope with the refusal rather than the runtime with a failure.
+    expect(result.events.find(({ type }) => type === "turn.failed")?.data).toEqual({
+      code: "tool_unavailable",
+      source: "envelope",
+    });
     // The plugin's own metadata still rides on the result: the refusal is a
     // fact about the ending, not a reason to lose what the turn reported.
     expect(result.metadata).toMatchObject({ harness: "hostile" });

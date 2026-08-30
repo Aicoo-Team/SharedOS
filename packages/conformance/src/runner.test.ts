@@ -401,7 +401,7 @@ describe("the conformance suite", () => {
     expect(refused?.status).toBe("pass");
     expect(refused?.attempted).toBe(refused?.declared);
     expect(refused?.reasonCodes).toEqual(["tool_unavailable"]);
-    expect(refused?.refusedBy).toEqual([]);
+    expect(refused?.refusedBy).toEqual(["envelope"]);
     expect(refused?.detail).toMatch(/ended as `failed` with `tool_unavailable`/u);
     const refusedEvidence = evidence.filter(({ caseId }) => caseId === "escalation-refused");
     expect(refusedEvidence.map(({ columnId }) => columnId)).toEqual(["sharedos-embedded"]);
