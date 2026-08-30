@@ -183,8 +183,10 @@ versus
 
 A `strict` policy that also lists `externalDirect` entries is rejected by the
 schema, rather than producing a run whose headline claim its own manifest
-contradicts. `harnessLocal` stays permitted under `strict` — no CLI gives up all
-its own tools — but the entries must be named.
+contradicts. `harnessLocal` stays permitted under `strict` — most CLIs keep some
+tool of their own — but the entries must be named, and a launch that leaves the
+harness none of its own, as Pi's does with `--no-builtin-tools`, declares `[]`:
+the extension's `mcp` proxy is the catalogue's conduit, not a local tool.
 
 This is what makes a result readable. "The kernel refused every violation" means
 one thing when the managed catalogue was the only way to have an effect, and
