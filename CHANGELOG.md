@@ -89,6 +89,16 @@ each entry calls out what a host has to update.
 
 ### Changed — behaviour
 
+- **The model driver decides truncation from `ModelReply.truncated`**, which
+  says the provider ended the reply rather than the model choosing to, instead
+  of comparing `finishReason` against `"length"`. That comparison was
+  chat-completions' spelling of the fact; the Responses API spells it as an
+  `incomplete` status, and a driver keyed on one vocabulary would grade a
+  cut-off reply from the other as a decision the model finished making. Both
+  shipped clients set the field, and `finishReason` still records the
+  provider's own word unnormalised. A host with its own `ModelClient`, or a
+  hand-written `ModelTranscript` that reported `finishReason: "length"`, states
+  the fact in `truncated` now, or the turn completes where it used to fail.
 - The conformance judge is at version 3: a failed turn that the envelope ended
   names `envelope` as its enforcement point, read from the `turn.failed`
   event's new `source`, where version 2 named a boundary for denied turns
@@ -160,6 +170,24 @@ each entry calls out what a host has to update.
   token and never the account code. `scripts/native-conformance.mjs` takes
   `SHAREDOS_MODEL_AUTH=codex-subscription` and reports an absent login the way
   it reports an absent binary. Hosts on an API key change nothing. See ADR 0019.
+- **The model seat speaks a second wire shape.** `OpenAiResponsesModelClient`
+  is OpenAI's Responses API, which is what a ChatGPT subscription's endpoint
+  speaks and what `OpenAiCompatibleModelClient` could not reach. Both extend
+  the new `ModelHttpClient`, which holds everything that is not the wire shape
+  -- the credential, the per-request deadline, the retry policy, the one
+  re-authentication, and the rule that a provider's error body never reaches a
+  caller -- so the second shape is an encoder and a reader rather than a second
+  copy of the policy. It writes a conversation as Responses input items (a tool
+  call and the text around it are separate items, a result is an item of its
+  own), declares tools flat and non-strict, reads a streamed answer from the
+  event carrying the finished response rather than reassembling deltas, and
+  picks its reader from the response's own content type. Two defaults differ
+  and both are deliberate: no `temperature` unless a caller asks for one, since
+  a reasoning model rejects it, and a 32,768-token ceiling, since reasoning
+  tokens count against it. `scripts/native-conformance.mjs` takes
+  `SHAREDOS_MODEL_WIRE=responses`, which is the default under
+  `codex-subscription` and carries the endpoint, model, and provider defaults
+  that go with it.
 - **The native harness has a committed conformance column.** `Standard`
   (`MODEL_SCRIPTED_COLUMN`, id `model-scripted`) is `ModelRuntime` —
   `StandardRuntime` with the model driver in the seat and the

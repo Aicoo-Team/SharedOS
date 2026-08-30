@@ -34,12 +34,12 @@ the harness that produced it.
 
 ## Four ways to occupy the seat
 
-| Path                    | What is in the delegate seat                                                                     | Entry points                                                                                                                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Driven harness          | A vendor CLI, run one turn at a time by SharedOS's own loop                                      | `createCodexRuntime`, `createClaudeCodeRuntime`, `createDeepseekRuntime`, `createPiRuntime`; `HarnessRuntime`                                                                               |
-| Driven model            | A model API, with no vendor between it and the kernel                                            | `ModelDriver`, `ModelRuntime`, `OpenAiCompatibleModelClient`; `apiKeyCredential` or `SubscriptionOAuthCredential` to authenticate it; `TranscriptModelClient` for a scripted reply sequence |
-| Native harness over MCP | A vendor CLI running its own loop, with the catalogue served to it                               | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                                                                                               |
-| Transcript              | Supplied vendor frames or model replies, for testing the translation without a CLI or a provider | `TranscriptTransport`, `HarnessTranscript`, and the `*FrameWriter`s that render a declared attempt in a vendor's shape; `TranscriptModelClient`, `ModelTranscript` for the model seat       |
+| Path                    | What is in the delegate seat                                                                     | Entry points                                                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Driven harness          | A vendor CLI, run one turn at a time by SharedOS's own loop                                      | `createCodexRuntime`, `createClaudeCodeRuntime`, `createDeepseekRuntime`, `createPiRuntime`; `HarnessRuntime`                                                                                                               |
+| Driven model            | A model API, with no vendor between it and the kernel                                            | `ModelDriver`, `ModelRuntime`, `OpenAiCompatibleModelClient` or `OpenAiResponsesModelClient`; `apiKeyCredential` or `SubscriptionOAuthCredential` to authenticate it; `TranscriptModelClient` for a scripted reply sequence |
+| Native harness over MCP | A vendor CLI running its own loop, with the catalogue served to it                               | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                                                                                                                               |
+| Transcript              | Supplied vendor frames or model replies, for testing the translation without a CLI or a provider | `TranscriptTransport`, `HarnessTranscript`, and the `*FrameWriter`s that render a declared attempt in a vendor's shape; `TranscriptModelClient`, `ModelTranscript` for the model seat                                       |
 
 The first two run inside `StandardRuntime`: SharedOS owns the loop, renders the
 permission-filtered catalogue into the harness's or the model's own tool shape,
@@ -151,11 +151,43 @@ otherwise land in artifacts that get committed and compared. `ModelDriver` puts
 that description on the turn's metadata as `auth`, so a run on somebody's
 subscription is distinguishable from a run on a metered key.
 
-One limit, stated rather than papered over: `OpenAiCompatibleModelClient`
-speaks chat-completions, and ChatGPT's own Codex backend speaks the Responses
-API. The credential authenticates a subscription against any chat-completions
-endpoint that accepts these tokens; pointing `baseUrl` at the Codex backend
-fails on the wire shape, not on the credential.
+## Two wire shapes, one policy
+
+Which client to use is decided by what the endpoint speaks, not by how the call
+authenticates.
+
+| Client                        | Speaks                               | Reaches                                                               |
+| ----------------------------- | ------------------------------------ | --------------------------------------------------------------------- |
+| `OpenAiCompatibleModelClient` | `POST {baseUrl}/chat/completions`    | DeepSeek, and any provider serving the OpenAI chat-completions shape  |
+| `OpenAiResponsesModelClient`  | `POST {baseUrl}/responses`, streamed | OpenAI's Responses API, including the endpoint a ChatGPT plan reaches |
+
+Both extend `ModelHttpClient`, which holds everything that is not the wire
+shape: the credential, the per-request deadline, the retry policy, the single
+re-authentication on a 401, and the rule that a provider's error body never
+reaches a caller. A second wire shape is an encoder and a reader — not a second
+copy of the policy that decides whether a failed turn is honest evidence.
+
+What differs is the translation. Responses items are flatter than
+chat-completions messages: a tool call and the assistant text around it are
+separate items, a tool result is an item of its own, and a tool is declared
+without the `function` wrapper. The answer usually arrives as a stream, and what
+is read is the event carrying the finished response rather than reassembled
+deltas — the terminal event holds the whole response, so rebuilding it from
+fragments would be a second implementation of the same answer. Which reader runs
+is decided by the response's own content type, so a provider that streams when
+it was not asked to, or declines to when it was, is read correctly either way.
+
+Two defaults differ from the chat-completions client, and both are deliberate.
+No `temperature` is sent unless a caller asks for one, because a reasoning model
+rejects the parameter and those are the models this endpoint mostly serves. The
+output ceiling is 32,768 rather than 4,096, because reasoning tokens count
+against it and a reply cut off mid-thought fails the turn — correctly, but for a
+reason that would be the client's doing rather than the model's.
+
+A reply the provider cut short is reported as `truncated` by both clients, under
+whichever word the provider used for it (`length`, `max_output_tokens`). That is
+the one fact the driver acts on: it fails the turn rather than grading a cut
+reply as a decision the model finished making.
 
 ## Who executes the tools
 

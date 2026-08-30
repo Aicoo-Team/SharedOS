@@ -1,12 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
-  ModelRequestError,
   OpenAiCompatibleModelClient,
-  parseToolArguments,
-  type ModelCompletionRequest,
   type OpenAiCompatibleModelClientOptions,
-} from "./client.js";
+} from "./chat-completions.js";
+import { ModelRequestError, parseToolArguments, type ModelCompletionRequest } from "./client.js";
 import { ModelCredentialError, type ModelCredential } from "./credential.js";
 
 const REQUEST: ModelCompletionRequest = {
@@ -230,6 +228,27 @@ describe("the chat-completions client", () => {
 
     expect(error?.message).toBe("the model provider answered 400");
     expect(error?.message).not.toContain("SECRET");
+  });
+
+  it("refuses a body that is not JSON without quoting it", async () => {
+    vi.useFakeTimers();
+    // A 200 carrying an error page is not a completion. Letting `JSON.parse`
+    // throw would put the text it choked on into the message, and that text can
+    // be the request it is complaining about.
+    const fetch = vi.fn<Fetch>(
+      async () => new Response("<html>you sent: SECRET PROMPT</html>", { status: 200 }),
+    );
+
+    const pending = client(fetch).complete(REQUEST, signal());
+    const outcome = pending.then(
+      () => "resolved",
+      (error: unknown) => error as Error,
+    );
+    await vi.advanceTimersByTimeAsync(1_500);
+    const error = await outcome;
+
+    expect((error as Error).message).toBe("the model provider returned an unreadable completion");
+    expect((error as Error).message).not.toContain("SECRET");
   });
 
   it("refuses a completion it cannot read rather than casting it", async () => {

@@ -259,17 +259,17 @@ class ModelSession implements AgentTurnSession {
       }
 
       this.#account(reply);
-      if (reply.finishReason === "length") {
+      if (reply.truncated === true) {
         // The provider stopped the model, not the model itself. Nothing in a
-        // reply cut off at the token ceiling is a decision the model finished
-        // making: its calls may be incomplete and its silence is not a choice
-        // to stop. Releasing any of it would grade the cut as the model's
-        // doing, and completing the turn would grade it as the model choosing
-        // to end -- both are the wrong record. The turn fails, under a code
-        // that says so.
+        // reply the provider cut short is a decision the model finished making:
+        // its calls may be incomplete and its silence is not a choice to stop.
+        // Releasing any of it would grade the cut as the model's doing, and
+        // completing the turn would grade it as the model choosing to end --
+        // both are the wrong record. The turn fails, under a code that says so,
+        // and the provider's own word for why is on the metadata.
         return failed(
           "model_output_truncated",
-          "The model's reply was cut off at the output token limit before it finished deciding.",
+          "The model's reply was cut off before it finished deciding.",
           this.#metadata(),
         );
       }

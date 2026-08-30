@@ -1,7 +1,6 @@
 import type { JsonObject } from "@aicoo/sharedos-contracts";
 
 export { parseToolArguments } from "../internal.js";
-import { z } from "zod";
 
 import { apiKeyCredential, type ModelCredential } from "./credential.js";
 
@@ -61,13 +60,23 @@ export interface ModelReply {
   /**
    * Why generation stopped, in the provider's own vocabulary.
    *
-   * `stop` and `tool_calls` are the model ending its reply; `length` is the
-   * provider ending it at the output-token ceiling. Carried because the two are
-   * different facts about the same reply: a completion that was cut off mid-way
-   * looks, without this, exactly like a completion the model chose to end, and
-   * a record whose purpose is honest attribution has to tell them apart.
+   * Recorded verbatim and never normalised, so two providers that end a reply
+   * for the same reason under different words stay distinguishable in the
+   * record. What the driver acts on is {@link truncated}, which is the same
+   * fact stated once for every wire shape.
    */
   readonly finishReason?: string;
+  /**
+   * Whether the provider ended the reply rather than the model choosing to.
+   *
+   * A completion cut off at the output ceiling looks, without this, exactly
+   * like a completion the model chose to end: its calls may be half-written and
+   * its silence is not a decision. The driver fails the turn on it rather than
+   * grading the cut, so every client has to state it -- `finish_reason:
+   * "length"` on chat-completions, an `incomplete` status on the Responses API
+   * -- and a client that leaves it absent is claiming the model finished.
+   */
+  readonly truncated?: boolean;
   /** Absent when the provider reported no usage; never estimated. */
   readonly usage?: ModelUsage;
   /**
@@ -122,48 +131,8 @@ export class ModelRequestError extends Error {
   }
 }
 
-/**
- * The subset of a chat-completions response this driver reads.
- *
- * Parsed rather than cast. The response is remote input, and a driver that
- * trusted its shape would turn a provider's bad day into a kernel-looking
- * failure somewhere further in.
- */
-const ChatCompletionSchema = z.object({
-  model: z.string().min(1).optional(),
-  choices: z
-    .array(
-      z.object({
-        finish_reason: z.string().nullish(),
-        message: z.object({
-          content: z.string().nullish(),
-          tool_calls: z
-            .array(
-              z.object({
-                id: z.string().min(1),
-                function: z.object({
-                  name: z.string().min(1),
-                  arguments: z.string(),
-                }),
-              }),
-            )
-            .nullish(),
-        }),
-      }),
-    )
-    .min(1),
-  usage: z
-    .object({
-      prompt_tokens: z.number().int().nonnegative().optional(),
-      completion_tokens: z.number().int().nonnegative().optional(),
-    })
-    .nullish(),
-});
-
-export interface OpenAiCompatibleModelClientOptions {
-  /**
-   * A metered account's key. Supply this or {@link credential}, never both.
-   */
+export interface ModelHttpClientOptions {
+  /** A metered account's key. Supply this or {@link credential}, never both. */
   readonly apiKey?: string;
   /**
    * How calls authenticate, for anything a constant key cannot express.
@@ -176,29 +145,24 @@ export interface OpenAiCompatibleModelClientOptions {
   readonly model: string;
   /** Names the provider on every record this client's turns produce. */
   readonly provider: string;
-  /** The chat-completions root, without a trailing slash. */
+  /** The API root, without a trailing slash. */
   readonly baseUrl: string;
-  readonly maxOutputTokens?: number;
   /**
-   * Left at zero by default, which reduces variation between runs but does not
-   * remove it. This column is not deterministic and must not be described as if
-   * it were: a temperature of zero is not a seed, and the same prompt can still
-   * produce a different call sequence on a different day.
+   * Constant headers this endpoint requires, beyond the content type.
+   *
+   * A subscription endpoint often wants more than a token -- a client
+   * originator, a beta opt-in -- and which ones is the operator's knowledge of
+   * their provider rather than something this package should assert. The
+   * credential's own headers win over these: a static configuration must not be
+   * able to override the token or the account the call is billed to.
    */
-  readonly temperature?: number;
+  readonly headers?: Readonly<Record<string, string>>;
   /** How long one model call may take, independently of the turn's own budget. */
   readonly requestTimeoutMs?: number;
   /** Injected for tests, which must never reach a network. */
   readonly fetch?: typeof globalThis.fetch;
 }
 
-/**
- * Room for a tool-heavy turn. A reply that hits this ceiling is not a decision
- * the model finished making, and the driver fails the turn on it rather than
- * grading the cut as a choice; the ceiling is set so that a turn issuing
- * several calls with JSON arguments does not reach it in ordinary use.
- */
-const DEFAULT_MAX_OUTPUT_TOKENS = 4_096;
 const DEFAULT_REQUEST_TIMEOUT_MS = 120_000;
 /**
  * One retry, on the failures that are worth retrying.
@@ -212,25 +176,28 @@ const RETRYABLE_ATTEMPTS = 2;
 const RETRY_DELAY_MS = 1_500;
 
 /**
- * A chat-completions client for any provider speaking the OpenAI wire shape.
+ * Everything a model client does that is not its provider's wire shape.
  *
- * DeepSeek is the one this was built against, but nothing here is DeepSeek
- * specific: the endpoint, model, and provider label are all supplied, so
- * pointing the column at another compatible provider is configuration rather
- * than a second client.
+ * Authentication, the per-request deadline, the retry policy, the single
+ * re-authentication, and the rule that a provider's error body never leaves
+ * this file are the same regardless of which API is being spoken -- and they
+ * are the parts that decide whether a failed turn is honest evidence. Holding
+ * them once means a second wire shape is an encoder and a reader, not a second
+ * copy of the policy that would drift from the first.
+ *
+ * A subclass supplies three things: where to post, how to render a request, and
+ * how to read a response.
  */
-export class OpenAiCompatibleModelClient implements ModelClient {
+export abstract class ModelHttpClient implements ModelClient {
   readonly model: string;
   readonly provider: string;
-  readonly auth: JsonObject;
   readonly #credential: ModelCredential;
   readonly #baseUrl: string;
-  readonly #maxOutputTokens: number;
-  readonly #temperature: number;
+  readonly #headers: Readonly<Record<string, string>>;
   readonly #requestTimeoutMs: number;
   readonly #fetch: typeof globalThis.fetch;
 
-  constructor(options: OpenAiCompatibleModelClientOptions) {
+  protected constructor(options: ModelHttpClientOptions) {
     if (options.apiKey !== undefined && options.credential !== undefined) {
       // Two ways to authenticate is one too many: whichever lost would be a
       // credential a host configured and this client silently ignored.
@@ -242,34 +209,41 @@ export class OpenAiCompatibleModelClient implements ModelClient {
     this.model = options.model;
     this.provider = options.provider;
     this.#credential = options.credential ?? apiKeyCredential(options.apiKey ?? "");
-    this.auth = this.#credential.describe();
     this.#baseUrl = options.baseUrl.replace(/\/+$/u, "");
-    this.#maxOutputTokens = options.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
-    this.#temperature = options.temperature ?? 0;
+    this.#headers = options.headers ?? {};
     this.#requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
     this.#fetch = options.fetch ?? globalThis.fetch.bind(globalThis);
   }
 
+  /**
+   * How this client authenticates, asked of the credential rather than captured
+   * when the client was built.
+   *
+   * A subscription can learn which account it pays from only when the provider
+   * first says so, and a description taken at construction would then record
+   * the turn as unscoped for the life of the process.
+   */
+  get auth(): JsonObject {
+    return this.#credential.describe();
+  }
+
+  /** Where this wire shape posts, as a path under the configured root. */
+  protected abstract readonly path: string;
+
+  /** One turn of conversation, in the provider's request shape. */
+  protected abstract encode(request: ModelCompletionRequest): JsonObject;
+
+  /**
+   * The provider's answer, read into a reply.
+   *
+   * Given the whole `Response` rather than a parsed body because how the answer
+   * arrives is part of the wire shape: one JSON document for chat-completions,
+   * a stream of events for a Responses endpoint that only streams.
+   */
+  protected abstract read(response: Response): Promise<ModelReply>;
+
   async complete(request: ModelCompletionRequest, signal: AbortSignal): Promise<ModelReply> {
-    const body = JSON.stringify({
-      model: this.model,
-      messages: request.messages.map(encodeMessage),
-      ...(request.tools.length === 0
-        ? {}
-        : {
-            tools: request.tools.map((tool) => ({
-              type: "function",
-              function: {
-                name: tool.name,
-                description: tool.description,
-                parameters: tool.parameters,
-              },
-            })),
-            tool_choice: "auto",
-          }),
-      max_tokens: this.#maxOutputTokens,
-      temperature: this.#temperature,
-    });
+    const body = JSON.stringify(this.encode(request));
 
     try {
       return await this.#attempt(body, signal);
@@ -331,21 +305,26 @@ export class OpenAiCompatibleModelClient implements ModelClient {
   }
 
   async #request(body: string, signal: AbortSignal): Promise<ModelReply> {
-    // Two deadlines, not one. The turn's signal ends the whole execution; this
-    // one ends a single hung request so a stalled connection is a failed call
-    // rather than a failed run.
-    const deadline = AbortSignal.timeout(this.#requestTimeoutMs);
     // Resolved per call, not per client. A subscription token expires while a
     // turn is running, and the instant that decides whether it still holds is
     // the one the call is made at.
     const authorization = await this.#credential.headers(signal);
-    const response = await this.#fetch(`${this.#baseUrl}/chat/completions`, {
+    // Two deadlines, not one. The turn's signal ends the whole execution; this
+    // one ends a single hung request so a stalled connection is a failed call
+    // rather than a failed run. Started after the credential has answered, so a
+    // slow token exchange does not spend the request's budget.
+    const deadline = AbortSignal.timeout(this.#requestTimeoutMs);
+    const response = await this.#fetch(`${this.#baseUrl}${this.path}`, {
       method: "POST",
       headers: {
+        ...this.#headers,
         "content-type": "application/json",
         ...authorization,
       },
       body,
+      // Both deadlines reach the body as well as the headers, so a stream that
+      // stalls half way through is ended by the same timeout that would have
+      // ended a stalled request.
       signal: AbortSignal.any([signal, deadline]),
     });
 
@@ -360,57 +339,8 @@ export class OpenAiCompatibleModelClient implements ModelClient {
       );
     }
 
-    const parsed = ChatCompletionSchema.safeParse(await response.json());
-    if (!parsed.success) {
-      throw new ModelRequestError("the model provider returned an unreadable completion");
-    }
-
-    const [choice] = parsed.data.choices;
-    const message = choice?.message;
-    const usage = parsed.data.usage;
-    return {
-      text: message?.content ?? "",
-      toolCalls: (message?.tool_calls ?? []).map((call) => ({
-        id: call.id,
-        name: call.function.name,
-        arguments: call.function.arguments,
-      })),
-      ...(parsed.data.model === undefined ? {} : { model: parsed.data.model }),
-      ...(typeof choice?.finish_reason === "string" ? { finishReason: choice.finish_reason } : {}),
-      ...(usage === undefined || usage === null
-        ? {}
-        : {
-            usage: {
-              ...(usage.prompt_tokens === undefined ? {} : { inputTokens: usage.prompt_tokens }),
-              ...(usage.completion_tokens === undefined
-                ? {}
-                : { outputTokens: usage.completion_tokens }),
-            },
-          }),
-    };
+    return this.read(response);
   }
-}
-
-function encodeMessage(message: ModelMessage): JsonObject {
-  if (message.role === "tool") {
-    return { role: "tool", tool_call_id: message.toolCallId, content: message.content };
-  }
-  if (message.role === "assistant") {
-    return {
-      role: "assistant",
-      content: message.content,
-      ...(message.toolCalls.length === 0
-        ? {}
-        : {
-            tool_calls: message.toolCalls.map((call) => ({
-              id: call.id,
-              type: "function",
-              function: { name: call.name, arguments: call.arguments },
-            })),
-          }),
-    };
-  }
-  return { role: message.role, content: message.content };
 }
 
 function isRetryable(error: ModelRequestError): boolean {

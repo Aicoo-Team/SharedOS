@@ -33,11 +33,14 @@
  *   SHAREDOS_MODEL_API_KEY   the model column's key (DEEPSEEK_API_KEY, DSH_API_KEY)
  *   SHAREDOS_MODEL_AUTH      `api-key` (default) or `codex-subscription`, which
  *                            authenticates from the login `codex login` stored
- *                            and needs no key. The endpoint must still speak
- *                            chat-completions; SHAREDOS_MODEL_BASE_URL names it.
- *   SHAREDOS_MODEL           model name          (default DSH_MODEL, else the config's model.id, else deepseek-v4-flash)
- *   SHAREDOS_MODEL_BASE_URL  chat-completions root (default https://api.deepseek.com)
- *   SHAREDOS_MODEL_PROVIDER  provider label      (default the config's model.provider, else deepseek)
+ *                            and needs no key
+ *   SHAREDOS_MODEL_WIRE      `chat-completions`, or `responses` for OpenAI's
+ *                            Responses API (the default under
+ *                            `codex-subscription`, which is the only wire shape
+ *                            that endpoint speaks)
+ *   SHAREDOS_MODEL           model name          (default DSH_MODEL, else the config's model.id, else deepseek-v4-flash; on the Responses wire, the config's model.id, else gpt-5-codex)
+ *   SHAREDOS_MODEL_BASE_URL  API root            (default https://api.deepseek.com; on the Responses wire, https://chatgpt.com/backend-api/codex under a subscription, else https://api.openai.com/v1)
+ *   SHAREDOS_MODEL_PROVIDER  provider label      (default the config's model.provider, else deepseek; on the Responses wire, openai)
  *   SHAREDOS_NATIVE_CONFIG   default for --config
  *   DSH_RUNTIME_COMMAND      DeepSeek Harness JSON-RPC runtime (default dsh-jsonrpc-agent)
  *   DSH_RUNTIME_CONFIG       its plugin composition, passed as the first argument
@@ -66,7 +69,7 @@ const {
 const { ChildProcessTransport, createCodexSubscriptionCredential, probeHarness } = await import(
   join(root, "packages", "adapters", "dist", "node.js")
 );
-const { OpenAiCompatibleModelClient } = await import(
+const { OpenAiCompatibleModelClient, OpenAiResponsesModelClient } = await import(
   join(root, "packages", "adapters", "dist", "index.js")
 );
 const {
@@ -363,10 +366,38 @@ const modelCredentialMissing =
     : modelApiKey === undefined || modelApiKey.trim() === ""
       ? "None of SHAREDOS_MODEL_API_KEY, DEEPSEEK_API_KEY, DSH_API_KEY is set."
       : undefined;
-const modelName =
-  process.env["SHAREDOS_MODEL"] ?? process.env["DSH_MODEL"] ?? model?.id ?? "deepseek-v4-flash";
-const modelBaseUrl = process.env["SHAREDOS_MODEL_BASE_URL"] ?? "https://api.deepseek.com";
-const modelProvider = process.env["SHAREDOS_MODEL_PROVIDER"] ?? model?.provider ?? "deepseek";
+/**
+ * Which wire shape the seat speaks, and what that changes.
+ *
+ * A subscription reaches OpenAI's Responses endpoint and nothing else, so it
+ * selects the wire shape unless the operator says otherwise -- and with it the
+ * endpoint, the model, and the provider label, none of whose chat-completions
+ * defaults mean anything there. `DSH_MODEL` is deliberately not consulted on
+ * the Responses wire: it names a DeepSeek Harness model, and carrying it across
+ * would point an OpenAI endpoint at a model it has never heard of.
+ */
+const modelWire =
+  process.env["SHAREDOS_MODEL_WIRE"] ??
+  (modelAuth === "codex-subscription" ? "responses" : "chat-completions");
+const responsesWire = modelWire === "responses";
+const modelName = responsesWire
+  ? (process.env["SHAREDOS_MODEL"] ?? model?.id ?? "gpt-5-codex")
+  : (process.env["SHAREDOS_MODEL"] ?? process.env["DSH_MODEL"] ?? model?.id ?? "deepseek-v4-flash");
+const modelBaseUrl =
+  process.env["SHAREDOS_MODEL_BASE_URL"] ??
+  (responsesWire
+    ? // The two Responses endpoints are not interchangeable: a subscription is
+      // recognised by the ChatGPT backend, and a metered key by the public API.
+      // Defaulting both to one of them would fail on authentication and read as
+      // a broken credential.
+      subscription === undefined
+      ? "https://api.openai.com/v1"
+      : "https://chatgpt.com/backend-api/codex"
+    : "https://api.deepseek.com");
+const modelProvider =
+  process.env["SHAREDOS_MODEL_PROVIDER"] ??
+  model?.provider ??
+  (responsesWire ? "openai" : "deepseek");
 const MODEL_COLUMN_ID = "model-live";
 
 if (only !== undefined && only !== "model") {
@@ -388,22 +419,26 @@ if (only !== undefined && only !== "model") {
     harness: "model",
     available: true,
     detail: {
-      endpoint: `${modelBaseUrl}/chat/completions`,
+      endpoint: `${modelBaseUrl}${responsesWire ? "/responses" : "/chat/completions"}`,
       model: modelName,
       provider: modelProvider,
       auth: modelAuth,
+      wire: modelWire,
     },
   });
+  const clientOptions = {
+    ...(subscription === undefined ? { apiKey: modelApiKey } : { credential: subscription }),
+    model: modelName,
+    provider: modelProvider,
+    baseUrl: modelBaseUrl,
+  };
   columns.push(
     modelColumn({
       id: MODEL_COLUMN_ID,
       label: `Standard (${modelName})`,
-      client: new OpenAiCompatibleModelClient({
-        ...(subscription === undefined ? { apiKey: modelApiKey } : { credential: subscription }),
-        model: modelName,
-        provider: modelProvider,
-        baseUrl: modelBaseUrl,
-      }),
+      client: responsesWire
+        ? new OpenAiResponsesModelClient(clientOptions)
+        : new OpenAiCompatibleModelClient(clientOptions),
     }),
   );
 }

@@ -40,12 +40,12 @@ the harness that produced it.
 
 ## Four ways to occupy the seat
 
-| Path                    | What is in the delegate seat                                                                     | Entry points                                                                                                                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Driven harness          | A vendor CLI, run one turn at a time by SharedOS's own loop                                      | `createCodexRuntime`, `createClaudeCodeRuntime`, `createDeepseekRuntime`, `createPiRuntime`; `HarnessRuntime`                                                                               |
-| Driven model            | A model API, with no vendor between it and the kernel                                            | `ModelDriver`, `ModelRuntime`, `OpenAiCompatibleModelClient`; `apiKeyCredential` or `SubscriptionOAuthCredential` to authenticate it; `TranscriptModelClient` for a scripted reply sequence |
-| Native harness over MCP | A vendor CLI running its own loop, with the catalogue served to it                               | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                                                                                               |
-| Transcript              | Supplied vendor frames or model replies, for testing the translation without a CLI or a provider | `TranscriptTransport`, `HarnessTranscript`, and the `*FrameWriter`s that render a declared attempt in a vendor's shape; `TranscriptModelClient`, `ModelTranscript` for the model seat       |
+| Path                    | What is in the delegate seat                                                                     | Entry points                                                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Driven harness          | A vendor CLI, run one turn at a time by SharedOS's own loop                                      | `createCodexRuntime`, `createClaudeCodeRuntime`, `createDeepseekRuntime`, `createPiRuntime`; `HarnessRuntime`                                                                                                               |
+| Driven model            | A model API, with no vendor between it and the kernel                                            | `ModelDriver`, `ModelRuntime`, `OpenAiCompatibleModelClient` or `OpenAiResponsesModelClient`; `apiKeyCredential` or `SubscriptionOAuthCredential` to authenticate it; `TranscriptModelClient` for a scripted reply sequence |
+| Native harness over MCP | A vendor CLI running its own loop, with the catalogue served to it                               | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                                                                                                                               |
+| Transcript              | Supplied vendor frames or model replies, for testing the translation without a CLI or a provider | `TranscriptTransport`, `HarnessTranscript`, and the `*FrameWriter`s that render a declared attempt in a vendor's shape; `TranscriptModelClient`, `ModelTranscript` for the model seat                                       |
 
 The first two run inside `StandardRuntime`: SharedOS owns the loop, renders the
 permission-filtered catalogue into the harness's or the model's own tool shape,
@@ -161,11 +161,43 @@ otherwise land in artifacts that get committed and compared. `ModelDriver` puts
 that description on the turn's metadata as `auth`, so a run on somebody's
 subscription is distinguishable from a run on a metered key.
 
-One limit, stated rather than papered over: `OpenAiCompatibleModelClient`
-speaks chat-completions, and ChatGPT's own Codex backend speaks the Responses
-API. The credential authenticates a subscription against any chat-completions
-endpoint that accepts these tokens; pointing `baseUrl` at the Codex backend
-fails on the wire shape, not on the credential.
+## Two wire shapes, one policy
+
+Which client to use is decided by what the endpoint speaks, not by how the call
+authenticates.
+
+| Client                        | Speaks                               | Reaches                                                               |
+| ----------------------------- | ------------------------------------ | --------------------------------------------------------------------- |
+| `OpenAiCompatibleModelClient` | `POST {baseUrl}/chat/completions`    | DeepSeek, and any provider serving the OpenAI chat-completions shape  |
+| `OpenAiResponsesModelClient`  | `POST {baseUrl}/responses`, streamed | OpenAI's Responses API, including the endpoint a ChatGPT plan reaches |
+
+Both extend `ModelHttpClient`, which holds everything that is not the wire
+shape: the credential, the per-request deadline, the retry policy, the single
+re-authentication on a 401, and the rule that a provider's error body never
+reaches a caller. A second wire shape is an encoder and a reader — not a second
+copy of the policy that decides whether a failed turn is honest evidence.
+
+What differs is the translation. Responses items are flatter than
+chat-completions messages: a tool call and the assistant text around it are
+separate items, a tool result is an item of its own, and a tool is declared
+without the `function` wrapper. The answer usually arrives as a stream, and what
+is read is the event carrying the finished response rather than reassembled
+deltas — the terminal event holds the whole response, so rebuilding it from
+fragments would be a second implementation of the same answer. Which reader runs
+is decided by the response's own content type, so a provider that streams when
+it was not asked to, or declines to when it was, is read correctly either way.
+
+Two defaults differ from the chat-completions client, and both are deliberate.
+No `temperature` is sent unless a caller asks for one, because a reasoning model
+rejects the parameter and those are the models this endpoint mostly serves. The
+output ceiling is 32,768 rather than 4,096, because reasoning tokens count
+against it and a reply cut off mid-thought fails the turn — correctly, but for a
+reason that would be the client's doing rather than the model's.
+
+A reply the provider cut short is reported as `truncated` by both clients, under
+whichever word the provider used for it (`length`, `max_output_tokens`). That is
+the one fact the driver acts on: it fails the turn rather than grading a cut
+reply as a decision the model finished making.
 
 ## Who executes the tools
 
@@ -497,7 +529,7 @@ Defined in: [packages/adapters/src/runtime.ts:42](https://github.com/Aicoo-Team/
 
 ### ModelCredentialError
 
-Defined in: packages/adapters/src/model/credential.ts:58
+Defined in: [packages/adapters/src/model/credential.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L58)
 
 A credential that could not be presented or renewed. Carries no token.
 
@@ -511,7 +543,7 @@ A credential that could not be presented or renewed. Carries no token.
 
 > **new ModelCredentialError**(`message`, `status?`): [`ModelCredentialError`](#modelcredentialerror)
 
-Defined in: packages/adapters/src/model/credential.ts:61
+Defined in: [packages/adapters/src/model/credential.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L61)
 
 ###### Parameters
 
@@ -530,14 +562,14 @@ Defined in: packages/adapters/src/model/credential.ts:61
 
 #### Properties
 
-| Property                                                | Modifier   | Type      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Inherited from          | Defined in                                                                                 |
-| ------------------------------------------------------- | ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------ |
-| <a id="property-cause"></a> `cause?`                    | `public`   | `unknown` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.cause`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26 |
-| <a id="property-message"></a> `message`                 | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077        |
-| <a id="property-name"></a> `name`                       | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name`            | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1076        |
-| <a id="property-stack"></a> `stack?`                    | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078        |
-| <a id="property-status"></a> `status?`                  | `readonly` | `number`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | packages/adapters/src/model/credential.ts:59                                               |
-| <a id="property-stacktracelimit"></a> `stackTraceLimit` | `static`   | `number`  | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68          |
+| Property                                                | Modifier   | Type      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Inherited from          | Defined in                                                                                                                                     |
+| ------------------------------------------------------- | ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-cause"></a> `cause?`                    | `public`   | `unknown` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.cause`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26                                                     |
+| <a id="property-message"></a> `message`                 | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077                                                            |
+| <a id="property-name"></a> `name`                       | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name`            | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1076                                                            |
+| <a id="property-stack"></a> `stack?`                    | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078                                                            |
+| <a id="property-status"></a> `status?`                  | `readonly` | `number`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | [packages/adapters/src/model/credential.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L59) |
+| <a id="property-stacktracelimit"></a> `stackTraceLimit` | `static`   | `number`  | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68                                                              |
 
 #### Methods
 
@@ -714,9 +746,100 @@ Defined in: [packages/adapters/src/model/driver.ts:159](https://github.com/Aicoo
 
 ---
 
+### `abstract` ModelHttpClient
+
+Defined in: [packages/adapters/src/model/client.ts:191](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L191)
+
+Everything a model client does that is not its provider's wire shape.
+
+Authentication, the per-request deadline, the retry policy, the single
+re-authentication, and the rule that a provider's error body never leaves
+this file are the same regardless of which API is being spoken -- and they
+are the parts that decide whether a failed turn is honest evidence. Holding
+them once means a second wire shape is an encoder and a reader, not a second
+copy of the policy that would drift from the first.
+
+A subclass supplies three things: where to post, how to render a request, and
+how to read a response.
+
+#### Extended by
+
+- [`OpenAiCompatibleModelClient`](#openaicompatiblemodelclient)
+- [`OpenAiResponsesModelClient`](#openairesponsesmodelclient)
+
+#### Implements
+
+- [`ModelClient`](#modelclient)
+
+#### Properties
+
+| Property                                  | Modifier   | Type     | Description                                                              | Defined in                                                                                                                               |
+| ----------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-model"></a> `model`       | `readonly` | `string` | The model this client was configured to ask for.                         | [packages/adapters/src/model/client.ts:192](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L192) |
+| <a id="property-provider"></a> `provider` | `readonly` | `string` | The provider that serves it, recorded alongside the model on every turn. | [packages/adapters/src/model/client.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L193) |
+
+#### Accessors
+
+##### auth
+
+###### Get Signature
+
+> **get** **auth**(): [`JsonObject`](sharedos-contracts.md#jsonobject)
+
+Defined in: [packages/adapters/src/model/client.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L226)
+
+How this client authenticates, asked of the credential rather than captured
+when the client was built.
+
+A subscription can learn which account it pays from only when the provider
+first says so, and a description taken at construction would then record
+the turn as unscoped for the life of the process.
+
+###### Returns
+
+[`JsonObject`](sharedos-contracts.md#jsonobject)
+
+How this client authenticates, when it authenticates at all.
+
+Carried onto the turn's metadata for the same reason the served model is: a
+run on a metered API key and a run on somebody's subscription are different
+claims about where the answers came from, and a record that cannot tell
+them apart cannot say which one it is evidence of. It holds identifiers and
+shapes only -- see [ModelCredential.describe](#describe-1) -- and a client that
+presents nothing, such as a transcript, leaves it absent.
+
+###### Implementation of
+
+[`ModelClient`](#modelclient).[`auth`](#property-auth)
+
+#### Methods
+
+##### complete()
+
+> **complete**(`request`, `signal`): `Promise`\<[`ModelReply`](#modelreply)>\>
+
+Defined in: [packages/adapters/src/model/client.ts:245](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L245)
+
+###### Parameters
+
+| Parameter | Type                                                |
+| --------- | --------------------------------------------------- |
+| `request` | [`ModelCompletionRequest`](#modelcompletionrequest) |
+| `signal`  | `AbortSignal`                                       |
+
+###### Returns
+
+`Promise`\<[`ModelReply`](#modelreply)\>
+
+###### Implementation of
+
+[`ModelClient`](#modelclient).[`complete`](#complete-5)
+
+---
+
 ### ModelRequestError
 
-Defined in: [packages/adapters/src/model/client.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L113)
+Defined in: [packages/adapters/src/model/client.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L122)
 
 A model call that did not produce an answer. Carries no response body.
 
@@ -730,7 +853,7 @@ A model call that did not produce an answer. Carries no response body.
 
 > **new ModelRequestError**(`message`, `status?`): [`ModelRequestError`](#modelrequesterror)
 
-Defined in: [packages/adapters/src/model/client.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L116)
+Defined in: [packages/adapters/src/model/client.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L125)
 
 ###### Parameters
 
@@ -755,7 +878,7 @@ Defined in: [packages/adapters/src/model/client.ts:116](https://github.com/Aicoo
 | <a id="property-message-1"></a> `message`                 | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077                                                      |
 | <a id="property-name-1"></a> `name`                       | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name`            | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1076                                                      |
 | <a id="property-stack-1"></a> `stack?`                    | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078                                                      |
-| <a id="property-status-1"></a> `status?`                  | `readonly` | `number`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | [packages/adapters/src/model/client.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L114) |
+| <a id="property-status-1"></a> `status?`                  | `readonly` | `number`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | [packages/adapters/src/model/client.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L123) |
 | <a id="property-stacktracelimit-1"></a> `stackTraceLimit` | `static`   | `number`  | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68                                                        |
 
 #### Methods
@@ -927,7 +1050,7 @@ Defined in: [packages/adapters/src/runtime.ts:42](https://github.com/Aicoo-Team/
 
 ### OpenAiCompatibleModelClient
 
-Defined in: [packages/adapters/src/model/client.ts:222](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L222)
+Defined in: packages/adapters/src/model/chat-completions.ts:80
 
 A chat-completions client for any provider speaking the OpenAI wire shape.
 
@@ -936,9 +1059,9 @@ specific: the endpoint, model, and provider label are all supplied, so
 pointing the column at another compatible provider is configuration rather
 than a second client.
 
-#### Implements
+#### Extends
 
-- [`ModelClient`](#modelclient)
+- [`ModelHttpClient`](#abstract-modelhttpclient)
 
 #### Constructors
 
@@ -946,7 +1069,7 @@ than a second client.
 
 > **new OpenAiCompatibleModelClient**(`options`): [`OpenAiCompatibleModelClient`](#openaicompatiblemodelclient)
 
-Defined in: [packages/adapters/src/model/client.ts:233](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L233)
+Defined in: packages/adapters/src/model/chat-completions.ts:85
 
 ###### Parameters
 
@@ -958,13 +1081,50 @@ Defined in: [packages/adapters/src/model/client.ts:233](https://github.com/Aicoo
 
 [`OpenAiCompatibleModelClient`](#openaicompatiblemodelclient)
 
+###### Overrides
+
+`ModelHttpClient.constructor`
+
 #### Properties
 
-| Property                                  | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                               |
-| ----------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-auth"></a> `auth`         | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | How this client authenticates, when it authenticates at all. Carried onto the turn's metadata for the same reason the served model is: a run on a metered API key and a run on somebody's subscription are different claims about where the answers came from, and a record that cannot tell them apart cannot say which one it is evidence of. It holds identifiers and shapes only -- see [ModelCredential.describe](#describe-1) -- and a client that presents nothing, such as a transcript, leaves it absent. | [packages/adapters/src/model/client.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L225) |
-| <a id="property-model"></a> `model`       | `readonly` | `string`                                         | The model this client was configured to ask for.                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [packages/adapters/src/model/client.ts:223](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L223) |
-| <a id="property-provider"></a> `provider` | `readonly` | `string`                                         | The provider that serves it, recorded alongside the model on every turn.                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L224) |
+| Property                                    | Modifier   | Type     | Description                                                              | Inherited from                                                                  | Defined in                                                                                                                               |
+| ------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-model-1"></a> `model`       | `readonly` | `string` | The model this client was configured to ask for.                         | [`ModelHttpClient`](#abstract-modelhttpclient).[`model`](#property-model)       | [packages/adapters/src/model/client.ts:192](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L192) |
+| <a id="property-provider-1"></a> `provider` | `readonly` | `string` | The provider that serves it, recorded alongside the model on every turn. | [`ModelHttpClient`](#abstract-modelhttpclient).[`provider`](#property-provider) | [packages/adapters/src/model/client.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L193) |
+
+#### Accessors
+
+##### auth
+
+###### Get Signature
+
+> **get** **auth**(): [`JsonObject`](sharedos-contracts.md#jsonobject)
+
+Defined in: [packages/adapters/src/model/client.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L226)
+
+How this client authenticates, asked of the credential rather than captured
+when the client was built.
+
+A subscription can learn which account it pays from only when the provider
+first says so, and a description taken at construction would then record
+the turn as unscoped for the life of the process.
+
+###### Returns
+
+[`JsonObject`](sharedos-contracts.md#jsonobject)
+
+How this client authenticates, when it authenticates at all.
+
+Carried onto the turn's metadata for the same reason the served model is: a
+run on a metered API key and a run on somebody's subscription are different
+claims about where the answers came from, and a record that cannot tell
+them apart cannot say which one it is evidence of. It holds identifiers and
+shapes only -- see [ModelCredential.describe](#describe-1) -- and a client that
+presents nothing, such as a transcript, leaves it absent.
+
+###### Inherited from
+
+[`ModelHttpClient`](#abstract-modelhttpclient).[`auth`](#auth)
 
 #### Methods
 
@@ -972,7 +1132,7 @@ Defined in: [packages/adapters/src/model/client.ts:233](https://github.com/Aicoo
 
 > **complete**(`request`, `signal`): `Promise`\<[`ModelReply`](#modelreply)>\>
 
-Defined in: [packages/adapters/src/model/client.ts:253](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L253)
+Defined in: [packages/adapters/src/model/client.ts:245](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L245)
 
 ###### Parameters
 
@@ -985,15 +1145,127 @@ Defined in: [packages/adapters/src/model/client.ts:253](https://github.com/Aicoo
 
 `Promise`\<[`ModelReply`](#modelreply)\>
 
-###### Implementation of
+###### Inherited from
 
-[`ModelClient`](#modelclient).[`complete`](#complete-3)
+[`ModelHttpClient`](#abstract-modelhttpclient).[`complete`](#complete)
+
+---
+
+### OpenAiResponsesModelClient
+
+Defined in: packages/adapters/src/model/responses.ts:125
+
+A client for OpenAI's Responses API, including the endpoint a ChatGPT
+subscription reaches.
+
+The second wire shape, not a second policy. Authentication, the retry rule,
+the single re-authentication, the per-request deadline, and the rule that a
+provider's error body never reaches a caller all come from
+[ModelHttpClient](#abstract-modelhttpclient), so what is here is exactly the translation: how a
+conversation is written as input items, how tools are declared, and how an
+answer -- one JSON document, or a stream of events -- is read back into a
+reply.
+
+It is what makes a Codex subscription usable in the model seat.
+`SubscriptionOAuthCredential` authenticates against `chatgpt.com`, and this
+speaks what that endpoint speaks; the chat-completions client authenticates
+identically and would fail on the wire shape.
+
+#### Extends
+
+- [`ModelHttpClient`](#abstract-modelhttpclient)
+
+#### Constructors
+
+##### Constructor
+
+> **new OpenAiResponsesModelClient**(`options`): [`OpenAiResponsesModelClient`](#openairesponsesmodelclient)
+
+Defined in: packages/adapters/src/model/responses.ts:132
+
+###### Parameters
+
+| Parameter | Type                                                                      |
+| --------- | ------------------------------------------------------------------------- |
+| `options` | [`OpenAiResponsesModelClientOptions`](#openairesponsesmodelclientoptions) |
+
+###### Returns
+
+[`OpenAiResponsesModelClient`](#openairesponsesmodelclient)
+
+###### Overrides
+
+`ModelHttpClient.constructor`
+
+#### Properties
+
+| Property                                    | Modifier   | Type     | Description                                                              | Inherited from                                                                  | Defined in                                                                                                                               |
+| ------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-model-2"></a> `model`       | `readonly` | `string` | The model this client was configured to ask for.                         | [`ModelHttpClient`](#abstract-modelhttpclient).[`model`](#property-model)       | [packages/adapters/src/model/client.ts:192](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L192) |
+| <a id="property-provider-2"></a> `provider` | `readonly` | `string` | The provider that serves it, recorded alongside the model on every turn. | [`ModelHttpClient`](#abstract-modelhttpclient).[`provider`](#property-provider) | [packages/adapters/src/model/client.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L193) |
+
+#### Accessors
+
+##### auth
+
+###### Get Signature
+
+> **get** **auth**(): [`JsonObject`](sharedos-contracts.md#jsonobject)
+
+Defined in: [packages/adapters/src/model/client.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L226)
+
+How this client authenticates, asked of the credential rather than captured
+when the client was built.
+
+A subscription can learn which account it pays from only when the provider
+first says so, and a description taken at construction would then record
+the turn as unscoped for the life of the process.
+
+###### Returns
+
+[`JsonObject`](sharedos-contracts.md#jsonobject)
+
+How this client authenticates, when it authenticates at all.
+
+Carried onto the turn's metadata for the same reason the served model is: a
+run on a metered API key and a run on somebody's subscription are different
+claims about where the answers came from, and a record that cannot tell
+them apart cannot say which one it is evidence of. It holds identifiers and
+shapes only -- see [ModelCredential.describe](#describe-1) -- and a client that
+presents nothing, such as a transcript, leaves it absent.
+
+###### Inherited from
+
+[`ModelHttpClient`](#abstract-modelhttpclient).[`auth`](#auth)
+
+#### Methods
+
+##### complete()
+
+> **complete**(`request`, `signal`): `Promise`\<[`ModelReply`](#modelreply)>\>
+
+Defined in: [packages/adapters/src/model/client.ts:245](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L245)
+
+###### Parameters
+
+| Parameter | Type                                                |
+| --------- | --------------------------------------------------- |
+| `request` | [`ModelCompletionRequest`](#modelcompletionrequest) |
+| `signal`  | `AbortSignal`                                       |
+
+###### Returns
+
+`Promise`\<[`ModelReply`](#modelreply)\>
+
+###### Inherited from
+
+[`ModelHttpClient`](#abstract-modelhttpclient).[`complete`](#complete)
 
 ---
 
 ### SubscriptionOAuthCredential
 
-Defined in: packages/adapters/src/model/credential.ts:226
+Defined in: [packages/adapters/src/model/credential.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L226)
 
 A subscription in the model seat.
 
@@ -1019,7 +1291,7 @@ that says nothing about SharedOS.
 
 > **new SubscriptionOAuthCredential**(`options`): [`SubscriptionOAuthCredential`](#subscriptionoauthcredential)
 
-Defined in: packages/adapters/src/model/credential.ts:246
+Defined in: [packages/adapters/src/model/credential.ts:246](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L246)
 
 ###### Parameters
 
@@ -1033,9 +1305,9 @@ Defined in: packages/adapters/src/model/credential.ts:246
 
 #### Properties
 
-| Property                              | Modifier   | Type                   | Default value          | Description                                                              | Defined in                                    |
-| ------------------------------------- | ---------- | ---------------------- | ---------------------- | ------------------------------------------------------------------------ | --------------------------------------------- |
-| <a id="property-scheme"></a> `scheme` | `readonly` | `"subscription_oauth"` | `"subscription_oauth"` | How a call authenticates, in one word, for the record. Never the secret. | packages/adapters/src/model/credential.ts:227 |
+| Property                              | Modifier   | Type                   | Default value          | Description                                                              | Defined in                                                                                                                                       |
+| ------------------------------------- | ---------- | ---------------------- | ---------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-scheme"></a> `scheme` | `readonly` | `"subscription_oauth"` | `"subscription_oauth"` | How a call authenticates, in one word, for the record. Never the secret. | [packages/adapters/src/model/credential.ts:227](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L227) |
 
 #### Accessors
 
@@ -1045,7 +1317,7 @@ Defined in: packages/adapters/src/model/credential.ts:246
 
 > **get** **tokens**(): [`SubscriptionTokens`](#subscriptiontokens)
 
-Defined in: packages/adapters/src/model/credential.ts:261
+Defined in: [packages/adapters/src/model/credential.ts:261](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L261)
 
 The tokens as they now stand, for a host persisting them itself.
 
@@ -1059,7 +1331,7 @@ The tokens as they now stand, for a host persisting them itself.
 
 > **describe**(): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: packages/adapters/src/model/credential.ts:289
+Defined in: [packages/adapters/src/model/credential.ts:289](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L289)
 
 What may be recorded about how this call authenticated.
 
@@ -1081,7 +1353,7 @@ weaker claim.
 
 > **headers**(`signal`): `Promise`\<`Readonly`\<`Record`\<`string`, `string`>>>\>\>\>
 
-Defined in: packages/adapters/src/model/credential.ts:265
+Defined in: [packages/adapters/src/model/credential.ts:265](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L265)
 
 The headers one call presents, resolved at the instant of that call.
 
@@ -1110,7 +1382,7 @@ renewed here, and a window that has not opened yet is never widened.
 
 > **renew**(`signal`): `Promise`\<`boolean`>\>
 
-Defined in: packages/adapters/src/model/credential.ts:283
+Defined in: [packages/adapters/src/model/credential.ts:283](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L283)
 
 One chance to renew, after the provider refused the call as
 unauthenticated.
@@ -1253,8 +1525,8 @@ Defined in: [packages/adapters/src/model/transcript.ts:46](https://github.com/Ai
 
 | Property                                    | Modifier   | Type                                                  | Default value | Description                                                              | Defined in                                                                                                                                     |
 | ------------------------------------------- | ---------- | ----------------------------------------------------- | ------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-model-1"></a> `model`       | `readonly` | `string`                                              | `undefined`   | The model this client was configured to ask for.                         | [packages/adapters/src/model/transcript.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L39) |
-| <a id="property-provider-1"></a> `provider` | `readonly` | `string`                                              | `undefined`   | The provider that serves it, recorded alongside the model on every turn. | [packages/adapters/src/model/transcript.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L40) |
+| <a id="property-model-3"></a> `model`       | `readonly` | `string`                                              | `undefined`   | The model this client was configured to ask for.                         | [packages/adapters/src/model/transcript.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L39) |
+| <a id="property-provider-3"></a> `provider` | `readonly` | `string`                                              | `undefined`   | The provider that serves it, recorded alongside the model on every turn. | [packages/adapters/src/model/transcript.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L40) |
 | <a id="property-seen"></a> `seen`           | `readonly` | [`ModelCompletionRequest`](#modelcompletionrequest)[] | `[]`          | Every request the driver made, in order, for a test to read back.        | [packages/adapters/src/model/transcript.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L42) |
 
 #### Methods
@@ -1278,7 +1550,7 @@ Defined in: [packages/adapters/src/model/transcript.ts:55](https://github.com/Ai
 
 ###### Implementation of
 
-[`ModelClient`](#modelclient).[`complete`](#complete-3)
+[`ModelClient`](#modelclient).[`complete`](#complete-5)
 
 ---
 
@@ -1676,7 +1948,7 @@ Everything a harness needs to start one turn.
 
 ### ModelClient
 
-Defined in: [packages/adapters/src/model/client.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L93)
+Defined in: [packages/adapters/src/model/client.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L102)
 
 A model API in the SharedOS driver seat.
 
@@ -1690,9 +1962,9 @@ interface and no new enforcement path.
 
 | Property                                    | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                               |
 | ------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-auth-1"></a> `auth?`        | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | How this client authenticates, when it authenticates at all. Carried onto the turn's metadata for the same reason the served model is: a run on a metered API key and a run on somebody's subscription are different claims about where the answers came from, and a record that cannot tell them apart cannot say which one it is evidence of. It holds identifiers and shapes only -- see [ModelCredential.describe](#describe-1) -- and a client that presents nothing, such as a transcript, leaves it absent. | [packages/adapters/src/model/client.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L108) |
-| <a id="property-model-2"></a> `model`       | `readonly` | `string`                                         | The model this client was configured to ask for.                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [packages/adapters/src/model/client.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L95)   |
-| <a id="property-provider-2"></a> `provider` | `readonly` | `string`                                         | The provider that serves it, recorded alongside the model on every turn.                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L97)   |
+| <a id="property-auth"></a> `auth?`          | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | How this client authenticates, when it authenticates at all. Carried onto the turn's metadata for the same reason the served model is: a run on a metered API key and a run on somebody's subscription are different claims about where the answers came from, and a record that cannot tell them apart cannot say which one it is evidence of. It holds identifiers and shapes only -- see [ModelCredential.describe](#describe-1) -- and a client that presents nothing, such as a transcript, leaves it absent. | [packages/adapters/src/model/client.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L117) |
+| <a id="property-model-4"></a> `model`       | `readonly` | `string`                                         | The model this client was configured to ask for.                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [packages/adapters/src/model/client.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L104) |
+| <a id="property-provider-4"></a> `provider` | `readonly` | `string`                                         | The provider that serves it, recorded alongside the model on every turn.                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L106) |
 
 #### Methods
 
@@ -1700,7 +1972,7 @@ interface and no new enforcement path.
 
 > **complete**(`request`, `signal`): `Promise`\<[`ModelReply`](#modelreply)>\>
 
-Defined in: [packages/adapters/src/model/client.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L109)
+Defined in: [packages/adapters/src/model/client.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L118)
 
 ###### Parameters
 
@@ -1717,20 +1989,20 @@ Defined in: [packages/adapters/src/model/client.ts:109](https://github.com/Aicoo
 
 ### ModelCompletionRequest
 
-Defined in: [packages/adapters/src/model/client.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L46)
+Defined in: [packages/adapters/src/model/client.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L45)
 
 #### Properties
 
 | Property                                  | Modifier   | Type                                       | Defined in                                                                                                                             |
 | ----------------------------------------- | ---------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-messages"></a> `messages` | `readonly` | readonly [`ModelMessage`](#modelmessage)[] | [packages/adapters/src/model/client.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L47) |
-| <a id="property-tools-1"></a> `tools`     | `readonly` | readonly [`ModelTool`](#modeltool)[]       | [packages/adapters/src/model/client.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L48) |
+| <a id="property-messages"></a> `messages` | `readonly` | readonly [`ModelMessage`](#modelmessage)[] | [packages/adapters/src/model/client.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L46) |
+| <a id="property-tools-1"></a> `tools`     | `readonly` | readonly [`ModelTool`](#modeltool)[]       | [packages/adapters/src/model/client.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L47) |
 
 ---
 
 ### ModelCredential
 
-Defined in: packages/adapters/src/model/credential.ts:20
+Defined in: [packages/adapters/src/model/credential.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L20)
 
 What one model call presents to prove it may be made.
 
@@ -1749,9 +2021,9 @@ for the model does not vouch for the agent using it.
 
 #### Properties
 
-| Property                                | Modifier   | Type     | Description                                                              | Defined in                                   |
-| --------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------ | -------------------------------------------- |
-| <a id="property-scheme-1"></a> `scheme` | `readonly` | `string` | How a call authenticates, in one word, for the record. Never the secret. | packages/adapters/src/model/credential.ts:24 |
+| Property                                | Modifier   | Type     | Description                                                              | Defined in                                                                                                                                     |
+| --------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-scheme-1"></a> `scheme` | `readonly` | `string` | How a call authenticates, in one word, for the record. Never the secret. | [packages/adapters/src/model/credential.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L24) |
 
 #### Methods
 
@@ -1759,7 +2031,7 @@ for the model does not vouch for the agent using it.
 
 > **describe**(): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: packages/adapters/src/model/credential.ts:54
+Defined in: [packages/adapters/src/model/credential.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L54)
 
 What may be recorded about how this call authenticated.
 
@@ -1777,7 +2049,7 @@ weaker claim.
 
 > **headers**(`signal`): `Promise`\<`Readonly`\<`Record`\<`string`, `string`>>>\>\>\>
 
-Defined in: packages/adapters/src/model/credential.ts:35
+Defined in: [packages/adapters/src/model/credential.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L35)
 
 The headers one call presents, resolved at the instant of that call.
 
@@ -1802,7 +2074,7 @@ renewed here, and a window that has not opened yet is never widened.
 
 > `optional` **renew**(`signal`): `Promise`\<`boolean`>\>
 
-Defined in: packages/adapters/src/model/credential.ts:44
+Defined in: [packages/adapters/src/model/credential.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L44)
 
 One chance to renew, after the provider refused the call as
 unauthenticated.
@@ -1843,27 +2115,52 @@ Defined in: [packages/adapters/src/model/driver.ts:88](https://github.com/Aicoo-
 
 ---
 
+### ModelHttpClientOptions
+
+Defined in: [packages/adapters/src/model/client.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L134)
+
+#### Extended by
+
+- [`OpenAiCompatibleModelClientOptions`](#openaicompatiblemodelclientoptions)
+- [`OpenAiResponsesModelClientOptions`](#openairesponsesmodelclientoptions)
+
+#### Properties
+
+| Property                                                   | Modifier   | Type                                                                                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                      | Defined in                                                                                                                               |
+| ---------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-apikey"></a> `apiKey?`                     | `readonly` | `string`                                                                                       | A metered account's key. Supply this or [credential](#property-credential), never both.                                                                                                                                                                                                                                                                                                                                          | [packages/adapters/src/model/client.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L136) |
+| <a id="property-baseurl"></a> `baseUrl`                    | `readonly` | `string`                                                                                       | The API root, without a trailing slash.                                                                                                                                                                                                                                                                                                                                                                                          | [packages/adapters/src/model/client.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L149) |
+| <a id="property-credential"></a> `credential?`             | `readonly` | [`ModelCredential`](#modelcredential)                                                          | How calls authenticate, for anything a constant key cannot express. A subscription is the case this exists for: an access token that expires, renewed against the provider's token endpoint, presented alongside the code of the account the plan bills. See [SubscriptionOAuthCredential](#subscriptionoauthcredential).                                                                                                        | [packages/adapters/src/model/client.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L144) |
+| <a id="property-fetch"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                                                                                                                                                            | [packages/adapters/src/model/client.ts:163](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L163) |
+| <a id="property-headers"></a> `headers?`                   | `readonly` | `Readonly`\<`Record`\<`string`, `string`\>\>                                                   | Constant headers this endpoint requires, beyond the content type. A subscription endpoint often wants more than a token -- a client originator, a beta opt-in -- and which ones is the operator's knowledge of their provider rather than something this package should assert. The credential's own headers win over these: a static configuration must not be able to override the token or the account the call is billed to. | [packages/adapters/src/model/client.ts:159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L159) |
+| <a id="property-model-5"></a> `model`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                                                                | [packages/adapters/src/model/client.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L145) |
+| <a id="property-provider-5"></a> `provider`                | `readonly` | `string`                                                                                       | Names the provider on every record this client's turns produce.                                                                                                                                                                                                                                                                                                                                                                  | [packages/adapters/src/model/client.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L147) |
+| <a id="property-requesttimeoutms"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one model call may take, independently of the turn's own budget.                                                                                                                                                                                                                                                                                                                                                        | [packages/adapters/src/model/client.ts:161](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L161) |
+
+---
+
 ### ModelReply
 
-Defined in: [packages/adapters/src/model/client.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L58)
+Defined in: [packages/adapters/src/model/client.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L57)
 
 What the model answered with.
 
 #### Properties
 
-| Property                                           | Modifier   | Type                                         | Description                                                                                                                                                                                                                                                                                                                                                                                                                               | Defined in                                                                                                                             |
-| -------------------------------------------------- | ---------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-finishreason"></a> `finishReason?` | `readonly` | `string`                                     | Why generation stopped, in the provider's own vocabulary. `stop` and `tool_calls` are the model ending its reply; `length` is the provider ending it at the output-token ceiling. Carried because the two are different facts about the same reply: a completion that was cut off mid-way looks, without this, exactly like a completion the model chose to end, and a record whose purpose is honest attribution has to tell them apart. | [packages/adapters/src/model/client.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L70) |
-| <a id="property-model-3"></a> `model?`             | `readonly` | `string`                                     | The model the provider says actually answered. Recorded separately from the one that was asked for because they differ: DeepSeek maps an unrecognised name onto a default rather than rejecting it, so a run configured for one model can be served by another. The record should say what answered, which is the weaker claim and the honest one.                                                                                        | [packages/adapters/src/model/client.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L81) |
-| <a id="property-text"></a> `text`                  | `readonly` | `string`                                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L59) |
-| <a id="property-toolcalls"></a> `toolCalls`        | `readonly` | readonly [`ModelToolCall`](#modeltoolcall)[] | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L60) |
-| <a id="property-usage"></a> `usage?`               | `readonly` | [`ModelUsage`](#modelusage)                  | Absent when the provider reported no usage; never estimated.                                                                                                                                                                                                                                                                                                                                                                              | [packages/adapters/src/model/client.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L72) |
+| Property                                           | Modifier   | Type                                         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Defined in                                                                                                                             |
+| -------------------------------------------------- | ---------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-finishreason"></a> `finishReason?` | `readonly` | `string`                                     | Why generation stopped, in the provider's own vocabulary. Recorded verbatim and never normalised, so two providers that end a reply for the same reason under different words stay distinguishable in the record. What the driver acts on is [truncated](#property-truncated), which is the same fact stated once for every wire shape.                                                                                                                                                                                     | [packages/adapters/src/model/client.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L68) |
+| <a id="property-model-6"></a> `model?`             | `readonly` | `string`                                     | The model the provider says actually answered. Recorded separately from the one that was asked for because they differ: DeepSeek maps an unrecognised name onto a default rather than rejecting it, so a run configured for one model can be served by another. The record should say what answered, which is the weaker claim and the honest one.                                                                                                                                                                          | [packages/adapters/src/model/client.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L90) |
+| <a id="property-text"></a> `text`                  | `readonly` | `string`                                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L58) |
+| <a id="property-toolcalls"></a> `toolCalls`        | `readonly` | readonly [`ModelToolCall`](#modeltoolcall)[] | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L59) |
+| <a id="property-truncated"></a> `truncated?`       | `readonly` | `boolean`                                    | Whether the provider ended the reply rather than the model choosing to. A completion cut off at the output ceiling looks, without this, exactly like a completion the model chose to end: its calls may be half-written and its silence is not a decision. The driver fails the turn on it rather than grading the cut, so every client has to state it -- `finish_reason: "length"` on chat-completions, an `incomplete` status on the Responses API -- and a client that leaves it absent is claiming the model finished. | [packages/adapters/src/model/client.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L79) |
+| <a id="property-usage"></a> `usage?`               | `readonly` | [`ModelUsage`](#modelusage)                  | Absent when the provider reported no usage; never estimated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [packages/adapters/src/model/client.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L81) |
 
 ---
 
 ### ModelTool
 
-Defined in: [packages/adapters/src/model/client.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L23)
+Defined in: [packages/adapters/src/model/client.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L22)
 
 A tool offered to the model, already rendered into the provider's alphabet.
 
@@ -1871,15 +2168,15 @@ A tool offered to the model, already rendered into the provider's alphabet.
 
 | Property                                        | Modifier   | Type                                             | Defined in                                                                                                                             |
 | ----------------------------------------------- | ---------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-description"></a> `description` | `readonly` | `string`                                         | [packages/adapters/src/model/client.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L25) |
-| <a id="property-name-2"></a> `name`             | `readonly` | `string`                                         | [packages/adapters/src/model/client.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L24) |
-| <a id="property-parameters"></a> `parameters`   | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/adapters/src/model/client.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L26) |
+| <a id="property-description"></a> `description` | `readonly` | `string`                                         | [packages/adapters/src/model/client.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L24) |
+| <a id="property-name-2"></a> `name`             | `readonly` | `string`                                         | [packages/adapters/src/model/client.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L23) |
+| <a id="property-parameters"></a> `parameters`   | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/adapters/src/model/client.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L25) |
 
 ---
 
 ### ModelToolCall
 
-Defined in: [packages/adapters/src/model/client.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L16)
+Defined in: [packages/adapters/src/model/client.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L15)
 
 One tool call a model asked for, exactly as it came off the wire.
 
@@ -1892,9 +2189,9 @@ an unrecognised name means is a policy question that belongs to the driver.
 
 | Property                                    | Modifier   | Type     | Defined in                                                                                                                             |
 | ------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-arguments"></a> `arguments` | `readonly` | `string` | [packages/adapters/src/model/client.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L19) |
-| <a id="property-id-1"></a> `id`             | `readonly` | `string` | [packages/adapters/src/model/client.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L17) |
-| <a id="property-name-3"></a> `name`         | `readonly` | `string` | [packages/adapters/src/model/client.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L18) |
+| <a id="property-arguments"></a> `arguments` | `readonly` | `string` | [packages/adapters/src/model/client.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L18) |
+| <a id="property-id-1"></a> `id`             | `readonly` | `string` | [packages/adapters/src/model/client.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L16) |
+| <a id="property-name-3"></a> `name`         | `readonly` | `string` | [packages/adapters/src/model/client.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L17) |
 
 ---
 
@@ -1919,7 +2216,7 @@ provider, so a transcript exercises the same code path a live model does.
 
 ### ModelUsage
 
-Defined in: [packages/adapters/src/model/client.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L52)
+Defined in: [packages/adapters/src/model/client.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L51)
 
 What a provider billed for one reply, when it said.
 
@@ -1927,53 +2224,85 @@ What a provider billed for one reply, when it said.
 
 | Property                                           | Modifier   | Type     | Defined in                                                                                                                             |
 | -------------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-inputtokens"></a> `inputTokens?`   | `readonly` | `number` | [packages/adapters/src/model/client.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L53) |
-| <a id="property-outputtokens"></a> `outputTokens?` | `readonly` | `number` | [packages/adapters/src/model/client.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L54) |
+| <a id="property-inputtokens"></a> `inputTokens?`   | `readonly` | `number` | [packages/adapters/src/model/client.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L52) |
+| <a id="property-outputtokens"></a> `outputTokens?` | `readonly` | `number` | [packages/adapters/src/model/client.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L53) |
 
 ---
 
 ### OpenAiCompatibleModelClientOptions
 
-Defined in: [packages/adapters/src/model/client.ts:163](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L163)
+Defined in: packages/adapters/src/model/chat-completions.ts:51
+
+#### Extends
+
+- [`ModelHttpClientOptions`](#modelhttpclientoptions)
 
 #### Properties
 
-| Property                                                   | Modifier   | Type                                                                                           | Description                                                                                                                                                                                                                                                                                                               | Defined in                                                                                                                               |
-| ---------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-apikey"></a> `apiKey?`                     | `readonly` | `string`                                                                                       | A metered account's key. Supply this or [credential](#property-credential), never both.                                                                                                                                                                                                                                   | [packages/adapters/src/model/client.ts:167](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L167) |
-| <a id="property-baseurl"></a> `baseUrl`                    | `readonly` | `string`                                                                                       | The chat-completions root, without a trailing slash.                                                                                                                                                                                                                                                                      | [packages/adapters/src/model/client.ts:180](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L180) |
-| <a id="property-credential"></a> `credential?`             | `readonly` | [`ModelCredential`](#modelcredential)                                                          | How calls authenticate, for anything a constant key cannot express. A subscription is the case this exists for: an access token that expires, renewed against the provider's token endpoint, presented alongside the code of the account the plan bills. See [SubscriptionOAuthCredential](#subscriptionoauthcredential). | [packages/adapters/src/model/client.ts:175](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L175) |
-| <a id="property-fetch"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                                                     | [packages/adapters/src/model/client.ts:192](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L192) |
-| <a id="property-maxoutputtokens"></a> `maxOutputTokens?`   | `readonly` | `number`                                                                                       | -                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:181](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L181) |
-| <a id="property-model-4"></a> `model`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:176](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L176) |
-| <a id="property-provider-3"></a> `provider`                | `readonly` | `string`                                                                                       | Names the provider on every record this client's turns produce.                                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:178](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L178) |
-| <a id="property-requesttimeoutms"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one model call may take, independently of the turn's own budget.                                                                                                                                                                                                                                                 | [packages/adapters/src/model/client.ts:190](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L190) |
-| <a id="property-temperature"></a> `temperature?`           | `readonly` | `number`                                                                                       | Left at zero by default, which reduces variation between runs but does not remove it. This column is not deterministic and must not be described as if it were: a temperature of zero is not a seed, and the same prompt can still produce a different call sequence on a different day.                                  | [packages/adapters/src/model/client.ts:188](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L188) |
+| Property                                                     | Modifier   | Type                                                                                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                      | Overrides                                                                          | Inherited from                                                                                       | Defined in                                                                                                                               |
+| ------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-apikey-1"></a> `apiKey?`                     | `readonly` | `string`                                                                                       | A metered account's key. Supply this or [credential](#property-credential), never both.                                                                                                                                                                                                                                                                                                                                          | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`apiKey`](#property-apikey)                     | [packages/adapters/src/model/client.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L136) |
+| <a id="property-baseurl-1"></a> `baseUrl`                    | `readonly` | `string`                                                                                       | The chat-completions root, without a trailing slash.                                                                                                                                                                                                                                                                                                                                                                             | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`baseUrl`](#property-baseurl) | -                                                                                                    | packages/adapters/src/model/chat-completions.ts:53                                                                                       |
+| <a id="property-credential-1"></a> `credential?`             | `readonly` | [`ModelCredential`](#modelcredential)                                                          | How calls authenticate, for anything a constant key cannot express. A subscription is the case this exists for: an access token that expires, renewed against the provider's token endpoint, presented alongside the code of the account the plan bills. See [SubscriptionOAuthCredential](#subscriptionoauthcredential).                                                                                                        | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`credential`](#property-credential)             | [packages/adapters/src/model/client.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L144) |
+| <a id="property-fetch-1"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                                                                                                                                                            | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`fetch`](#property-fetch)                       | [packages/adapters/src/model/client.ts:163](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L163) |
+| <a id="property-headers-1"></a> `headers?`                   | `readonly` | `Readonly`\<`Record`\<`string`, `string`\>\>                                                   | Constant headers this endpoint requires, beyond the content type. A subscription endpoint often wants more than a token -- a client originator, a beta opt-in -- and which ones is the operator's knowledge of their provider rather than something this package should assert. The credential's own headers win over these: a static configuration must not be able to override the token or the account the call is billed to. | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`headers`](#property-headers)                   | [packages/adapters/src/model/client.ts:159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L159) |
+| <a id="property-maxoutputtokens"></a> `maxOutputTokens?`     | `readonly` | `number`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                                                                | -                                                                                  | -                                                                                                    | packages/adapters/src/model/chat-completions.ts:54                                                                                       |
+| <a id="property-model-7"></a> `model`                        | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                                                                | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`model`](#property-model-5)                     | [packages/adapters/src/model/client.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L145) |
+| <a id="property-provider-6"></a> `provider`                  | `readonly` | `string`                                                                                       | Names the provider on every record this client's turns produce.                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`provider`](#property-provider-5)               | [packages/adapters/src/model/client.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L147) |
+| <a id="property-requesttimeoutms-1"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one model call may take, independently of the turn's own budget.                                                                                                                                                                                                                                                                                                                                                        | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`requestTimeoutMs`](#property-requesttimeoutms) | [packages/adapters/src/model/client.ts:161](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L161) |
+| <a id="property-temperature"></a> `temperature?`             | `readonly` | `number`                                                                                       | Left at zero by default, which reduces variation between runs but does not remove it. This column is not deterministic and must not be described as if it were: a temperature of zero is not a seed, and the same prompt can still produce a different call sequence on a different day.                                                                                                                                         | -                                                                                  | -                                                                                                    | packages/adapters/src/model/chat-completions.ts:61                                                                                       |
+
+---
+
+### OpenAiResponsesModelClientOptions
+
+Defined in: packages/adapters/src/model/responses.ts:67
+
+#### Extends
+
+- [`ModelHttpClientOptions`](#modelhttpclientoptions)
+
+#### Properties
+
+| Property                                                     | Modifier   | Type                                                                                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                      | Overrides                                                                          | Inherited from                                                                                       | Defined in                                                                                                                               |
+| ------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-apikey-2"></a> `apiKey?`                     | `readonly` | `string`                                                                                       | A metered account's key. Supply this or [credential](#property-credential), never both.                                                                                                                                                                                                                                                                                                                                          | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`apiKey`](#property-apikey)                     | [packages/adapters/src/model/client.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L136) |
+| <a id="property-baseurl-2"></a> `baseUrl`                    | `readonly` | `string`                                                                                       | The Responses root, without a trailing slash and without `/responses`.                                                                                                                                                                                                                                                                                                                                                           | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`baseUrl`](#property-baseurl) | -                                                                                                    | packages/adapters/src/model/responses.ts:69                                                                                              |
+| <a id="property-credential-2"></a> `credential?`             | `readonly` | [`ModelCredential`](#modelcredential)                                                          | How calls authenticate, for anything a constant key cannot express. A subscription is the case this exists for: an access token that expires, renewed against the provider's token endpoint, presented alongside the code of the account the plan bills. See [SubscriptionOAuthCredential](#subscriptionoauthcredential).                                                                                                        | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`credential`](#property-credential)             | [packages/adapters/src/model/client.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L144) |
+| <a id="property-fetch-2"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                                                                                                                                                            | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`fetch`](#property-fetch)                       | [packages/adapters/src/model/client.ts:163](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L163) |
+| <a id="property-headers-2"></a> `headers?`                   | `readonly` | `Readonly`\<`Record`\<`string`, `string`\>\>                                                   | Constant headers this endpoint requires, beyond the content type. A subscription endpoint often wants more than a token -- a client originator, a beta opt-in -- and which ones is the operator's knowledge of their provider rather than something this package should assert. The credential's own headers win over these: a static configuration must not be able to override the token or the account the call is billed to. | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`headers`](#property-headers)                   | [packages/adapters/src/model/client.ts:159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L159) |
+| <a id="property-maxoutputtokens-1"></a> `maxOutputTokens?`   | `readonly` | `number`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                                                                | -                                                                                  | -                                                                                                    | packages/adapters/src/model/responses.ts:70                                                                                              |
+| <a id="property-model-8"></a> `model`                        | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                                                                | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`model`](#property-model-5)                     | [packages/adapters/src/model/client.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L145) |
+| <a id="property-provider-7"></a> `provider`                  | `readonly` | `string`                                                                                       | Names the provider on every record this client's turns produce.                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`provider`](#property-provider-5)               | [packages/adapters/src/model/client.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L147) |
+| <a id="property-requesttimeoutms-2"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one model call may take, independently of the turn's own budget.                                                                                                                                                                                                                                                                                                                                                        | -                                                                                  | [`ModelHttpClientOptions`](#modelhttpclientoptions).[`requestTimeoutMs`](#property-requesttimeoutms) | [packages/adapters/src/model/client.ts:161](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L161) |
+| <a id="property-store"></a> `store?`                         | `readonly` | `boolean`                                                                                      | Whether the provider may retain the turn. Default false. The request carries the turn's prompt, the catalogue, and every tool result. Asking a provider to keep that is a decision a host should make deliberately, so the default is not to.                                                                                                                                                                                    | -                                                                                  | -                                                                                                    | packages/adapters/src/model/responses.ts:96                                                                                              |
+| <a id="property-stream"></a> `stream?`                       | `readonly` | `boolean`                                                                                      | Whether to ask for the answer as a stream of events. Default true. Streaming is not a feature here; it is what the subscription endpoint accepts. What arrives is decided by the response's own content type rather than by this flag, so a provider that streams anyway, or that declines to, is read correctly either way.                                                                                                     | -                                                                                  | -                                                                                                    | packages/adapters/src/model/responses.ts:88                                                                                              |
+| <a id="property-temperature-1"></a> `temperature?`           | `readonly` | `number`                                                                                       | Omitted unless a caller asks for one, unlike the chat-completions client. A reasoning model rejects the parameter outright, and those are the models this endpoint mostly serves, so a default of zero would make the client unusable against exactly the provider it exists for. A caller pointing it at a model that accepts one can still say so.                                                                             | -                                                                                  | -                                                                                                    | packages/adapters/src/model/responses.ts:79                                                                                              |
 
 ---
 
 ### SubscriptionOAuthCredentialOptions
 
-Defined in: packages/adapters/src/model/credential.ts:162
+Defined in: [packages/adapters/src/model/credential.ts:162](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L162)
 
 #### Properties
 
-| Property                                                     | Modifier   | Type                                                                                           | Description                                                                                                                                                                                                                                                                                                                                                                       | Defined in                                    |
-| ------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| <a id="property-accountcode"></a> `accountCode?`             | `readonly` | `string`                                                                                       | Overrides the account code the login carried, for a multi-account login.                                                                                                                                                                                                                                                                                                          | packages/adapters/src/model/credential.ts:166 |
-| <a id="property-fetch-1"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                                                                                                             | packages/adapters/src/model/credential.ts:190 |
-| <a id="property-now"></a> `now?`                             | `readonly` | () => `string`                                                                                 | The clock, RFC 3339. Injected for tests, which must not depend on real time.                                                                                                                                                                                                                                                                                                      | packages/adapters/src/model/credential.ts:188 |
-| <a id="property-onrefresh"></a> `onRefresh?`                 | `readonly` | (`tokens`) => `void` \| `Promise`\<`void`\>                                                    | Where renewed tokens go. Providers rotate the refresh token on every exchange, so a host that does not persist what comes back has a login that works until the process exits and then cannot be renewed at all. SharedOS stores nothing itself: this is the host's sink, called with the whole set, and a failure in it is not allowed to fail the model call that triggered it. | packages/adapters/src/model/credential.ts:186 |
-| <a id="property-profile"></a> `profile`                      | `readonly` | [`SubscriptionOAuthProfile`](#subscriptionoauthprofile)                                        | -                                                                                                                                                                                                                                                                                                                                                                                 | packages/adapters/src/model/credential.ts:163 |
-| <a id="property-refreshskewms"></a> `refreshSkewMs?`         | `readonly` | `number`                                                                                       | How long before expiry a token is renewed anyway. Default 60s. A token that is valid when the request is written can still be expired when the provider reads it. The skew renews early rather than discovering that as a failed turn.                                                                                                                                            | packages/adapters/src/model/credential.ts:174 |
-| <a id="property-requesttimeoutms-1"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one token exchange may take. Default 30s.                                                                                                                                                                                                                                                                                                                                | packages/adapters/src/model/credential.ts:176 |
-| <a id="property-tokens"></a> `tokens`                        | `readonly` | [`SubscriptionTokens`](#subscriptiontokens)                                                    | -                                                                                                                                                                                                                                                                                                                                                                                 | packages/adapters/src/model/credential.ts:164 |
+| Property                                                     | Modifier   | Type                                                                                           | Description                                                                                                                                                                                                                                                                                                                                                                       | Defined in                                                                                                                                       |
+| ------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-accountcode"></a> `accountCode?`             | `readonly` | `string`                                                                                       | Overrides the account code the login carried, for a multi-account login.                                                                                                                                                                                                                                                                                                          | [packages/adapters/src/model/credential.ts:166](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L166) |
+| <a id="property-fetch-3"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                                                                                                             | [packages/adapters/src/model/credential.ts:190](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L190) |
+| <a id="property-now"></a> `now?`                             | `readonly` | () => `string`                                                                                 | The clock, RFC 3339. Injected for tests, which must not depend on real time.                                                                                                                                                                                                                                                                                                      | [packages/adapters/src/model/credential.ts:188](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L188) |
+| <a id="property-onrefresh"></a> `onRefresh?`                 | `readonly` | (`tokens`) => `void` \| `Promise`\<`void`\>                                                    | Where renewed tokens go. Providers rotate the refresh token on every exchange, so a host that does not persist what comes back has a login that works until the process exits and then cannot be renewed at all. SharedOS stores nothing itself: this is the host's sink, called with the whole set, and a failure in it is not allowed to fail the model call that triggered it. | [packages/adapters/src/model/credential.ts:186](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L186) |
+| <a id="property-profile"></a> `profile`                      | `readonly` | [`SubscriptionOAuthProfile`](#subscriptionoauthprofile)                                        | -                                                                                                                                                                                                                                                                                                                                                                                 | [packages/adapters/src/model/credential.ts:163](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L163) |
+| <a id="property-refreshskewms"></a> `refreshSkewMs?`         | `readonly` | `number`                                                                                       | How long before expiry a token is renewed anyway. Default 60s. A token that is valid when the request is written can still be expired when the provider reads it. The skew renews early rather than discovering that as a failed turn.                                                                                                                                            | [packages/adapters/src/model/credential.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L174) |
+| <a id="property-requesttimeoutms-3"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one token exchange may take. Default 30s.                                                                                                                                                                                                                                                                                                                                | [packages/adapters/src/model/credential.ts:176](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L176) |
+| <a id="property-tokens"></a> `tokens`                        | `readonly` | [`SubscriptionTokens`](#subscriptiontokens)                                                    | -                                                                                                                                                                                                                                                                                                                                                                                 | [packages/adapters/src/model/credential.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L164) |
 
 ---
 
 ### SubscriptionOAuthProfile
 
-Defined in: packages/adapters/src/model/credential.ts:96
+Defined in: [packages/adapters/src/model/credential.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L96)
 
 Where a subscription provider's tokens come from and how its account code
 travels.
@@ -1983,20 +2312,20 @@ is a second one of these, and no second credential class.
 
 #### Properties
 
-| Property                                            | Modifier   | Type                                         | Description                                                                                                                                                                                                                                                                        | Defined in                                    |
-| --------------------------------------------------- | ---------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| <a id="property-accountheader"></a> `accountHeader` | `readonly` | `string`                                     | The header the provider reads the subscription's account code from. Subscription plans are billed per account, and the access token alone does not always say which one: a login that covers several workspaces issues one token and expects the account to be named alongside it. | packages/adapters/src/model/credential.ts:110 |
-| <a id="property-clientid"></a> `clientId`           | `readonly` | `string`                                     | The public client the login was performed by.                                                                                                                                                                                                                                      | packages/adapters/src/model/credential.ts:102 |
-| <a id="property-encoding"></a> `encoding?`          | `readonly` | `"form"` \| `"json"`                         | How the token endpoint wants its request body. RFC 6749 says `form`.                                                                                                                                                                                                               | packages/adapters/src/model/credential.ts:112 |
-| <a id="property-headers"></a> `headers?`            | `readonly` | `Readonly`\<`Record`\<`string`, `string`\>\> | Constant headers the provider requires on a subscription call.                                                                                                                                                                                                                     | packages/adapters/src/model/credential.ts:114 |
-| <a id="property-id-2"></a> `id`                     | `readonly` | `string`                                     | Names the issuer on every record this credential's turns produce.                                                                                                                                                                                                                  | packages/adapters/src/model/credential.ts:98  |
-| <a id="property-tokenurl"></a> `tokenUrl`           | `readonly` | `string`                                     | The OAuth token endpoint, which is where a refresh is exchanged.                                                                                                                                                                                                                   | packages/adapters/src/model/credential.ts:100 |
+| Property                                            | Modifier   | Type                                         | Description                                                                                                                                                                                                                                                                        | Defined in                                                                                                                                       |
+| --------------------------------------------------- | ---------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-accountheader"></a> `accountHeader` | `readonly` | `string`                                     | The header the provider reads the subscription's account code from. Subscription plans are billed per account, and the access token alone does not always say which one: a login that covers several workspaces issues one token and expects the account to be named alongside it. | [packages/adapters/src/model/credential.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L110) |
+| <a id="property-clientid"></a> `clientId`           | `readonly` | `string`                                     | The public client the login was performed by.                                                                                                                                                                                                                                      | [packages/adapters/src/model/credential.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L102) |
+| <a id="property-encoding"></a> `encoding?`          | `readonly` | `"form"` \| `"json"`                         | How the token endpoint wants its request body. RFC 6749 says `form`.                                                                                                                                                                                                               | [packages/adapters/src/model/credential.ts:112](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L112) |
+| <a id="property-headers-3"></a> `headers?`          | `readonly` | `Readonly`\<`Record`\<`string`, `string`\>\> | Constant headers the provider requires on a subscription call.                                                                                                                                                                                                                     | [packages/adapters/src/model/credential.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L114) |
+| <a id="property-id-2"></a> `id`                     | `readonly` | `string`                                     | Names the issuer on every record this credential's turns produce.                                                                                                                                                                                                                  | [packages/adapters/src/model/credential.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L98)   |
+| <a id="property-tokenurl"></a> `tokenUrl`           | `readonly` | `string`                                     | The OAuth token endpoint, which is where a refresh is exchanged.                                                                                                                                                                                                                   | [packages/adapters/src/model/credential.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L100) |
 
 ---
 
 ### SubscriptionTokens
 
-Defined in: packages/adapters/src/model/credential.ts:146
+Defined in: [packages/adapters/src/model/credential.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L146)
 
 One subscription login, as it is held between calls and persisted between
 runs.
@@ -2007,12 +2336,12 @@ that has to go back to the store.
 
 #### Properties
 
-| Property                                           | Modifier   | Type     | Description                                                                                                                                                                                                                                              | Defined in                                    |
-| -------------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| <a id="property-accesstoken"></a> `accessToken`    | `readonly` | `string` | -                                                                                                                                                                                                                                                        | packages/adapters/src/model/credential.ts:147 |
-| <a id="property-accountcode-1"></a> `accountCode?` | `readonly` | `string` | The subscription account this login pays from, when the login carried one. Called a code rather than an id because that is what it is to SharedOS: an opaque string copied into a header. Nothing here parses it, compares it, or treats it as identity. | packages/adapters/src/model/credential.ts:159 |
-| <a id="property-expiresat"></a> `expiresAt?`       | `readonly` | `string` | RFC 3339. Absent when the provider did not say when it ends.                                                                                                                                                                                             | packages/adapters/src/model/credential.ts:151 |
-| <a id="property-refreshtoken"></a> `refreshToken?` | `readonly` | `string` | Absent on a login that cannot be renewed; the credential then cannot either.                                                                                                                                                                             | packages/adapters/src/model/credential.ts:149 |
+| Property                                           | Modifier   | Type     | Description                                                                                                                                                                                                                                              | Defined in                                                                                                                                       |
+| -------------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-accesstoken"></a> `accessToken`    | `readonly` | `string` | -                                                                                                                                                                                                                                                        | [packages/adapters/src/model/credential.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L147) |
+| <a id="property-accountcode-1"></a> `accountCode?` | `readonly` | `string` | The subscription account this login pays from, when the login carried one. Called a code rather than an id because that is what it is to SharedOS: an opaque string copied into a header. Nothing here parses it, compares it, or treats it as identity. | [packages/adapters/src/model/credential.ts:159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L159) |
+| <a id="property-expiresat"></a> `expiresAt?`       | `readonly` | `string` | RFC 3339. Absent when the provider did not say when it ends.                                                                                                                                                                                             | [packages/adapters/src/model/credential.ts:151](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L151) |
+| <a id="property-refreshtoken"></a> `refreshToken?` | `readonly` | `string` | Absent on a login that cannot be renewed; the credential then cannot either.                                                                                                                                                                             | [packages/adapters/src/model/credential.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L149) |
 
 ---
 
@@ -2024,8 +2353,8 @@ Defined in: [packages/adapters/src/model/transcript.ts:15](https://github.com/Ai
 
 | Property                                     | Modifier   | Type     | Description                                                      | Defined in                                                                                                                                     |
 | -------------------------------------------- | ---------- | -------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-model-5"></a> `model?`       | `readonly` | `string` | What the record names as the model; defaults to `transcript`.    | [packages/adapters/src/model/transcript.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L17) |
-| <a id="property-provider-4"></a> `provider?` | `readonly` | `string` | What the record names as the provider; defaults to `transcript`. | [packages/adapters/src/model/transcript.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L19) |
+| <a id="property-model-9"></a> `model?`       | `readonly` | `string` | What the record names as the model; defaults to `transcript`.    | [packages/adapters/src/model/transcript.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L17) |
+| <a id="property-provider-8"></a> `provider?` | `readonly` | `string` | What the record names as the provider; defaults to `transcript`. | [packages/adapters/src/model/transcript.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L19) |
 
 ## Type Aliases
 
@@ -2110,7 +2439,7 @@ whose terminal frame carries no text still produces a turn output.
 
 > **ModelMessage** = \{ `content`: `string`; `role`: `"system"` \| `"user"`; \} \| \{ `content`: `string`; `role`: `"assistant"`; `toolCalls`: readonly [`ModelToolCall`](#modeltoolcall)[]; \} \| \{ `content`: `string`; `role`: `"tool"`; `toolCallId`: `string`; \}
 
-Defined in: [packages/adapters/src/model/client.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L37)
+Defined in: [packages/adapters/src/model/client.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L36)
 
 One turn of conversation.
 
@@ -2366,7 +2695,7 @@ Defined in: [packages/adapters/src/deepseek/protocol.ts:107](https://github.com/
 
 > `const` **OPENAI\_SUBSCRIPTION\_PROFILE**: [`SubscriptionOAuthProfile`](#subscriptionoauthprofile)
 
-Defined in: packages/adapters/src/model/credential.ts:130
+Defined in: [packages/adapters/src/model/credential.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L130)
 
 The OpenAI login a `codex login` session leaves behind.
 
@@ -2470,7 +2799,7 @@ Defined in: [packages/adapters/src/pi/protocol.ts:86](https://github.com/Aicoo-T
 
 > **accountCodeFromIdToken**(`idToken`): `string` \| `undefined`
 
-Defined in: packages/adapters/src/model/credential.ts:436
+Defined in: [packages/adapters/src/model/credential.ts:436](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L436)
 
 The account code an OpenAI id token carries, when it carries one.
 
@@ -2499,7 +2828,7 @@ Absent for a token that is unreadable, unsegmented, or carries no such claim
 
 > **apiKeyCredential**(`apiKey`): [`ModelCredential`](#modelcredential)
 
-Defined in: packages/adapters/src/model/credential.ts:77
+Defined in: [packages/adapters/src/model/credential.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/credential.ts#L77)
 
 A constant key in an `authorization` header: what a metered API account is.
 

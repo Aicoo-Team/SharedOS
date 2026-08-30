@@ -695,6 +695,7 @@ describe("a model driving a SharedOS turn", () => {
         text: "",
         toolCalls: [{ id: "call-1", name: "files_read", arguments: '{"path":["Workspa' }],
         finishReason: "length",
+        truncated: true,
       },
       { text: "done", toolCalls: [] },
     ]);
