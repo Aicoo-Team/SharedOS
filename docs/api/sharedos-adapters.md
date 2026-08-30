@@ -115,12 +115,14 @@ onto every execution record they produce: a column whose catalogue arrived out
 of band is making a narrower claim than one whose catalogue was on the wire, and
 that belongs in the evidence rather than in a footnote.
 
-It is also why a native run of `dsh` or `pi` over stdio leaves the kernel rows
-`not exercised`: the driver can carry the transport but not the catalogue. The
-MCP path is what closes that gap. `createMcpHarnessRuntime` serves the
-permission-filtered catalogue over MCP to a CLI running natively, and all four
-CLIs have run the whole case set against it; the runs and what they showed are
-recorded in ADR 0014 and ADR 0018.
+It is also why a native run over a CLI's own stdio — any of the four — leaves
+the kernel rows `not exercised`: the driver can carry the transport, but a CLI
+exposes neither its API layer nor a frame for the catalogue (ADR 0014), so the
+harness reaches for its own tools. The MCP path is what closes that gap.
+`createMcpHarnessRuntime` serves the permission-filtered catalogue over MCP to a
+CLI running natively; `scripts/mcp-conformance.mjs` runs the case set against
+each installed CLI that way, and ADR 0018 records what the escalation-case runs
+on all four showed.
 
 ## Verification status
 
@@ -144,8 +146,9 @@ model actually chooses. Two scripts cover exactly those gaps:
 Both report a harness that is absent, unauthenticated, or emitting shapes the
 adapter does not parse as `not exercised`, never as a pass and never as a kernel
 failure. The version each run drove is the harness's own to report, so it is
-recorded in the run's artifact under `artifacts/conformance/` rather than
-pinned here.
+recorded in the artifact the script writes under `artifacts/conformance/` —
+local to the machine that ran it, not committed — rather than pinned here; ADR
+0014 and ADR 0018 pin the versions of the runs they record.
 
 ## Availability
 

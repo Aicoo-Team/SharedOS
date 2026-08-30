@@ -215,30 +215,18 @@ the runtime on purpose: the adversary records what happened and never decides
 whether it was correct, so the same receipts can be re-graded without re-running
 anything. A cell is one of six statuses, and a pass may carry one marker:
 
-| Status            | Means                                                                                                                                             |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pass`            | Every declared attempt met its expectation and every control attempt succeeded                                                                    |
-| `pass (driver)`   | A pass whose attack the column's driver had to issue on the occupant's behalf — the step-ceiling row, where only a driver can name a step past it |
-| `fail`            | An attempt did not meet its expectation                                                                                                           |
-| `not exercised`   | An attack was never issued, or a control did not succeed, so the row is evidence of nothing; never a pass                                         |
-| `not applicable`  | The runtime structurally cannot make the attempt, as declared by the move or by the column                                                        |
-| `not implemented` | SharedOS does not do this; the row is declared so the gap is stated, and is never run                                                             |
-| `out of scope`    | The attempt was made and recorded, and SharedOS declares no guarantee over it on this path; not graded, never averaged into pass or fail          |
+| Status            | Means                                                                                                                                                                                                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pass`            | Every declared attempt met its expectation and every control attempt succeeded                                                                                                                                                                                                       |
+| `pass (driver)`   | A pass whose attack the column's driver had to issue on the occupant's behalf — the step-ceiling row, where only a driver can name a step past it                                                                                                                                    |
+| `fail`            | An attempt did not meet its expectation                                                                                                                                                                                                                                              |
+| `not exercised`   | An attack was never issued, or a control did not succeed — the fixture, not the kernel, decided the outcome — so the row is evidence of nothing; never a pass                                                                                                                        |
+| `not applicable`  | The runtime structurally cannot make the attempt: declared by the move when no runtime can, and by the column when this one cannot. It does not sink the case, which keeps a row a comparison across columns rather than a penalty on the columns that cannot reach every part of it |
+| `not implemented` | SharedOS does not do this; the row is declared so the gap is stated, and is never run                                                                                                                                                                                                |
+| `out of scope`    | The attempt is issued and its evidence kept, but SharedOS declares no guarantee over it on this path, so the verdict is withheld: a narrowed claim rather than a result, never averaged into pass or fail. It exists so a guarantee cannot be narrowed by deleting a row             |
 
-- A **control** attempt that did not succeed makes the case `not_exercised`. The
-  fixture, not the kernel, decided the outcome, so the row is evidence of
-  nothing.
-- An attack that was never issued is `not_exercised`, never a pass.
-- A declared-unreachable attempt is `not_applicable` and does not sink the case.
-  Unreachability is declared by the move when no runtime can make the attempt,
-  and by the **column** when this runtime cannot — which is what keeps a row a
-  comparison across columns rather than a penalty for the columns that cannot
-  reach every part of it.
-- `out_of_scope` is the one status that reports a _narrowed claim_ rather than a
-  result. It exists so a guarantee cannot be narrowed by deleting a row: the
-  attempt is still issued and its evidence kept, only the verdict is withheld.
-- Record completeness is reported beside the verdict rather than folded into it —
-  except for the record-completeness row itself, where the record _is_ the claim.
+Record completeness is reported beside the verdict rather than folded into it —
+except for the record-completeness row itself, where the record _is_ the claim.
 
 Some rows are about how the turn ends rather than about a call inside it. A
 condition can declare `expectTurn`, and the row is then graded on the turn's
@@ -1118,12 +1106,12 @@ What the bench drives per turn.
 
 #### Properties
 
-| Property                                              | Modifier   | Type                | Description                                                                   | Defined in                                                                                                            |
-| ----------------------------------------------------- | ---------- | ------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-callsperturn"></a> `callsPerTurn`     | `readonly` | `number`            | Attempts a harness can actually put on a wire, not attempts declared.         | [conformance/src/bench.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L57) |
-| <a id="property-caseids"></a> `caseIds`               | `readonly` | readonly `string`[] | Conformance case ids, as `docs/conformance/kernel-conformance.md` names them. | [conformance/src/bench.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L55) |
-| <a id="property-measuredturns-2"></a> `measuredTurns` | `readonly` | `number`            | -                                                                             | [conformance/src/bench.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L59) |
-| <a id="property-warmupturns-2"></a> `warmupTurns`     | `readonly` | `number`            | -                                                                             | [conformance/src/bench.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L58) |
+| Property                                              | Modifier   | Type                | Description                                                                       | Defined in                                                                                                            |
+| ----------------------------------------------------- | ---------- | ------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-callsperturn"></a> `callsPerTurn`     | `readonly` | `number`            | Attempts a harness can actually put on a wire, not attempts declared.             | [conformance/src/bench.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L57) |
+| <a id="property-caseids"></a> `caseIds`               | `readonly` | readonly `string`[] | Conformance case ids, as `docs/conformance/kernel-conformance.json` records them. | [conformance/src/bench.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L55) |
+| <a id="property-measuredturns-2"></a> `measuredTurns` | `readonly` | `number`            | -                                                                                 | [conformance/src/bench.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L59) |
+| <a id="property-warmupturns-2"></a> `warmupTurns`     | `readonly` | `number`            | -                                                                                 | [conformance/src/bench.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/bench.ts#L58) |
 
 ---
 
@@ -1959,16 +1947,16 @@ Defined in: [conformance/src/judge.ts:80](https://github.com/Aicoo-Team/SharedOS
 
 ### LiveColumnOptions
 
-Defined in: [conformance/src/columns.ts:553](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L553)
+Defined in: [conformance/src/columns.ts:555](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L555)
 
 #### Properties
 
 | Property                                                | Modifier   | Type                                                                       | Description                                                                                                                                                                                  | Defined in                                                                                                                  |
 | ------------------------------------------------------- | ---------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-createtransport"></a> `createTransport` | `readonly` | (`options`) => [`HarnessTransport`](sharedos-adapters.md#harnesstransport) | Opens the real harness. Kept as a callback so this package stays host-neutral: the process transport that spawns a CLI is Node-only and belongs to the caller, not to the conformance suite. | [conformance/src/columns.ts:562](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L562) |
-| <a id="property-id-3"></a> `id`                         | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:554](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L554) |
-| <a id="property-label-1"></a> `label`                   | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:555](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L555) |
-| <a id="property-protocol"></a> `protocol`               | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)                  | -                                                                                                                                                                                            | [conformance/src/columns.ts:556](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L556) |
+| <a id="property-createtransport"></a> `createTransport` | `readonly` | (`options`) => [`HarnessTransport`](sharedos-adapters.md#harnesstransport) | Opens the real harness. Kept as a callback so this package stays host-neutral: the process transport that spawns a CLI is Node-only and belongs to the caller, not to the conformance suite. | [conformance/src/columns.ts:564](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L564) |
+| <a id="property-id-3"></a> `id`                         | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:556](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L556) |
+| <a id="property-label-1"></a> `label`                   | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:557](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L557) |
+| <a id="property-protocol"></a> `protocol`               | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)                  | -                                                                                                                                                                                            | [conformance/src/columns.ts:558](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L558) |
 
 ---
 
@@ -2006,28 +1994,28 @@ Defined in: [conformance/src/columns.ts:433](https://github.com/Aicoo-Team/Share
 
 ### ModelColumnOptions
 
-Defined in: [conformance/src/columns.ts:608](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L608)
+Defined in: [conformance/src/columns.ts:610](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L610)
 
 #### Properties
 
 | Property                              | Modifier   | Type                                              | Description                                                                                                                                                                               | Defined in                                                                                                                  |
 | ------------------------------------- | ---------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-client"></a> `client` | `readonly` | [`ModelClient`](sharedos-adapters.md#modelclient) | The model in the delegate seat. Supplied rather than constructed here so this package stays free of credentials and endpoints, exactly as the transport is for [liveColumn](#livecolumn). | [conformance/src/columns.ts:617](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L617) |
-| <a id="property-id-5"></a> `id`       | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:609](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L609) |
-| <a id="property-label-3"></a> `label` | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:610](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L610) |
+| <a id="property-client"></a> `client` | `readonly` | [`ModelClient`](sharedos-adapters.md#modelclient) | The model in the delegate seat. Supplied rather than constructed here so this package stays free of credentials and endpoints, exactly as the transport is for [liveColumn](#livecolumn). | [conformance/src/columns.ts:619](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L619) |
+| <a id="property-id-5"></a> `id`       | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:611](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L611) |
+| <a id="property-label-3"></a> `label` | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:612](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L612) |
 
 ---
 
 ### MovePromptOptions
 
-Defined in: [conformance/src/columns.ts:845](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L845)
+Defined in: [conformance/src/columns.ts:848](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L848)
 
 #### Properties
 
 | Property                                  | Modifier   | Type                                                                 | Defined in                                                                                                                  |
 | ----------------------------------------- | ---------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-context-1"></a> `context` | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | [conformance/src/columns.ts:846](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L846) |
-| <a id="property-turn-3"></a> `turn`       | `readonly` | `number`                                                             | [conformance/src/columns.ts:847](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L847) |
+| <a id="property-context-1"></a> `context` | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | [conformance/src/columns.ts:849](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L849) |
+| <a id="property-turn-3"></a> `turn`       | `readonly` | `number`                                                             | [conformance/src/columns.ts:850](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L850) |
 
 ---
 
@@ -5294,7 +5282,7 @@ re-graded without re-running anything.
 
 > **liveColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:580](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L580)
+Defined in: [conformance/src/columns.ts:582](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L582)
 
 A vendor adapter driven by the vendor's own CLI, over the real wire.
 
@@ -5326,7 +5314,7 @@ something that did not happen.
 
 > **liveReceiptsFromRecord**(`move`, `turn`): readonly `object`[]
 
-Defined in: [conformance/src/columns.ts:766](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L766)
+Defined in: [conformance/src/columns.ts:769](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L769)
 
 Recover what a live turn attempted, correlating on the call rather than its id.
 
@@ -5376,7 +5364,7 @@ readonly `object`[]
 
 > **mcpColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:472](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L472)
+Defined in: [conformance/src/columns.ts:474](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L474)
 
 A vendor CLI running natively, against the SharedOS catalogue over MCP.
 
@@ -5388,9 +5376,11 @@ which claim each makes.
   no vendor stdio protocol has a frame that means "here are your tools", so the
   harness reaches for its own tools and the kernel rows go unexercised.
 - This column leaves out nothing on either axis. The catalogue is served over
-  MCP, which is the one interface all three ecosystems accept a host-supplied
-  tool set on; the harness discovers it with its own client, decides with its
-  own model, and every call it makes is re-authorized by the kernel.
+  MCP, which is the one interface every harness here accepts a host-supplied
+  tool set on -- Pi through an extension; the harness discovers it with its
+  own client, decides with its own model, and every call it makes is
+  re-authorized by the kernel.
+- A model column leaves out the vendor instead: see [modelColumn](#modelcolumn).
 
 What it gives up instead is control of the loop. The harness decides how many
 calls to make and when to stop, so an attempt it declines to issue leaves no
@@ -5414,7 +5404,7 @@ make the cell green would be measuring the prompt rather than the kernel.
 
 > **mcpHarnessLimits**(`move`, `condition`): [`ColumnLimits`](#columnlimits)
 
-Defined in: [conformance/src/columns.ts:530](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L530)
+Defined in: [conformance/src/columns.ts:532](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L532)
 
 What a natively-looping MCP harness cannot be tested on, and why.
 
@@ -5480,7 +5470,7 @@ record's metadata.
 
 > **modelColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:710](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L710)
+Defined in: [conformance/src/columns.ts:713](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L713)
 
 A model API in the delegate seat, with no vendor between it and the kernel.
 
@@ -5501,10 +5491,11 @@ It is an addition to the scripted column and never a replacement for it, for
 a reason worth stating plainly. The scripted adversary is the reference:
 every declared attempt is issued, in order, every run, which is what makes
 "did the kernel refuse this the same way?" a question the other columns can
-be asked. A model chooses. Point one at the same rows and the rows a scripted
-driver carries alone -- an uncatalogued name, a call past the budget -- are
-simply not attempted, and the cells report `not exercised` rather than
-`pass`. Replacing the reference with this column would put `pnpm
+be asked. A model chooses. Point one at the same rows and an attack the model
+does not choose to make is simply not attempted, and the cell reports `not
+exercised` rather than `pass`; the step past the budget is the one attempt
+the driver makes on the model's behalf, and it is marked so the cell reads
+`pass (driver)`. Replacing the reference with this column would put `pnpm
 conformance:check` behind a model's choices.
 
 Graded under [modelLimits](#modellimits), which unlike [mcpHarnessLimits](#mcpharnesslimits)
@@ -5532,7 +5523,7 @@ manifest would have suppressed had the column declared the row unreachable.
 
 > **modelLimits**(`move`, `condition`): [`ColumnLimits`](#columnlimits)
 
-Defined in: [conformance/src/columns.ts:650](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L650)
+Defined in: [conformance/src/columns.ts:652](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L652)
 
 What a model in the delegate seat cannot be tested on, and why.
 
@@ -5588,7 +5579,7 @@ would suppress a real result -- and in the first live run it did produce one.
 
 > **movesToPrompt**(`moves`, `options`): `string`
 
-Defined in: [conformance/src/columns.ts:863](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L863)
+Defined in: [conformance/src/columns.ts:866](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/columns.ts#L866)
 
 The declared attempts, written out as instructions a live harness can follow.
 

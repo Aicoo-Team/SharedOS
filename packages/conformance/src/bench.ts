@@ -51,7 +51,7 @@ export const BENCH_VERSION = "1";
 
 /** What the bench drives per turn. */
 export interface BenchWorkload {
-  /** Conformance case ids, as `docs/conformance/kernel-conformance.md` names them. */
+  /** Conformance case ids, as `docs/conformance/kernel-conformance.json` records them. */
   readonly caseIds: readonly string[];
   /** Attempts a harness can actually put on a wire, not attempts declared. */
   readonly callsPerTurn: number;

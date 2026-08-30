@@ -348,26 +348,26 @@ Live runs cost model tokens, so the default is one case; `--full` runs the whole
 set and is what a published result should come from. Output lands in
 `artifacts/conformance/mcp-conformance.json`.
 
-| Flag or variable | Meaning                                                                                                |
-| ---------------- | ------------------------------------------------------------------------------------------------------ |
-| `--full`         | Every case                                                                                             |
-| `--limit N`      | The first N cases (default 1): a smoke test, not a way to reach a row added at position eighteen       |
-| `--case a,b`     | Named cases; one that names no case stops the run                                                      |
-| `--harness id`   | One column — `claude-code`, `codex`, `deepseek`, or `pi`; an id no installed harness has stops the run |
-| `--config path`  | The operator's model and per-harness configuration (below); `SHAREDOS_MCP_CONFIG` is its default       |
+| Flag or variable | Meaning                                                                                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--full`         | Every case                                                                                                                                                                |
+| `--limit N`      | The first N cases (default 1): a smoke test, not a way to reach a row added at position eighteen; `0` probes the harnesses and runs none                                  |
+| `--case a,b`     | Named cases; one that names no case stops the run                                                                                                                         |
+| `--harness id`   | One column — `claude-code`, `codex`, `deepseek`, or `pi`; an id that names no column stops the run, and a named harness that is not installed is reported `not available` |
+| `--config path`  | The operator's model and per-harness configuration (below); `SHAREDOS_MCP_CONFIG` is its default                                                                          |
 
 `pnpm conformance:native` (`scripts/native-conformance.mjs`) is the other live
 script: it drives each installed CLI as a harness over its own stdio, and runs
-the model column when a key is present. It shares `--case`, `--harness`, and
-`--config` (default `SHAREDOS_NATIVE_CONFIG`), has no `--limit` — it runs every
-case — and reads:
+the model column when a key is present. It shares `--case`, `--harness` (which
+also takes `model`, for the model column alone), and `--config` (default
+`SHAREDOS_NATIVE_CONFIG`), has no `--limit` — it runs every case — and reads:
 
-| Variable                                                               | Meaning                                                                                                                         |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `SHAREDOS_MODEL_API_KEY`, else `DEEPSEEK_API_KEY` or `DSH_API_KEY`     | The model column's key; without one the column does not run                                                                     |
-| `SHAREDOS_MODEL`, `SHAREDOS_MODEL_BASE_URL`, `SHAREDOS_MODEL_PROVIDER` | The model column's model (default the config's `model.id`, else `deepseek-v4-flash`), chat-completions root, and provider label |
-| `DSH_RUNTIME_COMMAND`, `DSH_RUNTIME_CONFIG`, `DSH_RUNTIME_CWD`         | DeepSeek Harness's JSON-RPC runtime (default `dsh-jsonrpc-agent`), its plugin composition, and its working directory            |
-| `DSH_PROVIDER`, `DSH_MODEL`                                            | What that runtime is told at `initialize` (default `deepseek-official`, `deepseek-v4-flash`)                                    |
+| Variable                                                               | Meaning                                                                                                                                                                                                                                         |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SHAREDOS_MODEL_API_KEY`, else `DEEPSEEK_API_KEY` or `DSH_API_KEY`     | The model column's key; without one the column does not run                                                                                                                                                                                     |
+| `SHAREDOS_MODEL`, `SHAREDOS_MODEL_BASE_URL`, `SHAREDOS_MODEL_PROVIDER` | The model column's model (default `DSH_MODEL`, else the config's `model.id`, else `deepseek-v4-flash`), chat-completions root (default `https://api.deepseek.com`), and provider label (default the config's `model.provider`, else `deepseek`) |
+| `DSH_RUNTIME_COMMAND`, `DSH_RUNTIME_CONFIG`, `DSH_RUNTIME_CWD`         | DeepSeek Harness's JSON-RPC runtime (default `dsh-jsonrpc-agent`), its plugin composition, and its working directory                                                                                                                            |
+| `DSH_PROVIDER`, `DSH_MODEL`                                            | What that runtime is told at `initialize` (default `deepseek-official`, `deepseek-v4-flash`)                                                                                                                                                    |
 
 The scripted suite, `pnpm conformance` (`scripts/conformance.mjs`), takes
 `--check` and `--strict` — what `conformance:check` passes — and `--no-build`,

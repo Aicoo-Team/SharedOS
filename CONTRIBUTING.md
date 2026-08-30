@@ -36,21 +36,21 @@ change.
 
 ## Repository boundaries
 
-| Location               | Allowed responsibility                                                                    |
-| ---------------------- | ----------------------------------------------------------------------------------------- |
-| `packages/contracts`   | JSON-safe types, schemas, protocol errors and identifiers                                 |
-| `packages/core`        | Deterministic authorization, routing and dispatch                                         |
-| `packages/os`          | Standard `files` schemas and guarded tool adapters                                        |
-| `packages/runtime`     | One bounded agent turn over provider ports                                                |
-| `packages/client`      | Typed remote client with no separate policy semantics                                     |
-| `packages/http`        | HTTP adapter over contracts, core and runtime                                             |
-| `packages/sdk`         | Deliberate re-exports only; no independent policy semantics                               |
-| `packages/testkit`     | Deterministic fixtures, in-memory providers and conformance helpers                       |
-| `packages/conformance` | Execution records and the adversarial conformance suite; no tasks, gold labels, or scores |
-| `packages/mcp`         | The permission-filtered catalogue served over MCP; one method wide into the turn          |
-| `packages/adapters`    | Vendor harness and model-API translation; no policy of its own                            |
-| `examples`             | Small, non-production demonstrations                                                      |
-| `docs/adr`             | Durable architectural decisions and trade-offs                                            |
+| Location               | Allowed responsibility                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| `packages/contracts`   | JSON-safe types, schemas, protocol errors and identifiers                                             |
+| `packages/core`        | Deterministic authorization, routing and dispatch                                                     |
+| `packages/os`          | Standard `files` schemas and guarded tool adapters                                                    |
+| `packages/runtime`     | One bounded agent turn over provider ports                                                            |
+| `packages/client`      | Typed remote client with no separate policy semantics                                                 |
+| `packages/http`        | HTTP adapter over contracts, core and runtime                                                         |
+| `packages/sdk`         | Deliberate re-exports only; no independent policy semantics                                           |
+| `packages/testkit`     | Deterministic fixtures, in-memory providers and conformance helpers                                   |
+| `packages/conformance` | Execution records and the adversarial conformance suite; no tasks, gold labels, evaluators, or scores |
+| `packages/mcp`         | The permission-filtered catalogue served over MCP; one method wide into the turn                      |
+| `packages/adapters`    | Vendor harness and model-API translation; no policy of its own                                        |
+| `examples`             | Small, non-production demonstrations                                                                  |
+| `docs/adr`             | Durable architectural decisions and trade-offs                                                        |
 
 Core packages must not import Next.js, Drizzle, Azure, Aicoo billing or UI, or
 PACT tasks, gold labels, runners, judges, and metrics. Host integrations belong

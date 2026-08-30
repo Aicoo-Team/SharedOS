@@ -459,9 +459,11 @@ export interface McpColumnOptions {
  *   no vendor stdio protocol has a frame that means "here are your tools", so the
  *   harness reaches for its own tools and the kernel rows go unexercised.
  * - This column leaves out nothing on either axis. The catalogue is served over
- *   MCP, which is the one interface all three ecosystems accept a host-supplied
- *   tool set on; the harness discovers it with its own client, decides with its
- *   own model, and every call it makes is re-authorized by the kernel.
+ *   MCP, which is the one interface every harness here accepts a host-supplied
+ *   tool set on -- Pi through an extension; the harness discovers it with its
+ *   own client, decides with its own model, and every call it makes is
+ *   re-authorized by the kernel.
+ * - A model column leaves out the vendor instead: see {@link modelColumn}.
  *
  * What it gives up instead is control of the loop. The harness decides how many
  * calls to make and when to stop, so an attempt it declines to issue leaves no
@@ -692,10 +694,11 @@ export function modelLimits(move: AttackMove, condition: ConformanceCondition): 
  * a reason worth stating plainly. The scripted adversary is the reference:
  * every declared attempt is issued, in order, every run, which is what makes
  * "did the kernel refuse this the same way?" a question the other columns can
- * be asked. A model chooses. Point one at the same rows and the rows a scripted
- * driver carries alone -- an uncatalogued name, a call past the budget -- are
- * simply not attempted, and the cells report `not exercised` rather than
- * `pass`. Replacing the reference with this column would put `pnpm
+ * be asked. A model chooses. Point one at the same rows and an attack the model
+ * does not choose to make is simply not attempted, and the cell reports `not
+ * exercised` rather than `pass`; the step past the budget is the one attempt
+ * the driver makes on the model's behalf, and it is marked so the cell reads
+ * `pass (driver)`. Replacing the reference with this column would put `pnpm
  * conformance:check` behind a model's choices.
  *
  * Graded under {@link modelLimits}, which unlike {@link mcpHarnessLimits}

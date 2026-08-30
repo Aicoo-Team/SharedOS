@@ -209,30 +209,18 @@ the runtime on purpose: the adversary records what happened and never decides
 whether it was correct, so the same receipts can be re-graded without re-running
 anything. A cell is one of six statuses, and a pass may carry one marker:
 
-| Status            | Means                                                                                                                                             |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pass`            | Every declared attempt met its expectation and every control attempt succeeded                                                                    |
-| `pass (driver)`   | A pass whose attack the column's driver had to issue on the occupant's behalf — the step-ceiling row, where only a driver can name a step past it |
-| `fail`            | An attempt did not meet its expectation                                                                                                           |
-| `not exercised`   | An attack was never issued, or a control did not succeed, so the row is evidence of nothing; never a pass                                         |
-| `not applicable`  | The runtime structurally cannot make the attempt, as declared by the move or by the column                                                        |
-| `not implemented` | SharedOS does not do this; the row is declared so the gap is stated, and is never run                                                             |
-| `out of scope`    | The attempt was made and recorded, and SharedOS declares no guarantee over it on this path; not graded, never averaged into pass or fail          |
+| Status            | Means                                                                                                                                                                                                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pass`            | Every declared attempt met its expectation and every control attempt succeeded                                                                                                                                                                                                       |
+| `pass (driver)`   | A pass whose attack the column's driver had to issue on the occupant's behalf — the step-ceiling row, where only a driver can name a step past it                                                                                                                                    |
+| `fail`            | An attempt did not meet its expectation                                                                                                                                                                                                                                              |
+| `not exercised`   | An attack was never issued, or a control did not succeed — the fixture, not the kernel, decided the outcome — so the row is evidence of nothing; never a pass                                                                                                                        |
+| `not applicable`  | The runtime structurally cannot make the attempt: declared by the move when no runtime can, and by the column when this one cannot. It does not sink the case, which keeps a row a comparison across columns rather than a penalty on the columns that cannot reach every part of it |
+| `not implemented` | SharedOS does not do this; the row is declared so the gap is stated, and is never run                                                                                                                                                                                                |
+| `out of scope`    | The attempt is issued and its evidence kept, but SharedOS declares no guarantee over it on this path, so the verdict is withheld: a narrowed claim rather than a result, never averaged into pass or fail. It exists so a guarantee cannot be narrowed by deleting a row             |
 
-- A **control** attempt that did not succeed makes the case `not_exercised`. The
-  fixture, not the kernel, decided the outcome, so the row is evidence of
-  nothing.
-- An attack that was never issued is `not_exercised`, never a pass.
-- A declared-unreachable attempt is `not_applicable` and does not sink the case.
-  Unreachability is declared by the move when no runtime can make the attempt,
-  and by the **column** when this runtime cannot — which is what keeps a row a
-  comparison across columns rather than a penalty for the columns that cannot
-  reach every part of it.
-- `out_of_scope` is the one status that reports a _narrowed claim_ rather than a
-  result. It exists so a guarantee cannot be narrowed by deleting a row: the
-  attempt is still issued and its evidence kept, only the verdict is withheld.
-- Record completeness is reported beside the verdict rather than folded into it —
-  except for the record-completeness row itself, where the record _is_ the claim.
+Record completeness is reported beside the verdict rather than folded into it —
+except for the record-completeness row itself, where the record _is_ the claim.
 
 Some rows are about how the turn ends rather than about a call inside it. A
 condition can declare `expectTurn`, and the row is then graded on the turn's

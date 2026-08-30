@@ -71,10 +71,11 @@ This runs, in order: the package-set checks (one shared version, dependency
 order, release metadata, embedded version constants, per-package licenses);
 `pnpm check` — formatting, type checks, tests, the release-script tests, the
 generated API reference, and the conformance manifest; `pnpm pack:preview` —
-package builds, tarballs with `workspace:*` rewritten to exact versions, and
-the fresh-consumer runtime and TypeScript smoke tests; package lint; an
-`npm publish --dry-run` per tarball; and a comparison of each tarball against
-what the registry already holds. It does not publish.
+package builds, tarballs with `workspace:*` rewritten to exact versions and
+their contents checked (README, license, entry points and sources present; no
+test or build-cache files), and the fresh-consumer runtime and TypeScript smoke
+tests; package lint; a comparison of each tarball against what the registry
+already holds; and an `npm publish --dry-run` per tarball. It does not publish.
 
 ## Publishing a prerelease
 
