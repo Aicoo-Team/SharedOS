@@ -38,6 +38,10 @@
  *                            Responses API (the default under
  *                            `codex-subscription`, which is the only wire shape
  *                            that endpoint speaks)
+ *   SHAREDOS_MODEL_HEADERS   a JSON object of constant headers the endpoint
+ *                            requires beyond the credential; unparseable JSON
+ *                            reports the column unavailable rather than running
+ *                            it without them
  *   SHAREDOS_MODEL           model name          (default DSH_MODEL, else the config's model.id, else deepseek-v4-flash; on the Responses wire, the config's model.id, else gpt-5-codex)
  *   SHAREDOS_MODEL_BASE_URL  API root            (default https://api.deepseek.com; on the Responses wire, https://chatgpt.com/backend-api/codex under a subscription, else https://api.openai.com/v1)
  *   SHAREDOS_MODEL_PROVIDER  provider label      (default the config's model.provider, else deepseek; on the Responses wire, openai)
@@ -358,7 +362,7 @@ const modelApiKey =
   process.env["DSH_API_KEY"];
 const subscription =
   modelAuth === "codex-subscription" ? await createCodexSubscriptionCredential() : undefined;
-const modelCredentialMissing =
+const modelConfigurationMissing =
   modelAuth === "codex-subscription"
     ? subscription === undefined
       ? "No Codex login was found. Run `codex login` first, or unset SHAREDOS_MODEL_AUTH."
@@ -394,6 +398,32 @@ const modelBaseUrl =
       ? "https://api.openai.com/v1"
       : "https://chatgpt.com/backend-api/codex"
     : "https://api.deepseek.com");
+/**
+ * Headers this endpoint wants beyond a token.
+ *
+ * A subscription endpoint is not always a documented one, and what it requires
+ * -- a client originator, a beta opt-in -- is the operator's knowledge of their
+ * provider rather than something this script should assert. Unparseable JSON
+ * makes the column unavailable: running without the headers would produce a
+ * column of provider refusals and report them as results about SharedOS.
+ */
+const modelHeaders = readModelHeaders(process.env["SHAREDOS_MODEL_HEADERS"]);
+
+function readModelHeaders(raw) {
+  if (raw === undefined || raw.trim() === "") {
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return undefined;
+    }
+    return Object.fromEntries(Object.entries(parsed).map(([key, value]) => [key, String(value)]));
+  } catch {
+    return undefined;
+  }
+}
+
 const modelProvider =
   process.env["SHAREDOS_MODEL_PROVIDER"] ??
   model?.provider ??
@@ -404,13 +434,16 @@ if (only !== undefined && only !== "model") {
   // Filtered out by `--harness`. Nothing is pushed: a column that was not asked
   // for is not an absent one, and reporting it as unavailable would read as a
   // missing credential.
-} else if (modelCredentialMissing !== undefined) {
+} else if (modelConfigurationMissing !== undefined || modelHeaders === undefined) {
   availability.push({
     columnId: MODEL_COLUMN_ID,
     label: `Standard (${modelName})`,
     harness: "model",
     available: false,
-    reason: modelCredentialMissing,
+    reason:
+      modelHeaders === undefined
+        ? "SHAREDOS_MODEL_HEADERS is not a JSON object of headers."
+        : modelConfigurationMissing,
   });
 } else {
   availability.push({
@@ -424,6 +457,9 @@ if (only !== undefined && only !== "model") {
       provider: modelProvider,
       auth: modelAuth,
       wire: modelWire,
+      // The names only. A header a provider requires can carry a session or a
+      // tenant, and this artifact is committed.
+      headers: Object.keys(modelHeaders).sort(),
     },
   });
   const clientOptions = {
@@ -431,6 +467,7 @@ if (only !== undefined && only !== "model") {
     model: modelName,
     provider: modelProvider,
     baseUrl: modelBaseUrl,
+    headers: modelHeaders,
   };
   columns.push(
     modelColumn({
