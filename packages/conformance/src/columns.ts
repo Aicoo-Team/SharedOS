@@ -44,8 +44,14 @@ import { conformanceRuntimeContext } from "./world.js";
 /** What one column cannot do, so a cell reports it instead of failing on it. */
 export interface ColumnLimits {
   /**
-   * Set when the column structurally cannot run this row at all. No committed
-   * column sets it; see `docs/open-items.md`.
+   * Set when the column structurally cannot run this row at all, and why.
+   *
+   * Every driven, MCP, and model column sets it on the ungranted-escalation
+   * row: only a plugin that owns its outcome can end a turn with an `escalate`
+   * the catalogue did not offer, and each of those columns reads the catalogue
+   * before it will. The cell reads `not applicable` with the reason, and the
+   * row is not run for that column, so it leaves no evidence -- unlike an
+   * unreachable *attempt*, whose turn still runs.
    */
   readonly unsupported?: string;
   /** Attempt ids the column structurally cannot issue, mapped to why. */
@@ -145,6 +151,12 @@ export const EMBEDDED_COLUMN: RuntimeColumn = Object.freeze({
  *   than filing the driver's reach under the harness's name.
  */
 export function harnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
+  if (move.kind === "escalation_refused") {
+    return {
+      unsupported:
+        "the driver inside the standard loop honours `escalate` only when the catalogue offers it; an ask on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn. Only a plugin that owns its outcome can return an ungranted `escalate`",
+    };
+  }
   const unreachable = new Map<string, string>();
   const driverIssued = new Map<string, string>();
 
@@ -530,6 +542,12 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
  * record's metadata.
  */
 export function mcpHarnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
+  if (move.kind === "escalation_refused") {
+    return {
+      unsupported:
+        "the MCP runtime settles `escalate` only from a call to the catalogued affordance, which an ungranted turn does not serve; the harness has no outcome of its own to return",
+    };
+  }
   const unreachable = new Map<string, string>();
 
   for (const attempt of move.attempts) {
@@ -650,6 +668,12 @@ export interface ModelColumnOptions {
  * would suppress a real result -- and in the first live run it did produce one.
  */
 export function modelLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
+  if (move.kind === "escalation_refused") {
+    return {
+      unsupported:
+        "the model driver honours `escalate` only when the catalogue offers it; an ask the model makes on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn",
+    };
+  }
   const unreachable = new Map<string, string>();
   const driverIssued = new Map<string, string>();
 

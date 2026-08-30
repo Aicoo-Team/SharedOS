@@ -1,8 +1,8 @@
 {
   "version": "1",
   "judgeVersion": "2",
-  "caseSetHash": "0ccb3a6c0b9ef02d8f586a4b46abd994592a9c69df37529451eee950378d9f43",
-  "worldSetHash": "c75490dec1496ac29295b4a4bd520f0904c20afbaa6b30b6b7651c787b0e992d",
+  "caseSetHash": "a9dcadd111e499a7866e05a99340a4ca7af0b9469234d9845e8e3ae6e2a574f6",
+  "worldSetHash": "ac0f6db6c17d39b3429247fc6450c48f0001914ffb2f74cccb0dadae07054d2d",
   "columns": [
     {
       "id": "sharedos-embedded",
@@ -2312,6 +2312,88 @@
           "recordGaps": [],
           "turns": 1,
           "detail": "the turn itself ended as `escalated` with `escalation_requested`"
+        }
+      ]
+    },
+    {
+      "caseId": "escalation-refused",
+      "conditionId": "escalation-withheld",
+      "kind": "escalation_refused",
+      "invariant": "An escalation the turn was not granted is refused",
+      "expectedOutcome": "The turn fails `tool_unavailable`; nothing is recorded or audited",
+      "condition": "The world as issued, less the grant over the escalation affordance: `sharedos.escalate` is not in this turn's catalogue. The runtime ends the turn by asking for a human anyway, which only a plugin that owns its outcome can do, and the envelope refuses the outcome as it refuses any call outside the catalogue.",
+      "cells": [
+        {
+          "columnId": "sharedos-embedded",
+          "status": "pass",
+          "refusedBy": [],
+          "reasonCodes": [
+            "tool_unavailable"
+          ],
+          "declared": 1,
+          "attempted": 1,
+          "driverIssued": [],
+          "notApplicable": 0,
+          "recordUsable": true,
+          "recordGaps": [],
+          "turns": 1,
+          "detail": "the turn itself ended as `failed` with `tool_unavailable`"
+        },
+        {
+          "columnId": "codex-scripted",
+          "status": "not_applicable",
+          "refusedBy": [],
+          "reasonCodes": [],
+          "declared": 1,
+          "attempted": 0,
+          "notApplicable": 1,
+          "recordUsable": false,
+          "recordGaps": [],
+          "driverIssued": [],
+          "turns": 0,
+          "detail": "the driver inside the standard loop honours `escalate` only when the catalogue offers it; an ask on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn. Only a plugin that owns its outcome can return an ungranted `escalate`"
+        },
+        {
+          "columnId": "claude-code-scripted",
+          "status": "not_applicable",
+          "refusedBy": [],
+          "reasonCodes": [],
+          "declared": 1,
+          "attempted": 0,
+          "notApplicable": 1,
+          "recordUsable": false,
+          "recordGaps": [],
+          "driverIssued": [],
+          "turns": 0,
+          "detail": "the driver inside the standard loop honours `escalate` only when the catalogue offers it; an ask on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn. Only a plugin that owns its outcome can return an ungranted `escalate`"
+        },
+        {
+          "columnId": "deepseek-scripted",
+          "status": "not_applicable",
+          "refusedBy": [],
+          "reasonCodes": [],
+          "declared": 1,
+          "attempted": 0,
+          "notApplicable": 1,
+          "recordUsable": false,
+          "recordGaps": [],
+          "driverIssued": [],
+          "turns": 0,
+          "detail": "the driver inside the standard loop honours `escalate` only when the catalogue offers it; an ask on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn. Only a plugin that owns its outcome can return an ungranted `escalate`"
+        },
+        {
+          "columnId": "pi-scripted",
+          "status": "not_applicable",
+          "refusedBy": [],
+          "reasonCodes": [],
+          "declared": 1,
+          "attempted": 0,
+          "notApplicable": 1,
+          "recordUsable": false,
+          "recordGaps": [],
+          "driverIssued": [],
+          "turns": 0,
+          "detail": "the driver inside the standard loop honours `escalate` only when the catalogue offers it; an ask on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn. Only a plugin that owns its outcome can return an ungranted `escalate`"
         }
       ]
     },
