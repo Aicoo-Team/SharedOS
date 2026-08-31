@@ -136,6 +136,10 @@ is the boundary between them and the agents that act on them.
 - [ADR 0014: MCP is the toolshare boundary](adr/0014-mcp-toolshare.md)
 - [ADR 0015: One message purpose and recipient-owned execution](adr/0015-message-purpose-and-recipient-execution.md)
 - [ADR 0016: Expiry is instant-bound, revocation is snapshot-bound](adr/0016-expiry-is-instant-bound.md)
+- [ADR 0017: Driver-declared turn control](adr/0017-driver-declared-turn-control.md)
+- [ADR 0018: Escalation over MCP is recovered from the call, not returned by it](adr/0018-escalation-over-mcp.md)
+- [ADR 0019: An escalation names the authority it needs](adr/0019-escalation-names-the-authority-it-needs.md)
+- [ADR 0020: The host ceiling is a port, not a convention](adr/0020-host-ceiling-is-a-port.md)
 
 ## Project governance
 
