@@ -18,6 +18,7 @@ import {
   type RuntimeHost,
   type RuntimePlugin,
   type RuntimeTurnRequest,
+  type TurnErrorContext,
 } from "./index.js";
 
 const now = "2026-08-14T00:00:00.000Z";
@@ -574,6 +575,75 @@ describe("RuntimePlugin security envelope", () => {
     // The plugin's own metadata still rides on the result: the refusal is a
     // fact about the ending, not a reason to lose what the turn reported.
     expect(result.metadata).toMatchObject({ harness: "hostile" });
+  });
+
+  it("hands a thrown plugin error to the host and puts none of it on the wire", async () => {
+    const thrown = new Error("connection pool exhausted at /srv/pulse/db.ts:88");
+    const plugin = runtime(async () => {
+      throw thrown;
+    });
+    const seen: { error: unknown; turn: TurnErrorContext }[] = [];
+
+    const result = await new SharedOSExecutor(kernel(), plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+      onTurnError: (error, turn) => void seen.push({ error, turn }),
+    }).execute(request());
+
+    // The error arrives whole. A host logging it gets the stack, which is the
+    // only thing that says where the throw came from -- the terminal code says
+    // a turn stopped and nothing more.
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.error).toBe(thrown);
+    expect(seen[0]?.turn).toEqual({ executionId: "execution-1", traceId: "trace-1" });
+
+    // And it arrives only there. The outcome is what it was before the hook
+    // existed, and nothing a thrower had in scope reaches the model or the
+    // event stream that becomes an execution record.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe("runtime_failed");
+    expect(result.status === "failed" ? result.error.message : undefined).toBe(
+      "The runtime plugin failed.",
+    );
+    expect(JSON.stringify(result)).not.toContain("connection pool exhausted");
+    expect(JSON.stringify(result)).not.toContain("/srv/pulse/db.ts");
+  });
+
+  it("does not report a cancelled turn as a turn error", async () => {
+    const plugin = runtime(async () => new Promise(() => undefined));
+    const input = request();
+    input.options = { timeoutMs: 5 };
+    const seen: unknown[] = [];
+
+    const result = await new SharedOSExecutor(kernel(), plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+      onTurnError: (error) => void seen.push(error),
+    }).execute(input);
+
+    // A deadline is the envelope's own decision, not a defect to diagnose. A
+    // hook that fired here would report every timed-out turn as a crash.
+    expect(result.status).toBe("cancelled");
+    expect(seen).toEqual([]);
+  });
+
+  it("does not let a turn-error sink replace the turn outcome", async () => {
+    const plugin = runtime(async () => {
+      throw new Error("the plugin failed");
+    });
+
+    const result = await new SharedOSExecutor(kernel(), plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+      onTurnError: () => {
+        throw new Error("the host's logger is down");
+      },
+    }).execute(request());
+
+    // Same rule as the event sink: a diagnostic that could turn one failure
+    // into a second one is a risk to install rather than a diagnostic.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe("runtime_failed");
   });
 
   it("does not let an observational event sink replace the turn outcome", async () => {

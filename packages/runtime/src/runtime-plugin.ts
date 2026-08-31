@@ -11,6 +11,61 @@ import {
 
 import { deepFreeze } from "./internal.js";
 
+/** Which turn a {@link TurnErrorReporter} notification is about. */
+export interface TurnErrorContext {
+  readonly executionId: string;
+  readonly traceId: string;
+}
+
+/**
+ * A host's sink for a throw the turn contained rather than propagated.
+ *
+ * Both layers that contain one take it: `SharedOSExecutor`, whose catch ends
+ * the turn `runtime_failed`, and `StandardRuntime`, whose catch ends it
+ * `driver_failed`. A terminal code says a turn stopped and does not say why;
+ * the thrown error is the only thing that does, so it is handed over whole and
+ * unwrapped, because its stack is what names the origin.
+ *
+ * It reaches nothing else. A `ProtocolError.message` is read by the model, and
+ * an `ExecutionEvent` becomes part of an `ExecutionRecord`, which travels
+ * further than an audit sink; a thrown message may carry anything the thrower
+ * had in scope. This is a host-side sink for host-side logs, in the position
+ * `SharedOSKernel.onAuditError` occupies for the same reason.
+ *
+ * Observational. One that throws is ignored -- it cannot replace an outcome
+ * already decided -- and a turn behaves identically with none installed.
+ * Cancellation never reaches it: a turn stopped by the deadline or by the
+ * caller's signal ends `cancelled`, which is a decision rather than a defect.
+ */
+export type TurnErrorReporter = (error: unknown, turn: TurnErrorContext) => void;
+
+/**
+ * Call one reporter without letting it change what happened.
+ *
+ * Shared by both containment sites so the guarantee is one implementation: a
+ * diagnostic that could turn one failure into a second would be a risk to
+ * install rather than a diagnostic.
+ *
+ * Exported deliberately. A host writing its own {@link RuntimePlugin} that
+ * offers the same hook should not have to reimplement the guard, and one that
+ * reimplemented it slightly differently would be the reason the guarantee stops
+ * being true everywhere.
+ */
+export function reportTurnError(
+  reporter: TurnErrorReporter | undefined,
+  error: unknown,
+  turn: TurnErrorContext,
+): void {
+  if (reporter === undefined) {
+    return;
+  }
+  try {
+    reporter(error, turn);
+  } catch {
+    // Deliberately empty; see the docblock above.
+  }
+}
+
 export interface RuntimeVisibleContext {
   readonly actor: AccessContext["actor"];
   readonly owner: AccessContext["owner"];

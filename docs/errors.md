@@ -172,12 +172,44 @@ for `tool_unavailable`.
 | `no_matching_grant`        | denied    | No `sharedos.execution` / `invoke` grant for the target agent                                                                                                                                                                                             |
 | `escalation_requested`     | escalated | The runtime stopped and asked for a human. Nothing was granted                                                                                                                                                                                            |
 | `step_limit_exceeded`      | failed    | `StandardRuntime` spent its own steps while the driver was still asking for tools. The envelope's budgets refuse calls instead — see [tool invocation](#tool-invocation)                                                                                  |
-| `driver_failed`            | failed    | Your `AgentTurnDriver` threw                                                                                                                                                                                                                              |
+| `driver_failed`            | failed    | Your `AgentTurnDriver` threw. The thrown error goes to `onTurnError` and nowhere else (below)                                                                                                                                                             |
 | `invalid_driver_decision`  | failed    | The driver returned something that is not a valid decision                                                                                                                                                                                                |
-| `runtime_failed`           | failed    | A `RuntimePlugin` threw                                                                                                                                                                                                                                   |
+| `runtime_failed`           | failed    | A `RuntimePlugin` threw, or a host port the turn body called did. The message is fixed and the thrown error goes nowhere near the wire — install `onTurnError` to see it (below)                                                                          |
 | `invalid_runtime_outcome`  | failed    | A plugin returned a malformed outcome                                                                                                                                                                                                                     |
 | `tool_unavailable`         | failed    | A plugin returned `escalate` on a turn whose catalogue does not offer `sharedos.escalate`. The envelope refuses the outcome as it refuses a call outside the catalogue, under the same code; nothing reaches the kernel and nothing is audited (ADR 0017) |
 | `turn_cancelled`           | cancelled | Deadline expired, or the host aborted                                                                                                                                                                                                                     |
+
+### Diagnosing a contained throw
+
+`runtime_failed` and `driver_failed` are the whole of what a caller, a record,
+and an event stream are told, and each says a turn stopped rather than why. That
+is deliberate: a `ProtocolError.message` reaches the model, and an
+`ExecutionEvent` reaches an `ExecutionRecord`, which travels further than an
+audit sink — and a thrown message may carry anything the thrower had in scope.
+
+The error itself is handed to `onTurnError`, whole and unwrapped, for a host to
+log:
+
+```ts
+new SharedOSExecutor(kernel, plugin, {
+  onTurnError: (error, { executionId, traceId }) =>
+    logger.error({ err: error, executionId, traceId }, "turn ended on a throw"),
+});
+```
+
+Two layers contain a throw and both take the option, because only one of them
+catches any given one. `StandardRuntime` catches its driver's and ends the turn
+`driver_failed`, which is a cooperative outcome the envelope never sees as an
+exception; `SharedOSExecutor` catches everything else and ends it
+`runtime_failed`. `TurnExecutor` forwards the option to both, so one sink covers
+both.
+
+Read the stack. `runtime_failed` is also what a throw from `openTurnAuthority`,
+`admitTurn`, or `listTools` ends a turn as, so the code alone does not say
+whether the plugin or one of your own ports failed; the stack does. The hook is
+observational — one that throws is ignored, and a turn behaves identically with
+none installed — and a cancelled turn never reaches it, because a deadline is
+the envelope's own decision rather than a defect.
 
 ## Adapters and the MCP harness path
 

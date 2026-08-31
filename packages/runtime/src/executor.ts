@@ -26,12 +26,14 @@ import type { SharedOSKernel, TurnAuthorityScope } from "@aicoo/sharedos-core";
 
 import { escalationOffered } from "./escalation.js";
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
-import type {
-  RuntimeHost,
-  RuntimeLimits,
-  RuntimePlugin,
-  RuntimeToolInvocationOptions,
-  RuntimeTurnRequest,
+import {
+  reportTurnError,
+  type RuntimeHost,
+  type RuntimeLimits,
+  type RuntimePlugin,
+  type RuntimeToolInvocationOptions,
+  type RuntimeTurnRequest,
+  type TurnErrorReporter,
 } from "./runtime-plugin.js";
 import {
   StandardRuntime,
@@ -53,6 +55,20 @@ export interface SharedOSExecutorOptions {
    * {@link SpanSink}.
    */
   spans?: SpanSink;
+  /**
+   * Notification for a throw the turn body did not convert into an outcome.
+   *
+   * The envelope contains such a throw and ends the turn `failed` with
+   * `runtime_failed`; the error itself comes here rather than being discarded.
+   * See {@link TurnErrorReporter} for what it may and may not be used for.
+   *
+   * Not only the plugin's. The turn body also calls `openTurnAuthority`,
+   * `admitTurn`, and `listTools`, and a host port that throws arrives here too
+   * under the same terminal code. That conflation is in the wire vocabulary and
+   * is not fixed by this hook; the error's own stack is what separates them,
+   * which is the reason for handing it over rather than classifying it here.
+   */
+  onTurnError?: TurnErrorReporter;
 }
 
 export interface ExecuteTurnOptions {
@@ -98,6 +114,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
   readonly #defaultMaxToolCalls: number | undefined;
   readonly #defaultTimeoutMs: number;
   readonly #spans: SpanSink | undefined;
+  readonly #onTurnError: TurnErrorReporter | undefined;
 
   constructor(kernel: TurnKernel, runtime: RuntimePlugin, options: SharedOSExecutorOptions = {}) {
     if (runtime === null || typeof runtime !== "object" || typeof runtime.run !== "function") {
@@ -120,6 +137,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
     this.#defaultMaxToolCalls = options.defaultMaxToolCalls;
     this.#defaultTimeoutMs = options.defaultTimeoutMs ?? 120_000;
     this.#spans = options.spans;
+    this.#onTurnError = options.onTurnError;
 
     if (!Number.isInteger(this.#defaultMaxSteps) || this.#defaultMaxSteps <= 0) {
       throw new TypeError("defaultMaxSteps must be a positive integer");
@@ -458,7 +476,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
         outcome.data.error,
         runtimeResultMetadata(this.#manifest, outcome.data),
       );
-    } catch {
+    } catch (thrown) {
       if (abort.signal.aborted) {
         emit("turn.cancelled", {});
         return cancelledResult(request, events, startedAt, this.#clock(), metadata);
@@ -466,6 +484,13 @@ export class SharedOSExecutor implements TurnExecutionPort {
 
       const error = protocolError("runtime_failed", "The runtime plugin failed.", true);
       emit("turn.failed", { code: error.code, source: "envelope" });
+      // Reported here rather than from the `finally`, which also runs for a
+      // turn that ended normally and would have to work out whether there was
+      // anything to report. This is the one path that has an error in hand.
+      reportTurnError(this.#onTurnError, thrown, {
+        executionId: request.executionId,
+        traceId: request.context.traceId,
+      });
       return resultFor(request, events, startedAt, this.#clock(), "failed", error, metadata);
     } finally {
       runtimeHostActive = false;
@@ -496,6 +521,10 @@ export class TurnExecutor implements TurnExecutionPort {
   constructor(kernel: TurnKernel, driver: AgentTurnDriver, options: TurnExecutorOptions = {}) {
     const runtimeOptions: StandardRuntimeOptions = {
       ...(options.closeTimeoutMs === undefined ? {} : { closeTimeoutMs: options.closeTimeoutMs }),
+      // To both, because either can contain a throw and only one of them ever
+      // does per turn: the loop catches its driver's, the envelope catches
+      // everything else. A host installs one sink and hears about both.
+      ...(options.onTurnError === undefined ? {} : { onTurnError: options.onTurnError }),
     };
     const executorOptions: SharedOSExecutorOptions = {
       ...(options.clock === undefined ? {} : { clock: options.clock }),
@@ -510,6 +539,7 @@ export class TurnExecutor implements TurnExecutionPort {
         ? {}
         : { defaultTimeoutMs: options.defaultTimeoutMs }),
       ...(options.spans === undefined ? {} : { spans: options.spans }),
+      ...(options.onTurnError === undefined ? {} : { onTurnError: options.onTurnError }),
     };
     this.#executor = new SharedOSExecutor(
       kernel,

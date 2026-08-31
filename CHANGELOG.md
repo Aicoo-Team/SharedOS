@@ -157,6 +157,19 @@ each entry calls out what a host has to update.
   fails the turn `model_call_failed` rather than completing on the recording's
   behalf, so a script that ends too early is a visible result and not a model
   choosing to stop.
+- **`onTurnError`**, on `SharedOSExecutorOptions` and `StandardRuntimeOptions`,
+  so a contained throw is diagnosable. Both layers catch one and end the turn on
+  a terminal code -- the envelope's `runtime_failed`, the standard loop's
+  `driver_failed` -- and both discarded the error, leaving an operator a code and
+  no stack. It is now handed to this optional hook, whole and unwrapped,
+  alongside the turn's `executionId` and `traceId`; `TurnExecutor` forwards it to
+  both, so one sink covers both. Nothing about the wire changes: each
+  `ProtocolError.message` is the same fixed string, no event carries the throw,
+  and a turn with no hook installed behaves exactly as before. The hook is
+  observational -- one that throws is ignored -- and a cancelled turn does not
+  reach it. Note that `runtime_failed` is also what a throw from
+  `openTurnAuthority`, `admitTurn`, or `listTools` ends a turn as, so read the
+  stack rather than the code to tell a plugin's failure from a host port's.
 - A conformance row for a runtime plugin that throws out of its turn. The
   envelope contains the throw rather than letting it reach the host: the turn
   ends `failed` with `runtime_failed`, the `turn.failed` event names the
