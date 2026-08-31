@@ -4,6 +4,7 @@ import type {
   AuthorizationDecision,
   Capability,
   Escalation,
+  GovernedView,
   MessageDeliveryResult,
   MessageEnvelope,
   ProtocolError,
@@ -58,7 +59,8 @@ import {
   toResourceOperation,
 } from "./resource-registry.js";
 import { buildToolCatalog } from "./published-tool.js";
-import { SPAN, measure, type SpanSink } from "./spans.js";
+import { projectGovernedView } from "./governed-view.js";
+import { SPAN, measure, measureSync, type SpanSink } from "./spans.js";
 import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
 import { DuplicateRegistrationError, MissingRegistrationError } from "./errors.js";
@@ -678,7 +680,11 @@ export class SharedOSKernel {
     const decision = await this.#authorize(
       context,
       authority.authority,
-      { resource: requirement.resource, action: requirement.action },
+      {
+        resource: requirement.resource,
+        action: requirement.action,
+        ...(requirement.view === undefined ? {} : { view: requirement.view }),
+      },
       true,
       call.id,
     );
@@ -723,8 +729,56 @@ export class SharedOSKernel {
       );
     }
 
-    await this.#recordToolResult(context, call, result, decision.matchedGrantId, requirement);
+    result = this.#serveGovernedView(context, call, decision, result);
+
+    await this.#recordToolResult(
+      context,
+      call,
+      result,
+      decision.matchedGrantId,
+      requirement,
+      decision.view,
+    );
     return result;
+  }
+
+  /**
+   * Serve the view an allowed decision carried, in place of the raw result.
+   *
+   * The projection sits between the provider and the caller on purpose: the
+   * provider answered the raw operation exactly as it would have answered a raw
+   * read, and nothing it returned can widen what leaves the kernel. A
+   * representation the view cannot be served from fails closed -- refusing is
+   * the only answer that never discloses the record the grant withheld.
+   */
+  #serveGovernedView(
+    context: AccessContext,
+    call: ToolCall,
+    decision: AuthorizationDecision,
+    result: ToolResult,
+  ): ToolResult {
+    const view = decision.view;
+    if (view === undefined || result.status !== "succeeded") {
+      return result;
+    }
+
+    const rawOutput = result.output;
+    const projection = measureSync(this.#spans, SPAN.VIEW_PROJECT, (span) => {
+      span.set("callId", call.id);
+      span.set("view", view.name);
+      const projected = projectGovernedView(view, rawOutput);
+      span.set("outcome", projected.ok ? "projected" : "refused");
+      return projected;
+    });
+
+    return projection.ok
+      ? { ...result, output: projection.output }
+      : failedToolResult(
+          call,
+          context.now,
+          "view_projection_failed",
+          "The resource representation cannot serve the granted view",
+        );
   }
 
   async invokeResource(
@@ -757,7 +811,11 @@ export class SharedOSKernel {
     const decision = await this.#authorize(
       context,
       authority.authority,
-      { resource: request.resource, action: request.action },
+      {
+        resource: request.resource,
+        action: request.action,
+        ...(request.view === undefined ? {} : { view: request.view }),
+      },
       true,
     );
     if (!decision.allowed) {
@@ -808,6 +866,26 @@ export class SharedOSKernel {
           "The resource provider failed while executing",
         );
       }
+    }
+
+    if (decision.view !== undefined && result.status === "succeeded") {
+      const view = decision.view;
+      const rawOutput = result.output;
+      const projection = measureSync(this.#spans, SPAN.VIEW_PROJECT, (span) => {
+        span.set("callId", request.operationId);
+        span.set("view", view.name);
+        const projected = projectGovernedView(view, rawOutput);
+        span.set("outcome", projected.ok ? "projected" : "refused");
+        return projected;
+      });
+      result = projection.ok
+        ? { ...result, output: projection.output }
+        : failedResourceResult(
+            request,
+            context.now,
+            "view_projection_failed",
+            "The resource representation cannot serve the granted view",
+          );
     }
 
     await this.#recordResourceResult(context, request, result, decision.matchedGrantId);
@@ -1201,7 +1279,17 @@ export class SharedOSKernel {
     result: ToolResult,
     grantId?: string,
     requirement?: AuthorizationRequest,
+    view?: GovernedView,
   ): Promise<void> {
+    // Field names only, never field values: the audit stream says which view
+    // was served and what it declares, and the served content stays out of the
+    // evidence exactly as every other payload does.
+    const metadata = {
+      ...(view === undefined ? {} : { view: { name: view.name, fields: [...view.fields] } }),
+      ...(result.status !== "succeeded" && isInfrastructureDenial(result.error.code)
+        ? { failClosed: true }
+        : {}),
+    };
     await this.#recordOutcome(
       auditEvent(context, {
         type: "tool.invoked",
@@ -1216,9 +1304,7 @@ export class SharedOSKernel {
             }),
         ...(grantId === undefined ? {} : { grantId }),
         ...(result.status === "succeeded" ? {} : { reason: result.error.code }),
-        ...(result.status !== "succeeded" && isInfrastructureDenial(result.error.code)
-          ? { metadata: { failClosed: true } }
-          : {}),
+        ...(Object.keys(metadata).length === 0 ? {} : { metadata }),
       }),
     );
   }

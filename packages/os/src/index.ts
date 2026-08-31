@@ -25,6 +25,23 @@ export type FilePath = z.infer<typeof FilePathSchema>;
 export const FilesPathArgumentsSchema = z.object({ path: FilePathSchema }).strict();
 export type FilesPathArguments = z.infer<typeof FilesPathArgumentsSchema>;
 
+/**
+ * `files.read` also accepts the name of a typed governed view to serve.
+ *
+ * Naming a view asks for less, never more: the request is authorized against a
+ * capability declaring that view, and the kernel serves only the view's
+ * declared fields. A caller holding raw read authority does not need the
+ * argument, and a caller holding only view-bound authority is refused without
+ * it (`view_required`).
+ */
+export const FilesReadArgumentsSchema = z
+  .object({
+    path: FilePathSchema,
+    view: z.string().trim().min(1).max(256).optional(),
+  })
+  .strict();
+export type FilesReadArguments = z.infer<typeof FilesReadArgumentsSchema>;
+
 export const FilesSearchArgumentsSchema = z
   .object({
     path: FilePathSchema,
@@ -127,6 +144,8 @@ export type FilesSnapshotRestoreArguments = z.infer<typeof FilesSnapshotRestoreA
 
 interface ParsedResourceCall {
   readonly path: string[];
+  /** The governed view the call names. Authorization input; never sent to the provider. */
+  readonly view?: string;
   readonly input?: JsonValue;
 }
 
@@ -162,7 +181,28 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
   return [
     pathOnlyTool(provider, "files.list", "List entries inside a granted file path.", "list"),
     pathOnlyTool(provider, "files.stat", "Read metadata for a granted file path.", "stat"),
-    pathOnlyTool(provider, "files.read", "Read content from a granted file path.", "read"),
+    resourceTool(provider, {
+      definition: definition({
+        name: "files.read",
+        description:
+          "Read content from a granted file path, or a named governed view of it when the grant serves one.",
+        action: "read",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["path"],
+          properties: {
+            path: pathJsonSchema(),
+            view: { type: "string", minLength: 1, maxLength: 256 },
+          },
+        },
+        readOnly: true,
+      }),
+      parse: (arguments_) => {
+        const args = FilesReadArgumentsSchema.parse(arguments_);
+        return args.view === undefined ? { path: args.path } : { path: args.path, view: args.view };
+      },
+    }),
     resourceTool(provider, {
       definition: definition({
         name: "files.search",
@@ -395,14 +435,18 @@ function resourceTool(provider: ResourceProvider, spec: ResourceToolSpec): ToolH
       spec.parse(arguments_);
       return arguments_;
     },
-    resolveRequirement: (context, call) => ({
-      resource: {
-        namespace: provider.namespace,
-        path: spec.parse(call.arguments).path,
-        owner: context.owner,
-      },
-      action: spec.definition.requiredCapability.action,
-    }),
+    resolveRequirement: (context, call) => {
+      const parsed = spec.parse(call.arguments);
+      return {
+        resource: {
+          namespace: provider.namespace,
+          path: parsed.path,
+          owner: context.owner,
+        },
+        action: spec.definition.requiredCapability.action,
+        ...(parsed.view === undefined ? {} : { view: parsed.view }),
+      };
+    },
     invoke: async (context, call, signal) => {
       const parsed = spec.parse(call.arguments);
       const operation: ResourceOperation = {

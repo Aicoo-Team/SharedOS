@@ -177,6 +177,8 @@ export const SPAN = Object.freeze({
   TOOL_DISCOVER: "kernel.tool.discover",
   /** The provider call inside it. Foreign work, to be subtracted. */
   TOOL_HANDLER: "kernel.tool.handler",
+  /** Serving a typed governed view: one projection of one provider result. */
+  VIEW_PROJECT: "kernel.view.project",
   /** One `RuntimeHost.invokeTool`: the envelope's mediation of one call. */
   TOOL_MEDIATE: "envelope.tool.mediate",
   /** One whole agent turn, from request to terminal outcome. */

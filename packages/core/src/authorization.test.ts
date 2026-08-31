@@ -367,3 +367,103 @@ describe("CapabilityAuthorizer", () => {
     });
   });
 });
+
+describe("typed governed views", () => {
+  const VIEW = { name: "free-busy", fields: ["freeBusy"] };
+
+  function viewGrant(): CapabilityGrant {
+    return grant({
+      id: "grant-files-view",
+      capabilities: [
+        { resource: RESOURCE, actions: ["read"], scope: "exact", view: structuredClone(VIEW) },
+      ],
+    });
+  }
+
+  it("refuses a raw read against view-bound authority with the view's name", async () => {
+    const authorizer = new CapabilityAuthorizer();
+
+    // Not `no_matching_grant`: the refusal says what the caller may still do,
+    // and only names views whose grants would genuinely serve.
+    await expect(
+      authorizer.authorize(context([viewGrant()]), { resource: RESOURCE, action: "read" }),
+    ).resolves.toEqual({
+      allowed: false,
+      reasonCode: "view_required",
+      metadata: { views: ["free-busy"] },
+    });
+  });
+
+  it("serves a request naming the view, and carries the view on the decision", async () => {
+    const authorizer = new CapabilityAuthorizer();
+
+    await expect(
+      authorizer.authorize(context([viewGrant()]), {
+        resource: RESOURCE,
+        action: "read",
+        view: "free-busy",
+      }),
+    ).resolves.toEqual({
+      allowed: true,
+      reasonCode: "allowed",
+      matchedGrantId: "grant-files-view",
+      view: { name: "free-busy", fields: ["freeBusy"] },
+    });
+  });
+
+  it("never lets a raw capability serve a view, nor a view capability another view", async () => {
+    const authorizer = new CapabilityAuthorizer();
+
+    // A raw grant has no field list to serve a view from.
+    await expect(
+      authorizer.authorize(context([grant()]), {
+        resource: RESOURCE,
+        action: "read",
+        view: "free-busy",
+      }),
+    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+
+    // And a view's name is not a key into someone else's declaration.
+    await expect(
+      authorizer.authorize(context([viewGrant()]), {
+        resource: RESOURCE,
+        action: "read",
+        view: "attendee-count",
+      }),
+    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+  });
+
+  it("answers a raw read from a raw grant when both kinds of authority are held", async () => {
+    const authorizer = new CapabilityAuthorizer();
+
+    await expect(
+      authorizer.authorize(context([viewGrant(), grant()]), { resource: RESOURCE, action: "read" }),
+    ).resolves.toEqual({
+      allowed: true,
+      reasonCode: "allowed",
+      matchedGrantId: "grant-files-read",
+    });
+  });
+
+  it("reports an exhausted full match ahead of view advice", async () => {
+    const bounded = grant({
+      id: "grant-bounded",
+      constraints: { purposes: ["prepare-update"], maxUses: 1 },
+    });
+    const authorizer = new CapabilityAuthorizer({ usageStore: new InMemoryGrantUsageStore() });
+    const authority = context([bounded, viewGrant()]);
+    const request = { resource: RESOURCE, action: "read" };
+
+    await expect(authorizer.authorize(authority, request, { consume: true })).resolves.toEqual({
+      allowed: true,
+      reasonCode: "allowed",
+      matchedGrantId: "grant-bounded",
+    });
+    // The raw authority ran out; that fact outranks the advice that a view
+    // remains, because the caller's own full match is the more direct answer.
+    await expect(authorizer.authorize(authority, request, { consume: true })).resolves.toEqual({
+      allowed: false,
+      reasonCode: "grant_exhausted",
+    });
+  });
+});

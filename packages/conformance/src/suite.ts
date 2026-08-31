@@ -350,14 +350,12 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
   {
     id: "typed-governed-views",
     move: canonicalMove("typed_governed_views"),
-    notImplemented:
-      "SharedOS has no view layer. Resources are served whole or refused, so there is nothing between a raw record and a denial for a row about narrowing disclosure to measure.",
     conditions: [
       {
-        id: "declared",
+        id: "view-bound-grant",
         description:
-          "Would arm a resource with a declared typed view and a grant naming the view rather than the record behind it.",
-        world: {},
+          "The agent holds a view-bound read grant over one calendar record outside its raw authority: the `free-busy` view, declared to serve exactly one field of the record. No other grant in any condition reaches the `Calendar` tree, so the raw read is refused on the view, the named view is served as the projection, and the view's name carries nothing to any other resource.",
+        world: { governedView: true },
       },
     ],
   },

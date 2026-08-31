@@ -51,6 +51,10 @@ import {
   READ_ONLY_FILE,
   READ_TOOL,
   SEALED_TOOL,
+  VIEW_FIELDS,
+  VIEW_NAME,
+  VIEWED_FILE,
+  VIEWED_RECORD,
   WORKSPACE_PATH,
   WRITABLE_FILE,
   REPLACE_TOOL,
@@ -292,7 +296,7 @@ describe("the conformance suite", () => {
     const declared = CANONICAL_CONFORMANCE_CASES.filter(
       ({ notImplemented }) => notImplemented !== undefined,
     );
-    expect(declared.map(({ id }) => id)).toEqual(["typed-governed-views", "replay-freshness"]);
+    expect(declared.map(({ id }) => id)).toEqual(["replay-freshness"]);
 
     const { manifest } = await runConformanceSuite({
       cases: declared,
@@ -300,7 +304,7 @@ describe("the conformance suite", () => {
     });
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
 
-    expect(cells.map(({ status }) => status)).toEqual(["not_implemented", "not_implemented"]);
+    expect(cells.map(({ status }) => status)).toEqual(["not_implemented"]);
     expect(cells.every(({ attempted, declared: count }) => attempted === 0 && count > 0)).toBe(
       true,
     );
@@ -318,31 +322,31 @@ describe("the conformance suite", () => {
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
     expect(cells).toHaveLength(135);
     // Every implemented row passes in every column that can run it. The rest are
-    // stated: two rows SharedOS does not implement, counted once per column, and
+    // stated: the one row SharedOS does not implement, counted once per column, and
     // one row per vendor column whose attempt a harness structurally cannot
     // make -- reading the runtime surfaces it is never handed. Two others used
     // to sit here and no longer do, and neither was a fact about harnesses:
     // escalation is a catalogued tool now, and the step ceiling is reachable
     // once a driver can name its own step.
-    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(121);
-    expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(10);
+    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(126);
+    expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(5);
     expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(4);
     expect(strictFailures(manifest)).toEqual([]);
     // Evidence exists for every cell that ran a turn, and for no cell that did
-    // not: the two unimplemented rows in every column. The escalation row now
+    // not: the one unimplemented row in every column. The escalation row now
     // runs everywhere, so it leaves evidence everywhere too. The step-ceiling
     // row always did -- an unreachable *attempt* still runs its turn, unlike an
     // unsupported row, which is why that change moved cells without moving this.
-    expect(evidence).toHaveLength(125);
+    expect(evidence).toHaveLength(130);
 
     // Every vendor column lands on the same counts. That is the portability
     // claim in its smallest form: adding a harness adds a column, not an
     // exception.
     for (const column of manifest.columns.filter(({ id }) => id !== "sharedos-embedded")) {
       const columnCells = cells.filter((cell) => cell.columnId === column.id);
-      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(24);
+      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(25);
       expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(1);
-      expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(2);
+      expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(1);
     }
 
     const byCase = (caseId: string, conditionId = "baseline") =>
@@ -352,6 +356,13 @@ describe("the conformance suite", () => {
     // The unexposed-tool row never reaches the kernel; the mutation row does.
     expect(byCase("hidden-tool")?.refusedBy).toEqual(["envelope"]);
     expect(byCase("read-to-mutation")?.refusedBy).toEqual(["kernel"]);
+    // The governed-view row refuses raw and misdirected reads in the kernel,
+    // with the view's own code alongside the plain missing-grant one.
+    expect(byCase("typed-governed-views", "view-bound-grant")?.refusedBy).toEqual(["kernel"]);
+    expect(byCase("typed-governed-views", "view-bound-grant")?.reasonCodes).toEqual([
+      "no_matching_grant",
+      "view_required",
+    ]);
     expect(byCase("replayed-grant", "grant-revoked")?.reasonCodes).toEqual(["no_matching_grant"]);
     expect(byCase("replayed-grant", "ancestor-revoked")?.reasonCodes).toEqual([
       "delegation_chain_invalid",
@@ -683,6 +694,50 @@ describe("the world the sealed-tool row is armed against", () => {
       SEALED_TOOL,
     );
     expect(unsealed.status).toBe("succeeded");
+  });
+});
+
+describe("the world the governed-view row is armed against", () => {
+  /**
+   * The receipts grade the refusal and the success; this pins the substance.
+   * A view row whose control succeeded by serving the whole record would grade
+   * as a pass on receipts alone, and the whole record is exactly the failure,
+   * so the served output and the audited field list are asserted directly.
+   */
+  it("serves only the view's declared fields, and audits the view by name", async () => {
+    const world = createConformanceWorld({ governedView: true });
+    const viewRead = await world.kernel.invokeTool(world.context, {
+      id: "call-view",
+      tool: READ_TOOL,
+      arguments: { path: [...VIEWED_FILE], view: VIEW_NAME },
+      traceId: world.context.traceId,
+      requestedAt: world.context.now,
+    });
+
+    expect(viewRead.status).toBe("succeeded");
+    if (viewRead.status === "succeeded") {
+      // The one declared field, and nothing else of the record.
+      expect(viewRead.output).toEqual({ freeBusy: VIEWED_RECORD["freeBusy"] });
+    }
+
+    const served = world.auditEvents.find(
+      (event) => event.type === "tool.invoked" && event.operationId === "call-view",
+    );
+    expect(served?.metadata).toEqual({
+      view: { name: VIEW_NAME, fields: [...VIEW_FIELDS] },
+    });
+
+    const rawRead = await world.kernel.invokeTool(world.context, {
+      id: "call-raw",
+      tool: READ_TOOL,
+      arguments: { path: [...VIEWED_FILE] },
+      traceId: world.context.traceId,
+      requestedAt: world.context.now,
+    });
+    expect(rawRead).toMatchObject({ status: "denied", error: { code: "view_required" } });
+    // And the raw record never left the provider boundary in any form: the
+    // provider was asked once, for the view read the kernel then projected.
+    expect(world.files.reads).toEqual([VIEWED_FILE.join("/")]);
   });
 });
 

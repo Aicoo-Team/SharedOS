@@ -11,6 +11,14 @@ export interface ResourceInvocationRequest {
   readonly operationId: string;
   readonly resource: ResourceRef;
   readonly action: string;
+  /**
+   * The typed governed view to serve, by name.
+   *
+   * The provider never sees it: the operation it answers is the raw one, and
+   * the kernel projects the result down to the granted view's declared fields
+   * before anything leaves the boundary.
+   */
+  readonly view?: string;
   readonly input?: ResourceOperation["input"];
   readonly metadata?: ResourceOperation["metadata"];
 }

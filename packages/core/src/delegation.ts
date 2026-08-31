@@ -188,6 +188,25 @@ function linkViolation(
   return constraintsAreAttenuated(child, parent) ? undefined : "constraints_widened";
 }
 
+/**
+ * True when `child` serves no more of the resource than `parent` does.
+ *
+ * A view is an attenuation, so a raw parent may issue a view-bound child. The
+ * reverse is a widening -- dropping the view hands over the record the parent
+ * was never allowed to see whole -- and so is renaming the view or growing its
+ * field list. Field subsets narrow further and are allowed.
+ */
+function viewIsWithin(parent: Capability["view"], child: Capability["view"]): boolean {
+  if (parent === undefined) {
+    return true;
+  }
+  if (child === undefined || child.name !== parent.name) {
+    return false;
+  }
+  const allowed = new Set(parent.fields);
+  return child.fields.every((field) => allowed.has(field));
+}
+
 /** True when every access `capability` permits is also permitted by `ancestor`. */
 function capabilityIsWithin(
   capability: Capability,
@@ -195,6 +214,10 @@ function capabilityIsWithin(
   context: AccessContext,
 ): boolean {
   if (capability.resource.namespace !== ancestor.resource.namespace) {
+    return false;
+  }
+
+  if (!viewIsWithin(ancestor.view, capability.view)) {
     return false;
   }
 
@@ -317,6 +340,8 @@ export interface DeriveGrantRequest {
  */
 function capabilityIsWithinInAnyContext(parent: Capability, child: Capability): boolean {
   if (parent.resource.namespace !== child.resource.namespace) return false;
+
+  if (!viewIsWithin(parent.view, child.view)) return false;
 
   const parentOwner = parent.resource.owner;
   const childOwner = child.resource.owner;

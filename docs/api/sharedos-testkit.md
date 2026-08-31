@@ -23,7 +23,7 @@ SharedOS is currently an `0.x` prerelease.
 
 ### InMemoryAuditSink
 
-Defined in: [testkit/src/index.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L28)
+Defined in: testkit/src/index.ts:28
 
 #### Implements
 
@@ -41,9 +41,9 @@ Defined in: [testkit/src/index.ts:28](https://github.com/Aicoo-Team/SharedOS/blo
 
 #### Properties
 
-| Property                              | Modifier   | Type                                          | Default value | Defined in                                                                                                    |
-| ------------------------------------- | ---------- | --------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------- |
-| <a id="property-events"></a> `events` | `readonly` | [`AuditEvent`](sharedos-core.md#auditevent)[] | `[]`          | [testkit/src/index.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L29) |
+| Property                              | Modifier   | Type                                          | Default value | Defined in              |
+| ------------------------------------- | ---------- | --------------------------------------------- | ------------- | ----------------------- |
+| <a id="property-events"></a> `events` | `readonly` | [`AuditEvent`](sharedos-core.md#auditevent)[] | `[]`          | testkit/src/index.ts:29 |
 
 #### Methods
 
@@ -51,7 +51,7 @@ Defined in: [testkit/src/index.ts:28](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **record**(`event`): `Promise`\<`void`>\>
 
-Defined in: [testkit/src/index.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L31)
+Defined in: testkit/src/index.ts:31
 
 ###### Parameters
 
@@ -71,7 +71,7 @@ Defined in: [testkit/src/index.ts:31](https://github.com/Aicoo-Team/SharedOS/blo
 
 ### InMemoryGrantChainResolver
 
-Defined in: [testkit/src/index.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L135)
+Defined in: testkit/src/index.ts:135
 
 Namespace-scoped ancestor lookup for delegated-grant fixtures.
 
@@ -85,7 +85,7 @@ Namespace-scoped ancestor lookup for delegated-grant fixtures.
 
 > **new InMemoryGrantChainResolver**(`grants?`): [`InMemoryGrantChainResolver`](#inmemorygrantchainresolver)
 
-Defined in: [testkit/src/index.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L138)
+Defined in: testkit/src/index.ts:138
 
 ###### Parameters
 
@@ -103,7 +103,7 @@ Defined in: [testkit/src/index.ts:138](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **add**(`grant`): `this`
 
-Defined in: [testkit/src/index.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L144)
+Defined in: testkit/src/index.ts:144
 
 ###### Parameters
 
@@ -134,7 +134,7 @@ Defined in: [testkit/src/index.ts:144](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **resolve**(`namespaceId`, `grantId`): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: [testkit/src/index.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L164)
+Defined in: testkit/src/index.ts:164
 
 ###### Parameters
 
@@ -155,7 +155,7 @@ Defined in: [testkit/src/index.ts:164](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **revoke**(`namespaceId`, `grantId`, `revokedAt`): `this`
 
-Defined in: [testkit/src/index.ts:155](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L155)
+Defined in: testkit/src/index.ts:155
 
 Record a revocation the way a host grant store would, in place.
 
@@ -175,7 +175,7 @@ Record a revocation the way a host grant store would, in place.
 
 ### InMemoryGrantSource
 
-Defined in: [testkit/src/index.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L86)
+Defined in: testkit/src/index.ts:86
 
 A host grant store fixture.
 
@@ -193,7 +193,7 @@ authority inside its namespace, which is the contract every production
 
 > **new InMemoryGrantSource**(`grants?`): [`InMemoryGrantSource`](#inmemorygrantsource)
 
-Defined in: [testkit/src/index.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L89)
+Defined in: testkit/src/index.ts:89
 
 ###### Parameters
 
@@ -211,7 +211,7 @@ Defined in: [testkit/src/index.ts:89](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **add**(...`grants`): `this`
 
-Defined in: [testkit/src/index.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L95)
+Defined in: testkit/src/index.ts:95
 
 ###### Parameters
 
@@ -227,7 +227,7 @@ Defined in: [testkit/src/index.ts:95](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **load**(`context`): `Promise`\<readonly `object`[]\>
 
-Defined in: [testkit/src/index.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L113)
+Defined in: testkit/src/index.ts:113
 
 ###### Parameters
 
@@ -255,7 +255,7 @@ Defined in: [testkit/src/index.ts:113](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **revoke**(`grantId`, `revokedAt`): `this`
 
-Defined in: [testkit/src/index.ts:103](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L103)
+Defined in: testkit/src/index.ts:103
 
 Record a revocation the way a host store would, without deleting history.
 
@@ -274,7 +274,7 @@ Record a revocation the way a host store would, without deleting history.
 
 ### InMemoryMessageTransport
 
-Defined in: [testkit/src/index.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L36)
+Defined in: testkit/src/index.ts:36
 
 #### Implements
 
@@ -292,9 +292,9 @@ Defined in: [testkit/src/index.ts:36](https://github.com/Aicoo-Team/SharedOS/blo
 
 #### Properties
 
-| Property                                      | Modifier   | Type       | Default value | Defined in                                                                                                    |
-| --------------------------------------------- | ---------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------------------- |
-| <a id="property-deliveries"></a> `deliveries` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L37) |
+| Property                                      | Modifier   | Type       | Default value | Defined in              |
+| --------------------------------------------- | ---------- | ---------- | ------------- | ----------------------- |
+| <a id="property-deliveries"></a> `deliveries` | `readonly` | `object`[] | `[]`          | testkit/src/index.ts:37 |
 
 #### Methods
 
@@ -302,7 +302,7 @@ Defined in: [testkit/src/index.ts:36](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **deliver**(`context`, `envelope`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [testkit/src/index.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L39)
+Defined in: testkit/src/index.ts:39
 
 ###### Parameters
 
@@ -344,7 +344,7 @@ Defined in: [testkit/src/index.ts:39](https://github.com/Aicoo-Team/SharedOS/blo
 
 ### InMemoryResourceProvider
 
-Defined in: [testkit/src/index.ts:182](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L182)
+Defined in: testkit/src/index.ts:182
 
 A host-neutral recording provider for examples, conformance tests, and isolated experiment worlds.
 
@@ -358,7 +358,7 @@ A host-neutral recording provider for examples, conformance tests, and isolated 
 
 > **new InMemoryResourceProvider**(`namespace`, `handler?`): [`InMemoryResourceProvider`](#inmemoryresourceprovider)
 
-Defined in: [testkit/src/index.ts:187](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L187)
+Defined in: testkit/src/index.ts:187
 
 ###### Parameters
 
@@ -373,10 +373,10 @@ Defined in: [testkit/src/index.ts:187](https://github.com/Aicoo-Team/SharedOS/bl
 
 #### Properties
 
-| Property                                      | Modifier   | Type       | Default value | Defined in                                                                                                      |
-| --------------------------------------------- | ---------- | ---------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
-| <a id="property-namespace"></a> `namespace`   | `readonly` | `string`   | `undefined`   | [testkit/src/index.ts:183](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L183) |
-| <a id="property-operations"></a> `operations` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:184](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L184) |
+| Property                                      | Modifier   | Type       | Default value | Defined in               |
+| --------------------------------------------- | ---------- | ---------- | ------------- | ------------------------ |
+| <a id="property-namespace"></a> `namespace`   | `readonly` | `string`   | `undefined`   | testkit/src/index.ts:183 |
+| <a id="property-operations"></a> `operations` | `readonly` | `object`[] | `[]`          | testkit/src/index.ts:184 |
 
 #### Methods
 
@@ -384,7 +384,7 @@ Defined in: [testkit/src/index.ts:187](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **invoke**(`operation`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [testkit/src/index.ts:192](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L192)
+Defined in: testkit/src/index.ts:192
 
 ###### Parameters
 
@@ -421,7 +421,7 @@ Defined in: [testkit/src/index.ts:192](https://github.com/Aicoo-Team/SharedOS/bl
 
 ### InMemoryToolNamespaceSettingsStore
 
-Defined in: [testkit/src/index.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L53)
+Defined in: testkit/src/index.ts:53
 
 Namespace settings fixture keyed by the access-context namespace/world.
 
@@ -435,7 +435,7 @@ Namespace settings fixture keyed by the access-context namespace/world.
 
 > **new InMemoryToolNamespaceSettingsStore**(`initial?`): [`InMemoryToolNamespaceSettingsStore`](#inmemorytoolnamespacesettingsstore)
 
-Defined in: [testkit/src/index.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L56)
+Defined in: testkit/src/index.ts:56
 
 ###### Parameters
 
@@ -453,7 +453,7 @@ Defined in: [testkit/src/index.ts:56](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **applyUpdate**(`context`, `update`): `Promise`\<readonly `string`[]\>
 
-Defined in: [testkit/src/index.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L62)
+Defined in: testkit/src/index.ts:62
 
 ###### Parameters
 
@@ -484,7 +484,7 @@ Defined in: [testkit/src/index.ts:62](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **get**(`namespaceId`): readonly `string`[]
 
-Defined in: [testkit/src/index.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L74)
+Defined in: testkit/src/index.ts:74
 
 ###### Parameters
 
@@ -500,7 +500,7 @@ readonly `string`[]
 
 ### UnavailableGrantChainResolver
 
-Defined in: [testkit/src/index.ts:172](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L172)
+Defined in: testkit/src/index.ts:172
 
 A resolver whose authoritative source is down; every lookup must fail closed.
 
@@ -524,7 +524,7 @@ A resolver whose authoritative source is down; every lookup must fail closed.
 
 > **resolve**(): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: [testkit/src/index.ts:173](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L173)
+Defined in: testkit/src/index.ts:173
 
 ###### Returns
 
@@ -538,7 +538,7 @@ Defined in: [testkit/src/index.ts:173](https://github.com/Aicoo-Team/SharedOS/bl
 
 ### UnavailableGrantSource
 
-Defined in: [testkit/src/index.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L127)
+Defined in: testkit/src/index.ts:127
 
 A grant store that is down; every decision made against it must fail closed.
 
@@ -562,7 +562,7 @@ A grant store that is down; every decision made against it must fail closed.
 
 > **load**(): `Promise`\<readonly `object`[]\>
 
-Defined in: [testkit/src/index.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L128)
+Defined in: testkit/src/index.ts:128
 
 ###### Returns
 
@@ -576,73 +576,73 @@ Defined in: [testkit/src/index.ts:128](https://github.com/Aicoo-Team/SharedOS/bl
 
 ### TestContextOptions
 
-Defined in: [testkit/src/index.ts:237](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L237)
+Defined in: testkit/src/index.ts:237
 
 #### Properties
 
-| Property                                                             | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                      |
-| -------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| <a id="property-actor"></a> `actor?`                                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:238](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L238) |
-| <a id="property-authority"></a> `authority?`                         | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:239](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L239) |
-| <a id="property-enabledtoolnamespaces"></a> `enabledToolNamespaces?` | `readonly` | readonly `string`[]                                                                                                                                                                                        | [testkit/src/index.ts:242](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L242) |
-| <a id="property-namespaceid"></a> `namespaceId?`                     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:241](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L241) |
-| <a id="property-now"></a> `now?`                                     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:245](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L245) |
-| <a id="property-owner"></a> `owner?`                                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:240](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L240) |
-| <a id="property-purpose"></a> `purpose?`                             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:243](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L243) |
-| <a id="property-traceid"></a> `traceId?`                             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:244](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L244) |
+| Property                                                             | Modifier   | Type                                                                                                                                                                                                       | Defined in               |
+| -------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| <a id="property-actor"></a> `actor?`                                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | testkit/src/index.ts:238 |
+| <a id="property-authority"></a> `authority?`                         | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | testkit/src/index.ts:239 |
+| <a id="property-enabledtoolnamespaces"></a> `enabledToolNamespaces?` | `readonly` | readonly `string`[]                                                                                                                                                                                        | testkit/src/index.ts:242 |
+| <a id="property-namespaceid"></a> `namespaceId?`                     | `readonly` | `string`                                                                                                                                                                                                   | testkit/src/index.ts:241 |
+| <a id="property-now"></a> `now?`                                     | `readonly` | `string`                                                                                                                                                                                                   | testkit/src/index.ts:245 |
+| <a id="property-owner"></a> `owner?`                                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | testkit/src/index.ts:240 |
+| <a id="property-purpose"></a> `purpose?`                             | `readonly` | `string`                                                                                                                                                                                                   | testkit/src/index.ts:243 |
+| <a id="property-traceid"></a> `traceId?`                             | `readonly` | `string`                                                                                                                                                                                                   | testkit/src/index.ts:244 |
 
 ---
 
 ### TestGrantOptions
 
-Defined in: [testkit/src/index.ts:262](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L262)
+Defined in: testkit/src/index.ts:262
 
 #### Properties
 
-| Property                                                 | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                      |
-| -------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| <a id="property-capabilities"></a> `capabilities`        | `readonly` | readonly `object`[]                                                                                                                                                                                        | [testkit/src/index.ts:267](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L267) |
-| <a id="property-delegationdepth"></a> `delegationDepth?` | `readonly` | `number`                                                                                                                                                                                                   | [testkit/src/index.ts:274](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L274) |
-| <a id="property-expiresat"></a> `expiresAt?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:271](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L271) |
-| <a id="property-id"></a> `id?`                           | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:263](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L263) |
-| <a id="property-issuedat"></a> `issuedAt?`               | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:269](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L269) |
-| <a id="property-issuer"></a> `issuer?`                   | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:266](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L266) |
-| <a id="property-maxuses"></a> `maxUses?`                 | `readonly` | `number`                                                                                                                                                                                                   | [testkit/src/index.ts:273](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L273) |
-| <a id="property-namespaceid-1"></a> `namespaceId?`       | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:264](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L264) |
-| <a id="property-notbefore"></a> `notBefore?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:270](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L270) |
-| <a id="property-parentgrantid"></a> `parentGrantId?`     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:275](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L275) |
-| <a id="property-purposes"></a> `purposes?`               | `readonly` | readonly `string`[]                                                                                                                                                                                        | [testkit/src/index.ts:268](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L268) |
-| <a id="property-revokedat"></a> `revokedAt?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:272](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L272) |
-| <a id="property-subject"></a> `subject?`                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:265](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L265) |
+| Property                                                 | Modifier   | Type                                                                                                                                                                                                       | Defined in               |
+| -------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| <a id="property-capabilities"></a> `capabilities`        | `readonly` | readonly `object`[]                                                                                                                                                                                        | testkit/src/index.ts:267 |
+| <a id="property-delegationdepth"></a> `delegationDepth?` | `readonly` | `number`                                                                                                                                                                                                   | testkit/src/index.ts:274 |
+| <a id="property-expiresat"></a> `expiresAt?`             | `readonly` | `string`                                                                                                                                                                                                   | testkit/src/index.ts:271 |
+| <a id="property-id"></a> `id?`                           | `readonly` | `string`                                                                                                                                                                                                   | testkit/src/index.ts:263 |
+| <a id="property-issuedat"></a> `issuedAt?`               | `readonly` | `string`                                                                                                                                                                                                   | testkit/src/index.ts:269 |
+| <a id="property-issuer"></a> `issuer?`                   | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | testkit/src/index.ts:266 |
+| <a id="property-maxuses"></a> `maxUses?`                 | `readonly` | `number`                                                                                                                                                                                                   | testkit/src/index.ts:273 |
+| <a id="property-namespaceid-1"></a> `namespaceId?`       | `readonly` | `string`                                                                                                                                                                                                   | testkit/src/index.ts:264 |
+| <a id="property-notbefore"></a> `notBefore?`             | `readonly` | `string`                                                                                                                                                                                                   | testkit/src/index.ts:270 |
+| <a id="property-parentgrantid"></a> `parentGrantId?`     | `readonly` | `string`                                                                                                                                                                                                   | testkit/src/index.ts:275 |
+| <a id="property-purposes"></a> `purposes?`               | `readonly` | readonly `string`[]                                                                                                                                                                                        | testkit/src/index.ts:268 |
+| <a id="property-revokedat"></a> `revokedAt?`             | `readonly` | `string`                                                                                                                                                                                                   | testkit/src/index.ts:272 |
+| <a id="property-subject"></a> `subject?`                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | testkit/src/index.ts:265 |
 
 ---
 
 ### TestKernel
 
-Defined in: [testkit/src/index.ts:198](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L198)
+Defined in: testkit/src/index.ts:198
 
 #### Properties
 
-| Property                                  | Modifier   | Type                                                    | Description                                                                      | Defined in                                                                                                      |
-| ----------------------------------------- | ---------- | ------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| <a id="property-audit"></a> `audit`       | `readonly` | [`InMemoryAuditSink`](#inmemoryauditsink)               | -                                                                                | [testkit/src/index.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L200) |
-| <a id="property-grants"></a> `grants`     | `readonly` | [`InMemoryGrantSource`](#inmemorygrantsource)           | The trusted store the kernel loads authority from; mutate it to grant or revoke. | [testkit/src/index.ts:203](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L203) |
-| <a id="property-kernel"></a> `kernel`     | `readonly` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)     | -                                                                                | [testkit/src/index.ts:199](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L199) |
-| <a id="property-messages"></a> `messages` | `readonly` | [`InMemoryMessageTransport`](#inmemorymessagetransport) | -                                                                                | [testkit/src/index.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L201) |
+| Property                                  | Modifier   | Type                                                    | Description                                                                      | Defined in               |
+| ----------------------------------------- | ---------- | ------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------ |
+| <a id="property-audit"></a> `audit`       | `readonly` | [`InMemoryAuditSink`](#inmemoryauditsink)               | -                                                                                | testkit/src/index.ts:200 |
+| <a id="property-grants"></a> `grants`     | `readonly` | [`InMemoryGrantSource`](#inmemorygrantsource)           | The trusted store the kernel loads authority from; mutate it to grant or revoke. | testkit/src/index.ts:203 |
+| <a id="property-kernel"></a> `kernel`     | `readonly` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)     | -                                                                                | testkit/src/index.ts:199 |
+| <a id="property-messages"></a> `messages` | `readonly` | [`InMemoryMessageTransport`](#inmemorymessagetransport) | -                                                                                | testkit/src/index.ts:201 |
 
 ---
 
 ### TestKernelOptions
 
-Defined in: [testkit/src/index.ts:206](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L206)
+Defined in: testkit/src/index.ts:206
 
 #### Properties
 
-| Property                                                       | Modifier   | Type                                                                  | Description                                                           | Defined in                                                                                                      |
-| -------------------------------------------------------------- | ---------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| <a id="property-delegationresolver"></a> `delegationResolver?` | `readonly` | [`DelegationChainResolver`](sharedos-core.md#delegationchainresolver) | Installs ancestor validation so delegated grants can be exercised.    | [testkit/src/index.ts:212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L212) |
-| <a id="property-grants-1"></a> `grants?`                       | `readonly` | readonly `object`[]                                                   | Seed authority for the kernel's trusted grant source.                 | [testkit/src/index.ts:208](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L208) |
-| <a id="property-grantsource"></a> `grantSource?`               | `readonly` | [`GrantSource`](sharedos-core.md#grantsource)                         | Replaces the trusted grant source, for example to exercise an outage. | [testkit/src/index.ts:210](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L210) |
+| Property                                                       | Modifier   | Type                                                                  | Description                                                           | Defined in               |
+| -------------------------------------------------------------- | ---------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------ |
+| <a id="property-delegationresolver"></a> `delegationResolver?` | `readonly` | [`DelegationChainResolver`](sharedos-core.md#delegationchainresolver) | Installs ancestor validation so delegated grants can be exercised.    | testkit/src/index.ts:212 |
+| <a id="property-grants-1"></a> `grants?`                       | `readonly` | readonly `object`[]                                                   | Seed authority for the kernel's trusted grant source.                 | testkit/src/index.ts:208 |
+| <a id="property-grantsource"></a> `grantSource?`               | `readonly` | [`GrantSource`](sharedos-core.md#grantsource)                         | Replaces the trusted grant source, for example to exercise an outage. | testkit/src/index.ts:210 |
 
 ## Type Aliases
 
@@ -650,7 +650,7 @@ Defined in: [testkit/src/index.ts:206](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **ResourceHandler** = (`operation`) => `Promise`\<[`ResourceResult`](sharedos-contracts.md#resourceresult)>\>
 
-Defined in: [testkit/src/index.ts:179](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L179)
+Defined in: testkit/src/index.ts:179
 
 #### Parameters
 
@@ -668,7 +668,7 @@ Defined in: [testkit/src/index.ts:179](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **createTestContext**(`options?`): `object`
 
-Defined in: [testkit/src/index.ts:248](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L248)
+Defined in: testkit/src/index.ts:248
 
 #### Parameters
 
@@ -718,7 +718,7 @@ Defined in: [testkit/src/index.ts:248](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **createTestGrant**(`options`): `object`
 
-Defined in: [testkit/src/index.ts:278](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L278)
+Defined in: testkit/src/index.ts:278
 
 #### Parameters
 
@@ -796,7 +796,7 @@ Defined in: [testkit/src/index.ts:278](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **createTestKernel**(`options?`): [`TestKernel`](#testkernel)
 
-Defined in: [testkit/src/index.ts:215](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L215)
+Defined in: testkit/src/index.ts:215
 
 #### Parameters
 
