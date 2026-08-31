@@ -226,14 +226,23 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
     a JSON tuple, where the escalation plane writes a computed cluster and a
     SHA-256 of normalized intent. That is one mechanism with no home, not two
     policies.
+
+    Name the home in this phase rather than after it. The matching logic is a
+    SharedOS package — deterministic, opt-in, depending on nothing Pulse owns —
+    and the rows stay host-side behind a lookup port, because a precedent is a
+    record of what one owner answered and SharedOS stores nothing. Leaving the
+    home unstated is how the second copy comes back.
+
   - A precedent decides whether to **ask**, never whether to **permit**. It runs
     after authorization has already allowed the call, so it can only skip an
     owner prompt. Keep that property explicit wherever it lands.
-  - The **model-based sanitizer** stays outside the kernel — not because it is
-    Pulse-specific, but because it is probabilistic. A conformance row whose
-    expected output is a model call is not a conformance row. It sits above the
-    ceiling port, where its verdict is recorded as a host decision and can be
-    measured against one.
+  - The **model-based sanitizer** is not a ceiling and does not move into the
+    kernel decision. A ceiling runs in the discovery path, once per tool per
+    catalogue build, so it must be deterministic and cheap (ADR 0020). The
+    sanitizer stays the host gate it already is, running before the call reaches
+    the kernel. What changes is that it emits its verdict through the same
+    `AuditSink` with the same outcome vocabulary. Its defect today is that
+    nothing records it, not that it runs host-side.
 - `computePermissionGaps` largely dissolves. "Which scope was never granted" is
   the same computation as the `requiredCapability` a `no_matching_grant` denial
   now describes (ADR 0019); keep only the owner-facing scope copy.

@@ -98,7 +98,9 @@ end this way and exactly one queue a reviewer reads.
   workflow stays host-owned; what stops being host-owned is the vocabulary for
   saying which capability it is about.
 - Conformance gains a row: an escalation recorded after a `no_matching_grant`
-  denial names the capability that denial described.
+  denial names the capability that denial described. It lands with the
+  implementation — ADR 0013's gate covers every declared row, so a row added
+  ahead of the code would have to be declared `notImplemented` with a reason.
 - `CapabilityRequest` stops being a type with no port. It is still not authority
   and still not accepted as input.
 

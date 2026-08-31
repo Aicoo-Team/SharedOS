@@ -75,9 +75,18 @@ export interface HostCeiling {
   that does not carry the `matchedGrantId` it was handed is treated as a
   malfunction and fails closed, so widening is not expressible rather than
   merely forbidden.
-- Its denial carries `host_ceiling_denied`, a reason code of its own, so it is
-  separable from `no_matching_grant` in every count. It is not an infrastructure
-  denial: it is a policy decision the deployment made deliberately.
+- Its denial carries `policy_denied`, separable from `no_matching_grant` in
+  every count. It is not an infrastructure denial: it is a policy decision the
+  deployment made deliberately.
+
+  The code names **what** was refused, not **who** refused it. ADR 0012 removed
+  `tool_not_available` for exactly that conflation and settled the rule: "a code
+  is what was refused; a source is who refused it." A ceiling that announced
+  itself in the code — `host_ceiling_denied` — would put the decision point back
+  in the vocabulary. Which component refused belongs beside
+  `OperationRecord.source`, and a ceiling that wants to say more supplies its own
+  detail in the decision metadata, which is not part of the wire vocabulary.
+
 - A throw fails closed and is recorded as an infrastructure denial, consistent
   with every other unavailable trusted component.
 - It is optional. A kernel constructed without one behaves exactly as it does
@@ -86,6 +95,30 @@ export interface HostCeiling {
 Discovery uses the same port. `canDiscover` consults it too, so a catalogue is
 not offered on authority that invocation would refuse — the property ADR 0016
 established for expiry, for the same reason.
+
+That is only safe because of what a ceiling is allowed to be.
+
+### A ceiling is deterministic and cheap, by contract
+
+`listTools` iterates the registry and awaits a discovery decision **per tool
+definition**. A ceiling in that path therefore runs once per tool per catalogue
+build, so it must be a pure function of the request and host state it already
+holds. Anything that makes a network call, or whose answer is not reproducible
+from its inputs, is not a ceiling.
+
+That bound is not only about cost. A conformance row's expected output has to be
+observable, and ADR 0013 requires a declared row to run or to say it does not. A
+model call inside the authorization decision would make a cell that cannot state
+what it observed.
+
+Probabilistic judgment — a model deciding whether a permitted request should
+nonetheless be asked about — is real, and hosts have it. It stays **outside** the
+kernel decision, where it already is: a host gate that runs before the call
+reaches the kernel. What must change is not where it executes but that it is
+recorded. A host emits its verdict through the same `AuditSink`, with the same
+outcome vocabulary, so the decision is countable and measurable against a
+ground truth. The defect in a host-side judgment layer today is that nothing
+records it, not that it runs host-side.
 
 ## Consequences
 
@@ -103,7 +136,11 @@ established for expiry, for the same reason.
   content-sensitivity check, an org-wide freeze — get a home that cannot widen
   authority, instead of wrapping the kernel where they can do anything.
 - Conformance gains a row for a grant-allowed, ceiling-denied call, and the
-  reason code makes it checkable rather than inferred from an absent effect.
+  reason code makes it checkable rather than inferred from an absent effect. The
+  row lands with the implementation, not with this ADR: ADR 0013's strict gate
+  covers every declared row, so a row added ahead of the code would have to be
+  declared `notImplemented` with a reason rather than left to assert something
+  nobody ran.
 
 ## Rejected alternatives
 
