@@ -253,7 +253,6 @@ call and then bounds it by wall time, so what passes depends on machine speed â€
 which cannot be a conformance signal, and which makes the ceiling's determinism
 a property of the deployment rather than of the contract.
 
-**Let the ceiling return an escalation.** Rejected here and answered in ADR
-0019. A ceiling says no; whether a no is worth asking a human about is the
+**Let the ceiling return an escalation.** Rejected here and answered in ADR 0019. A ceiling says no; whether a no is worth asking a human about is the
 host's decision, made on the denial it receives, using the capability that
 denial describes.
