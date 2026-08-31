@@ -276,6 +276,28 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
 - Register the local agent's vetted Git subset as a tool provider in the kernel
   registry, beside the files provider. It is a provider, not a permission name,
   and not an MCP server.
+- **Give Git its own resource namespace. Do not model it as file access.**
+  `repo` and `files` may address the same directory and are still different
+  resources, and `capabilityMatches` requires the namespace to be equal, so
+  holding one grants nothing over the other. Modelling `git commit` as a write
+  under `files` would mean every holder of file-write authority could also
+  commit, which is a permission cross-product the model forbids and a real
+  widening of what the current `GitCommit` permission allows.
+- Keep the two kinds of restriction in `safe-git.ts` apart, because only one of
+  them is a permission:
+  - **Scope** — arguments must resolve inside the approved repository
+    (`validatePathArguments`) — is expressed by the capability's path, exactly
+    as it is today.
+  - **Execution hardening** — five subcommands, per-subcommand argument
+    allowlists, `core.hooksPath=/dev/null`, `GIT_CONFIG_NOSYSTEM`,
+    `GIT_CONFIG_GLOBAL=/dev/null`, `--no-ext-diff`, `--no-textconv`,
+    `hash-object --no-filters`, symlink refusal — is not authorization at all.
+    It survives because the provider is the only code that can turn a capability
+    into a Git invocation, and it can only emit the hardened form.
+- Anything outside that subset — `push`, `reset`, `checkout`, `clean`, `config`,
+  `remote` — remains `shell.command`, which is never silently granted. The
+  provider does not widen the reachable set of Git operations; it only removes
+  tool names from the permission vocabulary.
 
 ### 11. Extract the transport
 
@@ -285,6 +307,25 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
   `deliver` does and holds no authorization decision of its own.
 - Name the two leases apart. `TurnAuthorityScope` is an authority lease; a
   communication session is a route lease.
+- **Authorization does not replace the route-lease check, and the lease check
+  keeps its lock.** These answer different questions at different instants:
+  - The kernel decides whether the actor _may_ send to that recipient. It
+    decides against the turn's snapshot, resolved once at the turn boundary, so
+    by ADR 0010 it cannot see a revocation that lands mid-turn.
+  - The transport decides whether the route is _still live at the moment of
+    dispatch_, under the row lock that already exists —
+    `requireGrantForMessagePersistence` takes `.for('update')` on the
+    communication session and its collaboration, so a revocation must wait for
+    that transaction to commit.
+
+  Delivery is a side effect that outlives the decision authorizing it, so an
+  authorization that is deliberately one turn stale cannot be the only gate.
+  Move `.for('update')` behind `MessageTransport` unchanged; the port does not
+  take it over. A dispatch whose lease check is skipped because the kernel
+  already allowed the send is exactly the revocation race this preserves against,
+  and conformance should carry a row for it: a send authorized before a
+  revocation, dispatched after it, must terminate rather than deliver.
+
 - Embedded Pulse and a self-hosted deployment must pass the same conformance
   suite, as with the HTTP boundary in phase 7.
 
