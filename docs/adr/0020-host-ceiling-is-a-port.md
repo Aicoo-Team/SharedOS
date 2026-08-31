@@ -95,14 +95,49 @@ already assigns it. `663dd94`'s documentation change is reverted and step 10
 restored.
 
 ```ts
+/** Loaded once per turn, beside the grant set. */
+export interface PolicySource {
+  load(context: AccessContext, signal: AbortSignal): Promise<HostPolicy>;
+}
+
+/** Consulted per decision, over already-loaded state. Synchronous by contract. */
 export interface HostCeiling {
   narrow(
     decision: AuthorizationDecision,
     request: AuthorizationRequest,
     context: AccessContext,
+    policy: HostPolicy,
   ): AuthorizationDecision;
 }
 ```
+
+`HostPolicy` is opaque to SharedOS: whatever the host loaded, carried beside the
+resolved authority and handed back to the host's own ceiling.
+
+### Why the synchronous signature needs a second port
+
+A synchronous ceiling can only decide against state it already holds, and the
+first real host's two recorded policies read a database:
+`getFolderAccessStatus` and the c2c precedent lookup are both `async`. Without
+somewhere for that read to happen, the signature would forbid the port to
+exactly the policies that are working today, and they would stay outside it.
+
+They do not need a per-request query. Their keys are
+`(owner, requester, device, folder, normalizedTool)` over a bounded vocabulary —
+thirteen normalized tools, two access presets — so the answer set is a small
+table, not a lookup per argument. It can be loaded once and consulted many
+times.
+
+So policy enters the way authority already does, at the same moment: one
+`PolicySource.load` per turn, asynchronous, at the turn boundary, and every
+decision inside the turn made against the result without reading a store. This
+is ADR 0009 and ADR 0010's pattern applied one level up — a turn now resolves
+one grant set **and** one policy set — and it is what the local agent already
+does with its policy file: read once at startup, then decide in memory.
+
+A host with request-independent policy may ignore `PolicySource` entirely and
+close over its own state; the port exists so that a host whose policy lives in a
+database is not forced back outside the kernel by the signature.
 
 **The signature is synchronous, and that is the enforcement.** "Deterministic
 and cheap" cannot be asserted in prose and then relied on. A synchronous return

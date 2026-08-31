@@ -214,7 +214,14 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
 
 ### 9. One decision point for tool approval and escalation
 
-- Implement `HostCeiling` (ADR 0020) over the judgment checks so they stop being
+- Implement `PolicySource` and `HostCeiling` (ADR 0020). Load the folder grants,
+  precedents and session-scope decisions once per turn, beside the grant set,
+  and decide against them synchronously — their keys are a bounded table, not a
+  per-argument query, so no decision needs a database read.
+- Stop applying policy in the `GrantSource`. The `toolAccess.allowedTools`
+  intersection moves to the ceiling, where a refusal is recorded as
+  `policy_denied` instead of reaching audit as `no_matching_grant`.
+- Implement `HostCeiling` over the remaining judgment checks so they stop being
   a second enforcement point. Separate the three things currently bundled as
   "judgment", because they do not belong in the same place:
   - The **precedent mechanism** — fingerprint a request shape, match it against
