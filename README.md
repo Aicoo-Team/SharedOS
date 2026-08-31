@@ -309,6 +309,7 @@ transition are documented in the
 - [ADR 0016: Expiry is instant-bound, revocation is snapshot-bound](docs/adr/0016-expiry-is-instant-bound.md)
 - [ADR 0017: What a driver may declare about its own turn](docs/adr/0017-driver-declared-turn-control.md)
 - [ADR 0018: Escalation over MCP is recovered from the call, not returned by it](docs/adr/0018-escalation-over-mcp.md)
+- [ADR 0019: An escalation names the authority it needs](docs/adr/0019-escalation-names-the-authority-it-needs.md)
 
 ## License
 
