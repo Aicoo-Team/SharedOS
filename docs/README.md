@@ -140,6 +140,7 @@ is the boundary between them and the agents that act on them.
 - [ADR 0018: Escalation over MCP is recovered from the call, not returned by it](adr/0018-escalation-over-mcp.md)
 - [ADR 0019: An escalation names the authority it needs](adr/0019-escalation-names-the-authority-it-needs.md)
 - [ADR 0020: The host ceiling is a port, not a convention](adr/0020-host-ceiling-is-a-port.md)
+- [ADR 0021: Every refusal reaches audit, and the record names the boundary](adr/0021-every-refusal-reaches-audit.md)
 
 ## Project governance
 

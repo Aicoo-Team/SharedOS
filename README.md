@@ -310,6 +310,8 @@ transition are documented in the
 - [ADR 0017: What a driver may declare about its own turn](docs/adr/0017-driver-declared-turn-control.md)
 - [ADR 0018: Escalation over MCP is recovered from the call, not returned by it](docs/adr/0018-escalation-over-mcp.md)
 - [ADR 0019: An escalation names the authority it needs](docs/adr/0019-escalation-names-the-authority-it-needs.md)
+- [ADR 0020: The host ceiling is a port, not a convention](docs/adr/0020-host-ceiling-is-a-port.md)
+- [ADR 0021: Every refusal reaches audit, and the record names the boundary](docs/adr/0021-every-refusal-reaches-audit.md)
 
 ## License
 
