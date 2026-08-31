@@ -362,13 +362,11 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
   {
     id: "replay-freshness",
     move: canonicalMove("replay_freshness"),
-    notImplemented:
-      "SharedOS has no freshness port. A call carries its own instant and identifiers and nothing rejects one for having been seen before, so a replay is indistinguishable from a repeat.",
     conditions: [
       {
-        id: "declared",
+        id: "baseline",
         description:
-          "Would arm a recorded turn, then re-issue its calls verbatim against a host that tracks what it has already accepted.",
+          "The world as issued. A turn has two instants -- admission and operation -- and the kernel refuses a call whose declared instant lies outside that window. The replayed call differs from the control in its instant alone, so the denial is the freshness check and nothing else. The instant is the freshness anchor rather than the call id, because an id is presenter-chosen and carries nothing a kernel could trust.",
         world: {},
       },
     ],

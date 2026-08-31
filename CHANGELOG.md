@@ -96,6 +96,18 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- Call freshness, instant-bound and turn-scoped: inside an open turn,
+  `SharedOSKernel.invokeTool` refuses a call whose `requestedAt` predates the
+  turn's authority resolution or postdates the operation instant, as
+  `stale_request`. Identifiers are deliberately not deduplicated — a call id is
+  presenter-chosen and model APIs reuse them — and bare kernel calls (the HTTP
+  surface) are exempt, because without a turn the window degenerates to a
+  point no remote clock could hit. The conformance manifest's
+  `replay_freshness` row is implemented; no declared, unimplemented rows
+  remain. Hosts updating: a custom runtime that stamps calls with invented
+  instants will now be refused inside turns — stamp the turn context's own.
+  See ADR 0020.
+
 - Typed governed views: a `Capability` may declare a named view with a field
   list, and then authorizes that view of its resource and nothing rawer. A raw
   read whose only covering authority is view-bound is refused `view_required`

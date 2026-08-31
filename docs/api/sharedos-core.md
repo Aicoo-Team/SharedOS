@@ -671,7 +671,7 @@ Defined in: packages/core/src/resource-registry.ts:34
 
 ### SharedOSKernel
 
-Defined in: packages/core/src/kernel.ts:126
+Defined in: packages/core/src/kernel.ts:127
 
 Host-neutral facade for every permission-controlled SharedOS operation.
 AccessContext is a trusted host-created boundary; never construct it from an
@@ -683,7 +683,7 @@ unverified request body.
 
 > **new SharedOSKernel**(`options`): [`SharedOSKernel`](#sharedoskernel)
 
-Defined in: packages/core/src/kernel.ts:142
+Defined in: packages/core/src/kernel.ts:143
 
 ###### Parameters
 
@@ -701,7 +701,7 @@ Defined in: packages/core/src/kernel.ts:142
 
 > **admitTurn**(`context`, `agent`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}\>
 
-Defined in: packages/core/src/kernel.ts:250
+Defined in: packages/core/src/kernel.ts:251
 
 Consume permission to invoke exactly one target agent turn.
 
@@ -729,7 +729,7 @@ Consume permission to invoke exactly one target agent turn.
 
 > **authorize**(`context`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}\>
 
-Defined in: packages/core/src/kernel.ts:234
+Defined in: packages/core/src/kernel.ts:235
 
 ###### Parameters
 
@@ -755,7 +755,7 @@ Defined in: packages/core/src/kernel.ts:234
 
 > **invokeResource**(`context`, `request`, `options?`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: packages/core/src/kernel.ts:784
+Defined in: packages/core/src/kernel.ts:799
 
 ###### Parameters
 
@@ -781,7 +781,7 @@ Defined in: packages/core/src/kernel.ts:784
 
 > **invokeTool**(`context`, `call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: packages/core/src/kernel.ts:476
+Defined in: packages/core/src/kernel.ts:477
 
 Re-authorize and dispatch one tool call.
 
@@ -820,7 +820,7 @@ SharedOS. Both spans exist or neither does.
 
 > **listPublishedTools**(`context`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
-Defined in: packages/core/src/kernel.ts:388
+Defined in: packages/core/src/kernel.ts:389
 
 The effective catalogue as an external harness receives it.
 
@@ -859,7 +859,7 @@ harness would have to interpret.
 
 > **listToolNamespaces**(`context`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: packages/core/src/kernel.ts:396
+Defined in: packages/core/src/kernel.ts:397
 
 ###### Parameters
 
@@ -884,7 +884,7 @@ Defined in: packages/core/src/kernel.ts:396
 
 > **listTools**(`context`, `options?`): `Promise`\<readonly `object`[]\>
 
-Defined in: packages/core/src/kernel.ts:320
+Defined in: packages/core/src/kernel.ts:321
 
 ###### Parameters
 
@@ -909,7 +909,7 @@ Defined in: packages/core/src/kernel.ts:320
 
 > **openTurnAuthority**(`context`, `options?`): `Promise`\<[`TurnAuthorityScope`](#turnauthorityscope)>\>
 
-Defined in: packages/core/src/kernel.ts:198
+Defined in: packages/core/src/kernel.ts:199
 
 Resolve the authority one turn will be decided against, and hold it.
 
@@ -950,7 +950,7 @@ lease resolves its own authority, which is a turn of one operation.
 
 > **recordEscalation**(`context`, `reason`, `options?`): `Promise`\<\{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}\>
 
-Defined in: packages/core/src/kernel.ts:286
+Defined in: packages/core/src/kernel.ts:287
 
 Record that a turn stopped and asked a human to decide.
 
@@ -988,7 +988,7 @@ deliberately no path from here back into the running turn.
 
 > **registerResourceProvider**(`provider`): `void`
 
-Defined in: packages/core/src/kernel.ts:162
+Defined in: packages/core/src/kernel.ts:163
 
 ###### Parameters
 
@@ -1004,7 +1004,7 @@ Defined in: packages/core/src/kernel.ts:162
 
 > **registerTool**(`handler`): `void`
 
-Defined in: packages/core/src/kernel.ts:166
+Defined in: packages/core/src/kernel.ts:167
 
 ###### Parameters
 
@@ -1020,7 +1020,7 @@ Defined in: packages/core/src/kernel.ts:166
 
 > **registerToolProvider**(`provider`): `void`
 
-Defined in: packages/core/src/kernel.ts:170
+Defined in: packages/core/src/kernel.ts:171
 
 ###### Parameters
 
@@ -1036,7 +1036,7 @@ Defined in: packages/core/src/kernel.ts:170
 
 > **sendMessage**(`context`, `envelope`, `options?`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: packages/core/src/kernel.ts:949
+Defined in: packages/core/src/kernel.ts:964
 
 ###### Parameters
 
@@ -1075,7 +1075,7 @@ Defined in: packages/core/src/kernel.ts:949
 
 > **updateToolNamespaces**(`context`, `update`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: packages/core/src/kernel.ts:419
+Defined in: packages/core/src/kernel.ts:420
 
 ###### Parameters
 
@@ -1694,13 +1694,13 @@ Defined in: packages/core/src/authorization.ts:74
 
 ### KernelOperationOptions
 
-Defined in: packages/core/src/kernel.ts:96
+Defined in: packages/core/src/kernel.ts:97
 
 #### Properties
 
 | Property                               | Modifier   | Type          | Defined in                     |
 | -------------------------------------- | ---------- | ------------- | ------------------------------ |
-| <a id="property-signal"></a> `signal?` | `readonly` | `AbortSignal` | packages/core/src/kernel.ts:97 |
+| <a id="property-signal"></a> `signal?` | `readonly` | `AbortSignal` | packages/core/src/kernel.ts:98 |
 
 ---
 
@@ -1947,25 +1947,25 @@ Defined in: packages/core/src/resource-registry.ts:28
 
 ### SharedOSKernelOptions
 
-Defined in: packages/core/src/kernel.ts:68
+Defined in: packages/core/src/kernel.ts:69
 
 #### Properties
 
 | Property                                                                     | Modifier   | Type                                                        | Description                                                                                                                                                                                                                                               | Defined in                     |
 | ---------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| <a id="property-audit"></a> `audit?`                                         | `readonly` | [`AuditSink`](#auditsink)                                   | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:83 |
-| <a id="property-authorizer"></a> `authorizer?`                               | `readonly` | [`CapabilityAuthorizer`](#capabilityauthorizer)             | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:74 |
-| <a id="property-createmessageid"></a> `createMessageId?`                     | `readonly` | (`context`, `call`) => `string`                             | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:82 |
-| <a id="property-grantsource"></a> `grantSource`                              | `readonly` | [`GrantSource`](#grantsource)                               | The trusted boundary that loads authority. It is required: a kernel with no authoritative grant source can only fail closed.                                                                                                                              | packages/core/src/kernel.ts:73 |
-| <a id="property-messagecapabilityresolver"></a> `messageCapabilityResolver?` | `readonly` | [`MessageCapabilityResolver`](#messagecapabilityresolver)   | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:81 |
-| <a id="property-messagerequestrouter"></a> `messageRequestRouter?`           | `readonly` | [`MessageRequestRouter`](#messagerequestrouter)             | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:80 |
-| <a id="property-messagetransport"></a> `messageTransport?`                   | `readonly` | [`MessageTransport`](#messagetransport)                     | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:79 |
-| <a id="property-onauditerror"></a> `onAuditError?`                           | `readonly` | (`error`, `event`) => `void` \| `Promise`\<`void`\>         | Notification for audit failures that occur after a side effect.                                                                                                                                                                                           | packages/core/src/kernel.ts:85 |
-| <a id="property-resources"></a> `resources?`                                 | `readonly` | [`ResourceProviderRegistry`](#resourceproviderregistry)     | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:75 |
-| <a id="property-spans"></a> `spans?`                                         | `readonly` | [`SpanSink`](#spansink)                                     | Where the cost of enforcement is reported, when a host is measuring it. Absent by default and absent in every production path that does not ask for it, which is what keeps a measured run and an unmeasured one the same run. See [SpanSink](#spansink). | packages/core/src/kernel.ts:93 |
-| <a id="property-toolnamespacesettings"></a> `toolNamespaceSettings?`         | `readonly` | [`ToolNamespaceSettingsStore`](#toolnamespacesettingsstore) | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:78 |
-| <a id="property-toolproviders"></a> `toolProviders?`                         | `readonly` | readonly [`ContextToolProvider`](#contexttoolprovider)[]    | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:77 |
-| <a id="property-tools"></a> `tools?`                                         | `readonly` | [`ToolRegistry`](#toolregistry)                             | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:76 |
+| <a id="property-audit"></a> `audit?`                                         | `readonly` | [`AuditSink`](#auditsink)                                   | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:84 |
+| <a id="property-authorizer"></a> `authorizer?`                               | `readonly` | [`CapabilityAuthorizer`](#capabilityauthorizer)             | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:75 |
+| <a id="property-createmessageid"></a> `createMessageId?`                     | `readonly` | (`context`, `call`) => `string`                             | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:83 |
+| <a id="property-grantsource"></a> `grantSource`                              | `readonly` | [`GrantSource`](#grantsource)                               | The trusted boundary that loads authority. It is required: a kernel with no authoritative grant source can only fail closed.                                                                                                                              | packages/core/src/kernel.ts:74 |
+| <a id="property-messagecapabilityresolver"></a> `messageCapabilityResolver?` | `readonly` | [`MessageCapabilityResolver`](#messagecapabilityresolver)   | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:82 |
+| <a id="property-messagerequestrouter"></a> `messageRequestRouter?`           | `readonly` | [`MessageRequestRouter`](#messagerequestrouter)             | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:81 |
+| <a id="property-messagetransport"></a> `messageTransport?`                   | `readonly` | [`MessageTransport`](#messagetransport)                     | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:80 |
+| <a id="property-onauditerror"></a> `onAuditError?`                           | `readonly` | (`error`, `event`) => `void` \| `Promise`\<`void`\>         | Notification for audit failures that occur after a side effect.                                                                                                                                                                                           | packages/core/src/kernel.ts:86 |
+| <a id="property-resources"></a> `resources?`                                 | `readonly` | [`ResourceProviderRegistry`](#resourceproviderregistry)     | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:76 |
+| <a id="property-spans"></a> `spans?`                                         | `readonly` | [`SpanSink`](#spansink)                                     | Where the cost of enforcement is reported, when a host is measuring it. Absent by default and absent in every production path that does not ask for it, which is what keeps a measured run and an unmeasured one the same run. See [SpanSink](#spansink). | packages/core/src/kernel.ts:94 |
+| <a id="property-toolnamespacesettings"></a> `toolNamespaceSettings?`         | `readonly` | [`ToolNamespaceSettingsStore`](#toolnamespacesettingsstore) | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:79 |
+| <a id="property-toolproviders"></a> `toolProviders?`                         | `readonly` | readonly [`ContextToolProvider`](#contexttoolprovider)[]    | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:78 |
+| <a id="property-tools"></a> `tools?`                                         | `readonly` | [`ToolRegistry`](#toolregistry)                             | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:77 |
 
 ---
 
@@ -2360,7 +2360,7 @@ Defined in: packages/core/src/authority.ts:77
 
 > `const` **AGENT\_INVOKE\_ACTION**: `"invoke"` = `"invoke"`
 
-Defined in: packages/core/src/kernel.ts:101
+Defined in: packages/core/src/kernel.ts:102
 
 ---
 
@@ -2399,7 +2399,7 @@ The longest ancestor chain SharedOS will walk before failing closed.
 
 > `const` **EXECUTION\_NAMESPACE**: `"sharedos.execution"` = `"sharedos.execution"`
 
-Defined in: packages/core/src/kernel.ts:100
+Defined in: packages/core/src/kernel.ts:101
 
 ---
 
@@ -2560,7 +2560,7 @@ Stable, segment-safe grant path for recipient-scoped messaging.
 
 > **agentExecutionCapability**(`agent`, `owner`): `object`
 
-Defined in: packages/core/src/kernel.ts:103
+Defined in: packages/core/src/kernel.ts:104
 
 #### Parameters
 
