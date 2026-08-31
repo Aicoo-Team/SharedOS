@@ -204,6 +204,10 @@ const kernel = new SharedOSKernel({
   messageTransport: durableMessageLog,
   messageRequestRouter: durableReplyRouter,
   createMessageId: () => crypto.randomUUID(),
+  // Where a throw from any of the ports above goes. Without it, one of them
+  // failing is reported to the agent as a reason code and to you as nothing;
+  // see [Diagnosing a contained throw](errors.md#diagnosing-a-contained-throw).
+  onProviderError: (error, op) => logger.error({ err: error, ...op }, op.reasonCode),
 });
 
 kernel.registerResourceProvider(files);
@@ -444,6 +448,10 @@ Before production use, the host must provide:
 - isolated file and tool providers with cancellation-safe side effects;
 - durable tool namespace settings and credential isolation;
 - durable, append-only audit storage and operational alerting;
+- a diagnostic sink on `onProviderError`, so a failing provider, transport, or
+  router is debuggable: the kernel answers the agent with a reason code and
+  keeps the thrown error off the wire deliberately, which leaves that hook as
+  the only place the cause appears;
 - replay and idempotency controls around externally visible mutations;
 - model-driver limits, product scheduling, retries, budgets, and stopping;
 - consent, policy administration, retention, deletion, and incident response.

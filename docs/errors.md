@@ -117,20 +117,20 @@ impermissible.
 
 ## Tool invocation
 
-| Code                                 | Status | Means                                                                                                |
-| ------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------- |
-| `tool_unavailable`                   | denied | Not registered, namespace off, or not discoverable — see above                                       |
-| `no_matching_grant`                  | denied | The exact argument-selected resource is not authorized                                               |
-| `invalid_request`                    | denied | The resolved requirement names a world other than the caller's own                                   |
-| `invalid_tool_arguments`             | failed | `parseArguments` rejected the call                                                                   |
-| `invalid_tool_requirement`           | failed | `resolveRequirement` returned something outside the declared ceiling                                 |
-| `tool_requirement_resolution_failed` | failed | `resolveRequirement` threw                                                                           |
-| `tool_catalog_unavailable`           | failed | A `ContextToolProvider` threw. The catalog is never partially returned                               |
-| `tool_execution_failed`              | failed | Your `invoke` threw                                                                                  |
-| `invalid_tool_result`                | failed | Your handler returned something that is not a `ToolResult`                                           |
-| `trace_mismatch`                     | denied | `call.traceId` does not match the context                                                            |
-| `step_limit_exceeded`                | denied | The call names a step at or past the envelope's `maxSteps`. This call is refused; the turn continues |
-| `tool_call_limit_exceeded`           | denied | The envelope's `maxToolCalls` is spent. This call is refused; the turn continues                     |
+| Code                                 | Status | Means                                                                                                                                       |
+| ------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tool_unavailable`                   | denied | Not registered, namespace off, or not discoverable — see above                                                                              |
+| `no_matching_grant`                  | denied | The exact argument-selected resource is not authorized                                                                                      |
+| `invalid_request`                    | denied | The resolved requirement names a world other than the caller's own                                                                          |
+| `invalid_tool_arguments`             | failed | `parseArguments` rejected the call. The thrown error goes to `onProviderError` and nowhere else (below)                                     |
+| `invalid_tool_requirement`           | failed | `resolveRequirement` returned something outside the declared ceiling                                                                        |
+| `tool_requirement_resolution_failed` | failed | `resolveRequirement` threw. The thrown error goes to `onProviderError` and nowhere else (below)                                             |
+| `tool_catalog_unavailable`           | failed | A `ContextToolProvider` threw. The catalog is never partially returned. The thrown error goes to `onProviderError` and nowhere else (below) |
+| `tool_execution_failed`              | failed | Your `invoke` threw. The thrown error goes to `onProviderError` and nowhere else (below)                                                    |
+| `invalid_tool_result`                | failed | Your handler returned something that is not a `ToolResult`                                                                                  |
+| `trace_mismatch`                     | denied | `call.traceId` does not match the context                                                                                                   |
+| `step_limit_exceeded`                | denied | The call names a step at or past the envelope's `maxSteps`. This call is refused; the turn continues                                        |
+| `tool_call_limit_exceeded`           | denied | The envelope's `maxToolCalls` is spent. This call is refused; the turn continues                                                            |
 
 A budget refuses a call; it does not end a turn. The envelope answers the call
 that crosses `maxSteps` or `maxToolCalls` with `denied`, the runtime receives an
@@ -145,22 +145,22 @@ for `tool_unavailable`.
 | Code                          | Status | Means                                                                                          |
 | ----------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
 | `resource_provider_not_found` | failed | No provider registered for that namespace                                                      |
-| `resource_execution_failed`   | failed | Your provider threw                                                                            |
+| `resource_execution_failed`   | failed | Your provider threw. The thrown error goes to `onProviderError` and nowhere else (below)       |
 | `invalid_resource_result`     | failed | Your provider returned a malformed `ResourceResult`, or one whose `operationId` does not match |
 
 ## Messages
 
-| Code                                    | Status | Means                                                               |
-| --------------------------------------- | ------ | ------------------------------------------------------------------- |
-| `message_transport_not_configured`      | failed | No `messageTransport` was supplied to the kernel                    |
-| `message_context_mismatch`              | denied | The envelope's sender, purpose, or trace disagrees with the context |
-| `message_requirement_resolution_failed` | failed | The capability resolver threw                                       |
-| `message_delivery_failed`               | failed | Your transport threw                                                |
-| `invalid_message_receipt`               | failed | Your transport returned a malformed delivery result                 |
-| `message_request_not_prepared`          | failed | The request tool did not prepare the authorized call                |
-| `message_request_not_accepted`          | failed | The transport did not accept the request                            |
-| `message_reply_resolution_failed`       | failed | The host router could not resolve the durable reply                 |
-| `invalid_message_reply`                 | failed | The resolved reply did not preserve request context                 |
+| Code                                    | Status | Means                                                                                                                    |
+| --------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `message_transport_not_configured`      | failed | No `messageTransport` was supplied to the kernel                                                                         |
+| `message_context_mismatch`              | denied | The envelope's sender, purpose, or trace disagrees with the context                                                      |
+| `message_requirement_resolution_failed` | failed | The capability resolver threw. The thrown error goes to `onProviderError` and nowhere else (below)                       |
+| `message_delivery_failed`               | failed | Your transport threw. The thrown error goes to `onProviderError` and nowhere else (below)                                |
+| `invalid_message_receipt`               | failed | Your transport returned a malformed delivery result                                                                      |
+| `message_request_not_prepared`          | failed | The request tool did not prepare the authorized call                                                                     |
+| `message_request_not_accepted`          | failed | The transport did not accept the request                                                                                 |
+| `message_reply_resolution_failed`       | failed | The host router could not resolve the durable reply. The thrown error goes to `onProviderError` and nowhere else (below) |
+| `invalid_message_reply`                 | failed | The resolved reply did not preserve request context                                                                      |
 
 ## Turns
 
@@ -179,16 +179,59 @@ for `tool_unavailable`.
 | `tool_unavailable`         | failed    | A plugin returned `escalate` on a turn whose catalogue does not offer `sharedos.escalate`. The envelope refuses the outcome as it refuses a call outside the catalogue, under the same code; nothing reaches the kernel and nothing is audited (ADR 0017) |
 | `turn_cancelled`           | cancelled | Deadline expired, or the host aborted                                                                                                                                                                                                                     |
 
-### Diagnosing a contained throw
+## Diagnosing a contained throw
 
-`runtime_failed` and `driver_failed` are the whole of what a caller, a record,
-and an event stream are told, and each says a turn stopped rather than why. That
-is deliberate: a `ProtocolError.message` reaches the model, and an
-`ExecutionEvent` reaches an `ExecutionRecord`, which travels further than an
-audit sink — and a thrown message may carry anything the thrower had in scope.
+Every code in this document is a bounded fact: it says an operation stopped and
+does not say why. That is deliberate. A `ProtocolError.message` reaches the
+model, an `ExecutionEvent` reaches an `ExecutionRecord` that travels further than
+an audit sink, and audit has never carried call data — while a thrown message
+may hold arguments, rows, or credentials the thrower had in scope.
 
-The error itself is handed to `onTurnError`, whole and unwrapped, for a host to
-log:
+So the error itself goes to a host-side sink instead, whole and unwrapped. There
+are two, one per layer that contains a throw, and neither changes anything a
+caller can see.
+
+**`SharedOSKernelOptions.onProviderError`** — a provider, tool handler,
+transport, or router threw, and the kernel answered with a reason code:
+
+```ts
+new SharedOSKernel({
+  grantSource,
+  onProviderError: (error, op) =>
+    logger.error({ err: error, ...op }, `${op.kind} port failed: ${op.reasonCode}`),
+});
+```
+
+One hook covers every such port. `op.kind` is `"tool"`, `"tool_catalog"`,
+`"resource"`, or `"message"`, so a host that wants to route a transport failure
+differently branches on it — and a port added later reaches the hook already
+installed. `op.reasonCode` is the code the kernel returned in its place and the
+one the matching audit event carries under `reason`, so a log line joins to
+audit without correlating on timing. It is usually also what the agent was told;
+the exception is a transport failure under the message-request tool, where audit
+records `message_delivery_failed` and the tool result says
+`message_request_not_accepted`. Both carry the same `operationId`.
+
+`kind` follows the entry point rather than the port where the two differ: a
+`MessageCapabilityResolver` that throws is `message` under `sendMessage` and
+`tool` under the message-request tool, which is a tool call resolving its
+requirement. Match on `reasonCode` to watch one port.
+
+The error arrives as thrown, with one exception: when a `ContextToolProvider`'s
+`listTools` throws, the kernel replaces it with one catalogue-failure sentence
+every caller can match on, and the provider's error survives as that wrapper's
+`cause`. A `tool_catalog` report from another origin — a returned handler the
+registry refuses, which throws a named `DuplicateRegistrationError` or
+`TypeError` a caller can branch on — carries that error unwrapped and has no
+`cause`. Log `error` and let a formatter walk it.
+
+The same provider failure reaches a different hook depending on who asked. A
+throw from `listTools` during a turn is contained by the execution envelope as
+`runtime_failed` and reported to `onTurnError`, because the turn body calls
+`listTools` itself; only a call made through `invokeTool` reaches
+`onProviderError` as `tool_catalog_unavailable`.
+
+**`SharedOSExecutorOptions.onTurnError`** — a turn ended on a throw:
 
 ```ts
 new SharedOSExecutor(kernel, plugin, {
@@ -197,19 +240,39 @@ new SharedOSExecutor(kernel, plugin, {
 });
 ```
 
-Two layers contain a throw and both take the option, because only one of them
-catches any given one. `StandardRuntime` catches its driver's and ends the turn
-`driver_failed`, which is a cooperative outcome the envelope never sees as an
-exception; `SharedOSExecutor` catches everything else and ends it
-`runtime_failed`. `TurnExecutor` forwards the option to both, so one sink covers
-both.
+`StandardRuntime` takes the same option, because only one of the two catches any
+given throw: a driver's becomes the loop's cooperative `driver_failed` outcome,
+which the envelope never sees as an exception, and the executor catches
+everything else as `runtime_failed`. `TurnExecutor` forwards to both, so one sink
+covers both.
 
 Read the stack. `runtime_failed` is also what a throw from `openTurnAuthority`,
 `admitTurn`, or `listTools` ends a turn as, so the code alone does not say
-whether the plugin or one of your own ports failed; the stack does. The hook is
-observational — one that throws is ignored, and a turn behaves identically with
-none installed — and a cancelled turn never reaches it, because a deadline is
-the envelope's own decision rather than a defect.
+whether the plugin or one of your own ports failed; the stack does.
+
+Both hooks are observational and synchronous. One that throws is ignored, a
+component with none installed behaves identically, and neither is awaited —
+unlike `onAuditError`, which fires after the side effect where there is nothing
+left to hold up, these fire mid-flight with a result still to construct. A
+cancelled operation is not reported: every site that awaits a host port re-throws
+the abort ahead of the containment, and the three that do not — an argument
+parser, a requirement resolver, a message capability resolver — wrap synchronous
+code that is never handed the signal, so an abort cannot be what made them throw.
+A caller that stopped the work is not a defect.
+
+Still uncovered: the four authority ports discard a throw the same way, and they
+are not equally bad. `GrantSource`, `GrantUsageStore`, and
+`DelegationChainResolver` at least fail closed under their own codes —
+`authority_unavailable`, `usage_store_unavailable`,
+`delegation_chain_unverified`, each marked `failClosed` — so the failure is
+classified even though the cause is gone.
+
+`CapabilityGrantVerifier` is the one to watch. A throw from `verify` is treated
+as `false` (reason 8 under
+[`no_matching_grant`](#when-you-get-no_matching_grant-and-expected-otherwise)), so
+the grant becomes invisible and the denial reads `no_matching_grant` — not a
+`failClosed` code, and indistinguishable from an actor who was simply never
+granted the capability. A broken verifier looks exactly like correct enforcement.
 
 ## Adapters and the MCP harness path
 

@@ -671,7 +671,7 @@ Defined in: [packages/core/src/resource-registry.ts:26](https://github.com/Aicoo
 
 ### SharedOSKernel
 
-Defined in: [packages/core/src/kernel.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L125)
+Defined in: [packages/core/src/kernel.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L143)
 
 Host-neutral facade for every permission-controlled SharedOS operation.
 AccessContext is a trusted host-created boundary; never construct it from an
@@ -683,7 +683,7 @@ unverified request body.
 
 > **new SharedOSKernel**(`options`): [`SharedOSKernel`](#sharedoskernel)
 
-Defined in: [packages/core/src/kernel.ts:141](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L141)
+Defined in: [packages/core/src/kernel.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L160)
 
 ###### Parameters
 
@@ -701,7 +701,7 @@ Defined in: [packages/core/src/kernel.ts:141](https://github.com/Aicoo-Team/Shar
 
 > **admitTurn**(`context`, `agent`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:249](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L249)
+Defined in: [packages/core/src/kernel.ts:269](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L269)
 
 Consume permission to invoke exactly one target agent turn.
 
@@ -729,7 +729,7 @@ Consume permission to invoke exactly one target agent turn.
 
 > **authorize**(`context`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:233](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L233)
+Defined in: [packages/core/src/kernel.ts:253](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L253)
 
 ###### Parameters
 
@@ -755,7 +755,7 @@ Defined in: [packages/core/src/kernel.ts:233](https://github.com/Aicoo-Team/Shar
 
 > **invokeResource**(`context`, `request`, `options?`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:731](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L731)
+Defined in: [packages/core/src/kernel.ts:782](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L782)
 
 ###### Parameters
 
@@ -781,7 +781,7 @@ Defined in: [packages/core/src/kernel.ts:731](https://github.com/Aicoo-Team/Shar
 
 > **invokeTool**(`context`, `call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:475](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L475)
+Defined in: [packages/core/src/kernel.ts:495](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L495)
 
 Re-authorize and dispatch one tool call.
 
@@ -820,7 +820,7 @@ SharedOS. Both spans exist or neither does.
 
 > **listPublishedTools**(`context`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:387](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L387)
+Defined in: [packages/core/src/kernel.ts:407](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L407)
 
 The effective catalogue as an external harness receives it.
 
@@ -859,7 +859,7 @@ harness would have to interpret.
 
 > **listToolNamespaces**(`context`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:395](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L395)
+Defined in: [packages/core/src/kernel.ts:415](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L415)
 
 ###### Parameters
 
@@ -884,7 +884,7 @@ Defined in: [packages/core/src/kernel.ts:395](https://github.com/Aicoo-Team/Shar
 
 > **listTools**(`context`, `options?`): `Promise`\<readonly `object`[]\>
 
-Defined in: [packages/core/src/kernel.ts:319](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L319)
+Defined in: [packages/core/src/kernel.ts:339](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L339)
 
 ###### Parameters
 
@@ -909,7 +909,7 @@ Defined in: [packages/core/src/kernel.ts:319](https://github.com/Aicoo-Team/Shar
 
 > **openTurnAuthority**(`context`, `options?`): `Promise`\<[`TurnAuthorityScope`](#turnauthorityscope)>\>
 
-Defined in: [packages/core/src/kernel.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L197)
+Defined in: [packages/core/src/kernel.ts:217](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L217)
 
 Resolve the authority one turn will be decided against, and hold it.
 
@@ -950,7 +950,7 @@ lease resolves its own authority, which is a turn of one operation.
 
 > **recordEscalation**(`context`, `reason`, `options?`): `Promise`\<\{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:285](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L285)
+Defined in: [packages/core/src/kernel.ts:305](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L305)
 
 Record that a turn stopped and asked a human to decide.
 
@@ -988,7 +988,7 @@ deliberately no path from here back into the running turn.
 
 > **registerResourceProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:161](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L161)
+Defined in: [packages/core/src/kernel.ts:181](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L181)
 
 ###### Parameters
 
@@ -1004,7 +1004,7 @@ Defined in: [packages/core/src/kernel.ts:161](https://github.com/Aicoo-Team/Shar
 
 > **registerTool**(`handler`): `void`
 
-Defined in: [packages/core/src/kernel.ts:165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L165)
+Defined in: [packages/core/src/kernel.ts:185](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L185)
 
 ###### Parameters
 
@@ -1020,7 +1020,7 @@ Defined in: [packages/core/src/kernel.ts:165](https://github.com/Aicoo-Team/Shar
 
 > **registerToolProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:169](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L169)
+Defined in: [packages/core/src/kernel.ts:189](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L189)
 
 ###### Parameters
 
@@ -1036,7 +1036,7 @@ Defined in: [packages/core/src/kernel.ts:169](https://github.com/Aicoo-Team/Shar
 
 > **sendMessage**(`context`, `envelope`, `options?`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:872](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L872)
+Defined in: [packages/core/src/kernel.ts:944](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L944)
 
 ###### Parameters
 
@@ -1075,7 +1075,7 @@ Defined in: [packages/core/src/kernel.ts:872](https://github.com/Aicoo-Team/Shar
 
 > **updateToolNamespaces**(`context`, `update`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:418](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L418)
+Defined in: [packages/core/src/kernel.ts:438](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L438)
 
 ###### Parameters
 
@@ -1693,13 +1693,13 @@ Defined in: [packages/core/src/authorization.ts:63](https://github.com/Aicoo-Tea
 
 ### KernelOperationOptions
 
-Defined in: [packages/core/src/kernel.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L95)
+Defined in: [packages/core/src/kernel.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L113)
 
 #### Properties
 
-| Property                               | Modifier   | Type          | Defined in                                                                                                         |
-| -------------------------------------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-signal"></a> `signal?` | `readonly` | `AbortSignal` | [packages/core/src/kernel.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L96) |
+| Property                               | Modifier   | Type          | Defined in                                                                                                           |
+| -------------------------------------- | ---------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-signal"></a> `signal?` | `readonly` | `AbortSignal` | [packages/core/src/kernel.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L114) |
 
 ---
 
@@ -1847,6 +1847,56 @@ Defined in: [packages/core/src/message-service.ts:28](https://github.com/Aicoo-T
 
 ---
 
+### ProviderErrorContext
+
+Defined in: [packages/core/src/diagnostics.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L71)
+
+What one contained throw was, in the kernel's own terms.
+
+`kind` is what lets a single hook stay honest across a growing set of ports.
+A host that wants to route a transport failure differently from a tool's
+branches on it, and gets that without SharedOS having guessed in advance which
+splits a host would want; a fifth port added later is covered by the hook
+every host already installed, where a fifth _option_ would be one nobody
+passes.
+
+`reasonCode` closes the loop, and is most of the value here. It is the code
+the kernel returned in place of the throw, and the same code the matching
+audit event carries under `reason`, so a host can join its own log line to
+audit without correlating on timing. Usually it is also what the agent was
+told; the exception is a transport failure under the message-request tool,
+where audit records `message_delivery_failed` and the tool result says
+`message_request_not_accepted`. Both records carry the same `operationId`.
+
+`kind` follows the _entry point_, not the port, where the two differ. A
+`MessageCapabilityResolver` that throws is `message` when the turn called
+`sendMessage` and `tool` when it went through the message-request tool, since
+that is a tool call resolving its requirement. A host watching one port
+should match on `reasonCode`, which is stable, rather than on `kind` alone.
+
+The rest is what the kernel knew at the point it caught: `traceId` and
+`namespaceId` always, and whichever of the operation's identifiers exist on
+that path. A message resolved outside a tool call names neither a call nor a
+tool; a resource names no tool.
+
+#### Properties
+
+| Property                                           | Modifier   | Type                                                                                                                                                                                                       | Description                           | Defined in                                                                                                                   |
+| -------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-action-2"></a> `action?`           | `readonly` | `string`                                                                                                                                                                                                   | -                                     | [packages/core/src/diagnostics.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L81) |
+| <a id="property-kind"></a> `kind`                  | `readonly` | [`ProviderErrorKind`](#providererrorkind)                                                                                                                                                                  | -                                     | [packages/core/src/diagnostics.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L72) |
+| <a id="property-namespaceid-1"></a> `namespaceId`  | `readonly` | `string`                                                                                                                                                                                                   | -                                     | [packages/core/src/diagnostics.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L76) |
+| <a id="property-operationid-1"></a> `operationId?` | `readonly` | `string`                                                                                                                                                                                                   | The call id, where the path has one.  | [packages/core/src/diagnostics.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L78) |
+| <a id="property-reasoncode"></a> `reasonCode`      | `readonly` | `string`                                                                                                                                                                                                   | The code the kernel returned instead. | [packages/core/src/diagnostics.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L74) |
+| <a id="property-resource-2"></a> `resource?`       | `readonly` | `object`                                                                                                                                                                                                   | -                                     | [packages/core/src/diagnostics.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L80) |
+| `resource.namespace`                               | `public`   | `string`                                                                                                                                                                                                   | -                                     | packages/contracts/dist/capability.d.ts:54                                                                                   |
+| `resource.owner?`                                  | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                     | packages/contracts/dist/capability.d.ts:55                                                                                   |
+| `resource.path`                                    | `public`   | `string`[]                                                                                                                                                                                                 | -                                     | packages/contracts/dist/capability.d.ts:53                                                                                   |
+| <a id="property-tool-1"></a> `tool?`               | `readonly` | `string`                                                                                                                                                                                                   | -                                     | [packages/core/src/diagnostics.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L79) |
+| <a id="property-traceid-1"></a> `traceId`          | `readonly` | `string`                                                                                                                                                                                                   | -                                     | [packages/core/src/diagnostics.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L75) |
+
+---
+
 ### ResolvedAuthority
 
 Defined in: [packages/core/src/authority.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L133)
@@ -1884,11 +1934,11 @@ Defined in: [packages/core/src/resource-registry.ts:10](https://github.com/Aicoo
 
 | Property                                          | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                                               |
 | ------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-action-2"></a> `action`           | `readonly` | `string`                                                                                                                                                                                                   | [packages/core/src/resource-registry.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L13) |
+| <a id="property-action-3"></a> `action`           | `readonly` | `string`                                                                                                                                                                                                   | [packages/core/src/resource-registry.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L13) |
 | <a id="property-input"></a> `input?`              | `readonly` | [`JsonValue`](sharedos-contracts.md#jsonvalue)                                                                                                                                                             | [packages/core/src/resource-registry.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L14) |
 | <a id="property-metadata-2"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | [packages/core/src/resource-registry.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L15) |
-| <a id="property-operationid-1"></a> `operationId` | `readonly` | `string`                                                                                                                                                                                                   | [packages/core/src/resource-registry.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L11) |
-| <a id="property-resource-2"></a> `resource`       | `readonly` | `object`                                                                                                                                                                                                   | [packages/core/src/resource-registry.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L12) |
+| <a id="property-operationid-2"></a> `operationId` | `readonly` | `string`                                                                                                                                                                                                   | [packages/core/src/resource-registry.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L11) |
+| <a id="property-resource-3"></a> `resource`       | `readonly` | `object`                                                                                                                                                                                                   | [packages/core/src/resource-registry.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L12) |
 | `resource.namespace`                              | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/capability.d.ts:54                                                                                               |
 | `resource.owner?`                                 | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/capability.d.ts:55                                                                                               |
 | `resource.path`                                   | `public`   | `string`[]                                                                                                                                                                                                 | packages/contracts/dist/capability.d.ts:53                                                                                               |
@@ -1945,25 +1995,26 @@ Defined in: [packages/core/src/resource-registry.ts:20](https://github.com/Aicoo
 
 ### SharedOSKernelOptions
 
-Defined in: [packages/core/src/kernel.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L67)
+Defined in: [packages/core/src/kernel.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L72)
 
 #### Properties
 
-| Property                                                                     | Modifier   | Type                                                        | Description                                                                                                                                                                                                                                               | Defined in                                                                                                         |
-| ---------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-audit"></a> `audit?`                                         | `readonly` | [`AuditSink`](#auditsink)                                   | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L82) |
-| <a id="property-authorizer"></a> `authorizer?`                               | `readonly` | [`CapabilityAuthorizer`](#capabilityauthorizer)             | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L73) |
-| <a id="property-createmessageid"></a> `createMessageId?`                     | `readonly` | (`context`, `call`) => `string`                             | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L81) |
-| <a id="property-grantsource"></a> `grantSource`                              | `readonly` | [`GrantSource`](#grantsource)                               | The trusted boundary that loads authority. It is required: a kernel with no authoritative grant source can only fail closed.                                                                                                                              | [packages/core/src/kernel.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L72) |
-| <a id="property-messagecapabilityresolver"></a> `messageCapabilityResolver?` | `readonly` | [`MessageCapabilityResolver`](#messagecapabilityresolver)   | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L80) |
-| <a id="property-messagerequestrouter"></a> `messageRequestRouter?`           | `readonly` | [`MessageRequestRouter`](#messagerequestrouter)             | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L79) |
-| <a id="property-messagetransport"></a> `messageTransport?`                   | `readonly` | [`MessageTransport`](#messagetransport)                     | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L78) |
-| <a id="property-onauditerror"></a> `onAuditError?`                           | `readonly` | (`error`, `event`) => `void` \| `Promise`\<`void`\>         | Notification for audit failures that occur after a side effect.                                                                                                                                                                                           | [packages/core/src/kernel.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L84) |
-| <a id="property-resources"></a> `resources?`                                 | `readonly` | [`ResourceProviderRegistry`](#resourceproviderregistry)     | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L74) |
-| <a id="property-spans"></a> `spans?`                                         | `readonly` | [`SpanSink`](#spansink)                                     | Where the cost of enforcement is reported, when a host is measuring it. Absent by default and absent in every production path that does not ask for it, which is what keeps a measured run and an unmeasured one the same run. See [SpanSink](#spansink). | [packages/core/src/kernel.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L92) |
-| <a id="property-toolnamespacesettings"></a> `toolNamespaceSettings?`         | `readonly` | [`ToolNamespaceSettingsStore`](#toolnamespacesettingsstore) | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L77) |
-| <a id="property-toolproviders"></a> `toolProviders?`                         | `readonly` | readonly [`ContextToolProvider`](#contexttoolprovider)[]    | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L76) |
-| <a id="property-tools"></a> `tools?`                                         | `readonly` | [`ToolRegistry`](#toolregistry)                             | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L75) |
+| Property                                                                     | Modifier   | Type                                                        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Defined in                                                                                                           |
+| ---------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-audit"></a> `audit?`                                         | `readonly` | [`AuditSink`](#auditsink)                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L87)   |
+| <a id="property-authorizer"></a> `authorizer?`                               | `readonly` | [`CapabilityAuthorizer`](#capabilityauthorizer)             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L78)   |
+| <a id="property-createmessageid"></a> `createMessageId?`                     | `readonly` | (`context`, `call`) => `string`                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L86)   |
+| <a id="property-grantsource"></a> `grantSource`                              | `readonly` | [`GrantSource`](#grantsource)                               | The trusted boundary that loads authority. It is required: a kernel with no authoritative grant source can only fail closed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [packages/core/src/kernel.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L77)   |
+| <a id="property-messagecapabilityresolver"></a> `messageCapabilityResolver?` | `readonly` | [`MessageCapabilityResolver`](#messagecapabilityresolver)   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L85)   |
+| <a id="property-messagerequestrouter"></a> `messageRequestRouter?`           | `readonly` | [`MessageRequestRouter`](#messagerequestrouter)             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L84)   |
+| <a id="property-messagetransport"></a> `messageTransport?`                   | `readonly` | [`MessageTransport`](#messagetransport)                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L83)   |
+| <a id="property-onauditerror"></a> `onAuditError?`                           | `readonly` | (`error`, `event`) => `void` \| `Promise`\<`void`\>         | Notification for audit failures that occur after a side effect.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | [packages/core/src/kernel.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L89)   |
+| <a id="property-onprovidererror"></a> `onProviderError?`                     | `readonly` | [`ProviderErrorReporter`](#providererrorreporter)           | Notification for a throw the kernel contained rather than propagated. A provider, tool handler, transport, or router that throws is answered with a fixed reason code, and until a host installs this the error itself is gone: `tool_execution_failed` says an operation stopped and does not say why. One hook covers every such port, and [ProviderErrorContext.kind](#property-kind) is what a host branches on if it wants to treat them differently. Synchronous, unlike [SharedOSKernelOptions.onAuditError](#property-onauditerror), and see [reportContainedError](#reportcontainederror) for why the two differ. | [packages/core/src/kernel.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L102) |
+| <a id="property-resources"></a> `resources?`                                 | `readonly` | [`ResourceProviderRegistry`](#resourceproviderregistry)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L79)   |
+| <a id="property-spans"></a> `spans?`                                         | `readonly` | [`SpanSink`](#spansink)                                     | Where the cost of enforcement is reported, when a host is measuring it. Absent by default and absent in every production path that does not ask for it, which is what keeps a measured run and an unmeasured one the same run. See [SpanSink](#spansink).                                                                                                                                                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L110) |
+| <a id="property-toolnamespacesettings"></a> `toolNamespaceSettings?`         | `readonly` | [`ToolNamespaceSettingsStore`](#toolnamespacesettingsstore) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L82)   |
+| <a id="property-toolproviders"></a> `toolProviders?`                         | `readonly` | readonly [`ContextToolProvider`](#contexttoolprovider)[]    | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L81)   |
+| <a id="property-tools"></a> `tools?`                                         | `readonly` | [`ToolRegistry`](#toolregistry)                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L80)   |
 
 ---
 
@@ -2259,6 +2310,65 @@ Defined in: [packages/core/src/delegation.ts:286](https://github.com/Aicoo-Team/
 
 ---
 
+### ProviderErrorKind
+
+> **ProviderErrorKind** = `"tool"` \| `"tool_catalog"` \| `"resource"` \| `"message"`
+
+Defined in: [packages/core/src/diagnostics.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L40)
+
+Which of the kernel's mediated operations a contained throw happened under.
+
+---
+
+### ProviderErrorReporter
+
+> **ProviderErrorReporter** = (`error`, `operation`) => `void`
+
+Defined in: [packages/core/src/diagnostics.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L115)
+
+A host's sink for a throw the kernel contained rather than propagated.
+
+A provider, tool handler, transport, or router that throws is answered with a
+fixed reason code and a fixed message: the operation fails closed and the
+agent is told a bounded fact about it. That is the right thing to put on the
+wire and the wrong place to put a stack, so the error itself comes here for a
+host's own logs, as thrown.
+
+One case is wrapped rather than as-thrown, and it is worth knowing which. When
+a `ContextToolProvider`'s `listTools` throws, the kernel replaces it with one
+catalogue-failure sentence -- every caller of the catalogue reads that one --
+and the provider's error becomes its `cause`. A `tool_catalog` report from any
+other origin, such as a returned handler the registry refuses, carries that
+error unwrapped and has no `cause`. Log `error` and let a formatter walk it;
+do not read `cause` on its own.
+
+It reaches nothing else. Audit records the outcome and the reason code and has
+never carried call data; a thrown message may contain arguments, rows, or
+credentials the thrower had in scope, and routing it into an audit sink or a
+protocol error would be a disclosure the rest of the design spends its effort
+preventing.
+
+Observational. One that throws is ignored, and a kernel with none installed
+takes the same decisions. A cancelled operation is not reported: every site
+that awaits a host port re-throws the abort ahead of the containment, and the
+three that do not -- an argument parser, a requirement resolver, a message
+capability resolver -- wrap synchronous code that is never handed the signal,
+so an abort cannot be what made them throw. A caller that stopped the work is
+not a defect to diagnose.
+
+#### Parameters
+
+| Parameter   | Type                                            |
+| ----------- | ----------------------------------------------- |
+| `error`     | `unknown`                                       |
+| `operation` | [`ProviderErrorContext`](#providererrorcontext) |
+
+#### Returns
+
+`void`
+
+---
+
 ### SpanAttributes
 
 > **SpanAttributes** = `Readonly`\<`Record`\<`string`, `string` \| `number` \| `boolean`>>\>\>
@@ -2343,7 +2453,7 @@ Defined in: [packages/core/src/authority.ts:79](https://github.com/Aicoo-Team/Sh
 
 > `const` **AGENT\_INVOKE\_ACTION**: `"invoke"` = `"invoke"`
 
-Defined in: [packages/core/src/kernel.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L100)
+Defined in: [packages/core/src/kernel.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L118)
 
 ---
 
@@ -2382,7 +2492,7 @@ The longest ancestor chain SharedOS will walk before failing closed.
 
 > `const` **EXECUTION\_NAMESPACE**: `"sharedos.execution"` = `"sharedos.execution"`
 
-Defined in: [packages/core/src/kernel.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L99)
+Defined in: [packages/core/src/kernel.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L117)
 
 ---
 
@@ -2415,7 +2525,7 @@ The largest authority set SharedOS will evaluate for one decision.
 
 > `const` **MESSAGE\_REQUEST\_TOOL\_DEFINITION**: [`ToolDefinition`](sharedos-contracts.md#tooldefinition)
 
-Defined in: [packages/core/src/message-tool.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-tool.ts#L24)
+Defined in: [packages/core/src/message-tool.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-tool.ts#L25)
 
 ---
 
@@ -2423,7 +2533,7 @@ Defined in: [packages/core/src/message-tool.ts:24](https://github.com/Aicoo-Team
 
 > `const` **MESSAGE\_REQUEST\_TOOL\_NAME**: `"messages.request"` = `"messages.request"`
 
-Defined in: [packages/core/src/message-tool.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-tool.ts#L22)
+Defined in: [packages/core/src/message-tool.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-tool.ts#L23)
 
 ---
 
@@ -2439,7 +2549,7 @@ Defined in: [packages/core/src/message-service.ts:13](https://github.com/Aicoo-T
 
 > `const` **MESSAGE\_TOOL\_NAMESPACE**: `"messages"` = `"messages"`
 
-Defined in: [packages/core/src/message-tool.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-tool.ts#L21)
+Defined in: [packages/core/src/message-tool.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-tool.ts#L22)
 
 ---
 
@@ -2545,7 +2655,7 @@ Stable, segment-safe grant path for recipient-scoped messaging.
 
 > **agentExecutionCapability**(`agent`, `owner`): `object`
 
-Defined in: [packages/core/src/kernel.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L102)
+Defined in: [packages/core/src/kernel.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L120)
 
 #### Parameters
 
@@ -3152,6 +3262,52 @@ unfixed value into `catalogHash`.
 ##### outputSchema?
 
 > `optional` **outputSchema?**: [`JsonObject`](sharedos-contracts.md#jsonobject)
+
+---
+
+### reportContainedError()
+
+> **reportContainedError**\<`Context`>\>(`report`, `error`, `context`): `void`
+
+Defined in: [packages/core/src/diagnostics.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L24)
+
+Call one diagnostic sink without letting it change what happened.
+
+Exported deliberately, and it is the guard rather than a convenience: a host
+or package offering a hook of this shape should not reimplement the swallow
+rule, because two implementations of one promise is how it stops being true
+in one of them. `@aicoo/sharedos-runtime` uses it for exactly that reason.
+
+The guard behind the synchronous "here is the error we contained" hooks --
+`SharedOSKernelOptions.onProviderError` and the runtime's `onTurnError` --
+generic over the context each one carries so there is one implementation of
+the rule rather than one per hook. A sink that throws is swallowed: a
+diagnostic that can turn one failure into two is a liability, and a host would
+be right to weigh installing it against the risk. There is no risk.
+
+Synchronous is the reason `onAuditError` is not among them and keeps a guard
+of its own. That one is awaited because it fires _after_ the side effect,
+where there is nothing left to hold up; every sink called through here fires
+mid-flight, with a result still to construct and return, so awaiting a host's
+logger would put its latency on the path of every failed call.
+
+#### Type Parameters
+
+| Type Parameter |
+| -------------- |
+| `Context`      |
+
+#### Parameters
+
+| Parameter | Type                                            |
+| --------- | ----------------------------------------------- |
+| `report`  | ((`error`, `context`) => `void`) \| `undefined` |
+| `error`   | `unknown`                                       |
+| `context` | `Context`                                       |
+
+#### Returns
+
+`void`
 
 ---
 

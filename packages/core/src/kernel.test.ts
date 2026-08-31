@@ -12,6 +12,7 @@ import type {
 import type { AuditEvent, AuditSink } from "./audit.js";
 import type { GrantSource } from "./authority.js";
 import { CapabilityAuthorizer, InMemoryGrantUsageStore } from "./authorization.js";
+import type { ProviderErrorContext, ProviderErrorReporter } from "./diagnostics.js";
 import { SharedOSKernel, type SharedOSKernelOptions } from "./kernel.js";
 import {
   addressPath,
@@ -19,7 +20,11 @@ import {
   type MessageTransport,
 } from "./message-service.js";
 import { MESSAGE_REQUEST_TOOL_DEFINITION, MESSAGE_REQUEST_TOOL_NAME } from "./message-tool.js";
-import type { ResourceInvocationRequest, ResourceProvider } from "./resource-registry.js";
+import {
+  ResourceProviderRegistry,
+  type ResourceInvocationRequest,
+  type ResourceProvider,
+} from "./resource-registry.js";
 import {
   applyToolNamespaceUpdate,
   type ToolNamespaceSettingsStore,
@@ -1518,5 +1523,409 @@ describe("SharedOSKernel messaging and audit", () => {
     });
     expect(invoke).toHaveBeenCalledOnce();
     expect(onAuditError).toHaveBeenCalledOnce();
+  });
+});
+
+describe("SharedOSKernel provider diagnostics", () => {
+  const SEARCH_GRANT = grant("grant-search", FILE_RESOURCE, ["search"]);
+
+  function reporter(): {
+    readonly onProviderError: ProviderErrorReporter;
+    readonly seen: { error: unknown; operation: ProviderErrorContext }[];
+  } {
+    const seen: { error: unknown; operation: ProviderErrorContext }[] = [];
+    return { onProviderError: (error, operation) => void seen.push({ error, operation }), seen };
+  }
+
+  it("hands a tool handler's throw to the host and puts none of it on the wire", async () => {
+    const thrown = new Error('postgres: relation "notes" does not exist');
+    const { onProviderError, seen } = reporter();
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([SEARCH_GRANT], {
+      onProviderError,
+      audit: { record: async (event) => void events.push(event) },
+    });
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      invoke: async () => {
+        throw thrown;
+      },
+    });
+
+    const result = await kernel.invokeTool(context(), toolCall());
+
+    // Whole and unwrapped: the stack is the only thing that says which provider
+    // failed and where, and a code cannot carry it.
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.error).toBe(thrown);
+    // `reasonCode` is what closes the loop -- it is exactly what the agent was
+    // told and exactly what audit recorded, so a host joins all three without
+    // correlating on timing.
+    expect(seen[0]?.operation).toEqual({
+      kind: "tool",
+      reasonCode: "tool_execution_failed",
+      traceId: "trace-1",
+      namespaceId: "world-alpha",
+      operationId: "call-1",
+      tool: FILE_TOOL.name,
+      resource: FILE_RESOURCE,
+      action: "search",
+    });
+    expect(result).toMatchObject({ status: "failed" });
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "tool_execution_failed",
+    );
+    // The join itself, which is the whole point of carrying `reasonCode`: the
+    // audit event for this operation records the same string the hook was
+    // given, so a host's log line and its audit trail meet without anyone
+    // correlating on timestamps.
+    expect(events.at(-1)).toMatchObject({
+      type: "tool.invoked",
+      reason: seen[0]?.operation.reasonCode,
+    });
+
+    // And nowhere else. Audit has never carried call data, and a thrown message
+    // may hold arguments, rows, or credentials the provider had in scope.
+    expect(JSON.stringify(result)).not.toContain("relation");
+    expect(JSON.stringify(events)).not.toContain("relation");
+  });
+
+  it("names the kind of port that failed, so one hook can be routed", async () => {
+    const { onProviderError, seen } = reporter();
+    const messagingResource: ResourceRef = {
+      namespace: "sharedos.messaging",
+      path: addressPath(RECEIVER),
+      owner: OWNER,
+    };
+    const resources = new ResourceProviderRegistry();
+    resources.register({
+      namespace: "files",
+      async invoke() {
+        throw new Error("blob store offline");
+      },
+    });
+    const kernel = kernelWith(
+      [
+        grant("grant-read", { ...FILE_RESOURCE, owner: OWNER }, ["read"]),
+        grant("grant-send", messagingResource, ["send"]),
+      ],
+      {
+        onProviderError,
+        resources,
+        messageTransport: {
+          async deliver() {
+            throw new Error("device unreachable");
+          },
+        },
+      },
+    );
+
+    await kernel.invokeResource(context(), {
+      operationId: "operation-1",
+      resource: { ...FILE_RESOURCE, owner: OWNER },
+      action: "read",
+    });
+    await kernel.sendMessage(context(), {
+      version: "1",
+      id: "message-1",
+      sender: ACTOR,
+      receiver: RECEIVER,
+      purpose: "prepare-update",
+      payload: { request: "Summarize the architecture" },
+      traceId: "trace-1",
+      createdAt: NOW,
+    });
+
+    // One hook, two ports, and the difference is data rather than a second
+    // option a host would have had to know to install. A fifth port added later
+    // reaches every host that installed this one.
+    expect(seen.map(({ operation }) => [operation.kind, operation.reasonCode])).toEqual([
+      ["resource", "resource_execution_failed"],
+      ["message", "message_delivery_failed"],
+    ]);
+    expect(seen[0]?.operation.operationId).toBe("operation-1");
+  });
+
+  it("carries a tool provider's own error under the catalogue failure it caused", async () => {
+    const thrown = new Error("notion: 401 unauthorized");
+    const { onProviderError, seen } = reporter();
+    const provider: ContextToolProvider = {
+      id: "notion",
+      async listTools() {
+        throw thrown;
+      },
+    };
+    const kernel = kernelWith([SEARCH_GRANT], { onProviderError, toolProviders: [provider] });
+
+    const result = await kernel.invokeTool(context(), toolCall());
+
+    expect(result.status).toBe("failed");
+    expect(seen[0]?.operation).toMatchObject({
+      kind: "tool_catalog",
+      reasonCode: "tool_catalog_unavailable",
+    });
+    // The kernel wraps a provider failure in one sentence every caller can read,
+    // which would have destroyed the only account of what actually broke. It is
+    // the `cause` instead, so the wrapper is what a caller matches on and the
+    // provider's error is what an operator reads.
+    expect((seen[0]?.error as Error).message).toMatch(/failed to resolve its catalog/u);
+    expect((seen[0]?.error as Error).cause).toBe(thrown);
+  });
+
+  it("is observational: a sink that throws changes nothing", async () => {
+    let called = false;
+    const kernel = kernelWith([SEARCH_GRANT], {
+      onProviderError: () => {
+        called = true;
+        throw new Error("the host's logger is down");
+      },
+    });
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      invoke: async () => {
+        throw new Error("provider failed");
+      },
+    });
+
+    // A diagnostic that can turn one failure into two is a liability, so the
+    // guarantee is that installing it is free.
+    await expect(kernel.invokeTool(context(), toolCall())).resolves.toMatchObject({
+      status: "failed",
+      error: { code: "tool_execution_failed" },
+    });
+    // Asserted, because without it this test passes with the hook entirely
+    // dead -- it would be restating the plain tool-failure case under a name
+    // that claims to be about the guard.
+    expect(called).toBe(true);
+  });
+
+  it("reports the synchronous tool callbacks that run before execution", async () => {
+    const parseThrow = new Error("argument parser blew up");
+    const requirementThrow = new Error("requirement resolver blew up");
+    const { onProviderError, seen } = reporter();
+    const kernel = kernelWith(
+      [
+        SEARCH_GRANT,
+        grant("grant-calendar", { namespace: "calendar", path: ["primary"] }, ["create"]),
+      ],
+      { onProviderError },
+    );
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: () => {
+        throw parseThrow;
+      },
+      invoke: successfulTool().invoke,
+    });
+    kernel.registerTool({
+      definition: CALENDAR_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      resolveRequirement: () => {
+        throw requirementThrow;
+      },
+      invoke: successfulTool(CALENDAR_TOOL).invoke,
+    });
+
+    const parsed = await kernel.invokeTool(context(), toolCall());
+    const resolved = await kernel.invokeTool(
+      context(),
+      toolCall({ id: "call-2", tool: CALENDAR_TOOL.name }),
+    );
+
+    // Both are the tool's own code, so both are `kind: "tool"`. Neither has a
+    // requirement to name yet -- the parser runs before one is resolved, and
+    // the resolver is what failed to produce one.
+    expect(seen[0]).toEqual({
+      error: parseThrow,
+      operation: {
+        kind: "tool",
+        reasonCode: "invalid_tool_arguments",
+        traceId: "trace-1",
+        namespaceId: "world-alpha",
+        operationId: "call-1",
+        tool: FILE_TOOL.name,
+      },
+    });
+    expect(seen[1]).toEqual({
+      error: requirementThrow,
+      operation: {
+        kind: "tool",
+        reasonCode: "tool_requirement_resolution_failed",
+        traceId: "trace-1",
+        namespaceId: "world-alpha",
+        operationId: "call-2",
+        tool: CALENDAR_TOOL.name,
+      },
+    });
+    // Traced to the consumer, not just to the context object: each reported
+    // code is the one the caller was actually answered with.
+    expect(parsed.status === "failed" ? parsed.error.code : undefined).toBe(
+      seen[0]?.operation.reasonCode,
+    );
+    expect(resolved.status === "failed" ? resolved.error.code : undefined).toBe(
+      seen[1]?.operation.reasonCode,
+    );
+  });
+
+  it("reports a message capability resolver that cannot decide, naming no call", async () => {
+    const thrown = new Error("recipient directory unreachable");
+    const { onProviderError, seen } = reporter();
+    const kernel = kernelWith([], {
+      onProviderError,
+      messageCapabilityResolver: {
+        resolve() {
+          throw thrown;
+        },
+      },
+    });
+
+    const result = await kernel.sendMessage(context(), {
+      version: "1",
+      id: "message-1",
+      sender: ACTOR,
+      receiver: RECEIVER,
+      purpose: "prepare-update",
+      payload: { request: "Summarize the architecture" },
+      traceId: "trace-1",
+      createdAt: NOW,
+    });
+
+    // A send outside a tool call has no call id and no tool, so the context
+    // carries only what the kernel actually knew.
+    expect(seen).toEqual([
+      {
+        error: thrown,
+        operation: {
+          kind: "message",
+          reasonCode: "message_requirement_resolution_failed",
+          traceId: "trace-1",
+          namespaceId: "world-alpha",
+        },
+      },
+    ]);
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "message_requirement_resolution_failed",
+    );
+  });
+
+  it("reports a router that cannot resolve the reply it was asked for", async () => {
+    const thrown = new Error("reply queue unreachable");
+    const { onProviderError, seen } = reporter();
+    const kernel = kernelWith(
+      [
+        grant(
+          "grant-send",
+          { namespace: "sharedos.messaging", path: addressPath(RECEIVER), owner: OWNER },
+          ["send"],
+        ),
+      ],
+      {
+        onProviderError,
+        messageTransport: {
+          async deliver(_context, envelope) {
+            return { messageId: envelope.id, status: "accepted" as const, timestamp: NOW };
+          },
+        },
+        messageRequestRouter: {
+          async resolveReply() {
+            throw thrown;
+          },
+        },
+      },
+    );
+
+    const result = await kernel.invokeTool(context(["messages"]), {
+      id: "call-1",
+      tool: MESSAGE_REQUEST_TOOL_NAME,
+      arguments: { recipient: RECEIVER, payload: { question: "status" } },
+      traceId: "trace-1",
+      requestedAt: NOW,
+    });
+
+    // The router is a host port, reached only through the request tool, so the
+    // report names the tool call it arrived under.
+    expect(seen).toEqual([
+      {
+        error: thrown,
+        operation: {
+          kind: "message",
+          reasonCode: "message_reply_resolution_failed",
+          traceId: "trace-1",
+          namespaceId: "world-alpha",
+          operationId: "call-1",
+          tool: MESSAGE_REQUEST_TOOL_NAME,
+        },
+      },
+    ]);
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "message_reply_resolution_failed",
+    );
+  });
+
+  it("is not awaited, so a sink that never returns cannot stall the operation", async () => {
+    const kernel = kernelWith([SEARCH_GRANT], {
+      onProviderError: () => {
+        // A host logger that hangs. If the kernel awaited this, the call below
+        // would never settle and the test would time out rather than fail.
+        void new Promise(() => undefined);
+      },
+    });
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      invoke: async () => {
+        throw new Error("provider failed");
+      },
+    });
+
+    await expect(kernel.invokeTool(context(), toolCall())).resolves.toMatchObject({
+      status: "failed",
+    });
+  });
+
+  it("leaves the authority ports it does not cover alone", async () => {
+    const { onProviderError, seen } = reporter();
+    const kernel = new SharedOSKernel({
+      onProviderError,
+      grantSource: {
+        async load() {
+          throw new Error("grant store unreachable");
+        },
+      },
+    });
+    kernel.registerTool(successfulTool());
+
+    // The negative half of the documented boundary. `GrantSource` and the other
+    // authority ports still discard their cause, and the docs say so; a later
+    // change that wired them without saying so would show up here.
+    await expect(kernel.invokeTool(context(), toolCall())).resolves.toMatchObject({
+      status: "denied",
+      error: { code: "authority_unavailable" },
+    });
+    expect(seen).toEqual([]);
+  });
+
+  it("does not report an operation the caller aborted", async () => {
+    const { onProviderError, seen } = reporter();
+    const controller = new AbortController();
+    const kernel = kernelWith([SEARCH_GRANT], { onProviderError });
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      invoke: async () => {
+        controller.abort(new Error("caller went away"));
+        throw new Error("aborted mid-flight");
+      },
+    });
+
+    // An abort is re-thrown ahead of the containment. A caller that stopped the
+    // work is not a defect, and a hook that fired here would report every
+    // cancelled call as a provider failure.
+    await expect(
+      kernel.invokeTool(context(), toolCall(), { signal: controller.signal }),
+    ).rejects.toThrow(/caller went away/u);
+    expect(seen).toEqual([]);
   });
 });

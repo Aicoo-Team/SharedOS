@@ -44,6 +44,11 @@ import {
   isInfrastructureDenial,
 } from "./authorization.js";
 import {
+  reportContainedError,
+  type ProviderErrorContext,
+  type ProviderErrorReporter,
+} from "./diagnostics.js";
+import {
   type MessageCapabilityResolver,
   type MessageRequestRouter,
   type MessageTransport,
@@ -82,6 +87,19 @@ export interface SharedOSKernelOptions {
   readonly audit?: AuditSink;
   /** Notification for audit failures that occur after a side effect. */
   readonly onAuditError?: (error: unknown, event: AuditEvent) => void | Promise<void>;
+  /**
+   * Notification for a throw the kernel contained rather than propagated.
+   *
+   * A provider, tool handler, transport, or router that throws is answered with
+   * a fixed reason code, and until a host installs this the error itself is
+   * gone: `tool_execution_failed` says an operation stopped and does not say
+   * why. One hook covers every such port, and {@link ProviderErrorContext.kind}
+   * is what a host branches on if it wants to treat them differently.
+   *
+   * Synchronous, unlike {@link SharedOSKernelOptions.onAuditError}, and see
+   * {@link reportContainedError} for why the two differ.
+   */
+  readonly onProviderError?: ProviderErrorReporter;
   /**
    * Where the cost of enforcement is reported, when a host is measuring it.
    *
@@ -136,6 +154,7 @@ export class SharedOSKernel {
   readonly #createMessageId: (context: AccessContext, call: ToolCall) => string;
   readonly #audit: AuditSink;
   readonly #onAuditError: ((error: unknown, event: AuditEvent) => void | Promise<void>) | undefined;
+  readonly #onProviderError: ProviderErrorReporter | undefined;
   readonly #spans: SpanSink | undefined;
 
   constructor(options: SharedOSKernelOptions) {
@@ -155,6 +174,7 @@ export class SharedOSKernel {
     this.#createMessageId = options.createMessageId ?? (() => crypto.randomUUID());
     this.#audit = options.audit ?? new NoopAuditSink();
     this.#onAuditError = options.onAuditError;
+    this.#onProviderError = options.onProviderError;
     this.#spans = options.spans;
   }
 
@@ -532,6 +552,17 @@ export class SharedOSKernel {
       if (options.signal?.aborted) {
         throw options.signal.reason ?? error;
       }
+      // What arrives here is the wrapper `#resolveToolRegistry` threw, with the
+      // provider's own error as its `cause`. The wrapper is the sentence every
+      // caller of the catalogue reads; the cause is the only account of what
+      // actually broke, and it would have been destroyed without it. A host
+      // logging this wants both, which is why neither is unwrapped here.
+      this.#reportProviderError(error, context, {
+        kind: "tool_catalog",
+        reasonCode: "tool_catalog_unavailable",
+        operationId: call.id,
+        tool: call.tool,
+      });
       const result = failedToolResult(
         call,
         context.now,
@@ -614,7 +645,13 @@ export class SharedOSKernel {
           arguments: parsedArguments.data,
         }),
       );
-    } catch {
+    } catch (error) {
+      this.#reportProviderError(error, context, {
+        kind: "tool",
+        reasonCode: "invalid_tool_arguments",
+        operationId: call.id,
+        tool: call.tool,
+      });
       const result = failedToolResult(
         call,
         context.now,
@@ -629,7 +666,13 @@ export class SharedOSKernel {
     try {
       requirement =
         handler.resolveRequirement?.(context, parsedCall) ?? handler.definition.requiredCapability;
-    } catch {
+    } catch (error) {
+      this.#reportProviderError(error, context, {
+        kind: "tool",
+        reasonCode: "tool_requirement_resolution_failed",
+        operationId: call.id,
+        tool: call.tool,
+      });
       const result = failedToolResult(
         call,
         context.now,
@@ -716,6 +759,14 @@ export class SharedOSKernel {
       if (options.signal?.aborted) {
         throw options.signal.reason ?? error;
       }
+      this.#reportProviderError(error, context, {
+        kind: "tool",
+        reasonCode: "tool_execution_failed",
+        operationId: call.id,
+        tool: call.tool,
+        resource: requirement.resource,
+        action: requirement.action,
+      });
       result = failedToolResult(
         call,
         context.now,
@@ -802,6 +853,13 @@ export class SharedOSKernel {
         if (options.signal?.aborted) {
           throw options.signal.reason ?? error;
         }
+        this.#reportProviderError(error, context, {
+          kind: "resource",
+          reasonCode: "resource_execution_failed",
+          operationId: request.operationId,
+          resource: request.resource,
+          action: request.action,
+        });
         result = failedResourceResult(
           request,
           context.now,
@@ -830,6 +888,8 @@ export class SharedOSKernel {
           capabilityResolver: this.#messageCapabilityResolver,
           router: this.#messageRequestRouter,
           createMessageId: this.#createMessageId,
+          reportProviderError: (error, access, operation) =>
+            this.#reportProviderError(error, access, operation),
           deliverAuthorizedMessage: (access, envelope, operationSignal, operationId) =>
             this.#deliverAuthorizedMessage(
               access,
@@ -856,12 +916,24 @@ export class SharedOSKernel {
         if (signal?.aborted) {
           throw signal.reason ?? error;
         }
-        throw new Error("A context tool provider failed to resolve its catalog");
+        // Wrapped rather than re-thrown, so every caller sees one sentence for
+        // "the catalogue could not be built" -- and `cause`d, so the provider's
+        // own error survives to whoever ends up looking. `listTools` lets this
+        // reach its caller; `invokeTool` contains it and reports it.
+        throw new Error("A context tool provider failed to resolve its catalog", { cause: error });
       }
       if (!Array.isArray(handlers)) {
         throw new TypeError("A context tool provider returned an invalid catalog");
       }
       for (const handler of handlers) {
+        // Deliberately not wrapped. A handler the registry refuses throws a
+        // named error -- `DuplicateRegistrationError`, or a `TypeError` naming
+        // what about the definition was wrong -- and a caller of `listTools`
+        // both sees and matches on those today. Wrapping them to make the
+        // diagnostic hook's `cause` unconditional would trade a typed error a
+        // host can branch on for a sentence it cannot, which is the wrong way
+        // round; the hook's contract says instead that it reports the error as
+        // thrown, and names the one case that is wrapped.
         resolved.register(handler);
       }
     }
@@ -907,7 +979,11 @@ export class SharedOSKernel {
         structuredClone(context),
         structuredClone(envelope),
       );
-    } catch {
+    } catch (error) {
+      this.#reportProviderError(error, context, {
+        kind: "message",
+        reasonCode: "message_requirement_resolution_failed",
+      });
       const result = failedMessageResult(
         envelope,
         context.now,
@@ -998,6 +1074,11 @@ export class SharedOSKernel {
       if (signal.aborted) {
         throw signal.reason ?? error;
       }
+      this.#reportProviderError(error, trustedContext, {
+        kind: "message",
+        reasonCode: "message_delivery_failed",
+        ...(operationId === undefined ? {} : { operationId }),
+      });
       result = failedMessageResult(
         trustedEnvelope,
         trustedContext.now,
@@ -1266,6 +1347,26 @@ export class SharedOSKernel {
           : {}),
       }),
     );
+  }
+
+  /**
+   * Hand one contained throw to the host's diagnostic sink.
+   *
+   * The context is assembled here rather than at each catch so every call site
+   * contributes only what is specific to it -- what kind of port failed, the
+   * code returned in its place, and whichever identifiers that path has -- and
+   * the trace and namespace come from the one place that always knows them.
+   */
+  #reportProviderError(
+    error: unknown,
+    context: AccessContext,
+    operation: Omit<ProviderErrorContext, "traceId" | "namespaceId">,
+  ): void {
+    reportContainedError(this.#onProviderError, error, {
+      ...operation,
+      traceId: context.traceId,
+      namespaceId: context.namespaceId,
+    });
   }
 
   async #recordOutcome(event: AuditEvent): Promise<void> {

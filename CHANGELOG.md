@@ -157,6 +157,51 @@ each entry calls out what a host has to update.
   fails the turn `model_call_failed` rather than completing on the recording's
   behalf, so a script that ends too early is a visible result and not a model
   choosing to stop.
+- **`SharedOSKernelOptions.onProviderError`**, so a contained throw is
+  diagnosable. A provider, tool handler, transport, or router that throws is
+  answered with a fixed reason code -- `tool_execution_failed`,
+  `resource_execution_failed`, `message_delivery_failed`, and the four other
+  codes the seven contained call sites return --
+  and the error itself was discarded, so nothing said which provider broke or
+  where. It now reaches this optional hook, whole and unwrapped, with a
+  `ProviderErrorContext` naming the `kind` of port (`tool`, `tool_catalog`,
+  `resource`, `message`), the `reasonCode` returned in its place, the trace and
+  namespace, and whichever of `operationId`, `tool`, `resource`, and `action`
+  that path has. One hook rather than one per port: `kind` is what a host
+  branches on to route them differently, and a port added later is covered by
+  the hook every host already installed. `reasonCode` is the same code audit
+  recorded and the same one the agent was told, so a log line joins to both.
+
+  Nothing reaches the wire: every message and audit event is unchanged, and a
+  kernel with no hook installed takes the same decisions. The hook is
+  observational -- one that throws is ignored -- and synchronous, unlike
+  `onAuditError`, which is awaited because it fires after the side effect; this
+  one fires mid-flight, where awaiting a host's logger would put its latency on
+  every failed call. A cancelled operation is not reported.
+
+  The one behavioural change: a `ContextToolProvider` whose `listTools` throws is
+  still wrapped into one catalogue-failure sentence, but the provider's error is
+  now that wrapper's `cause` rather than being destroyed. That is visible without
+  the hook -- a logger or reporting SDK that walks `cause` will print the
+  provider's message where it previously printed nothing -- so it is a change to
+  what a host may see, not a no-op.
+
+  Four symbols join the public surface of `@aicoo/sharedos-core`, and through it
+  `@aicoo/sharedos`: `ProviderErrorContext`, `ProviderErrorKind`,
+  `ProviderErrorReporter`, and `reportContainedError`. The last is the swallow
+  guard itself, exported so `@aicoo/sharedos-runtime` and any host offering a
+  hook of the same shape share one implementation of the promise rather than
+  each making their own.
+
+  Not covered, and stated so it is not mistaken for done: the four authority
+  ports still discard theirs, and they are not equally bad. `GrantSource`,
+  `GrantUsageStore`, and `DelegationChainResolver` fail closed under their own
+  `failClosed` reason codes, so the failure is classified even though the cause
+  is gone. `CapabilityGrantVerifier` is the one to watch: a throw from `verify`
+  is treated as `false`, so the grant becomes invisible and the denial reads
+  `no_matching_grant` -- indistinguishable from an actor who was never granted
+  the capability, and not marked `failClosed`.
+
 - **`onTurnError`**, on `SharedOSExecutorOptions` and `StandardRuntimeOptions`,
   so a contained throw is diagnosable. Both layers catch one and end the turn on
   a terminal code -- the envelope's `runtime_failed`, the standard loop's

@@ -9,6 +9,8 @@ import {
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
 
+import { reportContainedError } from "@aicoo/sharedos-core";
+
 import { deepFreeze } from "./internal.js";
 
 /** Which turn a {@link TurnErrorReporter} notification is about. */
@@ -36,34 +38,36 @@ export interface TurnErrorContext {
  * already decided -- and a turn behaves identically with none installed.
  * Cancellation never reaches it: a turn stopped by the deadline or by the
  * caller's signal ends `cancelled`, which is a decision rather than a defect.
+ *
+ * The kernel makes the same promise about a provider's throw, under
+ * `SharedOSKernelOptions.onProviderError`. A host wanting both installs both;
+ * they are separate because they are about different things failing, and the
+ * turn's identifiers are not the ones a mediated call has.
  */
 export type TurnErrorReporter = (error: unknown, turn: TurnErrorContext) => void;
 
 /**
- * Call one reporter without letting it change what happened.
+ * Call one turn-error sink without letting it change what happened.
  *
- * Shared by both containment sites so the guarantee is one implementation: a
- * diagnostic that could turn one failure into a second would be a risk to
- * install rather than a diagnostic.
+ * The turn-shaped name for `reportContainedError`, which is where the guard
+ * itself lives: a sink that throws is swallowed, because a diagnostic that can
+ * turn one failure into two is a liability rather than a diagnostic.
  *
- * Exported deliberately. A host writing its own {@link RuntimePlugin} that
- * offers the same hook should not have to reimplement the guard, and one that
- * reimplemented it slightly differently would be the reason the guarantee stops
- * being true everywhere.
+ * It delegates rather than repeating the rule. The kernel contains a provider's
+ * throw and the runtime contains a plugin's, and the same promise is made to a
+ * host about both; two implementations of one promise is how it stops being
+ * true in one of them. Core owns it because the dependency runs runtime → core
+ * and cannot run back.
+ *
+ * Exported deliberately, for a host writing its own {@link RuntimePlugin} that
+ * offers the same hook.
  */
 export function reportTurnError(
   reporter: TurnErrorReporter | undefined,
   error: unknown,
   turn: TurnErrorContext,
 ): void {
-  if (reporter === undefined) {
-    return;
-  }
-  try {
-    reporter(error, turn);
-  } catch {
-    // Deliberately empty; see the docblock above.
-  }
+  reportContainedError(reporter, error, turn);
 }
 
 export interface RuntimeVisibleContext {
