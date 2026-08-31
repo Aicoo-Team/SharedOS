@@ -824,12 +824,22 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
     expectedOutcome: "Replay succeeds 0% of the time",
     attempts: [
       {
+        id: "read-fresh",
+        role: "control",
+        description:
+          "Read the same file with the turn's own instant, so the replay's denial is attributable to its instant and to nothing else about the call.",
+        tool: READ_TOOL,
+        toolArguments: { path: [...READ_ONLY_FILE] },
+        expect: { statuses: ["succeeded"] },
+      },
+      {
         id: "replay-a-recorded-call",
         role: "attack",
         description:
-          "Re-issue a call captured from an earlier turn, with its original identifiers and instant intact.",
+          "Re-issue a recorded call as captured: the identical tool and arguments, minted at an instant that predates this turn's admission.",
         tool: READ_TOOL,
         toolArguments: { path: [...READ_ONLY_FILE] },
+        requestedAtOffsetMs: -1000,
         expect: { statuses: ["denied"], reasonCodes: ["stale_request"] },
       },
     ],

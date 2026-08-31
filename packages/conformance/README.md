@@ -91,13 +91,23 @@ definitions rather than transcribed beside them:
 | `escalation_recorded`        | Escalation is requested and recorded              | `escalation_requested`     |
 | `record_completeness`        | Allowed and denied turns emit a complete record   | `ExecutionRecord`          |
 | `typed_governed_views`       | Serve a typed governed view in place of a record  | `view_required`            |
-| `replay_freshness`           | Replay a recorded turn against a freshness check  | _not implemented_          |
+| `replay_freshness`           | Replay a recorded turn against a freshness check  | `stale_request`            |
 
-The last row is declared and not built. It is here rather than omitted
-because a matrix that silently drops the rows nobody implemented describes a
-narrower system as a more conformant one. `ConformanceCase.notImplemented`
-carries the reason, the cell reports `not implemented`, and the row is never run
-and never a pass.
+Every declared row is now implemented. `ConformanceCase.notImplemented`
+remains the way the next gap is stated rather than omitted -- a matrix that
+silently drops the rows nobody implemented describes a narrower system as a
+more conformant one -- and the reporting path is pinned by a test against a
+synthetic declared case.
+
+The replay row's freshness anchor is the call's instant, not its identifier: a
+turn has two instants, admission and operation, and a call minted outside that
+window is refused `stale_request`. An identifier is presenter-chosen -- model
+APIs are free to reuse `call_0` on every reply, and some do -- so it carries no
+freshness a kernel could trust. Only the embedded adversary can issue the
+stale-instant attempt; a harness frame carries no instant, the adapters stamp
+the turn's own onto every call they translate, and the driven columns declare
+the attempt unreachable rather than issuing a fresh-instant call and calling it
+a replay.
 
 The governed-view row runs three attempts against one armed grant: the raw read
 of the record behind the view is refused `view_required`, the read naming the

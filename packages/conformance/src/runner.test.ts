@@ -293,10 +293,23 @@ describe("the conformance suite", () => {
   });
 
   it("reports a declared but unimplemented row rather than omitting it", async () => {
-    const declared = CANONICAL_CONFORMANCE_CASES.filter(
-      ({ notImplemented }) => notImplemented !== undefined,
-    );
-    expect(declared.map(({ id }) => id)).toEqual(["replay-freshness"]);
+    // The shipped case set no longer carries one -- typed governed views and
+    // replay freshness are both implemented -- so the mechanism is pinned on a
+    // synthetic case, because the next declared gap must still be reported
+    // rather than silently dropped.
+    expect(
+      CANONICAL_CONFORMANCE_CASES.filter(({ notImplemented }) => notImplemented !== undefined),
+    ).toEqual([]);
+    const declared: ConformanceCase[] = [
+      {
+        id: "declared-gap",
+        move: canonicalMove("hidden_tool"),
+        notImplemented: "a synthetic gap, declared so the reporting path stays honest",
+        conditions: [
+          { id: "declared", description: "Would arm nothing; the row is never run.", world: {} },
+        ],
+      },
+    ];
 
     const { manifest } = await runConformanceSuite({
       cases: declared,
@@ -322,22 +335,20 @@ describe("the conformance suite", () => {
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
     expect(cells).toHaveLength(135);
     // Every implemented row passes in every column that can run it. The rest are
-    // stated: the one row SharedOS does not implement, counted once per column, and
-    // one row per vendor column whose attempt a harness structurally cannot
-    // make -- reading the runtime surfaces it is never handed. Two others used
-    // to sit here and no longer do, and neither was a fact about harnesses:
-    // escalation is a catalogued tool now, and the step ceiling is reachable
-    // once a driver can name its own step.
-    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(126);
-    expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(5);
-    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(4);
+    // stated: two rows per vendor column whose attempts a harness structurally
+    // cannot make -- reading the runtime surfaces it is never handed, and
+    // minting a call at an instant that is not the turn's own, because a frame
+    // carries no instant for the adapter to replay.
+    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(127);
+    expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(0);
+    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(8);
     expect(strictFailures(manifest)).toEqual([]);
     // Evidence exists for every cell that ran a turn, and for no cell that did
-    // not: the one unimplemented row in every column. The escalation row now
+    // not: none, now that every declared row runs. The escalation row always
     // runs everywhere, so it leaves evidence everywhere too. The step-ceiling
     // row always did -- an unreachable *attempt* still runs its turn, unlike an
     // unsupported row, which is why that change moved cells without moving this.
-    expect(evidence).toHaveLength(130);
+    expect(evidence).toHaveLength(135);
 
     // Every vendor column lands on the same counts. That is the portability
     // claim in its smallest form: adding a harness adds a column, not an
@@ -345,8 +356,8 @@ describe("the conformance suite", () => {
     for (const column of manifest.columns.filter(({ id }) => id !== "sharedos-embedded")) {
       const columnCells = cells.filter((cell) => cell.columnId === column.id);
       expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(25);
-      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(1);
-      expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(1);
+      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(2);
+      expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(0);
     }
 
     const byCase = (caseId: string, conditionId = "baseline") =>
@@ -363,6 +374,9 @@ describe("the conformance suite", () => {
       "no_matching_grant",
       "view_required",
     ]);
+    // The replay row refuses in the kernel, on the instant alone.
+    expect(byCase("replay-freshness")?.refusedBy).toEqual(["kernel"]);
+    expect(byCase("replay-freshness")?.reasonCodes).toEqual(["stale_request"]);
     expect(byCase("replayed-grant", "grant-revoked")?.reasonCodes).toEqual(["no_matching_grant"]);
     expect(byCase("replayed-grant", "ancestor-revoked")?.reasonCodes).toEqual([
       "delegation_chain_invalid",
@@ -738,6 +752,49 @@ describe("the world the governed-view row is armed against", () => {
     // And the raw record never left the provider boundary in any form: the
     // provider was asked once, for the view read the kernel then projected.
     expect(world.files.reads).toEqual([VIEWED_FILE.join("/")]);
+  });
+});
+
+describe("the freshness window", () => {
+  /**
+   * The receipts grade the conformance row; this pins the window's edges. A
+   * call minted before admission is a recording, a call minted after the
+   * operation instant claims a moment that has not happened, and a bare kernel
+   * call -- no turn, so no window -- is exempt, because a remote host's clock
+   * cannot be required to agree with this one to the millisecond.
+   */
+  it("refuses foreign instants inside a turn, and only inside a turn", async () => {
+    const world = createConformanceWorld();
+    const call = (id: string, requestedAt: string): ToolCall => ({
+      id,
+      tool: READ_TOOL,
+      arguments: { path: [...READ_ONLY_FILE] },
+      traceId: world.context.traceId,
+      requestedAt,
+    });
+    const before = new Date(Date.parse(world.context.now) - 1000).toISOString();
+    const after = new Date(Date.parse(world.context.now) + 1000).toISOString();
+
+    const turn = await world.kernel.openTurnAuthority(world.context);
+    expect(turn.status).toBe("resolved");
+    try {
+      await expect(
+        world.kernel.invokeTool(world.context, call("call-fresh", world.context.now)),
+      ).resolves.toMatchObject({ status: "succeeded" });
+      await expect(
+        world.kernel.invokeTool(world.context, call("call-stale", before)),
+      ).resolves.toMatchObject({ status: "denied", error: { code: "stale_request" } });
+      await expect(
+        world.kernel.invokeTool(world.context, call("call-future", after)),
+      ).resolves.toMatchObject({ status: "denied", error: { code: "stale_request" } });
+    } finally {
+      turn.close();
+    }
+
+    // The same stale instant outside any turn is answered on its merits.
+    await expect(
+      world.kernel.invokeTool(world.context, call("call-bare", before)),
+    ).resolves.toMatchObject({ status: "succeeded" });
   });
 });
 

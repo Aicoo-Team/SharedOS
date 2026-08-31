@@ -52,6 +52,7 @@ import {
   addressPath,
 } from "./message-service.js";
 import { createMessageRequestTool } from "./message-tool.js";
+import { parseTimestamp } from "./internal.js";
 import {
   type ResourceInvocationRequest,
   type ResourceProvider,
@@ -519,6 +520,20 @@ export class SharedOSKernel {
       );
       await this.#recordToolResult(context, call, result);
       return result;
+    }
+
+    // Freshness is turn-scoped. A turn has two distinct instants -- admission
+    // and operation -- and a recorded call replayed into it carries an instant
+    // outside that window. A bare kernel call has no such window: its authority
+    // is resolved at the operation itself, and a remote host's clock cannot be
+    // required to agree with this one to the millisecond.
+    if (this.#leases.has(turnAuthorityKey(context))) {
+      const staleness = staleCallReason(call, authority.authority.context.now, context.now);
+      if (staleness !== undefined) {
+        const result = deniedToolResult(call, context.now, "stale_request", staleness);
+        await this.#recordToolResult(context, call, result);
+        return result;
+      }
     }
 
     let tools: ToolRegistry;
@@ -1387,6 +1402,41 @@ function scopeFor(resolution: AuthorityResolution, release: () => void): TurnAut
       release();
     },
   };
+}
+
+/**
+ * The freshness check: a call's declared instant must lie inside its turn.
+ *
+ * A call minted before the turn's authority was resolved is a recording -- its
+ * instant belongs to some earlier turn, and replaying it with the instant
+ * intact is exactly what this refuses. A call minted after the operation
+ * instant claims a moment that has not happened. Both are `stale_request`.
+ *
+ * Deliberately not an identifier check. A call id is presenter-chosen -- model
+ * APIs are free to reuse `call_0` on every reply, and some do -- so an id
+ * carries no freshness a kernel could trust. The trace is already bound
+ * (`trace_mismatch`), the instant is bound here, and a "replay" that mints a
+ * fresh instant inside the current turn is not a replay at all: it is a new
+ * request, and authorization decides it like any other.
+ */
+function staleCallReason(
+  call: ToolCall,
+  admittedAt: string,
+  operationNow: string,
+): string | undefined {
+  const requested = parseTimestamp(call.requestedAt);
+  const admitted = parseTimestamp(admittedAt);
+  const now = parseTimestamp(operationNow);
+  if (requested === undefined || admitted === undefined || now === undefined) {
+    return "The tool call carries no readable instant";
+  }
+  if (requested < admitted) {
+    return "The tool call was minted before this turn's authority was resolved";
+  }
+  if (requested > now) {
+    return "The tool call is minted after the operation instant";
+  }
+  return undefined;
 }
 
 function deniedToolResult(

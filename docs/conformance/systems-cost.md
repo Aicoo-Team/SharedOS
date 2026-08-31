@@ -7,8 +7,8 @@ real MCP server with the frames a client would send.
 
 - SharedOS: `0.1.0-alpha.3`
 - Measurement rules: version `2`
-- Workload: 27 declared attempts per turn, 200 measured turns after 60 discarded
-- Cases: `kernel.forged-grant`, `kernel.hidden-tool`, `kernel.read-to-mutation`, `kernel.namespace-crossing`, `kernel.tool-ceiling-escape`, `kernel.invalid-tool-result`, `kernel.grant-material`, `kernel.rollback-unavailable`, `kernel.record-completeness`, `kernel.typed-governed-views`
+- Workload: 29 declared attempts per turn, 200 measured turns after 60 discarded
+- Cases: `kernel.forged-grant`, `kernel.hidden-tool`, `kernel.read-to-mutation`, `kernel.namespace-crossing`, `kernel.tool-ceiling-escape`, `kernel.invalid-tool-result`, `kernel.grant-material`, `kernel.rollback-unavailable`, `kernel.record-completeness`, `kernel.typed-governed-views`, `kernel.replay-freshness`
 - Environment: node `v22.14.0`, platform `linux-x64`, cpu `AMD EPYC 7R13 Processor`, cores `4`, memoryGb `15`
 
 Percentiles are nearest-rank: a printed p95 is a duration that occurred, not
@@ -28,21 +28,21 @@ measurement.
 
 | Component | Path | p50 | p95 | Tokens | Evidence bytes | Wire bytes | Ops/sec | n |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Capability authorization | in-process | 124 µs | 270 µs | 0 | 1037 B | — | 6865 | 4800 |
-| Capability authorization | mcp-toolshare | 123 µs | 260 µs | 0 | 998 B | — | 6952 | 4800 |
-| Execution-record write | in-process | 8.18 ms | 9.76 ms | 0 | 59188 B | — | 119 | 200 |
-| Governed-view construction | in-process | 7.12 µs | 10.2 µs | 0 | — | — | 134505 | 200 |
-| Governed-view construction | mcp-toolshare | 7.31 µs | 9.45 µs | 0 | — | — | 130562 | 200 |
-| End-to-end SharedOS overhead | in-process | 3.44 ms | 5.25 ms | 0 | 1070 B | — | 309 | 5400 |
-| End-to-end SharedOS overhead | mcp-toolshare | 3.51 ms | 5.41 ms | 0 | 920 B | 477 B | 301 | 5400 |
+| Capability authorization | in-process | 124 µs | 241 µs | 0 | 1037 B | — | 6965 | 5000 |
+| Capability authorization | mcp-toolshare | 124 µs | 270 µs | 0 | 998 B | — | 6681 | 5200 |
+| Execution-record write | in-process | 8.66 ms | 10.4 ms | 0 | 62800 B | — | 112 | 200 |
+| Governed-view construction | in-process | 7.01 µs | 10.2 µs | 0 | — | — | 134803 | 200 |
+| Governed-view construction | mcp-toolshare | 7.47 µs | 9.74 µs | 0 | — | — | 126290 | 200 |
+| End-to-end SharedOS overhead | in-process | 3.47 ms | 5.29 ms | 0 | 1065 B | — | 315 | 5800 |
+| End-to-end SharedOS overhead | mcp-toolshare | 3.64 ms | 5.81 ms | 0 | 919 B | 461 B | 289 | 5800 |
 
 Every `0` in the token column is structural: it is asserted from the absence
 of a model call inside the span, not measured by counting one.
 
 ### What each row measured
 
-- **Capability authorization — in-process.** One operation is one authorization decision: the turn-boundary load, and each in-turn check. pooled over 200 turn-boundary loads (p50 0.396 ms) and 4600 in-turn checks (p50 0.123 ms).
-- **Capability authorization — mcp-toolshare.** One operation is one authorization decision: the turn-boundary load, and each in-turn check. pooled over 200 turn-boundary loads (p50 0.391 ms) and 4600 in-turn checks (p50 0.122 ms).
+- **Capability authorization — in-process.** One operation is one authorization decision: the turn-boundary load, and each in-turn check. pooled over 200 turn-boundary loads (p50 0.394 ms) and 4800 in-turn checks (p50 0.123 ms).
+- **Capability authorization — mcp-toolshare.** One operation is one authorization decision: the turn-boundary load, and each in-turn check. pooled over 200 turn-boundary loads (p50 0.401 ms) and 5000 in-turn checks (p50 0.123 ms).
 - **Execution-record write — in-process.** One operation is one record assembled, validated, and serialized. one turn's evidence, re-assembled; the same code on both paths, so it is measured once.
 - **Governed-view construction — in-process.** One operation is one typed governed view served in place of a raw record. the kernel's projection of the provider result down to the view's declared fields; the served payload leaves no evidence bytes because payloads never enter the record, and the view's name and field list ride the call's own audit event.
 - **Governed-view construction — mcp-toolshare.** One operation is one typed governed view served in place of a raw record. the kernel's projection of the provider result down to the view's declared fields; the served payload leaves no evidence bytes because payloads never enter the record, and the view's name and field list ride the call's own audit event.
@@ -65,23 +65,23 @@ catalogue -- and that is the column headed *Per call*.
 
 | Segment | p50 | Share of the call | Per call |
 | --- | --- | --- | --- |
-| Resolve the effective catalogue | 2.99 ms | 81% | 0.852 |
-| Discovery filter | 117 µs | 3% | 0.852 |
-| Authorization decision, audit included | 123 µs | 3% | 0.852 |
-| Provider (not enforcement) | 40 µs | 2% | 0.593 |
-| Remainder | 197 µs | 10% | 1 |
-| **Whole call** | 3.48 ms | 100% | 1 |
+| Resolve the effective catalogue | 3.06 ms | 81% | 0.828 |
+| Discovery filter | 118 µs | 3% | 0.828 |
+| Authorization decision, audit included | 123 µs | 3% | 0.828 |
+| Provider (not enforcement) | 42.3 µs | 2% | 0.586 |
+| Remainder | 201 µs | 10% | 1 |
+| **Whole call** | 3.51 ms | 100% | 1 |
 
 ### mcp-toolshare
 
 | Segment | p50 | Share of the call | Per call |
 | --- | --- | --- | --- |
-| Resolve the effective catalogue | 3.05 ms | 81% | 0.852 |
-| Discovery filter | 118 µs | 3% | 0.852 |
-| Authorization decision, audit included | 122 µs | 3% | 0.852 |
-| Provider (not enforcement) | 42.4 µs | 2% | 0.593 |
-| Remainder | 211 µs | 11% | 1 |
-| **Whole call** | 3.55 ms | 100% | 1 |
+| Resolve the effective catalogue | 3.16 ms | 81% | 0.862 |
+| Discovery filter | 120 µs | 3% | 0.862 |
+| Authorization decision, audit included | 123 µs | 3% | 0.862 |
+| Provider (not enforcement) | 42.6 µs | 2% | 0.621 |
+| Remainder | 230 µs | 11% | 1 |
+| **Whole call** | 3.68 ms | 100% | 1 |
 
 ## Harness translation cost
 
@@ -93,10 +93,10 @@ turn rather than once per call and is outside these figures.
 | Column | Parse + translate per call | Catalogue width | n |
 | --- | --- | --- | --- |
 | Std | — | 17 | — |
-| Codex | 2.09 µs | 17 | 200 |
-| CC | 5.26 µs | 17 | 200 |
-| DS | 4.29 µs | 17 | 200 |
-| Pi | 5.1 µs | 17 | 200 |
+| Codex | 2.4 µs | 17 | 200 |
+| CC | 5.23 µs | 17 | 200 |
+| DS | 4.26 µs | 17 | 200 |
+| Pi | 5.08 µs | 17 | 200 |
 
 Std's `—` is the absence of a translation layer, not a pending measurement.
 
@@ -109,9 +109,9 @@ extension rather than a measurement this bench can take.
 
 | Quantity | Value |
 | --- | --- |
-| Record bytes per turn | 60819 B mean |
+| Record bytes per turn | 64547 B mean |
 | Authority loads per turn | 1 |
-| Decisions per turn | 23 |
-| Audit events per turn | 49 |
-| Mediated tool calls per turn | 27 |
+| Decisions per turn | 24 |
+| Audit events per turn | 52 |
+| Mediated tool calls per turn | 29 |
 | Catalogue served per turn | 9216 B over the wire, 17 tools |

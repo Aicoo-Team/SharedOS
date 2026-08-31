@@ -150,6 +150,12 @@ export function harnessLimits(move: AttackMove, condition: ConformanceCondition)
         "a harness speaks tool calls over a wire and is never handed the runtime surfaces to enumerate",
       );
     }
+    if (attempt.requestedAtOffsetMs !== undefined) {
+      unreachable.set(
+        attempt.id,
+        "a harness frame carries no instant; the adapter stamps the turn's own onto every call it translates",
+      );
+    }
     if (attempt.overBudget === true && condition.requiresDeclaredSteps !== undefined) {
       driverIssued.set(
         attempt.id,
@@ -365,6 +371,10 @@ function issuableByHarness(attempt: AttackAttempt, turn: number): boolean {
     (attempt.turn ?? 1) === turn &&
     attempt.unreachable === undefined &&
     attempt.inspect === undefined &&
+    // A frame carries no instant, so a harness cannot mint a stale one. The
+    // adapter would stamp the turn's own onto the translated call, and a
+    // fresh-instant "replay" is not the attempt the row declares.
+    attempt.requestedAtOffsetMs === undefined &&
     attempt.tool !== undefined
   );
 }
@@ -529,6 +539,12 @@ export function mcpHarnessLimits(move: AttackMove, condition: ConformanceConditi
         "a harness speaks tool calls over MCP and is never handed the runtime surfaces to enumerate",
       );
     }
+    if (attempt.requestedAtOffsetMs !== undefined) {
+      unreachable.set(
+        attempt.id,
+        "an MCP tools/call frame carries no instant; the bridge stamps the turn's own onto the call it translates",
+      );
+    }
     if (attempt.uncatalogued !== undefined) {
       unreachable.set(attempt.id, attempt.uncatalogued);
     }
@@ -681,6 +697,12 @@ export function modelLimits(move: AttackMove, condition: ConformanceCondition): 
       unreachable.set(
         attempt.id,
         "a model driver is handed a turn request and returns a decision; the runtime surfaces this attempt enumerates are never passed to it",
+      );
+    }
+    if (attempt.requestedAtOffsetMs !== undefined) {
+      unreachable.set(
+        attempt.id,
+        "a model names a tool and arguments; the driver stamps the turn's own instant onto the call it mints",
       );
     }
     if (attempt.overBudget === true && condition.requiresDeclaredSteps !== undefined) {

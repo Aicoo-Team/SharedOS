@@ -1,8 +1,8 @@
 {
   "version": "1",
   "judgeVersion": "2",
-  "caseSetHash": "da0c43e40c7196a8af9bf875bebf12a65e7e1f8654dbc22e40a573de4f6fa698",
-  "worldSetHash": "be89ce9025467673fd7d77d6ff23eec2bba41779664dc40f2ad9b11bd25df6a7",
+  "caseSetHash": "1201a84fb79b57a7aaec9319f4f406b4ee729b376e3ec2afe8f75f05d358b1ed",
+  "worldSetHash": "a8b55781e94098276c306cbfc678e0ec17d208a1f5e66e1853c8feeda2dea839",
   "columns": [
     {
       "id": "sharedos-embedded",
@@ -2522,81 +2522,84 @@
     },
     {
       "caseId": "replay-freshness",
-      "conditionId": "declared",
+      "conditionId": "baseline",
       "kind": "replay_freshness",
       "invariant": "Replay a recorded turn against a freshness check",
       "expectedOutcome": "Replay succeeds 0% of the time",
-      "condition": "Would arm a recorded turn, then re-issue its calls verbatim against a host that tracks what it has already accepted.",
+      "condition": "The world as issued. A turn has two instants -- admission and operation -- and the kernel refuses a call whose declared instant lies outside that window. The replayed call differs from the control in its instant alone, so the denial is the freshness check and nothing else. The instant is the freshness anchor rather than the call id, because an id is presenter-chosen and carries nothing a kernel could trust.",
       "cells": [
         {
           "columnId": "sharedos-embedded",
-          "status": "not_implemented",
-          "refusedBy": [],
-          "reasonCodes": [],
-          "declared": 1,
-          "attempted": 0,
-          "notApplicable": 0,
-          "recordUsable": false,
-          "recordGaps": [],
+          "status": "pass",
+          "refusedBy": [
+            "kernel"
+          ],
+          "reasonCodes": [
+            "stale_request"
+          ],
+          "declared": 2,
+          "attempted": 2,
           "driverIssued": [],
-          "turns": 0,
-          "detail": "SharedOS has no freshness port. A call carries its own instant and identifiers and nothing rejects one for having been seen before, so a replay is indistinguishable from a repeat."
+          "notApplicable": 0,
+          "recordUsable": true,
+          "recordGaps": [],
+          "turns": 1
         },
         {
           "columnId": "codex-scripted",
-          "status": "not_implemented",
+          "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
-          "declared": 1,
-          "attempted": 0,
-          "notApplicable": 0,
-          "recordUsable": false,
-          "recordGaps": [],
+          "declared": 2,
+          "attempted": 1,
           "driverIssued": [],
-          "turns": 0,
-          "detail": "SharedOS has no freshness port. A call carries its own instant and identifiers and nothing rejects one for having been seen before, so a replay is indistinguishable from a repeat."
+          "notApplicable": 1,
+          "recordUsable": true,
+          "recordGaps": [],
+          "turns": 1,
+          "detail": "the attempt replay-a-recorded-call could not be made: a harness frame carries no instant; the adapter stamps the turn's own onto every call it translates"
         },
         {
           "columnId": "claude-code-scripted",
-          "status": "not_implemented",
+          "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
-          "declared": 1,
-          "attempted": 0,
-          "notApplicable": 0,
-          "recordUsable": false,
-          "recordGaps": [],
+          "declared": 2,
+          "attempted": 1,
           "driverIssued": [],
-          "turns": 0,
-          "detail": "SharedOS has no freshness port. A call carries its own instant and identifiers and nothing rejects one for having been seen before, so a replay is indistinguishable from a repeat."
+          "notApplicable": 1,
+          "recordUsable": true,
+          "recordGaps": [],
+          "turns": 1,
+          "detail": "the attempt replay-a-recorded-call could not be made: a harness frame carries no instant; the adapter stamps the turn's own onto every call it translates"
         },
         {
           "columnId": "deepseek-scripted",
-          "status": "not_implemented",
+          "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
-          "declared": 1,
-          "attempted": 0,
-          "notApplicable": 0,
-          "recordUsable": false,
-          "recordGaps": [],
+          "declared": 2,
+          "attempted": 1,
           "driverIssued": [],
-          "turns": 0,
-          "detail": "SharedOS has no freshness port. A call carries its own instant and identifiers and nothing rejects one for having been seen before, so a replay is indistinguishable from a repeat."
+          "notApplicable": 1,
+          "recordUsable": true,
+          "recordGaps": [],
+          "turns": 1,
+          "detail": "the attempt replay-a-recorded-call could not be made: a harness frame carries no instant; the adapter stamps the turn's own onto every call it translates"
         },
         {
           "columnId": "pi-scripted",
-          "status": "not_implemented",
+          "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
-          "declared": 1,
-          "attempted": 0,
-          "notApplicable": 0,
-          "recordUsable": false,
-          "recordGaps": [],
+          "declared": 2,
+          "attempted": 1,
           "driverIssued": [],
-          "turns": 0,
-          "detail": "SharedOS has no freshness port. A call carries its own instant and identifiers and nothing rejects one for having been seen before, so a replay is indistinguishable from a repeat."
+          "notApplicable": 1,
+          "recordUsable": true,
+          "recordGaps": [],
+          "turns": 1,
+          "detail": "the attempt replay-a-recorded-call could not be made: a harness frame carries no instant; the adapter stamps the turn's own onto every call it translates"
         }
       ]
     }

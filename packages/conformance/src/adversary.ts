@@ -150,6 +150,17 @@ export const AttackAttemptSchema = z
      * ceiling only the runtime honours is not a ceiling.
      */
     overBudget: z.boolean().optional(),
+    /**
+     * Mint this call's `requestedAt` this many milliseconds away from the
+     * turn's own instant. Negative reaches before the turn was admitted, which
+     * is what a call captured from an earlier turn carries.
+     *
+     * Derived from the turn context by arithmetic, never from a clock, so a
+     * replayed instant is as deterministic as a fresh one. Only the embedded
+     * adversary can issue such a call: a harness frame carries no instant, and
+     * the adapters stamp the turn's own onto every call they translate.
+     */
+    requestedAtOffsetMs: z.number().int().min(-86_400_000).max(86_400_000).optional(),
     expect: AttemptExpectationSchema,
     /**
      * Declares that a runtime plugin structurally cannot make this attempt, and
@@ -436,7 +447,7 @@ export class HostileRuntime implements RuntimePlugin {
       tool: attempt.tool,
       arguments: toolArguments,
       traceId: turn.context.traceId,
-      requestedAt: turn.context.now,
+      requestedAt: attemptRequestedAt(turn.context, attempt),
     };
     const base = {
       ...receiptBase(move, attempt),
@@ -550,6 +561,26 @@ export function attemptCallId(
   attempt: AttackAttempt,
 ): string {
   return `${executionId}.${move.id}.${attempt.id}`;
+}
+
+/**
+ * The instant one declared attempt's call is minted at.
+ *
+ * The turn's own instant unless the attempt declares an offset, and pure
+ * arithmetic on the context either way: nothing here reads a clock, so a
+ * stale instant is exactly as reproducible as a fresh one. An unparsable turn
+ * instant is passed through untouched rather than repaired -- the world's
+ * timestamps are the world's claim, and this function has no better one.
+ */
+export function attemptRequestedAt(context: RuntimeVisibleContext, attempt: AttackAttempt): string {
+  if (attempt.requestedAtOffsetMs === undefined) {
+    return context.now;
+  }
+  const parsed = Date.parse(context.now);
+  if (!Number.isFinite(parsed)) {
+    return context.now;
+  }
+  return new Date(parsed + attempt.requestedAtOffsetMs).toISOString();
 }
 
 /**
