@@ -47,7 +47,7 @@ import {
  * what counts as a millisecond -- and one number for both would oblige a re-run
  * of the wrong thing.
  */
-export const BENCH_VERSION = "1";
+export const BENCH_VERSION = "2";
 
 /** How many attempts the bench workload issues per turn. */
 export interface BenchWorkload {
@@ -315,7 +315,12 @@ export function benchMoves(
       (kase) =>
         kase.notImplemented === undefined &&
         kase.move.terminal === undefined &&
-        kase.conditions.some((condition) => condition.id === "baseline"),
+        kase.conditions.some(
+          // The governed-view condition differs from the baseline by one grant
+          // pair and nothing else, and every bench world arms it, so the view
+          // rows ride the same workload rather than getting one of their own.
+          (condition) => condition.id === "baseline" || condition.id === "view-bound-grant",
+        ),
     )
     .map((kase) => kase.move);
 }
@@ -459,7 +464,7 @@ export async function runInProcessPath(
 ): Promise<PathRun> {
   const collector = new SpanCollector();
   const world = createConformanceWorld(
-    { maxToolCalls: BENCH_CEILING, maxSteps: BENCH_CEILING },
+    { governedView: true, maxToolCalls: BENCH_CEILING, maxSteps: BENCH_CEILING },
     { spans: collector },
   );
   const turns: TurnOutcome[] = [];
@@ -628,7 +633,7 @@ export async function runToolsharePath(
 ): Promise<PathRun> {
   const collector = new SpanCollector();
   const world = createConformanceWorld(
-    { maxToolCalls: BENCH_CEILING, maxSteps: BENCH_CEILING },
+    { governedView: true, maxToolCalls: BENCH_CEILING, maxSteps: BENCH_CEILING },
     { spans: collector },
   );
   const attempts = benchAttempts(moves);
@@ -702,7 +707,11 @@ export async function runRecordWritePath(
   moves: readonly AttackMove[],
   options: BenchSettings,
 ): Promise<RecordWriteRun> {
-  const world = createConformanceWorld({ maxToolCalls: BENCH_CEILING, maxSteps: BENCH_CEILING });
+  const world = createConformanceWorld({
+    governedView: true,
+    maxToolCalls: BENCH_CEILING,
+    maxSteps: BENCH_CEILING,
+  });
   const auditFrom = world.auditEvents.length;
   const request = world.request("bench.record.turn-1");
   let sequence = 0;
@@ -898,6 +907,8 @@ export async function runSystemsCostBench(options: BenchOptions = {}): Promise<S
       basis:
         "one turn's evidence, re-assembled; the same code on both paths, so it is measured once",
     },
+    viewMeasure(inProcess, "in-process"),
+    viewMeasure(toolshare, "mcp-toolshare"),
     endToEndMeasure(inProcess, "in-process"),
     endToEndMeasure(toolshare, "mcp-toolshare"),
   ];
@@ -970,6 +981,33 @@ function authorizationMeasure(run: PathRun, path: BenchMeasure["path"]): BenchMe
     basis:
       `pooled over ${loadStats.n} turn-boundary loads (p50 ${round(loadStats.p50Ms)} ms) and ` +
       `${checkStats.n} in-turn checks (p50 ${round(checkStats.p50Ms)} ms)`,
+  };
+}
+
+/**
+ * The governed-view row for one path: one projection of one provider result.
+ *
+ * The span opens after the provider has answered and closes when the projection
+ * is decided, so the figure is the kernel-owned narrowing alone: no provider,
+ * no authorization, no audit. There is one projection per turn on each path --
+ * the workload's one view read -- which is exactly the rate the mediated path
+ * pays it at.
+ */
+function viewMeasure(run: PathRun, path: BenchMeasure["path"]): BenchMeasure {
+  const spans = run.spans.filter(({ name }) => name === SPAN.VIEW_PROJECT);
+  return {
+    id: `governed-view-construction.${path}`,
+    component: "Governed-view construction",
+    path,
+    unit: "one typed governed view served in place of a raw record",
+    latency: summarize(spans.map(({ durationMs }) => durationMs)),
+    tokens: 0,
+    evidenceBytes: null,
+    wireBytes: null,
+    basis:
+      "the kernel's projection of the provider result down to the view's declared fields; " +
+      "the served payload leaves no evidence bytes because payloads never enter the record, " +
+      "and the view's name and field list ride the call's own audit event",
   };
 }
 

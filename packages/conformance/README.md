@@ -90,14 +90,22 @@ definitions rather than transcribed beside them:
 | `over_broad_delegation`      | Derived grant exceeds its parent                  | `delegation_chain_invalid` |
 | `escalation_recorded`        | Escalation is requested and recorded              | `escalation_requested`     |
 | `record_completeness`        | Allowed and denied turns emit a complete record   | `ExecutionRecord`          |
-| `typed_governed_views`       | Serve a typed governed view in place of a record  | _not implemented_          |
+| `typed_governed_views`       | Serve a typed governed view in place of a record  | `view_required`            |
 | `replay_freshness`           | Replay a recorded turn against a freshness check  | _not implemented_          |
 
-The last two rows are declared and not built. They are here rather than omitted
+The last row is declared and not built. It is here rather than omitted
 because a matrix that silently drops the rows nobody implemented describes a
 narrower system as a more conformant one. `ConformanceCase.notImplemented`
 carries the reason, the cell reports `not implemented`, and the row is never run
 and never a pass.
+
+The governed-view row runs three attempts against one armed grant: the raw read
+of the record behind the view is refused `view_required`, the read naming the
+view succeeds and is served only the view's declared fields, and naming the view
+against any other resource grants nothing. The narrowing itself is asserted in
+the world's tests rather than inferred from the receipts, because a control that
+succeeded by serving the whole record is exactly the failure the row exists to
+catch.
 
 Three rows need more than one turn, a clock that moves, or a kind of attempt
 that is not a tool call:

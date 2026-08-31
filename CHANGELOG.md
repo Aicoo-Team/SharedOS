@@ -96,6 +96,20 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- Typed governed views: a `Capability` may declare a named view with a field
+  list, and then authorizes that view of its resource and nothing rawer. A raw
+  read whose only covering authority is view-bound is refused `view_required`
+  with the servable view names in the decision metadata; a read naming the view
+  is served the kernel's projection of the provider's raw result down to the
+  declared fields, under its own `kernel.view.project` span. Dropping, renaming,
+  or widening a parent's view is refused across delegation like any other
+  widening. `files.read` gains an optional `view` argument, the conformance
+  manifest's `typed_governed_views` row is implemented rather than declared,
+  and the systems-cost bench reports "Governed-view construction" as its own
+  component (measurement rules version 2). Hosts updating: `AuthorizationRequest`
+  and `ResourceInvocationRequest` gain an optional `view`; `AuthorizationDecision`
+  carries the matched view on allowed decisions. See ADR 0019.
+
 - `messages.request`, a canonical recipient-scoped request/reply tool. The model
   supplies only a recipient and JSON-safe payload; trusted context supplies the
   sender, purpose, trace, timestamp, and message id. `MessageTransport` and

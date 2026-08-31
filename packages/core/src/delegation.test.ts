@@ -670,3 +670,51 @@ describe("deriveGrant", () => {
     ).resolves.toMatchObject({ status: "invalid", code: "parent_inactive" });
   });
 });
+
+describe("view attenuation across delegation", () => {
+  const cell3Reads = {
+    resource: { namespace: "fleet", path: ["cell-3"], owner: FLEET_OWNER },
+    actions: ["move"],
+    scope: "exact" as const,
+  };
+  const statusView = { name: "status", fields: ["state", "battery"] };
+
+  it("lets a raw parent pass on a view-bound child: a view is an attenuation", () => {
+    const result = derive(fleetParent({ capabilities: [cell3Reads] }), [
+      { ...cell3Reads, view: structuredClone(statusView) },
+    ]);
+    expect(result.ok).toBe(true);
+  });
+
+  it("refuses a child that drops, renames, or widens its parent's view", () => {
+    const viewParent = fleetParent({
+      capabilities: [{ ...cell3Reads, view: structuredClone(statusView) }],
+    });
+
+    // Dropping the view would hand over the record the parent never saw whole.
+    expect(derive(viewParent, [cell3Reads])).toEqual({
+      ok: false,
+      reason: "capability_not_within_parent",
+    });
+    // A renamed view is a different declaration, not a subset of this one.
+    expect(
+      derive(viewParent, [{ ...cell3Reads, view: { name: "telemetry", fields: ["state"] } }]),
+    ).toEqual({ ok: false, reason: "capability_not_within_parent" });
+    // And a grown field list serves more than the parent's view declares.
+    expect(
+      derive(viewParent, [
+        { ...cell3Reads, view: { name: "status", fields: ["state", "battery", "operator"] } },
+      ]),
+    ).toEqual({ ok: false, reason: "capability_not_within_parent" });
+  });
+
+  it("lets a view-bound parent narrow its field list further", () => {
+    const viewParent = fleetParent({
+      capabilities: [{ ...cell3Reads, view: structuredClone(statusView) }],
+    });
+    const result = derive(viewParent, [
+      { ...cell3Reads, view: { name: "status", fields: ["state"] } },
+    ]);
+    expect(result.ok).toBe(true);
+  });
+});

@@ -34,12 +34,63 @@ export const ResourceRefSchema = z
 
 export type ResourceRef = z.infer<typeof ResourceRefSchema>;
 
-/** A positive capability. SharedOS is deny-by-default when no grant matches. */
+/**
+ * One field of a typed governed view, by name.
+ *
+ * A field name is a JSON object key on the representation a read serves, so the
+ * vocabulary is the data plane's, not the identifier plane's: anything but
+ * control characters, bounded, and never empty.
+ */
+export const ViewFieldSchema = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[^\u0000-\u001f\u007f]+$/u, {
+    message: "view fields must not contain control characters",
+  });
+
+/**
+ * A typed governed view: the authorised representation of a resource, declared
+ * on the capability that serves it.
+ *
+ * A grant carrying a view does not authorize the record behind the view. The
+ * kernel refuses a raw read against it (`view_required`) and serves a request
+ * that names the view with only the declared fields -- a calendar entry's
+ * free/busy without its title, attendees, or notes. The definition lives here,
+ * on authority, because a view whose field list arrived with the request would
+ * be disclosure the presenter controls.
+ */
+export const GovernedViewSchema = z
+  .object({
+    name: IdentifierSchema,
+    fields: z.array(ViewFieldSchema).min(1).max(64),
+  })
+  .strict()
+  .superRefine((view, context) => {
+    if (new Set(view.fields).size !== view.fields.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "view fields must be unique",
+        path: ["fields"],
+      });
+    }
+  });
+
+export type GovernedView = z.infer<typeof GovernedViewSchema>;
+
+/**
+ * A positive capability. SharedOS is deny-by-default when no grant matches.
+ *
+ * A capability carrying `view` authorizes the named view of the resource and
+ * nothing rawer: requests that do not name the view are refused, and requests
+ * that do are served only the view's declared fields.
+ */
 export const CapabilitySchema = z
   .object({
     resource: ResourceRefSchema,
     actions: z.array(ActionSchema).min(1).max(64),
     scope: z.enum(["exact", "descendants"]),
+    view: GovernedViewSchema.optional(),
   })
   .strict();
 

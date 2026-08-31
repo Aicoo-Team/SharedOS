@@ -124,6 +124,8 @@ describe("runSystemsCostBench", () => {
       "capability-authorization.in-process",
       "capability-authorization.mcp-toolshare",
       "execution-record-write.in-process",
+      "governed-view-construction.in-process",
+      "governed-view-construction.mcp-toolshare",
       "end-to-end.in-process",
       "end-to-end.mcp-toolshare",
     ]);

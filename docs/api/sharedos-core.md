@@ -27,7 +27,7 @@ SharedOS is currently an `0.x` prerelease.
 
 ### CapabilityAuthorizer
 
-Defined in: [packages/core/src/authorization.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L133)
+Defined in: packages/core/src/authorization.ts:144
 
 #### Constructors
 
@@ -35,7 +35,7 @@ Defined in: [packages/core/src/authorization.ts:133](https://github.com/Aicoo-Te
 
 > **new CapabilityAuthorizer**(`options?`): [`CapabilityAuthorizer`](#capabilityauthorizer)
 
-Defined in: [packages/core/src/authorization.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L139)
+Defined in: packages/core/src/authorization.ts:150
 
 ###### Parameters
 
@@ -51,9 +51,9 @@ Defined in: [packages/core/src/authorization.ts:139](https://github.com/Aicoo-Te
 
 ##### authorize()
 
-> **authorize**(`authority`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
+> **authorize**(`authority`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}\>
 
-Defined in: [packages/core/src/authorization.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L146)
+Defined in: packages/core/src/authorization.ts:157
 
 ###### Parameters
 
@@ -65,13 +65,13 @@ Defined in: [packages/core/src/authorization.ts:146](https://github.com/Aicoo-Te
 
 ###### Returns
 
-`Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
+`Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}\>
 
 ##### canDiscover()
 
-> **canDiscover**(`authority`, `ceiling`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
+> **canDiscover**(`authority`, `ceiling`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}\>
 
-Defined in: [packages/core/src/authorization.ts:165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L165)
+Defined in: packages/core/src/authorization.ts:176
 
 Non-consuming catalog check. A narrow grant can discover a tool whose
 declared resource is a broader ceiling; invocation still checks the exact
@@ -87,13 +87,13 @@ argument-selected resource.
 
 ###### Returns
 
-`Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
+`Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}\>
 
 ---
 
 ### CompositeAuditSink
 
-Defined in: [packages/core/src/audit.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L62)
+Defined in: packages/core/src/audit.ts:62
 
 #### Implements
 
@@ -105,7 +105,7 @@ Defined in: [packages/core/src/audit.ts:62](https://github.com/Aicoo-Team/Shared
 
 > **new CompositeAuditSink**(`sinks`): [`CompositeAuditSink`](#compositeauditsink)
 
-Defined in: [packages/core/src/audit.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L65)
+Defined in: packages/core/src/audit.ts:65
 
 ###### Parameters
 
@@ -123,7 +123,7 @@ Defined in: [packages/core/src/audit.ts:65](https://github.com/Aicoo-Team/Shared
 
 > **record**(`event`): `Promise`\<`void`>\>
 
-Defined in: [packages/core/src/audit.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L69)
+Defined in: packages/core/src/audit.ts:69
 
 ###### Parameters
 
@@ -143,7 +143,7 @@ Defined in: [packages/core/src/audit.ts:69](https://github.com/Aicoo-Team/Shared
 
 ### DuplicateRegistrationError
 
-Defined in: [packages/core/src/errors.ts:1](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/errors.ts#L1)
+Defined in: packages/core/src/errors.ts:1
 
 #### Extends
 
@@ -155,7 +155,7 @@ Defined in: [packages/core/src/errors.ts:1](https://github.com/Aicoo-Team/Shared
 
 > **new DuplicateRegistrationError**(`kind`, `identifier`): [`DuplicateRegistrationError`](#duplicateregistrationerror)
 
-Defined in: [packages/core/src/errors.ts:4](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/errors.ts#L4)
+Defined in: packages/core/src/errors.ts:4
 
 ###### Parameters
 
@@ -174,13 +174,13 @@ Defined in: [packages/core/src/errors.ts:4](https://github.com/Aicoo-Team/Shared
 
 #### Properties
 
-| Property                                                | Modifier   | Type                           | Default value                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Overrides    | Inherited from          | Defined in                                                                                                       |
-| ------------------------------------------------------- | ---------- | ------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| <a id="property-cause"></a> `cause?`                    | `public`   | `unknown`                      | `undefined`                    | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -            | `Error.cause`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26                       |
-| <a id="property-message"></a> `message`                 | `public`   | `string`                       | `undefined`                    | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -            | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077                              |
-| <a id="property-name"></a> `name`                       | `readonly` | `"DuplicateRegistrationError"` | `"DuplicateRegistrationError"` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name` | -                       | [packages/core/src/errors.ts:2](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/errors.ts#L2) |
-| <a id="property-stack"></a> `stack?`                    | `public`   | `string`                       | `undefined`                    | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -            | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078                              |
-| <a id="property-stacktracelimit"></a> `stackTraceLimit` | `static`   | `number`                       | `undefined`                    | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | -            | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68                                |
+| Property                                                | Modifier   | Type                           | Default value                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Overrides    | Inherited from          | Defined in                                                                                 |
+| ------------------------------------------------------- | ---------- | ------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ----------------------- | ------------------------------------------------------------------------------------------ |
+| <a id="property-cause"></a> `cause?`                    | `public`   | `unknown`                      | `undefined`                    | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -            | `Error.cause`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26 |
+| <a id="property-message"></a> `message`                 | `public`   | `string`                       | `undefined`                    | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -            | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077        |
+| <a id="property-name"></a> `name`                       | `readonly` | `"DuplicateRegistrationError"` | `"DuplicateRegistrationError"` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name` | -                       | packages/core/src/errors.ts:2                                                              |
+| <a id="property-stack"></a> `stack?`                    | `public`   | `string`                       | `undefined`                    | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -            | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078        |
+| <a id="property-stacktracelimit"></a> `stackTraceLimit` | `static`   | `number`                       | `undefined`                    | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | -            | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68          |
 
 #### Methods
 
@@ -278,7 +278,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### InMemoryGrantUsageStore
 
-Defined in: [packages/core/src/authorization.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L109)
+Defined in: packages/core/src/authorization.ts:120
 
 An atomic, process-local usage store suitable for tests and single-process
 hosts. Distributed hosts should inject a durable compare-and-set store.
@@ -303,7 +303,7 @@ hosts. Distributed hosts should inject a durable compare-and-set store.
 
 > **getUsage**(`namespaceId`, `grantId`): `Promise`\<`number`>\>
 
-Defined in: [packages/core/src/authorization.ts:112](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L112)
+Defined in: packages/core/src/authorization.ts:123
 
 ###### Parameters
 
@@ -324,7 +324,7 @@ Defined in: [packages/core/src/authorization.ts:112](https://github.com/Aicoo-Te
 
 > **tryConsume**(`namespaceId`, `grantId`, `maximumUses`): `Promise`\<`boolean`>\>
 
-Defined in: [packages/core/src/authorization.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L116)
+Defined in: packages/core/src/authorization.ts:127
 
 ###### Parameters
 
@@ -346,7 +346,7 @@ Defined in: [packages/core/src/authorization.ts:116](https://github.com/Aicoo-Te
 
 ### MissingRegistrationError
 
-Defined in: [packages/core/src/errors.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/errors.ts#L12)
+Defined in: packages/core/src/errors.ts:12
 
 #### Extends
 
@@ -358,7 +358,7 @@ Defined in: [packages/core/src/errors.ts:12](https://github.com/Aicoo-Team/Share
 
 > **new MissingRegistrationError**(`kind`, `identifier`): [`MissingRegistrationError`](#missingregistrationerror)
 
-Defined in: [packages/core/src/errors.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/errors.ts#L15)
+Defined in: packages/core/src/errors.ts:15
 
 ###### Parameters
 
@@ -377,13 +377,13 @@ Defined in: [packages/core/src/errors.ts:15](https://github.com/Aicoo-Team/Share
 
 #### Properties
 
-| Property                                                  | Modifier   | Type                         | Default value                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Overrides    | Inherited from          | Defined in                                                                                                         |
-| --------------------------------------------------------- | ---------- | ---------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-cause-1"></a> `cause?`                    | `public`   | `unknown`                    | `undefined`                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -            | `Error.cause`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26                         |
-| <a id="property-message-1"></a> `message`                 | `public`   | `string`                     | `undefined`                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -            | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077                                |
-| <a id="property-name-1"></a> `name`                       | `readonly` | `"MissingRegistrationError"` | `"MissingRegistrationError"` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name` | -                       | [packages/core/src/errors.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/errors.ts#L13) |
-| <a id="property-stack-1"></a> `stack?`                    | `public`   | `string`                     | `undefined`                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -            | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078                                |
-| <a id="property-stacktracelimit-1"></a> `stackTraceLimit` | `static`   | `number`                     | `undefined`                  | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | -            | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68                                  |
+| Property                                                  | Modifier   | Type                         | Default value                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Overrides    | Inherited from          | Defined in                                                                                 |
+| --------------------------------------------------------- | ---------- | ---------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ----------------------- | ------------------------------------------------------------------------------------------ |
+| <a id="property-cause-1"></a> `cause?`                    | `public`   | `unknown`                    | `undefined`                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -            | `Error.cause`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26 |
+| <a id="property-message-1"></a> `message`                 | `public`   | `string`                     | `undefined`                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -            | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077        |
+| <a id="property-name-1"></a> `name`                       | `readonly` | `"MissingRegistrationError"` | `"MissingRegistrationError"` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name` | -                       | packages/core/src/errors.ts:13                                                             |
+| <a id="property-stack-1"></a> `stack?`                    | `public`   | `string`                     | `undefined`                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -            | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078        |
+| <a id="property-stacktracelimit-1"></a> `stackTraceLimit` | `static`   | `number`                     | `undefined`                  | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | -            | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68          |
 
 #### Methods
 
@@ -481,7 +481,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### NoopAuditSink
 
-Defined in: [packages/core/src/audit.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L56)
+Defined in: packages/core/src/audit.ts:56
 
 #### Implements
 
@@ -503,7 +503,7 @@ Defined in: [packages/core/src/audit.ts:56](https://github.com/Aicoo-Team/Shared
 
 > **record**(`_event`): `Promise`\<`void`>\>
 
-Defined in: [packages/core/src/audit.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L57)
+Defined in: packages/core/src/audit.ts:57
 
 ###### Parameters
 
@@ -523,7 +523,7 @@ Defined in: [packages/core/src/audit.ts:57](https://github.com/Aicoo-Team/Shared
 
 ### RecipientScopedMessageCapabilityResolver
 
-Defined in: [packages/core/src/message-service.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L52)
+Defined in: packages/core/src/message-service.ts:52
 
 #### Implements
 
@@ -535,7 +535,7 @@ Defined in: [packages/core/src/message-service.ts:52](https://github.com/Aicoo-T
 
 > **new RecipientScopedMessageCapabilityResolver**(`namespace?`): [`RecipientScopedMessageCapabilityResolver`](#recipientscopedmessagecapabilityresolver)
 
-Defined in: [packages/core/src/message-service.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L55)
+Defined in: packages/core/src/message-service.ts:55
 
 ###### Parameters
 
@@ -553,7 +553,7 @@ Defined in: [packages/core/src/message-service.ts:55](https://github.com/Aicoo-T
 
 > **resolve**(`context`, `envelope`): [`AuthorizationRequest`](#authorizationrequest)
 
-Defined in: [packages/core/src/message-service.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L59)
+Defined in: packages/core/src/message-service.ts:59
 
 ###### Parameters
 
@@ -595,7 +595,7 @@ Defined in: [packages/core/src/message-service.ts:59](https://github.com/Aicoo-T
 
 ### ResourceProviderRegistry
 
-Defined in: [packages/core/src/resource-registry.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L23)
+Defined in: packages/core/src/resource-registry.ts:31
 
 #### Constructors
 
@@ -613,7 +613,7 @@ Defined in: [packages/core/src/resource-registry.ts:23](https://github.com/Aicoo
 
 > **get**(`namespace`): [`ResourceProvider`](#resourceprovider) \| `undefined`
 
-Defined in: [packages/core/src/resource-registry.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L37)
+Defined in: packages/core/src/resource-registry.ts:45
 
 ###### Parameters
 
@@ -629,7 +629,7 @@ Defined in: [packages/core/src/resource-registry.ts:37](https://github.com/Aicoo
 
 > **has**(`namespace`): `boolean`
 
-Defined in: [packages/core/src/resource-registry.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L41)
+Defined in: packages/core/src/resource-registry.ts:49
 
 ###### Parameters
 
@@ -645,7 +645,7 @@ Defined in: [packages/core/src/resource-registry.ts:41](https://github.com/Aicoo
 
 > **namespaces**(): readonly `string`[]
 
-Defined in: [packages/core/src/resource-registry.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L45)
+Defined in: packages/core/src/resource-registry.ts:53
 
 ###### Returns
 
@@ -655,7 +655,7 @@ readonly `string`[]
 
 > **register**(`provider`): `void`
 
-Defined in: [packages/core/src/resource-registry.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L26)
+Defined in: packages/core/src/resource-registry.ts:34
 
 ###### Parameters
 
@@ -671,7 +671,7 @@ Defined in: [packages/core/src/resource-registry.ts:26](https://github.com/Aicoo
 
 ### SharedOSKernel
 
-Defined in: [packages/core/src/kernel.ts:124](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L124)
+Defined in: packages/core/src/kernel.ts:126
 
 Host-neutral facade for every permission-controlled SharedOS operation.
 AccessContext is a trusted host-created boundary; never construct it from an
@@ -683,7 +683,7 @@ unverified request body.
 
 > **new SharedOSKernel**(`options`): [`SharedOSKernel`](#sharedoskernel)
 
-Defined in: [packages/core/src/kernel.ts:140](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L140)
+Defined in: packages/core/src/kernel.ts:142
 
 ###### Parameters
 
@@ -699,9 +699,9 @@ Defined in: [packages/core/src/kernel.ts:140](https://github.com/Aicoo-Team/Shar
 
 ##### admitTurn()
 
-> **admitTurn**(`context`, `agent`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
+> **admitTurn**(`context`, `agent`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:248](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L248)
+Defined in: packages/core/src/kernel.ts:250
 
 Consume permission to invoke exactly one target agent turn.
 
@@ -723,13 +723,13 @@ Consume permission to invoke exactly one target agent turn.
 
 ###### Returns
 
-`Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
+`Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}\>
 
 ##### authorize()
 
-> **authorize**(`context`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
+> **authorize**(`context`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:232](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L232)
+Defined in: packages/core/src/kernel.ts:234
 
 ###### Parameters
 
@@ -749,13 +749,13 @@ Defined in: [packages/core/src/kernel.ts:232](https://github.com/Aicoo-Team/Shar
 
 ###### Returns
 
-`Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
+`Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}\>
 
 ##### invokeResource()
 
 > **invokeResource**(`context`, `request`, `options?`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:730](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L730)
+Defined in: packages/core/src/kernel.ts:784
 
 ###### Parameters
 
@@ -781,7 +781,7 @@ Defined in: [packages/core/src/kernel.ts:730](https://github.com/Aicoo-Team/Shar
 
 > **invokeTool**(`context`, `call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:474](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L474)
+Defined in: packages/core/src/kernel.ts:476
 
 Re-authorize and dispatch one tool call.
 
@@ -820,7 +820,7 @@ SharedOS. Both spans exist or neither does.
 
 > **listPublishedTools**(`context`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:386](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L386)
+Defined in: packages/core/src/kernel.ts:388
 
 The effective catalogue as an external harness receives it.
 
@@ -859,7 +859,7 @@ harness would have to interpret.
 
 > **listToolNamespaces**(`context`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:394](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L394)
+Defined in: packages/core/src/kernel.ts:396
 
 ###### Parameters
 
@@ -884,7 +884,7 @@ Defined in: [packages/core/src/kernel.ts:394](https://github.com/Aicoo-Team/Shar
 
 > **listTools**(`context`, `options?`): `Promise`\<readonly `object`[]\>
 
-Defined in: [packages/core/src/kernel.ts:318](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L318)
+Defined in: packages/core/src/kernel.ts:320
 
 ###### Parameters
 
@@ -909,7 +909,7 @@ Defined in: [packages/core/src/kernel.ts:318](https://github.com/Aicoo-Team/Shar
 
 > **openTurnAuthority**(`context`, `options?`): `Promise`\<[`TurnAuthorityScope`](#turnauthorityscope)>\>
 
-Defined in: [packages/core/src/kernel.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L196)
+Defined in: packages/core/src/kernel.ts:198
 
 Resolve the authority one turn will be decided against, and hold it.
 
@@ -950,7 +950,7 @@ lease resolves its own authority, which is a turn of one operation.
 
 > **recordEscalation**(`context`, `reason`, `options?`): `Promise`\<\{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:284](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L284)
+Defined in: packages/core/src/kernel.ts:286
 
 Record that a turn stopped and asked a human to decide.
 
@@ -988,7 +988,7 @@ deliberately no path from here back into the running turn.
 
 > **registerResourceProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L160)
+Defined in: packages/core/src/kernel.ts:162
 
 ###### Parameters
 
@@ -1004,7 +1004,7 @@ Defined in: [packages/core/src/kernel.ts:160](https://github.com/Aicoo-Team/Shar
 
 > **registerTool**(`handler`): `void`
 
-Defined in: [packages/core/src/kernel.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L164)
+Defined in: packages/core/src/kernel.ts:166
 
 ###### Parameters
 
@@ -1020,7 +1020,7 @@ Defined in: [packages/core/src/kernel.ts:164](https://github.com/Aicoo-Team/Shar
 
 > **registerToolProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:168](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L168)
+Defined in: packages/core/src/kernel.ts:170
 
 ###### Parameters
 
@@ -1036,7 +1036,7 @@ Defined in: [packages/core/src/kernel.ts:168](https://github.com/Aicoo-Team/Shar
 
 > **sendMessage**(`context`, `envelope`, `options?`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:871](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L871)
+Defined in: packages/core/src/kernel.ts:949
 
 ###### Parameters
 
@@ -1075,7 +1075,7 @@ Defined in: [packages/core/src/kernel.ts:871](https://github.com/Aicoo-Team/Shar
 
 > **updateToolNamespaces**(`context`, `update`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:417](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L417)
+Defined in: packages/core/src/kernel.ts:419
 
 ###### Parameters
 
@@ -1103,7 +1103,7 @@ Defined in: [packages/core/src/kernel.ts:417](https://github.com/Aicoo-Team/Shar
 
 ### ToolRegistry
 
-Defined in: [packages/core/src/tool-registry.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L34)
+Defined in: packages/core/src/tool-registry.ts:34
 
 #### Constructors
 
@@ -1121,7 +1121,7 @@ Defined in: [packages/core/src/tool-registry.ts:34](https://github.com/Aicoo-Tea
 
 > **definitions**(): readonly `object`[]
 
-Defined in: [packages/core/src/tool-registry.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L78)
+Defined in: packages/core/src/tool-registry.ts:78
 
 ###### Returns
 
@@ -1131,7 +1131,7 @@ readonly `object`[]
 
 > **get**(`name`): [`ToolHandler`](#toolhandler) \| `undefined`
 
-Defined in: [packages/core/src/tool-registry.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L70)
+Defined in: packages/core/src/tool-registry.ts:70
 
 ###### Parameters
 
@@ -1147,7 +1147,7 @@ Defined in: [packages/core/src/tool-registry.ts:70](https://github.com/Aicoo-Tea
 
 > **handlers**(): readonly [`ToolHandler`](#toolhandler)[]
 
-Defined in: [packages/core/src/tool-registry.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L84)
+Defined in: packages/core/src/tool-registry.ts:84
 
 ###### Returns
 
@@ -1157,7 +1157,7 @@ readonly [`ToolHandler`](#toolhandler)[]
 
 > **has**(`name`): `boolean`
 
-Defined in: [packages/core/src/tool-registry.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L74)
+Defined in: packages/core/src/tool-registry.ts:74
 
 ###### Parameters
 
@@ -1173,7 +1173,7 @@ Defined in: [packages/core/src/tool-registry.ts:74](https://github.com/Aicoo-Tea
 
 > **namespaceCatalog**(`enabledToolNamespaces`): `object`
 
-Defined in: [packages/core/src/tool-registry.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L90)
+Defined in: packages/core/src/tool-registry.ts:90
 
 ###### Parameters
 
@@ -1209,7 +1209,7 @@ Defined in: [packages/core/src/tool-registry.ts:90](https://github.com/Aicoo-Tea
 
 > **register**(`handler`): `void`
 
-Defined in: [packages/core/src/tool-registry.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L37)
+Defined in: packages/core/src/tool-registry.ts:37
 
 ###### Parameters
 
@@ -1225,7 +1225,7 @@ Defined in: [packages/core/src/tool-registry.ts:37](https://github.com/Aicoo-Tea
 
 ### TrustedAuthorityResolver
 
-Defined in: [packages/core/src/authority.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L147)
+Defined in: packages/core/src/authority.ts:147
 
 Loads and validates authority for one access context.
 
@@ -1238,7 +1238,7 @@ against a partially trusted authority set.
 
 > **new TrustedAuthorityResolver**(`source`): [`TrustedAuthorityResolver`](#trustedauthorityresolver)
 
-Defined in: [packages/core/src/authority.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L152)
+Defined in: packages/core/src/authority.ts:152
 
 ###### Parameters
 
@@ -1256,7 +1256,7 @@ Defined in: [packages/core/src/authority.ts:152](https://github.com/Aicoo-Team/S
 
 > **resolve**(`context`, `signal`): `Promise`\<[`AuthorityResolution`](#authorityresolution)>\>
 
-Defined in: [packages/core/src/authority.ts:159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L159)
+Defined in: packages/core/src/authority.ts:159
 
 ###### Parameters
 
@@ -1281,41 +1281,41 @@ Defined in: [packages/core/src/authority.ts:159](https://github.com/Aicoo-Team/S
 
 ### AuditEvent
 
-Defined in: [packages/core/src/audit.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L23)
+Defined in: packages/core/src/audit.ts:23
 
 #### Properties
 
-| Property                                             | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                       | Defined in                                                                                                       |
-| ---------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| <a id="property-action"></a> `action?`               | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L35) |
-| <a id="property-actor"></a> `actor`                  | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L30) |
-| <a id="property-at"></a> `at`                        | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L27) |
-| <a id="property-authority"></a> `authority`          | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L31) |
-| <a id="property-authorityhash"></a> `authorityHash?` | `readonly` | `string`                                                                                                                                                                                                   | Content identifier of the exact authority set the decision was made against. A turn resolves authority once, so every decision in it carries the same value; the `authority.resolved` event that opened the turn carries the grant ids behind it. | [packages/core/src/audit.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L43) |
-| <a id="property-grantid"></a> `grantId?`             | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L36) |
-| <a id="property-messageid"></a> `messageId?`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L46) |
-| <a id="property-metadata"></a> `metadata?`           | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L49) |
-| <a id="property-namespaceid"></a> `namespaceId`      | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L29) |
-| <a id="property-operationid"></a> `operationId?`     | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L44) |
-| <a id="property-outcome"></a> `outcome`              | `readonly` | [`AuditOutcome`](#auditoutcome)                                                                                                                                                                            | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L26) |
-| <a id="property-owner"></a> `owner`                  | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L32) |
-| <a id="property-purpose"></a> `purpose`              | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L33) |
-| <a id="property-reason"></a> `reason?`               | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L48) |
-| <a id="property-receiver"></a> `receiver?`           | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L47) |
-| <a id="property-resource"></a> `resource?`           | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L34) |
-| `resource.namespace`                                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/contracts/dist/capability.d.ts:54                                                                       |
-| `resource.owner?`                                    | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                 | packages/contracts/dist/capability.d.ts:55                                                                       |
-| `resource.path`                                      | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                 | packages/contracts/dist/capability.d.ts:53                                                                       |
-| <a id="property-tool"></a> `tool?`                   | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L45) |
-| <a id="property-traceid"></a> `traceId`              | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L28) |
-| <a id="property-type"></a> `type`                    | `readonly` | [`AuditEventType`](#auditeventtype)                                                                                                                                                                        | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L25) |
-| <a id="property-version"></a> `version`              | `readonly` | `"1"`                                                                                                                                                                                                      | -                                                                                                                                                                                                                                                 | [packages/core/src/audit.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L24) |
+| Property                                             | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                       | Defined in                                 |
+| ---------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| <a id="property-action"></a> `action?`               | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:35              |
+| <a id="property-actor"></a> `actor`                  | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:30              |
+| <a id="property-at"></a> `at`                        | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:27              |
+| <a id="property-authority"></a> `authority`          | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:31              |
+| <a id="property-authorityhash"></a> `authorityHash?` | `readonly` | `string`                                                                                                                                                                                                   | Content identifier of the exact authority set the decision was made against. A turn resolves authority once, so every decision in it carries the same value; the `authority.resolved` event that opened the turn carries the grant ids behind it. | packages/core/src/audit.ts:43              |
+| <a id="property-grantid"></a> `grantId?`             | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:36              |
+| <a id="property-messageid"></a> `messageId?`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:46              |
+| <a id="property-metadata"></a> `metadata?`           | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:49              |
+| <a id="property-namespaceid"></a> `namespaceId`      | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:29              |
+| <a id="property-operationid"></a> `operationId?`     | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:44              |
+| <a id="property-outcome"></a> `outcome`              | `readonly` | [`AuditOutcome`](#auditoutcome)                                                                                                                                                                            | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:26              |
+| <a id="property-owner"></a> `owner`                  | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:32              |
+| <a id="property-purpose"></a> `purpose`              | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:33              |
+| <a id="property-reason"></a> `reason?`               | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:48              |
+| <a id="property-receiver"></a> `receiver?`           | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:47              |
+| <a id="property-resource"></a> `resource?`           | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:34              |
+| `resource.namespace`                                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/contracts/dist/capability.d.ts:54 |
+| `resource.owner?`                                    | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                 | packages/contracts/dist/capability.d.ts:55 |
+| `resource.path`                                      | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                 | packages/contracts/dist/capability.d.ts:53 |
+| <a id="property-tool"></a> `tool?`                   | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:45              |
+| <a id="property-traceid"></a> `traceId`              | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:28              |
+| <a id="property-type"></a> `type`                    | `readonly` | [`AuditEventType`](#auditeventtype)                                                                                                                                                                        | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:25              |
+| <a id="property-version"></a> `version`              | `readonly` | `"1"`                                                                                                                                                                                                      | -                                                                                                                                                                                                                                                 | packages/core/src/audit.ts:24              |
 
 ---
 
 ### AuditSink
 
-Defined in: [packages/core/src/audit.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L52)
+Defined in: packages/core/src/audit.ts:52
 
 #### Methods
 
@@ -1323,7 +1323,7 @@ Defined in: [packages/core/src/audit.ts:52](https://github.com/Aicoo-Team/Shared
 
 > **record**(`event`): `Promise`\<`void`>\>
 
-Defined in: [packages/core/src/audit.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L53)
+Defined in: packages/core/src/audit.ts:53
 
 ###### Parameters
 
@@ -1339,7 +1339,7 @@ Defined in: [packages/core/src/audit.ts:53](https://github.com/Aicoo-Team/Shared
 
 ### AuthoritySnapshot
 
-Defined in: [packages/core/src/authority.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L115)
+Defined in: packages/core/src/authority.ts:115
 
 A content identifier for exactly the authority one decision was made against.
 
@@ -1353,18 +1353,18 @@ change the shape of the evidence.
 
 #### Properties
 
-| Property                                      | Modifier   | Type                | Description                                                          | Defined in                                                                                                                 |
-| --------------------------------------------- | ---------- | ------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-grantcount"></a> `grantCount` | `readonly` | `number`            | -                                                                    | [packages/core/src/authority.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L119) |
-| <a id="property-grantids"></a> `grantIds`     | `readonly` | readonly `string`[] | -                                                                    | [packages/core/src/authority.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L118) |
-| <a id="property-hash"></a> `hash`             | `readonly` | `string`            | SHA-256 over the canonical, order-independent form of the grant set. | [packages/core/src/authority.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L117) |
-| <a id="property-loadedat"></a> `loadedAt`     | `readonly` | `string`            | -                                                                    | [packages/core/src/authority.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L120) |
+| Property                                      | Modifier   | Type                | Description                                                          | Defined in                         |
+| --------------------------------------------- | ---------- | ------------------- | -------------------------------------------------------------------- | ---------------------------------- |
+| <a id="property-grantcount"></a> `grantCount` | `readonly` | `number`            | -                                                                    | packages/core/src/authority.ts:119 |
+| <a id="property-grantids"></a> `grantIds`     | `readonly` | readonly `string`[] | -                                                                    | packages/core/src/authority.ts:118 |
+| <a id="property-hash"></a> `hash`             | `readonly` | `string`            | SHA-256 over the canonical, order-independent form of the grant set. | packages/core/src/authority.ts:117 |
+| <a id="property-loadedat"></a> `loadedAt`     | `readonly` | `string`            | -                                                                    | packages/core/src/authority.ts:120 |
 
 ---
 
 ### AuthorizationInstantOptions
 
-Defined in: [packages/core/src/authorization.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L82)
+Defined in: packages/core/src/authorization.ts:93
 
 The instant one decision is made at, when it is not the turn's own.
 
@@ -1383,31 +1383,32 @@ move and which do not, and ADR 0016 for why.
 
 #### Properties
 
-| Property                         | Modifier   | Type     | Defined in                                                                                                                       |
-| -------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-now"></a> `now?` | `readonly` | `string` | [packages/core/src/authorization.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L83) |
+| Property                         | Modifier   | Type     | Defined in                            |
+| -------------------------------- | ---------- | -------- | ------------------------------------- |
+| <a id="property-now"></a> `now?` | `readonly` | `string` | packages/core/src/authorization.ts:94 |
 
 ---
 
 ### AuthorizationRequest
 
-Defined in: [packages/core/src/authorization.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L27)
+Defined in: packages/core/src/authorization.ts:27
 
 #### Properties
 
-| Property                                    | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                                       |
-| ------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-action-1"></a> `action`     | `readonly` | `string`                                                                                                                                                                                                   | [packages/core/src/authorization.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L29) |
-| <a id="property-resource-1"></a> `resource` | `readonly` | `object`                                                                                                                                                                                                   | [packages/core/src/authorization.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L28) |
-| `resource.namespace`                        | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/capability.d.ts:54                                                                                       |
-| `resource.owner?`                           | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/capability.d.ts:55                                                                                       |
-| `resource.path`                             | `public`   | `string`[]                                                                                                                                                                                                 | packages/contracts/dist/capability.d.ts:53                                                                                       |
+| Property                                    | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                  | Defined in                                 |
+| ------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| <a id="property-action-1"></a> `action`     | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                            | packages/core/src/authorization.ts:29      |
+| <a id="property-resource-1"></a> `resource` | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                            | packages/core/src/authorization.ts:28      |
+| `resource.namespace`                        | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                            | packages/contracts/dist/capability.d.ts:54 |
+| `resource.owner?`                           | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                                                                                            | packages/contracts/dist/capability.d.ts:55 |
+| `resource.path`                             | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                                                                                                                                                                                            | packages/contracts/dist/capability.d.ts:53 |
+| <a id="property-view"></a> `view?`          | `readonly` | `string`                                                                                                                                                                                                   | The typed governed view the request asks to be served, by name. A request naming a view is satisfied only by a capability declaring that view; a request naming none is satisfied only by a capability declaring none. The two never substitute for each other: a raw capability carries no field list to serve a view from, and a view-bound capability was issued precisely so the record behind it is never served whole. | packages/core/src/authorization.ts:39      |
 
 ---
 
 ### AuthorizeOptions
 
-Defined in: [packages/core/src/authorization.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L86)
+Defined in: packages/core/src/authorization.ts:97
 
 The instant one decision is made at, when it is not the turn's own.
 
@@ -1426,31 +1427,31 @@ move and which do not, and ADR 0016 for why.
 
 #### Properties
 
-| Property                                 | Modifier   | Type      | Description                                                                                                                            | Inherited from                                                                       | Defined in                                                                                                                       |
-| ---------------------------------------- | ---------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-consume"></a> `consume?` | `readonly` | `boolean` | Consumption is reserved for execution. Discovery calls must leave this false so merely viewing a catalog cannot spend a bounded grant. | -                                                                                    | [packages/core/src/authorization.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L91) |
-| <a id="property-now-1"></a> `now?`       | `readonly` | `string`  | -                                                                                                                                      | [`AuthorizationInstantOptions`](#authorizationinstantoptions).[`now`](#property-now) | [packages/core/src/authorization.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L83) |
+| Property                                 | Modifier   | Type      | Description                                                                                                                            | Inherited from                                                                       | Defined in                             |
+| ---------------------------------------- | ---------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------- |
+| <a id="property-consume"></a> `consume?` | `readonly` | `boolean` | Consumption is reserved for execution. Discovery calls must leave this false so merely viewing a catalog cannot spend a bounded grant. | -                                                                                    | packages/core/src/authorization.ts:102 |
+| <a id="property-now-1"></a> `now?`       | `readonly` | `string`  | -                                                                                                                                      | [`AuthorizationInstantOptions`](#authorizationinstantoptions).[`now`](#property-now) | packages/core/src/authorization.ts:94  |
 
 ---
 
 ### CapabilityAuthorizerOptions
 
-Defined in: [packages/core/src/authorization.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L94)
+Defined in: packages/core/src/authorization.ts:105
 
 #### Properties
 
-| Property                                                                   | Modifier   | Type                                                  | Description                                                                                                          | Defined in                                                                                                                         |
-| -------------------------------------------------------------------------- | ---------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-delegationresolver"></a> `delegationResolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | Trusted ancestor lookup for delegated grants. Without it, a grant that claims a parent can never authorize anything. | [packages/core/src/authorization.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L101) |
-| <a id="property-grantverifier"></a> `grantVerifier?`                       | `readonly` | [`CapabilityGrantVerifier`](#capabilitygrantverifier) | -                                                                                                                    | [packages/core/src/authorization.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L96)   |
-| <a id="property-maxdelegationchainlength"></a> `maxDelegationChainLength?` | `readonly` | `number`                                              | -                                                                                                                    | [packages/core/src/authorization.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L102) |
-| <a id="property-usagestore"></a> `usageStore?`                             | `readonly` | [`GrantUsageStore`](#grantusagestore)                 | -                                                                                                                    | [packages/core/src/authorization.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L95)   |
+| Property                                                                   | Modifier   | Type                                                  | Description                                                                                                          | Defined in                             |
+| -------------------------------------------------------------------------- | ---------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| <a id="property-delegationresolver"></a> `delegationResolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | Trusted ancestor lookup for delegated grants. Without it, a grant that claims a parent can never authorize anything. | packages/core/src/authorization.ts:112 |
+| <a id="property-grantverifier"></a> `grantVerifier?`                       | `readonly` | [`CapabilityGrantVerifier`](#capabilitygrantverifier) | -                                                                                                                    | packages/core/src/authorization.ts:107 |
+| <a id="property-maxdelegationchainlength"></a> `maxDelegationChainLength?` | `readonly` | `number`                                              | -                                                                                                                    | packages/core/src/authorization.ts:113 |
+| <a id="property-usagestore"></a> `usageStore?`                             | `readonly` | [`GrantUsageStore`](#grantusagestore)                 | -                                                                                                                    | packages/core/src/authorization.ts:106 |
 
 ---
 
 ### CapabilityGrantVerifier
 
-Defined in: [packages/core/src/authorization.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L66)
+Defined in: packages/core/src/authorization.ts:77
 
 #### Methods
 
@@ -1458,7 +1459,7 @@ Defined in: [packages/core/src/authorization.ts:66](https://github.com/Aicoo-Tea
 
 > **verify**(`grant`, `context`): `Promise`\<`boolean`>\>
 
-Defined in: [packages/core/src/authorization.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L67)
+Defined in: packages/core/src/authorization.ts:78
 
 ###### Parameters
 
@@ -1498,7 +1499,7 @@ Defined in: [packages/core/src/authorization.ts:67](https://github.com/Aicoo-Tea
 
 ### ContextToolProvider
 
-Defined in: [packages/core/src/tool-registry.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L29)
+Defined in: packages/core/src/tool-registry.ts:29
 
 Supplies tools for exactly one trusted access context.
 
@@ -1507,9 +1508,9 @@ instead of mutating one global registry shared by concurrent users.
 
 #### Properties
 
-| Property                      | Modifier   | Type     | Defined in                                                                                                                       |
-| ----------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-id"></a> `id` | `readonly` | `string` | [packages/core/src/tool-registry.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L30) |
+| Property                      | Modifier   | Type     | Defined in                            |
+| ----------------------------- | ---------- | -------- | ------------------------------------- |
+| <a id="property-id"></a> `id` | `readonly` | `string` | packages/core/src/tool-registry.ts:30 |
 
 #### Methods
 
@@ -1517,7 +1518,7 @@ instead of mutating one global registry shared by concurrent users.
 
 > **listTools**(`context`, `signal`): `Promise`\<readonly [`ToolHandler`](#toolhandler)[]\>
 
-Defined in: [packages/core/src/tool-registry.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L31)
+Defined in: packages/core/src/tool-registry.ts:31
 
 ###### Parameters
 
@@ -1542,7 +1543,7 @@ Defined in: [packages/core/src/tool-registry.ts:31](https://github.com/Aicoo-Tea
 
 ### DelegationChainResolver
 
-Defined in: [packages/core/src/delegation.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L29)
+Defined in: packages/core/src/delegation.ts:29
 
 The trusted lookup for ancestors of a derived grant.
 
@@ -1557,7 +1558,7 @@ throw rather than return a partial or stale ancestor.
 
 > **resolve**(`namespaceId`, `grantId`): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: [packages/core/src/delegation.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L30)
+Defined in: packages/core/src/delegation.ts:30
 
 ###### Parameters
 
@@ -1574,38 +1575,38 @@ Defined in: [packages/core/src/delegation.ts:30](https://github.com/Aicoo-Team/S
 
 ### DelegationValidationOptions
 
-Defined in: [packages/core/src/delegation.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L65)
+Defined in: packages/core/src/delegation.ts:65
 
 #### Properties
 
-| Property                                               | Modifier   | Type                                                  | Description                                                                                                                                                                                                                                                                                       | Defined in                                                                                                                 |
-| ------------------------------------------------------ | ---------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-admittedat"></a> `admittedAt?`         | `readonly` | `number`                                              | The instant the turn's authority was resolved, when it is not `now`. An ancestor is subject to the same split as the grant that names it: its expiry is observed at `now`, everything else at the instant the turn was admitted. Defaults to `now`, which decides the whole chain at one instant. | [packages/core/src/delegation.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L75) |
-| <a id="property-maxchainlength"></a> `maxChainLength?` | `readonly` | `number`                                              | -                                                                                                                                                                                                                                                                                                 | [packages/core/src/delegation.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L67) |
-| <a id="property-resolver"></a> `resolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | -                                                                                                                                                                                                                                                                                                 | [packages/core/src/delegation.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L66) |
+| Property                                               | Modifier   | Type                                                  | Description                                                                                                                                                                                                                                                                                       | Defined in                         |
+| ------------------------------------------------------ | ---------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| <a id="property-admittedat"></a> `admittedAt?`         | `readonly` | `number`                                              | The instant the turn's authority was resolved, when it is not `now`. An ancestor is subject to the same split as the grant that names it: its expiry is observed at `now`, everything else at the instant the turn was admitted. Defaults to `now`, which decides the whole chain at one instant. | packages/core/src/delegation.ts:75 |
+| <a id="property-maxchainlength"></a> `maxChainLength?` | `readonly` | `number`                                              | -                                                                                                                                                                                                                                                                                                 | packages/core/src/delegation.ts:67 |
+| <a id="property-resolver"></a> `resolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | -                                                                                                                                                                                                                                                                                                 | packages/core/src/delegation.ts:66 |
 
 ---
 
 ### DeriveGrantRequest
 
-Defined in: [packages/core/src/delegation.ts:290](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L290)
+Defined in: packages/core/src/delegation.ts:313
 
 #### Properties
 
-| Property                                          | Modifier   | Type                                                                                                                                                                                                       | Description                                                                      | Defined in                                                                                                                   |
-| ------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-capabilities"></a> `capabilities` | `readonly` | readonly `object`[]                                                                                                                                                                                        | The subset being passed on. Must be within the parent, capability by capability. | [packages/core/src/delegation.ts:296](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L296) |
-| <a id="property-constraints"></a> `constraints?`  | `readonly` | `Omit`\<\{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, `"delegationDepth"`\> & `object`                               | -                                                                                | [packages/core/src/delegation.ts:297](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L297) |
-| <a id="property-id-1"></a> `id`                   | `readonly` | `string`                                                                                                                                                                                                   | Identifier for the derived grant. Must be unique within the namespace.           | [packages/core/src/delegation.ts:292](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L292) |
-| <a id="property-issuedat"></a> `issuedAt`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                | [packages/core/src/delegation.ts:300](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L300) |
-| <a id="property-metadata-1"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                | [packages/core/src/delegation.ts:301](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L301) |
-| <a id="property-subject"></a> `subject`           | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Who receives the derived authority.                                              | [packages/core/src/delegation.ts:294](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L294) |
+| Property                                          | Modifier   | Type                                                                                                                                                                                                       | Description                                                                      | Defined in                          |
+| ------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------- |
+| <a id="property-capabilities"></a> `capabilities` | `readonly` | readonly `object`[]                                                                                                                                                                                        | The subset being passed on. Must be within the parent, capability by capability. | packages/core/src/delegation.ts:319 |
+| <a id="property-constraints"></a> `constraints?`  | `readonly` | `Omit`\<\{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, `"delegationDepth"`\> & `object`                               | -                                                                                | packages/core/src/delegation.ts:320 |
+| <a id="property-id-1"></a> `id`                   | `readonly` | `string`                                                                                                                                                                                                   | Identifier for the derived grant. Must be unique within the namespace.           | packages/core/src/delegation.ts:315 |
+| <a id="property-issuedat"></a> `issuedAt`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                | packages/core/src/delegation.ts:323 |
+| <a id="property-metadata-1"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                | packages/core/src/delegation.ts:324 |
+| <a id="property-subject"></a> `subject`           | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Who receives the derived authority.                                              | packages/core/src/delegation.ts:317 |
 
 ---
 
 ### GrantSource
 
-Defined in: [packages/core/src/authority.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L93)
+Defined in: packages/core/src/authority.ts:93
 
 The trusted boundary that loads authoritative grants.
 
@@ -1625,7 +1626,7 @@ fail-closed denial; it never falls back to a cached or caller-supplied set.
 
 > **load**(`context`, `signal`): `Promise`\<readonly `object`[]\>
 
-Defined in: [packages/core/src/authority.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L94)
+Defined in: packages/core/src/authority.ts:94
 
 ###### Parameters
 
@@ -1650,7 +1651,7 @@ Defined in: [packages/core/src/authority.ts:94](https://github.com/Aicoo-Team/Sh
 
 ### GrantUsageStore
 
-Defined in: [packages/core/src/authorization.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L61)
+Defined in: packages/core/src/authorization.ts:72
 
 #### Methods
 
@@ -1658,7 +1659,7 @@ Defined in: [packages/core/src/authorization.ts:61](https://github.com/Aicoo-Tea
 
 > **getUsage**(`namespaceId`, `grantId`): `Promise`\<`number`>\>
 
-Defined in: [packages/core/src/authorization.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L62)
+Defined in: packages/core/src/authorization.ts:73
 
 ###### Parameters
 
@@ -1675,7 +1676,7 @@ Defined in: [packages/core/src/authorization.ts:62](https://github.com/Aicoo-Tea
 
 > **tryConsume**(`namespaceId`, `grantId`, `maximumUses`): `Promise`\<`boolean`>\>
 
-Defined in: [packages/core/src/authorization.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L63)
+Defined in: packages/core/src/authorization.ts:74
 
 ###### Parameters
 
@@ -1693,19 +1694,19 @@ Defined in: [packages/core/src/authorization.ts:63](https://github.com/Aicoo-Tea
 
 ### KernelOperationOptions
 
-Defined in: [packages/core/src/kernel.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L94)
+Defined in: packages/core/src/kernel.ts:96
 
 #### Properties
 
-| Property                               | Modifier   | Type          | Defined in                                                                                                         |
-| -------------------------------------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-signal"></a> `signal?` | `readonly` | `AbortSignal` | [packages/core/src/kernel.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L95) |
+| Property                               | Modifier   | Type          | Defined in                     |
+| -------------------------------------- | ---------- | ------------- | ------------------------------ |
+| <a id="property-signal"></a> `signal?` | `readonly` | `AbortSignal` | packages/core/src/kernel.ts:97 |
 
 ---
 
 ### MessageCapabilityResolver
 
-Defined in: [packages/core/src/message-service.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L48)
+Defined in: packages/core/src/message-service.ts:48
 
 #### Methods
 
@@ -1713,7 +1714,7 @@ Defined in: [packages/core/src/message-service.ts:48](https://github.com/Aicoo-T
 
 > **resolve**(`context`, `envelope`): [`AuthorizationRequest`](#authorizationrequest)
 
-Defined in: [packages/core/src/message-service.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L49)
+Defined in: packages/core/src/message-service.ts:49
 
 ###### Parameters
 
@@ -1751,7 +1752,7 @@ Defined in: [packages/core/src/message-service.ts:49](https://github.com/Aicoo-T
 
 ### MessageRequestRouter
 
-Defined in: [packages/core/src/message-service.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L39)
+Defined in: packages/core/src/message-service.ts:39
 
 Host-owned lookup for the durable reply to one accepted message request.
 SharedOS validates the returned envelope before exposing its payload.
@@ -1762,7 +1763,7 @@ SharedOS validates the returned envelope before exposing its payload.
 
 > **resolveReply**(`context`, `request`, `delivery`, `signal`): `Promise`\<\{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/core/src/message-service.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L40)
+Defined in: packages/core/src/message-service.ts:40
 
 ###### Parameters
 
@@ -1802,7 +1803,7 @@ Defined in: [packages/core/src/message-service.ts:40](https://github.com/Aicoo-T
 
 ### MessageTransport
 
-Defined in: [packages/core/src/message-service.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L27)
+Defined in: packages/core/src/message-service.ts:27
 
 #### Methods
 
@@ -1810,7 +1811,7 @@ Defined in: [packages/core/src/message-service.ts:27](https://github.com/Aicoo-T
 
 > **deliver**(`context`, `envelope`, `signal`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [packages/core/src/message-service.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L28)
+Defined in: packages/core/src/message-service.ts:28
 
 ###### Parameters
 
@@ -1849,7 +1850,7 @@ Defined in: [packages/core/src/message-service.ts:28](https://github.com/Aicoo-T
 
 ### ResolvedAuthority
 
-Defined in: [packages/core/src/authority.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L131)
+Defined in: packages/core/src/authority.ts:131
 
 An access context together with the authority a trusted source produced for
 it.
@@ -1860,50 +1861,51 @@ message transport, or runtime that expects an `AccessContext`.
 
 #### Properties
 
-| Property                                  | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                                 |
-| ----------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-context"></a> `context`   | `readonly` | `object`                                                                                                                                                                                                   | [packages/core/src/authority.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L132) |
-| `context.actor`                           | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/access.d.ts:144                                                                                    |
-| `context.authority`                       | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/access.d.ts:157                                                                                    |
-| `context.enabledToolNamespaces`           | `public`   | `string`[]                                                                                                                                                                                                 | packages/contracts/dist/access.d.ts:170                                                                                    |
-| `context.namespaceId`                     | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/access.d.ts:141                                                                                    |
-| `context.now`                             | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/access.d.ts:171                                                                                    |
-| `context.owner`                           | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/access.d.ts:128                                                                                    |
-| `context.purpose`                         | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/access.d.ts:142                                                                                    |
-| `context.traceId`                         | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/access.d.ts:143                                                                                    |
-| <a id="property-grants"></a> `grants`     | `readonly` | readonly `object`[]                                                                                                                                                                                        | [packages/core/src/authority.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L133) |
-| <a id="property-snapshot"></a> `snapshot` | `readonly` | [`AuthoritySnapshot`](#authoritysnapshot)                                                                                                                                                                  | [packages/core/src/authority.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L134) |
+| Property                                  | Modifier   | Type                                                                                                                                                                                                       | Defined in                              |
+| ----------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| <a id="property-context"></a> `context`   | `readonly` | `object`                                                                                                                                                                                                   | packages/core/src/authority.ts:132      |
+| `context.actor`                           | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/access.d.ts:144 |
+| `context.authority`                       | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/access.d.ts:157 |
+| `context.enabledToolNamespaces`           | `public`   | `string`[]                                                                                                                                                                                                 | packages/contracts/dist/access.d.ts:170 |
+| `context.namespaceId`                     | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/access.d.ts:141 |
+| `context.now`                             | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/access.d.ts:171 |
+| `context.owner`                           | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/access.d.ts:128 |
+| `context.purpose`                         | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/access.d.ts:142 |
+| `context.traceId`                         | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/access.d.ts:143 |
+| <a id="property-grants"></a> `grants`     | `readonly` | readonly `object`[]                                                                                                                                                                                        | packages/core/src/authority.ts:133      |
+| <a id="property-snapshot"></a> `snapshot` | `readonly` | [`AuthoritySnapshot`](#authoritysnapshot)                                                                                                                                                                  | packages/core/src/authority.ts:134      |
 
 ---
 
 ### ResourceInvocationRequest
 
-Defined in: [packages/core/src/resource-registry.ts:10](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L10)
+Defined in: packages/core/src/resource-registry.ts:10
 
 #### Properties
 
-| Property                                          | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                                               |
-| ------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-action-2"></a> `action`           | `readonly` | `string`                                                                                                                                                                                                   | [packages/core/src/resource-registry.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L13) |
-| <a id="property-input"></a> `input?`              | `readonly` | [`JsonValue`](sharedos-contracts.md#jsonvalue)                                                                                                                                                             | [packages/core/src/resource-registry.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L14) |
-| <a id="property-metadata-2"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | [packages/core/src/resource-registry.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L15) |
-| <a id="property-operationid-1"></a> `operationId` | `readonly` | `string`                                                                                                                                                                                                   | [packages/core/src/resource-registry.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L11) |
-| <a id="property-resource-2"></a> `resource`       | `readonly` | `object`                                                                                                                                                                                                   | [packages/core/src/resource-registry.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L12) |
-| `resource.namespace`                              | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/capability.d.ts:54                                                                                               |
-| `resource.owner?`                                 | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/capability.d.ts:55                                                                                               |
-| `resource.path`                                   | `public`   | `string`[]                                                                                                                                                                                                 | packages/contracts/dist/capability.d.ts:53                                                                                               |
+| Property                                          | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                        | Defined in                                 |
+| ------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| <a id="property-action-2"></a> `action`           | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                  | packages/core/src/resource-registry.ts:13  |
+| <a id="property-input"></a> `input?`              | `readonly` | [`JsonValue`](sharedos-contracts.md#jsonvalue)                                                                                                                                                             | -                                                                                                                                                                                                                                  | packages/core/src/resource-registry.ts:22  |
+| <a id="property-metadata-2"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                                                                                                                                                                  | packages/core/src/resource-registry.ts:23  |
+| <a id="property-operationid-1"></a> `operationId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                  | packages/core/src/resource-registry.ts:11  |
+| <a id="property-resource-2"></a> `resource`       | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                  | packages/core/src/resource-registry.ts:12  |
+| `resource.namespace`                              | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:54 |
+| `resource.owner?`                                 | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:55 |
+| `resource.path`                                   | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:53 |
+| <a id="property-view-1"></a> `view?`              | `readonly` | `string`                                                                                                                                                                                                   | The typed governed view to serve, by name. The provider never sees it: the operation it answers is the raw one, and the kernel projects the result down to the granted view's declared fields before anything leaves the boundary. | packages/core/src/resource-registry.ts:21  |
 
 ---
 
 ### ResourceProvider
 
-Defined in: [packages/core/src/resource-registry.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L18)
+Defined in: packages/core/src/resource-registry.ts:26
 
 #### Properties
 
-| Property                                    | Modifier   | Type     | Defined in                                                                                                                               |
-| ------------------------------------------- | ---------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-namespace"></a> `namespace` | `readonly` | `string` | [packages/core/src/resource-registry.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L19) |
+| Property                                    | Modifier   | Type     | Defined in                                |
+| ------------------------------------------- | ---------- | -------- | ----------------------------------------- |
+| <a id="property-namespace"></a> `namespace` | `readonly` | `string` | packages/core/src/resource-registry.ts:27 |
 
 #### Methods
 
@@ -1911,7 +1913,7 @@ Defined in: [packages/core/src/resource-registry.ts:18](https://github.com/Aicoo
 
 > **invoke**(`operation`, `signal`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [packages/core/src/resource-registry.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L20)
+Defined in: packages/core/src/resource-registry.ts:28
 
 ###### Parameters
 
@@ -1945,47 +1947,47 @@ Defined in: [packages/core/src/resource-registry.ts:20](https://github.com/Aicoo
 
 ### SharedOSKernelOptions
 
-Defined in: [packages/core/src/kernel.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L66)
+Defined in: packages/core/src/kernel.ts:68
 
 #### Properties
 
-| Property                                                                     | Modifier   | Type                                                        | Description                                                                                                                                                                                                                                               | Defined in                                                                                                         |
-| ---------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-audit"></a> `audit?`                                         | `readonly` | [`AuditSink`](#auditsink)                                   | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L81) |
-| <a id="property-authorizer"></a> `authorizer?`                               | `readonly` | [`CapabilityAuthorizer`](#capabilityauthorizer)             | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L72) |
-| <a id="property-createmessageid"></a> `createMessageId?`                     | `readonly` | (`context`, `call`) => `string`                             | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L80) |
-| <a id="property-grantsource"></a> `grantSource`                              | `readonly` | [`GrantSource`](#grantsource)                               | The trusted boundary that loads authority. It is required: a kernel with no authoritative grant source can only fail closed.                                                                                                                              | [packages/core/src/kernel.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L71) |
-| <a id="property-messagecapabilityresolver"></a> `messageCapabilityResolver?` | `readonly` | [`MessageCapabilityResolver`](#messagecapabilityresolver)   | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L79) |
-| <a id="property-messagerequestrouter"></a> `messageRequestRouter?`           | `readonly` | [`MessageRequestRouter`](#messagerequestrouter)             | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L78) |
-| <a id="property-messagetransport"></a> `messageTransport?`                   | `readonly` | [`MessageTransport`](#messagetransport)                     | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L77) |
-| <a id="property-onauditerror"></a> `onAuditError?`                           | `readonly` | (`error`, `event`) => `void` \| `Promise`\<`void`\>         | Notification for audit failures that occur after a side effect.                                                                                                                                                                                           | [packages/core/src/kernel.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L83) |
-| <a id="property-resources"></a> `resources?`                                 | `readonly` | [`ResourceProviderRegistry`](#resourceproviderregistry)     | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L73) |
-| <a id="property-spans"></a> `spans?`                                         | `readonly` | [`SpanSink`](#spansink)                                     | Where the cost of enforcement is reported, when a host is measuring it. Absent by default and absent in every production path that does not ask for it, which is what keeps a measured run and an unmeasured one the same run. See [SpanSink](#spansink). | [packages/core/src/kernel.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L91) |
-| <a id="property-toolnamespacesettings"></a> `toolNamespaceSettings?`         | `readonly` | [`ToolNamespaceSettingsStore`](#toolnamespacesettingsstore) | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L76) |
-| <a id="property-toolproviders"></a> `toolProviders?`                         | `readonly` | readonly [`ContextToolProvider`](#contexttoolprovider)[]    | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L75) |
-| <a id="property-tools"></a> `tools?`                                         | `readonly` | [`ToolRegistry`](#toolregistry)                             | -                                                                                                                                                                                                                                                         | [packages/core/src/kernel.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L74) |
+| Property                                                                     | Modifier   | Type                                                        | Description                                                                                                                                                                                                                                               | Defined in                     |
+| ---------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| <a id="property-audit"></a> `audit?`                                         | `readonly` | [`AuditSink`](#auditsink)                                   | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:83 |
+| <a id="property-authorizer"></a> `authorizer?`                               | `readonly` | [`CapabilityAuthorizer`](#capabilityauthorizer)             | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:74 |
+| <a id="property-createmessageid"></a> `createMessageId?`                     | `readonly` | (`context`, `call`) => `string`                             | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:82 |
+| <a id="property-grantsource"></a> `grantSource`                              | `readonly` | [`GrantSource`](#grantsource)                               | The trusted boundary that loads authority. It is required: a kernel with no authoritative grant source can only fail closed.                                                                                                                              | packages/core/src/kernel.ts:73 |
+| <a id="property-messagecapabilityresolver"></a> `messageCapabilityResolver?` | `readonly` | [`MessageCapabilityResolver`](#messagecapabilityresolver)   | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:81 |
+| <a id="property-messagerequestrouter"></a> `messageRequestRouter?`           | `readonly` | [`MessageRequestRouter`](#messagerequestrouter)             | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:80 |
+| <a id="property-messagetransport"></a> `messageTransport?`                   | `readonly` | [`MessageTransport`](#messagetransport)                     | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:79 |
+| <a id="property-onauditerror"></a> `onAuditError?`                           | `readonly` | (`error`, `event`) => `void` \| `Promise`\<`void`\>         | Notification for audit failures that occur after a side effect.                                                                                                                                                                                           | packages/core/src/kernel.ts:85 |
+| <a id="property-resources"></a> `resources?`                                 | `readonly` | [`ResourceProviderRegistry`](#resourceproviderregistry)     | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:75 |
+| <a id="property-spans"></a> `spans?`                                         | `readonly` | [`SpanSink`](#spansink)                                     | Where the cost of enforcement is reported, when a host is measuring it. Absent by default and absent in every production path that does not ask for it, which is what keeps a measured run and an unmeasured one the same run. See [SpanSink](#spansink). | packages/core/src/kernel.ts:93 |
+| <a id="property-toolnamespacesettings"></a> `toolNamespaceSettings?`         | `readonly` | [`ToolNamespaceSettingsStore`](#toolnamespacesettingsstore) | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:78 |
+| <a id="property-toolproviders"></a> `toolProviders?`                         | `readonly` | readonly [`ContextToolProvider`](#contexttoolprovider)[]    | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:77 |
+| <a id="property-tools"></a> `tools?`                                         | `readonly` | [`ToolRegistry`](#toolregistry)                             | -                                                                                                                                                                                                                                                         | packages/core/src/kernel.ts:76 |
 
 ---
 
 ### Span
 
-Defined in: [packages/core/src/spans.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L37)
+Defined in: packages/core/src/spans.ts:37
 
 One completed span of SharedOS-owned work.
 
 #### Properties
 
-| Property                                      | Modifier   | Type                                | Description                                    | Defined in                                                                                                       |
-| --------------------------------------------- | ---------- | ----------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| <a id="property-attributes"></a> `attributes` | `readonly` | [`SpanAttributes`](#spanattributes) | -                                              | [packages/core/src/spans.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L41) |
-| <a id="property-durationms"></a> `durationMs` | `readonly` | `number`                            | Monotonic duration in fractional milliseconds. | [packages/core/src/spans.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L40) |
-| <a id="property-name-2"></a> `name`           | `readonly` | `string`                            | -                                              | [packages/core/src/spans.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L38) |
+| Property                                      | Modifier   | Type                                | Description                                    | Defined in                    |
+| --------------------------------------------- | ---------- | ----------------------------------- | ---------------------------------------------- | ----------------------------- |
+| <a id="property-attributes"></a> `attributes` | `readonly` | [`SpanAttributes`](#spanattributes) | -                                              | packages/core/src/spans.ts:41 |
+| <a id="property-durationms"></a> `durationMs` | `readonly` | `number`                            | Monotonic duration in fractional milliseconds. | packages/core/src/spans.ts:40 |
+| <a id="property-name-2"></a> `name`           | `readonly` | `string`                            | -                                              | packages/core/src/spans.ts:38 |
 
 ---
 
 ### SpanScope
 
-Defined in: [packages/core/src/spans.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L64)
+Defined in: packages/core/src/spans.ts:64
 
 The handle an operation uses to say what it turned out to be.
 
@@ -2000,7 +2002,7 @@ boundary that answered. Setting one on a span nobody is recording is a no-op.
 
 > **set**(`key`, `value`): `void`
 
-Defined in: [packages/core/src/spans.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L65)
+Defined in: packages/core/src/spans.ts:65
 
 ###### Parameters
 
@@ -2017,7 +2019,7 @@ Defined in: [packages/core/src/spans.ts:65](https://github.com/Aicoo-Team/Shared
 
 ### SpanSink
 
-Defined in: [packages/core/src/spans.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L52)
+Defined in: packages/core/src/spans.ts:52
 
 Where completed spans are reported.
 
@@ -2032,7 +2034,7 @@ authorization decision would be a new way for a turn to be denied.
 
 > **record**(`span`): `void`
 
-Defined in: [packages/core/src/spans.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L53)
+Defined in: packages/core/src/spans.ts:53
 
 ###### Parameters
 
@@ -2048,45 +2050,45 @@ Defined in: [packages/core/src/spans.ts:53](https://github.com/Aicoo-Team/Shared
 
 ### ToolCatalogOptions
 
-Defined in: [packages/core/src/published-tool.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L132)
+Defined in: packages/core/src/published-tool.ts:132
 
 #### Properties
 
-| Property                                        | Modifier   | Type     | Defined in                                                                                                                           |
-| ----------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-executionid"></a> `executionId` | `readonly` | `string` | [packages/core/src/published-tool.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L133) |
+| Property                                        | Modifier   | Type     | Defined in                              |
+| ----------------------------------------------- | ---------- | -------- | --------------------------------------- |
+| <a id="property-executionid"></a> `executionId` | `readonly` | `string` | packages/core/src/published-tool.ts:133 |
 
 ---
 
 ### ToolHandler
 
-Defined in: [packages/core/src/tool-registry.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L14)
+Defined in: packages/core/src/tool-registry.ts:14
 
 #### Properties
 
-| Property                                                       | Modifier   | Type                                                                                                                                                                                                       | Description                                                                | Defined in                                                                                                                       |
-| -------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-definition"></a> `definition`                  | `readonly` | `object`                                                                                                                                                                                                   | -                                                                          | [packages/core/src/tool-registry.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L15) |
-| `definition.annotations?`                                      | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:309                                                                                            |
-| `definition.annotations.destructive?`                          | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:311                                                                                            |
-| `definition.annotations.idempotent?`                           | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:312                                                                                            |
-| `definition.annotations.readOnly?`                             | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:310                                                                                            |
-| `definition.description`                                       | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:283                                                                                            |
-| `definition.inputSchema`                                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                          | packages/contracts/dist/tool.d.ts:286                                                                                            |
-| `definition.metadata?`                                         | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                          | packages/contracts/dist/tool.d.ts:307                                                                                            |
-| `definition.name`                                              | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:282                                                                                            |
-| `definition.namespace`                                         | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:281                                                                                            |
-| `definition.outputSchema?`                                     | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                          | packages/contracts/dist/tool.d.ts:308                                                                                            |
-| `definition.readWrite`                                         | `public`   | `"write"` \| `"read"`                                                                                                                                                                                      | -                                                                          | packages/contracts/dist/tool.d.ts:285                                                                                            |
-| `definition.requiredCapability`                                | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:287                                                                                            |
-| `definition.requiredCapability.action`                         | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:305                                                                                            |
-| `definition.requiredCapability.resource`                       | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:288                                                                                            |
-| `definition.requiredCapability.resource.namespace`             | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:290                                                                                            |
-| `definition.requiredCapability.resource.owner?`                | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                          | packages/contracts/dist/tool.d.ts:291                                                                                            |
-| `definition.requiredCapability.resource.path`                  | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                          | packages/contracts/dist/tool.d.ts:289                                                                                            |
-| `definition.source`                                            | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:284                                                                                            |
-| <a id="property-parsearguments"></a> `parseArguments`          | `readonly` | (`arguments_`) => `unknown`                                                                                                                                                                                | Parse and normalize untrusted arguments before authorization or execution. | [packages/core/src/tool-registry.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L17) |
-| <a id="property-resolverequirement"></a> `resolveRequirement?` | `readonly` | (`context`, `call`) => [`AuthorizationRequest`](#authorizationrequest)                                                                                                                                     | Resolve argument-selected resources immediately before execution.          | [packages/core/src/tool-registry.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L19) |
+| Property                                                       | Modifier   | Type                                                                                                                                                                                                       | Description                                                                | Defined in                            |
+| -------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------- |
+| <a id="property-definition"></a> `definition`                  | `readonly` | `object`                                                                                                                                                                                                   | -                                                                          | packages/core/src/tool-registry.ts:15 |
+| `definition.annotations?`                                      | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:309 |
+| `definition.annotations.destructive?`                          | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:311 |
+| `definition.annotations.idempotent?`                           | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:312 |
+| `definition.annotations.readOnly?`                             | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:310 |
+| `definition.description`                                       | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:283 |
+| `definition.inputSchema`                                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                          | packages/contracts/dist/tool.d.ts:286 |
+| `definition.metadata?`                                         | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                          | packages/contracts/dist/tool.d.ts:307 |
+| `definition.name`                                              | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:282 |
+| `definition.namespace`                                         | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:281 |
+| `definition.outputSchema?`                                     | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                          | packages/contracts/dist/tool.d.ts:308 |
+| `definition.readWrite`                                         | `public`   | `"write"` \| `"read"`                                                                                                                                                                                      | -                                                                          | packages/contracts/dist/tool.d.ts:285 |
+| `definition.requiredCapability`                                | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:287 |
+| `definition.requiredCapability.action`                         | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:305 |
+| `definition.requiredCapability.resource`                       | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:288 |
+| `definition.requiredCapability.resource.namespace`             | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:290 |
+| `definition.requiredCapability.resource.owner?`                | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                          | packages/contracts/dist/tool.d.ts:291 |
+| `definition.requiredCapability.resource.path`                  | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                          | packages/contracts/dist/tool.d.ts:289 |
+| `definition.source`                                            | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:284 |
+| <a id="property-parsearguments"></a> `parseArguments`          | `readonly` | (`arguments_`) => `unknown`                                                                                                                                                                                | Parse and normalize untrusted arguments before authorization or execution. | packages/core/src/tool-registry.ts:17 |
+| <a id="property-resolverequirement"></a> `resolveRequirement?` | `readonly` | (`context`, `call`) => [`AuthorizationRequest`](#authorizationrequest)                                                                                                                                     | Resolve argument-selected resources immediately before execution.          | packages/core/src/tool-registry.ts:19 |
 
 #### Methods
 
@@ -2094,7 +2096,7 @@ Defined in: [packages/core/src/tool-registry.ts:14](https://github.com/Aicoo-Tea
 
 > **invoke**(`context`, `call`, `signal`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [packages/core/src/tool-registry.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L20)
+Defined in: packages/core/src/tool-registry.ts:20
 
 ###### Parameters
 
@@ -2125,7 +2127,7 @@ Defined in: [packages/core/src/tool-registry.ts:20](https://github.com/Aicoo-Tea
 
 ### ToolNamespaceSettingsStore
 
-Defined in: [packages/core/src/tool-namespace-control.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-namespace-control.ts#L11)
+Defined in: packages/core/src/tool-namespace-control.ts:11
 
 Host-owned persistence and product-policy boundary for namespace settings.
 
@@ -2139,7 +2141,7 @@ to organization policy, but must never widen it beyond trusted host policy.
 
 > **applyUpdate**(`context`, `update`, `signal`): `Promise`\<readonly `string`[]\>
 
-Defined in: [packages/core/src/tool-namespace-control.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-namespace-control.ts#L12)
+Defined in: packages/core/src/tool-namespace-control.ts:12
 
 ###### Parameters
 
@@ -2169,7 +2171,7 @@ Defined in: [packages/core/src/tool-namespace-control.ts:12](https://github.com/
 
 > **AuditEventType** = `"authority.resolved"` \| `"authorization.checked"` \| `"escalation.requested"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"`
 
-Defined in: [packages/core/src/audit.ts:3](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L3)
+Defined in: packages/core/src/audit.ts:3
 
 ---
 
@@ -2177,7 +2179,7 @@ Defined in: [packages/core/src/audit.ts:3](https://github.com/Aicoo-Team/SharedO
 
 > **AuditOutcome** = `"allowed"` \| `"denied"` \| `"succeeded"` \| `"failed"` \| `"escalated"`
 
-Defined in: [packages/core/src/audit.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L21)
+Defined in: packages/core/src/audit.ts:21
 
 `escalated` is its own outcome, not a denial.
 
@@ -2191,7 +2193,7 @@ every denial rate by the cases where the system correctly asked for help.
 
 > **AuthorityResolution** = \{ `authority`: [`ResolvedAuthority`](#resolvedauthority); `status`: `"resolved"`; \} \| \{ `code`: [`AuthorityUnavailableCode`](#authorityunavailablecode); `status`: `"unavailable"`; \}
 
-Defined in: [packages/core/src/authority.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L137)
+Defined in: packages/core/src/authority.ts:137
 
 ---
 
@@ -2199,7 +2201,7 @@ Defined in: [packages/core/src/authority.ts:137](https://github.com/Aicoo-Team/S
 
 > **AuthorityUnavailableCode** = `"grant_source_failed"` \| `"invalid_grant_material"` \| `"grant_scope_mismatch"` \| `"grant_limit_exceeded"`
 
-Defined in: [packages/core/src/authority.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L98)
+Defined in: packages/core/src/authority.ts:98
 
 Why authority could not be established for one decision.
 
@@ -2207,9 +2209,9 @@ Why authority could not be established for one decision.
 
 ### AuthorizationReasonCode
 
-> **AuthorizationReasonCode** = `"allowed"` \| `"invalid_context"` \| `"invalid_request"` \| `"no_matching_grant"` \| `"grant_exhausted"` \| `"delegation_chain_invalid"` \| `"authority_unavailable"` \| `"delegation_chain_unverified"` \| `"usage_store_unavailable"`
+> **AuthorizationReasonCode** = `"allowed"` \| `"invalid_context"` \| `"invalid_request"` \| `"no_matching_grant"` \| `"view_required"` \| `"grant_exhausted"` \| `"delegation_chain_invalid"` \| `"authority_unavailable"` \| `"delegation_chain_unverified"` \| `"usage_store_unavailable"`
 
-Defined in: [packages/core/src/authorization.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L32)
+Defined in: packages/core/src/authorization.ts:42
 
 ---
 
@@ -2217,7 +2219,7 @@ Defined in: [packages/core/src/authorization.ts:32](https://github.com/Aicoo-Tea
 
 > **DelegationRefusal** = `"empty_capabilities"` \| `"id_collides_with_parent"` \| `"bounded_parent_not_delegable"` \| `"parent_not_delegable"` \| `"depth_exhausted"` \| `"capability_not_within_parent"` \| `"purpose_not_within_parent"` \| `"window_not_within_parent"` \| `"issued_before_parent"`
 
-Defined in: [packages/core/src/delegation.ts:275](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L275)
+Defined in: packages/core/src/delegation.ts:298
 
 Why a delegation was refused at the point it was issued.
 
@@ -2227,7 +2229,7 @@ Why a delegation was refused at the point it was issued.
 
 > **DelegationUnverifiedCode** = `"resolver_unavailable"` \| `"parent_not_found"` \| `"resolver_failed"`
 
-Defined in: [packages/core/src/delegation.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L47)
+Defined in: packages/core/src/delegation.ts:47
 
 The chain could not be established, which is never treated as valid.
 
@@ -2237,7 +2239,7 @@ The chain could not be established, which is never treated as valid.
 
 > **DelegationValidation** = \{ `chain`: readonly `string`[]; `status`: `"valid"`; \} \| \{ `chain`: readonly `string`[]; `code`: [`DelegationViolationCode`](#delegationviolationcode); `grantId`: `string`; `status`: `"invalid"`; \} \| \{ `chain`: readonly `string`[]; `code`: [`DelegationUnverifiedCode`](#delegationunverifiedcode); `grantId`: `string`; `status`: `"unverified"`; \}
 
-Defined in: [packages/core/src/delegation.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L50)
+Defined in: packages/core/src/delegation.ts:50
 
 ---
 
@@ -2245,7 +2247,7 @@ Defined in: [packages/core/src/delegation.ts:50](https://github.com/Aicoo-Team/S
 
 > **DelegationViolationCode** = `"delegation_not_permitted"` \| `"delegation_depth_exceeded"` \| `"bounded_parent_not_delegable"` \| `"issuer_not_parent_subject"` \| `"namespace_mismatch"` \| `"parent_inactive"` \| `"capability_widened"` \| `"constraints_widened"` \| `"chain_cycle"` \| `"chain_too_long"`
 
-Defined in: [packages/core/src/delegation.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L34)
+Defined in: packages/core/src/delegation.ts:34
 
 A structural rule the presented chain broke.
 
@@ -2255,7 +2257,22 @@ A structural rule the presented chain broke.
 
 > **DeriveGrantResult** = \{ `grant`: [`CapabilityGrant`](sharedos-contracts.md#capabilitygrant); `ok`: `true`; \} \| \{ `ok`: `false`; `reason`: [`DelegationRefusal`](#delegationrefusal); \}
 
-Defined in: [packages/core/src/delegation.ts:286](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L286)
+Defined in: packages/core/src/delegation.ts:309
+
+---
+
+### GovernedViewProjection
+
+> **GovernedViewProjection** = \{ `ok`: `true`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); \} \| \{ `ok`: `false`; `reason`: `string`; \}
+
+Defined in: packages/core/src/governed-view.ts:11
+
+The outcome of serving one typed governed view.
+
+There is no partial success. A representation that cannot carry the view is
+refused whole, because the alternative -- serving what could be projected and
+passing the rest through -- is exactly the disclosure the view was issued to
+prevent.
 
 ---
 
@@ -2263,7 +2280,7 @@ Defined in: [packages/core/src/delegation.ts:286](https://github.com/Aicoo-Team/
 
 > **SpanAttributes** = `Readonly`\<`Record`\<`string`, `string` \| `number` \| `boolean`>>\>\>
 
-Defined in: [packages/core/src/spans.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L34)
+Defined in: packages/core/src/spans.ts:34
 
 What a span may say about itself.
 
@@ -2279,7 +2296,7 @@ turning measurement on.
 
 > **SpanName** = _typeof_ [`SPAN`](#span-1)\[keyof _typeof_ [`SPAN`](#span-1)\]
 
-Defined in: [packages/core/src/spans.ts:188](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L188)
+Defined in: packages/core/src/spans.ts:190
 
 ---
 
@@ -2287,7 +2304,7 @@ Defined in: [packages/core/src/spans.ts:188](https://github.com/Aicoo-Team/Share
 
 > **TurnAuthorityScope** = `object`
 
-Defined in: [packages/core/src/authority.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L71)
+Defined in: packages/core/src/authority.ts:71
 
 A handle on one turn's frozen authority.
 
@@ -2307,7 +2324,7 @@ any later operation that presents the same turn identity.
 
 > `readonly` `optional` **code?**: [`AuthorityUnavailableCode`](#authorityunavailablecode)
 
-Defined in: [packages/core/src/authority.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L76)
+Defined in: packages/core/src/authority.ts:76
 
 Present when it was not.
 
@@ -2315,7 +2332,7 @@ Present when it was not.
 
 > `readonly` `optional` **snapshot?**: [`AuthoritySnapshot`](#authoritysnapshot)
 
-Defined in: [packages/core/src/authority.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L74)
+Defined in: packages/core/src/authority.ts:74
 
 Present when authority was established.
 
@@ -2323,7 +2340,7 @@ Present when authority was established.
 
 > `readonly` **status**: `"resolved"` \| `"unavailable"`
 
-Defined in: [packages/core/src/authority.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L72)
+Defined in: packages/core/src/authority.ts:72
 
 #### Methods
 
@@ -2331,7 +2348,7 @@ Defined in: [packages/core/src/authority.ts:72](https://github.com/Aicoo-Team/Sh
 
 > **close**(): `void`
 
-Defined in: [packages/core/src/authority.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L77)
+Defined in: packages/core/src/authority.ts:77
 
 ###### Returns
 
@@ -2343,7 +2360,7 @@ Defined in: [packages/core/src/authority.ts:77](https://github.com/Aicoo-Team/Sh
 
 > `const` **AGENT\_INVOKE\_ACTION**: `"invoke"` = `"invoke"`
 
-Defined in: [packages/core/src/kernel.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L99)
+Defined in: packages/core/src/kernel.ts:101
 
 ---
 
@@ -2351,7 +2368,7 @@ Defined in: [packages/core/src/kernel.ts:99](https://github.com/Aicoo-Team/Share
 
 > `const` **CATALOG\_HASH\_FIELDS**: readonly `string`[]
 
-Defined in: [packages/core/src/published-tool.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L26)
+Defined in: packages/core/src/published-tool.ts:26
 
 The fields of a published tool that `catalogHash` is computed over.
 
@@ -2372,7 +2389,7 @@ on equal terms -- which is the only reason it exists.
 
 > `const` **DEFAULT\_MAX\_DELEGATION\_CHAIN\_LENGTH**: `16` = `16`
 
-Defined in: [packages/core/src/delegation.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L19)
+Defined in: packages/core/src/delegation.ts:19
 
 The longest ancestor chain SharedOS will walk before failing closed.
 
@@ -2382,7 +2399,7 @@ The longest ancestor chain SharedOS will walk before failing closed.
 
 > `const` **EXECUTION\_NAMESPACE**: `"sharedos.execution"` = `"sharedos.execution"`
 
-Defined in: [packages/core/src/kernel.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L98)
+Defined in: packages/core/src/kernel.ts:100
 
 ---
 
@@ -2390,7 +2407,7 @@ Defined in: [packages/core/src/kernel.ts:98](https://github.com/Aicoo-Team/Share
 
 > `const` **INFRASTRUCTURE\_DENIAL\_REASONS**: readonly [`AuthorizationReasonCode`](#authorizationreasoncode)[]
 
-Defined in: [packages/core/src/authorization.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L51)
+Defined in: packages/core/src/authorization.ts:62
 
 Denials caused by SharedOS being unable to establish a fact, not by policy.
 
@@ -2405,7 +2422,7 @@ the audit record.
 
 > `const` **MAX\_RESOLVED\_GRANTS**: `256` = `256`
 
-Defined in: [packages/core/src/authority.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L8)
+Defined in: packages/core/src/authority.ts:8
 
 The largest authority set SharedOS will evaluate for one decision.
 
@@ -2415,7 +2432,7 @@ The largest authority set SharedOS will evaluate for one decision.
 
 > `const` **MESSAGE\_REQUEST\_TOOL\_DEFINITION**: [`ToolDefinition`](sharedos-contracts.md#tooldefinition)
 
-Defined in: [packages/core/src/message-tool.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-tool.ts#L23)
+Defined in: packages/core/src/message-tool.ts:23
 
 ---
 
@@ -2423,7 +2440,7 @@ Defined in: [packages/core/src/message-tool.ts:23](https://github.com/Aicoo-Team
 
 > `const` **MESSAGE\_REQUEST\_TOOL\_NAME**: `"messages.request"` = `"messages.request"`
 
-Defined in: [packages/core/src/message-tool.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-tool.ts#L21)
+Defined in: packages/core/src/message-tool.ts:21
 
 ---
 
@@ -2431,7 +2448,7 @@ Defined in: [packages/core/src/message-tool.ts:21](https://github.com/Aicoo-Team
 
 > `const` **MESSAGE\_SEND\_ACTION**: `"send"` = `"send"`
 
-Defined in: [packages/core/src/message-service.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L13)
+Defined in: packages/core/src/message-service.ts:13
 
 ---
 
@@ -2439,7 +2456,7 @@ Defined in: [packages/core/src/message-service.ts:13](https://github.com/Aicoo-T
 
 > `const` **MESSAGE\_TOOL\_NAMESPACE**: `"messages"` = `"messages"`
 
-Defined in: [packages/core/src/message-tool.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-tool.ts#L20)
+Defined in: packages/core/src/message-tool.ts:20
 
 ---
 
@@ -2447,7 +2464,7 @@ Defined in: [packages/core/src/message-tool.ts:20](https://github.com/Aicoo-Team
 
 > `const` **MESSAGING\_NAMESPACE**: `"sharedos.messaging"` = `"sharedos.messaging"`
 
-Defined in: [packages/core/src/message-service.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L12)
+Defined in: packages/core/src/message-service.ts:12
 
 ---
 
@@ -2455,7 +2472,7 @@ Defined in: [packages/core/src/message-service.ts:12](https://github.com/Aicoo-T
 
 > `const` **MID\_TURN\_AUTHORITY\_REFRESH**: `false` = `false`
 
-Defined in: [packages/core/src/authority.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L36)
+Defined in: packages/core/src/authority.ts:36
 
 The fuse over per-operation authority resolution. Off.
 
@@ -2486,9 +2503,9 @@ running turn, and will pay a store read per operation for it, sets this.
 
 ### SPAN
 
-> `const` **SPAN**: `Readonly`\<\{ `AUTHORITY_LOAD`: `"kernel.authority.load"`; `AUTHORIZE`: `"kernel.authorize"`; `MCP_HANDLE`: `"mcp.handle"`; `TOOL_CATALOGUE`: `"kernel.tool.catalogue"`; `TOOL_DISCOVER`: `"kernel.tool.discover"`; `TOOL_HANDLER`: `"kernel.tool.handler"`; `TOOL_INVOKE`: `"kernel.tool.invoke"`; `TOOL_MEDIATE`: `"envelope.tool.mediate"`; `TURN`: `"envelope.turn"`; \}\>
+> `const` **SPAN**: `Readonly`\<\{ `AUTHORITY_LOAD`: `"kernel.authority.load"`; `AUTHORIZE`: `"kernel.authorize"`; `MCP_HANDLE`: `"mcp.handle"`; `TOOL_CATALOGUE`: `"kernel.tool.catalogue"`; `TOOL_DISCOVER`: `"kernel.tool.discover"`; `TOOL_HANDLER`: `"kernel.tool.handler"`; `TOOL_INVOKE`: `"kernel.tool.invoke"`; `TOOL_MEDIATE`: `"envelope.tool.mediate"`; `TURN`: `"envelope.turn"`; `VIEW_PROJECT`: `"kernel.view.project"`; \}\>
 
-Defined in: [packages/core/src/spans.ts:167](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L167)
+Defined in: packages/core/src/spans.ts:167
 
 The spans SharedOS emits, named once so a sink and a report agree.
 
@@ -2504,7 +2521,7 @@ taken back out, correlated by the `callId` every span on one call carries.
 
 > **addressesEqual**(`left`, `right`): `boolean`
 
-Defined in: [packages/core/src/internal.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/internal.ts#L19)
+Defined in: packages/core/src/internal.ts:19
 
 #### Parameters
 
@@ -2523,7 +2540,7 @@ Defined in: [packages/core/src/internal.ts:19](https://github.com/Aicoo-Team/Sha
 
 > **addressPath**(`address`): \[`"human"` \| `"agent"` \| `"group"` \| `"service"`, `string`\]
 
-Defined in: [packages/core/src/message-service.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L71)
+Defined in: packages/core/src/message-service.ts:71
 
 Stable, segment-safe grant path for recipient-scoped messaging.
 
@@ -2543,7 +2560,7 @@ Stable, segment-safe grant path for recipient-scoped messaging.
 
 > **agentExecutionCapability**(`agent`, `owner`): `object`
 
-Defined in: [packages/core/src/kernel.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L101)
+Defined in: packages/core/src/kernel.ts:103
 
 #### Parameters
 
@@ -2580,13 +2597,25 @@ Defined in: [packages/core/src/kernel.ts:101](https://github.com/Aicoo-Team/Shar
 
 > **scope**: `"exact"` \| `"descendants"`
 
+##### view?
+
+> `optional` **view?**: `object`
+
+###### view.fields
+
+> **fields**: `string`[]
+
+###### view.name
+
+> **name**: `string`
+
 ---
 
 ### applyToolNamespaceUpdate()
 
 > **applyToolNamespaceUpdate**(`current`, `update`): `string`[]
 
-Defined in: [packages/core/src/tool-namespace-control.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-namespace-control.ts#L20)
+Defined in: packages/core/src/tool-namespace-control.ts:20
 
 Apply the standard idempotent patch semantics used by host stores.
 
@@ -2609,7 +2638,7 @@ Apply the standard idempotent patch semantics used by host stores.
 
 > **auditEvent**(`context`, `event`): [`AuditEvent`](#auditevent)
 
-Defined in: [packages/core/src/audit.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L76)
+Defined in: packages/core/src/audit.ts:76
 
 #### Parameters
 
@@ -2636,7 +2665,7 @@ Defined in: [packages/core/src/audit.ts:76](https://github.com/Aicoo-Team/Shared
 
 > **buildToolCatalog**(`definitions`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
-Defined in: [packages/core/src/published-tool.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L137)
+Defined in: packages/core/src/published-tool.ts:137
 
 Build the per-turn catalogue a harness is served, hash included.
 
@@ -2657,7 +2686,7 @@ Build the per-turn catalogue a harness is served, hash included.
 
 > **canonicalJson**(`value`): `string`
 
-Defined in: [packages/core/src/internal.ts:4](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/internal.ts#L4)
+Defined in: packages/core/src/internal.ts:4
 
 Structural JSON equality for protocol values with unordered object keys.
 
@@ -2677,19 +2706,22 @@ Structural JSON equality for protocol values with unordered object keys.
 
 > **capabilityIntersectsCeiling**(`capability`, `ceiling`, `context`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:372](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L372)
+Defined in: packages/core/src/authorization.ts:426
 
 #### Parameters
 
 | Parameter                       | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `capability`                    | \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `capability`                    | \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}                                                                                                                                                                                                                                                                                                                                                                                   |
 | `capability.actions`            | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `capability.resource`           | \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `capability.resource.namespace` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `capability.resource.owner?`    | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `capability.resource.path`      | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `capability.scope`              | `"exact"` \| `"descendants"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `capability.view?`              | \{ `fields`: `string`[]; `name`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `capability.view.fields`        | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `capability.view.name`          | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `ceiling`                       | [`AuthorizationRequest`](#authorizationrequest)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `context`                       | \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \} |
 | `context.actor`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -2711,19 +2743,22 @@ Defined in: [packages/core/src/authorization.ts:372](https://github.com/Aicoo-Te
 
 > **capabilityMatches**(`capability`, `request`, `context`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:344](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L344)
+Defined in: packages/core/src/authorization.ts:394
 
 #### Parameters
 
 | Parameter                       | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `capability`                    | \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `capability`                    | \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}                                                                                                                                                                                                                                                                                                                                                                                   |
 | `capability.actions`            | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `capability.resource`           | \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `capability.resource.namespace` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `capability.resource.owner?`    | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `capability.resource.path`      | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `capability.scope`              | `"exact"` \| `"descendants"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `capability.view?`              | \{ `fields`: `string`[]; `name`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `capability.view.fields`        | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `capability.view.name`          | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `request`                       | [`AuthorizationRequest`](#authorizationrequest)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `context`                       | \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \} |
 | `context.actor`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -2745,7 +2780,7 @@ Defined in: [packages/core/src/authorization.ts:344](https://github.com/Aicoo-Te
 
 > **catalogHash**(`tools`): `Promise`\<`string`>\>
 
-Defined in: [packages/core/src/published-tool.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L120)
+Defined in: packages/core/src/published-tool.ts:120
 
 A stable identifier for one effective, model-facing tool catalogue.
 
@@ -2776,7 +2811,7 @@ tool, and a stale discovery cache alike.
 
 > **deriveGrant**(`parent`, `request`): [`DeriveGrantResult`](#derivegrantresult)
 
-Defined in: [packages/core/src/delegation.ts:400](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L400)
+Defined in: packages/core/src/delegation.ts:425
 
 Derive a narrower grant from one the delegator already holds.
 
@@ -2825,7 +2860,7 @@ on its own: a host that issues one must also install a
 
 > **formatCatalogHash**(`hash`): `string`
 
-Defined in: [packages/core/src/published-tool.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L128)
+Defined in: packages/core/src/published-tool.ts:128
 
 The hash as an experiment record renders it: algorithm-qualified.
 
@@ -2845,7 +2880,7 @@ The hash as an experiment record renders it: algorithm-qualified.
 
 > **hashJson**(`value`): `Promise`\<`string`>\>
 
-Defined in: [packages/core/src/hashing.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/hashing.ts#L12)
+Defined in: packages/core/src/hashing.ts:12
 
 A stable content identifier for any JSON-safe value.
 
@@ -2869,7 +2904,7 @@ rather than `node:crypto` so the kernel stays host-neutral.
 
 > **isInfrastructureDenial**(`reasonCode`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L57)
+Defined in: packages/core/src/authorization.ts:68
 
 #### Parameters
 
@@ -2887,7 +2922,7 @@ Defined in: [packages/core/src/authorization.ts:57](https://github.com/Aicoo-Tea
 
 > **measure**\<`T`>\>(`sink`, `name`, `operation`, `describe?`): `Promise`\<`T`>\>
 
-Defined in: [packages/core/src/spans.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L92)
+Defined in: packages/core/src/spans.ts:92
 
 Run an operation, and report how long the part SharedOS owns took.
 
@@ -2935,7 +2970,7 @@ are in flight at once.
 
 > **measureSync**\<`T`>\>(`sink`, `name`, `operation`): `T`
 
-Defined in: [packages/core/src/spans.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L102)
+Defined in: packages/core/src/spans.ts:102
 
 [measure](#measure) for an operation that does not await.
 
@@ -2963,7 +2998,7 @@ Defined in: [packages/core/src/spans.ts:102](https://github.com/Aicoo-Team/Share
 
 > **messageSendCapability**(`receiver`, `owner`): `object`
 
-Defined in: [packages/core/src/message-service.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/message-service.ts#L15)
+Defined in: packages/core/src/message-service.ts:15
 
 #### Parameters
 
@@ -3000,13 +3035,25 @@ Defined in: [packages/core/src/message-service.ts:15](https://github.com/Aicoo-T
 
 > **scope**: `"exact"` \| `"descendants"`
 
+##### view?
+
+> `optional` **view?**: `object`
+
+###### view.fields
+
+> **fields**: `string`[]
+
+###### view.name
+
+> **name**: `string`
+
 ---
 
 ### portableToolName()
 
 > **portableToolName**(`name`): `string`
 
-Defined in: [packages/core/src/published-tool.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L160)
+Defined in: packages/core/src/published-tool.ts:160
 
 The canonical name rewritten for a transport that cannot carry a dot.
 
@@ -3029,11 +3076,45 @@ that is the whole of its role.
 
 ---
 
+### projectGovernedView()
+
+> **projectGovernedView**(`view`, `output`): [`GovernedViewProjection`](#governedviewprojection)
+
+Defined in: packages/core/src/governed-view.ts:29
+
+Project one resource representation down to a view's declared fields.
+
+The projection is kernel-owned enforcement, not provider courtesy: the
+provider serves the raw representation exactly as it would for a raw read,
+and what leaves the kernel is decided here, after the fact, from the view the
+authorization decision carried. A provider that lied about its shape cannot
+widen the result -- a representation that is not a record (or an array of
+records) fails closed rather than passing through.
+
+A declared field absent from the record is simply absent from the view. The
+field list is an allowlist over what exists, not a schema the record must
+satisfy: a calendar entry with no `location` still has a free/busy view.
+
+#### Parameters
+
+| Parameter     | Type                                           |
+| ------------- | ---------------------------------------------- |
+| `view`        | \{ `fields`: `string`[]; `name`: `string`; \}  |
+| `view.fields` | `string`[]                                     |
+| `view.name`   | `string`                                       |
+| `output`      | [`JsonValue`](sharedos-contracts.md#jsonvalue) |
+
+#### Returns
+
+[`GovernedViewProjection`](#governedviewprojection)
+
+---
+
 ### publishToolCatalog()
 
 > **publishToolCatalog**(`definitions`): readonly `object`[]
 
-Defined in: [packages/core/src/published-tool.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L90)
+Defined in: packages/core/src/published-tool.ts:90
 
 Project a permission-filtered catalogue, in canonical order.
 
@@ -3059,7 +3140,7 @@ readonly `object`[]
 
 > **publishToolDefinition**(`definition`): `object`
 
-Defined in: [packages/core/src/published-tool.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L50)
+Defined in: packages/core/src/published-tool.ts:50
 
 Project one registered tool into what a harness is allowed to see.
 
@@ -3157,7 +3238,7 @@ unfixed value into `catalogHash`.
 
 > **sha256Hex**(`value`): `Promise`\<`string`>\>
 
-Defined in: [packages/core/src/hashing.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/hashing.ts#L16)
+Defined in: packages/core/src/hashing.ts:16
 
 #### Parameters
 
@@ -3175,7 +3256,7 @@ Defined in: [packages/core/src/hashing.ts:16](https://github.com/Aicoo-Team/Shar
 
 > **toResourceOperation**(`context`, `request`): `object`
 
-Defined in: [packages/core/src/resource-registry.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L50)
+Defined in: packages/core/src/resource-registry.ts:58
 
 #### Parameters
 
@@ -3270,7 +3351,7 @@ Defined in: [packages/core/src/resource-registry.ts:50](https://github.com/Aicoo
 
 > **turnAuthorityKey**(`context`): `string`
 
-Defined in: [packages/core/src/authority.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L47)
+Defined in: packages/core/src/authority.ts:47
 
 The identity a turn's frozen authority is held against.
 
@@ -3304,7 +3385,7 @@ a lease can never answer for a context it was not resolved for.
 
 > **validateDelegationChain**(`grant`, `context`, `now`, `options?`): `Promise`\<[`DelegationValidation`](#delegationvalidation)>\>
 
-Defined in: [packages/core/src/delegation.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L102)
+Defined in: packages/core/src/delegation.ts:102
 
 Validate the complete ancestor chain of one grant.
 

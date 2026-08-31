@@ -6,17 +6,17 @@ scripted adversary against one fixed world, and the toolshare path drives the
 real MCP server with the frames a client would send.
 
 - SharedOS: `0.1.0-alpha.3`
-- Measurement rules: version `1`
-- Workload: 24 declared attempts per turn, 200 measured turns after 60 discarded
-- Cases: `kernel.forged-grant`, `kernel.hidden-tool`, `kernel.read-to-mutation`, `kernel.namespace-crossing`, `kernel.tool-ceiling-escape`, `kernel.invalid-tool-result`, `kernel.grant-material`, `kernel.rollback-unavailable`, `kernel.record-completeness`
-- Environment: node `v22.23.2`, platform `linux-x64`, cpu `AMD EPYC 7571`, cores `2`, memoryGb `8`
+- Measurement rules: version `2`
+- Workload: 27 declared attempts per turn, 200 measured turns after 60 discarded
+- Cases: `kernel.forged-grant`, `kernel.hidden-tool`, `kernel.read-to-mutation`, `kernel.namespace-crossing`, `kernel.tool-ceiling-escape`, `kernel.invalid-tool-result`, `kernel.grant-material`, `kernel.rollback-unavailable`, `kernel.record-completeness`, `kernel.typed-governed-views`
+- Environment: node `v22.14.0`, platform `linux-x64`, cpu `AMD EPYC 7R13 Processor`, cores `4`, memoryGb `15`
 
 Percentiles are nearest-rank: a printed p95 is a duration that occurred, not
 an interpolation between two that did. Throughput is `1000 / mean`, not
 `1000 / p50`, because a median discards the tail that makes a stream of
 operations slower than its typical member.
 
-Taking one measurement costs 0.18 µs at the median over 4096 samples. It is
+Taking one measurement costs 0.06 µs at the median over 4096 samples. It is
 printed rather than subtracted: subtracting it would produce a number that is
 neither the operation nor the measurement of it.
 
@@ -28,20 +28,24 @@ measurement.
 
 | Component | Path | p50 | p95 | Tokens | Evidence bytes | Wire bytes | Ops/sec | n |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Capability authorization | in-process | 285 µs | 738 µs | 0 | 1038 B | — | 2930 | 4200 |
-| Capability authorization | mcp-toolshare | 281 µs | 723 µs | 0 | 1000 B | — | 3016 | 4200 |
-| Execution-record write | in-process | 16.8 ms | 18.8 ms | 0 | 52901 B | — | 59 | 200 |
-| End-to-end SharedOS overhead | in-process | 8.29 ms | 13.5 ms | 0 | 1068 B | — | 128 | 4800 |
-| End-to-end SharedOS overhead | mcp-toolshare | 8.19 ms | 13.3 ms | 0 | 918 B | 489 B | 129 | 4800 |
+| Capability authorization | in-process | 124 µs | 270 µs | 0 | 1037 B | — | 6865 | 4800 |
+| Capability authorization | mcp-toolshare | 123 µs | 260 µs | 0 | 998 B | — | 6952 | 4800 |
+| Execution-record write | in-process | 8.18 ms | 9.76 ms | 0 | 59188 B | — | 119 | 200 |
+| Governed-view construction | in-process | 7.12 µs | 10.2 µs | 0 | — | — | 134505 | 200 |
+| Governed-view construction | mcp-toolshare | 7.31 µs | 9.45 µs | 0 | — | — | 130562 | 200 |
+| End-to-end SharedOS overhead | in-process | 3.44 ms | 5.25 ms | 0 | 1070 B | — | 309 | 5400 |
+| End-to-end SharedOS overhead | mcp-toolshare | 3.51 ms | 5.41 ms | 0 | 920 B | 477 B | 301 | 5400 |
 
 Every `0` in the token column is structural: it is asserted from the absence
 of a model call inside the span, not measured by counting one.
 
 ### What each row measured
 
-- **Capability authorization — in-process.** One operation is one authorization decision: the turn-boundary load, and each in-turn check. pooled over 200 turn-boundary loads (p50 0.776 ms) and 4000 in-turn checks (p50 0.283 ms).
-- **Capability authorization — mcp-toolshare.** One operation is one authorization decision: the turn-boundary load, and each in-turn check. pooled over 200 turn-boundary loads (p50 0.756 ms) and 4000 in-turn checks (p50 0.278 ms).
+- **Capability authorization — in-process.** One operation is one authorization decision: the turn-boundary load, and each in-turn check. pooled over 200 turn-boundary loads (p50 0.396 ms) and 4600 in-turn checks (p50 0.123 ms).
+- **Capability authorization — mcp-toolshare.** One operation is one authorization decision: the turn-boundary load, and each in-turn check. pooled over 200 turn-boundary loads (p50 0.391 ms) and 4600 in-turn checks (p50 0.122 ms).
 - **Execution-record write — in-process.** One operation is one record assembled, validated, and serialized. one turn's evidence, re-assembled; the same code on both paths, so it is measured once.
+- **Governed-view construction — in-process.** One operation is one typed governed view served in place of a raw record. the kernel's projection of the provider result down to the view's declared fields; the served payload leaves no evidence bytes because payloads never enter the record, and the view's name and field list ride the call's own audit event.
+- **Governed-view construction — mcp-toolshare.** One operation is one typed governed view served in place of a raw record. the kernel's projection of the provider result down to the view's declared fields; the served payload leaves no evidence bytes because payloads never enter the record, and the view's name and field list ride the call's own audit event.
 - **End-to-end SharedOS overhead — in-process.** One operation is one mediated tool call. the envelope's mediation of one call, provider subtracted by call id.
 - **End-to-end SharedOS overhead — mcp-toolshare.** One operation is one mediated tool call. one `tools/call` frame in to its response out, provider subtracted by call id; the transport and the process boundary lie outside this span by its own definition, and so does the vendor CLI's own tool router.
 
@@ -61,23 +65,23 @@ catalogue -- and that is the column headed *Per call*.
 
 | Segment | p50 | Share of the call | Per call |
 | --- | --- | --- | --- |
-| Resolve the effective catalogue | 7.27 ms | 80% | 0.833 |
-| Discovery filter | 300 µs | 3% | 0.833 |
-| Authorization decision, audit included | 283 µs | 3% | 0.833 |
-| Provider (not enforcement) | 94.3 µs | 2% | 0.625 |
-| Remainder | 470 µs | 11% | 1 |
-| **Whole call** | 8.36 ms | 100% | 1 |
+| Resolve the effective catalogue | 2.99 ms | 81% | 0.852 |
+| Discovery filter | 117 µs | 3% | 0.852 |
+| Authorization decision, audit included | 123 µs | 3% | 0.852 |
+| Provider (not enforcement) | 40 µs | 2% | 0.593 |
+| Remainder | 197 µs | 10% | 1 |
+| **Whole call** | 3.48 ms | 100% | 1 |
 
 ### mcp-toolshare
 
 | Segment | p50 | Share of the call | Per call |
 | --- | --- | --- | --- |
-| Resolve the effective catalogue | 7.14 ms | 79% | 0.833 |
-| Discovery filter | 296 µs | 3% | 0.833 |
-| Authorization decision, audit included | 278 µs | 3% | 0.833 |
-| Provider (not enforcement) | 93.6 µs | 2% | 0.625 |
-| Remainder | 517 µs | 12% | 1 |
-| **Whole call** | 8.27 ms | 100% | 1 |
+| Resolve the effective catalogue | 3.05 ms | 81% | 0.852 |
+| Discovery filter | 118 µs | 3% | 0.852 |
+| Authorization decision, audit included | 122 µs | 3% | 0.852 |
+| Provider (not enforcement) | 42.4 µs | 2% | 0.593 |
+| Remainder | 211 µs | 11% | 1 |
+| **Whole call** | 3.55 ms | 100% | 1 |
 
 ## Harness translation cost
 
@@ -89,10 +93,10 @@ turn rather than once per call and is outside these figures.
 | Column | Parse + translate per call | Catalogue width | n |
 | --- | --- | --- | --- |
 | Std | — | 17 | — |
-| Codex | 5.11 µs | 17 | 200 |
-| CC | 12.7 µs | 17 | 200 |
-| DS | 9.75 µs | 17 | 200 |
-| Pi | 12.3 µs | 17 | 200 |
+| Codex | 2.09 µs | 17 | 200 |
+| CC | 5.26 µs | 17 | 200 |
+| DS | 4.29 µs | 17 | 200 |
+| Pi | 5.1 µs | 17 | 200 |
 
 Std's `—` is the absence of a translation layer, not a pending measurement.
 
@@ -105,9 +109,9 @@ extension rather than a measurement this bench can take.
 
 | Quantity | Value |
 | --- | --- |
-| Record bytes per turn | 54358 B mean |
+| Record bytes per turn | 60819 B mean |
 | Authority loads per turn | 1 |
-| Decisions per turn | 20 |
-| Audit events per turn | 43 |
-| Mediated tool calls per turn | 24 |
-| Catalogue served per turn | 9103 B over the wire, 17 tools |
+| Decisions per turn | 23 |
+| Audit events per turn | 49 |
+| Mediated tool calls per turn | 27 |
+| Catalogue served per turn | 9216 B over the wire, 17 tools |

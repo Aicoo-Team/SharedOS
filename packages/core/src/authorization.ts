@@ -27,6 +27,16 @@ export { addressesEqual };
 export interface AuthorizationRequest {
   readonly resource: ResourceRef;
   readonly action: string;
+  /**
+   * The typed governed view the request asks to be served, by name.
+   *
+   * A request naming a view is satisfied only by a capability declaring that
+   * view; a request naming none is satisfied only by a capability declaring
+   * none. The two never substitute for each other: a raw capability carries no
+   * field list to serve a view from, and a view-bound capability was issued
+   * precisely so the record behind it is never served whole.
+   */
+  readonly view?: string;
 }
 
 export type AuthorizationReasonCode =
@@ -34,6 +44,7 @@ export type AuthorizationReasonCode =
   | "invalid_context"
   | "invalid_request"
   | "no_matching_grant"
+  | "view_required"
   | "grant_exhausted"
   | "delegation_chain_invalid"
   | "authority_unavailable"
@@ -209,6 +220,7 @@ export class CapabilityAuthorizer {
 
     let foundExhaustedGrant = false;
     let delegationFailure: DelegationFailure | undefined;
+    const requiredViews = new Set<string>();
 
     for (const grant of grants) {
       if (!(await this.#grantIsEligible(context, grant, at))) {
@@ -219,6 +231,25 @@ export class CapabilityAuthorizer {
         matches(candidate, request, context),
       );
       if (capability === undefined) {
+        // A raw request that only a view-bound capability covers is refused
+        // with the view's name rather than with `no_matching_grant`, so the
+        // refusal says what the caller may still do. The advice is issued only
+        // for authority that would actually serve: the grant is eligible and
+        // its delegation chain must validate below, exactly as a match would.
+        if (request.view === undefined && matches === capabilityMatches) {
+          for (const candidate of grant.capabilities) {
+            if (
+              candidate.view === undefined ||
+              !matches(withoutView(candidate), request, context)
+            ) {
+              continue;
+            }
+            const advice = await this.#validateDelegation(context, grant, at);
+            if (advice.status === "valid") {
+              requiredViews.add(candidate.view.name);
+            }
+          }
+        }
         continue;
       }
 
@@ -234,7 +265,7 @@ export class CapabilityAuthorizer {
 
       const maximumUses = grant.constraints.maxUses;
       if (maximumUses === undefined) {
-        return allow(grant.id);
+        return allow(grant.id, capability.view);
       }
 
       if (this.#usageStore === undefined) {
@@ -247,7 +278,7 @@ export class CapabilityAuthorizer {
           : (await this.#usageStore.getUsage(context.namespaceId, grant.id)) < maximumUses;
 
         if (available) {
-          return allow(grant.id);
+          return allow(grant.id, capability.view);
         }
 
         foundExhaustedGrant = true;
@@ -265,7 +296,15 @@ export class CapabilityAuthorizer {
       );
     }
 
-    return deny(foundExhaustedGrant ? "grant_exhausted" : "no_matching_grant");
+    if (foundExhaustedGrant) {
+      return deny("grant_exhausted");
+    }
+
+    if (requiredViews.size > 0) {
+      return deny("view_required", { views: [...requiredViews].sort() });
+    }
+
+    return deny("no_matching_grant");
   }
 
   async #validateDelegation(
@@ -330,8 +369,19 @@ function worstDelegationFailure(
   return current;
 }
 
-function allow(grantId: string): AuthorizationDecision {
-  return { allowed: true, reasonCode: "allowed", matchedGrantId: grantId };
+function allow(grantId: string, view?: Capability["view"]): AuthorizationDecision {
+  return {
+    allowed: true,
+    reasonCode: "allowed",
+    matchedGrantId: grantId,
+    ...(view === undefined ? {} : { view }),
+  };
+}
+
+/** The same capability with its view withheld, for the advice check alone. */
+function withoutView(capability: Capability): Capability {
+  const { view: _view, ...rest } = capability;
+  return rest;
 }
 
 function deny(
@@ -348,6 +398,10 @@ export function capabilityMatches(
 ): boolean {
   const grantedResource = capability.resource;
   const requestedResource = request.resource;
+
+  if ((capability.view?.name ?? undefined) !== request.view) {
+    return false;
+  }
 
   if (
     grantedResource.namespace !== requestedResource.namespace ||

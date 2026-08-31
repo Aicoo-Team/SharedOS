@@ -33,7 +33,7 @@ SharedOS is currently an `0.x` prerelease.
 
 ### SharedOSHttpError
 
-Defined in: [packages/http/src/index.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L119)
+Defined in: packages/http/src/index.ts:119
 
 #### Extends
 
@@ -45,7 +45,7 @@ Defined in: [packages/http/src/index.ts:119](https://github.com/Aicoo-Team/Share
 
 > **new SharedOSHttpError**(`status`, `code`, `message`): [`SharedOSHttpError`](#sharedoshttperror)
 
-Defined in: [packages/http/src/index.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L123)
+Defined in: packages/http/src/index.ts:123
 
 ###### Parameters
 
@@ -65,15 +65,15 @@ Defined in: [packages/http/src/index.ts:123](https://github.com/Aicoo-Team/Share
 
 #### Properties
 
-| Property                                                | Modifier   | Type      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Inherited from          | Defined in                                                                                                         |
-| ------------------------------------------------------- | ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-cause"></a> `cause?`                    | `public`   | `unknown` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.cause`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26                         |
-| <a id="property-code"></a> `code`                       | `readonly` | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | [packages/http/src/index.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L121) |
-| <a id="property-message"></a> `message`                 | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077                                |
-| <a id="property-name"></a> `name`                       | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name`            | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1076                                |
-| <a id="property-stack"></a> `stack?`                    | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078                                |
-| <a id="property-status"></a> `status`                   | `readonly` | `number`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | [packages/http/src/index.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L120) |
-| <a id="property-stacktracelimit"></a> `stackTraceLimit` | `static`   | `number`  | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68                                  |
+| Property                                                | Modifier   | Type      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Inherited from          | Defined in                                                                                 |
+| ------------------------------------------------------- | ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------ |
+| <a id="property-cause"></a> `cause?`                    | `public`   | `unknown` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.cause`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26 |
+| <a id="property-code"></a> `code`                       | `readonly` | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | packages/http/src/index.ts:121                                                             |
+| <a id="property-message"></a> `message`                 | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077        |
+| <a id="property-name"></a> `name`                       | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name`            | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1076        |
+| <a id="property-stack"></a> `stack?`                    | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078        |
+| <a id="property-status"></a> `status`                   | `readonly` | `number`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | packages/http/src/index.ts:120                                                             |
+| <a id="property-stacktracelimit"></a> `stackTraceLimit` | `static`   | `number`  | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68          |
 
 #### Methods
 
@@ -171,28 +171,28 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### KernelSharedOSApiOptions
 
-Defined in: [packages/http/src/index.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L72)
+Defined in: packages/http/src/index.ts:72
 
 #### Properties
 
-| Property                              | Type                                                         | Defined in                                                                                                       |
-| ------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| <a id="property-kernel"></a> `kernel` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)          | [packages/http/src/index.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L73) |
-| <a id="property-turns"></a> `turns`   | [`TurnExecutionPort`](sharedos-runtime.md#turnexecutionport) | [packages/http/src/index.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L74) |
+| Property                              | Type                                                         | Defined in                    |
+| ------------------------------------- | ------------------------------------------------------------ | ----------------------------- |
+| <a id="property-kernel"></a> `kernel` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)          | packages/http/src/index.ts:73 |
+| <a id="property-turns"></a> `turns`   | [`TurnExecutionPort`](sharedos-runtime.md#turnexecutionport) | packages/http/src/index.ts:74 |
 
 ---
 
 ### SharedOSApi
 
-Defined in: [packages/http/src/index.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L31)
+Defined in: packages/http/src/index.ts:31
 
 #### Methods
 
 ##### authorize()
 
-> **authorize**(`context`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
+> **authorize**(`context`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}\>
 
-Defined in: [packages/http/src/index.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L32)
+Defined in: packages/http/src/index.ts:32
 
 ###### Parameters
 
@@ -217,13 +217,13 @@ Defined in: [packages/http/src/index.ts:32](https://github.com/Aicoo-Team/Shared
 
 ###### Returns
 
-`Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; \}\>
+`Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `view?`: \{ `fields`: `string`[]; `name`: `string`; \}; \}\>
 
 ##### executeTurn()
 
 > **executeTurn**(`context`, `request`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/http/src/index.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L65)
+Defined in: packages/http/src/index.ts:65
 
 ###### Parameters
 
@@ -274,7 +274,7 @@ Defined in: [packages/http/src/index.ts:65](https://github.com/Aicoo-Team/Shared
 
 > **invokeResource**(`context`, `operation`, `options?`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [packages/http/src/index.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L55)
+Defined in: packages/http/src/index.ts:55
 
 ###### Parameters
 
@@ -317,7 +317,7 @@ Defined in: [packages/http/src/index.ts:55](https://github.com/Aicoo-Team/Shared
 
 > **invokeTool**(`context`, `call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [packages/http/src/index.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L50)
+Defined in: packages/http/src/index.ts:50
 
 ###### Parameters
 
@@ -348,7 +348,7 @@ Defined in: [packages/http/src/index.ts:50](https://github.com/Aicoo-Team/Shared
 
 > **listToolNamespaces**(`context`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/http/src/index.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L41)
+Defined in: packages/http/src/index.ts:41
 
 ###### Parameters
 
@@ -373,7 +373,7 @@ Defined in: [packages/http/src/index.ts:41](https://github.com/Aicoo-Team/Shared
 
 > **listTools**(`context`, `options?`): `Promise`\<readonly `object`[]\>
 
-Defined in: [packages/http/src/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L37)
+Defined in: packages/http/src/index.ts:37
 
 ###### Parameters
 
@@ -398,7 +398,7 @@ Defined in: [packages/http/src/index.ts:37](https://github.com/Aicoo-Team/Shared
 
 > **sendMessage**(`context`, `envelope`, `options?`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [packages/http/src/index.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L60)
+Defined in: packages/http/src/index.ts:60
 
 ###### Parameters
 
@@ -437,7 +437,7 @@ Defined in: [packages/http/src/index.ts:60](https://github.com/Aicoo-Team/Shared
 
 > **updateToolNamespaces**(`context`, `update`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/http/src/index.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L45)
+Defined in: packages/http/src/index.ts:45
 
 ###### Parameters
 
@@ -465,26 +465,26 @@ Defined in: [packages/http/src/index.ts:45](https://github.com/Aicoo-Team/Shared
 
 ### SharedOSApiCallOptions
 
-Defined in: [packages/http/src/index.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L27)
+Defined in: packages/http/src/index.ts:27
 
 #### Properties
 
-| Property                               | Modifier   | Type          | Defined in                                                                                                       |
-| -------------------------------------- | ---------- | ------------- | ---------------------------------------------------------------------------------------------------------------- |
-| <a id="property-signal"></a> `signal?` | `readonly` | `AbortSignal` | [packages/http/src/index.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L28) |
+| Property                               | Modifier   | Type          | Defined in                    |
+| -------------------------------------- | ---------- | ------------- | ----------------------------- |
+| <a id="property-signal"></a> `signal?` | `readonly` | `AbortSignal` | packages/http/src/index.ts:28 |
 
 ---
 
 ### SharedOSHttpOptions
 
-Defined in: [packages/http/src/index.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L113)
+Defined in: packages/http/src/index.ts:113
 
 #### Properties
 
-| Property                                 | Type                                                               | Defined in                                                                                                         |
-| ---------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-api"></a> `api`          | [`SharedOSApi`](#sharedosapi)                                      | [packages/http/src/index.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L114) |
-| <a id="property-onerror"></a> `onError?` | (`error`, `request`, `requestId`) => `void` \| `Promise`\<`void`\> | [packages/http/src/index.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L116) |
+| Property                                 | Type                                                               | Defined in                     |
+| ---------------------------------------- | ------------------------------------------------------------------ | ------------------------------ |
+| <a id="property-api"></a> `api`          | [`SharedOSApi`](#sharedosapi)                                      | packages/http/src/index.ts:114 |
+| <a id="property-onerror"></a> `onError?` | (`error`, `request`, `requestId`) => `void` \| `Promise`\<`void`\> | packages/http/src/index.ts:116 |
 
 #### Methods
 
@@ -492,7 +492,7 @@ Defined in: [packages/http/src/index.ts:113](https://github.com/Aicoo-Team/Share
 
 > **resolveContext**(`request`): `Promise`\<\{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}\>
 
-Defined in: [packages/http/src/index.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L115)
+Defined in: packages/http/src/index.ts:115
 
 ###### Parameters
 
@@ -510,7 +510,7 @@ Defined in: [packages/http/src/index.ts:115](https://github.com/Aicoo-Team/Share
 
 > **createKernelSharedOSApi**(`options`): [`SharedOSApi`](#sharedosapi)
 
-Defined in: [packages/http/src/index.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L78)
+Defined in: packages/http/src/index.ts:78
 
 Builds the HTTP application surface from the same kernel used by embedded consumers.
 
@@ -530,7 +530,7 @@ Builds the HTTP application surface from the same kernel used by embedded consum
 
 > **createSharedOSHandler**(`options`): (`request`) => `Promise`\<`Response`>\>
 
-Defined in: [packages/http/src/index.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/http/src/index.ts#L131)
+Defined in: packages/http/src/index.ts:131
 
 #### Parameters
 

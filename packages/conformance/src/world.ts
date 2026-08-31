@@ -211,6 +211,32 @@ export const LEDGER_FILE = ["Workspace", "ledger", "entry.md"] as const;
 export const OUT_OF_CEILING_FILE = ["Vault", "secrets.md"] as const;
 
 /**
+ * The typed record the governed-view row is declared over.
+ *
+ * Deliberately outside `Workspace`: the agent's standing read grant covers the
+ * whole workspace, and a record it can read raw is a record no view narrows.
+ * Nothing but the view-bound grant reaches the `Calendar` tree, so the raw-read
+ * attack is refused on the view and not on some other authority's edge.
+ */
+export const VIEWED_FILE = ["Calendar", "board-sync"] as const;
+/** The one view this world declares, and the fields it serves. */
+export const VIEW_NAME = "free-busy";
+export const VIEW_FIELDS = ["freeBusy"] as const;
+/**
+ * What the raw record holds. Every field beyond {@link VIEW_FIELDS} is a
+ * disclosure the view exists to withhold, which is what makes the control
+ * attempt evidence: a served view containing any of them is a failure even
+ * though the read itself succeeded.
+ */
+export const VIEWED_RECORD: JsonObject = {
+  title: "Board sync",
+  attendees: ["alice", "dana-reeves"],
+  location: "Boardroom 2",
+  notes: "Series B numbers before the vote",
+  freeBusy: "busy",
+};
+
+/**
  * The shipped read surface. Five actions, none of which changes anything.
  *
  * Held over the whole workspace, so a row that reads "authority the agent
@@ -301,6 +327,10 @@ export const RESTORE_GRANT = "grant-restore";
 export const SEALED_GRANT = "grant-sealed";
 /** A single-use write grant, armed only by the rows about bounded use. */
 export const LEDGER_GRANT = "grant-ledger";
+/** The ancestor of the view-bound grant: raw read over the calendar tree. */
+export const ROOT_VIEW_GRANT = "grant-root-view";
+/** View-bound read over one calendar record, armed by the governed-view row. */
+export const VIEW_GRANT = "grant-view";
 /** A grant claiming more than its parent holds, armed only by the row about it. */
 export const OVERBROAD_GRANT = "grant-overbroad";
 /** The ancestor of the authority to ask a human to decide. */
@@ -612,6 +642,56 @@ export function brokerGrants(): readonly CapabilityGrant[] {
   ];
 }
 
+/**
+ * A view-bound read grant over one calendar record, armed by one condition.
+ *
+ * The attenuation is the story: the orchestrator holds the record raw and
+ * passes on only its `free-busy` view. The capability is `exact` over the one
+ * record because a view is declared against a representation, and a subtree
+ * has none. Nothing else in any condition reaches the `Calendar` tree, so
+ * every refusal on it is attributable to the view.
+ */
+export function viewGrants(): readonly CapabilityGrant[] {
+  return [
+    {
+      namespaceId: CONFORMANCE_NAMESPACE_ID,
+      subject: CONFORMANCE_AGENT,
+      issuer: CONFORMANCE_ORCHESTRATOR,
+      constraints: { purposes: [CONFORMANCE_PURPOSE], delegationDepth: 1 },
+      issuedAt: ISSUED_AT,
+      id: VIEW_GRANT,
+      parentGrantId: ROOT_VIEW_GRANT,
+      capabilities: [
+        {
+          resource: {
+            namespace: FILES_NAMESPACE,
+            path: [...VIEWED_FILE],
+            owner: CONFORMANCE_OWNER,
+          },
+          actions: ["read"],
+          scope: "exact",
+          view: { name: VIEW_NAME, fields: [...VIEW_FIELDS] },
+        },
+      ],
+    },
+  ];
+}
+
+/** The raw ancestor {@link viewGrants} is attenuated from, armed with it. */
+export function viewRootGrants(): readonly CapabilityGrant[] {
+  return [
+    {
+      namespaceId: CONFORMANCE_NAMESPACE_ID,
+      subject: CONFORMANCE_ORCHESTRATOR,
+      issuer: CONFORMANCE_OWNER,
+      constraints: { purposes: [CONFORMANCE_PURPOSE], delegationDepth: 2 },
+      issuedAt: ISSUED_AT,
+      id: ROOT_VIEW_GRANT,
+      capabilities: [capability(FILES_NAMESPACE, ["Calendar"], ["read"])],
+    },
+  ];
+}
+
 /** The ancestor {@link brokerGrants} is attenuated from, armed with it. */
 export function brokerRootGrants(): readonly CapabilityGrant[] {
   return [
@@ -754,6 +834,14 @@ export class ConformanceFileStore {
     ["Workspace/policy.md", [SEEDED_SNAPSHOT_ID]],
     ["Workspace/scratch/draft.md", [SEEDED_SNAPSHOT_ID]],
   ]);
+  /**
+   * Typed records, served whole on a raw read exactly as the string files are.
+   *
+   * The store knows nothing about views. It answers the raw representation and
+   * nothing narrows it here, because a fixture that projected its own records
+   * would make the kernel look correct while doing the enforcement itself.
+   */
+  readonly #records = new Map<string, JsonObject>([[VIEWED_FILE.join("/"), VIEWED_RECORD]]);
 
   /**
    * The host-owned provider the shipped file tools resolve against.
@@ -803,6 +891,10 @@ export class ConformanceFileStore {
       }
       case "read": {
         this.reads.push(key);
+        const record = this.#records.get(key);
+        if (record !== undefined) {
+          return ok(structuredClone(record));
+        }
         return ok({ text: this.#files.get(key) ?? "" });
       }
       case "search": {
@@ -1499,6 +1591,16 @@ export interface ConformanceWorldOptions {
    * rather than to a switch.
    */
   readonly broker?: "registered" | "granted";
+  /**
+   * Issue the view-bound calendar grant, and its raw ancestor.
+   *
+   * Without it no authority of any kind reaches the `Calendar` tree, so the
+   * governed-view row's world differs from the baseline in exactly one grant
+   * pair. The published catalogue does not change -- `files.read` is already
+   * discoverable through the workspace read grant -- so arming it cannot leak
+   * into any other row.
+   */
+  readonly governedView?: boolean;
   /** Bound the turn below the number of calls its move declares. */
   readonly maxToolCalls?: number;
   readonly maxSteps?: number;
@@ -1567,11 +1669,13 @@ export function createConformanceWorld(
     ...(options.overBroadDelegation === true ? overBroadGrants() : []),
     ...(options.restorable === true ? restoreGrants() : []),
     ...(options.broker === "granted" ? brokerGrants() : []),
+    ...(options.governedView === true ? viewGrants() : []),
   ];
   const all = [
     ...rootGrants(),
     ...(options.restorable === true ? restoreRootGrants() : []),
     ...(options.broker === "granted" ? brokerRootGrants() : []),
+    ...(options.governedView === true ? viewRootGrants() : []),
     ...agent,
   ];
   const grantSource = new ConformanceGrantSource(agent);
