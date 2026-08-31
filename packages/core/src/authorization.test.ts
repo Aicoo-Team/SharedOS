@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type {
   AccessContext,
   Address,
+  AuthorizationDecision,
   CapabilityGrant,
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
@@ -12,7 +13,9 @@ import {
   type CapabilityGrantVerifier,
   CapabilityAuthorizer,
   type GrantUsageStore,
+  type HostCeiling,
   InMemoryGrantUsageStore,
+  isInfrastructureDenial,
 } from "./authorization.js";
 
 const NOW = "2026-08-03T09:00:00.000Z";
@@ -69,15 +72,38 @@ function authorityFor(access: AccessContext, grants: CapabilityGrant[]): Resolve
   };
 }
 
+/**
+ * The denial nothing matched, together with the description ADR 0019 attaches.
+ *
+ * Asserted as one thing because the description's safety property only holds
+ * jointly: a boundary test whose grant *nearly* matched must still see its own
+ * request described and never the near-miss grant. Checking the reason code
+ * alone would pass while the field named authority the caller never asked for.
+ */
+function expectNoMatchingGrant(
+  decision: AuthorizationDecision,
+  request: { resource: ResourceRef; action: string },
+  access: AccessContext = accessContext(),
+): void {
+  const { requiredCapability, ...rest } = decision;
+  expect(rest).toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+  expect(requiredCapability).toEqual({
+    id: expect.stringMatching(/^capreq-[0-9a-f]{64}$/u) as unknown as string,
+    namespaceId: access.namespaceId,
+    requester: access.actor,
+    owner: access.owner,
+    purpose: access.purpose,
+    requestedAt: access.now,
+    capabilities: [{ resource: request.resource, actions: [request.action], scope: "exact" }],
+  });
+}
+
 describe("CapabilityAuthorizer", () => {
   it("denies by default and allows only an explicit matching grant", async () => {
     const authorizer = new CapabilityAuthorizer();
     const request = { resource: RESOURCE, action: "read" };
 
-    await expect(authorizer.authorize(context([]), request)).resolves.toEqual({
-      allowed: false,
-      reasonCode: "no_matching_grant",
-    });
+    expectNoMatchingGrant(await authorizer.authorize(context([]), request), request);
     await expect(authorizer.authorize(context([grant()]), request)).resolves.toEqual({
       allowed: true,
       reasonCode: "allowed",
@@ -96,15 +122,13 @@ describe("CapabilityAuthorizer", () => {
   ] satisfies ReadonlyArray<readonly [string, Partial<CapabilityGrant>]>)(
     "rejects a grant with a mismatched %s boundary",
     async (_label, overrides) => {
-      const decision = await new CapabilityAuthorizer().authorize(context([grant(overrides)]), {
-        resource: RESOURCE,
-        action: "read",
-      });
+      const request = { resource: RESOURCE, action: "read" };
+      const decision = await new CapabilityAuthorizer().authorize(
+        context([grant(overrides)]),
+        request,
+      );
 
-      expect(decision).toEqual({
-        allowed: false,
-        reasonCode: "no_matching_grant",
-      });
+      expectNoMatchingGrant(decision, request);
     },
   );
 
@@ -147,18 +171,14 @@ describe("CapabilityAuthorizer", () => {
       }),
     ).resolves.toMatchObject({ allowed: true });
 
-    await expect(
-      authorizer.authorize(access, {
-        resource: {
-          namespace: "files",
-          path: ["Workspace", "projects", "sharedos-evil", "README.md"],
-        },
-        action: "grep",
-      }),
-    ).resolves.toEqual({
-      allowed: false,
-      reasonCode: "no_matching_grant",
-    });
+    const sibling = {
+      resource: {
+        namespace: "files",
+        path: ["Workspace", "projects", "sharedos-evil", "README.md"],
+      },
+      action: "grep",
+    };
+    expectNoMatchingGrant(await authorizer.authorize(access, sibling), sibling);
   });
 
   it("does not consume maxUses during inspection and consumes atomically", async () => {
@@ -258,10 +278,10 @@ describe("CapabilityAuthorizer", () => {
       await expect(authorizer.authorize(authority, READ)).resolves.toMatchObject({
         allowed: true,
       });
-      await expect(authorizer.authorize(authority, READ, { now: LATER })).resolves.toEqual({
-        allowed: false,
-        reasonCode: "no_matching_grant",
-      });
+      // `requestedAt` follows the context instant, not the operation instant:
+      // the description says when the turn asked, which is what a reviewer's
+      // queue orders on.
+      expectNoMatchingGrant(await authorizer.authorize(authority, READ, { now: LATER }), READ);
     });
 
     it("keeps revocation at the turn's instant, where the store edit was not seen", async () => {
@@ -281,8 +301,9 @@ describe("CapabilityAuthorizer", () => {
         constraints: { purposes: ["prepare-update"], notBefore: EXPIRES_AT },
       });
 
-      await expect(authorizer.authorize(context([pending]), READ, { now: LATER })).resolves.toEqual(
-        { allowed: false, reasonCode: "no_matching_grant" },
+      expectNoMatchingGrant(
+        await authorizer.authorize(context([pending]), READ, { now: LATER }),
+        READ,
       );
     });
 
@@ -299,6 +320,10 @@ describe("CapabilityAuthorizer", () => {
       await expect(authorizer.canDiscover(context([expiring]), ceiling)).resolves.toMatchObject({
         allowed: true,
       });
+      // Exact equality, and it is the assertion: discovery carries no
+      // description. The requirement here is the tool's declared ceiling, which
+      // is broader than any call, so describing it would ask a reviewer to issue
+      // more authority than an operation needed (ADR 0019).
       await expect(
         authorizer.canDiscover(context([expiring]), ceiling, { now: LATER }),
       ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
@@ -356,15 +381,8 @@ describe("CapabilityAuthorizer", () => {
     };
     const authorizer = new CapabilityAuthorizer({ grantVerifier: rejectAll });
 
-    await expect(
-      authorizer.authorize(context([grant()]), {
-        resource: RESOURCE,
-        action: "read",
-      }),
-    ).resolves.toEqual({
-      allowed: false,
-      reasonCode: "no_matching_grant",
-    });
+    const request = { resource: RESOURCE, action: "read" };
+    expectNoMatchingGrant(await authorizer.authorize(context([grant()]), request), request);
   });
 });
 
@@ -389,25 +407,29 @@ describe('the "*" action', () => {
 
   it("widens the action test only: path, scope, and purpose still have to match", async () => {
     const authorizer = new CapabilityAuthorizer();
-    await expect(
-      authorizer.authorize(context([everything]), {
-        resource: { ...RESOURCE, path: [...RESOURCE.path, "notes.md"] },
+    const deeper = {
+      resource: { ...RESOURCE, path: [...RESOURCE.path, "notes.md"] },
+      action: "read",
+    };
+    expectNoMatchingGrant(await authorizer.authorize(context([everything]), deeper), deeper);
+
+    // A different purpose describes the same capability under that purpose,
+    // because purpose comes from the caller's context rather than the grant.
+    const elsewhere = { ...accessContext(), purpose: "publish-summary" };
+    expectNoMatchingGrant(
+      await authorizer.authorize(authorityFor(elsewhere, [everything]), {
+        resource: RESOURCE,
         action: "read",
       }),
-    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
-    await expect(
-      authorizer.authorize(
-        authorityFor({ ...accessContext(), purpose: "publish-summary" }, [everything]),
-        { resource: RESOURCE, action: "read" },
-      ),
-    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+      { resource: RESOURCE, action: "read" },
+      elsewhere,
+    );
   });
 
   it('is not a request pattern: asking for "*" against named actions is denied', async () => {
     const authorizer = new CapabilityAuthorizer();
-    await expect(
-      authorizer.authorize(context([grant()]), { resource: RESOURCE, action: "*" }),
-    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+    const wildcard = { resource: RESOURCE, action: "*" };
+    expectNoMatchingGrant(await authorizer.authorize(context([grant()]), wildcard), wildcard);
   });
 
   it("makes every tool over the resource discoverable, and nothing outside it", async () => {
@@ -424,5 +446,415 @@ describe('the "*" action', () => {
         action: "read",
       }),
     ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+  });
+});
+
+describe("the capability a denial describes", () => {
+  const REQUEST = { resource: RESOURCE, action: "read" };
+
+  it("derives the identifier from the authority, not from when it was asked", async () => {
+    const authorizer = new CapabilityAuthorizer();
+    const later = { ...accessContext(), now: "2026-08-03T11:00:00.000Z" };
+
+    const first = await authorizer.authorize(context([]), REQUEST);
+    const second = await authorizer.authorize(authorityFor(later, []), REQUEST);
+
+    // The instant moves and the identifier does not. A turn refreshes
+    // `context.now` per operation, so hashing it would give two identical
+    // denials two ids -- and give a conformance case a different record on
+    // every run.
+    expect(first.requiredCapability?.requestedAt).toBe(NOW);
+    expect(second.requiredCapability?.requestedAt).toBe(later.now);
+    expect(second.requiredCapability?.id).toBe(first.requiredCapability?.id);
+  });
+
+  it("gives one identifier whether an optional key is omitted or explicitly undefined", async () => {
+    const authorizer = new CapabilityAuthorizer();
+    const bare = { namespace: "files", path: ["Memory"] };
+
+    const omitted = await authorizer.authorize(context([]), { resource: bare, action: "read" });
+    const explicit = await authorizer.authorize(context([]), {
+      resource: { ...bare, owner: undefined },
+      action: "read",
+    });
+
+    // `structuredClone` keeps an own property whose value is `undefined`, and
+    // `canonicalJson` emits one, so building the description by spreading the
+    // request would hash these to two ids for one missing authority -- and a
+    // host de-duplicating consent requests by id would raise two asks.
+    expect(explicit.requiredCapability?.id).toBe(omitted.requiredCapability?.id);
+    expect(explicit.requiredCapability?.capabilities[0]?.resource).not.toHaveProperty("owner");
+  });
+
+  it("takes the owner from the context's owner, not from its authority", async () => {
+    // The shared fixture makes AUTHORITY and OWNER the same principal, so the
+    // helper's owner assertion cannot tell them apart. Here they differ.
+    const carol = { kind: "human", userId: "user-carol" } as const;
+    const access = { ...accessContext(), owner: carol };
+    const request = {
+      resource: { namespace: "files", path: ["Memory"], owner: carol },
+      action: "read",
+    };
+
+    const decision = await new CapabilityAuthorizer().authorize(authorityFor(access, []), request);
+
+    expect(decision.requiredCapability?.owner).toEqual(carol);
+    expect(decision.requiredCapability?.requester).toEqual(ACTOR);
+  });
+
+  it("describes exactly one capability, whatever the schema permits", async () => {
+    const decision = await new CapabilityAuthorizer().authorize(context([]), REQUEST);
+
+    // `CapabilityRequestSchema` allows 64 for a host-built consent request. A
+    // kernel-built description concerns the one resource and action the caller
+    // named; a second entry could only be a guess at what else it wanted.
+    expect(decision.requiredCapability?.capabilities).toHaveLength(1);
+  });
+
+  it("is absent from grant_exhausted, where a grant exists and is spent", async () => {
+    const usageStore = new InMemoryGrantUsageStore();
+    const authorizer = new CapabilityAuthorizer({ usageStore });
+    const access = context([grant({ constraints: { purposes: ["prepare-update"], maxUses: 1 } })]);
+
+    await expect(authorizer.authorize(access, REQUEST, { consume: true })).resolves.toMatchObject({
+      allowed: true,
+    });
+    const spent = await authorizer.authorize(access, REQUEST, { consume: true });
+
+    // Issuing a grant is not the remedy here: one was issued and it is used up.
+    expect(spent).toEqual({ allowed: false, reasonCode: "grant_exhausted" });
+  });
+
+  it("is absent from an infrastructure denial, which is not about authority at all", async () => {
+    // No usage store, so a bounded grant cannot be decided and fails closed.
+    const authorizer = new CapabilityAuthorizer();
+    const access = context([grant({ constraints: { purposes: ["prepare-update"], maxUses: 1 } })]);
+
+    expect(await authorizer.authorize(access, REQUEST)).toEqual({
+      allowed: false,
+      reasonCode: "usage_store_unavailable",
+    });
+  });
+});
+
+describe("the host ceiling", () => {
+  const REQUEST = { resource: RESOURCE, action: "read" };
+  /** Refuses everything it is shown. */
+  const refuseAll: HostCeiling = { narrow: () => ({ allowed: false, reasonCode: "frozen" }) };
+
+  it("refuses a grant that would have allowed, and names the grant it overrode", async () => {
+    const authorizer = new CapabilityAuthorizer({ hostCeiling: refuseAll });
+
+    const decision = await authorizer.authorize(context([grant()]), REQUEST);
+
+    // Not `no_matching_grant`: a grant exists and policy overrode it. That
+    // separation is the whole measurable point (ADR 0020).
+    expect(decision).toEqual({
+      allowed: false,
+      reasonCode: "host_policy_denied",
+      matchedGrantId: "grant-files-read",
+    });
+    expect(isInfrastructureDenial(decision.reasonCode)).toBe(false);
+    // No grant would satisfy it -- one was issued and overridden -- so
+    // describing a capability would say issuing one is the remedy (ADR 0019).
+    expect(decision.requiredCapability).toBeUndefined();
+  });
+
+  it("does not spend a bounded use on a call it refused", async () => {
+    const usageStore = new InMemoryGrantUsageStore();
+    const bounded = grant({ constraints: { purposes: ["prepare-update"], maxUses: 1 } });
+    const refused = new CapabilityAuthorizer({ hostCeiling: refuseAll, usageStore });
+
+    await expect(
+      refused.authorize(context([bounded]), REQUEST, { consume: true }),
+    ).resolves.toMatchObject({ reasonCode: "host_policy_denied" });
+
+    // The single use is still there. `maxUses` counts what an actor did, and a
+    // call product policy stopped is not something the actor did -- which is
+    // why the ceiling is consulted before consumption, not after.
+    const permitted = new CapabilityAuthorizer({ usageStore });
+    await expect(
+      permitted.authorize(context([bounded]), REQUEST, { consume: true }),
+    ).resolves.toMatchObject({ allowed: true, matchedGrantId: "grant-files-read" });
+  });
+
+  it("keeps walking: a refusal ends one grant's candidacy, not the decision", async () => {
+    // Two grants cover the same request. Policy distinguishes them, which is
+    // the case that makes stopping at the first refusal wrong.
+    const frozen = grant({ id: "grant-legacy" });
+    const current = grant({ id: "grant-current" });
+    const exceptLegacy: HostCeiling = {
+      narrow: (decision) =>
+        decision.matchedGrantId === "grant-legacy"
+          ? { allowed: false, reasonCode: "frozen" }
+          : decision,
+    };
+    const authorizer = new CapabilityAuthorizer({ hostCeiling: exceptLegacy });
+
+    await expect(authorizer.authorize(context([frozen, current]), REQUEST)).resolves.toEqual({
+      allowed: true,
+      reasonCode: "allowed",
+      matchedGrantId: "grant-current",
+    });
+  });
+
+  it("reports a policy refusal rather than an absence when every grant is refused", async () => {
+    const authorizer = new CapabilityAuthorizer({ hostCeiling: refuseAll });
+
+    await expect(
+      authorizer.authorize(context([grant({ id: "grant-a" }), grant({ id: "grant-b" })]), REQUEST),
+    ).resolves.toMatchObject({ allowed: false, reasonCode: "host_policy_denied" });
+  });
+
+  it("is never shown a denial, so it cannot turn one into an allow", async () => {
+    const shown: string[] = [];
+    const widenEverything: HostCeiling = {
+      narrow: (decision) => {
+        shown.push(decision.reasonCode);
+        return { allowed: true, reasonCode: "allowed", matchedGrantId: "grant-forged" };
+      },
+    };
+
+    // No grant matches at all, so the ceiling is not consulted and the denial
+    // stands. Widening is not reachable, not merely forbidden.
+    await expect(
+      new CapabilityAuthorizer({ hostCeiling: widenEverything }).authorize(context([]), REQUEST),
+    ).resolves.toMatchObject({ allowed: false, reasonCode: "no_matching_grant" });
+    expect(shown).toEqual([]);
+  });
+
+  it("fails closed when it returns an allow for a grant it was not shown", async () => {
+    const swapGrant: HostCeiling = {
+      narrow: () => ({ allowed: true, reasonCode: "allowed", matchedGrantId: "grant-forged" }),
+    };
+
+    const decision = await new CapabilityAuthorizer({ hostCeiling: swapGrant }).authorize(
+      context([grant()]),
+      REQUEST,
+    );
+
+    expect(decision).toEqual({ allowed: false, reasonCode: "host_policy_unavailable" });
+    expect(isInfrastructureDenial(decision.reasonCode)).toBe(true);
+  });
+
+  it("keeps a refusal's metadata but not its reason code", async () => {
+    const detailed: HostCeiling = {
+      narrow: () => ({
+        allowed: false,
+        reasonCode: "no_matching_grant",
+        metadata: { rule: "hr-freeze" },
+      }),
+    };
+
+    // A ceiling free to name its own code could return the very
+    // misattribution the separate bucket exists to end, so the code is
+    // replaced; what it wanted to say survives in metadata.
+    await expect(
+      new CapabilityAuthorizer({ hostCeiling: detailed }).authorize(context([grant()]), REQUEST),
+    ).resolves.toMatchObject({
+      reasonCode: "host_policy_denied",
+      metadata: { rule: "hr-freeze" },
+    });
+  });
+
+  it("fails closed when it throws", async () => {
+    const broken: HostCeiling = {
+      narrow: () => {
+        throw new Error("policy service is unreachable");
+      },
+    };
+
+    const decision = await new CapabilityAuthorizer({ hostCeiling: broken }).authorize(
+      context([grant()]),
+      REQUEST,
+    );
+
+    expect(decision).toEqual({ allowed: false, reasonCode: "host_policy_unavailable" });
+    expect(isInfrastructureDenial(decision.reasonCode)).toBe(true);
+  });
+
+  it("filters discovery on the same policy, so a catalogue matches invocation", async () => {
+    const authorizer = new CapabilityAuthorizer({ hostCeiling: refuseAll });
+    const ceiling = {
+      resource: { namespace: "files", path: ["Workspace"], owner: OWNER },
+      action: "read",
+    };
+
+    // ADR 0016's agreement property: nothing is offered on authority that
+    // invocation would refuse.
+    await expect(authorizer.canDiscover(context([grant()]), ceiling)).resolves.toMatchObject({
+      allowed: false,
+      reasonCode: "host_policy_denied",
+    });
+  });
+
+  it("ranks a policy refusal below a fail-closed chain and above exhaustion", async () => {
+    const usageStore = new InMemoryGrantUsageStore();
+    const spent = grant({
+      id: "grant-spent",
+      constraints: { purposes: ["prepare-update"], maxUses: 1 },
+    });
+    const refusedGrant = grant({ id: "grant-refused" });
+    const onlyRefused: HostCeiling = {
+      narrow: (decision) =>
+        decision.matchedGrantId === "grant-refused"
+          ? { allowed: false, reasonCode: "frozen" }
+          : decision,
+    };
+    const authorizer = new CapabilityAuthorizer({ hostCeiling: onlyRefused, usageStore });
+
+    await expect(
+      authorizer.authorize(context([spent]), REQUEST, { consume: true }),
+    ).resolves.toMatchObject({ allowed: true });
+
+    // A deliberate refusal outranks a spent budget: under-counting policy
+    // denials is the defect the port exists to fix.
+    await expect(
+      authorizer.authorize(context([spent, refusedGrant]), REQUEST, { consume: true }),
+    ).resolves.toMatchObject({ reasonCode: "host_policy_denied" });
+
+    // But an unverifiable chain outranks the policy refusal, because reporting
+    // a deliberate decision would hide an infrastructure failure behind it.
+    const derived = grant({ id: "grant-derived", parentGrantId: "grant-missing" });
+    await expect(
+      authorizer.authorize(context([derived, refusedGrant]), REQUEST),
+    ).resolves.toMatchObject({ reasonCode: "delegation_chain_unverified" });
+  });
+
+  it("is handed the caller's request and the resolved context, not just a decision", async () => {
+    const seen: { decision: unknown; request: unknown; context: unknown }[] = [];
+    const spy: HostCeiling = {
+      narrow: (decision, request, ceilingContext) => {
+        seen.push({ decision, request, context: ceilingContext });
+        return decision;
+      },
+    };
+
+    // The port's contract is "decide from `request` and `context`". Asserting
+    // only the outcome would leave those two arguments unobserved, and a
+    // version that passed `undefined` for both would look identical.
+    await new CapabilityAuthorizer({ hostCeiling: spy }).authorize(context([grant()]), REQUEST);
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.decision).toEqual({
+      allowed: true,
+      reasonCode: "allowed",
+      matchedGrantId: "grant-files-read",
+    });
+    expect(seen[0]?.request).toEqual(REQUEST);
+    expect(seen[0]?.context).toEqual(accessContext());
+  });
+
+  it("cannot change the walk by mutating what it was handed", async () => {
+    const consulted: (string | undefined)[] = [];
+    const vandal: HostCeiling = {
+      narrow: (decision, request, ceilingContext) => {
+        consulted.push(decision.matchedGrantId);
+        // A ceiling that edits the purpose in place would make every later
+        // grant stop matching -- changing authorization for grants it was never
+        // shown. The arguments are cloned, so this writes to a copy.
+        (ceilingContext as { purpose: string }).purpose = "unrelated-purpose";
+        (request as { action: string }).action = "delete";
+        return decision.matchedGrantId === "grant-first"
+          ? { allowed: false, reasonCode: "frozen" }
+          : decision;
+      },
+    };
+
+    const decision = await new CapabilityAuthorizer({ hostCeiling: vandal }).authorize(
+      context([grant({ id: "grant-first" }), grant({ id: "grant-second" })]),
+      REQUEST,
+    );
+
+    expect(consulted).toEqual(["grant-first", "grant-second"]);
+    expect(decision).toEqual({
+      allowed: true,
+      reasonCode: "allowed",
+      matchedGrantId: "grant-second",
+    });
+  });
+
+  it("names the first grant it refused, not the last", async () => {
+    const authorizer = new CapabilityAuthorizer({ hostCeiling: refuseAll });
+
+    // Which grant a multi-grant refusal names is observable -- it reaches the
+    // audit event -- so it is pinned rather than left to walk order.
+    await expect(
+      authorizer.authorize(context([grant({ id: "grant-a" }), grant({ id: "grant-b" })]), REQUEST),
+    ).resolves.toEqual({
+      allowed: false,
+      reasonCode: "host_policy_denied",
+      matchedGrantId: "grant-a",
+    });
+  });
+
+  it.each([
+    ["an async narrow, which returns a promise", async () => ({ allowed: false, reasonCode: "x" })],
+    ["a branch that falls off the end", () => undefined],
+    ["something that is not an object at all", () => "denied"],
+  ])("fails closed on a malformed return: %s", async (_label, narrow) => {
+    const decision = await new CapabilityAuthorizer({
+      hostCeiling: { narrow } as unknown as HostCeiling,
+    }).authorize(context([grant()]), REQUEST);
+
+    // The async case is the one that matters. Read optimistically, its
+    // `allowed` is `undefined` -- falsy -- and a broken port would be recorded
+    // as a deliberate `host_policy_denied`, inflating the one count this port
+    // exists to make trustworthy. It is a malfunction, so it fails closed.
+    expect(decision).toEqual({ allowed: false, reasonCode: "host_policy_unavailable" });
+    expect(isInfrastructureDenial(decision.reasonCode)).toBe(true);
+  });
+
+  it("hands a throw to the diagnostic sink instead of destroying it", async () => {
+    const seen: { error: unknown; operation: { kind: string; reasonCode: string } }[] = [];
+    const failure = new Error("policy table is malformed");
+    const broken: HostCeiling = {
+      narrow: () => {
+        throw failure;
+      },
+    };
+
+    await new CapabilityAuthorizer({
+      hostCeiling: broken,
+      onProviderError: (error, operation) => void seen.push({ error, operation }),
+    }).authorize(context([grant()]), REQUEST);
+
+    // Without this, a ceiling with one bad row denies every operation in the
+    // deployment and says nothing about why.
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.error).toBe(failure);
+    expect(seen[0]?.operation).toMatchObject({
+      kind: "policy",
+      reasonCode: "host_policy_unavailable",
+      resource: RESOURCE,
+      action: "read",
+    });
+  });
+
+  it("drops metadata that is not a JSON object rather than carrying it", async () => {
+    const badMetadata: HostCeiling = {
+      narrow: () =>
+        ({ allowed: false, reasonCode: "frozen", metadata: "hr-freeze" }) as unknown as ReturnType<
+          HostCeiling["narrow"]
+        >,
+    };
+
+    // The refusal is still true and useful without it, and letting a non-JSON
+    // value reach `structuredClone` in the audit path would turn a policy
+    // denial into a thrown turn.
+    const decision = await new CapabilityAuthorizer({ hostCeiling: badMetadata }).authorize(
+      context([grant()]),
+      REQUEST,
+    );
+    expect(decision).toEqual({
+      allowed: false,
+      reasonCode: "host_policy_denied",
+      matchedGrantId: "grant-files-read",
+    });
+  });
+
+  it("reports whether one is installed at all", () => {
+    expect(new CapabilityAuthorizer().hasHostCeiling).toBe(false);
+    expect(new CapabilityAuthorizer({ hostCeiling: refuseAll }).hasHostCeiling).toBe(true);
   });
 });

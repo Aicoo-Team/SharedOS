@@ -73,7 +73,11 @@ export type CapabilityConstraints = z.infer<typeof CapabilityConstraintsSchema>;
 /**
  * A request for authority. A request is not itself proof of authority.
  *
- * No SharedOS port accepts one yet; see `docs/open-items.md`.
+ * Two places produce one and none accepts one as input. A denial that matched no
+ * grant describes what would have satisfied it, and an escalation may carry that
+ * description on to whoever resolves it. Both are descriptions: turning one into
+ * usable authority is the host's issuing workflow, which ends in a grant the
+ * next turn loads (ADR 0019).
  */
 export const CapabilityRequestSchema = z
   .object({

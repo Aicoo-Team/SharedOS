@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { AccessContextSchema } from "./access.js";
 import { AddressSchema, AgentAddressSchema } from "./address.js";
+import { CapabilityRequestSchema } from "./capability.js";
 import { IdentifierSchema, ProtocolVersionSchema, TimestampSchema } from "./common.js";
 import { JsonObjectSchema, JsonValueSchema } from "./json.js";
 import { MessageEnvelopeSchema } from "./message.js";
@@ -71,6 +72,19 @@ export const EscalationSchema = z
     reason: z.string().trim().min(1).max(512),
     reviewer: AddressSchema,
     requestedAt: TimestampSchema,
+    /**
+     * The authority this escalation is asking for, when it can name one.
+     *
+     * `reason` is what a model wrote; this is what a control plane can act on.
+     * Resolution is unchanged and still host-owned -- the host turns the request
+     * into a grant and the next turn loads it -- but it no longer has to
+     * reconstruct the resource, action, owner, and purpose from a sentence
+     * before it can do so (ADR 0019).
+     *
+     * Optional because an escalation a model chose may be about something no
+     * capability describes.
+     */
+    request: CapabilityRequestSchema.optional(),
     /** Always pending. Nothing inside SharedOS advances it. */
     status: z.literal("pending"),
   })

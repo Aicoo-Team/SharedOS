@@ -89,6 +89,31 @@ each entry calls out what a host has to update.
 
 ### Changed — behaviour
 
+- **`authorization.checked` now carries the decision's own metadata.** Until now
+  the event's `metadata` held only the two keys the kernel states, `consumed` and
+  `failClosed`. It now also carries whatever the decision carried: a
+  `HostCeiling`'s own keys, and — new to audit, though it has existed on the
+  decision all along — the `delegation` detail (`code` and `grantId`) behind a
+  `delegation_chain_invalid` or `delegation_chain_unverified` denial. Hosts
+  persist audit events under closed schemas of their own, so this is a change to
+  record. The kernel's two keys are stripped from the decision's copy rather than
+  overwritten, so no port can set them.
+
+- **`GrantSource` returns the grants the actor holds and applies no policy.**
+  The host guide previously instructed the opposite — apply the ceiling in the
+  source, by not returning the grant it forbids. That is the one refusal path
+  that misreports itself: the kernel records `no_matching_grant` while the grant
+  sits in the store. Policy moves to the `HostCeiling` above. Nothing in the code
+  enforces this, and nothing can — SharedOS never sees what a source withheld —
+  so it is a contract, and the `hostCeiling` flag on every authority load is the
+  most a reader gets: it says whether a policy port exists, not whether the
+  source stopped filtering.
+
+  The trade is worth stating: `AuthoritySnapshot.hash` now identifies _authority
+  held_, not authority usable. A snapshot may list grants a ceiling will refuse,
+  so an auditor reading one alone overstates what a turn could do and has to read
+  the decisions as well.
+
 - The conformance judge is at version 3: a failed turn that the envelope ended
   names `envelope` as its enforcement point, read from the `turn.failed`
   event's new `source`, where version 2 named a boundary for denied turns
@@ -136,6 +161,85 @@ each entry calls out what a host has to update.
   behaviour, so a host calling either directly is unaffected until it opts in.
 
 ### Added
+
+- **Host policy is a port the kernel calls, so its refusals are recorded.**
+  `CapabilityAuthorizer` accepts a `hostCeiling`: product or organization policy
+  consulted on a grant that would otherwise allow. Its refusal is
+  `host_policy_denied`, carrying the `grantId` it overrode — a bucket of its
+  own, separate from `no_matching_grant`, and not marked `failClosed`, because a
+  deliberate refusal is not an outage. Until now a host narrowed authority by
+  withholding the grant, which made the kernel record "nobody authorized this"
+  about a call a grant did authorize, so no deployment could answer how often
+  its own policy overrode a grant it issued (ADR 0020).
+
+  It may only narrow, and by construction rather than by rule. It is never shown
+  a denial; an `allowed` result naming a grant it was not shown fails closed as
+  `host_policy_unavailable`, as does a throw, and as does a malformed return —
+  an `async narrow` or a branch that falls off the end both yield something whose
+  `allowed` is `undefined`, and reading that as a denial would file a broken port
+  as a deliberate refusal. A refusal's `reasonCode` is replaced with
+  `host_policy_denied` so a ceiling cannot re-emit the very misattribution the
+  separate code ends. Its `metadata` is preserved except for `consumed` and
+  `failClosed`, which the kernel states itself, and except for anything that is
+  not a JSON object, which is dropped whole.
+
+  A throw is reported to `CapabilityAuthorizerOptions.onProviderError` — the same
+  shape `SharedOSKernelOptions.onProviderError` takes, declared on the authorizer
+  because that is where the ceiling is installed and the kernel's hook cannot
+  reach it. Pass one function to both. Reports carry `kind: "policy"`, a new
+  `ProviderErrorKind` value.
+
+  Synchronous, deliberately: the signature structurally forbids a network call,
+  a database read, or a model call on the authorization path, which a timeout
+  would permit while punishing a slow machine. A host with a remote policy
+  service loads it into memory and refreshes it on its own schedule.
+
+  Consulted per matching grant and before consumption. A refused call does not
+  spend a `maxUses` grant, and a refusal ends that grant's candidacy rather than
+  the decision — two grants can cover one request and differ in ways policy
+  distinguishes. When nothing is left, the reason follows a fixed precedence:
+  the fail-closed delegation denials, then `host_policy_denied`, then
+  `grant_exhausted`, then `no_matching_grant`. Discovery consults the same port,
+  so a catalogue is never offered on authority invocation would refuse.
+
+  Every `authority.resolved` event now carries `hostCeiling: "installed"` or
+  `"absent"`. Without it an audit stream containing no policy denials cannot be
+  told apart from one produced by a deployment that has no policy port. It says a
+  ceiling exists, not that the `GrantSource` stopped filtering — a host can do
+  both, and audit cannot tell.
+
+- **A denial says which capability would have satisfied it, and an escalation
+  can carry that.** `AuthorizationDecision` gains an optional
+  `requiredCapability: CapabilityRequest` on a `no_matching_grant` denial, and
+  `Escalation` gains an optional `request` that
+  `SharedOSKernel.recordEscalation` accepts through its options and records on
+  the `escalation.requested` audit event. A host running a consent workflow can
+  now name the capability an approval is about instead of reconstructing the
+  resource, action, owner, and purpose from a sentence a model wrote — the step
+  that mints real authority, and the one SharedOS could neither see nor test.
+  `CapabilityRequest` had existed since the first release with no port
+  (ADR 0019).
+
+  It grants nothing. No port accepts one as input, `allowed` stays `false`, and
+  a host that ignores both fields behaves exactly as before. The description is
+  built from what the caller already named — the request's resource and action,
+  and the context's requester, owner, namespace, purpose, and instant — so it
+  restates the request rather than revealing whether a path or a grant exists.
+  Its `id` is derived from those fields _other than_ the instant, rather than
+  being random, so one missing authority has one identifier however often and
+  whenever it is described.
+
+  Deliberately narrow, and the boundaries are the contract. It is absent from
+  `grant_exhausted`, from the infrastructure denials, and from a policy denial,
+  because for none of them is issuing a grant the remedy. It is absent from
+  discovery: `canDiscover` is asked about a tool's declared capability, which
+  ADR 0016 allows to be broader than any call, so a description there would ask
+  for more authority than an operation needed.
+
+  `AuditEvent` gains a top-level `request` field, which is a contract change to
+  the audit vocabulary: hosts persist these events under closed schemas of their
+  own. It appears on `escalation.requested` and only when the escalation named a
+  capability.
 
 - **The native harness has a committed conformance column.** `Standard`
   (`MODEL_SCRIPTED_COLUMN`, id `model-scripted`) is `ModelRuntime` —

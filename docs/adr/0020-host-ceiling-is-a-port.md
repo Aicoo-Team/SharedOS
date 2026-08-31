@@ -170,7 +170,19 @@ machine is, so the same ceiling could pass on one host and fail on another.
   separated by `failClosed`, not by guesswork.
 - A throw fails closed and is recorded as `host_policy_unavailable`, an
   infrastructure denial consistent with every other unavailable trusted
-  component.
+  component. The thrown error goes to
+  `CapabilityAuthorizerOptions.onProviderError` and nowhere else — the same hook
+  shape the kernel takes, declared on the authorizer because that is where the
+  ceiling is installed and the kernel's own hook cannot reach it. A host wanting
+  both passes one function to both.
+- A malformed **return** fails closed the same way. `narrow` is host code that
+  may have no compiler in front of it, and the two mistakes it makes without a
+  type error — an `async narrow`, and a branch that falls off the end — both
+  produce something whose `allowed` is `undefined`. Read as a denial, the first
+  would be recorded as a deliberate `host_policy_denied` and would inflate the
+  one count this ADR exists to make trustworthy; read at all, the second throws
+  past every call site and ends the turn with no audit event. The shape is
+  checked before any field is read.
 - It is optional. A kernel constructed without one behaves exactly as it does
   today.
 

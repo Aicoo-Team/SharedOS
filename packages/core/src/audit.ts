@@ -1,4 +1,10 @@
-import type { AccessContext, Address, JsonObject, ResourceRef } from "@aicoo/sharedos-contracts";
+import type {
+  AccessContext,
+  Address,
+  CapabilityRequest,
+  JsonObject,
+  ResourceRef,
+} from "@aicoo/sharedos-contracts";
 import { deepFreeze } from "./internal.js";
 
 export type AuditEventType =
@@ -47,6 +53,15 @@ export interface AuditEvent {
   readonly messageId?: string;
   readonly receiver?: Address;
   readonly reason?: string;
+  /**
+   * The authority an escalation is asking for, when it names one.
+   *
+   * A first-class field rather than something folded into `metadata`, for the
+   * same reason `resource` is: it is a contract type with its own schema, and a
+   * reviewer's queue built from audit reads it directly rather than trusting
+   * that an untyped bag holds the right shape (ADR 0019).
+   */
+  readonly request?: CapabilityRequest;
   readonly metadata?: JsonObject;
 }
 

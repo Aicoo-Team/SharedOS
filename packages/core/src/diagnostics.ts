@@ -37,7 +37,7 @@ export function reportContainedError<Context>(
 }
 
 /** Which of the kernel's mediated operations a contained throw happened under. */
-export type ProviderErrorKind = "tool" | "tool_catalog" | "resource" | "message";
+export type ProviderErrorKind = "tool" | "tool_catalog" | "resource" | "message" | "policy";
 
 /**
  * What one contained throw was, in the kernel's own terms.
@@ -56,6 +56,14 @@ export type ProviderErrorKind = "tool" | "tool_catalog" | "resource" | "message"
  * told; the exception is a transport failure under the message-request tool,
  * where audit records `message_delivery_failed` and the tool result says
  * `message_request_not_accepted`. Both records carry the same `operationId`.
+ *
+ * `policy` is the one kind that is not an operation: it is a `HostCeiling` that
+ * threw while narrowing a decision, answered with `host_policy_unavailable`.
+ * The ceiling is installed on `CapabilityAuthorizer` rather than on the kernel,
+ * so a host that wants these reports passes the same function to both --
+ * `CapabilityAuthorizerOptions.onProviderError` and
+ * `SharedOSKernelOptions.onProviderError` -- which is why they share one shape
+ * rather than the ceiling growing a hook of its own.
  *
  * `kind` follows the *entry point*, not the port, where the two differ. A
  * `MessageCapabilityResolver` that throws is `message` when the turn called

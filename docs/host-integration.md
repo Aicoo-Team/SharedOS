@@ -133,11 +133,11 @@ The contract is narrow on purpose:
   `access.namespaceId`; anything else is treated as an unavailable source, not
   as partial authority;
 - **do not apply policy here.** Return the grants the actor holds. Product or
-  organization policy that narrows what those grants may do is the host
-  ceiling, a step of the kernel's authorization algorithm (see
-  `docs/security/permission-model.md`); withholding a grant instead makes the
-  kernel record `no_matching_grant` for a call a grant did authorize, which
-  misattributes a policy refusal as absent authority;
+  organization policy that narrows what those grants may do belongs in a
+  `HostCeiling` (below); withholding a grant instead makes the kernel record
+  `no_matching_grant` for a call a grant did authorize, which is a false
+  statement in your own audit trail and the reason denial counts cannot be
+  trusted without this rule;
 - return material that satisfies `CapabilityGrantSchema`, including signature or
   revocation verification the host requires;
 - throw when the store is unreachable. SharedOS converts that into a fail-closed
@@ -146,6 +146,65 @@ The contract is narrow on purpose:
 A host that issues delegated grants also installs a `DelegationChainResolver`
 so ancestors can be re-resolved; see
 `docs/adr/0008-delegation-chain-validation.md`.
+
+That rule holds because `AuthoritySnapshot.hash` identifies **authority held**,
+not authority usable. A request-dependent filter in the source would make the
+snapshot depend on the call, which is the property ADR 0010 relies on for one
+snapshot per turn. The trade is worth naming: a snapshot now lists grants a
+ceiling may refuse, so an auditor reading a snapshot alone overstates what the
+turn could do, and must read the decisions too.
+
+#### The host ceiling
+
+Judgment a grant cannot express — a relationship model, a content-sensitivity
+check, an org-wide freeze — goes here:
+
+```ts
+const kernel = new SharedOSKernel({
+  grantSource: stores,
+  authorizer: new CapabilityAuthorizer({
+    usageStore: stores,
+    hostCeiling: {
+      // Synchronous by contract: no network call, no database read, no model
+      // call on the authorization path. Load policy into memory and refresh it
+      // on your own schedule.
+      narrow: (decision, request) =>
+        frozenNamespaces.has(request.resource.namespace)
+          ? { allowed: false, reasonCode: "frozen", metadata: { rule: "freeze" } }
+          : decision,
+    },
+    // The ceiling lives here, not on the kernel, so the kernel's own
+    // `onProviderError` cannot reach it. Pass the same function to both.
+    onProviderError: (error, op) => logger.error({ err: error, ...op }, op.reasonCode),
+  }),
+});
+```
+
+Return the decision you were given, or a denial. Anything else fails closed as
+`host_policy_unavailable` — including an `async narrow`, whose promise has no
+`allowed` to read, and a branch that falls off the end.
+
+It is consulted only on a grant that would otherwise allow, so it can narrow and
+never widen, and it is consulted before a bounded use is consumed, so a refused
+call does not spend one. Its refusal is recorded as `host_policy_denied` with
+the `grantId` it overrode — separable from `no_matching_grant` in every count,
+and not marked `failClosed`, because a deliberate refusal is not an outage. Your
+own `reasonCode` is replaced; say more in `metadata`, which is preserved except
+for the `consumed` and `failClosed` keys the kernel states itself.
+
+Two things it does not cover, and both are yours to close:
+
+- **Namespace availability.** `enabledToolNamespaces` still carries the user's
+  own settings choice, and a namespace withheld by _policy_ is still invisible.
+  Routing it through the ceiling is the intended direction and is **not possible
+  yet**: `listTools` filters on namespace before it asks the authorizer, so a
+  disabled namespace never reaches the port, and `narrow` is shown a resource
+  namespace rather than a tool namespace. ADR 0020 records this as an open
+  question.
+- **Anything upstream of the kernel.** A gate that has to call a model cannot be
+  this port. Run it where you run it, and emit its verdict to the same
+  `AuditSink` with the same vocabulary, or that refusal is missing from the
+  record.
 
 ### 2. Adapt host state to the `files` resource plane
 

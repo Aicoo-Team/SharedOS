@@ -16,12 +16,27 @@ describe("testkit", () => {
     const { kernel } = createTestKernel();
     const context = createTestContext();
 
+    // Deny by default, and the denial says what would have satisfied it. A
+    // fixture kernel is where a host first sees that field, so it is asserted
+    // here rather than left to the core package's own tests.
     await expect(
       kernel.authorize(context, {
         resource: { namespace: "files", path: ["Workspace", "project-x"] },
         action: "search",
       }),
-    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+    ).resolves.toMatchObject({
+      allowed: false,
+      reasonCode: "no_matching_grant",
+      requiredCapability: {
+        capabilities: [
+          {
+            resource: { namespace: "files", path: ["Workspace", "project-x"] },
+            actions: ["search"],
+            scope: "exact",
+          },
+        ],
+      },
+    });
   });
 
   it("builds grants bound to the same namespace as the context", async () => {

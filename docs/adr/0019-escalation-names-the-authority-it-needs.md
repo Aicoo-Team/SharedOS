@@ -57,6 +57,14 @@ populated only on a `no_matching_grant` denial, where the authorizer already
 holds every field it needs: the request's resource and action, and the context's
 owner, namespace, purpose, and instant.
 
+**On invocation, not on discovery.** `authorize` describes; `canDiscover` does
+not. The requirement a discovery check is made against is the tool's _declared
+ceiling_, which ADR 0012 allows to be broader than the argument-selected
+resource of any particular call — so a description built there would ask a reviewer to issue more authority
+than the operation needed, and would produce one request per hidden tool on
+every catalogue build. The denial worth escalating is the one where an agent
+tried to do something.
+
 It is a description, not an offer. It grants nothing, it is not accepted as
 input anywhere, and the denial is still a denial — `allowed` stays `false` and
 fail-closed behaviour is untouched. A host that ignores the field behaves

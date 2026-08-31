@@ -29,21 +29,35 @@ denials as successes.
 `AuthorizationDecision.reasonCode`, and the `reason` field on
 `authorization.checked` audit events.
 
-| Code                          | Means                                                              | Fix                                                    |
-| ----------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------ |
-| `allowed`                     | A grant matched                                                    | —                                                      |
-| `no_matching_grant`           | Nothing the `GrantSource` returned covers this resource and action | See the checklist below                                |
-| `grant_exhausted`             | A matching grant exists but its `maxUses` is spent                 | Issue a new grant; usage is not resettable             |
-| `invalid_context`             | The `AccessContext` failed its schema                              | A host bug. Build the context server-side              |
-| `invalid_request`             | The resource or action failed its schema, or names another world   | Check path segments, action naming, and the owner      |
-| `authority_unavailable`       | The `GrantSource` threw, or answered with unusable material        | Fail-closed. See the authority table below             |
-| `usage_store_unavailable`     | The grant has `maxUses` and there is no `usageStore`, or it threw  | Supply `CapabilityAuthorizer({ usageStore })`          |
-| `delegation_chain_unverified` | The chain could not be established at all                          | Supply `CapabilityAuthorizer({ delegationResolver })`  |
-| `delegation_chain_invalid`    | The chain resolved and broke a rule — often a revoked ancestor     | Usually working as intended — upstream authority ended |
+| Code                          | Means                                                                | Fix                                                    |
+| ----------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------ |
+| `allowed`                     | A grant matched                                                      | —                                                      |
+| `no_matching_grant`           | Nothing the `GrantSource` returned covers this resource and action   | See the checklist below                                |
+| `grant_exhausted`             | A matching grant exists but its `maxUses` is spent                   | Issue a new grant; usage is not resettable             |
+| `host_policy_denied`          | A grant matched and the host ceiling overrode it                     | Product or organization policy, not authority          |
+| `invalid_context`             | The `AccessContext` failed its schema                                | A host bug. Build the context server-side              |
+| `invalid_request`             | The resource or action failed its schema, or names another world     | Check path segments, action naming, and the owner      |
+| `authority_unavailable`       | The `GrantSource` threw, or answered with unusable material          | Fail-closed. See the authority table below             |
+| `usage_store_unavailable`     | The grant has `maxUses` and there is no `usageStore`, or it threw    | Supply `CapabilityAuthorizer({ usageStore })`          |
+| `delegation_chain_unverified` | The chain could not be established at all                            | Supply `CapabilityAuthorizer({ delegationResolver })`  |
+| `delegation_chain_invalid`    | The chain resolved and broke a rule — often a revoked ancestor       | Usually working as intended — upstream authority ended |
+| `host_policy_unavailable`     | The host ceiling threw, or answered with a decision it was not shown | Fail-closed. A ceiling may only narrow                 |
 
-The last three are SharedOS failing to establish a fact, not a policy decision.
-They are named once, in `INFRASTRUCTURE_DENIAL_REASONS`, and their audit records
-carry `failClosed: true`. Exclude them before computing any denial rate.
+Four of these are SharedOS failing to establish a fact rather than a policy
+decision: `authority_unavailable`, `usage_store_unavailable`,
+`delegation_chain_unverified`, and `host_policy_unavailable`. They are named once,
+in `INFRASTRUCTURE_DENIAL_REASONS`, and their audit records carry
+`failClosed: true`. Exclude them before computing any denial rate.
+`delegation_chain_invalid` is **not** among them: a chain that resolved and broke
+a rule is a real answer about authority, not a failure to get one.
+
+`host_policy_denied` is the opposite case and is kept apart from
+`no_matching_grant` for the reason the separation exists at all: "nobody
+authorized this" and "a grant authorized this and our own policy overrode it"
+are different facts about a deployment, and a host that expressed the second by
+withholding the grant made the kernel assert the first. It is not marked
+`failClosed` — a deliberate refusal is not an outage — and it carries the
+`grantId` it overrode, so the two are countable separately (ADR 0020).
 
 `authority_unavailable` collapses four situations on purpose, so that no caller
 can tell a broken store from a rejected one:
@@ -83,6 +97,33 @@ Walk these in order. Every one of them produces the identical code.
 8. **A `grantVerifier` returned false or threw.** A throw is treated as false.
 9. **The capability is spread across grants.** One requirement must be satisfied
    by one grant. Path from one and action from another is refused deliberately.
+
+### The denial says which capability it wanted
+
+A `no_matching_grant` decision carries `requiredCapability`: a
+`CapabilityRequest` naming the exact resource and action that would have
+satisfied it, with the requester, owner, namespace, and purpose from the context
+that asked. It is what a consent workflow needs in order to issue a grant on one
+action rather than parse a sentence, and `SharedOSKernel.recordEscalation`
+accepts it so an escalation carries it to whoever resolves it.
+
+It is a description and nothing else. It grants nothing, no port accepts one as
+input, `allowed` stays `false`, and a host that ignores it sees no change. Its
+`id` is derived from the fields rather than random, so the same missing
+authority has the same identifier every time it is described.
+
+Three things it is deliberately not:
+
+- **Not on any other denial.** `grant_exhausted` names a grant that exists,
+  `host_policy_denied` names one that exists and was overridden, and the
+  infrastructure denials name a fact SharedOS could not establish. Issuing a
+  grant is not the remedy for any of them.
+- **Not on discovery.** `canDiscover` is asked about a tool's declared
+  capability, which may be a broader ceiling than any call. A description there
+  would name more authority than an operation needed.
+- **Not an existence oracle.** It restates the request and the caller's own
+  context. It does not say whether the path exists, whether a grant for it
+  exists, or who holds one.
 
 ## `tool_unavailable` covers three different situations
 
@@ -260,6 +301,12 @@ parser, a requirement resolver, a message capability resolver — wrap synchrono
 code that is never handed the signal, so an abort cannot be what made them throw.
 A caller that stopped the work is not a defect.
 
+`HostCeiling` reports through the same shape, but from
+`CapabilityAuthorizerOptions.onProviderError` rather than the kernel's: the
+ceiling is installed on the authorizer, so the kernel's hook cannot reach it. A
+host wanting both passes one function to both. Its reports carry
+`kind: "policy"` and `reasonCode: "host_policy_unavailable"`.
+
 Still uncovered: the four authority ports discard a throw the same way, and they
 are not equally bad. `GrantSource`, `GrantUsageStore`, and
 `DelegationChainResolver` at least fail closed under their own codes —
@@ -387,7 +434,13 @@ differently, so an outage is never reported as a policy decision.
 Every event carries `version`, `type`, `outcome`, `at`, `traceId`,
 `namespaceId`, `actor`, `authority`, `owner`, `purpose`, and where applicable
 `resource`, `action`, `grantId`, `authorityHash`, `operationId`, `tool`,
-`messageId`, `receiver`, `reason`, and `metadata`.
+`messageId`, `receiver`, `reason`, `request`, and `metadata`.
+
+`request` appears on `escalation.requested`, and only when the escalation named
+a capability. It is the `CapabilityRequest` a reviewer's queue is built from — a
+top-level field rather than a `metadata` key because it is a contract type with
+its own schema, and a consumer reading it should be reading that shape rather
+than trusting an untyped bag to hold it (ADR 0019).
 
 `authorityHash` names the exact authority set a decision was made against. A
 turn resolves authority once, so the `authority.resolved` event that opened it
@@ -397,8 +450,12 @@ decision to that one load.
 
 `metadata` keys a host may rely on: `authority.resolved` carries `grantIds` and
 `grantCount` (or `failClosed: true` and `authority`, the internal code, when it
-failed); `authorization.checked` carries `consumed`, whether a bounded use was
-spent, and `failClosed: true` on an infrastructure denial; `tool.catalog.listed`
+failed), and `hostCeiling`, `"installed"` or `"absent"`, on both;
+`authorization.checked` carries `consumed`, whether a bounded use was spent,
+`failClosed: true` on an infrastructure denial, and whatever the decision itself
+carried — a `HostCeiling`'s own keys, or `delegation` detail on a broken chain —
+less `consumed` and `failClosed`, which the kernel states itself and a port
+cannot overwrite; `tool.catalog.listed`
 carries `visibleTools`, the names the caller was shown (empty, with
 `failClosed: true`, when denied); `escalation.requested` carries `detail` (the
 reason the runtime gave), `reviewer`, `reviewerAssumed`, and `resolution`.

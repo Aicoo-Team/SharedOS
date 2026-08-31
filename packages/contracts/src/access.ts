@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { AddressSchema } from "./address.js";
+import { CapabilityRequestSchema } from "./capability.js";
 import { IdentifierSchema, TimestampSchema } from "./common.js";
 import { JsonObjectSchema } from "./json.js";
 import { EnabledToolNamespacesSchema } from "./tool.js";
@@ -34,6 +35,31 @@ export const AuthorizationDecisionSchema = z
     allowed: z.boolean(),
     reasonCode: IdentifierSchema,
     matchedGrantId: IdentifierSchema.optional(),
+    /**
+     * The authority that would have satisfied this request, when none did.
+     *
+     * A description, not an offer. It grants nothing, no port accepts one as
+     * input, and the denial is still a denial: `allowed` stays `false` and
+     * fail-closed behaviour is untouched. What it buys is that a host running a
+     * consent workflow can name the capability an approval is about instead of
+     * reconstructing it from prose (ADR 0019).
+     *
+     * Present on a `no_matching_grant` denial from an authorization check, and
+     * on nothing else. A `canDiscover` denial carries none even under that same
+     * code: it is asked about a tool's declared ceiling rather than a call, so a
+     * description built there would name more authority than an operation
+     * needed. Of the other codes, `grant_exhausted` names a grant that exists,
+     * `host_policy_denied` names one that exists and was overridden, and the
+     * infrastructure denials name a fact SharedOS could not establish; for all
+     * of them, issuing a grant is not the remedy, and a description would say
+     * that it is.
+     *
+     * It restates the caller's own request and context and reveals nothing
+     * further. It does not say whether the path exists, whether any grant for it
+     * exists, or who holds one -- and it must not be extended to, because a
+     * denial that answered those would be an existence oracle.
+     */
+    requiredCapability: CapabilityRequestSchema.optional(),
     metadata: JsonObjectSchema.optional(),
   })
   .strict();

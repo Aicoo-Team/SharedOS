@@ -3,7 +3,9 @@ import type {
   Address,
   AuthorizationDecision,
   Capability,
+  CapabilityRequest,
   Escalation,
+  JsonObject,
   MessageDeliveryResult,
   MessageEnvelope,
   ProtocolError,
@@ -112,6 +114,18 @@ export interface SharedOSKernelOptions {
 
 export interface KernelOperationOptions {
   readonly signal?: AbortSignal;
+}
+
+export interface EscalationOptions extends KernelOperationOptions {
+  /**
+   * The authority this escalation is asking for.
+   *
+   * A host escalating a denial passes the `requiredCapability` that denial
+   * described; a model-chosen escalation usually has none, because a sentence
+   * is all it produced. Either way nothing here advances the escalation --
+   * resolution stays host-owned work that ends in a grant the next turn loads.
+   */
+  readonly request?: CapabilityRequest;
 }
 
 export const EXECUTION_NAMESPACE = "sharedos.execution";
@@ -305,7 +319,7 @@ export class SharedOSKernel {
   async recordEscalation(
     context: AccessContext,
     reason: string,
-    options: KernelOperationOptions = {},
+    options: EscalationOptions = {},
   ): Promise<Escalation> {
     throwIfAborted(options.signal);
     context = structuredClone(context);
@@ -314,6 +328,7 @@ export class SharedOSKernel {
       reviewer: context.owner,
       requestedAt: context.now,
       status: "pending",
+      ...(options.request === undefined ? {} : { request: structuredClone(options.request) }),
     });
     if (!parsed.success) {
       throw new TypeError("escalation does not match the SharedOS v1 contract");
@@ -330,6 +345,10 @@ export class SharedOSKernel {
           reviewerAssumed: true,
           resolution: "pending",
         },
+        // Recorded so a reviewer's queue can be built from audit alone. The
+        // reason is what a model wrote; this is what can be turned into a grant
+        // without reading it (ADR 0019).
+        ...(parsed.data.request === undefined ? {} : { request: parsed.data.request }),
       }),
     );
 
@@ -1223,17 +1242,35 @@ export class SharedOSKernel {
               metadata: {
                 grantIds: [...resolution.authority.snapshot.grantIds],
                 grantCount: resolution.authority.snapshot.grantCount,
+                hostCeiling: this.#hostCeilingState(),
               },
             }
           : {
               type: "authority.resolved",
               outcome: "failed",
               reason: "authority_unavailable",
-              metadata: { failClosed: true, authority: resolution.code },
+              metadata: {
+                failClosed: true,
+                authority: resolution.code,
+                hostCeiling: this.#hostCeilingState(),
+              },
             },
       ),
     );
     return resolution;
+  }
+
+  /**
+   * Whether product policy can refuse anything in this deployment.
+   *
+   * Recorded on every turn's authority load so an audit stream is readable
+   * without knowing how the kernel was constructed. A stream with no
+   * `host_policy_denied` in it means one thing when no ceiling is installed and
+   * something else entirely when one is, and nothing else in the record
+   * separates them (ADR 0020).
+   */
+  #hostCeilingState(): "installed" | "absent" {
+    return this.#authorizer.hasHostCeiling ? "installed" : "absent";
   }
 
   async #denyUnavailableAuthority(
@@ -1270,6 +1307,16 @@ export class SharedOSKernel {
         ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
         ...(!decision.allowed ? { reason: decision.reasonCode } : {}),
         metadata: {
+          // A decision may carry metadata of its own: a host ceiling's rule,
+          // or the authorizer's delegation detail on a broken chain. The two
+          // keys the kernel states are removed from it rather than overwritten.
+          // Order alone would already win for `consumed`, but not for
+          // `failClosed`, which is only ever *set* on an infrastructure denial:
+          // a port's `failClosed: false` would stand on every other denial, and
+          // a `failClosed: true` would move a deliberate refusal out of the
+          // policy counts it belongs in. Both are stripped, so the rule is one
+          // rule rather than one that happens to hold for one of the keys.
+          ...decisionMetadata(decision.metadata),
           consumed: consume,
           ...(isInfrastructureDenial(decision.reasonCode) ? { failClosed: true } : {}),
         },
@@ -1380,6 +1427,22 @@ export class SharedOSKernel {
       }
     }
   }
+}
+
+/**
+ * Metadata the decision itself carried, less the two keys the kernel states.
+ *
+ * Two things produce it, and naming only the newer one would be misleading: a
+ * `HostCeiling` saying which rule refused, and the authorizer's own delegation
+ * detail on a broken chain. The latter is the reason this is a behaviour change
+ * as well as a guard -- until now no decision metadata reached audit at all.
+ */
+function decisionMetadata(metadata: JsonObject | undefined): JsonObject {
+  if (metadata === undefined) {
+    return {};
+  }
+  const { consumed: _consumed, failClosed: _failClosed, ...rest } = metadata;
+  return rest;
 }
 
 /**

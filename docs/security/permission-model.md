@@ -26,7 +26,11 @@ agent. A message carries data and one host-bound purpose, never authority.
 - **Issuer / authority**: the principal that issued or attests the grant.
 - **Owner**: the principal whose resource is being accessed.
 - **Host ceiling**: product or organization policy that can reduce, but never
-  increase, granted authority.
+  increase, granted authority. It is a port the kernel calls — `HostCeiling`,
+  installed on the `CapabilityAuthorizer` — consulted on a grant that would
+  otherwise allow, so its refusal is recorded as `host_policy_denied` instead of
+  being invisible. Its answer is a policy decision, not an authority one, and
+  the two are counted apart.
 - **Namespace / world**: the tenant or experiment isolation boundary within
   which identifiers and resources resolve.
 
@@ -86,9 +90,11 @@ through a configured verifier. An HTTP caller cannot make a request authorized
 by attaching an arbitrary grant object to its payload.
 
 `CapabilityRequest` expresses requested authority for a consent workflow. It is
-not usable authority until an eligible issuer turns it into a trusted grant. No
-SharedOS port accepts one yet; the issuing workflow is the host's today (see
-[open items](../open-items.md)).
+not usable authority until an eligible issuer turns it into a trusted grant. The
+kernel produces one and accepts none as input: an `AuthorizationDecision` that
+matched no grant carries `requiredCapability` describing what would have
+satisfied it, and an `Escalation` may carry that description on to whoever
+resolves it. The issuing workflow stays the host's.
 
 ## Where authority comes from
 
@@ -121,7 +127,8 @@ For each concrete resource or tool operation, the kernel evaluates:
 
 1. Validate the protocol object and namespace/world binding.
 2. Establish the authenticated actor independently from untrusted payload.
-3. Load authority from the trusted grant source, or deny.
+3. Load authority from the trusted grant source, or deny. The source returns the
+   grants the actor holds and applies no policy of its own.
 4. Ensure the request owner matches the access context owner.
 5. Ignore grants whose subject or issuer does not match the access context.
 6. Ignore grants that are not active or have been revoked as of the turn's
@@ -129,21 +136,51 @@ For each concrete resource or tool operation, the kernel evaluates:
 7. Match the declared purpose when the grant restricts purposes.
 8. Match resource namespace, owner, path scope, and exact action together.
 9. Validate the delegation chain of a derived grant, or deny.
-10. Apply the host ceiling and any non-grant policy constraints.
+10. Apply the host ceiling to the matched grant, or deny `host_policy_denied`.
 11. Atomically consume a bounded grant only for execution, not discovery.
 12. Return an explicit decision and append an audit event.
 
 If no complete grant matches, deny. If trusted grant state, a delegation
 ancestor, or an atomic usage store is unavailable, fail closed.
 
+Steps 10 and 11 are in that order deliberately. A call the ceiling refuses does
+not spend a bounded use, because `maxUses` counts what an actor did and a call
+product policy stopped is not something the actor did.
+
+The ceiling is consulted per matching grant rather than once per request, and a
+refusal ends that grant's candidacy rather than the whole decision: two grants
+can cover one request and differ in ways policy distinguishes — direct against
+delegated, issued before a freeze against after it. If every matching grant is
+refused, the denial is `host_policy_denied`. It ranks below both delegation
+denials and above `grant_exhausted`. Below the unverified chain because that one
+is fail-closed, and reporting a deliberate refusal in its place would hide an
+infrastructure failure behind a policy label. Below the invalid chain — which is
+_not_ fail-closed — because a chain that resolved and broke a rule says the grant
+is not valid authority at all, which is upstream of whether policy would have
+allowed it.
+
+The ceiling may only narrow. It is never shown a denial, so it cannot turn one
+into an allow; an `allowed` result naming a grant it was not shown fails closed;
+and a refusal's reason code is replaced with `host_policy_denied` so one refusal
+vocabulary survives. It is synchronous, which structurally forbids a network or
+model call on the authorization path. Discovery consults the same port, so a
+catalogue is not offered on authority invocation would refuse.
+
+A host that installs none behaves exactly as it did before the port existed.
+Every turn's `authority.resolved` audit event records which case it is, because
+an audit stream with no policy denials in it is otherwise ambiguous between a
+deployment that has no policy port and one whose port never fired.
+
 ### Denials SharedOS caused
 
 Fail-closed behaviour makes an infrastructure failure look like a denial at the
 call site. The reason codes listed in `INFRASTRUCTURE_DENIAL_REASONS`
 (`authority_unavailable`, `delegation_chain_unverified`,
-`usage_store_unavailable`) mark that case, and their audit records carry
-`failClosed: true`. A measurement must separate them from policy denials before
-computing any rate.
+`usage_store_unavailable`, `host_policy_unavailable`) mark that case, and their
+audit records carry `failClosed: true`. A measurement must separate them from
+policy denials before computing any rate — and `host_policy_unavailable` is the
+one most easily miscounted, because a broken ceiling and a ceiling that refused
+are one line apart in the same table. Read `failClosed`, not the prefix.
 
 A turn that could not establish authority at all has no authority state to name,
 so record completeness does not require one from a decision that failed closed.

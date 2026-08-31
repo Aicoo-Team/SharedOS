@@ -3,11 +3,14 @@ import type {
   AuthorizationDecision,
   Capability,
   CapabilityGrant,
+  CapabilityRequest,
   JsonObject,
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
 
 import type { ResolvedAuthority } from "./authority.js";
+import { reportContainedError, type ProviderErrorReporter } from "./diagnostics.js";
+import { hashJson } from "./hashing.js";
 import {
   type DelegationChainResolver,
   type DelegationValidation,
@@ -38,7 +41,9 @@ export type AuthorizationReasonCode =
   | "delegation_chain_invalid"
   | "authority_unavailable"
   | "delegation_chain_unverified"
-  | "usage_store_unavailable";
+  | "usage_store_unavailable"
+  | "host_policy_denied"
+  | "host_policy_unavailable";
 
 /**
  * Denials caused by SharedOS being unable to establish a fact, not by policy.
@@ -52,6 +57,7 @@ export const INFRASTRUCTURE_DENIAL_REASONS: readonly AuthorizationReasonCode[] =
   "authority_unavailable",
   "delegation_chain_unverified",
   "usage_store_unavailable",
+  "host_policy_unavailable",
 ];
 
 export function isInfrastructureDenial(reasonCode: string): boolean {
@@ -65,6 +71,59 @@ export interface GrantUsageStore {
 
 export interface CapabilityGrantVerifier {
   verify(grant: CapabilityGrant, context: AccessContext): Promise<boolean>;
+}
+
+/**
+ * Product or organization policy, consulted on a grant that would otherwise
+ * allow.
+ *
+ * A host narrows what its agents may do for reasons no grant expresses -- a
+ * relationship model, a content-sensitivity check, an org-wide freeze. Doing
+ * that outside the kernel makes it a second enforcement point SharedOS cannot
+ * see: the refusal reaches no audit sink and no conformance cell, and the
+ * denial counts a deployment produces say "nobody authorized this" about calls a
+ * grant did authorize. This is where that judgment goes instead (ADR 0020).
+ *
+ * **Synchronous, and that is the contract.** A synchronous return structurally
+ * forbids the network call, the database read, and the model call. A ceiling
+ * needing a remote policy service is not this port: a per-call round trip here
+ * is a latency and availability change to every operation SharedOS mediates.
+ * Load the policy into memory and refresh it on your own schedule, which is what
+ * correctness would require anyway.
+ *
+ * **It may only narrow.** It is never shown a denial, so it cannot turn one into
+ * an allow. It may return the decision it was given or a denial, and nothing
+ * else is read from what it returns: an `allowed` result carrying a different
+ * `matchedGrantId` is treated as a malfunction and fails closed, and a denial's
+ * `reasonCode` is replaced with `host_policy_denied` so one refusal vocabulary
+ * survives (ADR 0012). Say more in `metadata`, which is preserved -- except that
+ * audit drops the `consumed` and `failClosed` keys the kernel states itself, and
+ * anything that is not a JSON object is dropped whole.
+ *
+ * **It is consulted before a bounded use is consumed**, so a call policy stopped
+ * does not spend a `maxUses` grant: that counter records what an actor did.
+ *
+ * **It is consulted per matching grant, not once per request.** A refusal ends
+ * that grant's candidacy and the walk continues, because two grants can match
+ * one request and differ in ways policy distinguishes. Decide from `request` and
+ * `context`; `decision.matchedGrantId` is there so a refusal can record which
+ * grant it overrode, and a ceiling that branches on it is describing grant
+ * issuance rather than a ceiling.
+ *
+ * **Discovery consults it too**, so a catalogue is not offered on authority that
+ * invocation would refuse -- the agreement ADR 0016 established for expiry. Note
+ * what it is asked there: a tool's *declared* ceiling, which ADR 0012 allows to
+ * be broader than the argument-selected resource of any particular call.
+ *
+ * A throw fails closed as `host_policy_unavailable`, an infrastructure denial
+ * like every other unavailable trusted component.
+ */
+export interface HostCeiling {
+  narrow(
+    decision: AuthorizationDecision,
+    request: AuthorizationRequest,
+    context: AccessContext,
+  ): AuthorizationDecision;
 }
 
 /**
@@ -100,6 +159,24 @@ export interface CapabilityAuthorizerOptions {
    */
   readonly delegationResolver?: DelegationChainResolver;
   readonly maxDelegationChainLength?: number;
+  /**
+   * Product or organization policy the kernel consults. See {@link HostCeiling}.
+   *
+   * Installed by whoever constructs the authorizer, which is the party that
+   * already chooses the `GrantSource`. That is not a new privilege: anyone who
+   * decides what authority exists can already decide it is none.
+   */
+  readonly hostCeiling?: HostCeiling;
+  /**
+   * Where a throw from {@link HostCeiling.narrow} is reported.
+   *
+   * The same shape `SharedOSKernelOptions.onProviderError` takes, and a host
+   * wanting both passes one function to both: the ceiling is installed here
+   * rather than on the kernel, so the kernel's hook cannot reach it. Without
+   * this, a ceiling that fails denies every operation in the deployment as
+   * `host_policy_unavailable` and says nothing about why.
+   */
+  readonly onProviderError?: ProviderErrorReporter;
 }
 
 /**
@@ -135,12 +212,28 @@ export class CapabilityAuthorizer {
   readonly #grantVerifier: CapabilityGrantVerifier | undefined;
   readonly #delegationResolver: DelegationChainResolver | undefined;
   readonly #maxDelegationChainLength: number | undefined;
+  readonly #hostCeiling: HostCeiling | undefined;
+  readonly #onProviderError: ProviderErrorReporter | undefined;
 
   constructor(options: CapabilityAuthorizerOptions = {}) {
     this.#usageStore = options.usageStore;
     this.#grantVerifier = options.grantVerifier;
     this.#delegationResolver = options.delegationResolver;
     this.#maxDelegationChainLength = options.maxDelegationChainLength;
+    this.#hostCeiling = options.hostCeiling;
+    this.#onProviderError = options.onProviderError;
+  }
+
+  /**
+   * Whether a host ceiling is installed.
+   *
+   * Read by the kernel so `authority.resolved` can say so. Without it, an audit
+   * stream containing no `host_policy_denied` is ambiguous between a deployment
+   * with no policy port and one whose port never fired, and that ambiguity is
+   * the difference between a count and a guess (ADR 0020).
+   */
+  get hasHostCeiling(): boolean {
+    return this.#hostCeiling !== undefined;
   }
 
   async authorize(
@@ -154,6 +247,9 @@ export class CapabilityAuthorizer {
       capabilityMatches,
       options.consume ?? false,
       options.now,
+      // Describes what was missing when nothing matched; see
+      // `describeRequiredCapability`.
+      true,
     );
   }
 
@@ -167,7 +263,10 @@ export class CapabilityAuthorizer {
     ceiling: AuthorizationRequest,
     options: AuthorizationInstantOptions = {},
   ): Promise<AuthorizationDecision> {
-    return this.#decide(authority, ceiling, capabilityIntersectsCeiling, false, options.now);
+    // The last argument is `false`: a discovery check is made against a tool's
+    // declared capability, which may be a broader ceiling than any call, so a
+    // description built here would name authority no operation needed.
+    return this.#decide(authority, ceiling, capabilityIntersectsCeiling, false, options.now, false);
   }
 
   async #decide(
@@ -180,6 +279,7 @@ export class CapabilityAuthorizer {
     ) => boolean,
     consume: boolean,
     operationNow: string | undefined,
+    describeMissing: boolean,
   ): Promise<AuthorizationDecision> {
     const context = structuredClone(authority.context);
     const grants = structuredClone([...authority.grants]);
@@ -208,6 +308,7 @@ export class CapabilityAuthorizer {
     }
 
     let foundExhaustedGrant = false;
+    let policyDenial: AuthorizationDecision | undefined;
     let delegationFailure: DelegationFailure | undefined;
 
     for (const grant of grants) {
@@ -229,6 +330,19 @@ export class CapabilityAuthorizer {
           code: delegation.code,
           grantId: delegation.grantId,
         });
+        continue;
+      }
+
+      // Last gate before consumption, so a call policy refuses does not spend a
+      // bounded use. The walk continues rather than stopping: two grants can
+      // match one request and differ in ways a policy distinguishes, and
+      // stopping here would deny a call the next grant would have allowed.
+      const narrowed = this.#applyCeiling(grant.id, request, context);
+      if (narrowed.reasonCode === "host_policy_unavailable") {
+        return narrowed;
+      }
+      if (!narrowed.allowed) {
+        policyDenial ??= narrowed;
         continue;
       }
 
@@ -265,7 +379,100 @@ export class CapabilityAuthorizer {
       );
     }
 
-    return deny(foundExhaustedGrant ? "grant_exhausted" : "no_matching_grant");
+    // Above exhaustion because under-counting policy denials is the defect the
+    // ceiling exists to fix. Below both delegation outcomes, for two reasons
+    // rather than one: an unverified chain is fail-closed, and reporting a
+    // deliberate refusal in its place would hide an infrastructure failure
+    // behind a policy label; an invalid chain is not fail-closed, but it says
+    // the grant is not valid authority at all, which is upstream of whether
+    // policy would have allowed it.
+    if (policyDenial !== undefined) {
+      return policyDenial;
+    }
+
+    if (foundExhaustedGrant) {
+      return deny("grant_exhausted");
+    }
+
+    const missing = deny("no_matching_grant");
+    return describeMissing
+      ? { ...missing, requiredCapability: await describeRequiredCapability(context, request) }
+      : missing;
+  }
+
+  /**
+   * Hand one would-be allow to the host ceiling, and read only what it may say.
+   *
+   * The returned decision is rebuilt here rather than passed through, so a
+   * ceiling cannot widen by construction rather than by prohibition: an
+   * `allowed` result is answered with *our* decision, and one naming a different
+   * grant than the one it was shown is a malfunction that fails closed. A denial
+   * keeps only its metadata; its reason code is replaced, because a ceiling free
+   * to return `no_matching_grant` could reintroduce the misattribution the
+   * separate code exists to end (ADR 0020).
+   */
+  /**
+   * Hand one would-be allow to the host ceiling, and read only what it may say.
+   *
+   * The returned decision is rebuilt here rather than passed through, so a
+   * ceiling cannot widen by construction rather than by prohibition: an
+   * `allowed` result is answered with a decision built here, and one naming a
+   * different grant than the one it was shown is a malfunction that fails
+   * closed. A denial keeps only its metadata; its reason code is replaced,
+   * because a ceiling free to return `no_matching_grant` could reintroduce the
+   * misattribution the separate code exists to end (ADR 0020).
+   *
+   * The *shape* of what came back is checked before any field is read, and that
+   * is not defensive clutter. Two mistakes a host makes without a type error --
+   * writing `async narrow`, or falling off the end of a branch that meant to
+   * allow -- both yield something whose `allowed` is `undefined`. Read
+   * optimistically, the first would be recorded as a deliberate
+   * `host_policy_denied`, inflating the one count this port exists to make
+   * trustworthy, and the second would throw past every call site and end the
+   * turn with no audit event at all. Both are malfunctions, so both fail closed.
+   */
+  #applyCeiling(
+    grantId: string,
+    request: AuthorizationRequest,
+    context: AccessContext,
+  ): AuthorizationDecision {
+    if (this.#hostCeiling === undefined) {
+      return allow(grantId);
+    }
+
+    let narrowed: unknown;
+    try {
+      narrowed = this.#hostCeiling.narrow(
+        allow(grantId),
+        structuredClone(request),
+        structuredClone(context),
+      );
+    } catch (error) {
+      reportContainedError(this.#onProviderError, error, {
+        kind: "policy",
+        reasonCode: "host_policy_unavailable",
+        traceId: context.traceId,
+        namespaceId: context.namespaceId,
+        resource: request.resource,
+        action: request.action,
+      });
+      return deny("host_policy_unavailable");
+    }
+
+    if (!isVerdict(narrowed)) {
+      return deny("host_policy_unavailable");
+    }
+
+    if (narrowed.allowed) {
+      return narrowed.matchedGrantId === grantId ? allow(grantId) : deny("host_policy_unavailable");
+    }
+
+    return {
+      allowed: false,
+      reasonCode: "host_policy_denied",
+      matchedGrantId: grantId,
+      ...(isJsonObject(narrowed.metadata) ? { metadata: narrowed.metadata } : {}),
+    };
   }
 
   async #validateDelegation(
@@ -339,6 +546,93 @@ function deny(
   metadata?: JsonObject,
 ): AuthorizationDecision {
   return { allowed: false, reasonCode, ...(metadata === undefined ? {} : { metadata }) };
+}
+
+/**
+ * Whether a host port returned something that can be read as a decision.
+ *
+ * Only `allowed` is required, because it is the only field read before the
+ * shape has been established; `matchedGrantId` and `metadata` are each checked
+ * where they are used. A `Promise`, `undefined`, or a bare string all fail here,
+ * which is the point -- see {@link CapabilityAuthorizer} on why an unchecked
+ * read of `allowed` is worse than a throw.
+ */
+function isVerdict(value: unknown): value is AuthorizationDecision {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { allowed?: unknown }).allowed === "boolean"
+  );
+}
+
+/**
+ * Whether a value may be carried into an audit event as metadata.
+ *
+ * `JsonObject` is a compile-time claim, and a ceiling is host code that may have
+ * no compiler in front of it. Anything else is dropped rather than refused: the
+ * refusal it annotates is still a true and useful record without it, and letting
+ * a function or a `Date` reach `structuredClone` inside the audit path would
+ * turn a policy denial into a thrown turn.
+ */
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * The authority that would have satisfied a request nothing matched.
+ *
+ * Every field is already in hand at the point of denial -- the caller named the
+ * resource and the action, and its own context names the requester, the owner,
+ * the namespace, and the purpose -- so nothing is resolved and no port is
+ * called. That is what keeps this affordable on a denial path and what keeps it
+ * from revealing anything: it restates the request rather than answering a
+ * question about the world (ADR 0019).
+ *
+ * Exactly one capability, always. The schema's bound of 64 is there for a
+ * host-built consent request that legitimately asks for several; this describes
+ * the one resource and one action the caller named, and a second entry could
+ * only be a guess at what else it might have wanted.
+ *
+ * The identifier is derived rather than random, and `requestedAt` is
+ * deliberately not part of what it is derived from. `requestedAt` is the instant
+ * of the authority the decision was made against -- the turn's admission instant
+ * inside a turn, since `context` comes from the authority lease and not from the
+ * operation -- so it is stable within a turn but moves between turns describing
+ * the same missing authority, and it moves on every conformance run. Hashing
+ * only the authority itself is what gives one missing authority one identifier
+ * across turns, and what keeps a conformance cell able to state the value it
+ * observed rather than that a field was present.
+ */
+async function describeRequiredCapability(
+  context: AccessContext,
+  request: AuthorizationRequest,
+): Promise<CapabilityRequest> {
+  const capability: Capability = {
+    // Rebuilt key by key rather than spread. `structuredClone` keeps an own
+    // property whose value is `undefined`, and `canonicalJson` emits one, so a
+    // caller that passed `owner: undefined` and one that omitted the key would
+    // hash to two different identifiers for one missing authority -- defeating
+    // the deduplication the derived identifier exists to give.
+    resource: {
+      namespace: request.resource.namespace,
+      path: [...request.resource.path],
+      ...(request.resource.owner === undefined ? {} : { owner: request.resource.owner }),
+    },
+    actions: [request.action],
+    scope: "exact",
+  };
+  const identity = {
+    namespaceId: context.namespaceId,
+    requester: context.actor,
+    owner: context.owner,
+    capabilities: [capability],
+    purpose: context.purpose,
+  };
+  return {
+    id: `capreq-${await hashJson(identity)}`,
+    ...identity,
+    requestedAt: context.now,
+  };
 }
 
 export function capabilityMatches(
