@@ -2,11 +2,12 @@
 
 - Status: Proposed
 - Date: 2026-08-31
+- Reverts: the documentation change in `663dd94`
 
 ## Context
 
-`docs/security/permission-model.md` lists ten steps the kernel evaluates for
-each operation. Step 10 is:
+`docs/security/permission-model.md` on `main` lists twelve steps the kernel
+evaluates for each operation. Step 10 is:
 
 > Apply the host ceiling and any non-grant policy constraints.
 
@@ -16,31 +17,65 @@ and `SharedOSKernel` audits that decision and proceeds. The only "ceiling" in
 the kernel is the one a _tool_ declares for itself, which ADR 0012 keeps
 deliberately separate and answers with `invalid_tool_requirement`.
 
-The step is not wrong about what hosts need — it is wrong about where they do
-it. A host with product or organization policy applies it outside the kernel,
-before or after asking. Pulse states this in its own adapter:
+That gap is real, and `663dd94` found it first. It resolved it in the other
+direction: step 10 was removed, the algorithm renumbered to eleven, and the
+actor definition rewritten to say the ceiling "is applied before SharedOS is
+asked" — through what a `GrantSource` returns and which namespaces a context
+enables — with the kernel having "no policy port of its own". Its reasoning was
+that nothing implements the step, that the one shipping host narrows authority
+exactly that way, and that a kernel-side port "would be a new trust-boundary
+contract needing an ADR, and no host asks for one".
 
-> `toolAccess.allowedTools` is intentionally NOT translated. [...] It stays a
-> Pulse-side ceiling applied while the tool map is built, so effective authority
-> is `Pulse ceiling ∩ SharedOS grants`.
+This is that ADR, and it argues the opposite resolution. Taking its three
+grounds in turn:
 
-That comment is honest and the decision behind it is right — importing a
-union-shaped legacy field as grants would manufacture a permission
-cross-product. But the consequence is a second enforcement point that the kernel
-cannot see. Three things follow, and all three are invisible today:
+**"Nothing implements it."** True, and the reason this decision has to be made
+rather than assumed. A document describing enforcement the code does not have
+can be fixed by deleting the claim or by implementing it. `663dd94` deleted it.
+The claim was load-bearing, so this ADR implements it instead.
+
+**"The one shipping host narrows authority that way."** SharedEval narrows
+through an immutable per-run grant manifest and a per-actor
+`enabledToolNamespaces`. That is an experiment harness whose policy is fixed
+before the run starts and cannot depend on a request, and for that shape,
+upstream narrowing genuinely suffices. Generalising from a host whose policy is
+static to a contract that must also serve hosts whose policy is not is the
+error. Pulse's ceiling reads the arguments of the call — which file, which
+recipient — and cannot be computed when authority is loaded.
+
+**"No host asks for one."** One already built it. Pulse states so in its own
+adapter: `toolAccess.allowedTools` "stays a Pulse-side ceiling applied while the
+tool map is built, so effective authority is `Pulse ceiling ∩ SharedOS
+grants`". The ask is not hypothetical; it is a second enforcement point that
+shipped because there was nowhere else to put it.
+
+### Why upstream narrowing is not the same thing
+
+The decisive objection is not expressiveness. It is that upstream refusal is
+**invisible and misattributed**.
+
+A host that refuses by withholding a grant produces `no_matching_grant`. That
+record says no such authority exists. The truth is that the authority exists and
+policy refused it. Those are different facts about a deployment, and today they
+are the same row — so a denial that is a deliberate product decision is
+indistinguishable from an owner who never granted anything. A namespace refused
+by policy is worse: the tool is simply absent from the catalogue and nothing is
+recorded at all.
+
+Three consequences follow, and none is reachable by a host doing more work
+upstream:
 
 - **The audit record is incomplete.** A call the host's ceiling refused never
   reaches the kernel, so nothing records that a decision was made or why.
-- **Denial rates are wrong in a way no measurement can detect.** "No grant
-  exists" and "a grant exists and product policy overrode it" are different
-  facts about a deployment. Today the first is recorded and the second is not
-  recorded at all.
+- **Denial rates cannot be computed.** "No grant exists" and "a grant exists and
+  policy overrode it" cannot be separated after the fact.
 - **Conformance cannot reach it.** ADR 0013 makes the matrix the case set, and a
   ceiling applied in host code before the kernel is called has no cell.
 
-SharedOS already has three narrowing mechanisms, and the reason none of them is
-this one is worth stating, because a fourth that overlaps them would be worse
-than none:
+### Not a fourth copy of an existing mechanism
+
+SharedOS already narrows in three places, and a port that overlapped them would
+be worse than none:
 
 | existing                               | what it narrows                                     | when it can be computed |
 | -------------------------------------- | --------------------------------------------------- | ----------------------- |
@@ -50,13 +85,14 @@ than none:
 
 All three are static with respect to the request: each is fully determined
 before the arguments of a particular call are known, and each can be applied
-once while a catalogue is built. A ceiling that has to read _this_ request —
-which file, which recipient, which argument — cannot be any of them.
+once while a catalogue is built. A ceiling that has to read _this_ request
+cannot be any of them.
 
 ## Decision
 
 The host ceiling becomes a port the kernel calls, in the position step 10
-already assigns it.
+already assigns it. `663dd94`'s documentation change is reverted and step 10
+restored.
 
 ```ts
 export interface HostCeiling {
@@ -64,10 +100,16 @@ export interface HostCeiling {
     decision: AuthorizationDecision,
     request: AuthorizationRequest,
     context: AccessContext,
-    signal: AbortSignal,
-  ): Promise<AuthorizationDecision>;
+  ): AuthorizationDecision;
 }
 ```
+
+**The signature is synchronous, and that is the enforcement.** "Deterministic
+and cheap" cannot be asserted in prose and then relied on. A synchronous return
+cannot await a network call or a model call, so the constraint is carried by the
+type rather than by a comment. A timeout was rejected for the same reason it
+would fail as a conformance signal: what it admits depends on how fast the
+machine is, so the same ceiling could pass on one host and fail on another.
 
 - It is consulted **only after a grant has matched**, on an `allowed` decision.
   A denial is never shown to it, so a ceiling cannot turn one into an allow.
@@ -75,55 +117,99 @@ export interface HostCeiling {
   that does not carry the `matchedGrantId` it was handed is treated as a
   malfunction and fails closed, so widening is not expressible rather than
   merely forbidden.
-- Its denial carries `policy_denied`, separable from `no_matching_grant` in
-  every count. It is not an infrastructure denial: it is a policy decision the
-  deployment made deliberately.
-
-  The code names **what** was refused, not **who** refused it. ADR 0012 removed
-  `tool_not_available` for exactly that conflation and settled the rule: "a code
-  is what was refused; a source is who refused it." A ceiling that announced
-  itself in the code — `host_ceiling_denied` — would put the decision point back
-  in the vocabulary. Which component refused belongs beside
-  `OperationRecord.source`, and a ceiling that wants to say more supplies its own
-  detail in the decision metadata, which is not part of the wire vocabulary.
-
+- Its denial carries `policy_denied`. The code names **what** was refused, not
+  **who** refused it: ADR 0012 removed `tool_not_available` for exactly that
+  conflation and settled that "a code is what was refused; a source is who
+  refused it". Which component refused is `OperationRecord.source`, and that is
+  the only place it lives — a parallel copy in decision metadata would be the
+  same fact in two shapes.
 - A throw fails closed and is recorded as an infrastructure denial, consistent
   with every other unavailable trusted component.
 - It is optional. A kernel constructed without one behaves exactly as it does
   today.
 
-Discovery uses the same port. `canDiscover` consults it too, so a catalogue is
-not offered on authority that invocation would refuse — the property ADR 0016
-established for expiry, for the same reason.
+### Who may install one, and how that is visible
 
-That is only safe because of what a ceiling is allowed to be.
+Whoever constructs the kernel constructs the ceiling; there is no separate
+authority for installing one, because a host that can build a kernel can already
+choose its `GrantSource`. What changes is that the choice is no longer silent:
+**the kernel records whether a ceiling is installed**, so a deployment that
+denies everything through policy is legible in the record rather than appearing
+as a deployment where nobody was granted anything.
 
-### A ceiling is deterministic and cheap, by contract
+### Denial-rate arithmetic
 
-`listTools` iterates the registry and awaits a discovery decision **per tool
-definition**. A ceiling in that path therefore runs once per tool per catalogue
-build, so it must be a pure function of the request and host state it already
-holds. Anything that makes a network call, or whose answer is not reproducible
-from its inputs, is not a ceiling.
+`policy_denied` is **its own bucket inside policy denials** — not an
+infrastructure denial, and not merged with `no_matching_grant`. Today
+`INFRASTRUCTURE_DENIAL_REASONS` is the only split the vocabulary supports, which
+is why a policy refusal currently has nowhere to go. The three-way shape is:
 
-That bound is not only about cost. A conformance row's expected output has to be
-observable, and ADR 0013 requires a declared row to run or to say it does not. A
-model call inside the authorization decision would make a cell that cannot state
-what it observed.
+```text
+denials = infrastructure (failClosed)
+        + policy { no_matching_grant, grant_exhausted, policy_denied, … }
+escalations are neither (ADR 0011)
+```
 
-Probabilistic judgment — a model deciding whether a permitted request should
-nonetheless be asked about — is real, and hosts have it. It stays **outside** the
-kernel decision, where it already is: a host gate that runs before the call
-reaches the kernel. What must change is not where it executes but that it is
-recorded. A host emits its verdict through the same `AuditSink`, with the same
-outcome vocabulary, so the decision is countable and measurable against a
-ground truth. The defect in a host-side judgment layer today is that nothing
-records it, not that it runs host-side.
+### Both paths, and the row that proves it
+
+The ceiling runs on `authorize` and on `canDiscover`. That is one call per tool
+per catalogue build plus one per invocation, which the synchronous signature is
+what makes affordable.
+
+Conformance gains a row that makes the pairing checkable rather than asserted:
+**a tool the ceiling refuses at invocation is absent from the catalogue.** A
+ceiling consulted on only one of the two paths fails that row. The row lands
+with the implementation, not with this ADR: ADR 0013's strict gate covers every
+declared row, so a row added ahead of the code would have to be declared
+`notImplemented` with a reason.
+
+## The port alone does not close the class
+
+Three refusal paths remain invisible or misattributed after the port lands, and
+the honest case for this direction includes all three.
+
+**1. A withheld grant never reaches the port.** The ceiling is consulted only on
+an `allowed` decision, so a host that refuses by not returning a grant bypasses
+it entirely and the kernel records `no_matching_grant`. Closing that requires
+inverting the `GrantSource` contract: **return the grants the actor holds; do
+not apply policy here.**
+
+That inversion is consistent with this ADR's own rejection of filtering in
+`GrantSource`. A request-dependent filter there would make `AuthoritySnapshot.hash`
+depend on the request, so the snapshot would stop identifying "the authority
+this turn holds". Inverting the rule protects that property rather than
+straining it.
+
+It also changes what a snapshot means, and that has to be written down rather
+than left implicit. The snapshot then contains authority that policy will
+refuse, so an auditor reading it alone would overstate what the turn could do.
+Its meaning becomes **"authority held", not "authority usable"** — a shift that
+belongs in ADR 0010's neighbourhood.
+
+**2. Namespace enablement launders the same invisibility.**
+`enabledToolNamespaces` carries two different things: the user's own settings
+choice, and organization policy. Split them by intent. The user's choice stays
+where it is; policy-driven namespace denial moves into the ceiling, where it
+produces a recorded `policy_denied` instead of a silent absence. Without the
+split, the port covers one field while the same refusal keeps flowing through
+another.
+
+**3. The pre-kernel host gate stays outside either way.** The determinism rule
+excludes a model-based sanitizer by design, so a host that runs one still runs
+it before the kernel is asked. Choosing the port does not remove the obligation
+that comes with that: such a host **emits its verdict to the same `AuditSink`
+with the same outcome vocabulary**. The port is added on top of that contract,
+not in place of it.
+
+**Net effect.** With only the port, a deployment gets one covered path, one
+still misattributed, one still silent — and a `policy_denied` count that reads
+as complete when it is not. All three follow-ons have to land for the class to
+actually close.
 
 ## Consequences
 
 - The permission model's step 10 becomes true of the code. Until now it
-  described an intention.
+  described an intention, and `663dd94` was right that the two disagreed.
 - A deployment can answer "how often does our own policy override a grant we
   issued", which is the question that tells an operator their grants are wider
   than their policy.
@@ -135,33 +221,39 @@ records it, not that it runs host-side.
 - Judgment layers that are not expressible as grants — a relationship model, a
   content-sensitivity check, an org-wide freeze — get a home that cannot widen
   authority, instead of wrapping the kernel where they can do anything.
-- Conformance gains a row for a grant-allowed, ceiling-denied call, and the
-  reason code makes it checkable rather than inferred from an absent effect. The
-  row lands with the implementation, not with this ADR: ADR 0013's strict gate
-  covers every declared row, so a row added ahead of the code would have to be
-  declared `notImplemented` with a reason rather than left to assert something
-  nobody ran.
+- SharedEval is unaffected. A host that narrows entirely upstream installs no
+  ceiling and behaves exactly as before; its ADR 0002 prohibition on a second
+  authorizer in the host is untouched, because a ceiling is not a second
+  authorizer — it cannot allow anything.
 
 ## Rejected alternatives
 
-**Leave it a convention.** Rejected. The convention already produced a second
-enforcement point in the first real host, with no audit and no test. Every
-further host will build its own, and each will be correct in isolation and
-invisible in aggregate.
+**Delete the claim instead of implementing it (`663dd94`).** Rejected on the
+evidence above: the enforcement it removed is the only one that can record a
+policy refusal, and its replacement — refuse by not issuing, not returning, or
+not enabling — is precisely the invisible path. It is the right change if
+SharedOS only ever serves hosts whose policy is fixed before a run; it is the
+wrong one for a host whose policy reads the request.
 
-**Filter the grants in `GrantSource` instead.** Rejected on two grounds. A
-ceiling that depends on the request cannot be applied when authority is loaded,
-because the request is not known yet. And it would make the authority snapshot
-depend on the request, so `AuthoritySnapshot.hash` would stop identifying "the
-authority this turn holds" and start identifying "the authority this call was
-allowed", which is the property ADR 0010 relies on for one snapshot per turn.
+**Leave it a convention.** Rejected. The convention already produced a second
+enforcement point in the first product host, with no audit and no test.
+
+**Filter the grants in `GrantSource` instead.** Rejected: a ceiling that depends
+on the request cannot be applied when authority is loaded, and it would make the
+authority snapshot depend on the request, breaking the one-snapshot-per-turn
+property ADR 0010 relies on.
 
 **Reuse `ToolNamespaceSettingsStore`.** Rejected: it narrows a persisted
 namespace selection at settings-write time and cannot read a call's arguments.
-Widening it into a per-request hook would give one interface two unrelated
-jobs and two different lifetimes.
+Widening it into a per-request hook would give one interface two unrelated jobs
+and two different lifetimes.
 
-**Let the ceiling return an escalation.** Rejected here and answered in
-ADR 0019. A ceiling says no; whether a no is worth asking a human about is the
+**An async signature with a timeout.** Rejected. It admits a network or model
+call and then bounds it by wall time, so what passes depends on machine speed —
+which cannot be a conformance signal, and which makes the ceiling's determinism
+a property of the deployment rather than of the contract.
+
+**Let the ceiling return an escalation.** Rejected here and answered in ADR
+0019. A ceiling says no; whether a no is worth asking a human about is the
 host's decision, made on the denial it receives, using the capability that
 denial describes.
