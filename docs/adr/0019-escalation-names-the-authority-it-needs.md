@@ -62,6 +62,15 @@ input anywhere, and the denial is still a denial — `allowed` stays `false` and
 fail-closed behaviour is untouched. A host that ignores the field behaves
 exactly as it does today.
 
+**It discloses nothing the caller did not already hold.** The description echoes
+the resource and action the caller just named, together with the owner,
+namespace and purpose that were already in its own access context. In
+particular it does **not** reveal whether the path exists: the same description
+is produced for a path that is absent and for one the actor merely cannot reach,
+because the authorizer never consults a provider to build it. That property is
+stated here so it is not later "improved" into an existence oracle by populating
+the field from anything a provider knows.
+
 It is deliberately absent from the other denials. `grant_exhausted` names a
 grant that exists, and the infrastructure denials name a fact SharedOS could not
 establish; describing a capability for either would suggest that issuing one is
@@ -72,6 +81,18 @@ the remedy when it is not.
 `Escalation` gains an optional `request: CapabilityRequest`, and
 `recordEscalation` accepts one alongside the reason. The `escalation.requested`
 audit event records it.
+
+`CapabilityRequest` carries a required `id`, `requester` and `requestedAt`, and
+**the kernel mints all three** — a host cannot supply them, because a request
+the caller authored would be a caller-chosen correlation for a decision the
+kernel made. They come from the trusted context and nothing else: `requester` is
+`context.actor`, `owner` is `context.owner`, and `requestedAt` is `context.now`.
+
+`id` is **derived deterministically** from those fields together with the
+resource and action, not generated randomly. A random UUID would make a
+conformance cell that cannot state what it observed: the row would have to
+either ignore the identifier or re-derive it, and a manifest that ignores a
+field is a manifest that does not check it.
 
 The reviewer is still assumed, the status is still always `pending`, and nothing
 inside SharedOS advances it. Resolution is unchanged and still host-owned: the
@@ -102,7 +123,29 @@ end this way and exactly one queue a reviewer reads.
   implementation — ADR 0013's gate covers every declared row, so a row added
   ahead of the code would have to be declared `notImplemented` with a reason.
 - `CapabilityRequest` stops being a type with no port. It is still not authority
-  and still not accepted as input.
+  and still not accepted as input. Its row in `docs/open-items.md` — "define a
+  port or delete it" — is closed by **the implementing PR**, not by this ADR: an
+  open item is closed by the code that closes it, not by a decision to write
+  that code.
+
+### Protocol version
+
+The field is additive and optional for a writer, and still breaking for a
+reader: every schema here is `.strict()`, so a reader on the previous version
+rejects an envelope carrying the unknown key rather than ignoring it. **The
+protocol version is bumped**, on the rule that what decides a bump is whether an
+existing peer can still parse what it receives, not whether the author added or
+removed a field.
+
+### Open
+
+**How many capabilities may one escalation name?** `CapabilityRequest.capabilities`
+is an array bounded at 64, the same bound the contract uses for every other
+list, so the number is a payload guard rather than a statement about review.
+The kernel-produced path emits exactly one, because one denial describes one
+missing capability; a host authoring a request deliberately could name several.
+Whether an escalation is answered as a whole — and therefore whether more than
+one may be named at all — is **undecided** and does not block this ADR.
 
 ## Rejected alternatives
 
