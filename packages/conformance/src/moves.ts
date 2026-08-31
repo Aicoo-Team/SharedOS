@@ -768,6 +768,25 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
     ],
   },
   {
+    id: "kernel.runtime-crashed",
+    kind: "runtime_crashed",
+    invariant: "Runtime plugin throws out of its turn",
+    expectedOutcome:
+      "The envelope ends the turn `failed` with `runtime_failed`; the record survives",
+    terminal: {
+      type: "crash",
+      reason: "the runtime plugin stopped obeying the protocol",
+    },
+    attempts: [
+      {
+        ...READ_OWN_WORKSPACE,
+        id: "read-own-workspace",
+        description:
+          "Read inside the agent's own world before throwing, so the row evidences a turn that was running and then crashed rather than one that never started -- and so the record has an operation in it to survive the crash.",
+      },
+    ],
+  },
+  {
     id: "kernel.record-completeness",
     kind: "record_completeness",
     invariant: "Allowed and denied turns emit a complete record",

@@ -234,10 +234,11 @@ describe("the conformance suite", () => {
     // The matrix has seventeen rows; two more are declared for the structural
     // reinforcements it names but does not tabulate, two more give the recovery
     // surface its own readings, two more give the brokered external surface its
-    // own, and one more gives the mid-turn row its expiry reading. A case set
-    // that drifts below this has stopped covering the document it claims to
+    // own, one more gives the mid-turn row its expiry reading, and one more
+    // covers the ending no plugin cooperates in producing. A case set that
+    // drifts below this has stopped covering the document it claims to
     // implement.
-    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(25);
+    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(26);
     expect(new Set(CANONICAL_ATTACK_MOVES.map(({ kind }) => kind)).size).toBe(
       CANONICAL_ATTACK_MOVES.length,
     );
@@ -315,32 +316,33 @@ describe("the conformance suite", () => {
   it("passes every implemented row and reports where each was refused", async () => {
     const { manifest, evidence } = await runConformanceSuite();
 
-    expect(manifest.rows).toHaveLength(28);
+    expect(manifest.rows).toHaveLength(29);
     expect(manifest.columns).toHaveLength(6);
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
-    expect(cells).toHaveLength(168);
+    expect(cells).toHaveLength(174);
     // Every implemented row passes in every column that can run it. The rest are
     // stated: two rows SharedOS does not implement, counted once per column, and
-    // two rows per driven column it structurally cannot run -- one whose
-    // attempt reads the runtime surfaces a driver is never handed, and the
-    // ungranted-escalation row, which only a plugin that owns its outcome can
-    // attempt. The native harness is a driven column too: it carries the same
-    // two, which is what makes its cell a claim about the shipped loop rather
-    // than a second copy of the adversary's. Two others used to sit here and no
-    // longer do, and neither was a fact about harnesses: escalation is a
-    // catalogued tool now, and the step ceiling is reachable once a driver can
-    // name its own step.
-    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(146);
+    // three rows per driven column it structurally cannot run -- one whose
+    // attempt reads the runtime surfaces a driver is never handed, and two whose
+    // claim is about a terminal outcome only a plugin that owns its outcome can
+    // produce: an ungranted `escalate`, and a throw out of the turn. The native
+    // harness is a driven column too: it carries the same three, which is what
+    // makes its cell a claim about the shipped loop rather than a second copy of
+    // the adversary's. Two others used to sit here and no longer do, and neither
+    // was a fact about harnesses: escalation is a catalogued tool now, and the
+    // step ceiling is reachable once a driver can name its own step.
+    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(147);
     expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(12);
-    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(10);
+    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(15);
     expect(strictFailures(manifest)).toEqual([]);
     // Evidence exists for every cell that ran a turn, and for no cell that did
     // not: the two unimplemented rows in every column, and the ungranted-
-    // escalation row in every column but the adversary's. The escalation row
-    // runs everywhere, so it leaves evidence everywhere. The step-ceiling row
-    // always did -- an unreachable *attempt* still runs its turn, unlike an
-    // unsupported row, which is why that change moved cells without moving this.
-    expect(evidence).toHaveLength(151);
+    // escalation and crash rows in every column but the adversary's. The
+    // escalation row runs everywhere, so it leaves evidence everywhere. The
+    // step-ceiling row always did -- an unreachable *attempt* still runs its
+    // turn, unlike an unsupported row, which is why that change moved cells
+    // without moving this.
+    expect(evidence).toHaveLength(152);
 
     // Every driven column lands on the same counts, the native harness
     // included. That is the portability claim in its smallest form: adding a
@@ -348,7 +350,7 @@ describe("the conformance suite", () => {
     for (const column of manifest.columns.filter(({ id }) => id !== ADVERSARY_COLUMN.id)) {
       const columnCells = cells.filter((cell) => cell.columnId === column.id);
       expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(24);
-      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(2);
+      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(3);
       expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(2);
     }
 
@@ -420,6 +422,35 @@ describe("the conformance suite", () => {
       Array.from({ length: 5 }, () => "not_applicable"),
     );
 
+    // A plugin that throws is contained rather than propagated: the envelope
+    // converts the throw into a terminal `failed` under its own code and names
+    // itself as the boundary that ended the turn. The control call before it is
+    // graded, which is what says the runtime was running and then crashed.
+    const crashed = byCase("runtime-crashed");
+    expect(crashed?.status).toBe("pass");
+    expect(crashed?.attempted).toBe(crashed?.declared);
+    expect(crashed?.refusedBy).toEqual(["envelope"]);
+    expect(crashed?.detail).toMatch(/ended as `failed` with `runtime_failed`/u);
+    // Receipts survive a crash only because they leave as they happen. A throw
+    // carries no terminal metadata, so a row that depended on the report would
+    // report its own control attempt as never exercised.
+    expect(crashed?.recordUsable).toBe(true);
+    const crashedEvidence = evidence.filter(({ caseId }) => caseId === "runtime-crashed");
+    expect(crashedEvidence.map(({ columnId }) => columnId)).toEqual([ADVERSARY_COLUMN.id]);
+    const crashedRecord = crashedEvidence[0]?.records[0];
+    expect(crashedRecord?.execution.status).toBe("failed");
+    expect(crashedRecord?.execution.terminalReasonCode).toBe("runtime_failed");
+    // The crash reached no kernel decision of its own, but the call before it
+    // did, and the record still carries it. A turn whose evidence vanished with
+    // the plugin would make a crash the cheapest way to erase what was tried.
+    expect(crashedRecord?.execution.operations).toContainEqual(
+      expect.objectContaining({ source: "kernel", outcome: "succeeded" }),
+    );
+    const crashedRow = manifest.rows.find((row) => row.caseId === "runtime-crashed");
+    expect(crashedRow?.cells.slice(1).map(({ status }) => status)).toEqual(
+      Array.from({ length: 5 }, () => "not_applicable"),
+    );
+
     // The next-turn row is the one that needs two turns against one world.
     const revoked = byCase("revoked-mid-turn", "revoked-while-the-first-turn-runs");
     expect(revoked?.turns).toBe(2);
@@ -427,10 +458,11 @@ describe("the conformance suite", () => {
     expect(revoked?.reasonCodes).toEqual(["no_matching_grant"]);
   });
 
-  // Two whole suite runs, which is a little over vitest's default budget on a
-  // small machine. Stated here rather than raised globally: this is the only
-  // test that deliberately runs the suite twice, and a global raise would hide
-  // the next test that becomes slow for a reason worth knowing about.
+  // Two whole suite runs, which is well over vitest's default budget on a small
+  // machine and grows with every row added. Stated here rather than raised
+  // globally: this is the only test that deliberately runs the suite twice, and
+  // a global raise would hide the next test that becomes slow for a reason worth
+  // knowing about.
   it("produces the same manifest on every run", async () => {
     const first = await runConformanceSuite();
     const second = await runConformanceSuite();
@@ -439,7 +471,7 @@ describe("the conformance suite", () => {
     expect(renderConformanceSummary(second.manifest)).toBe(
       renderConformanceSummary(first.manifest),
     );
-  }, 30_000);
+  }, 60_000);
 
   it("keeps volatile runtime identity out of the committed manifest", async () => {
     const { manifest, evidence } = await runConformanceSuite();

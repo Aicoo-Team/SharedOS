@@ -157,6 +157,16 @@ each entry calls out what a host has to update.
   fails the turn `model_call_failed` rather than completing on the recording's
   behalf, so a script that ends too early is a visible result and not a model
   choosing to stop.
+- A conformance row for a runtime plugin that throws out of its turn. The
+  envelope contains the throw rather than letting it reach the host: the turn
+  ends `failed` with `runtime_failed`, the `turn.failed` event names the
+  envelope as what ended it, and the record still carries the call the turn
+  made before it. The receipts survive only because the adversary emits them as
+  they happen -- a crash carries no terminal metadata to return them on -- and
+  the row pins that too. Only a plugin that owns its outcome can throw on
+  purpose, so the row runs on the adversary column and every driven, MCP, and
+  model column declares it `not applicable`. The case-set and world-set hashes
+  move.
 - A conformance row for an escalation the turn was not granted. A runtime that
   ends its turn with `escalate` while the catalogue does not offer the
   affordance is refused by the envelope: the turn fails `tool_unavailable`,

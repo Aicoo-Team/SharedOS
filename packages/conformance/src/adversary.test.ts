@@ -6,6 +6,7 @@ import type { ExecutionResult } from "@aicoo/sharedos-contracts";
 import { SharedOSExecutor } from "@aicoo/sharedos-runtime";
 
 import {
+  ADVERSARY_METADATA_KEY,
   type AttemptReceipt,
   HostileRuntime,
   readAdversarialReport,
@@ -151,6 +152,7 @@ describe("the hostile runtime", () => {
       "broker_out_of_scope",
       "escalation_recorded",
       "escalation_refused",
+      "runtime_crashed",
       "record_completeness",
       "typed_governed_views",
       "replay_freshness",
@@ -195,6 +197,55 @@ describe("the hostile runtime", () => {
 
     expect(readAttemptReceipts(run.result)).toEqual(run.receipts);
     expect(readAdversarialReport(withoutMetadata)?.receipts).toEqual(run.receipts);
+  });
+
+  it("throws out of the turn when the move declares a crash, and is contained", async () => {
+    const run = await runMove("runtime_crashed");
+
+    // The throw does not escape `execute`. A plugin that stops obeying the
+    // protocol is a terminal outcome the envelope owns, not an exception the
+    // host has to catch, and a caller that had to wrap this call would be
+    // wrapping the security boundary in its own error handling.
+    expect(run.result.status).toBe("failed");
+    expect(run.result.status === "failed" ? run.result.error.code : undefined).toBe(
+      "runtime_failed",
+    );
+
+    // `source` is what a record reader grades on: the envelope ended this turn,
+    // as against a failure a runtime reported as its own. Version 3 of the
+    // grading rules reads exactly this field.
+    const failed = run.result.events.find(({ type }) => type === "turn.failed");
+    expect(failed?.data).toMatchObject({ code: "runtime_failed", source: "envelope" });
+
+    // The receipt for the call made before the throw survives, and only because
+    // it left as it happened. There is no terminal outcome to carry a report on
+    // a crash, so the metadata holds none and the report has to be rebuilt from
+    // the event stream -- the fallback that exists for exactly this.
+    expect(run.result.metadata?.[ADVERSARY_METADATA_KEY]).toBeUndefined();
+    const recovered = readAttemptReceipts(run.result);
+    expect(recovered.map(({ attemptId }) => attemptId)).toEqual(["read-own-workspace"]);
+    expect(recovered[0]?.observed).toBe("succeeded");
+    expect(readAdversarialReport(run.result)?.receipts).toEqual(recovered);
+
+    // And the turn's own evidence is intact, which is the half of the claim a
+    // receipt cannot make: a crash must not be the cheapest way to leave no
+    // record of what the turn did before it.
+    expect(run.world.files.reads).toHaveLength(1);
+    expect(checkRecordCompleteness(run.record).usable).toBe(true);
+    expect(run.record.execution.terminalReasonCode).toBe("runtime_failed");
+    expect(run.record.execution.operations).toContainEqual(
+      expect.objectContaining({ tool: READ_TOOL, source: "kernel", outcome: "succeeded" }),
+    );
+
+    // What the crash leaves in audit is nothing, and the row says so rather
+    // than leaving a reader to assume the terminal outcome is in there with the
+    // decisions. The envelope owns this ending and never calls the kernel for
+    // it, so `runtime_failed` exists only in the execution event stream. A
+    // record built from audit alone would show a turn that read a file and then
+    // stopped, with no account of why.
+    expect(run.world.auditEvents.map(({ type }) => type)).not.toContain("escalation.requested");
+    expect(run.world.auditEvents.some(({ reason }) => reason === "runtime_failed")).toBe(false);
+    expect(run.record.execution.decisions.every(({ outcome }) => outcome === "allowed")).toBe(true);
   });
 });
 

@@ -56,6 +56,7 @@ export const ATTACK_MOVE_KINDS = [
   "broker_out_of_scope",
   "escalation_recorded",
   "escalation_refused",
+  "runtime_crashed",
   "record_completeness",
   "typed_governed_views",
   "replay_freshness",
@@ -186,17 +187,33 @@ export type AttackAttempt = z.infer<typeof AttackAttemptSchema>;
 /**
  * How the turn ends, when the row is about the ending itself.
  *
- * Only escalation is expressible. A runtime that ends a turn by asking a human
- * to decide is making a claim about SharedOS -- that the request is recorded and
- * audited and grants nothing -- and that claim cannot be tested by a turn that
- * always ends `complete`.
+ * Two endings are expressible, and both are claims about SharedOS rather than
+ * about a call inside the turn, so neither can be tested by a turn that always
+ * ends `complete`.
+ *
+ * `escalate` is a runtime ending the turn by asking a human to decide: the
+ * claim is that the request is recorded and audited and grants nothing.
+ *
+ * `crash` is a runtime throwing out of `run`. The claim is what the envelope
+ * does with a plugin that stops obeying the protocol entirely -- it is the one
+ * ending no plugin cooperates in producing, and the only one where SharedOS has
+ * nothing from the seat to read. `reason` is the message thrown, declared here
+ * so the throw is as reviewable and as deterministic as every other attempt.
  */
-export const AttackTerminalSchema = z
-  .object({
-    type: z.literal("escalate"),
-    reason: z.string().min(1).max(512),
-  })
-  .strict();
+export const AttackTerminalSchema = z.discriminatedUnion("type", [
+  z
+    .object({
+      type: z.literal("escalate"),
+      reason: z.string().min(1).max(512),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("crash"),
+      reason: z.string().min(1).max(512),
+    })
+    .strict(),
+]);
 export type AttackTerminal = z.infer<typeof AttackTerminalSchema>;
 
 export const AttackMoveSchema = z
@@ -394,8 +411,18 @@ export class HostileRuntime implements RuntimePlugin {
     // whenever the turn ended by asking for help would be unable to say what
     // the turn had done before it asked.
     const terminal = this.#moves.find(({ terminal: value }) => value !== undefined)?.terminal;
-    if (terminal !== undefined) {
+    if (terminal?.type === "escalate") {
       return { type: "escalate", reason: terminal.reason, metadata };
+    }
+
+    // A crash is the one ending that cannot carry the report out. There is no
+    // outcome to attach metadata to, so the receipts above have to have already
+    // left through `host.emit` -- which is why they are emitted as they happen
+    // rather than only summarised at the end. The throw is last, after every
+    // declared attempt has been issued and announced, so what the turn managed
+    // to do before it stopped obeying the protocol is still in the record.
+    if (terminal?.type === "crash") {
+      throw new Error(terminal.reason);
     }
 
     return {

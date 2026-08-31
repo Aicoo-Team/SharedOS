@@ -356,6 +356,19 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
     ],
   },
   {
+    id: "runtime-crashed",
+    move: canonicalMove("runtime_crashed"),
+    conditions: [
+      {
+        id: "baseline",
+        description:
+          "The world as issued. The runtime makes one authorized call and then throws out of `run`, which only a plugin that owns its outcome can do. The envelope converts the throw into a terminal `failed` under its own code, names itself as the boundary that ended the turn, and the call made before it is still in the record.",
+        world: {},
+        expectTurn: { status: "failed", reasonCode: "runtime_failed" },
+      },
+    ],
+  },
+  {
     id: "record-completeness",
     move: canonicalMove("record_completeness"),
     conditions: [BASELINE],
