@@ -214,9 +214,29 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
 
 ### 9. One decision point for tool approval and escalation
 
-- Implement `HostCeiling` (ADR 0020) over the sanitizer, relationship cluster,
-  and precedent checks. They keep their own records and stop being a second
-  enforcement point.
+- Implement `HostCeiling` (ADR 0020) over the judgment checks so they stop being
+  a second enforcement point. Separate the three things currently bundled as
+  "judgment", because they do not belong in the same place:
+  - The **precedent mechanism** — fingerprint a request shape, match it against
+    the owner's prior answers, and skip the prompt — is deterministic and is
+    already wanted by both planes. Converge it to one implementation with a
+    typed key. Today the c2c plane reuses the escalation precedent table by
+    string-encoding a structured key into fields meant for something else:
+    `relationshipCluster` holds `c2c:<principalId>` and `queryFingerprint` holds
+    a JSON tuple, where the escalation plane writes a computed cluster and a
+    SHA-256 of normalized intent. That is one mechanism with no home, not two
+    policies.
+  - A precedent decides whether to **ask**, never whether to **permit**. It runs
+    after authorization has already allowed the call, so it can only skip an
+    owner prompt. Keep that property explicit wherever it lands.
+  - The **model-based sanitizer** stays outside the kernel — not because it is
+    Pulse-specific, but because it is probabilistic. A conformance row whose
+    expected output is a model call is not a conformance row. It sits above the
+    ceiling port, where its verdict is recorded as a host decision and can be
+    measured against one.
+- `computePermissionGaps` largely dissolves. "Which scope was never granted" is
+  the same computation as the `requiredCapability` a `no_matching_grant` denial
+  now describes (ADR 0019); keep only the owner-facing scope copy.
 - Replace the in-memory permission elevation used for escalation replay with a
   grant scoped to the requesting guest: `subject`, `expiresAt`, and
   `maxUses: 1`. The reason it was never persisted — that `agentPermissions` has
