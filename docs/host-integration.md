@@ -192,6 +192,13 @@ and not marked `failClosed`, because a deliberate refusal is not an outage. Your
 own `reasonCode` is replaced; say more in `metadata`, which is preserved except
 for the `consumed` and `failClosed` keys the kernel states itself.
 
+ADR 0020 also defines `PolicySource` — a per-turn, kernel-owned policy load
+that hands `narrow` the loaded state as a fourth argument, so a database-backed
+policy is read once at the turn boundary the way authority is. It is **not
+implemented yet**; `docs/open-items.md` carries the row. Until it lands, the
+closure above is the contract: load policy into memory and refresh it on your
+own schedule.
+
 Two things it does not cover, and both are yours to close:
 
 - **Namespace availability.** `enabledToolNamespaces` still carries the user's
