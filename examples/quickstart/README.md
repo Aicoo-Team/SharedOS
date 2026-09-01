@@ -15,7 +15,7 @@ pnpm example:quickstart
 }
 ```
 
-Roughly 115 lines, and every line is one of the five things a turn needs:
+About 120 lines, and every line is one of the five things a turn needs:
 
 1. An `AccessContext` built from trusted state for Alice, the executing
    recipient. Grants are loaded separately from the trusted source.

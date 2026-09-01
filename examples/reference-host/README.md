@@ -11,15 +11,16 @@ pnpm example:reference-host
 ```
 
 Set `ANTHROPIC_API_KEY` to drive the same turn with a live model instead of the
-scripted driver.
+scripted driver; `ANTHROPIC_BASE_URL` overrides the endpoint. The example needs
+Node.js 22.5 or newer, because the stores use `node:sqlite`.
 
 ## What it implements
 
-| File                     | Port                                                                                                                              | Why it is the host's job                                                                                                                    |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `filesystem-provider.ts` | `ResourceProvider`                                                                                                                | All twelve `files` actions over one root, per `(namespace, owner)` tenant, with path safety                                                 |
-| `sqlite-stores.ts`       | `GrantSource`, `GrantUsageStore`, `CapabilityGrantVerifier`, `DelegationChainResolver`, `ToolNamespaceSettingsStore`, `AuditSink` | Authority has to come from somewhere durable; bounded uses need an atomic compare-and-set; revocation and audit need to outlive the process |
-| `driver.ts`              | `AgentTurnDriver`                                                                                                                 | The model, its tool-calling format, and its credentials belong to the host                                                                  |
+| File                     | Port                                                                                                                                                                                   | Why it is the host's job                                                                                                                    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `filesystem-provider.ts` | `ResourceProvider`                                                                                                                                                                     | All twelve `files` actions over one root, per `(namespace, owner)` tenant, with path safety                                                 |
+| `sqlite-stores.ts`       | `GrantSource`, `GrantUsageStore`, `CapabilityGrantVerifier`, `ToolNamespaceSettingsStore`, `AuditSink`, and the `resolveChain` query `index.ts` wraps as the `DelegationChainResolver` | Authority has to come from somewhere durable; bounded uses need an atomic compare-and-set; revocation and audit need to outlive the process |
+| `driver.ts`              | `AgentTurnDriver`                                                                                                                                                                      | The model, its tool-calling format, and its credentials belong to the host                                                                  |
 
 It uses `node:sqlite`, so it adds no dependency. A production host would use
 its existing database and keep the same statement shapes.

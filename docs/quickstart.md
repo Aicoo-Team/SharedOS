@@ -17,15 +17,16 @@ SharedOS decides whether an action is allowed. It never stores your data, calls
 your model, or holds your credentials. A first integration therefore supplies
 three things, and only the first is required to see anything work:
 
-| You supply             | Interface          | Needed for                              |
-| ---------------------- | ------------------ | --------------------------------------- |
-| Somewhere to put files | `ResourceProvider` | Any `files` operation at all            |
-| A model, or a script   | `AgentTurnDriver`  | Running a turn rather than single calls |
-| Durable stores         | five host ports    | Production. Not this page               |
+| You supply             | Interface                                                                                                                         | Needed for                              |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| Somewhere to put files | `ResourceProvider`                                                                                                                | Any `files` operation at all            |
+| A model, or a script   | `AgentTurnDriver`                                                                                                                 | Running a turn rather than single calls |
+| Durable stores         | `GrantSource`, `GrantUsageStore`, `CapabilityGrantVerifier`, `DelegationChainResolver`, `ToolNamespaceSettingsStore`, `AuditSink` | Production. Not this page               |
 
 The examples below use an in-memory provider so they run immediately.
 [`examples/reference-host`](https://github.com/Aicoo-Team/SharedOS/tree/main/examples/reference-host)
-is the same shape backed by a real filesystem and SQLite.
+is the same shape backed by a real filesystem and SQLite; it needs Node.js 22.5
+or newer for `node:sqlite`, where the packages themselves need 20.11.
 
 ## Embedded: authorize one file read
 
@@ -282,6 +283,14 @@ only the transport changes.
 
 ```ts
 import { createKernelSharedOSApi, createSharedOSHandler } from "@aicoo/sharedos";
+
+// The executor the embedded example built, kept for the HTTP turn route. The
+// kernel and driver are the ones defined above.
+const turns = new SharedOSExecutor(kernel, new StandardRuntime(driver), {
+  defaultMaxSteps: 8,
+  defaultMaxToolCalls: 8,
+  defaultTimeoutMs: 30_000,
+});
 
 const handler = createSharedOSHandler({
   api: createKernelSharedOSApi({ kernel, turns }),

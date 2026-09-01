@@ -31,9 +31,14 @@
  *
  * Environment:
  *   SHAREDOS_MODEL_API_KEY   the model column's key (DEEPSEEK_API_KEY, DSH_API_KEY)
- *   SHAREDOS_MODEL           model name          (default deepseek-v4-flash)
+ *   SHAREDOS_MODEL           model name          (default DSH_MODEL, else the config's model.id, else deepseek-v4-flash)
  *   SHAREDOS_MODEL_BASE_URL  chat-completions root (default https://api.deepseek.com)
- *   SHAREDOS_MODEL_PROVIDER  provider label      (default deepseek)
+ *   SHAREDOS_MODEL_PROVIDER  provider label      (default the config's model.provider, else deepseek)
+ *   SHAREDOS_NATIVE_CONFIG   default for --config
+ *   DSH_RUNTIME_COMMAND      DeepSeek Harness JSON-RPC runtime (default dsh-jsonrpc-agent)
+ *   DSH_RUNTIME_CONFIG       its plugin composition, passed as the first argument
+ *   DSH_RUNTIME_CWD          its working directory, also the `initialize` cwd
+ *   DSH_PROVIDER, DSH_MODEL  what `initialize` names (default deepseek-official, deepseek-v4-flash)
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";

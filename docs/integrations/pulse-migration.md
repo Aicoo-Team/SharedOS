@@ -97,8 +97,8 @@ No Pulse type, schema, route, or billing dependency moves into SharedOS.
 
 ### 0. Package and baseline
 
-- Consume the synchronized SharedOS packages from a private registry or packed
-  workspace artifacts.
+- Consume the synchronized SharedOS packages from npm under the `next`
+  dist-tag, or from packed workspace artifacts.
 - Confirm Pulse's Node runtime meets SharedOS's declared minimum.
 - Capture current allow/deny behavior for notes, memory maintenance, shared
   agents, snapshots, and `/api/v1/os` routes.

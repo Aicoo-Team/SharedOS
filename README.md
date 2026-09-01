@@ -93,8 +93,8 @@ flowchart LR
   E --> K["Fixed security envelope"]
   K --> R["RuntimePlugin"]
   R --> RS["Standard runtime"]
-  R --> RC["Codex runtime"]
-  R --> RD["DeepSeek / custom runtime"]
+  R --> RC["Harness runtimes: Codex, Claude Code, DeepSeek Harness, Pi"]
+  R --> RD["Model-API or custom runtime"]
   K --> PK["Permission kernel"]
   PK --> C["Capability contracts"]
   K --> C
@@ -258,25 +258,9 @@ The one-install entry point is `@aicoo/sharedos`. Individual packages remain
 available for hosts that want a smaller dependency surface. Release candidates
 use one synchronized version and the `next` dist-tag.
 
-````
-
-### Delegation on a robot line
-
-One agent passes part of its mandate to another and cannot pass on more than it
-holds. Runs offline in a couple of seconds.
-
 ```bash
-pnpm example:fleet-delegation
-````
-
-It shows a narrower grant derived from a held one, four attempts past its edge
-refused, two grants failing to combine into a third authority, redelegation
-refused once the depth is spent, and a revocation upstream stopping a
-descendant that was never rewritten.
-bash
 pnpm pack:preview
-
-````
+```
 
 This builds every package, verifies that `workspace:*` dependencies were
 rewritten to exact prerelease versions, installs the tarballs into a fresh
@@ -285,12 +269,13 @@ Artifacts are written to `artifacts/npm/`.
 
 ## Development
 
-Requirements: Node.js 20.11 or newer and pnpm 9.15.
+Requirements: Node.js 20.11 or newer and pnpm 9.15. The reference host example
+needs Node.js 22.5 or newer for `node:sqlite`.
 
 ```bash
 pnpm install
 pnpm check
-````
+```
 
 The repository is a TypeScript workspace. Public contracts must stay JSON-safe,
 and permission changes require tests for both allowed and denied paths. See
@@ -319,6 +304,11 @@ transition are documented in the
 - [ADR 0011: Escalation is a terminal outcome, not a denial](docs/adr/0011-escalation-terminal-outcome.md)
 - [ADR 0012: One refusal vocabulary at both enforcement boundaries](docs/adr/0012-one-refusal-vocabulary.md)
 - [ADR 0013: The conformance matrix is the case set](docs/adr/0013-matrix-is-the-case-set.md)
+- [ADR 0014: MCP is the toolshare boundary](docs/adr/0014-mcp-toolshare.md)
+- [ADR 0015: One message purpose and recipient-owned execution](docs/adr/0015-message-purpose-and-recipient-execution.md)
+- [ADR 0016: Expiry is instant-bound, revocation is snapshot-bound](docs/adr/0016-expiry-is-instant-bound.md)
+- [ADR 0017: What a driver may declare about its own turn](docs/adr/0017-driver-declared-turn-control.md)
+- [ADR 0018: Escalation over MCP is recovered from the call, not returned by it](docs/adr/0018-escalation-over-mcp.md)
 
 ## License
 
