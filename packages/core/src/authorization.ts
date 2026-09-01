@@ -8,6 +8,7 @@ import type {
 } from "@aicoo/sharedos-contracts";
 
 import type { ResolvedAuthority } from "./authority.js";
+import { describeRequiredCapability } from "./capability-request.js";
 import {
   type DelegationChainResolver,
   type DelegationValidation,
@@ -265,7 +266,20 @@ export class CapabilityAuthorizer {
       );
     }
 
-    return deny(foundExhaustedGrant ? "grant_exhausted" : "no_matching_grant");
+    if (foundExhaustedGrant) {
+      return deny("grant_exhausted");
+    }
+
+    // The one denial that describes what would have satisfied it. A grant
+    // exists for `grant_exhausted` and issuing another is not the remedy, and an
+    // infrastructure denial names a fact SharedOS could not establish; only
+    // "nothing granted this" is answered by authority that does not yet exist.
+    // See ADR 0019.
+    const requiredCapability = await describeRequiredCapability(context, request);
+    return {
+      ...deny("no_matching_grant"),
+      ...(requiredCapability === undefined ? {} : { requiredCapability }),
+    };
   }
 
   async #validateDelegation(

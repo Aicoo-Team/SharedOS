@@ -51,6 +51,34 @@ function accessContext(namespaceId = "world-alpha"): AccessContext {
   };
 }
 
+/**
+ * The whole of a denial for want of a grant, description included.
+ *
+ * Every `no_matching_grant` denial now names the authority that would have
+ * satisfied it (ADR 0019), so the assertions below stay exact rather than
+ * becoming partial: what is asserted is still the complete decision. Only the
+ * derived identifier is left open here, and it has a test of its own.
+ */
+function deniedForWantOfAGrant(
+  resource: ResourceRef,
+  action: string,
+  access: AccessContext = accessContext(),
+): unknown {
+  return {
+    allowed: false,
+    reasonCode: "no_matching_grant",
+    requiredCapability: {
+      id: expect.any(String),
+      namespaceId: access.namespaceId,
+      requester: access.actor,
+      owner: access.owner,
+      capabilities: [{ resource, actions: [action], scope: "exact" }],
+      purpose: access.purpose,
+      requestedAt: access.now,
+    },
+  };
+}
+
 /** Authority as the kernel would have resolved it from a trusted source. */
 function context(grants: CapabilityGrant[]): ResolvedAuthority {
   return authorityFor(accessContext(), grants);
@@ -74,10 +102,9 @@ describe("CapabilityAuthorizer", () => {
     const authorizer = new CapabilityAuthorizer();
     const request = { resource: RESOURCE, action: "read" };
 
-    await expect(authorizer.authorize(context([]), request)).resolves.toEqual({
-      allowed: false,
-      reasonCode: "no_matching_grant",
-    });
+    await expect(authorizer.authorize(context([]), request)).resolves.toEqual(
+      deniedForWantOfAGrant(RESOURCE, "read"),
+    );
     await expect(authorizer.authorize(context([grant()]), request)).resolves.toEqual({
       allowed: true,
       reasonCode: "allowed",
@@ -101,10 +128,7 @@ describe("CapabilityAuthorizer", () => {
         action: "read",
       });
 
-      expect(decision).toEqual({
-        allowed: false,
-        reasonCode: "no_matching_grant",
-      });
+      expect(decision).toEqual(deniedForWantOfAGrant(RESOURCE, "read"));
     },
   );
 
@@ -155,10 +179,12 @@ describe("CapabilityAuthorizer", () => {
         },
         action: "grep",
       }),
-    ).resolves.toEqual({
-      allowed: false,
-      reasonCode: "no_matching_grant",
-    });
+    ).resolves.toEqual(
+      deniedForWantOfAGrant(
+        { namespace: "files", path: ["Workspace", "projects", "sharedos-evil", "README.md"] },
+        "grep",
+      ),
+    );
   });
 
   it("does not consume maxUses during inspection and consumes atomically", async () => {
@@ -258,10 +284,12 @@ describe("CapabilityAuthorizer", () => {
       await expect(authorizer.authorize(authority, READ)).resolves.toMatchObject({
         allowed: true,
       });
-      await expect(authorizer.authorize(authority, READ, { now: LATER })).resolves.toEqual({
-        allowed: false,
-        reasonCode: "no_matching_grant",
-      });
+      // `requestedAt` is the turn's instant, not this operation's: the
+      // description names the authority the turn asked for, and a turn asks
+      // once.
+      await expect(authorizer.authorize(authority, READ, { now: LATER })).resolves.toEqual(
+        deniedForWantOfAGrant(READ.resource, READ.action),
+      );
     });
 
     it("keeps revocation at the turn's instant, where the store edit was not seen", async () => {
@@ -282,7 +310,7 @@ describe("CapabilityAuthorizer", () => {
       });
 
       await expect(authorizer.authorize(context([pending]), READ, { now: LATER })).resolves.toEqual(
-        { allowed: false, reasonCode: "no_matching_grant" },
+        deniedForWantOfAGrant(READ.resource, READ.action),
       );
     });
 
@@ -301,7 +329,7 @@ describe("CapabilityAuthorizer", () => {
       });
       await expect(
         authorizer.canDiscover(context([expiring]), ceiling, { now: LATER }),
-      ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+      ).resolves.toEqual(deniedForWantOfAGrant(ceiling.resource, ceiling.action));
     });
 
     it("invalidates a descendant when its ancestor expires mid-turn", async () => {
@@ -361,10 +389,98 @@ describe("CapabilityAuthorizer", () => {
         resource: RESOURCE,
         action: "read",
       }),
-    ).resolves.toEqual({
-      allowed: false,
-      reasonCode: "no_matching_grant",
+    ).resolves.toEqual(deniedForWantOfAGrant(RESOURCE, "read"));
+  });
+});
+
+describe("a denial that names the authority it needed", () => {
+  const authorizer = new CapabilityAuthorizer({ usageStore: new InMemoryGrantUsageStore() });
+
+  it("names the resource, action, owner and purpose the authorizer already held", async () => {
+    const decision = await authorizer.authorize(context([]), {
+      resource: RESOURCE,
+      action: "read",
     });
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.requiredCapability).toMatchObject({
+      namespaceId: "world-alpha",
+      requester: ACTOR,
+      owner: OWNER,
+      purpose: "prepare-update",
+      requestedAt: NOW,
+      capabilities: [{ resource: RESOURCE, actions: ["read"], scope: "exact" }],
+    });
+  });
+
+  it("describes only the narrowest authority that would have matched", async () => {
+    const decision = await authorizer.authorize(context([]), {
+      resource: { ...RESOURCE, path: [...RESOURCE.path, "notes.md"] },
+      action: "replace",
+    });
+
+    // Not the parent directory, and not the actions beside it: a denial
+    // establishes that this one operation was refused and nothing wider.
+    expect(decision.requiredCapability?.capabilities).toEqual([
+      {
+        resource: { ...RESOURCE, path: [...RESOURCE.path, "notes.md"] },
+        actions: ["replace"],
+        scope: "exact",
+      },
+    ]);
+  });
+
+  it("derives the identifier, so one ask describes itself the same way twice", async () => {
+    const read = { resource: RESOURCE, action: "read" };
+    const [first, second, other] = await Promise.all([
+      authorizer.authorize(context([]), read),
+      authorizer.authorize(context([]), read),
+      authorizer.authorize(context([]), { resource: RESOURCE, action: "delete" }),
+    ]);
+
+    expect(first.requiredCapability?.id).toBe(second.requiredCapability?.id);
+    // A different ask is a different request, not a re-run of the same one.
+    expect(other.requiredCapability?.id).not.toBe(first.requiredCapability?.id);
+  });
+
+  it("does not describe one for a denial that issuing a grant would not remedy", async () => {
+    const bounded = grant({ constraints: { purposes: ["prepare-update"], maxUses: 1 } });
+    const spent = context([bounded]);
+    const request = { resource: RESOURCE, action: "read" };
+    await authorizer.authorize(spent, request, { consume: true });
+
+    // A grant already exists and is spent; another one is not the answer.
+    await expect(authorizer.authorize(spent, request, { consume: true })).resolves.toEqual({
+      allowed: false,
+      reasonCode: "grant_exhausted",
+    });
+    // SharedOS could not establish a fact. Describing a capability would say
+    // the deployment is under-granted when it is broken.
+    await expect(
+      new CapabilityAuthorizer().authorize(context([bounded]), request),
+    ).resolves.toEqual({ allowed: false, reasonCode: "usage_store_unavailable" });
+    // The request names another world; no grant in this one satisfies it.
+    await expect(
+      authorizer.authorize(context([grant()]), {
+        resource: { ...RESOURCE, owner: { kind: "human", userId: "user-eve" } },
+        action: "read",
+      }),
+    ).resolves.toEqual({ allowed: false, reasonCode: "invalid_request" });
+  });
+
+  it("is a description and not an offer: the denial is still a denial", async () => {
+    const decision = await authorizer.authorize(context([]), {
+      resource: RESOURCE,
+      action: "read",
+    });
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.matchedGrantId).toBeUndefined();
+    // Nothing accepts one back. Handing the description to the authorizer as a
+    // grant is not even expressible, and the same request stays denied.
+    await expect(
+      authorizer.authorize(context([]), { resource: RESOURCE, action: "read" }),
+    ).resolves.toMatchObject({ allowed: false });
   });
 });
 
@@ -394,20 +510,24 @@ describe('the "*" action', () => {
         resource: { ...RESOURCE, path: [...RESOURCE.path, "notes.md"] },
         action: "read",
       }),
-    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+    ).resolves.toEqual(
+      deniedForWantOfAGrant({ ...RESOURCE, path: [...RESOURCE.path, "notes.md"] }, "read"),
+    );
     await expect(
       authorizer.authorize(
         authorityFor({ ...accessContext(), purpose: "publish-summary" }, [everything]),
         { resource: RESOURCE, action: "read" },
       ),
-    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+    ).resolves.toEqual(
+      deniedForWantOfAGrant(RESOURCE, "read", { ...accessContext(), purpose: "publish-summary" }),
+    );
   });
 
   it('is not a request pattern: asking for "*" against named actions is denied', async () => {
     const authorizer = new CapabilityAuthorizer();
     await expect(
       authorizer.authorize(context([grant()]), { resource: RESOURCE, action: "*" }),
-    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+    ).resolves.toEqual(deniedForWantOfAGrant(RESOURCE, "*"));
   });
 
   it("makes every tool over the resource discoverable, and nothing outside it", async () => {
@@ -423,6 +543,6 @@ describe('the "*" action', () => {
         resource: { namespace: "calendar", path: [] },
         action: "read",
       }),
-    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+    ).resolves.toEqual(deniedForWantOfAGrant({ namespace: "calendar", path: [] }, "read"));
   });
 });

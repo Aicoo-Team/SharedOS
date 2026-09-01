@@ -3,6 +3,7 @@ import type {
   Address,
   AuthorizationDecision,
   Capability,
+  CapabilityRequest,
   Escalation,
   MessageDeliveryResult,
   MessageEnvelope,
@@ -43,6 +44,7 @@ import {
   addressesEqual,
   isInfrastructureDenial,
 } from "./authorization.js";
+import { mintCapabilityRequest } from "./capability-request.js";
 import {
   type MessageCapabilityResolver,
   type MessageRequestRouter,
@@ -94,6 +96,23 @@ export interface SharedOSKernelOptions {
 
 export interface KernelOperationOptions {
   readonly signal?: AbortSignal;
+}
+
+export interface EscalationOptions extends KernelOperationOptions {
+  /**
+   * The authority the turn is asking for, when the asker can name it.
+   *
+   * Typically the `requiredCapability` a `no_matching_grant` denial described,
+   * handed straight back. What arrives here is a payload and not a correlation:
+   * `id`, `namespaceId`, `requester`, `owner`, and `requestedAt` are re-minted
+   * from the trusted context and only `capabilities`, `purpose`, `constraints`,
+   * and `metadata` survive, because a request the caller authored would be a
+   * caller-chosen correlation for a decision the kernel made.
+   *
+   * Supplying one changes nothing about resolution: it is not authority, the
+   * escalation is still `pending`, and nothing inside SharedOS advances it.
+   */
+  readonly request?: CapabilityRequest;
 }
 
 export const EXECUTION_NAMESPACE = "sharedos.execution";
@@ -281,18 +300,32 @@ export class SharedOSKernel {
    * Resolving an escalation is host-owned control-plane work: it ends in a new
    * grant issued to the trusted store, which the *next* turn loads. There is
    * deliberately no path from here back into the running turn.
+   *
+   * An asker that can name the authority it needs passes it as
+   * {@link EscalationOptions.request}, and the audit event records it, so the
+   * reviewer receives a capability rather than a sentence to reconstruct one
+   * from. That is the whole of the addition: naming what was asked for is not
+   * asking for it, and a recorded request grants nothing.
    */
   async recordEscalation(
     context: AccessContext,
     reason: string,
-    options: KernelOperationOptions = {},
+    options: EscalationOptions = {},
   ): Promise<Escalation> {
     throwIfAborted(options.signal);
     context = structuredClone(context);
+    const request =
+      options.request === undefined
+        ? undefined
+        : await mintCapabilityRequest(context, structuredClone(options.request));
+    if (options.request !== undefined && request === undefined) {
+      throw new TypeError("escalation request does not match the SharedOS v1 contract");
+    }
     const parsed = EscalationSchema.safeParse({
       reason,
       reviewer: context.owner,
       requestedAt: context.now,
+      ...(request === undefined ? {} : { request }),
       status: "pending",
     });
     if (!parsed.success) {
@@ -309,6 +342,11 @@ export class SharedOSKernel {
           reviewer: parsed.data.reviewer,
           reviewerAssumed: true,
           resolution: "pending",
+          // Recorded so the reviewer reads a capability instead of parsing the
+          // reason. Still `pending`: the record is the ask, not its answer.
+          ...(parsed.data.request === undefined
+            ? {}
+            : { request: JsonObjectSchema.parse(parsed.data.request) }),
         },
       }),
     );

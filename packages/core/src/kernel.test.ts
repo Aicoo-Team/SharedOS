@@ -207,6 +207,95 @@ describe("SharedOSKernel escalation", () => {
 
     await expect(kernel.recordEscalation(context(), "   ")).rejects.toThrow(TypeError);
   });
+
+  it("carries the capability a denial described into the escalation and its audit", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (event) => void events.push(event) } });
+
+    // The whole point of the pair: the host does not reconstruct a resource,
+    // action, owner and purpose from the sentence a model wrote. It hands back
+    // what the denial already named.
+    const denial = await kernel.authorize(context(), {
+      resource: FILE_RESOURCE,
+      action: "search",
+    });
+    expect(denial).toMatchObject({ allowed: false, reasonCode: "no_matching_grant" });
+
+    const escalation = await kernel.recordEscalation(context(), "this needs a grant", {
+      ...(denial.requiredCapability === undefined ? {} : { request: denial.requiredCapability }),
+    });
+
+    expect(escalation.request).toEqual(denial.requiredCapability);
+    expect(escalation.status).toBe("pending");
+    expect(events.at(-1)).toMatchObject({
+      type: "escalation.requested",
+      outcome: "escalated",
+      metadata: { request: denial.requiredCapability, resolution: "pending" },
+    });
+  });
+
+  it("mints the request's identity from the trusted context, not from the caller", async () => {
+    const kernel = kernelWith([]);
+    const forged = {
+      id: "correlation-the-caller-chose",
+      namespaceId: "world-somewhere-else",
+      requester: { kind: "agent", agentId: "agent-eve" } as const,
+      owner: { kind: "human", userId: "user-mallory" } as const,
+      capabilities: [{ resource: FILE_RESOURCE, actions: ["search"], scope: "exact" as const }],
+      purpose: "prepare-update",
+      requestedAt: "2019-01-01T00:00:00.000Z",
+    };
+
+    const escalation = await kernel.recordEscalation(context(), "needs a human", {
+      request: forged,
+    });
+
+    // Who asked, on whose behalf, in which world, and when are the kernel's to
+    // say. Only the payload -- which capabilities, for what purpose -- is the
+    // caller's.
+    expect(escalation.request).toMatchObject({
+      namespaceId: "world-alpha",
+      requester: ACTOR,
+      owner: OWNER,
+      requestedAt: NOW,
+      capabilities: forged.capabilities,
+      purpose: "prepare-update",
+    });
+    expect(escalation.request?.id).not.toBe(forged.id);
+  });
+
+  it("refuses a request that cannot be expressed as one", async () => {
+    const kernel = kernelWith([]);
+
+    await expect(
+      kernel.recordEscalation(context(), "needs a human", {
+        request: {
+          id: "ignored",
+          namespaceId: "world-alpha",
+          requester: ACTOR,
+          owner: OWNER,
+          capabilities: [],
+          purpose: "prepare-update",
+          requestedAt: NOW,
+        },
+      }),
+    ).rejects.toThrow(TypeError);
+  });
+
+  it("records the same escalation it always did when nothing is named", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (event) => void events.push(event) } });
+
+    const escalation = await kernel.recordEscalation(context(), "needs a human");
+
+    expect(escalation).toEqual({
+      reason: "needs a human",
+      reviewer: OWNER,
+      requestedAt: NOW,
+      status: "pending",
+    });
+    expect(events[0]?.metadata).not.toHaveProperty("request");
+  });
 });
 
 describe("SharedOSKernel tools", () => {
@@ -715,7 +804,7 @@ describe("SharedOSKernel turn admission", () => {
       owner: OWNER,
     };
 
-    await expect(kernel.admitTurn(context(), RECEIVER)).resolves.toEqual({
+    await expect(kernel.admitTurn(context(), RECEIVER)).resolves.toMatchObject({
       allowed: false,
       reasonCode: "no_matching_grant",
     });
@@ -730,7 +819,7 @@ describe("SharedOSKernel turn admission", () => {
         kind: "agent",
         agentId: "agent-other",
       }),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       allowed: false,
       reasonCode: "no_matching_grant",
     });

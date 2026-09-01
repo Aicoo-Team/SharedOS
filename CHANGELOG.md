@@ -137,6 +137,31 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **A denial for want of a grant names the authority that would have satisfied
+  it.** `AuthorizationDecision` gains an optional `requiredCapability`, a
+  `CapabilityRequest` populated only on `no_matching_grant`, where the
+  authorizer already holds every field: the resource and action the caller
+  named, and the owner, namespace, purpose and instant from its own access
+  context. It is a description and not an offer -- it grants nothing, no port
+  accepts one back as authority, `allowed` stays `false`, and a host that
+  ignores it behaves exactly as before. It is never built from anything a
+  provider knows, so the same description is produced for a path that is absent
+  and for one the actor cannot reach; it is not an existence oracle. The other
+  denials deliberately carry none. See ADR 0019.
+- **An escalation may carry the capability it is asking for.** `Escalation`
+  gains an optional `request` and `SharedOSKernel.recordEscalation` accepts one
+  through `EscalationOptions.request`, typically the `requiredCapability` a
+  denial just described; the `escalation.requested` audit event records it, so a
+  reviewer receives a capability instead of a sentence to reconstruct one from.
+  `id`, `namespaceId`, `requester`, `owner`, and `requestedAt` are minted from
+  the trusted context and overwrite whatever the caller supplied -- a request
+  the caller authored would be a caller-chosen correlation for a decision the
+  kernel made -- and `id` is derived from those fields rather than generated, so
+  one ask describes itself the same way twice. Nothing else changes: there is no
+  third decision value, no consent port, no queue, and no resumption;
+  `Escalation.status` is still always `pending` and nothing inside SharedOS
+  advances it. `CapabilityRequest` stops being a type with no port and leaves
+  `docs/open-items.md`.
 - **The native harness has a committed conformance column.** `Standard`
   (`MODEL_SCRIPTED_COLUMN`, id `model-scripted`) is `ModelRuntime` —
   `StandardRuntime` with the model driver in the seat and the

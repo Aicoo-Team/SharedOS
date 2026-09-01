@@ -193,10 +193,9 @@ describe("SharedOSKernel authority boundary", () => {
     await expect(
       kernelWith(staticSource([grant()])).authorize(context(), READ_REQUEST),
     ).resolves.toEqual({ allowed: true, reasonCode: "allowed", matchedGrantId: "grant-read" });
-    await expect(kernelWith(staticSource([])).authorize(context(), READ_REQUEST)).resolves.toEqual({
-      allowed: false,
-      reasonCode: "no_matching_grant",
-    });
+    await expect(
+      kernelWith(staticSource([])).authorize(context(), READ_REQUEST),
+    ).resolves.toMatchObject({ allowed: false, reasonCode: "no_matching_grant" });
   });
 
   it("denies and audits every operation when authority cannot be loaded", async () => {

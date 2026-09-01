@@ -86,9 +86,19 @@ through a configured verifier. An HTTP caller cannot make a request authorized
 by attaching an arbitrary grant object to its payload.
 
 `CapabilityRequest` expresses requested authority for a consent workflow. It is
-not usable authority until an eligible issuer turns it into a trusted grant. No
-SharedOS port accepts one yet; the issuing workflow is the host's today (see
-[open items](../open-items.md)).
+not usable authority until an eligible issuer turns it into a trusted grant.
+SharedOS produces one and never consumes one: a `no_matching_grant` denial
+carries the request that would have satisfied it in
+`AuthorizationDecision.requiredCapability`, and `recordEscalation` accepts one
+so `Escalation.request` names the capability a reviewer is being asked for.
+Neither is accepted back as authority, and the issuing workflow stays the
+host's. See [ADR 0019](../adr/0019-escalation-names-the-authority-it-needs.md).
+
+A description is not a disclosure. It echoes the resource and action the caller
+just named together with the owner, namespace, purpose and instant already in
+its own access context, and it is never built from anything a provider knows --
+so the same description is produced for a path that is absent and for one the
+actor merely cannot reach. It must not become an existence oracle.
 
 ## Where authority comes from
 

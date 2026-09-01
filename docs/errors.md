@@ -61,6 +61,16 @@ contract.
 
 ### When you get `no_matching_grant` and expected otherwise
 
+This is the one denial that describes what would have fixed it.
+`AuthorizationDecision.requiredCapability` carries the `CapabilityRequest` the
+authorizer would have needed -- resource, action, owner, namespace, purpose,
+instant -- so a host with a consent workflow can render it and issue a grant
+without parsing prose, and `recordEscalation` accepts it so an escalation names
+the same capability. It is a description and not an offer: nothing accepts one
+back as authority, and the denial is still a denial. The other denials do not
+carry one, deliberately -- `grant_exhausted` names a grant that already exists,
+and a fail-closed denial names a fact SharedOS could not establish.
+
 Walk these in order. Every one of them produces the identical code.
 
 1. **`context.authority` does not equal `grant.issuer`.** The most common cause.
