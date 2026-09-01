@@ -176,7 +176,7 @@ describe("runSystemsCostBench", () => {
 
     expect(markdown).toContain("# Systems cost");
     expect(markdown).toContain("| Component | Path | p50 | p95 |");
-    expect(markdown).toContain("Std's `—` is the absence of a translation layer");
+    expect(markdown).toContain("Adversary's `—` is the absence of a translation layer");
     for (const measure of report.measures) {
       expect(markdown).toContain(measure.basis);
     }

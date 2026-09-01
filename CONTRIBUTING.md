@@ -20,7 +20,7 @@ opening a public issue.
 
 Requirements:
 
-- Node.js 20.11 or newer;
+- Node.js 20.11 or newer (22.5 or newer to run the reference host example);
 - pnpm 9.15.
 
 ```bash
@@ -28,23 +28,29 @@ pnpm install
 pnpm check
 ```
 
-`pnpm check` runs formatting verification, TypeScript project references, and
-the test suite. Run it before handing off a change.
+`pnpm check` runs formatting verification, TypeScript project references, the
+test suite, the release-script tests, the generated API reference check, and the
+conformance manifest check. CI also runs `pnpm pack:check`, which typechecks the
+published surface from a fresh consumer, so run both before handing off a
+change.
 
 ## Repository boundaries
 
-| Location             | Allowed responsibility                                              |
-| -------------------- | ------------------------------------------------------------------- |
-| `packages/contracts` | JSON-safe types, schemas, protocol errors and identifiers           |
-| `packages/core`      | Deterministic authorization, routing and dispatch                   |
-| `packages/os`        | Standard `files` schemas and guarded tool adapters                  |
-| `packages/runtime`   | One bounded agent turn over provider ports                          |
-| `packages/client`    | Typed remote client with no separate policy semantics               |
-| `packages/http`      | HTTP adapter over contracts, core and runtime                       |
-| `packages/sdk`       | Deliberate re-exports only; no independent policy semantics         |
-| `packages/testkit`   | Deterministic fixtures, in-memory providers and conformance helpers |
-| `examples`           | Small, non-production demonstrations                                |
-| `docs/adr`           | Durable architectural decisions and trade-offs                      |
+| Location               | Allowed responsibility                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| `packages/contracts`   | JSON-safe types, schemas, protocol errors and identifiers                                             |
+| `packages/core`        | Deterministic authorization, routing and dispatch                                                     |
+| `packages/os`          | Standard `files` schemas and guarded tool adapters                                                    |
+| `packages/runtime`     | One bounded agent turn over provider ports                                                            |
+| `packages/client`      | Typed remote client with no separate policy semantics                                                 |
+| `packages/http`        | HTTP adapter over contracts, core and runtime                                                         |
+| `packages/sdk`         | Deliberate re-exports only; no independent policy semantics                                           |
+| `packages/testkit`     | Deterministic fixtures, in-memory providers and conformance helpers                                   |
+| `packages/conformance` | Execution records and the adversarial conformance suite; no tasks, gold labels, evaluators, or scores |
+| `packages/mcp`         | The permission-filtered catalogue served over MCP; one method wide into the turn                      |
+| `packages/adapters`    | Vendor harness and model-API translation; no policy of its own                                        |
+| `examples`             | Small, non-production demonstrations                                                                  |
+| `docs/adr`             | Durable architectural decisions and trade-offs                                                        |
 
 Core packages must not import Next.js, Drizzle, Azure, Aicoo billing or UI, or
 PACT tasks, gold labels, runners, judges, and metrics. Host integrations belong
@@ -90,7 +96,9 @@ Every permission change must preserve these invariants:
 - a complete resource-action-purpose tuple matches a complete grant;
 - discovery is filtered and execution is re-authorized;
 - tool arguments are runtime-validated and cancellation reaches providers;
-- expiry and revocation are checked at point of use;
+- expiry is checked at point of use; revocation, purpose withdrawal, `notBefore`,
+  and `issuedAt` are decided at the turn's admission instant and observed by the
+  next turn (ADR 0016);
 - bounded uses are atomic in multi-instance deployments;
 - namespace/world, owner, actor, authority, purpose, and trace reach audit;
 - provider failures do not trigger fallback to a wider identity.

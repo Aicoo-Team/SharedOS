@@ -10,6 +10,22 @@ each entry calls out what a host has to update.
 
 ### Changed — breaking
 
+- **The conformance manifest's reference column is renamed.** `EMBEDDED_COLUMN`
+  is now `ADVERSARY_COLUMN`, with id `adversary-embedded` and label `Adversary`
+  in place of `sharedos-embedded` / `Standard`. The column is unchanged — the
+  scripted `HostileRuntime` in the seat, owning its outcome — and the rename
+  says what it is: the reference adversary, not the harness SharedOS ships.
+  `Standard` now names that harness (below). Code importing the old constant
+  changes the name; a reader of `kernel-conformance.json`, or of a live
+  artifact, matches the column on its new id.
+
+- **`InMemoryGrantChainResolver` and `UnavailableGrantChainResolver` in
+  `@aicoo/sharedos-testkit` are renamed** `InMemoryDelegationChainResolver` and
+  `UnavailableDelegationChainResolver`, after the port they implement. The port
+  was renamed from `GrantChainResolver` to `DelegationChainResolver` in this
+  release and the fixtures kept the old name. Rename the import; nothing else
+  changes.
+
 - **Messages now have one policy-bound reason: `purpose`.** The redundant
   `MessageEnvelope.intent` field is removed, and strict parsing rejects legacy
   envelopes that still carry it. Outbound sends execute as their sender; an
@@ -73,6 +89,31 @@ each entry calls out what a host has to update.
 
 ### Changed — behaviour
 
+- The conformance judge is at version 3: a failed turn that the envelope ended
+  names `envelope` as its enforcement point, read from the `turn.failed`
+  event's new `source`, where version 2 named a boundary for denied turns
+  only. Statuses are graded as before; a manifest or artifact produced under
+  version 2 differs from one under version 3 in that field alone.
+- `turn.failed` carries `source` beside `code`: `envelope` when the envelope
+  refused the runtime's outcome or the runtime threw, `runtime` when the
+  envelope relayed a failure the runtime reported as its own. Additive; the
+  event's shape is otherwise unchanged.
+- A failure an adapter ends its turn with — `harness_*`, `model_*` — now carries
+  `retryable: false` on the driver path as it already did on the MCP path; the
+  field was simply absent before. Nothing an adapter fails on is retryable:
+  asking the harness or the model again asks the same thing.
+
+- `codexMcpConfig` now emits `default_tools_approval_mode = "approve"` beside
+  `required = true`, the setting the conformance launch has always passed as an
+  override. Codex's default `auto` mode asks a human before any tool that is not
+  read-only; a run with no human then refuses every write inside Codex with the
+  kernel never consulted. The approval is scoped to the SharedOS server, and what
+  secures a call is the kernel re-authorizing it. A host that wants Codex's own
+  prompt as well can override the key.
+- The four MCP harness specs derive their server name from
+  `SHAREDOS_MCP_SERVER_NAME` and, for Claude Code's `--allowedTools` and Codex's
+  `-c` overrides, from the connection's `name`, instead of the literal
+  `sharedos`; a spec given another `serverName` is now launched under it.
 - **A grant that expires while a turn is running is now refused inside that
   turn**, at the next decision, rather than at the next turn. Revocation,
   purpose withdrawal, `issuedAt`, and `notBefore` are unchanged: they are still
@@ -96,6 +137,54 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **The native harness has a committed conformance column.** `Standard`
+  (`MODEL_SCRIPTED_COLUMN`, id `model-scripted`) is `ModelRuntime` —
+  `StandardRuntime` with the model driver in the seat and the
+  permission-filtered catalogue rendered into the model's tool-call shape —
+  with a transcript where the provider would be. `movesToModelTranscript`
+  writes each declared attempt as a model reply in the wire alphabet a provider
+  accepts, and the driver's real codec, argument parsing, escalation
+  recognition, and step accounting read it back; what is left out is the model.
+  It is graded under `modelLimits`, as the live model column is, so the shipped
+  loop carries a driver's limits in a committed cell rather than standing in
+  for the kernel it runs on: the inspection row and the ungranted-escalation
+  row read `not applicable`, and the step-ceiling row `pass (driver)`. The
+  manifest goes from five columns to six; every hash is unchanged, because
+  neither the case set nor the world set moved.
+- `TranscriptModelClient` in `@aicoo/sharedos-adapters`: a `ModelClient` that
+  replays a supplied `ModelTranscript` through the real `ModelDriver`, the
+  counterpart of `TranscriptTransport` for a vendor harness. A spent transcript
+  fails the turn `model_call_failed` rather than completing on the recording's
+  behalf, so a script that ends too early is a visible result and not a model
+  choosing to stop.
+- A conformance row for an escalation the turn was not granted. A runtime that
+  ends its turn with `escalate` while the catalogue does not offer the
+  affordance is refused by the envelope: the turn fails `tool_unavailable`,
+  and nothing is recorded or audited. Only a plugin that owns its outcome can
+  make the attempt, so the row runs on the adversary column and every driven,
+  MCP, and model column declares it `not applicable` -- the first use of
+  `ColumnLimits.unsupported`. The case-set and world-set hashes move.
+- `DriverRuntime` in `@aicoo/sharedos-adapters`: the one implementation behind
+  `HarnessRuntime` and `ModelRuntime`, which are now its two named forms. A host
+  installing another driver under its own identity uses it directly.
+- `escalationOffered(tools)` in `@aicoo/sharedos-runtime`: the catalogue gate on
+  honouring `sharedos.escalate`, shared by the three adapters and the executor
+  instead of each spelling the check.
+
+- `canonicalActor` in `@aicoo/sharedos-mcp`: the one string form of an
+  `Address` an execution token carries as `actor`, `<kind>:<id>`, from the same
+  pair `addressPath` derives for a recipient-scoped grant. The form was
+  described in a docblock example and defined nowhere.
+
+- `MCP_HARNESS_IDS` in `@aicoo/sharedos-mcp`, the one list `McpHarnessId` is
+  derived from, and `CODEX_HARNESS_ID`, `CLAUDE_CODE_HARNESS_ID`,
+  `DEEPSEEK_HARNESS_ID`, `PI_HARNESS_ID` in `@aicoo/sharedos-adapters`: each
+  adapter's manifest, requirements, and MCP spec now name the harness from one
+  constant, checked against that list.
+- `codexMcpServerSettings` in `@aicoo/sharedos-mcp`: the settings a Codex MCP
+  server entry carries, as key and TOML value. `codexMcpConfig` renders it as a
+  table and the Codex conformance launch passes it as `-c` overrides, so the two
+  cannot disagree.
 - **A denial now explains itself to the host.** The reason codes still collapse
   for the caller — `no_matching_grant` covers nine causes and
   `authority_unavailable` covers four, so that no caller can map the permission
@@ -208,12 +297,43 @@ each entry calls out what a host has to update.
   closing it surfaces as a JSON-RPC internal error, which carries nothing about
   authority and which harnesses retry into a frame limit. The grant is checked
   first, so an agent without it gets `tool_unavailable`. See ADR 0018.
+- `createEscalationTool()` in `@aicoo/sharedos-runtime`: the handler a host
+  registers so `sharedos.escalate` is catalogued. The definition was exported
+  and every host wrote the same failing handler by hand; the conformance world
+  and the adapter tests now register this one. It is never meant to run -- a
+  driver ends the turn on the name -- and fails with
+  `escalation_not_terminated` if a driver forwards the call anyway.
 - What enforcement costs, measured on both paths and reported in
   `docs/conformance/systems-cost.md`. `pnpm bench` regenerates it, against a
   monotonic clock added for the purpose — wall time is not a duration.
 - `pnpm release:promote-latest <version>` moves the `latest` dist-tag across the
   whole package set in one command, refusing to act unless every package has
   published that version.
+
+### Removed
+
+- `release:check:private`, and the `--allow-private` flag on
+  `scripts/release.mjs` behind it. The flag required every package to be
+  `private: true` under an `UNLICENSED` license, the preparation state the
+  packages left before `0.1.0-alpha.0` was published; with all eleven public
+  and Apache-2.0, the command could only throw. `release:check` is the one
+  release check.
+- `MCP_HARNESSES` from `@aicoo/sharedos-adapters/node`. Nothing read it: the
+  conformance script names the four specs it runs, and a host picks one.
+- `strictToolPolicy` and `ListToolsParamsSchema` from `@aicoo/sharedos-mcp`.
+  Neither had a caller; `declareToolPolicy({ mode: "strict" })` is what the
+  helper built, and the `tools/list` handler takes no parameters.
+- The `config.toml` the Codex conformance spec wrote into its temporary
+  workspace. Codex reads `$CODEX_HOME/config.toml`, never the working
+  directory, and the launch has always passed the connection as `-c`
+  overrides, so the file was written and never read. `codexMcpConfig` stays,
+  for a host that configures a persistent Codex.
+- The MCP harness runtime's own `turn_cancelled` outcome. Under
+  `SharedOSExecutor` it was unreachable -- the executor races the plugin
+  against the signal, and its own `cancelled` result wins -- and it gave the
+  code a second shape, `retryable: false` against the executor's `true`. A run
+  whose signal is aborted now rejects with the signal's reason, as any aborted
+  operation does; `docs/errors.md` no longer lists the code under Adapters.
 
 ### Fixed
 
@@ -231,9 +351,23 @@ each entry calls out what a host has to update.
   among them — were left at `0.1.0-alpha.0` while their packages moved. They
   name the build that produced an execution record, so a stale one misattributes
   evidence. `release:check` guarded two of the seven and now guards all of them.
-- The client example in the host integration guide passed a `token` option that
-  `SharedOSClientOptions` has never had. It is `headers`, which accepts a value
-  or an async function.
+  An eighth, the version the MCP server reports in `initialize.serverInfo` when
+  built without `serverInfo`, was still `0.1.0-alpha.0`; it is now
+  `MCP_SERVER_VERSION`, exported from `@aicoo/sharedos-mcp` and guarded too.
+- The publish order listed `@aicoo/sharedos-conformance` ahead of
+  `@aicoo/sharedos-mcp` and `@aicoo/sharedos-adapters`, both of which it depends
+  on, so a run that stopped part-way could leave it on the registry with
+  unpublished dependencies. `scripts/package-set.mjs` is now in dependency
+  order, `release:check` refuses an order that is not, and `test:release`
+  checks the order against the manifests.
+- `SharedOSClientOptions.token` and `SharedOSCallOptions.purpose` were
+  undocumented: the HTTP reference listed only `headers`, and an earlier note
+  here said `token` had never existed. Both have been there since the client was
+  written. `token` is a value or an async function sent as a Bearer
+  `authorization` header, `headers` carries anything else, and per-call
+  `purpose` sets `x-sharedos-purpose`, the header the quickstart's
+  `resolveContext` reads. All three are now in the HTTP reference and the
+  client README.
 - Publish verification retried the same registry URL with default caching, so a
   CDN edge holding a pre-publish `404` made the whole window unwinnable and a
   successful release reported failure. It now backs off up to five minutes and

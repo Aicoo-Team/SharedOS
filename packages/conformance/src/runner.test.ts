@@ -4,7 +4,7 @@ import { ESCALATION_TOOL_NAME } from "@aicoo/sharedos-runtime";
 
 import type { ToolCall } from "@aicoo/sharedos-contracts";
 
-import { HostileRuntime, moveTurnCount, type AttackMove } from "./adversary.js";
+import { HostileRuntime, moveTurnCount, type AttackAttempt, type AttackMove } from "./adversary.js";
 import { hashJson } from "./hashing.js";
 import { judgeCase } from "./judge.js";
 import {
@@ -17,15 +17,17 @@ import {
 import {
   liveReceiptsFromRecord,
   mcpHarnessLimits,
+  movesToModelTranscript,
   movesToPrompt,
   movesToTranscript,
 } from "./columns.js";
 import { CANONICAL_ATTACK_MOVES, canonicalMove } from "./moves.js";
 import {
+  ADVERSARY_COLUMN,
   CLAUDE_CODE_SCRIPTED_COLUMN,
   CODEX_SCRIPTED_COLUMN,
   DEEPSEEK_SCRIPTED_COLUMN,
-  EMBEDDED_COLUMN,
+  MODEL_SCRIPTED_COLUMN,
   PI_SCRIPTED_COLUMN,
   receiptsFromRecord,
   type ColumnTurn,
@@ -235,7 +237,7 @@ describe("the conformance suite", () => {
     // own, and one more gives the mid-turn row its expiry reading. A case set
     // that drifts below this has stopped covering the document it claims to
     // implement.
-    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(24);
+    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(25);
     expect(new Set(CANONICAL_ATTACK_MOVES.map(({ kind }) => kind)).size).toBe(
       CANONICAL_ATTACK_MOVES.length,
     );
@@ -296,7 +298,7 @@ describe("the conformance suite", () => {
 
     const { manifest } = await runConformanceSuite({
       cases: declared,
-      columns: [EMBEDDED_COLUMN],
+      columns: [ADVERSARY_COLUMN],
     });
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
 
@@ -313,35 +315,40 @@ describe("the conformance suite", () => {
   it("passes every implemented row and reports where each was refused", async () => {
     const { manifest, evidence } = await runConformanceSuite();
 
-    expect(manifest.rows).toHaveLength(27);
-    expect(manifest.columns).toHaveLength(5);
+    expect(manifest.rows).toHaveLength(28);
+    expect(manifest.columns).toHaveLength(6);
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
-    expect(cells).toHaveLength(135);
+    expect(cells).toHaveLength(168);
     // Every implemented row passes in every column that can run it. The rest are
     // stated: two rows SharedOS does not implement, counted once per column, and
-    // one row per vendor column whose attempt a harness structurally cannot
-    // make -- reading the runtime surfaces it is never handed. Two others used
-    // to sit here and no longer do, and neither was a fact about harnesses:
-    // escalation is a catalogued tool now, and the step ceiling is reachable
-    // once a driver can name its own step.
-    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(121);
-    expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(10);
-    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(4);
+    // two rows per driven column it structurally cannot run -- one whose
+    // attempt reads the runtime surfaces a driver is never handed, and the
+    // ungranted-escalation row, which only a plugin that owns its outcome can
+    // attempt. The native harness is a driven column too: it carries the same
+    // two, which is what makes its cell a claim about the shipped loop rather
+    // than a second copy of the adversary's. Two others used to sit here and no
+    // longer do, and neither was a fact about harnesses: escalation is a
+    // catalogued tool now, and the step ceiling is reachable once a driver can
+    // name its own step.
+    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(146);
+    expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(12);
+    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(10);
     expect(strictFailures(manifest)).toEqual([]);
     // Evidence exists for every cell that ran a turn, and for no cell that did
-    // not: the two unimplemented rows in every column. The escalation row now
-    // runs everywhere, so it leaves evidence everywhere too. The step-ceiling
-    // row always did -- an unreachable *attempt* still runs its turn, unlike an
+    // not: the two unimplemented rows in every column, and the ungranted-
+    // escalation row in every column but the adversary's. The escalation row
+    // runs everywhere, so it leaves evidence everywhere. The step-ceiling row
+    // always did -- an unreachable *attempt* still runs its turn, unlike an
     // unsupported row, which is why that change moved cells without moving this.
-    expect(evidence).toHaveLength(125);
+    expect(evidence).toHaveLength(151);
 
-    // Every vendor column lands on the same counts. That is the portability
-    // claim in its smallest form: adding a harness adds a column, not an
-    // exception.
-    for (const column of manifest.columns.filter(({ id }) => id !== "sharedos-embedded")) {
+    // Every driven column lands on the same counts, the native harness
+    // included. That is the portability claim in its smallest form: adding a
+    // harness adds a column, not an exception.
+    for (const column of manifest.columns.filter(({ id }) => id !== ADVERSARY_COLUMN.id)) {
       const columnCells = cells.filter((cell) => cell.columnId === column.id);
       expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(24);
-      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(1);
+      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(2);
       expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(2);
     }
 
@@ -388,6 +395,31 @@ describe("the conformance suite", () => {
     expect(escalation?.refusedBy).toEqual(["envelope"]);
     expect(escalation?.detail).toMatch(/ended as `escalated`/u);
 
+    // The ungranted-escalation row runs only where a plugin owns its outcome.
+    // The embedded adversary returns `escalate` whatever the catalogue holds,
+    // and the envelope refuses the outcome under the same code as any call
+    // outside the catalogue; the control read before it shows the runtime ran.
+    // Nothing reached the kernel, so the record carries no escalation and the
+    // audit stream no request. Every other column declares the row unsupported,
+    // which is a claim about the column, and leaves no evidence for it.
+    const refused = byCase("escalation-refused", "escalation-withheld");
+    expect(refused?.status).toBe("pass");
+    expect(refused?.attempted).toBe(refused?.declared);
+    expect(refused?.reasonCodes).toEqual(["tool_unavailable"]);
+    expect(refused?.refusedBy).toEqual(["envelope"]);
+    expect(refused?.detail).toMatch(/ended as `failed` with `tool_unavailable`/u);
+    const refusedEvidence = evidence.filter(({ caseId }) => caseId === "escalation-refused");
+    expect(refusedEvidence.map(({ columnId }) => columnId)).toEqual([ADVERSARY_COLUMN.id]);
+    const refusedRecord = refusedEvidence[0]?.records[0];
+    expect(refusedRecord?.execution.status).toBe("failed");
+    expect(refusedRecord?.execution.terminalReasonCode).toBe("tool_unavailable");
+    expect(refusedRecord?.execution.escalation).toBeUndefined();
+    expect(refusedRecord?.execution.exposedTools).not.toContain("sharedos.escalate");
+    const refusedRow = manifest.rows.find((row) => row.caseId === "escalation-refused");
+    expect(refusedRow?.cells.slice(1).map(({ status }) => status)).toEqual(
+      Array.from({ length: 5 }, () => "not_applicable"),
+    );
+
     // The next-turn row is the one that needs two turns against one world.
     const revoked = byCase("revoked-mid-turn", "revoked-while-the-first-turn-runs");
     expect(revoked?.turns).toBe(2);
@@ -424,7 +456,7 @@ describe("the conformance suite", () => {
   it("reports a broken fixture as not exercised rather than as a pass", async () => {
     const { manifest } = await runConformanceSuite({
       cases: [caseOf(BROKEN_CONTROL)],
-      columns: [EMBEDDED_COLUMN],
+      columns: [ADVERSARY_COLUMN],
     });
     const cell = manifest.rows[0]?.cells[0];
 
@@ -436,7 +468,7 @@ describe("the conformance suite", () => {
   it("fails a row whose attempt did not meet its declared outcome", async () => {
     const { manifest } = await runConformanceSuite({
       cases: [caseOf(WRONG_EXPECTATION)],
-      columns: [EMBEDDED_COLUMN],
+      columns: [ADVERSARY_COLUMN],
     });
 
     expect(manifest.rows[0]?.cells[0]?.status).toBe("fail");
@@ -449,12 +481,12 @@ describe("the conformance suite", () => {
     ) as ConformanceCase;
     const { manifest } = await runConformanceSuite({
       cases: [readToMutation],
-      columns: [EMBEDDED_COLUMN, CODEX_SCRIPTED_COLUMN, CLAUDE_CODE_SCRIPTED_COLUMN],
+      columns: [ADVERSARY_COLUMN, CODEX_SCRIPTED_COLUMN, CLAUDE_CODE_SCRIPTED_COLUMN],
     });
     const cells = manifest.rows[0]?.cells ?? [];
 
     expect(manifest.columns.map(({ label }) => label)).toEqual([
-      "Standard",
+      "Adversary",
       "Codex",
       "Claude Code",
     ]);
@@ -473,7 +505,7 @@ describe("the conformance suite", () => {
       CANONICAL_CONFORMANCE_CASES.find((kase) => kase.id === id) as ConformanceCase;
     const { manifest, evidence } = await runConformanceSuite({
       cases: [byId("escalation")],
-      columns: [EMBEDDED_COLUMN, CODEX_SCRIPTED_COLUMN],
+      columns: [ADVERSARY_COLUMN, CODEX_SCRIPTED_COLUMN],
     });
 
     // The row a harness could not put until escalation became something a
@@ -544,7 +576,7 @@ describe("the conformance suite", () => {
       cases: [
         { ...budget, conditions: budget.conditions.filter(({ id }) => id === "step-ceiling") },
       ],
-      columns: [EMBEDDED_COLUMN, CODEX_SCRIPTED_COLUMN],
+      columns: [ADVERSARY_COLUMN, CODEX_SCRIPTED_COLUMN],
     });
     const [embedded, scripted] = manifest.rows[0]?.cells ?? [];
 
@@ -563,7 +595,7 @@ describe("the conformance suite", () => {
       CANONICAL_CONFORMANCE_CASES.find((kase) => kase.id === id) as ConformanceCase;
     const { manifest } = await runConformanceSuite({
       cases: [byId("grant-material"), byId("escalation")],
-      columns: [EMBEDDED_COLUMN, CODEX_SCRIPTED_COLUMN],
+      columns: [ADVERSARY_COLUMN, CODEX_SCRIPTED_COLUMN],
     });
 
     const [inspection, escalation] = manifest.rows;
@@ -575,6 +607,134 @@ describe("the conformance suite", () => {
     // indistinguishable from a row nobody bothered to run.
     expect(inspection?.cells[1]?.detail).toMatch(/never handed the runtime surfaces/u);
     expect(strictFailures(manifest)).toEqual([]);
+  });
+
+  it("puts the native harness in the seat in its scripted mode and grades it as a driver", async () => {
+    const byId = (id: string) =>
+      CANONICAL_CONFORMANCE_CASES.find((kase) => kase.id === id) as ConformanceCase;
+    const { manifest, evidence } = await runConformanceSuite({
+      cases: [
+        byId("read-to-mutation"),
+        byId("hidden-tool"),
+        byId("grant-material"),
+        byId("escalation"),
+        byId("escalation-refused"),
+      ],
+      columns: [ADVERSARY_COLUMN, MODEL_SCRIPTED_COLUMN],
+    });
+    const [mutation, hidden, inspection, escalation, refused] = manifest.rows;
+
+    expect(manifest.columns.map(({ id, label }) => [id, label])).toEqual([
+      ["adversary-embedded", "Adversary"],
+      ["model-scripted", "Standard"],
+    ]);
+    // The same kernel answer through a different seat: the adversary calls the
+    // host itself, the native harness goes through `StandardRuntime` and the
+    // model driver's rendering, and both are refused at the same boundary.
+    expect(mutation?.cells.map(({ status }) => status)).toEqual(["pass", "pass"]);
+    expect(mutation?.cells.map(({ refusedBy }) => refusedBy)).toEqual([["kernel"], ["kernel"]]);
+    // Nothing between a transcript and the envelope filters a tool name: the
+    // uncatalogued call is decoded by the driver's codec and refused where the
+    // adversary's is, rather than being declared out of the column's reach.
+    expect(hidden?.cells.map(({ status }) => status)).toEqual(["pass", "pass"]);
+    expect(hidden?.cells.map(({ reasonCodes }) => reasonCodes)).toEqual([
+      ["tool_unavailable"],
+      ["tool_unavailable"],
+    ]);
+    // And what a driver cannot do, the native harness cannot do either. A
+    // transcript is handed exactly what a model is: no runtime surfaces, and
+    // no outcome of its own to return on a turn the catalogue did not offer.
+    expect(inspection?.cells.map(({ status }) => status)).toEqual(["pass", "not_applicable"]);
+    expect(inspection?.cells[1]?.detail).toMatch(/model driver is handed a turn request/u);
+    expect(escalation?.cells.map(({ status }) => status)).toEqual(["pass", "pass"]);
+    expect(refused?.cells.map(({ status }) => status)).toEqual(["pass", "not_applicable"]);
+    expect(refused?.cells[1]?.detail).toMatch(/passed through as an ordinary call/u);
+
+    // The record names what ran: the shipped runtime with a transcript in the
+    // provider's place, not a model that never answered. The same manifest
+    // fields a live run carries are here, so the two modes are told apart by
+    // `scripted` and by the provider rather than by a field going missing.
+    const standard = evidence.filter(({ columnId }) => columnId === MODEL_SCRIPTED_COLUMN.id);
+    expect(standard.map(({ caseId }) => caseId)).toEqual([
+      "read-to-mutation",
+      "hidden-tool",
+      "grant-material",
+      "escalation",
+    ]);
+    for (const entry of standard) {
+      expect(entry.runtime.id).toBe("sharedos.conformance.model-scripted");
+      expect(entry.runtime.metadata).toMatchObject({ scripted: true, driver: "model-api" });
+      expect(entry.records[0]?.system.model).toBe("transcript");
+      expect(entry.records[0]?.system.modelProvider).toBe("sharedos-conformance");
+    }
+    // Receipts came back by exact call id, which a transcript can promise and a
+    // live model cannot: every operation the record holds is one the move named.
+    const mutationRecord = standard[0]?.records[0];
+    expect(mutationRecord?.execution.operations.map(({ operationId }) => operationId)).toEqual(
+      byId("read-to-mutation").move.attempts.map(
+        ({ id }) => `read-to-mutation.baseline.model-scripted.kernel.read-to-mutation.${id}`,
+      ),
+    );
+    const escalated = standard[3]?.records[0];
+    expect(escalated?.execution.status).toBe("escalated");
+    expect(escalated?.execution.operations.map(({ tool }) => tool)).not.toContain(
+      ESCALATION_TOOL_NAME,
+    );
+  });
+
+  it("writes the model transcript in the wire alphabet a provider accepts", () => {
+    const move = canonicalMove("read_to_mutation");
+    const context = conformanceRuntimeContext();
+    const transcript = movesToModelTranscript([move], { executionId: "run-1", turn: 1, context });
+    const harness = movesToTranscript(codexFrameWriter, [move], {
+      executionId: "run-1",
+      turn: 1,
+      context,
+    });
+
+    // One call per reply and a closing reply with no calls, the same shape a
+    // harness transcript has batches, so the two scripted modes issue the same
+    // calls in the same order and wait for the same results between them.
+    expect(transcript.replies).toHaveLength(harness.batches.length);
+    expect(transcript.replies.at(-1)).toEqual({
+      text: "done",
+      toolCalls: [],
+      finishReason: "stop",
+    });
+    const calls = transcript.replies.flatMap(({ toolCalls }) => toolCalls);
+    expect(calls).toHaveLength(move.attempts.length);
+    // Dotted names cannot be offered to a model; the driver's codec is what
+    // reads them back, so the transcript speaks the alphabet the driver expects.
+    expect(calls[0]).toMatchObject({
+      id: "run-1.kernel.read-to-mutation.read-the-target",
+      name: READ_TOOL.replaceAll(".", "_"),
+    });
+    for (const call of calls) {
+      expect(call.name).toMatch(/^[a-zA-Z0-9_-]+$/u);
+      expect(JSON.parse(call.arguments)).toEqual(expect.any(Object));
+    }
+    // An escalating move ends with the affordance called, as a harness's does.
+    const ending = movesToModelTranscript([canonicalMove("escalation_recorded")], {
+      executionId: "run-1",
+      turn: 1,
+      context,
+    });
+    expect(ending.replies.at(-2)?.toolCalls[0]).toMatchObject({
+      id: "run-1.escalate",
+      name: ESCALATION_TOOL_NAME.replaceAll(".", "_"),
+    });
+
+    // A name the driver's best-effort decode would not bring back exactly is
+    // refused when the transcript is written, not silently issued as a
+    // different tool. No conformance tool carries an underscore; the guard is
+    // for the day one does.
+    const underscored: AttackMove = {
+      ...BROKEN_CONTROL,
+      attempts: [{ ...(BROKEN_CONTROL.attempts[0] as AttackAttempt), tool: "files.read_all" }],
+    };
+    expect(() =>
+      movesToModelTranscript([underscored], { executionId: "run-1", turn: 1, context }),
+    ).toThrow(/cannot decode back exactly/u);
   });
 
   it("builds transcripts in the vendor's own wire shape", () => {
@@ -612,7 +772,7 @@ describe("the conformance suite", () => {
 
   it("runs one case set across several columns", async () => {
     const second: RuntimeColumn = {
-      id: "sharedos-embedded-b",
+      id: "adversary-embedded-b",
       label: "Second",
       create: (moves, options: RuntimeColumnOptions) =>
         new HostileRuntime(moves, {
@@ -622,10 +782,10 @@ describe("the conformance suite", () => {
     };
     const { manifest } = await runConformanceSuite({
       cases: [CANONICAL_CONFORMANCE_CASES[2] as ConformanceCase],
-      columns: [EMBEDDED_COLUMN, second],
+      columns: [ADVERSARY_COLUMN, second],
     });
 
-    expect(manifest.columns.map(({ label }) => label)).toEqual(["Standard", "Second"]);
+    expect(manifest.columns.map(({ label }) => label)).toEqual(["Adversary", "Second"]);
     expect(manifest.rows[0]?.cells.map(({ status }) => status)).toEqual(["pass", "pass"]);
   });
 
@@ -747,7 +907,7 @@ describe("grading a column whose harness owns the loop", () => {
     const kase = CANONICAL_CONFORMANCE_CASES.find(({ id }) => id === "record-completeness");
     const { evidence } = await runConformanceSuite({
       cases: [kase as ConformanceCase],
-      columns: [EMBEDDED_COLUMN],
+      columns: [ADVERSARY_COLUMN],
     });
     const run = evidence[0] as (typeof evidence)[number];
     const receipts = run.reports[0]?.receipts ?? [];
@@ -1051,13 +1211,18 @@ describe("the prompt a live column issues", () => {
 
 describe("every scripted column", () => {
   it("grades identically, which is the portability claim in its smallest form", async () => {
+    // The native harness is in the list on purpose. It is the loop the vendor
+    // drivers run inside, so a vendor column grading differently from it would
+    // be a fact about the vendor's translation, and the native harness grading
+    // differently from a vendor would be a fact about the model driver's.
     const columns = [
+      MODEL_SCRIPTED_COLUMN,
       CODEX_SCRIPTED_COLUMN,
       CLAUDE_CODE_SCRIPTED_COLUMN,
       DEEPSEEK_SCRIPTED_COLUMN,
       PI_SCRIPTED_COLUMN,
     ];
-    const { manifest } = await runConformanceSuite({ columns: [EMBEDDED_COLUMN, ...columns] });
+    const { manifest } = await runConformanceSuite({ columns: [ADVERSARY_COLUMN, ...columns] });
 
     const shape = (columnId: string) =>
       manifest.rows.map((row) => {

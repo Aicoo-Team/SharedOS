@@ -1,4 +1,7 @@
-import type { JsonObject, JsonValue, ToolDefinition, ToolResult } from "@aicoo/sharedos-contracts";
+import type { JsonValue, ToolDefinition, ToolResult } from "@aicoo/sharedos-contracts";
+import { parseToolArguments, toolResultBody } from "../internal.js";
+
+export { toolResultBody } from "../internal.js";
 import { z } from "zod";
 
 import type { HarnessFrame, HarnessProtocol, HarnessStep } from "../harness.js";
@@ -75,7 +78,7 @@ export const codexProtocol: HarnessProtocol = {
   interpret(frame: HarnessFrame): readonly HarnessStep[] {
     const call = FunctionCallSchema.safeParse(frame);
     if (call.success) {
-      const parsed = parseArguments(call.data.arguments);
+      const parsed = parseToolArguments(call.data.arguments);
       if (parsed === undefined) {
         return [
           {
@@ -137,27 +140,3 @@ export const codexProtocol: HarnessProtocol = {
     };
   },
 };
-
-function parseArguments(raw: string): JsonObject | undefined {
-  try {
-    const parsed: unknown = JSON.parse(raw === "" ? "{}" : raw);
-    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as JsonObject)
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * What the harness is told about a call it made.
- *
- * A denial is reported as an ordinary result, not as a transport error. The
- * harness needs to know it was refused and why, so it can choose differently;
- * hiding the refusal behind a crash would make it retry blindly.
- */
-export function toolResultBody(result: ToolResult): JsonValue {
-  return result.status === "succeeded"
-    ? { status: result.status, output: result.output }
-    : { status: result.status, error: { code: result.error.code, message: result.error.message } };
-}

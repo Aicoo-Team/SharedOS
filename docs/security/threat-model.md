@@ -18,7 +18,9 @@ SharedOS aims to ensure that:
   host policy ceiling;
 - agent messages and model output cannot create authority;
 - one tenant or experiment world cannot observe or modify another;
-- revocation, expiry, and bounded-use constraints are enforced at point of use;
+- expiry and bounded-use constraints are enforced at point of use, and a
+  revocation is decided when a turn's authority is resolved and observed by the
+  next turn (ADR 0016);
 - built-in, external, and MCP tools share the same permission gate;
 - decisions and side effects have reconstructable provenance;
 - protocol failures fail closed without masquerading as successful output.
@@ -63,26 +65,26 @@ Authenticated callers remain untrusted for authorization.
 
 ## Threats and required controls
 
-| Threat                   | Example                                                           | Required controls                                                                    |
-| ------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Self-issued authority    | A message includes a fabricated grant                             | Keep grants outside envelopes; load from trusted storage or verify them              |
-| Confused deputy          | Agent asks a more privileged agent to read a private file         | Authorize the effective actor, owner, purpose, and resource at every operation       |
-| Permission cross-product | Read scope from one grant combines with write action from another | Match a complete capability and constraints; never flatten grant dimensions          |
-| Prompt injection         | A note instructs the model to exfiltrate secrets                  | Treat content as data; expose only authorized tools; re-authorize every call         |
-| Tool substitution        | Model names a shadow tool with weaker permissions                 | Resolve definitions from a trusted registry and reject duplicate/ambiguous names     |
-| Namespace bypass         | Caller invokes a guessed tool from a disabled family              | Filter discovery and recheck namespace enablement at invocation                      |
-| Cross-user MCP mutation  | One user's reload replaces another user's dynamic tools           | Resolve dynamic catalogs per trusted context; avoid shared mutable registration      |
-| Discovery leakage        | Tool list reveals a private connector or account                  | Permission-filter definitions and metadata before returning the catalog              |
-| Tenant/world escape      | Crafted path reaches another run or user                          | Bind namespace/world and owner in every provider call; use segment-safe paths        |
-| Replay                   | Captured request repeats a destructive call                       | Host-owned durable deduplication and freshness checks; release remains blocked       |
-| Revocation race          | Grant is revoked after context loading                            | Re-check immediately before side effects; define transaction semantics               |
-| Bounded-use race         | Two workers consume the last use                                  | Durable atomic compare-and-set; deny when the usage store is unavailable             |
-| SSRF / connector escape  | MCP tool fetches metadata endpoints                               | Destination allowlists, DNS/IP validation, redirects policy, egress controls         |
-| Secret disclosure        | Provider output or logs contain OAuth tokens                      | Never place secrets in contracts, model context, errors, or audit payloads           |
-| Resource exhaustion      | Large schema, loop, payload, or tool call consumes resources      | Contract limits, timeouts, step budgets, rate limits, cancellation                   |
-| Audit tampering          | Operator removes denied calls                                     | Append-only/tamper-evident host storage, sequence checks, restricted access          |
-| Evaluation leakage       | An evaluation runtime sees hidden gold labels                     | Separate execution and evaluation channels; fresh world per run                      |
-| Runtime escape           | A third-party harness bypasses the broker or keeps calling later  | Give plugins only the scoped broker; close it after the turn; isolate untrusted code |
+| Threat                   | Example                                                           | Required controls                                                                                                                                           |
+| ------------------------ | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Self-issued authority    | A message includes a fabricated grant                             | Keep grants outside envelopes; load from trusted storage or verify them                                                                                     |
+| Confused deputy          | Agent asks a more privileged agent to read a private file         | Authorize the effective actor, owner, purpose, and resource at every operation                                                                              |
+| Permission cross-product | Read scope from one grant combines with write action from another | Match a complete capability and constraints; never flatten grant dimensions                                                                                 |
+| Prompt injection         | A note instructs the model to exfiltrate secrets                  | Treat content as data; expose only authorized tools; re-authorize every call                                                                                |
+| Tool substitution        | Model names a shadow tool with weaker permissions                 | Resolve definitions from a trusted registry and reject duplicate/ambiguous names                                                                            |
+| Namespace bypass         | Caller invokes a guessed tool from a disabled family              | Filter discovery and recheck namespace enablement at invocation                                                                                             |
+| Cross-user MCP mutation  | One user's reload replaces another user's dynamic tools           | Resolve dynamic catalogs per trusted context; avoid shared mutable registration                                                                             |
+| Discovery leakage        | Tool list reveals a private connector or account                  | Permission-filter definitions and metadata before returning the catalog                                                                                     |
+| Tenant/world escape      | Crafted path reaches another run or user                          | Bind namespace/world and owner in every provider call; use segment-safe paths                                                                               |
+| Replay                   | Captured request repeats a destructive call                       | Host-owned durable deduplication and freshness checks; release remains blocked                                                                              |
+| Revocation race          | Grant is revoked while a turn is running                          | Decided at admission and observed by the next turn (ADR 0010/0016); bound turn length, or issue short-lived grants, whose expiry is refused inside the turn |
+| Bounded-use race         | Two workers consume the last use                                  | Durable atomic compare-and-set; deny when the usage store is unavailable                                                                                    |
+| SSRF / connector escape  | MCP tool fetches metadata endpoints                               | Destination allowlists, DNS/IP validation, redirects policy, egress controls                                                                                |
+| Secret disclosure        | Provider output or logs contain OAuth tokens                      | Never place secrets in contracts, model context, errors, or audit payloads                                                                                  |
+| Resource exhaustion      | Large schema, loop, payload, or tool call consumes resources      | Contract limits, timeouts, step budgets, rate limits, cancellation                                                                                          |
+| Audit tampering          | Operator removes denied calls                                     | Append-only/tamper-evident host storage, sequence checks, restricted access                                                                                 |
+| Evaluation leakage       | An evaluation runtime sees hidden gold labels                     | Separate execution and evaluation channels; fresh world per run                                                                                             |
+| Runtime escape           | A third-party harness bypasses the broker or keeps calling later  | Give plugins only the scoped broker; close it after the turn; isolate untrusted code                                                                        |
 
 ## Detailed attack surfaces
 
@@ -113,9 +115,10 @@ boundaries to prevent hidden policy channels.
 ### Agent-to-agent messaging
 
 A trusted sender identity does not make payload instructions safe. Forwarding a
-message does not forward permission. Each hop records provenance and performs a
-new routing decision; every requested resource or tool operation is separately
-authorized.
+message does not forward permission. Each hop is a new routing decision, and
+every requested resource or tool operation is separately authorized. The
+envelope's optional `provenance` is metadata a host may attach; the kernel does
+not record hops itself (see [open items](../open-items.md)).
 
 Executing the receiving agent is also a side effect: it requires a
 recipient-scoped `sharedos.execution` + `invoke` grant before the model driver is
@@ -218,8 +221,11 @@ tested SharedOS port with production and isolated adapters rather than an
 undocumented host convention.
 
 Authorization and a side effect can have a time-of-check/time-of-use gap. For
-high-risk writes, hosts should combine grant-use consumption, revocation check,
-and side effect in a transaction or compensating protocol.
+high-risk writes, hosts should combine grant-use consumption, their own
+revocation check against the issuing store, and the side effect in a
+transaction or compensating protocol. The kernel itself decides revocation once
+per turn, at admission (ADR 0010/0016), and does not re-read the store before a
+side effect.
 
 ### Audit and observability
 

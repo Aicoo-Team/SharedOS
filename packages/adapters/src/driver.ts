@@ -1,12 +1,6 @@
-import type {
-  JsonObject,
-  JsonValue,
-  ProtocolError,
-  RuntimeManifest,
-  ToolCall,
-} from "@aicoo/sharedos-contracts";
+import type { JsonObject, RuntimeManifest, ToolCall } from "@aicoo/sharedos-contracts";
 import {
-  ESCALATION_TOOL_NAME,
+  escalationOffered,
   escalationRequest,
   type AgentTurnDecision,
   type AgentTurnDriver,
@@ -22,6 +16,7 @@ import type {
   HarnessTransport,
   HarnessTurnRequest,
 } from "./harness.js";
+import { defaultPrompt, failed } from "./internal.js";
 
 export interface HarnessDriverOptions {
   readonly manifest: RuntimeManifest;
@@ -127,7 +122,7 @@ class HarnessSession implements AgentTurnSession {
     this.#request = request;
     this.#maxIgnoredFrames = maxIgnoredFrames;
     this.#declareStep = options.declareStep;
-    this.#offered = request.tools.some((tool) => tool.name === ESCALATION_TOOL_NAME);
+    this.#offered = escalationOffered(request.tools);
   }
 
   async next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision> {
@@ -143,7 +138,7 @@ class HarnessSession implements AgentTurnSession {
 
       const frame = await this.#channel.read(signal);
       if (frame === undefined) {
-        return fail(
+        return failed(
           "harness_ended_without_outcome",
           "The harness stopped speaking without completing the turn.",
         );
@@ -151,7 +146,7 @@ class HarnessSession implements AgentTurnSession {
       this.#pending.push(...this.#protocol.interpret(frame));
     }
 
-    return fail(
+    return failed(
       "harness_frame_limit_exceeded",
       "The harness emitted too many frames without producing an outcome.",
     );
@@ -217,11 +212,6 @@ class HarnessSession implements AgentTurnSession {
   }
 }
 
-function fail(code: string, message: string): AgentTurnDecision {
-  const error: ProtocolError = { code, message };
-  return { type: "fail", error };
-}
-
 /**
  * The message payload as a prompt.
  *
@@ -229,16 +219,3 @@ function fail(code: string, message: string): AgentTurnDecision {
  * a `text` field is preferred when present; anything else is serialised rather
  * than dropped, so no instruction is silently lost in translation.
  */
-function defaultPrompt(request: AgentTurnRequest): string {
-  const payload: JsonValue = request.message.payload;
-  if (typeof payload === "string") {
-    return payload;
-  }
-  if (payload !== null && typeof payload === "object" && !Array.isArray(payload)) {
-    const text = (payload as JsonObject)["text"];
-    if (typeof text === "string") {
-      return text;
-    }
-  }
-  return JSON.stringify(payload);
-}

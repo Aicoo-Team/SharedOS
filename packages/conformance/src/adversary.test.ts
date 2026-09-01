@@ -150,6 +150,7 @@ describe("the hostile runtime", () => {
       "broker_ungranted",
       "broker_out_of_scope",
       "escalation_recorded",
+      "escalation_refused",
       "record_completeness",
       "typed_governed_views",
       "replay_freshness",

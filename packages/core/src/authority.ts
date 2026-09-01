@@ -30,8 +30,10 @@ export const MAX_RESOLVED_GRANTS = 256;
  * why it stays off.
  *
  * What remains behind it is exactly one behaviour: seeing a store edit without
- * waiting for the next turn. A host that needs a revocation to land inside a
- * running turn, and will pay a store read per operation for it, sets this.
+ * waiting for the next turn. A host cannot set it: it is an exported constant,
+ * a build-time switch for this package's maintainers, and turning it on means
+ * patching the package. Whether it becomes a kernel option, with the store read
+ * per operation that implies, is an open item (`docs/open-items.md`).
  */
 export const MID_TURN_AUTHORITY_REFRESH = false;
 

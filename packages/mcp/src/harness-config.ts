@@ -26,6 +26,7 @@ export interface HarnessMcpConnection {
   readonly url: string;
   /** The server name the harness will namespace its aliases under. */
   readonly name?: string;
+  /** Per-call timeout in the emitted config. Set by nothing today; see `docs/open-items.md`. */
   readonly timeoutSec?: number;
   /** Bearer token for a sandboxed or remote harness. */
   readonly token?: string;
@@ -41,24 +42,50 @@ export interface HarnessMcpConfigFile {
 const DEFAULT_TIMEOUT_SEC = 120;
 
 /**
- * Codex's `config.toml` fragment.
+ * The settings a Codex MCP server entry carries, as key and TOML value.
+ *
+ * One list serves both forms Codex accepts -- the `[mcp_servers.<name>]` table
+ * {@link codexMcpConfig} emits, and the `-c mcp_servers.<name>.<key>=<value>`
+ * overrides a launch passes -- so the two cannot disagree. `bearer_token`,
+ * present only when the connection carries one, belongs to the file alone: a
+ * launch keeps it off the command line.
  *
  * `required = true` is deliberate. A Codex run whose SharedOS server failed to
  * start should not quietly continue with only its own tools -- that run would
  * look like a harness that declined to use the catalogue, which is a different
  * finding entirely.
+ *
+ * `default_tools_approval_mode = "approve"` is the same decision as Claude
+ * Code's `--allowedTools`, and not an authorization one. Codex gates MCP calls
+ * itself, and its default mode, `auto`, decides from the tool's `readOnlyHint`:
+ * read-only tools run, everything else asks a human. A run with no human then
+ * refuses every write inside Codex, with the kernel never consulted. `approve`
+ * is scoped to this one server, leaves Codex's shell sandbox alone, and hands
+ * the decision to the only thing that should be making it:
+ * `RuntimeHost.invokeTool`, which re-authorizes every call.
  */
+export function codexMcpServerSettings(
+  connection: HarnessMcpConnection,
+): readonly (readonly [key: string, value: string])[] {
+  const settings: (readonly [string, string])[] = [
+    ["url", JSON.stringify(connection.url)],
+    ["required", "true"],
+    ["tool_timeout_sec", String(connection.timeoutSec ?? DEFAULT_TIMEOUT_SEC)],
+    ["default_tools_approval_mode", JSON.stringify("approve")],
+  ];
+  if (connection.token !== undefined) {
+    settings.push(["bearer_token", JSON.stringify(connection.token)]);
+  }
+  return settings;
+}
+
+/** Codex's `config.toml` fragment: {@link codexMcpServerSettings} as a table. */
 export function codexMcpConfig(connection: HarnessMcpConnection): string {
   const name = connection.name ?? SHAREDOS_MCP_SERVER_NAME;
   const lines = [
     `[mcp_servers.${name}]`,
-    `url = ${JSON.stringify(connection.url)}`,
-    "required = true",
-    `tool_timeout_sec = ${connection.timeoutSec ?? DEFAULT_TIMEOUT_SEC}`,
+    ...codexMcpServerSettings(connection).map(([key, value]) => `${key} = ${value}`),
   ];
-  if (connection.token !== undefined) {
-    lines.push(`bearer_token = ${JSON.stringify(connection.token)}`);
-  }
   return `${lines.join("\n")}\n`;
 }
 
@@ -181,7 +208,9 @@ export function piMcpConfig(connection: HarnessMcpConnection): JsonObject {
   };
 }
 
-export type McpHarnessId = "codex" | "claude-code" | "deepseek" | "pi";
+/** The harnesses this package emits a connection for, by id. */
+export const MCP_HARNESS_IDS = Object.freeze(["codex", "claude-code", "deepseek", "pi"] as const);
+export type McpHarnessId = (typeof MCP_HARNESS_IDS)[number];
 
 /** Every emitter above, addressed by harness id. */
 export function harnessMcpConfigFile(

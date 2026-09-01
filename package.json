@@ -24,7 +24,6 @@
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "test:release": "node --test scripts/*.test.mjs",
-    "test:coverage": "vitest run --coverage",
     "example:quickstart": "pnpm build && pnpm --filter @aicoo/sharedos-example-quickstart start",
     "example:reference-host": "pnpm build && pnpm --filter @aicoo/sharedos-example-reference-host start",
     "example:network-studio": "pnpm --filter @aicoo/sharedos-example-network-studio start",
@@ -32,7 +31,6 @@
     "pack:check": "node scripts/pack-preview.mjs --check",
     "pack:lint": "pnpm build && node scripts/package-lint.mjs",
     "release:check": "node scripts/release.mjs check",
-    "release:check:private": "node scripts/release.mjs check --allow-private",
     "release:publish": "node scripts/release.mjs publish",
     "release:promote-latest": "node scripts/promote-latest.mjs",
     "test:watch": "vitest",
@@ -41,7 +39,6 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "@vitest/coverage-v8": "^2.1.8",
     "prettier": "^3.4.2",
     "publint": "0.3.23",
     "typedoc": "0.28.20",

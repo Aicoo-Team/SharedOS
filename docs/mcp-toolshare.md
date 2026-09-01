@@ -77,6 +77,12 @@ files.read(path="/private/a.txt")  → denied
 The canonical tool ID identifies the operation implementation, not the authority.
 Publishing a capability requirement would therefore be both a leak and a lie.
 
+The same projection applies wherever a model is shown a catalogue, not only over
+MCP. `GET /v1/tools` and `AgentTurnRequest.tools` carry full `ToolDefinition`s
+for the host's benefit; a client or driver that feeds a model from either
+applies `publishToolCatalog` first, as `ModelDriver` does. See the
+[HTTP reference](http-api.md#get-v1tools).
+
 ## Per turn, never global
 
 ```
@@ -177,8 +183,10 @@ versus
 
 A `strict` policy that also lists `externalDirect` entries is rejected by the
 schema, rather than producing a run whose headline claim its own manifest
-contradicts. `harnessLocal` stays permitted under `strict` — no CLI gives up all
-its own tools — but the entries must be named.
+contradicts. `harnessLocal` stays permitted under `strict` — most CLIs keep some
+tool of their own — but the entries must be named, and a launch that leaves the
+harness none of its own, as Pi's does with `--no-builtin-tools`, declares `[]`:
+the extension's `mcp` proxy is the catalogue's conduit, not a local tool.
 
 This is what makes a result readable. "The kernel refused every violation" means
 one thing when the managed catalogue was the only way to have an effect, and
@@ -233,11 +241,12 @@ const runtime = createMcpHarnessRuntime(CLAUDE_CODE_MCP_HARNESS);
 
 `CODEX_MCP_HARNESS`, `DEEPSEEK_MCP_HARNESS`, and `PI_MCP_HARNESS` are the others.
 
-Each spec generates its own connection file and nothing else:
+Each spec hands its CLI the connection in the one form that CLI takes, and
+nothing else:
 
-| Harness     | File               | Shape                                          |
+| Harness     | Form               | Shape                                          |
 | ----------- | ------------------ | ---------------------------------------------- |
-| Codex       | `config.toml`      | `[mcp_servers.sharedos]`, `required = true`    |
+| Codex       | `-c` overrides     | `mcp_servers.sharedos.url`, `required=true`    |
 | Claude Code | `.mcp.json`        | `{"type":"http","url":…}`                      |
 | DeepSeek    | `cordis.patch.yml` | one `@deepseek-ai/dsh-mcp-client` plugin entry |
 | Pi          | `.mcp.json`        | `{"url":…,"lifecycle":"eager"}`                |
@@ -250,8 +259,35 @@ plugin also has to be installed into the profile first — a patch activates a
 plugin, it does not fetch one:
 
 ```sh
-dsh plugin --profile headless add -w @deepseek-ai/dsh-mcp-client
+dsh plugin --profile headless add @deepseek-ai/dsh-mcp-client
 ```
+
+### What each launch turns off
+
+Every spec launches its CLI with the flags that keep a measurement honest. Each
+is a permission-_prompt_ or tool-set decision rather than an authorization one:
+what secures the run is that every call is re-authorized by the kernel.
+
+- **Claude Code.** `--strict-mcp-config` drops the machine's own MCP servers,
+  so a `strict` policy is checkable rather than merely declared, and the
+  disallowed-tools list removes the harness's own file and shell tools — a
+  probe that can edit files on the machine it is measuring is answering a
+  different question. `--allowedTools mcp__sharedos` auto-approves the server:
+  Claude separates prompting from authorization, and print mode has no human to
+  prompt.
+- **Codex.** `mcp_servers.sharedos.required=true` stops a run whose bridge
+  failed to start rather than continuing with Codex's own tools, which would
+  look like a harness that declined the catalogue.
+  `default_tools_approval_mode="approve"`, scoped to this one server, is the
+  same decision as Claude's `--allowedTools`: Codex's default `auto` mode asks a
+  human before any tool that is not read-only, `codex exec` has no human, and
+  the refusal would happen inside Codex with the kernel never consulted.
+- **DeepSeek Harness.** The plugin overlay sets `failOnStartupError: true` for
+  the reason Codex's server is `required`: a run that quietly continued with
+  only the harness's own tools would be a different finding.
+- **Pi.** `--mode rpc --no-session --no-builtin-tools`: a session-less RPC run
+  with Pi's own tools off, so what the model reaches is the extension's proxy
+  tool and nothing else.
 
 ### Pi needs an extension, and which one is your choice
 
@@ -277,17 +313,6 @@ other. The manifest stamps `mcpSupport: "extension"` and names the extension, so
 a record says how the catalogue reached the harness rather than implying Pi did
 it itself.
 
-The launch flags remove what would otherwise confuse a measurement:
-`--strict-mcp-config` drops the machine's own MCP servers, so a `strict` policy
-is checkable rather than merely declared, and the disallowed-tools list removes
-the harness's own file and shell tools — a probe that can edit files on the
-machine it is measuring is answering a different question.
-
-`--allowedTools mcp__sharedos` auto-approves the server. That is a permission
-_prompt_ decision, not an authorization one: Claude separates the two, print mode
-has no human to prompt, and what secures the run is that every call is
-re-authorized by the kernel.
-
 ### Sandboxed or remote harnesses
 
 Loopback plus an ephemeral port is enough when the port is known only to the
@@ -295,7 +320,7 @@ subprocess it was opened for. Otherwise mint a short-lived execution token:
 
 ```ts
 const token = await mintExecutionToken(
-  { executionId, namespaceId, actor: "agent:agent-bob", catalogHash, expiresAt },
+  { executionId, namespaceId, actor: canonicalActor(agent), catalogHash, expiresAt },
   hostSecret,
 );
 const http = await createStreamableHttpMcpServer({
@@ -306,7 +331,10 @@ const http = await createStreamableHttpMcpServer({
 });
 ```
 
-The token identifies the broker session. It carries no grants and no
+`canonicalActor` renders an `Address` as `<kind>:<id>` — `agent:agent-bob` —
+which is the one string form a token's `actor` takes; it is compared by
+equality, never parsed back. The token identifies the broker session. It
+carries no grants and no
 capabilities: whoever presents it still receives exactly the catalogue that
 turn's `AccessContext` resolved, and every call is still authorized from the
 trusted grant source at the moment of the call. `catalogHash` is bound in so a
@@ -318,11 +346,37 @@ stale sandbox cannot reconnect and call tools it was never shown.
 pnpm build
 pnpm conformance:mcp                                    # one case, every installed harness
 pnpm conformance:mcp -- --config ./run.json --full      # every case, one pinned model
+pnpm conformance:mcp -- --harness codex --case broker-ungranted,broker-out-of-scope
 ```
 
 Live runs cost model tokens, so the default is one case; `--full` runs the whole
 set and is what a published result should come from. Output lands in
 `artifacts/conformance/mcp-conformance.json`.
+
+| Flag or variable | Meaning                                                                                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--full`         | Every case                                                                                                                                                                |
+| `--limit N`      | The first N cases (default 1): a smoke test, not a way to reach a row added at position eighteen; `0` probes the harnesses and runs none                                  |
+| `--case a,b`     | Named cases; one that names no case stops the run                                                                                                                         |
+| `--harness id`   | One column — `claude-code`, `codex`, `deepseek`, or `pi`; an id that names no column stops the run, and a named harness that is not installed is reported `not available` |
+| `--config path`  | The operator's model and per-harness configuration (below); `SHAREDOS_MCP_CONFIG` is its default                                                                          |
+
+`pnpm conformance:native` (`scripts/native-conformance.mjs`) is the other live
+script: it drives each installed CLI as a harness over its own stdio, and runs
+the model column when a key is present. It shares `--case`, `--harness` (which
+also takes `model`, for the model column alone), and `--config` (default
+`SHAREDOS_NATIVE_CONFIG`), has no `--limit` — it runs every case — and reads:
+
+| Variable                                                               | Meaning                                                                                                                                                                                                                                         |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SHAREDOS_MODEL_API_KEY`, else `DEEPSEEK_API_KEY` or `DSH_API_KEY`     | The model column's key; without one the column does not run                                                                                                                                                                                     |
+| `SHAREDOS_MODEL`, `SHAREDOS_MODEL_BASE_URL`, `SHAREDOS_MODEL_PROVIDER` | The model column's model (default `DSH_MODEL`, else the config's `model.id`, else `deepseek-v4-flash`), chat-completions root (default `https://api.deepseek.com`), and provider label (default the config's `model.provider`, else `deepseek`) |
+| `DSH_RUNTIME_COMMAND`, `DSH_RUNTIME_CONFIG`, `DSH_RUNTIME_CWD`         | DeepSeek Harness's JSON-RPC runtime (default `dsh-jsonrpc-agent`), its plugin composition, and its working directory                                                                                                                            |
+| `DSH_PROVIDER`, `DSH_MODEL`                                            | What that runtime is told at `initialize` (default `deepseek-official`, `deepseek-v4-flash`)                                                                                                                                                    |
+
+The scripted suite, `pnpm conformance` (`scripts/conformance.mjs`), takes
+`--check` and `--strict` — what `conformance:check` passes — and `--no-build`,
+which skips the package build when `dist` is already current.
 
 ### Holding the model constant
 

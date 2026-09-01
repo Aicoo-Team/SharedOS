@@ -14,6 +14,12 @@ SharedOS never depends on a host product.
 - `packages/sdk` is an ergonomic re-export layer and contains no policy logic.
 - `packages/testkit` may provide in-memory implementations, but production storage
   belongs to the host.
+- `packages/conformance` assembles execution records and runs the adversarial
+  conformance suite; it holds no tasks, gold labels, evaluators, or scores.
+- `packages/mcp` serves the permission-filtered catalogue over MCP and reaches
+  the turn only through `RuntimeHost.invokeTool`.
+- `packages/adapters` translates vendor harnesses and model APIs into agent
+  turn drivers; an adapter enforces no policy of its own.
 - Core packages must not import Next.js, Drizzle, Azure, Aicoo billing, or PACT
   tasks, gold labels, runners, or evaluators.
 

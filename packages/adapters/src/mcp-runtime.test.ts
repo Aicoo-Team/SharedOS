@@ -18,7 +18,6 @@ import {
   type AuditSink,
   type GrantSource,
   type ResourceProvider,
-  type ToolHandler,
 } from "@aicoo/sharedos-core";
 import {
   ESCALATION_ACTION,
@@ -26,10 +25,14 @@ import {
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAMESPACE,
   SharedOSExecutor,
+  createEscalationTool,
+  type RuntimeHost,
+  type RuntimeTurnRequest,
 } from "@aicoo/sharedos-runtime";
+import { codexMcpConfig, codexMcpServerSettings } from "@aicoo/sharedos-mcp";
 import { InMemoryAuditSink } from "@aicoo/sharedos-testkit";
 
-import { createMcpHarnessRuntime, type McpHarnessSpec } from "./mcp-runtime.js";
+import { CODEX_MCP_HARNESS, createMcpHarnessRuntime, type McpHarnessSpec } from "./mcp-runtime.js";
 import { claudeCodeProtocol } from "./claude-code/protocol.js";
 
 /**
@@ -124,35 +127,6 @@ function grantSource(escalation: boolean): GrantSource {
   };
 }
 
-/**
- * The affordance, registered the way a host registers it: catalogued,
- * permission-filtered, and never executed.
- *
- * The handler fails on purpose, exactly as the conformance world's does.
- * Reaching it means a call to the affordance was forwarded as an ordinary tool
- * call instead of ending the turn, and a stub that returned success would let
- * that pass for an escalation. Nothing here should ever reach it.
- */
-function escalationHandler(): ToolHandler {
-  return {
-    definition: ESCALATION_TOOL_DEFINITION,
-    parseArguments: (arguments_) => arguments_,
-    invoke: async (accessContext, call) => {
-      await Promise.resolve();
-      return {
-        callId: call.id,
-        tool: call.tool,
-        status: "failed",
-        error: {
-          code: "escalation_not_terminated",
-          message: "The escalation affordance ends a turn and is never executed.",
-        },
-        completedAt: accessContext.now,
-      };
-    },
-  };
-}
-
 const provider: ResourceProvider = {
   namespace: "files",
   async invoke(operation: ResourceOperation, _signal: AbortSignal): Promise<ResourceResult> {
@@ -223,7 +197,7 @@ function kernel(
     },
   });
   if (escalation) {
-    tools.register(escalationHandler());
+    tools.register(createEscalationTool());
   }
   return new SharedOSKernel({
     grantSource: grantSource(escalation),
@@ -739,4 +713,104 @@ describe("a harness that asks for a human over MCP", () => {
     expect(meta(asked)["sharedos/code"]).toBe("tool_unavailable");
     expect(turn.events.filter((type) => type === "tool.requested")).toHaveLength(1);
   }, 30_000);
+});
+
+/**
+ * The plugin called outside `SharedOSExecutor`, the only way an aborted signal
+ * reaches `run` at all: the executor checks the signal before it runs a plugin
+ * and races the plugin against it after, so its own `cancelled` result always
+ * wins. A direct caller gets the platform's answer, not a second shape of
+ * `turn_cancelled`.
+ */
+describe("a harness runtime whose signal is aborted", () => {
+  it("rejects with the signal's reason instead of returning an outcome", async () => {
+    const controller = new AbortController();
+    const reason = new Error("turn closed");
+    controller.abort(reason);
+    const { context, ...request } = executionRequest();
+    const visible: RuntimeTurnRequest = {
+      ...request,
+      context: {
+        actor: context.actor,
+        owner: context.owner,
+        namespaceId: context.namespaceId,
+        purpose: context.purpose,
+        traceId: context.traceId,
+        now: context.now,
+      },
+    };
+    const host: RuntimeHost = {
+      limits: { maxSteps: 1, maxToolCalls: 1, timeoutMs: 1_000 },
+      invokeTool: () => Promise.reject(new Error("not reached")),
+      emit: () => undefined,
+    };
+
+    await expect(
+      createMcpHarnessRuntime(fakeHarness([])).run(visible, host, controller.signal),
+    ).rejects.toBe(reason);
+  });
+});
+
+describe("the Codex spec", () => {
+  it("passes the same server settings codexMcpConfig emits, as overrides", () => {
+    const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
+    const { context, ...request } = executionRequest();
+    const launch = CODEX_MCP_HARNESS.launch({
+      prompt: "read both files",
+      connection,
+      workspace: "/tmp/sharedos-test",
+      configPaths: {},
+      request: {
+        ...request,
+        context: {
+          actor: context.actor,
+          owner: context.owner,
+          namespaceId: context.namespaceId,
+          purpose: context.purpose,
+          traceId: context.traceId,
+          now: context.now,
+        },
+      },
+    });
+    const settings = codexMcpServerSettings(connection);
+    const emitted = codexMcpConfig(connection);
+
+    expect(settings.map(([key]) => key)).toEqual([
+      "url",
+      "required",
+      "tool_timeout_sec",
+      "default_tools_approval_mode",
+    ]);
+    for (const [key, value] of settings) {
+      expect(launch.args).toContain(`mcp_servers.sharedos.${key}=${value}`);
+      expect(emitted).toContain(`${key} = ${value}`);
+    }
+  });
+
+  it("keeps a bearer token off the command line", () => {
+    const connection = { url: "http://127.0.0.1:41234/mcp", token: "secret-bridge-token" };
+    const { context, ...request } = executionRequest();
+    const launch = CODEX_MCP_HARNESS.launch({
+      prompt: "read both files",
+      connection,
+      workspace: "/tmp/sharedos-test",
+      configPaths: {},
+      request: {
+        ...request,
+        context: {
+          actor: context.actor,
+          owner: context.owner,
+          namespaceId: context.namespaceId,
+          purpose: context.purpose,
+          traceId: context.traceId,
+          now: context.now,
+        },
+      },
+    });
+
+    expect(codexMcpServerSettings(connection).map(([key]) => key)).toContain("bearer_token");
+    expect(codexMcpConfig(connection)).toContain('bearer_token = "secret-bridge-token"');
+    expect(launch.args.some((arg) => arg.includes("secret-bridge-token"))).toBe(false);
+    expect(launch.args.some((arg) => arg.includes("bearer_token"))).toBe(false);
+  });
 });

@@ -36,13 +36,44 @@ const turns = new SharedOSExecutor(kernel, runtime, {
 const result = await turns.execute(executionRequest);
 ```
 
-The original API remains available as a compatibility shorthand:
+The original API remains available as a compatibility shorthand, retained
+pending a deprecation decision (`docs/open-items.md`):
 
 ```ts
 import { TurnExecutor } from "@aicoo/sharedos-runtime";
 
 const turns = new TurnExecutor(kernel, agentDriver);
 ```
+
+## Escalation
+
+A turn may end by asking a human to decide (ADR 0011, ADR 0017). The ask is a
+catalogued tool, `sharedos.escalate`, so that it is chosen rather than inferred
+from prose, and so that it is permission-filtered like every other tool:
+
+```ts
+import { createEscalationTool } from "@aicoo/sharedos-runtime";
+
+kernel.registerTool(createEscalationTool());
+```
+
+An agent sees it only when its context enables the `sharedos` tool namespace
+and it holds a grant over resource `sharedos` / `["escalation"]`, action
+`request` — exported as `ESCALATION_TOOL_NAMESPACE`, `ESCALATION_RESOURCE_PATH`,
+and `ESCALATION_ACTION`. A host that issues no such grant has agents that cannot
+escalate, which is the intended arrangement.
+
+The tool is never executed. A driver whose turn's catalogue offers it
+recognises the name with `escalationRequest(tool, arguments)` and returns
+`{ type: "escalate", reason }` instead of a tool call; `StandardRuntime` settles
+the turn as `escalated`, the envelope records `escalation.requested`, and
+nothing is granted while the ask is pending. Without the grant the name is
+passed through and refused `tool_unavailable`, and `SharedOSExecutor` refuses an
+`escalate` outcome from any plugin on such a turn — the catalogue gates the
+name, not the driver's goodwill. The registered handler exists to put the tool in the catalogue and to
+fail — `escalation_not_terminated` — if a driver forwards the call anyway. Over
+MCP the bridge answers the ask itself and refuses later calls on that turn with
+`escalation_pending` (ADR 0018).
 
 ## Custom runtime
 
@@ -534,10 +565,12 @@ Defined in: [packages/runtime/src/standard-runtime.ts:129](https://github.com/Ai
 
 ### TurnExecutor
 
-Defined in: [packages/runtime/src/executor.ts:488](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L488)
+Defined in: [packages/runtime/src/executor.ts:493](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L493)
 
 Compatibility facade for the original driver-based API. New harnesses should
 implement RuntimePlugin and use SharedOSExecutor directly.
+
+Retained pending a deprecation decision; see `docs/open-items.md`.
 
 #### Implements
 
@@ -549,7 +582,7 @@ implement RuntimePlugin and use SharedOSExecutor directly.
 
 > **new TurnExecutor**(`kernel`, `driver`, `options?`): [`TurnExecutor`](#turnexecutor)
 
-Defined in: [packages/runtime/src/executor.ts:491](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L491)
+Defined in: [packages/runtime/src/executor.ts:496](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L496)
 
 ###### Parameters
 
@@ -571,7 +604,7 @@ Defined in: [packages/runtime/src/executor.ts:491](https://github.com/Aicoo-Team
 
 > **get** **runtimeManifest**(): `object`
 
-Defined in: [packages/runtime/src/executor.ts:515](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L515)
+Defined in: [packages/runtime/src/executor.ts:521](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L521)
 
 ###### Returns
 
@@ -599,7 +632,7 @@ Defined in: [packages/runtime/src/executor.ts:515](https://github.com/Aicoo-Team
 
 > **execute**(`input`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/runtime/src/executor.ts:519](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L519)
+Defined in: [packages/runtime/src/executor.ts:525](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L525)
 
 ###### Parameters
 
@@ -1142,7 +1175,7 @@ registries, namespace settings, or other host policy state.
 
 > `const` **ESCALATION\_ACTION**: `"request"` = `"request"`
 
-Defined in: [packages/runtime/src/escalation.ts:7](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L7)
+Defined in: [packages/runtime/src/escalation.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L8)
 
 ---
 
@@ -1150,7 +1183,7 @@ Defined in: [packages/runtime/src/escalation.ts:7](https://github.com/Aicoo-Team
 
 > `const` **ESCALATION\_REASON\_MAX\_LENGTH**: `512` = `512`
 
-Defined in: [packages/runtime/src/escalation.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L13)
+Defined in: [packages/runtime/src/escalation.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L14)
 
 The longest reason an escalation can carry, restating the contract's bound on
 `RuntimeTurnOutcome.reason` and `Escalation.reason` rather than importing a
@@ -1162,7 +1195,7 @@ schema this package does not validate with.
 
 > `const` **ESCALATION\_RESOURCE\_PATH**: readonly `string`[]
 
-Defined in: [packages/runtime/src/escalation.ts:6](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L6)
+Defined in: [packages/runtime/src/escalation.ts:7](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L7)
 
 The resource an escalation grant is written over.
 
@@ -1172,7 +1205,7 @@ The resource an escalation grant is written over.
 
 > `const` **ESCALATION\_TOOL\_DEFINITION**: [`ToolDefinition`](sharedos-contracts.md#tooldefinition)
 
-Defined in: [packages/runtime/src/escalation.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L43)
+Defined in: [packages/runtime/src/escalation.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L44)
 
 The affordance a driver offers so escalation can be chosen rather than inferred.
 
@@ -1207,7 +1240,7 @@ like any other unpublished tool.
 
 > `const` **ESCALATION\_TOOL\_NAME**: `"sharedos.escalate"` = `"sharedos.escalate"`
 
-Defined in: [packages/runtime/src/escalation.ts:4](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L4)
+Defined in: [packages/runtime/src/escalation.ts:5](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L5)
 
 ---
 
@@ -1215,7 +1248,7 @@ Defined in: [packages/runtime/src/escalation.ts:4](https://github.com/Aicoo-Team
 
 > `const` **ESCALATION\_TOOL\_NAMESPACE**: `"sharedos"` = `"sharedos"`
 
-Defined in: [packages/runtime/src/escalation.ts:3](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L3)
+Defined in: [packages/runtime/src/escalation.ts:4](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L4)
 
 ---
 
@@ -1237,11 +1270,40 @@ Kept equal to the synchronized package version by the release gate.
 
 ## Functions
 
+### createEscalationTool()
+
+> **createEscalationTool**(): [`ToolHandler`](sharedos-core.md#toolhandler)
+
+Defined in: [packages/runtime/src/escalation.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L90)
+
+The handler a host registers so the affordance is catalogued.
+
+It exists to put [ESCALATION\_TOOL\_DEFINITION](#escalation_tool_definition) in the permission-filtered
+catalogue, where an agent sees it only when its context enables the
+`sharedos` tool namespace and it holds a grant over `sharedos` /
+`["escalation"]` / `request`. It is never meant to run: a driver whose turn's
+catalogue offers it recognises the name (see [escalationRequest](#escalationrequest)) and
+ends the turn `escalated` instead of forwarding a call. If a driver forwards it anyway, the handler
+fails with `escalation_not_terminated` rather than succeeding, because a call
+that quietly succeeded would leave a record of an escalation tool that ran
+and a turn that completed normally -- the confusion the affordance exists to
+remove.
+
+Arguments pass through unparsed on purpose. A malformed forwarded call is
+still a forwarded call, and reporting it as `invalid_tool_arguments` would
+record the wrong defect.
+
+#### Returns
+
+[`ToolHandler`](sharedos-core.md#toolhandler)
+
+---
+
 ### escalationArguments()
 
 > **escalationArguments**(`reason`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/runtime/src/escalation.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L127)
+Defined in: [packages/runtime/src/escalation.ts:165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L165)
 
 The arguments an escalation is requested with, for a driver writing the call.
 
@@ -1257,11 +1319,35 @@ The arguments an escalation is requested with, for a driver writing the call.
 
 ---
 
+### escalationOffered()
+
+> **escalationOffered**(`tools`): `boolean`
+
+Defined in: [packages/runtime/src/escalation.ts:199](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L199)
+
+Whether a turn's catalogue offers the affordance.
+
+The gate on honouring the name (ADR 0017, "The catalogue gates the name"):
+a driver reads it from the same `tools` it offered the seat's occupant, and
+the executor from the catalogue the turn was actually served.
+
+#### Parameters
+
+| Parameter | Type                |
+| --------- | ------------------- |
+| `tools`   | readonly `object`[] |
+
+#### Returns
+
+`boolean`
+
+---
+
 ### escalationReason()
 
 > **escalationReason**(`value`): `string` \| `undefined`
 
-Defined in: [packages/runtime/src/escalation.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L144)
+Defined in: [packages/runtime/src/escalation.ts:182](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L182)
 
 A reason string bounded exactly as `RuntimeTurnOutcome`'s is.
 
@@ -1291,7 +1377,7 @@ than quietly trimmed away.
 
 > **escalationRequest**(`tool`, `arguments_`): `string` \| `undefined`
 
-Defined in: [packages/runtime/src/escalation.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L94)
+Defined in: [packages/runtime/src/escalation.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L132)
 
 Read an escalation out of a call a driver is about to make, if that is what it is.
 

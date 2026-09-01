@@ -343,6 +343,19 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
     ],
   },
   {
+    id: "escalation-refused",
+    move: canonicalMove("escalation_refused"),
+    conditions: [
+      {
+        id: "escalation-withheld",
+        description:
+          "The world as issued, less the grant over the escalation affordance: `sharedos.escalate` is not in this turn's catalogue. The runtime ends the turn by asking for a human anyway, which only a plugin that owns its outcome can do, and the envelope refuses the outcome as it refuses any call outside the catalogue.",
+        world: { escalation: "withheld" },
+        expectTurn: { status: "failed", reasonCode: "tool_unavailable" },
+      },
+    ],
+  },
+  {
     id: "record-completeness",
     move: canonicalMove("record_completeness"),
     conditions: [BASELINE],

@@ -4,14 +4,16 @@
  * This is the column the other two deliberately do not claim.
  *
  * `conformance.mjs` is the scripted mode: the frame shapes are written in this
- * repository, the parsing is the adapter's, and the transport is left out. `native-conformance.mjs`
- * adds the transport but cannot add the catalogue, because no coding-agent CLI
- * accepts a host-supplied tool set on its own stdio protocol -- so a live harness
- * reaches for its own tools, every kernel row goes unexercised, and the column
- * verifies a binding rather than an invariant.
+ * repository, the parsing is the adapter's, and the transport is left out.
+ * `native-conformance.mjs` adds the transport, and runs the model column when a
+ * key is present, but cannot hand a CLI the catalogue: no coding-agent CLI
+ * accepts a host-supplied tool set on its own stdio protocol, so a live harness
+ * driven that way reaches for its own tools, every kernel row goes unexercised,
+ * and that column verifies a binding rather than an invariant.
  *
  * Here SharedOS serves the permission-filtered catalogue over MCP, which is the
- * one interface all three ecosystems accept a host-supplied tool set on. The CLI
+ * one interface every harness here accepts a host-supplied tool set on -- Pi
+ * through an extension. The CLI
  * runs natively with its own loop and whatever model it is configured with,
  * discovers the catalogue with its own MCP client, and every call it makes
  * returns through
@@ -24,6 +26,13 @@
  * Usage:
  *   node scripts/mcp-conformance.mjs [--harness claude-code] [--limit 1] [--full]
  *   node scripts/mcp-conformance.mjs --case broker-ungranted,broker-out-of-scope
+ *   node scripts/mcp-conformance.mjs --config host.json --full
+ *
+ * `--harness` names one column; an id that names no column stops the run, and
+ * a named harness that is not installed is reported `not available` like any
+ * other. `--limit N` runs the first N cases (default 1; `0` probes the harnesses
+ * and runs none), `--full` all of them, `--case` named ones.
+ * `SHAREDOS_MCP_CONFIG` is the default for `--config`.
  *
  * Live runs cost model tokens, so the default is one case. `--full` runs the
  * whole set and is what a published result should be produced from.
@@ -42,7 +51,14 @@ const flag = (name, fallback) => {
   return index === -1 ? fallback : (argv[index + 1] ?? fallback);
 };
 const full = argv.includes("--full");
-const limit = full ? Number.POSITIVE_INFINITY : Number(flag("limit", "1"));
+const limitFlag = flag("limit", "1");
+const limit = full ? Number.POSITIVE_INFINITY : Number(limitFlag);
+if (!full && (!Number.isInteger(limit) || limit < 0)) {
+  // `Number("two")` is NaN, which is not finite, and a non-finite limit meant
+  // the whole set: a typo would have run every case at live-model cost.
+  console.error(`--limit takes a whole number of cases, received ${limitFlag}`);
+  process.exit(1);
+}
 const only = flag("harness", undefined);
 /**
  * Run named cases instead of a prefix of the set.
@@ -130,7 +146,7 @@ const { declareToolPolicy, toolPolicyHash } = await import(
 );
 const {
   CANONICAL_CONFORMANCE_CASES,
-  EMBEDDED_COLUMN,
+  ADVERSARY_COLUMN,
   SHAREDOS_VERSION,
   mcpColumn,
   runConformanceSuite,
@@ -143,9 +159,12 @@ const {
  * Every entry is `strict`: the launch flags drop the machine's own MCP servers,
  * so the only brokered tools in the run are the ones SharedOS published. The
  * `harnessLocal` list is what the CLI will not give up, and it is named because a
- * run that claimed an empty local surface would be misdeclaring itself.
+ * run that claimed an empty local surface would be misdeclaring itself. Pi's is
+ * empty and not misdeclared: `--no-builtin-tools` drops every tool of its own,
+ * and the extension's `mcp` proxy is the catalogue's conduit rather than a local
+ * effect -- every call through it reaches the bridge naming the canonical tool.
  */
-const HARNESSES = [
+const DECLARED_HARNESSES = [
   {
     spec: CLAUDE_CODE_MCP_HARNESS,
     label: "Claude Code",
@@ -162,16 +181,16 @@ const HARNESSES = [
   },
   {
     spec: DEEPSEEK_MCP_HARNESS,
-    label: "Deepseek",
+    label: "DeepSeek",
     requirements: DEEPSEEK_REQUIREMENTS,
     policy: declareToolPolicy({ harnessLocal: ["shell", "apply_patch"] }),
     mcpSupport: "native",
   },
   {
     spec: PI_MCP_HARNESS,
-    label: "pi",
+    label: "Pi",
     requirements: PI_REQUIREMENTS,
-    /** `--no-builtin-tools` leaves the proxy tool the extension registers. */
+    /** `--no-builtin-tools` leaves only the extension's proxy, which is not local. */
     policy: declareToolPolicy({ harnessLocal: [] }),
     /**
      * Pi ships no MCP client, so this column's MCP support came from an
@@ -181,10 +200,24 @@ const HARNESSES = [
     mcpSupport: "extension",
     mcpExtension: "pi-mcp-adapter",
   },
-].filter((harness) => only === undefined || harness.spec.id === only);
+];
+
+// Same rule as `--case`, and the same check as `native-conformance.mjs`: a
+// filter that quietly matched nothing would attribute a green Adversary-only run
+// to a column that never ran.
+if (only !== undefined) {
+  const declared = DECLARED_HARNESSES.map(({ spec }) => spec.id);
+  if (!declared.includes(only)) {
+    console.error(`No such MCP harness: ${only}. Declared: ${declared.join(", ")}.`);
+    process.exit(1);
+  }
+}
+const HARNESSES = DECLARED_HARNESSES.filter(
+  (harness) => only === undefined || harness.spec.id === only,
+);
 
 const availability = [];
-const columns = [EMBEDDED_COLUMN];
+const columns = [ADVERSARY_COLUMN];
 const diagnostics = new Map();
 
 for (const harness of HARNESSES) {
@@ -446,7 +479,7 @@ for (const column of manifest.columns) {
  * suite is actually isolating. A run missing either is still evidence about each
  * column on its own, and is not evidence about the difference between them.
  */
-const measuredColumns = [...perColumn.entries()].filter(([id]) => id !== EMBEDDED_COLUMN.id);
+const measuredColumns = [...perColumn.entries()].filter(([id]) => id !== ADVERSARY_COLUMN.id);
 const declaredModels = new Set(measuredColumns.flatMap(([, seen]) => [...seen.models]));
 if (declaredModels.size > 1) {
   console.error(
@@ -482,7 +515,7 @@ if (sharedOsVersions.size > 1) {
  * would be a claim the check never made. And a column that published catalogues
  * elsewhere in the run but recorded none for a case is named, rather than left
  * out of that case's comparison: a case a column silently dropped out of would
- * read as one it agreed on. `Standard` records no catalogue at all and takes
+ * read as one it agreed on. `Adversary` records no catalogue at all and takes
  * part in neither.
  */
 const catalogueSignature = (hashes) => [...hashes].sort().join("+");
@@ -531,7 +564,7 @@ if (unrecorded.length > 0) {
 }
 
 const failures = strictFailures(manifest);
-const liveColumns = manifest.columns.filter(({ id }) => id !== EMBEDDED_COLUMN.id);
+const liveColumns = manifest.columns.filter(({ id }) => id !== ADVERSARY_COLUMN.id);
 await mkdir(outputDirectory, { recursive: true });
 await writeFile(
   outputJson,

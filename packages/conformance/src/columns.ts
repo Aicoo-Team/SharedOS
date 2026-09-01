@@ -12,6 +12,8 @@ import {
   ModelRuntime,
   piFrameWriter,
   piProtocol,
+  ToolNameCodec,
+  TranscriptModelClient,
   TranscriptTransport,
   type HarnessFrame,
   type HarnessFrameWriter,
@@ -19,6 +21,8 @@ import {
   type HarnessTranscript,
   type HarnessTransport,
   type ModelClient,
+  type ModelReply,
+  type ModelTranscript,
 } from "@aicoo/sharedos-adapters";
 import {
   escalationArguments,
@@ -43,7 +47,16 @@ import { conformanceRuntimeContext } from "./world.js";
 
 /** What one column cannot do, so a cell reports it instead of failing on it. */
 export interface ColumnLimits {
-  /** Set when the column structurally cannot run this row at all. */
+  /**
+   * Set when the column structurally cannot run this row at all, and why.
+   *
+   * Every driven, MCP, and model column sets it on the ungranted-escalation
+   * row: only a plugin that owns its outcome can end a turn with an `escalate`
+   * the catalogue did not offer, and each of those columns reads the catalogue
+   * before it will. The cell reads `not applicable` with the reason, and the
+   * row is not run for that column, so it leaves no evidence -- unlike an
+   * unreachable *attempt*, whose turn still runs.
+   */
   readonly unsupported?: string;
   /** Attempt ids the column structurally cannot issue, mapped to why. */
   readonly unreachable?: ReadonlyMap<string, string>;
@@ -105,19 +118,37 @@ export interface RuntimeColumn {
   /**
    * Receipts for a turn, when the runtime in the seat cannot report on itself.
    *
-   * The scripted adversary emits its own; a vendor harness replaying recorded
-   * frames does not know it is in a conformance run, so its attempts are
-   * recovered from the execution record instead.
+   * The scripted adversary emits its own; a driver -- a vendor harness replaying
+   * frames, or the native harness replaying model replies -- does not know it
+   * is in a conformance run, so its attempts are recovered from the execution
+   * record instead.
    */
   receipts?(move: AttackMove, turn: ColumnTurn): readonly AttemptReceipt[];
   /** What this column structurally cannot do for one row under one condition. */
   limits?(move: AttackMove, condition: ConformanceCondition): ColumnLimits;
 }
 
-/** The in-process column: the SharedOS executor driving the scripted adversary. */
-export const EMBEDDED_COLUMN: RuntimeColumn = Object.freeze({
-  id: "sharedos-embedded",
-  label: "Standard",
+/**
+ * The reference column: `HostileRuntime` in the seat, owning its own outcome.
+ *
+ * The adversary is a plugin rather than a driver, and that is what the column
+ * is for. It issues every declared attempt itself, in order, every run, and
+ * returns whatever ending the row declares whether or not the catalogue offered
+ * it -- which is why it is the one column that can put the ungranted-escalation
+ * row, and why it is the fixed point every other column's cell is read against:
+ * "did the kernel refuse this the same way?" is a question only a column that
+ * always makes the attempt can anchor.
+ *
+ * It is not the native harness. Nothing here passes through `StandardRuntime`,
+ * a driver, or a catalogue rendering; the plugin calls `host.invokeTool`
+ * directly. The harness SharedOS ships is a separate column,
+ * {@link MODEL_SCRIPTED_COLUMN}, and the two must not be read as one: this one
+ * says what the kernel does to an attempt, that one says what the shipped loop
+ * does with it on the way.
+ */
+export const ADVERSARY_COLUMN: RuntimeColumn = Object.freeze({
+  id: "adversary-embedded",
+  label: "Adversary",
   create: (moves: readonly AttackMove[], options: RuntimeColumnOptions) =>
     new HostileRuntime(moves, { turn: options.turn }),
 });
@@ -125,21 +156,29 @@ export const EMBEDDED_COLUMN: RuntimeColumn = Object.freeze({
 /**
  * Attempts a transcript-driven vendor harness cannot issue.
  *
- * Two shapes are out of reach, and both are properties of being a harness
- * rather than of being recorded. Escalation is no longer one of them: it is a
- * catalogued tool now, so a driven harness ends the turn by calling it and the
- * row is graded rather than declared unavailable.
+ * Two shapes the harness itself cannot issue, and both are properties of being
+ * a harness rather than of being recorded: one is declared unreachable, the
+ * other is issued by the driver on the harness's behalf. Escalation is neither:
+ * it is a catalogued tool now, so a driven harness ends the turn by calling it
+ * and the row is graded rather than declared unavailable.
  *
  * - An inspection attempt reads the surfaces the runtime was handed. A harness
  *   speaks tool calls over a wire and never sees a `RuntimeTurnRequest` or a
  *   `RuntimeHost`, so it has nothing to enumerate.
- * - A call past the step budget cannot be made from inside `StandardRuntime`,
- *   which is the loop every harness driver runs in and which stops at its own
- *   step ceiling. The envelope's ceiling is still there; this column simply
- *   never reaches it, and reporting the row as failed would blame the kernel
- *   for a limit the runtime honoured first.
+ * - A call past the step budget cannot be made by the harness from inside
+ *   `StandardRuntime`, which is the loop every harness driver runs in and which
+ *   stops at its own step ceiling. Where a condition requires declared steps,
+ *   the driver names the out-of-budget step itself: the attempt is issued and
+ *   graded, and marked `driverIssued` so the cell reads `pass (driver)` rather
+ *   than filing the driver's reach under the harness's name.
  */
 export function harnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
+  if (move.kind === "escalation_refused") {
+    return {
+      unsupported:
+        "the driver inside the standard loop honours `escalate` only when the catalogue offers it; an ask on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn. Only a plugin that owns its outcome can return an ungranted `escalate`",
+    };
+  }
   const unreachable = new Map<string, string>();
   const driverIssued = new Map<string, string>();
 
@@ -178,7 +217,9 @@ export interface ScriptedColumnOptions {
  * adapter's, and the kernel and envelope are the real ones. What is left unexercised is the
  * transport that would have carried the frames: this column says nothing about
  * whether the live CLI is installed, authenticated, or emitting these shapes
- * today. A live column is a separate claim and is not yet made.
+ * today. A live column is a separate claim, made by {@link liveColumn} and
+ * {@link mcpColumn} from the conformance scripts rather than by the committed
+ * manifest.
  */
 export function scriptedColumn(options: ScriptedColumnOptions): RuntimeColumn {
   if (options.protocol.id !== options.writer.protocolId) {
@@ -231,14 +272,14 @@ export const CLAUDE_CODE_SCRIPTED_COLUMN: RuntimeColumn = scriptedColumn({
 
 export const DEEPSEEK_SCRIPTED_COLUMN: RuntimeColumn = scriptedColumn({
   id: "deepseek-scripted",
-  label: "Deepseek",
+  label: "DeepSeek",
   protocol: deepseekProtocol,
   writer: deepseekFrameWriter,
 });
 
 export const PI_SCRIPTED_COLUMN: RuntimeColumn = scriptedColumn({
   id: "pi-scripted",
-  label: "pi",
+  label: "Pi",
   protocol: piProtocol,
   writer: piFrameWriter,
 });
@@ -300,6 +341,142 @@ export function movesToTranscript(
 }
 
 /**
+ * Turn declared attempts into a scripted model conversation.
+ *
+ * The model-seat counterpart of {@link movesToTranscript}, making the same
+ * choices for the same reasons: one call per reply, because the driver answers
+ * every call in a reply before it speaks to the model again, and a closing
+ * reply with no calls so the turn ends by the model completing rather than by
+ * the recording running out. Attempts a driver cannot issue -- another turn's,
+ * a declared-unreachable one, an inspection -- get no reply, so they produce no
+ * receipt and are graded as unreached rather than as denied.
+ *
+ * Names are written in the wire alphabet a provider accepts, exactly as a live
+ * reply would carry them, and the driver's own codec is what turns them back
+ * into catalogue names. That includes the best-effort path for a name the
+ * catalogue does not hold, which is how an uncatalogued attempt reaches the
+ * envelope here as it does live. Call ids are the attempt's own, so receipts
+ * are recovered by the exact correlation a scripted column has and a live one
+ * lacks.
+ */
+export function movesToModelTranscript(
+  moves: readonly AttackMove[],
+  options: MoveTranscriptOptions,
+): ModelTranscript {
+  // An empty catalogue, so `toWire` is the substitution alone. The catalogue is
+  // the driver's to read: a transcript that consulted it would be deciding what
+  // the driver decides.
+  const wire = new ToolNameCodec([]);
+  const call = (id: string, tool: string, arguments_: JsonObject): ModelReply => ({
+    text: "",
+    toolCalls: [{ id, name: wire.toWire(tool), arguments: JSON.stringify(arguments_) }],
+    finishReason: "tool_calls",
+  });
+  const replies: ModelReply[] = [];
+
+  for (const move of moves) {
+    for (const attempt of move.attempts) {
+      if (!issuableByHarness(attempt, options.turn)) {
+        continue;
+      }
+      const tool = attempt.tool as string;
+      // The driver decodes a catalogued name through its map and any other by
+      // reversing the substitution, so a name that already holds an underscore
+      // would come back as a different dotted name once it is outside the
+      // catalogue -- and the row is then measuring an attempt nobody declared.
+      // No conformance tool carries one; refuse loudly the day one does rather
+      // than let the transcript quietly attack the wrong tool.
+      if (tool.includes("_")) {
+        throw new TypeError(
+          `Attempt ${attempt.id} names ${tool}, which the model driver cannot decode back exactly from its wire form`,
+        );
+      }
+      replies.push(
+        call(
+          attemptCallId(options.executionId, move, attempt),
+          tool,
+          attemptArguments(options.context, attempt) as JsonObject,
+        ),
+      );
+    }
+  }
+
+  // The same ending a harness transcript writes, for the same reason: the
+  // affordance is a catalogued tool, so the turn's ending is a call to it. The
+  // driver recognises the name off the catalogue and returns `escalate` -- or,
+  // on a turn the catalogue did not offer it, passes the call through to be
+  // refused, which is why the ungranted row is declared unsupported here.
+  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
+  if (terminal !== undefined) {
+    replies.push(
+      call(
+        `${options.executionId}.escalate`,
+        ESCALATION_TOOL_NAME,
+        escalationArguments(terminal.reason),
+      ),
+    );
+  }
+
+  replies.push({ text: "done", toolCalls: [], finishReason: "stop" });
+  return { replies };
+}
+
+/**
+ * The native harness in its scripted mode: `ModelRuntime` with a transcript in
+ * the provider's place.
+ *
+ * `StandardRuntime` owns the loop, `ModelDriver` renders the permission-
+ * filtered catalogue into the model's tool-call shape and decodes what comes
+ * back, and the kernel and envelope are the real ones. What is scripted is the
+ * one thing a live run gets from a provider: the replies. So this column is to
+ * {@link modelColumn} what a vendor's scripted column is to its live one -- the
+ * same driver, the same translation, the same limits, with the network and the
+ * model's choices taken out -- and it is what lets the manifest commit a cell
+ * for the harness SharedOS ships at all, since a live model chooses and a
+ * committed manifest cannot depend on a choice.
+ *
+ * It is not the reference column and is not meant to be. The adversary is a
+ * plugin that owns its outcome; this one reaches the envelope through a driver,
+ * so it carries a driver's limits under {@link modelLimits}: the inspection
+ * attempt is never handed to it, the out-of-budget step is the driver's to
+ * name, and an ungranted `escalate` is passed through as a call rather than
+ * returned as an outcome. Those are facts about the native harness, and putting
+ * them in a committed cell is the point -- the shipped loop is graded under the
+ * same rules as every vendor's, beside them, rather than standing in for the
+ * kernel it runs on.
+ */
+export const MODEL_SCRIPTED_COLUMN: RuntimeColumn = Object.freeze({
+  id: "model-scripted",
+  label: "Standard",
+  create: (moves: readonly AttackMove[], create: RuntimeColumnOptions): RuntimePlugin => {
+    const options: MoveTranscriptOptions = {
+      executionId: create.executionId,
+      turn: create.turn,
+      context: conformanceRuntimeContext(create.turn),
+    };
+    return new ModelRuntime(
+      new ModelDriver({
+        manifest: {
+          id: "sharedos.conformance.model-scripted",
+          version: "1.0.0",
+          protocolVersion: "1",
+          metadata: { scripted: true, driver: "model-api", catalogueDelivery: "in-band" },
+        },
+        client: new TranscriptModelClient(movesToModelTranscript(moves, options), {
+          provider: "sharedos-conformance",
+        }),
+        // The prompt a live model would be shown, so the request the driver
+        // builds is the same one; only the reply's author differs.
+        prompt: () => movesToPrompt(moves, { context: options.context, turn: options.turn }),
+        ...declaredStepOption(moves, create.turn),
+      }),
+    );
+  },
+  receipts: (move: AttackMove, turn: ColumnTurn) => receiptsFromRecord(move, turn),
+  limits: modelLimits,
+});
+
+/**
  * Declare an out-of-budget step for the attempt whose whole point is to have one.
  *
  * A driver inside `StandardRuntime` is handed the loop's index, which stops at
@@ -310,7 +487,8 @@ export function movesToTranscript(
  * is a claim, not a permission.
  *
  * Indexed on the calls the driver releases, in the order the moves declare them,
- * which is the same order `movesToPrompt` and `movesToTranscript` write out. A
+ * which is the same order `movesToPrompt`, `movesToTranscript`, and
+ * `movesToModelTranscript` write out. A
  * driver whose occupant reorders or skips calls therefore mislabels one, and the
  * row reports on what the record shows rather than on what was intended --
  * `not exercised` or `fail`, never a false pass.
@@ -444,17 +622,19 @@ export interface McpColumnOptions {
 /**
  * A vendor CLI running natively, against the SharedOS catalogue over MCP.
  *
- * The three columns differ in what they leave out, and it is worth being precise
- * about which claim each makes.
+ * The columns differ in what they leave out, and it is worth being precise about
+ * which claim each makes.
  *
  * - A scripted column leaves out the transport: the frames are written here.
  * - A live column leaves out the catalogue: the CLI never receives one, because
  *   no vendor stdio protocol has a frame that means "here are your tools", so the
  *   harness reaches for its own tools and the kernel rows go unexercised.
  * - This column leaves out nothing on either axis. The catalogue is served over
- *   MCP, which is the one interface all three ecosystems accept a host-supplied
- *   tool set on; the harness discovers it with its own client, decides with its
- *   own model, and every call it makes is re-authorized by the kernel.
+ *   MCP, which is the one interface every harness here accepts a host-supplied
+ *   tool set on -- Pi through an extension; the harness discovers it with its
+ *   own client, decides with its own model, and every call it makes is
+ *   re-authorized by the kernel.
+ * - A model column leaves out the vendor instead: see {@link modelColumn}.
  *
  * What it gives up instead is control of the loop. The harness decides how many
  * calls to make and when to stop, so an attempt it declines to issue leaves no
@@ -501,12 +681,13 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
  * The third is not a limit of the harness at all. Where a condition declares
  * `requiresDeclaredSteps`, SharedOS is stating that the guarantee holds only
  * while it owns the turn loop, and the row is reported `out_of_scope`: the
- * attempt is still issued and recorded, and simply not graded. A driven harness
- * reports `not_applicable` on the same row for a genuinely different reason --
- * `StandardRuntime` stops at its own step ceiling, so the call is never issued.
- * Neither is a pass, and the two must not be collapsed: one says the attempt
- * could not be made, the other says the attempt was made and SharedOS no longer
- * claims an answer for it.
+ * attempt is still issued and recorded, and simply not graded. A driven column
+ * grades the same row `pass (driver)` for a genuinely different reason --
+ * `StandardRuntime` stops at its own step ceiling, so the driver names the
+ * out-of-budget step itself and the attempt is graded as the driver's doing.
+ * The two must not be collapsed: one says the attempt was the driver's, the
+ * other says the attempt was made and SharedOS no longer claims an answer for
+ * it.
  *
  * Escalation was among these and is not any more. A call to the affordance still
  * leaves over MCP rather than over a driver's decision channel, so the turn's
@@ -520,6 +701,12 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
  * record's metadata.
  */
 export function mcpHarnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
+  if (move.kind === "escalation_refused") {
+    return {
+      unsupported:
+        "the MCP runtime settles `escalate` only from a call to the catalogued affordance, which an ungranted turn does not serve; the harness has no outcome of its own to return",
+    };
+  }
   const unreachable = new Map<string, string>();
 
   for (const attempt of move.attempts) {
@@ -610,50 +797,21 @@ export interface ModelColumnOptions {
 }
 
 /**
- * A model API in the delegate seat, with no vendor between it and the kernel.
- *
- * The fourth thing a column can leave out, and the first that is not a piece of
- * plumbing. A scripted column leaves out the transport. A live CLI column
- * leaves out the catalogue. An MCP column leaves out neither but hands the turn
- * loop to the vendor. This one leaves out the vendor: `StandardRuntime` owns
- * the loop, the permission-filtered catalogue is rendered straight into the
- * model's own tool-call shape, and every call the model asks for is
- * re-authorized by the kernel.
- *
- * That separates two things every other live column confounds -- what the model
- * does, and what the vendor's scaffolding makes the model do. It is the axis the
- * manifest otherwise leaves unmeasured, and naming it is the point of the
- * column; without that it reads as a redundant fifth sample.
- *
- * It is an addition to the scripted column and never a replacement for it, for
- * a reason worth stating plainly. The scripted adversary is the reference:
- * every declared attempt is issued, in order, every run, which is what makes
- * "did the kernel refuse this the same way?" a question the other columns can
- * be asked. A model chooses. Point one at the same rows and the rows a scripted
- * driver carries alone -- an uncatalogued name, a call past the budget -- are
- * simply not attempted, and the cells report `not exercised` rather than
- * `pass`. Replacing the reference with this column would put `pnpm
- * conformance:check` behind a model's choices.
- *
- * Graded under {@link modelLimits}, which unlike {@link mcpHarnessLimits}
- * declares nothing about uncatalogued names, and the difference is structural
- * rather than incidental. An MCP client refuses a name absent from its
- * registered catalogue before the call is sent, so `tool_unavailable` is
- * genuinely out of that column's reach. Nothing filters this one: the driver
- * passes back whatever name the model emitted, so an uncatalogued call can be
- * issued here -- and in the first live run one was, which is a result the
- * manifest would have suppressed had the column declared the row unreachable.
- */
-/**
  * What a model in the delegate seat cannot be tested on, and why.
+ *
+ * Shared by the scripted and the live model column, because every limit here
+ * is the driver's rather than the provider's: a transcript in the seat is
+ * handed exactly what a model is, and can reach exactly as far.
  *
  * Close to {@link harnessLimits} but not the same claims, and the differences
  * are worth keeping rather than sharing one function and one wording.
  *
  * The step ceiling is identical, and identical for the identical reason: this
  * column runs inside `StandardRuntime` too, whose loop stops at `maxSteps`, so
- * a call past the budget is never issued and reporting the row failed would
- * blame the kernel for a limit the runtime honoured first.
+ * a call past the budget is the driver's to make. Where a condition requires
+ * declared steps the driver names the step itself, and the attempt is marked
+ * `driverIssued` so the cell reads `pass (driver)` rather than as the model's
+ * choice.
  *
  * The inspection reason reads differently once no vendor is involved. A harness
  * cannot enumerate runtime surfaces because it is on the far side of a wire; a
@@ -673,6 +831,12 @@ export interface ModelColumnOptions {
  * would suppress a real result -- and in the first live run it did produce one.
  */
 export function modelLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
+  if (move.kind === "escalation_refused") {
+    return {
+      unsupported:
+        "the model driver honours `escalate` only when the catalogue offers it; an ask the model makes on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn",
+    };
+  }
   const unreachable = new Map<string, string>();
   const driverIssued = new Map<string, string>();
 
@@ -697,6 +861,44 @@ export function modelLimits(move: AttackMove, condition: ConformanceCondition): 
   };
 }
 
+/**
+ * A model API in the delegate seat, with no vendor between it and the kernel.
+ *
+ * The fourth thing a column can leave out, and the first that is not a piece of
+ * plumbing. A scripted column leaves out the transport. A live CLI column
+ * leaves out the catalogue. An MCP column leaves out neither but hands the turn
+ * loop to the vendor. This one leaves out the vendor: `StandardRuntime` owns
+ * the loop, the permission-filtered catalogue is rendered straight into the
+ * model's own tool-call shape, and every call the model asks for is
+ * re-authorized by the kernel.
+ *
+ * That separates two things every other live column confounds -- what the model
+ * does, and what the vendor's scaffolding makes the model do. It is the axis the
+ * manifest otherwise leaves unmeasured, and naming it is the point of the
+ * column; without that it reads as a redundant fifth sample.
+ *
+ * It is an addition to the scripted column and never a replacement for it, for
+ * a reason worth stating plainly. The scripted adversary is the reference:
+ * every declared attempt is issued, in order, every run, which is what makes
+ * "did the kernel refuse this the same way?" a question the other columns can
+ * be asked. A model chooses. Point one at the same rows and an attack the model
+ * does not choose to make is simply not attempted, and the cell reports `not
+ * exercised` rather than `pass`; the step past the budget is the one attempt
+ * the driver makes on the model's behalf, and it is marked so the cell reads
+ * `pass (driver)`. Replacing the reference with this column would put `pnpm
+ * conformance:check` behind a model's choices. Its scripted mode,
+ * {@link MODEL_SCRIPTED_COLUMN}, is what the manifest commits instead: the same
+ * driver with a transcript where the provider would be.
+ *
+ * Graded under {@link modelLimits}, which unlike {@link mcpHarnessLimits}
+ * declares nothing about uncatalogued names, and the difference is structural
+ * rather than incidental. An MCP client refuses a name absent from its
+ * registered catalogue before the call is sent, so `tool_unavailable` is
+ * genuinely out of that column's reach. Nothing filters this one: the driver
+ * passes back whatever name the model emitted, so an uncatalogued call can be
+ * issued here -- and in the first live run one was, which is a result the
+ * manifest would have suppressed had the column declared the row unreachable.
+ */
 export function modelColumn(options: ModelColumnOptions): RuntimeColumn {
   return Object.freeze({
     id: options.id,

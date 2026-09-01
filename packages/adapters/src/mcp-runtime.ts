@@ -6,7 +6,6 @@ import { createInterface } from "node:readline";
 
 import type {
   JsonObject,
-  ProtocolError,
   RuntimeManifest,
   RuntimeTurnOutcome,
   ToolCall,
@@ -14,7 +13,9 @@ import type {
 } from "@aicoo/sharedos-contracts";
 import {
   McpToolServer,
+  SHAREDOS_MCP_SERVER_NAME,
   claudeAgentSdkMcpOptions,
+  codexMcpServerSettings,
   harnessMcpConfigFile,
   openToolBridge,
   type BridgeToolInvoker,
@@ -24,7 +25,7 @@ import {
 } from "@aicoo/sharedos-mcp";
 import { createStreamableHttpMcpServer } from "@aicoo/sharedos-mcp/node";
 import {
-  ESCALATION_TOOL_NAME,
+  escalationOffered,
   escalationRequest,
   type RuntimeHost,
   type RuntimePlugin,
@@ -32,10 +33,15 @@ import {
 } from "@aicoo/sharedos-runtime";
 
 import type { HarnessProtocol } from "./harness.js";
+import { CLAUDE_CODE_HARNESS_ID } from "./claude-code/index.js";
 import { claudeCodeProtocol } from "./claude-code/protocol.js";
+import { CODEX_HARNESS_ID } from "./codex/index.js";
 import { codexProtocol } from "./codex/protocol.js";
+import { DEEPSEEK_HARNESS_ID } from "./deepseek/index.js";
 import { deepseekProtocol } from "./deepseek/protocol.js";
+import { PI_HARNESS_ID } from "./pi/index.js";
 import { piProtocol } from "./pi/protocol.js";
+import { defaultPrompt, failed } from "./internal.js";
 
 /**
  * A vendor harness run natively, against the SharedOS catalogue over MCP.
@@ -197,7 +203,10 @@ export function createMcpHarnessRuntime(
       });
       const server = new McpToolServer({
         invoker: bridge,
-        serverInfo: { name: spec.serverName ?? "sharedos", version: manifest.version },
+        serverInfo: {
+          name: spec.serverName ?? SHAREDOS_MCP_SERVER_NAME,
+          version: manifest.version,
+        },
         ...(options.instructions === undefined ? {} : { instructions: options.instructions }),
       });
 
@@ -212,7 +221,7 @@ export function createMcpHarnessRuntime(
       });
       const connection: HarnessMcpConnection = {
         url: http.url,
-        name: spec.serverName ?? "sharedos",
+        name: spec.serverName ?? SHAREDOS_MCP_SERVER_NAME,
         ...(options.token === undefined ? {} : { token: options.token }),
       };
 
@@ -287,7 +296,7 @@ class EscalationLatch implements BridgeToolInvoker {
     // without holding it is passed through and refused `tool_unavailable` like
     // any other unpublished name -- the same rule both native drivers apply
     // before ending a turn on the name.
-    this.#offered = request.tools.some((tool) => tool.name === ESCALATION_TOOL_NAME);
+    this.#offered = escalationOffered(request.tools);
   }
 
   async invokeTool(call: ToolCall, options?: { readonly step?: number }): Promise<ToolResult> {
@@ -420,7 +429,7 @@ function harnessMetadata(
   return {
     harness: spec.id,
     toolshare: "mcp",
-    mcpServer: connection.name ?? "sharedos",
+    mcpServer: connection.name ?? SHAREDOS_MCP_SERVER_NAME,
     ...(catalogHash === undefined ? {} : { catalogHash }),
     // The model the run declared, carried into the execution record so a
     // multi-harness comparison can be checked rather than assumed. It is a
@@ -444,9 +453,7 @@ async function runHarness(
   signal: AbortSignal,
   options: McpHarnessRuntimeOptions,
 ): Promise<RuntimeTurnOutcome> {
-  if (signal.aborted) {
-    return fail("turn_cancelled", "The turn was cancelled before the harness started.");
-  }
+  signal.throwIfAborted();
 
   const child = spawn(launch.command, [...launch.args], {
     ...(launch.cwd === undefined ? {} : { cwd: launch.cwd }),
@@ -565,11 +572,9 @@ async function runHarness(
   closeStdin();
   signal.removeEventListener("abort", kill);
 
-  if (signal.aborted) {
-    return fail("turn_cancelled", "The turn was cancelled while the harness was running.");
-  }
+  signal.throwIfAborted();
   if (exit.error !== undefined) {
-    return fail("harness_not_started", `The ${spec.id} CLI could not be started.`);
+    return failed("harness_not_started", `The ${spec.id} CLI could not be started.`);
   }
   if (terminal !== undefined) {
     return terminal;
@@ -580,29 +585,10 @@ async function runHarness(
     // as a failure the harness never declared.
     return { type: "complete", output: { text: messages.join("\n") } };
   }
-  return fail(
+  return failed(
     "harness_exited_without_outcome",
     `The ${spec.id} CLI exited with code ${String(exit.code)} without completing the turn.`,
   );
-}
-
-function fail(code: string, message: string): RuntimeTurnOutcome {
-  const error: ProtocolError = { code, message, retryable: false };
-  return { type: "fail", error };
-}
-
-function defaultPrompt(request: RuntimeTurnRequest): string {
-  const payload = request.message.payload;
-  if (typeof payload === "string") {
-    return payload;
-  }
-  if (payload !== null && typeof payload === "object" && !Array.isArray(payload)) {
-    const text = (payload as JsonObject)["text"];
-    if (typeof text === "string") {
-      return text;
-    }
-  }
-  return JSON.stringify(payload);
 }
 
 /** Two minutes of silence from a session harness is a stall, not a long step. */
@@ -627,22 +613,22 @@ export const MCP_ADAPTER_VERSION = "0.1.0-alpha.3";
  * one of those calls is re-authorized by the kernel.
  */
 export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
-  id: "claude-code",
+  id: CLAUDE_CODE_HARNESS_ID,
   manifest: Object.freeze({
     id: "sharedos.claude-code.mcp",
     version: MCP_ADAPTER_VERSION,
     protocolVersion: "1",
     metadata: {
       package: "@aicoo/sharedos-adapters",
-      harness: "claude-code",
+      harness: CLAUDE_CODE_HARNESS_ID,
       toolshare: "mcp",
       executionModel: "native-harness-loop",
     },
   }) as RuntimeManifest,
   protocol: claudeCodeProtocol,
-  serverName: "sharedos",
+  serverName: SHAREDOS_MCP_SERVER_NAME,
   configFiles: (connection) => [harnessMcpConfigFile("claude-code", connection)],
-  launch: ({ prompt, workspace, configPaths }) => ({
+  launch: ({ prompt, workspace, configPaths, connection }) => ({
     command: "claude",
     args: [
       "-p",
@@ -654,7 +640,7 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
       configPaths[".mcp.json"] ?? join(workspace, ".mcp.json"),
       "--strict-mcp-config",
       "--allowedTools",
-      "mcp__sharedos",
+      `mcp__${connection.name ?? SHAREDOS_MCP_SERVER_NAME}`,
       "--disallowedTools",
       "Bash,Edit,Write,Read,Glob,Grep,NotebookEdit,Task,WebFetch,WebSearch,TodoWrite",
       "--max-turns",
@@ -674,49 +660,40 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
  * look like a harness that declined to use the catalogue.
  */
 export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
-  id: "codex",
+  id: CODEX_HARNESS_ID,
   manifest: Object.freeze({
     id: "sharedos.codex.mcp",
     version: MCP_ADAPTER_VERSION,
     protocolVersion: "1",
     metadata: {
       package: "@aicoo/sharedos-adapters",
-      harness: "codex",
+      harness: CODEX_HARNESS_ID,
       toolshare: "mcp",
       executionModel: "native-harness-loop",
     },
   }) as RuntimeManifest,
   protocol: codexProtocol,
-  serverName: "sharedos",
-  configFiles: (connection) => [harnessMcpConfigFile("codex", connection)],
+  serverName: SHAREDOS_MCP_SERVER_NAME,
   launch: ({ prompt, workspace, connection }) => ({
     command: "codex",
     args: [
       "exec",
       "--json",
       "--skip-git-repo-check",
-      "-c",
-      `mcp_servers.sharedos.url=${JSON.stringify(connection.url)}`,
-      "-c",
-      "mcp_servers.sharedos.required=true",
-      "-c",
-      "mcp_servers.sharedos.tool_timeout_sec=120",
-      // The same decision as Claude Code's `--allowedTools`, and not an
-      // authorization one for the same reason.
-      //
-      // Codex gates MCP calls itself, and its default mode -- `auto` -- decides
-      // from the tool's MCP `readOnlyHint`: read-only tools run, everything else
-      // asks a human. `codex exec` has no human, so the ask is refused inside
-      // Codex with `approval policy is never` and the call never reaches the
-      // bridge. The row then reads as a kernel that refused every write, when
-      // the kernel was never consulted -- the one failure mode this whole column
-      // exists to avoid.
-      //
-      // `approve` auto-approves this server's tools. It is scoped to this one
-      // server, leaves Codex's shell sandbox alone, and hands the decision back
-      // to the only thing that should be making it: `RuntimeHost.invokeTool`.
-      "-c",
-      'mcp_servers.sharedos.default_tools_approval_mode="approve"',
+      // One source with `codexMcpConfig`: the same settings, as overrides, so a
+      // launch and an emitted `config.toml` cannot disagree. Why each setting is
+      // there -- `required`, and the approval mode that keeps a run with no
+      // human from refusing every write inside Codex -- is on
+      // `codexMcpServerSettings`. The bearer token is the one setting left to
+      // the file: a command line is readable by every local process, so a
+      // bridge that requires a token is reached through the `config.toml`
+      // `codexMcpConfig` emits, which this launch does not write.
+      ...codexMcpServerSettings(connection)
+        .filter(([key]) => key !== "bearer_token")
+        .flatMap(([key, value]) => [
+          "-c",
+          `mcp_servers.${connection.name ?? SHAREDOS_MCP_SERVER_NAME}.${key}=${value}`,
+        ]),
       prompt,
     ],
     cwd: workspace,
@@ -737,20 +714,20 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
  * should materialise for itself.
  */
 export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
-  id: "deepseek",
+  id: DEEPSEEK_HARNESS_ID,
   manifest: Object.freeze({
     id: "sharedos.deepseek.mcp",
     version: MCP_ADAPTER_VERSION,
     protocolVersion: "1",
     metadata: {
       package: "@aicoo/sharedos-adapters",
-      harness: "deepseek",
+      harness: DEEPSEEK_HARNESS_ID,
       toolshare: "mcp",
       executionModel: "native-harness-loop",
     },
   }) as RuntimeManifest,
   protocol: deepseekProtocol,
-  serverName: "sharedos",
+  serverName: SHAREDOS_MCP_SERVER_NAME,
   configFiles: (connection) => [harnessMcpConfigFile("deepseek", connection)],
   launch: ({ prompt, workspace, configPaths }) => ({
     command: process.env["DSH_COMMAND"] ?? "dsh",
@@ -790,14 +767,14 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
  * the one whose frames {@link piProtocol} reads.
  */
 export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
-  id: "pi",
+  id: PI_HARNESS_ID,
   manifest: Object.freeze({
     id: "sharedos.pi.mcp",
     version: MCP_ADAPTER_VERSION,
     protocolVersion: "1",
     metadata: {
       package: "@aicoo/sharedos-adapters",
-      harness: "pi",
+      harness: PI_HARNESS_ID,
       toolshare: "mcp",
       executionModel: "native-harness-loop",
       /** Named, not implied: Pi has no MCP client of its own. */
@@ -806,7 +783,7 @@ export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
     },
   }) as RuntimeManifest,
   protocol: piProtocol,
-  serverName: "sharedos",
+  serverName: SHAREDOS_MCP_SERVER_NAME,
   configFiles: (connection) => [harnessMcpConfigFile("pi", connection)],
   launch: ({ prompt, workspace, request }) => ({
     command: "pi",
@@ -817,12 +794,5 @@ export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
     keepStdinOpen: true,
   }),
 });
-
-export const MCP_HARNESSES: readonly McpHarnessSpec[] = Object.freeze([
-  CLAUDE_CODE_MCP_HARNESS,
-  CODEX_MCP_HARNESS,
-  DEEPSEEK_MCP_HARNESS,
-  PI_MCP_HARNESS,
-]);
 
 export { claudeAgentSdkMcpOptions };

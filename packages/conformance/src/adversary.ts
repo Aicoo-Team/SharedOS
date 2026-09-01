@@ -55,6 +55,7 @@ export const ATTACK_MOVE_KINDS = [
   "broker_ungranted",
   "broker_out_of_scope",
   "escalation_recorded",
+  "escalation_refused",
   "record_completeness",
   "typed_governed_views",
   "replay_freshness",
@@ -239,6 +240,7 @@ export const AttemptReceiptSchema = z
     callId: IdentifierSchema.optional(),
     /** Argument keys only. Receipts carry no argument values, ever. */
     argumentKeys: z.array(IdentifierSchema).max(64),
+    /** Never assigned by any move today; see `docs/open-items.md`. */
     forgedGrantId: IdentifierSchema.optional(),
     observed: AttemptStatusSchema.optional(),
     reasonCode: IdentifierSchema.optional(),

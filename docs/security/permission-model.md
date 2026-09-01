@@ -43,7 +43,8 @@ A capability binds these fields together:
 - exact or descendant scope.
 
 Canonical resource namespaces include `files`, `sharedos.messaging`,
-`sharedos.execution`, and host-registered external tool namespaces. A file path
+`sharedos.execution`, `sharedos` — the kernel's own affordances, today only
+`["escalation"]` — and host-registered external tool namespaces. A file path
 identifies the smallest stable resource scope, such as
 `["Memory", "project-x"]`, `["Workspace", "public", "summary.md"]`, or a
 single file. Messaging uses a structured recipient address instead.
@@ -54,8 +55,17 @@ in another world even if its resource namespace, path, and owner text are the
 same.
 
 Writes are never implied by reads. Search is never implied by list. Registering
-a tool does not imply permission to discover or invoke it. Wildcard actions, if
-enabled by a host, require the same complete resource and constraint match.
+a tool does not imply permission to discover or invoke it.
+
+One action is special. A capability whose `actions` lists the literal `"*"`
+covers every action on its resource. There is no switch that enables it: a host
+enables it by issuing such a grant, and should do so rarely, because ADR 0005
+keeps create, replace, append, and delete distinct precisely so that authority
+can be narrower than everything. It widens only the action test — resource,
+owner, scope, purpose, time window, and bounded use are matched exactly as for
+a named action — and delegation treats it as the widest action set: a derived
+grant may carry `"*"` only when its parent does. Nothing else expands;
+`snapshot:*` is an ordinary string that matches no action.
 
 ## Grant shape and constraints
 
@@ -76,7 +86,9 @@ through a configured verifier. An HTTP caller cannot make a request authorized
 by attaching an arbitrary grant object to its payload.
 
 `CapabilityRequest` expresses requested authority for a consent workflow. It is
-not usable authority until an eligible issuer turns it into a trusted grant.
+not usable authority until an eligible issuer turns it into a trusted grant. No
+SharedOS port accepts one yet; the issuing workflow is the host's today (see
+[open items](../open-items.md)).
 
 ## Where authority comes from
 
@@ -399,8 +411,9 @@ additionally caches inside its `GrantSource` owns that staleness window on top.
 
 The per-operation path is retained behind `MID_TURN_AUTHORITY_REFRESH`. What
 remains behind it is one behaviour -- observing a store edit without waiting for
-the next turn -- and no open question. See
-`docs/adr/0010-per-turn-authority.md`.
+the next turn -- and no open question about what it governs; whether the fuse
+becomes a kernel option is an open item (see [open items](../open-items.md)).
+See `docs/adr/0010-per-turn-authority.md`.
 
 ## Audit requirements
 
@@ -430,7 +443,7 @@ Any permission-related change must answer:
 - Where is the authenticated actor established?
 - How is the world/tenant boundary bound and checked?
 - Can two grants accidentally combine into broader authority?
-- Is expiry/revocation checked at the side effect?
+- Is expiry checked at the side effect, and revocation at the turn's admission?
 - Is bounded use atomic across instances?
 - Are discovery and invocation both gated?
 - Are allow and deny paths tested?

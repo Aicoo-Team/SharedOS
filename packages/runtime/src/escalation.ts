@@ -1,4 +1,5 @@
 import { JsonObjectSchema, type JsonObject, type ToolDefinition } from "@aicoo/sharedos-contracts";
+import type { ToolHandler } from "@aicoo/sharedos-core";
 
 export const ESCALATION_TOOL_NAMESPACE = "sharedos";
 export const ESCALATION_TOOL_NAME = "sharedos.escalate";
@@ -67,6 +68,43 @@ export const ESCALATION_TOOL_DEFINITION: ToolDefinition = Object.freeze({
   },
   annotations: { readOnly: true },
 });
+
+/**
+ * The handler a host registers so the affordance is catalogued.
+ *
+ * It exists to put {@link ESCALATION_TOOL_DEFINITION} in the permission-filtered
+ * catalogue, where an agent sees it only when its context enables the
+ * `sharedos` tool namespace and it holds a grant over `sharedos` /
+ * `["escalation"]` / `request`. It is never meant to run: a driver whose turn's
+ * catalogue offers it recognises the name (see {@link escalationRequest}) and
+ * ends the turn `escalated` instead of forwarding a call. If a driver forwards it anyway, the handler
+ * fails with `escalation_not_terminated` rather than succeeding, because a call
+ * that quietly succeeded would leave a record of an escalation tool that ran
+ * and a turn that completed normally -- the confusion the affordance exists to
+ * remove.
+ *
+ * Arguments pass through unparsed on purpose. A malformed forwarded call is
+ * still a forwarded call, and reporting it as `invalid_tool_arguments` would
+ * record the wrong defect.
+ */
+export function createEscalationTool(): ToolHandler {
+  return {
+    definition: ESCALATION_TOOL_DEFINITION,
+    parseArguments: (arguments_) => arguments_,
+    invoke: (context, call) =>
+      Promise.resolve({
+        callId: call.id,
+        tool: call.tool,
+        status: "failed",
+        error: {
+          code: "escalation_not_terminated",
+          message:
+            "The escalation affordance ends a turn and is never executed; this driver forwarded it as a tool call.",
+        },
+        completedAt: context.now,
+      }),
+  };
+}
 
 /**
  * Read an escalation out of a call a driver is about to make, if that is what it is.
@@ -149,4 +187,15 @@ export function escalationReason(value: unknown): string | undefined {
   return trimmed.length === 0 || trimmed.length > ESCALATION_REASON_MAX_LENGTH
     ? undefined
     : trimmed;
+}
+
+/**
+ * Whether a turn's catalogue offers the affordance.
+ *
+ * The gate on honouring the name (ADR 0017, "The catalogue gates the name"):
+ * a driver reads it from the same `tools` it offered the seat's occupant, and
+ * the executor from the catalogue the turn was actually served.
+ */
+export function escalationOffered(tools: ReadonlyArray<{ readonly name: string }>): boolean {
+  return tools.some((tool) => tool.name === ESCALATION_TOOL_NAME);
 }

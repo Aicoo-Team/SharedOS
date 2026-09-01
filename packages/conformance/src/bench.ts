@@ -28,6 +28,13 @@ import {
   type AttackMove,
 } from "./adversary.js";
 import { assembleExecutionRecord } from "./assemble.js";
+import {
+  CLAUDE_CODE_SCRIPTED_COLUMN,
+  CODEX_SCRIPTED_COLUMN,
+  DEEPSEEK_SCRIPTED_COLUMN,
+  ADVERSARY_COLUMN,
+  PI_SCRIPTED_COLUMN,
+} from "./columns.js";
 import { hashExperimentInputs } from "./hashing.js";
 import type { ExecutionRecord } from "./record.js";
 import { SHAREDOS_VERSION } from "./runner.js";
@@ -49,9 +56,11 @@ import {
  */
 export const BENCH_VERSION = "1";
 
-/** How many attempts the bench workload issues per turn. */
+/** What the bench drives per turn. */
 export interface BenchWorkload {
+  /** Conformance case ids, as `docs/conformance/kernel-conformance.json` records them. */
   readonly caseIds: readonly string[];
+  /** Attempts a harness can actually put on a wire, not attempts declared. */
   readonly callsPerTurn: number;
   readonly warmupTurns: number;
   readonly measuredTurns: number;
@@ -310,14 +319,19 @@ export function attributable(
 export function benchMoves(
   cases: readonly ConformanceCase[] = CANONICAL_CONFORMANCE_CASES,
 ): readonly AttackMove[] {
-  return cases
-    .filter(
-      (kase) =>
-        kase.notImplemented === undefined &&
-        kase.move.terminal === undefined &&
-        kase.conditions.some((condition) => condition.id === "baseline"),
-    )
-    .map((kase) => kase.move);
+  return benchCases(cases).map((kase) => kase.move);
+}
+
+/** The cases those moves come from: implemented, non-terminal, and run under the baseline. */
+export function benchCases(
+  cases: readonly ConformanceCase[] = CANONICAL_CONFORMANCE_CASES,
+): readonly ConformanceCase[] {
+  return cases.filter(
+    (kase) =>
+      kase.notImplemented === undefined &&
+      kase.move.terminal === undefined &&
+      kase.conditions.some((condition) => condition.id === "baseline"),
+  );
 }
 
 /** The attempts of those moves a harness can actually put on a wire. */
@@ -359,17 +373,7 @@ export interface TurnOutcome {
   readonly auditEvents: number;
 }
 
-/**
- * One measured turn, and everything about it that is not a duration.
- *
- * The byte figures are differences rather than sums: the marginal cost of a
- * call is what the record loses when its operations and events are removed, and
- * the marginal cost of a decision is what the record and the audit stream lose
- * when the decisions are. Differencing is used because the members do not
- * partition the serialization -- separators, keys, and array structure belong to
- * no single member -- and a sum over members would quietly under-report every
- * row by the punctuation between them.
- */
+/** One measured turn; the byte figures are explained on {@link TurnOutcome}. */
 async function runTurn(
   world: ConformanceWorld,
   runtime: RuntimePlugin,
@@ -829,22 +833,37 @@ export async function runTranslationPath(
   return measures;
 }
 
-/** The four scripted adapters, paired with the frames that drive them. */
+/**
+ * The four scripted adapters, paired with the frames that drive them.
+ *
+ * Ids and labels are the scripted columns' own, so a column is named the same
+ * way here as in the conformance manifest.
+ */
 export const TRANSLATION_SUBJECTS: readonly TranslationSubject[] = Object.freeze([
-  { columnId: "codex-scripted", label: "Codex", protocol: codexProtocol, writer: codexFrameWriter },
   {
-    columnId: "claude-code-scripted",
-    label: "CC",
+    columnId: CODEX_SCRIPTED_COLUMN.id,
+    label: CODEX_SCRIPTED_COLUMN.label,
+    protocol: codexProtocol,
+    writer: codexFrameWriter,
+  },
+  {
+    columnId: CLAUDE_CODE_SCRIPTED_COLUMN.id,
+    label: CLAUDE_CODE_SCRIPTED_COLUMN.label,
     protocol: claudeCodeProtocol,
     writer: claudeCodeFrameWriter,
   },
   {
-    columnId: "deepseek-scripted",
-    label: "DS",
+    columnId: DEEPSEEK_SCRIPTED_COLUMN.id,
+    label: DEEPSEEK_SCRIPTED_COLUMN.label,
     protocol: deepseekProtocol,
     writer: deepseekFrameWriter,
   },
-  { columnId: "pi-scripted", label: "Pi", protocol: piProtocol, writer: piFrameWriter },
+  {
+    columnId: PI_SCRIPTED_COLUMN.id,
+    label: PI_SCRIPTED_COLUMN.label,
+    protocol: piProtocol,
+    writer: piFrameWriter,
+  },
 ]);
 
 /** {@link BenchOptions} with every default already applied. */
@@ -870,7 +889,8 @@ export async function runSystemsCostBench(options: BenchOptions = {}): Promise<S
     warmupTurns: options.warmupTurns ?? DEFAULT_OPTIONS.warmupTurns,
     measuredTurns: options.measuredTurns ?? DEFAULT_OPTIONS.measuredTurns,
   };
-  const moves = benchMoves();
+  const cases = benchCases();
+  const moves = cases.map((kase) => kase.move);
   const attempts = benchAttempts(moves);
 
   const inProcess = await runInProcessPath(moves, settings);
@@ -908,7 +928,7 @@ export async function runSystemsCostBench(options: BenchOptions = {}): Promise<S
     benchVersion: BENCH_VERSION,
     sharedOsVersion: SHAREDOS_VERSION,
     workload: {
-      caseIds: moves.map(({ id }) => id),
+      caseIds: cases.map(({ id }) => id),
       callsPerTurn: attempts.length,
       warmupTurns: settings.warmupTurns,
       measuredTurns: settings.measuredTurns,
@@ -1119,7 +1139,7 @@ export function renderSystemsCostReport(report: SystemsCostReport): string {
     "",
     `- SharedOS: \`${report.sharedOsVersion}\``,
     `- Measurement rules: version \`${report.benchVersion}\``,
-    `- Workload: ${report.workload.callsPerTurn} declared attempts per turn, ` +
+    `- Workload: ${report.workload.callsPerTurn} issuable attempts per turn, ` +
       `${report.workload.measuredTurns} measured turns after ${report.workload.warmupTurns} discarded`,
     `- Cases: ${report.workload.caseIds.map((id) => `\`${id}\``).join(", ")}`,
     ...(report.environment === undefined
@@ -1201,13 +1221,16 @@ export function renderSystemsCostReport(report: SystemsCostReport): string {
   lines.push("turn rather than once per call and is outside these figures.", "");
   lines.push("| Column | Parse + translate per call | Catalogue width | n |");
   lines.push("| --- | --- | --- | --- |");
-  lines.push(`| Std | — | ${report.structural.catalogueWidth} | — |`);
+  lines.push(`| ${ADVERSARY_COLUMN.label} | — | ${report.structural.catalogueWidth} | — |`);
   for (const entry of report.translation) {
     lines.push(
       `| ${entry.label} | ${micro(entry.latency.p50Ms)} | ${entry.catalogueWidth} | ${entry.latency.n} |`,
     );
   }
-  lines.push("", "Std's `—` is the absence of a translation layer, not a pending measurement.");
+  lines.push(
+    "",
+    `${ADVERSARY_COLUMN.label}'s \`—\` is the absence of a translation layer, not a pending measurement.`,
+  );
   lines.push("");
   lines.push("The width is the catalogue SharedOS served. A harness that republishes it");
   lines.push("behind a proxy tool of its own -- Pi's installed extension does -- changes what");
