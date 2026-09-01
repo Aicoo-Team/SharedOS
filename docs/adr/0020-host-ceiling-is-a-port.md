@@ -139,6 +139,13 @@ A host with request-independent policy may ignore `PolicySource` entirely and
 close over its own state; the port exists so that a host whose policy lives in a
 database is not forced back outside the kernel by the signature.
 
+`PolicySource` is **not yet implemented**. The implementing branch lands
+`HostCeiling` first, with `narrow` taking the decision, request, and context and
+the host closing over state it loads and refreshes on its own schedule; the
+per-turn load moves into the kernel — and the `policy` argument arrives with
+it — in a follow-up on the same branch. `docs/open-items.md` carries the row
+until it does.
+
 **The signature is synchronous, and that is the enforcement.** "Deterministic
 and cheap" cannot be asserted in prose and then relied on. A synchronous return
 cannot await a network call or a model call, so the constraint is carried by the
@@ -152,14 +159,18 @@ machine is, so the same ceiling could pass on one host and fail on another.
   that does not carry the `matchedGrantId` it was handed is treated as a
   malfunction and fails closed, so widening is not expressible rather than
   merely forbidden.
-- Its denial carries `policy_denied`. The code names **what** was refused, not
-  **who** refused it: ADR 0012 removed `tool_not_available` for exactly that
-  conflation and settled that "a code is what was refused; a source is who
-  refused it". Which component refused is `OperationRecord.source`, and that is
-  the only place it lives — a parallel copy in decision metadata would be the
-  same fact in two shapes.
-- A throw fails closed and is recorded as an infrastructure denial, consistent
-  with every other unavailable trusted component.
+- Its denial carries `host_policy_denied`. The name is the constraint that
+  refused — host policy, the one input to this decision no grant expresses —
+  not the component that refused, so ADR 0012's rule that "a code is what was
+  refused; a source is who refused it" holds: which component refused is
+  `OperationRecord.source`, and that is the only place it lives — a parallel
+  copy in decision metadata would be the same fact in two shapes. The prefix
+  keeps the pair legible: `host_policy_denied` is the deliberate refusal and
+  `host_policy_unavailable` the broken port, one line apart in every table and
+  separated by `failClosed`, not by guesswork.
+- A throw fails closed and is recorded as `host_policy_unavailable`, an
+  infrastructure denial consistent with every other unavailable trusted
+  component.
 - It is optional. A kernel constructed without one behaves exactly as it does
   today.
 
@@ -174,14 +185,14 @@ as a deployment where nobody was granted anything.
 
 ### Denial-rate arithmetic
 
-`policy_denied` is **its own bucket inside policy denials** — not an
+`host_policy_denied` is **its own bucket inside policy denials** — not an
 infrastructure denial, and not merged with `no_matching_grant`. Today
 `INFRASTRUCTURE_DENIAL_REASONS` is the only split the vocabulary supports, which
 is why a policy refusal currently has nowhere to go. The three-way shape is:
 
 ```text
 denials = infrastructure (failClosed)
-        + policy { no_matching_grant, grant_exhausted, policy_denied, … }
+        + policy { no_matching_grant, grant_exhausted, host_policy_denied, … }
 escalations are neither (ADR 0011)
 ```
 
@@ -225,7 +236,7 @@ belongs in ADR 0010's neighbourhood.
 `enabledToolNamespaces` carries two different things: the user's own settings
 choice, and organization policy. Split them by intent. The user's choice stays
 where it is; policy-driven namespace denial moves into the ceiling, where it
-produces a recorded `policy_denied` instead of a silent absence. Without the
+produces a recorded `host_policy_denied` instead of a silent absence. Without the
 split, the port covers one field while the same refusal keeps flowing through
 another.
 
@@ -237,7 +248,7 @@ with the same outcome vocabulary**. The port is added on top of that contract,
 not in place of it.
 
 **Net effect.** With only the port, a deployment gets one covered path, one
-still misattributed, one still silent — and a `policy_denied` count that reads
+still misattributed, one still silent — and a `host_policy_denied` count that reads
 as complete when it is not. All three follow-ons have to land for the class to
 actually close.
 

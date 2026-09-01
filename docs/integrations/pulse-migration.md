@@ -220,7 +220,7 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
   per-argument query, so no decision needs a database read.
 - Stop applying policy in the `GrantSource`. The `toolAccess.allowedTools`
   intersection moves to the ceiling, where a refusal is recorded as
-  `policy_denied` instead of reaching audit as `no_matching_grant`.
+  `host_policy_denied` instead of reaching audit as `no_matching_grant`.
 - Implement `HostCeiling` over the remaining judgment checks so they stop being
   a second enforcement point. Separate the three things currently bundled as
   "judgment", because they do not belong in the same place:
