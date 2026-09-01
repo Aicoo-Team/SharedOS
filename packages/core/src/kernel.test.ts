@@ -2174,3 +2174,109 @@ describe("SharedOSKernel host ceiling", () => {
     await expect(kernel.listTools(context())).resolves.toEqual([]);
   });
 });
+
+describe("SharedOSKernel audit routing", () => {
+  it("names the boundary and the cause on every tool refusal it records", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (e) => void events.push(e) } });
+    kernel.registerTool(successfulTool());
+
+    // Not registered, and the wire code cannot say which of the three this is.
+    await kernel.invokeTool(context(), { ...toolCall(), tool: "files.invented" });
+    // Registered, granted, but its namespace is off for this context.
+    await kernel.invokeTool({ ...context(), enabledToolNamespaces: [] }, toolCall());
+    // Registered and enabled, but no grant makes it discoverable.
+    await kernel.invokeTool(context(), toolCall());
+
+    const invoked = events.filter(({ type }) => type === "tool.invoked");
+    expect(invoked.map(({ reason }) => reason)).toEqual([
+      "tool_unavailable",
+      "tool_unavailable",
+      "tool_unavailable",
+    ]);
+    // One code on the wire, three situations in the trail. `errors.md` has
+    // promised this disambiguation all along and delivered it for one of them.
+    expect(invoked.map(({ metadata }) => metadata?.["cause"])).toEqual([
+      "not_registered",
+      "namespace_disabled",
+      "no_matching_grant",
+    ]);
+    expect(invoked.every(({ metadata }) => metadata?.["source"] === "kernel")).toBe(true);
+  });
+
+  it("records what a catalogue withheld, and why, without one event per tool", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (e) => void events.push(e) } });
+    kernel.registerTool(successfulTool());
+
+    await kernel.listTools({ ...context(), enabledToolNamespaces: [] });
+
+    const listed = events.filter(({ type }) => type === "tool.catalog.listed");
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?.metadata).toMatchObject({
+      visibleTools: [],
+      withheld: [{ tool: FILE_TOOL.name, cause: "namespace_disabled" }],
+    });
+  });
+
+  it("records how a turn ended, once, from the boundary that ended it", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (e) => void events.push(e) } });
+
+    await kernel.recordTurnEnd(context(), {
+      executionId: "exec-1",
+      status: "failed",
+      reasonCode: "runtime_failed",
+      endedBy: "envelope",
+    });
+
+    expect(events).toEqual([
+      expect.objectContaining({
+        type: "turn.ended",
+        outcome: "failed",
+        reason: "runtime_failed",
+        operationId: "exec-1",
+        metadata: { source: "envelope", endedBy: "envelope" },
+      }),
+    ]);
+  });
+
+  it("records a cancelled turn as failed with its own reason, adding no outcome", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (e) => void events.push(e) } });
+
+    await kernel.recordTurnEnd(context(), {
+      executionId: "exec-2",
+      status: "cancelled",
+      reasonCode: "turn_cancelled",
+    });
+
+    // `AuditOutcome` is a compatibility surface every host persists against, so
+    // a deadline is `failed` with a reason rather than a sixth value.
+    expect(events[0]).toMatchObject({ type: "turn.ended", outcome: "failed" });
+    expect(events[0]?.reason).toBe("turn_cancelled");
+  });
+
+  it("records a call the envelope refused as the attempted call it was", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (e) => void events.push(e) } });
+
+    await kernel.recordRefusedCall(context(), {
+      callId: "call-9",
+      tool: "files.delete",
+      reasonCode: "tool_unavailable",
+      cause: "not_offered",
+    });
+
+    // An agent naming a tool it was never offered is the clearest attempted
+    // violation the system produces, and it reached no audit sink at all.
+    expect(events[0]).toMatchObject({
+      type: "tool.invoked",
+      outcome: "denied",
+      reason: "tool_unavailable",
+      operationId: "call-9",
+      tool: "files.delete",
+      metadata: { source: "envelope", cause: "not_offered" },
+    });
+  });
+});

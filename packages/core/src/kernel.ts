@@ -116,6 +116,43 @@ export interface KernelOperationOptions {
   readonly signal?: AbortSignal;
 }
 
+/** How a turn finished, as the boundary that finished it saw it. */
+export interface TurnEndRecord {
+  readonly executionId: string;
+  readonly status: "succeeded" | "denied" | "failed" | "cancelled" | "escalated";
+  /** The terminal code, where the ending had one. */
+  readonly reasonCode?: string;
+  /**
+   * Who produced a failure: the envelope refusing, or the runtime reporting its
+   * own. The same distinction `ExecutionEvent` carries, kept because a record
+   * reader crediting enforcement must not credit a plugin's self-reported error.
+   */
+  readonly endedBy?: "envelope" | "runtime";
+}
+
+/** One call an enforcement boundary refused without invoking anything. */
+export interface RefusedCall {
+  readonly callId: string;
+  readonly tool: string;
+  readonly reasonCode: string;
+  /** Which situation a coarse code was, where it covers several. */
+  readonly cause?: string;
+}
+
+/** What a `tool.invoked` event carries beyond the call and its result. */
+interface ToolResultAuditDetail {
+  readonly grantId?: string;
+  readonly requirement?: AuthorizationRequest;
+  /**
+   * Which situation a coarse refusal was, when the code covers several.
+   *
+   * `tool_unavailable` is deliberately one code over "not registered",
+   * "namespace disabled", and "not discoverable to you" so the caller learns it
+   * cannot use the tool and not which. An audit reader is not the caller.
+   */
+  readonly cause?: string;
+}
+
 export interface EscalationOptions extends KernelOperationOptions {
   /**
    * The authority this escalation is asking for.
@@ -355,6 +392,87 @@ export class SharedOSKernel {
     return parsed.data;
   }
 
+  /**
+   * Record how a turn ended, from the boundary that ended it.
+   *
+   * The envelope owns turn termination and, until this existed, owned no audit
+   * at all: a turn that started, completed, failed, or was cancelled left
+   * nothing in the trail, so a host reading audit could not bound a turn or
+   * join a set of tool calls to the one that made them beyond `traceId`. It is
+   * called through the kernel rather than from an `AuditSink` of the envelope's
+   * own, because one sink passed in two places is one sink a host can forget to
+   * pass twice -- and the failure mode of forgetting is a turn that enforces
+   * correctly and records nothing (ADR 0021).
+   *
+   * One event, at the terminal. Not five: a lifecycle event per transition
+   * would triple the audit volume of every successful turn to say nothing more,
+   * and a `turn.denied` would double-count against the `authorization.checked`
+   * {@link admitTurn} already produced for the same refusal.
+   *
+   * A cancelled turn is recorded `failed` with reason `turn_cancelled` rather
+   * than gaining an `AuditOutcome` of its own. The outcome vocabulary is a
+   * compatibility surface every host persists against, and `reason` already
+   * separates a deadline from a defect.
+   */
+  async recordTurnEnd(
+    context: AccessContext,
+    turn: TurnEndRecord,
+    options: KernelOperationOptions = {},
+  ): Promise<void> {
+    throwIfAborted(options.signal);
+    context = structuredClone(context);
+    await this.#recordOutcome(
+      auditEvent(context, {
+        type: "turn.ended",
+        outcome: turn.status === "cancelled" ? "failed" : turn.status,
+        operationId: turn.executionId,
+        ...(turn.reasonCode === undefined ? {} : { reason: turn.reasonCode }),
+        metadata: {
+          source: "envelope",
+          ...(turn.endedBy === undefined ? {} : { endedBy: turn.endedBy }),
+          ...(turn.reasonCode !== undefined && isInfrastructureDenial(turn.reasonCode)
+            ? { failClosed: true }
+            : {}),
+        },
+      }),
+    );
+  }
+
+  /**
+   * Record a tool call the envelope refused before the kernel was asked.
+   *
+   * A name the turn's catalogue never offered, a spent step budget, a spent
+   * tool-call budget. These are attempted violations -- the guessed tool name is
+   * the clearest one the system produces -- and they reached no audit sink at
+   * all, because the boundary that refused them does not own one.
+   *
+   * Recorded as `tool.invoked`, because that is what it is: a tool call that was
+   * attempted and denied. `metadata.source` says `envelope`, which is the fact
+   * that stops being inferable the moment this method exists (ADR 0021).
+   */
+  async recordRefusedCall(
+    context: AccessContext,
+    call: RefusedCall,
+    options: KernelOperationOptions = {},
+  ): Promise<void> {
+    throwIfAborted(options.signal);
+    context = structuredClone(context);
+    await this.#recordOutcome(
+      auditEvent(context, {
+        type: "tool.invoked",
+        outcome: "denied",
+        operationId: call.callId,
+        tool: call.tool,
+        reason: call.reasonCode,
+        metadata: {
+          source: "envelope",
+          ...(call.cause === undefined ? {} : { cause: call.cause }),
+          ...(isInfrastructureDenial(call.reasonCode) ? { failClosed: true } : {}),
+        },
+      }),
+    );
+  }
+
   async listTools(
     context: AccessContext,
     options: KernelOperationOptions = {},
@@ -368,19 +486,27 @@ export class SharedOSKernel {
           type: "tool.catalog.listed",
           outcome: "denied",
           reason: "authority_unavailable",
-          metadata: { visibleTools: [], failClosed: true, authority: authority.code },
+          metadata: {
+            visibleTools: [],
+            withheld: [],
+            failClosed: true,
+            authority: authority.code,
+            source: "kernel",
+          },
         }),
       );
       return [];
     }
 
     const allowed: ToolDefinition[] = [];
+    const withheld: JsonObject[] = [];
     const enabledNamespaces = new Set(context.enabledToolNamespaces);
     const tools = await this.#resolveToolRegistry(context, options.signal);
 
     for (const definition of tools.definitions()) {
       throwIfAborted(options.signal);
       if (!enabledNamespaces.has(definition.namespace)) {
+        withheld.push({ tool: definition.name, cause: "namespace_disabled" });
         continue;
       }
       const decision = await this.#authorizer.canDiscover(
@@ -393,6 +519,8 @@ export class SharedOSKernel {
       );
       if (decision.allowed) {
         allowed.push(definition);
+      } else {
+        withheld.push({ tool: definition.name, cause: decision.reasonCode });
       }
     }
 
@@ -401,7 +529,22 @@ export class SharedOSKernel {
         type: "tool.catalog.listed",
         outcome: "succeeded",
         authorityHash: authority.authority.snapshot.hash,
-        metadata: { visibleTools: allowed.map(({ name }) => name) },
+        metadata: {
+          visibleTools: allowed.map(({ name }) => name),
+          // What was not returned, and why. A discovery refusal had no code on
+          // either side before this: the caller is not told, and the record said
+          // nothing either, so a tool withheld by a disabled namespace and one
+          // withheld because no grant reached it were indistinguishable from a
+          // registry that never held them.
+          //
+          // Aggregated into the one event the listing already writes rather
+          // than emitted per tool. A two-hundred-tool registry would otherwise
+          // pay two hundred awaited sink writes per turn to record what a list
+          // records once. The reason is volume, not secrecy -- a tool name is a
+          // registry constant and says nothing about the world (ADR 0021).
+          withheld,
+          source: "kernel",
+        },
       }),
     );
 
@@ -600,7 +743,7 @@ export class SharedOSKernel {
         "tool_unavailable",
         "The requested tool is not available in this access context",
       );
-      await this.#recordToolResult(context, call, result);
+      await this.#recordToolResult(context, call, result, { cause: "not_registered" });
       return result;
     }
 
@@ -611,7 +754,7 @@ export class SharedOSKernel {
         "tool_unavailable",
         "The requested tool is not available in this access context",
       );
-      await this.#recordToolResult(context, call, result);
+      await this.#recordToolResult(context, call, result, { cause: "namespace_disabled" });
       return result;
     }
 
@@ -648,7 +791,18 @@ export class SharedOSKernel {
         "tool_unavailable",
         "The requested tool is not available in this access context",
       );
-      await this.#recordToolResult(context, call, result);
+      // The cause follows the decision rather than being hard-coded, so a
+      // catalogue refusal a host ceiling made is nameable as one. Without it,
+      // `host_policy_denied` could only ever appear on the decision event, and
+      // a host counting policy refusals from the operation events would get
+      // zero (ADR 0021).
+      await this.#recordToolResult(context, call, result, {
+        cause: discoverable.reasonCode,
+        requirement: {
+          resource: handler.definition.requiredCapability.resource,
+          action: handler.definition.requiredCapability.action,
+        },
+      });
       return result;
     }
 
@@ -723,7 +877,7 @@ export class SharedOSKernel {
         crossing.reasonCode,
         "The requested resource lies outside this access context's world",
       );
-      await this.#recordToolResult(context, call, result, undefined, requirement);
+      await this.#recordToolResult(context, call, result, { requirement });
       return result;
     }
 
@@ -752,7 +906,7 @@ export class SharedOSKernel {
         decision.reasonCode,
         "The access context does not grant this tool capability",
       );
-      await this.#recordToolResult(context, call, result, undefined, requirement);
+      await this.#recordToolResult(context, call, result, { requirement });
       return result;
     }
 
@@ -794,7 +948,10 @@ export class SharedOSKernel {
       );
     }
 
-    await this.#recordToolResult(context, call, result, decision.matchedGrantId, requirement);
+    await this.#recordToolResult(context, call, result, {
+      ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
+      requirement,
+    });
     return result;
   }
 
@@ -1328,9 +1485,9 @@ export class SharedOSKernel {
     context: AccessContext,
     call: ToolCall,
     result: ToolResult,
-    grantId?: string,
-    requirement?: AuthorizationRequest,
+    detail: ToolResultAuditDetail = {},
   ): Promise<void> {
+    const { grantId, requirement, cause } = detail;
     await this.#recordOutcome(
       auditEvent(context, {
         type: "tool.invoked",
@@ -1345,9 +1502,20 @@ export class SharedOSKernel {
             }),
         ...(grantId === undefined ? {} : { grantId }),
         ...(result.status === "succeeded" ? {} : { reason: result.error.code }),
-        ...(result.status !== "succeeded" && isInfrastructureDenial(result.error.code)
-          ? { metadata: { failClosed: true } }
-          : {}),
+        metadata: {
+          // Which boundary refused. Free to infer until the envelope started
+          // recording too -- anything in audit was the kernel's -- and a fact
+          // with nowhere to live the moment that stopped being true (ADR 0021).
+          source: "kernel",
+          // `tool_unavailable` is one code over several situations by design,
+          // so the model cannot tell them apart. An audit reader is not the
+          // model. `reason` stays the code the caller was given and this says
+          // which one it was.
+          ...(cause === undefined ? {} : { cause }),
+          ...(result.status !== "succeeded" && isInfrastructureDenial(result.error.code)
+            ? { failClosed: true }
+            : {}),
+        },
       }),
     );
   }
@@ -1367,6 +1535,7 @@ export class SharedOSKernel {
         action: request.action,
         ...(grantId === undefined ? {} : { grantId }),
         ...(result.status === "succeeded" ? {} : { reason: result.error.code }),
+        metadata: { source: "kernel" },
       }),
     );
   }
@@ -1392,6 +1561,7 @@ export class SharedOSKernel {
         ...(result.status === "denied" || result.status === "failed"
           ? { reason: result.error.code }
           : {}),
+        metadata: { source: "kernel" },
       }),
     );
   }

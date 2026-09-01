@@ -16,7 +16,8 @@ export type AuditEventType =
   | "tool.namespace.catalog.listed"
   | "tool.namespace.selection.updated"
   | "tool.invoked"
-  | "message.sent";
+  | "message.sent"
+  | "turn.ended";
 
 /**
  * `escalated` is its own outcome, not a denial.
@@ -26,6 +27,18 @@ export type AuditEventType =
  * every denial rate by the cases where the system correctly asked for help.
  */
 export type AuditOutcome = "allowed" | "denied" | "succeeded" | "failed" | "escalated";
+
+/**
+ * Which enforcement boundary produced an operation or terminal event.
+ *
+ * Recorded in `metadata` on every one of them. It was free to infer until the
+ * execution envelope began recording as well -- anything in audit was the
+ * kernel's, because the envelope wrote nothing -- and the moment that stopped
+ * being true it became a fact with nowhere to live. ADR 0012 keeps one refusal
+ * vocabulary across both boundaries on purpose: a code says what was refused,
+ * and this says who refused it (ADR 0021).
+ */
+export type AuditSource = "kernel" | "envelope";
 
 export interface AuditEvent {
   readonly version: "1";

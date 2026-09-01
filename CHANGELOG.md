@@ -162,6 +162,47 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **Every refusal reaches audit, and the record names the boundary that made
+  it.** The execution envelope made no audit call of its own: a tool name the
+  turn's catalogue never offered, a spent step or tool-call budget, a context
+  mismatch, and how a turn ended existed only in `ExecutionResult.events` — a
+  required field hosts pay for on the wire whose every consumer in this
+  repository is the conformance package. A host with an audit sink could not see
+  the clearest attempted violation the system produces (ADR 0021).
+
+  `AuditEventType` gains one value, `turn.ended`: one event per turn, at the
+  terminal, carrying the outcome and reason. Not one per transition — that would
+  triple the audit volume of every successful turn to say nothing more, and a
+  `turn.denied` would double-count against the `authorization.checked` admission
+  already produced. A cancelled turn is `failed` with reason `turn_cancelled`;
+  `AuditOutcome` is unchanged. `SharedOSKernel` gains `recordTurnEnd` and
+  `recordRefusedCall`, and the envelope calls them through the same optional
+  `TurnKernel` members `recordEscalation` already uses, so **hosts wire
+  nothing new** — a second `AuditSink` option would be one a host can forget to
+  pass twice, and the failure mode of forgetting is a turn that enforces
+  correctly and records nothing.
+
+  Two `metadata` keys carry the rest. `source` is `kernel` or `envelope` on every
+  operation and terminal event; it is required by the change rather than
+  incidental, because the rule "it is in audit, therefore the kernel refused it"
+  held only while the envelope recorded nothing. `cause` disambiguates
+  `tool_unavailable` — `not_registered`, `namespace_disabled`, the discovery
+  decision's own code, or `not_offered` from the envelope — while `reason` stays
+  the code the caller was given, so one refusal keeps one name. `errors.md` has
+  promised that disambiguation all along and delivered it for one of the three
+  situations; it now holds for all of them, including a policy refusal, which
+  could otherwise only ever appear on a decision event.
+
+  `tool.catalog.listed` gains `withheld`: one `{ tool, cause }` per tool a
+  listing did not return. Discovery refusals had no code on either side before —
+  the caller is not told and the record said nothing either.
+
+  Kept out deliberately: the MCP transport's `unauthorized` refusal, which
+  happens before an `AccessContext` exists and would need a fabricated principal
+  to record; the thrown error behind any refusal, which stays on the diagnostic
+  hooks; payloads, unchanged; and the parser detail behind
+  `invalid_tool_arguments`, which quotes the value that failed.
+
 - **Host policy is a port the kernel calls, so its refusals are recorded.**
   `CapabilityAuthorizer` accepts a `hostCeiling`: product or organization policy
   consulted on a grant that would otherwise allow. Its refusal is

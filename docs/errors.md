@@ -132,13 +132,26 @@ message — when the tool is not registered for this context, when its namespace
 is disabled, _and_ when no grant makes it discoverable. That is deliberate: the
 caller learns it cannot use the tool, not which of the three reasons applies.
 
-**The specific reason is in the audit trail.** An `authorization.checked` event
-is recorded immediately before, carrying the real reason code:
+**The specific reason is in the audit trail**, on the `tool.invoked` event
+itself, as `metadata.cause`:
 
 ```text
-authorization.checked  denied  files/Work/Finance  <- grant_exhausted
-tool.invoked           denied  files.read         <- tool_unavailable
+tool.invoked  denied  files.read  <- tool_unavailable, cause: namespace_disabled
 ```
+
+`cause` is one of `not_registered`, `namespace_disabled`, the reason code the
+discovery check returned (`no_matching_grant`, `host_policy_denied`, or a
+fail-closed code), or — from the execution envelope — `not_offered`, a tool name
+the turn's catalogue never held. `reason` stays the code the caller was given, so
+the audit code and the wire code remain comparable and one refusal keeps one
+name (ADR 0012).
+
+Where the refusal came from a decision, an `authorization.checked` event is also
+recorded immediately before and carries the same reason. Two of the situations
+produce no decision — nothing was checked when the tool is not registered, and
+nothing was checked when its namespace is off — so `cause` is what makes the
+disambiguation hold for all of them rather than for the one that happens to
+consult the authorizer.
 
 If you are debugging a `tool_unavailable` and have no audit sink wired, wire one
 first.
@@ -146,9 +159,10 @@ first.
 **Both boundaries use this one code.** The execution envelope refuses a tool
 outside the turn's permission-filtered catalogue with `tool_unavailable`, the
 same code the kernel uses. Which boundary refused is recorded separately, as
-`OperationRecord.source`: a code says what was refused, a source says who
-refused it. The earlier `tool_not_available` is gone rather than aliased — two
-names for one refusal is the defect.
+`metadata.source` on the audit event and as `OperationRecord.source` in a
+conformance record: a code says what was refused, a source says who refused it.
+The earlier `tool_not_available` is gone rather than aliased — two names for one
+refusal is the defect.
 
 An owner-crossing requirement is the other pair worth keeping apart:
 `invalid_request` is a denial, checked before the tool's declared ceiling and
@@ -205,20 +219,20 @@ for `tool_unavailable`.
 
 ## Turns
 
-| Code                       | Status    | Means                                                                                                                                                                                                                                                     |
-| -------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `actor_mismatch`           | denied    | The turn's agent is not the admitted one                                                                                                                                                                                                                  |
-| `receiver_mismatch`        | denied    | The delivered message's receiver is not the executing agent                                                                                                                                                                                               |
-| `message_context_mismatch` | denied    | The delivered message's trace or purpose disagrees with the context                                                                                                                                                                                       |
-| `no_matching_grant`        | denied    | No `sharedos.execution` / `invoke` grant for the target agent                                                                                                                                                                                             |
-| `escalation_requested`     | escalated | The runtime stopped and asked for a human. Nothing was granted                                                                                                                                                                                            |
-| `step_limit_exceeded`      | failed    | `StandardRuntime` spent its own steps while the driver was still asking for tools. The envelope's budgets refuse calls instead — see [tool invocation](#tool-invocation)                                                                                  |
-| `driver_failed`            | failed    | Your `AgentTurnDriver` threw. The thrown error goes to `onTurnError` and nowhere else (below)                                                                                                                                                             |
-| `invalid_driver_decision`  | failed    | The driver returned something that is not a valid decision                                                                                                                                                                                                |
-| `runtime_failed`           | failed    | A `RuntimePlugin` threw, or a host port the turn body called did. The message is fixed and the thrown error goes nowhere near the wire — install `onTurnError` to see it (below)                                                                          |
-| `invalid_runtime_outcome`  | failed    | A plugin returned a malformed outcome                                                                                                                                                                                                                     |
-| `tool_unavailable`         | failed    | A plugin returned `escalate` on a turn whose catalogue does not offer `sharedos.escalate`. The envelope refuses the outcome as it refuses a call outside the catalogue, under the same code; nothing reaches the kernel and nothing is audited (ADR 0017) |
-| `turn_cancelled`           | cancelled | Deadline expired, or the host aborted                                                                                                                                                                                                                     |
+| Code                       | Status    | Means                                                                                                                                                                                                                                            |
+| -------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `actor_mismatch`           | denied    | The turn's agent is not the admitted one                                                                                                                                                                                                         |
+| `receiver_mismatch`        | denied    | The delivered message's receiver is not the executing agent                                                                                                                                                                                      |
+| `message_context_mismatch` | denied    | The delivered message's trace or purpose disagrees with the context                                                                                                                                                                              |
+| `no_matching_grant`        | denied    | No `sharedos.execution` / `invoke` grant for the target agent                                                                                                                                                                                    |
+| `escalation_requested`     | escalated | The runtime stopped and asked for a human. Nothing was granted                                                                                                                                                                                   |
+| `step_limit_exceeded`      | failed    | `StandardRuntime` spent its own steps while the driver was still asking for tools. The envelope's budgets refuse calls instead — see [tool invocation](#tool-invocation)                                                                         |
+| `driver_failed`            | failed    | Your `AgentTurnDriver` threw. The thrown error goes to `onTurnError` and nowhere else (below)                                                                                                                                                    |
+| `invalid_driver_decision`  | failed    | The driver returned something that is not a valid decision                                                                                                                                                                                       |
+| `runtime_failed`           | failed    | A `RuntimePlugin` threw, or a host port the turn body called did. The message is fixed and the thrown error goes nowhere near the wire — install `onTurnError` to see it (below)                                                                 |
+| `invalid_runtime_outcome`  | failed    | A plugin returned a malformed outcome                                                                                                                                                                                                            |
+| `tool_unavailable`         | failed    | A plugin returned `escalate` on a turn whose catalogue does not offer `sharedos.escalate`. The envelope refuses the outcome as it refuses a call outside the catalogue, under the same code (ADR 0017); the turn's `turn.ended` event carries it |
+| `turn_cancelled`           | cancelled | Deadline expired, or the host aborted                                                                                                                                                                                                            |
 
 ## Diagnosing a contained throw
 
@@ -419,22 +433,32 @@ differently, so an outage is never reported as a policy decision.
 
 ## Audit events
 
-| Type                               | Outcomes                        | When                                                            |
-| ---------------------------------- | ------------------------------- | --------------------------------------------------------------- |
-| `authority.resolved`               | `succeeded`, `failed`           | A turn loaded its authority, once; `failed` is fail-closed      |
-| `authorization.checked`            | `allowed`, `denied`             | One decision, before any tool, resource, message, or turn       |
-| `escalation.requested`             | `escalated`                     | A turn ended by asking for a human; nothing was granted         |
-| `resource.invoked`                 | `succeeded`, `denied`, `failed` | A direct resource operation                                     |
-| `tool.invoked`                     | `succeeded`, `denied`, `failed` | A tool call                                                     |
-| `tool.catalog.listed`              | `succeeded`, `denied`           | A catalogue was computed; `denied` is an empty one, fail-closed |
-| `tool.namespace.catalog.listed`    | `succeeded`                     | The management-plane namespace catalogue was read               |
-| `tool.namespace.selection.updated` | `succeeded`, `failed`           | A namespace patch was applied                                   |
-| `message.sent`                     | `succeeded`, `denied`, `failed` | A message was delivered through the transport                   |
+| Type                               | Outcomes                                     | When                                                            |
+| ---------------------------------- | -------------------------------------------- | --------------------------------------------------------------- |
+| `authority.resolved`               | `succeeded`, `failed`                        | A turn loaded its authority, once; `failed` is fail-closed      |
+| `authorization.checked`            | `allowed`, `denied`                          | One decision, before any tool, resource, message, or turn       |
+| `escalation.requested`             | `escalated`                                  | A turn ended by asking for a human; nothing was granted         |
+| `resource.invoked`                 | `succeeded`, `denied`, `failed`              | A direct resource operation                                     |
+| `tool.invoked`                     | `succeeded`, `denied`, `failed`              | A tool call                                                     |
+| `tool.catalog.listed`              | `succeeded`, `denied`                        | A catalogue was computed; `denied` is an empty one, fail-closed |
+| `tool.namespace.catalog.listed`    | `succeeded`                                  | The management-plane namespace catalogue was read               |
+| `tool.namespace.selection.updated` | `succeeded`, `failed`                        | A namespace patch was applied                                   |
+| `message.sent`                     | `succeeded`, `denied`, `failed`              | A message was delivered through the transport                   |
+| `turn.ended`                       | `succeeded`, `denied`, `failed`, `escalated` | One turn reached a terminal outcome, recorded by the envelope   |
 
 Every event carries `version`, `type`, `outcome`, `at`, `traceId`,
 `namespaceId`, `actor`, `authority`, `owner`, `purpose`, and where applicable
 `resource`, `action`, `grantId`, `authorityHash`, `operationId`, `tool`,
 `messageId`, `receiver`, `reason`, `request`, and `metadata`.
+
+`turn.ended` is the execution envelope's one event, written at the terminal
+through the kernel, which owns audit. It carries the turn's `executionId` as
+`operationId` and the terminal code as `reason`. A cancelled turn is recorded
+`failed` with reason `turn_cancelled` rather than adding a sixth `AuditOutcome`:
+the outcome vocabulary is a compatibility surface, and `reason` already separates
+a deadline from a defect. There is one event per turn, not one per transition —
+a `turn.denied` would double-count against the `authorization.checked` that
+admission already produced for the same refusal (ADR 0021).
 
 `request` appears on `escalation.requested`, and only when the escalation named
 a capability. It is the `CapabilityRequest` a reviewer's queue is built from — a
@@ -448,6 +472,12 @@ and every `authorization.checked` and `tool.catalog.listed` event inside it
 carry the same value (ADR 0010); a consumer reconstructing a turn can pin every
 decision to that one load.
 
+`source` is on every operation and terminal event, in `metadata`: `kernel` or
+`envelope`, the boundary that produced it. It was free to infer until the
+envelope began recording — anything in audit was the kernel's, because the
+envelope wrote nothing — and it exists so closing that gap did not open an
+ambiguity in its place.
+
 `metadata` keys a host may rely on: `authority.resolved` carries `grantIds` and
 `grantCount` (or `failClosed: true` and `authority`, the internal code, when it
 failed), and `hostCeiling`, `"installed"` or `"absent"`, on both;
@@ -457,8 +487,18 @@ carried — a `HostCeiling`'s own keys, or `delegation` detail on a broken chain
 less `consumed` and `failClosed`, which the kernel states itself and a port
 cannot overwrite; `tool.catalog.listed`
 carries `visibleTools`, the names the caller was shown (empty, with
-`failClosed: true`, when denied); `escalation.requested` carries `detail` (the
-reason the runtime gave), `reviewer`, `reviewerAssumed`, and `resolution`.
+`failClosed: true`, when denied), and `withheld`, one `{ tool, cause }` per tool
+it did not return; `tool.invoked` carries `cause` where its code covers several
+situations; `turn.ended` carries `endedBy`, `envelope` or `runtime`, on a
+failure, so a reader crediting enforcement does not credit a plugin's
+self-reported error; `escalation.requested` carries `detail` (the reason the
+runtime gave), `reviewer`, `reviewerAssumed`, and `resolution`.
+
+`withheld` is aggregated into the one event a listing already writes rather than
+emitted per tool: a two-hundred-tool registry would otherwise pay two hundred
+awaited sink writes per turn to record what a list records once. The reason is
+volume, not secrecy — a tool name is a registry constant and says nothing about
+the world.
 
 This vocabulary is a compatibility surface. Hosts persist these events under
 closed schemas of their own, so a new type, outcome, or top-level field is a

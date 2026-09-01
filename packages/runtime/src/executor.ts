@@ -98,7 +98,12 @@ export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "listTools" | "invok
    * escalated turn as escalated, but without an audit trail for it.
    * `SharedOSKernel` offers both.
    */
-  Partial<Pick<SharedOSKernel, "openTurnAuthority" | "recordEscalation">>;
+  Partial<
+    Pick<
+      SharedOSKernel,
+      "openTurnAuthority" | "recordEscalation" | "recordTurnEnd" | "recordRefusedCall"
+    >
+  >;
 
 /**
  * The non-replaceable security envelope around one replaceable RuntimePlugin.
@@ -188,6 +193,75 @@ export class SharedOSExecutor implements TurnExecutionPort {
     }
 
     const request = parsed.data;
+    const result = await this.#runTurn(request, options);
+    await this.#recordTurnEnd(request, result);
+    return result;
+  }
+
+  /**
+   * Write how the turn ended into the trail the kernel owns.
+   *
+   * One site rather than one per terminal return, and derived from the result
+   * instead of from each branch, so an ending added later cannot be the one
+   * nobody remembered to record. The abort signal is deliberately not passed on:
+   * a cancelled turn is the case that most needs recording, and handing the
+   * recorder the signal that cancelled it would drop exactly that event.
+   *
+   * A failure here is swallowed. A dropped audit write matters -- that is what
+   * `SharedOSKernelOptions.onAuditError` is for, and the kernel calls it -- but
+   * it must not turn a turn that completed into one that threw.
+   */
+  async #recordTurnEnd(request: ExecutionRequest, result: ExecutionResult): Promise<void> {
+    if (this.#kernel.recordTurnEnd === undefined) {
+      return;
+    }
+    const reasonCode = terminalReasonCode(result);
+    const endedBy = terminalSource(result.events);
+    try {
+      await this.#kernel.recordTurnEnd(contextAt(request.context, result.completedAt), {
+        executionId: result.executionId,
+        status: result.status,
+        ...(reasonCode === undefined ? {} : { reasonCode }),
+        ...(endedBy === undefined ? {} : { endedBy }),
+      });
+    } catch {
+      // Deliberately empty; see the docblock above.
+    }
+  }
+
+  /**
+   * Write a call this boundary refused into the trail the kernel owns.
+   *
+   * Nothing reached the kernel, so nothing was audited -- a guessed tool name, a
+   * spent step budget, a spent call budget were visible only in the execution
+   * event stream, which no production consumer reads. Swallowed on failure for
+   * the reason {@link SharedOSExecutor.execute} records terminals: an
+   * observation must not change the outcome it observed (ADR 0021).
+   */
+  async #recordRefusedCall(
+    context: AccessContext,
+    result: ToolResult,
+    cause?: string,
+  ): Promise<void> {
+    if (this.#kernel.recordRefusedCall === undefined || result.status === "succeeded") {
+      return;
+    }
+    try {
+      await this.#kernel.recordRefusedCall(contextAt(context, result.completedAt), {
+        callId: result.callId,
+        tool: result.tool,
+        reasonCode: result.error.code,
+        ...(cause === undefined ? {} : { cause }),
+      });
+    } catch {
+      // Deliberately empty; see the docblock above.
+    }
+  }
+
+  async #runTurn(
+    request: ExecutionRequest,
+    options: ExecuteTurnOptions = {},
+  ): Promise<ExecutionResult> {
     const startedAt = this.#clock();
     const events: ExecutionEvent[] = [];
     const emit = (type: string, data: JsonValue): void => {
@@ -300,6 +374,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
             "The runtime reached its maximum number of steps.",
           );
           emit("tool.completed", completedToolEventData(result, step));
+          await this.#recordRefusedCall(executionContext, result);
           return result;
         }
         if (step !== undefined) {
@@ -314,6 +389,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
             "The runtime reached its maximum number of tool calls.",
           );
           emit("tool.completed", completedToolEventData(result, step));
+          await this.#recordRefusedCall(executionContext, result);
           return result;
         }
         toolCallCount += 1;
@@ -321,6 +397,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
         if (!effectiveToolNames.has(parsedCall.data.tool)) {
           const result = unavailableToolResult(parsedCall.data, this.#clock());
           emit("tool.completed", completedToolEventData(result, step));
+          // The clearest attempted violation the system produces, and until now
+          // it reached no audit sink at all: the kernel never saw the call.
+          await this.#recordRefusedCall(executionContext, result, "not_offered");
           return result;
         }
 
@@ -749,6 +828,46 @@ function deniedToolResult(
     completedAt,
     error: protocolError(code, message),
   };
+}
+
+/**
+ * The code a terminal ending carried, where it had one.
+ *
+ * A cancelled turn may carry none -- the deadline path builds a result without
+ * an error -- so it is named here rather than left absent, because "the turn
+ * stopped" and "the turn stopped because it ran out of time" are different
+ * facts and only the second is useful in a trail.
+ */
+function terminalReasonCode(result: ExecutionResult): string | undefined {
+  switch (result.status) {
+    case "denied":
+    case "failed":
+      return result.error.code;
+    case "cancelled":
+      return result.error?.code ?? "turn_cancelled";
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Whether the envelope refused the turn or the runtime reported its own failure.
+ *
+ * Read back from the event the envelope already emits rather than threaded
+ * through every return, and it is the distinction a record reader needs before
+ * crediting enforcement: a plugin that reports its own error is not the envelope
+ * stopping it.
+ */
+function terminalSource(events: readonly ExecutionEvent[]): "envelope" | "runtime" | undefined {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index];
+    if (event?.type !== "turn.failed" || typeof event.data !== "object" || event.data === null) {
+      continue;
+    }
+    const source = (event.data as Record<string, unknown>)["source"];
+    return source === "runtime" || source === "envelope" ? source : undefined;
+  }
+  return undefined;
 }
 
 function runtimeProvenance(manifest: RuntimeManifest): JsonObject {

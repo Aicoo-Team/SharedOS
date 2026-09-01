@@ -688,3 +688,104 @@ describe("RuntimeRegistry", () => {
     expect(() => new SharedOSExecutor(kernel(), malformed)).toThrow("Runtime manifest");
   });
 });
+
+describe("what the envelope writes into audit", () => {
+  /** The stub kernel, plus the two optional recorders ADR 0021 added. */
+  function recordingKernel(options: { readonly throws?: boolean } = {}) {
+    const turnEnds: unknown[] = [];
+    const refusals: unknown[] = [];
+    return {
+      ...kernel(),
+      turnEnds,
+      refusals,
+      recordTurnEnd: vi.fn(async (_context: unknown, turn: unknown) => {
+        if (options.throws === true) {
+          throw new Error("audit store is unreachable");
+        }
+        turnEnds.push(turn);
+      }),
+      recordRefusedCall: vi.fn(async (_context: unknown, call: unknown) => {
+        if (options.throws === true) {
+          throw new Error("audit store is unreachable");
+        }
+        refusals.push(call);
+      }),
+    };
+  }
+
+  it("records a tool name the catalogue never offered, which reached no sink before", async () => {
+    const host = recordingKernel();
+    const plugin = runtime(async (_input, runtimeHost) => {
+      await runtimeHost.invokeTool({
+        id: "call-guessed",
+        tool: "files.delete",
+        arguments: {},
+        traceId: context.traceId,
+        requestedAt: now,
+      });
+      return { type: "complete", output: { ok: true } };
+    });
+
+    const result = await new SharedOSExecutor(host as never, plugin).execute(request());
+
+    expect(result.status).toBe("succeeded");
+    // Nothing reached the kernel, so nothing was audited: the clearest
+    // attempted violation the system produces was invisible to a host with an
+    // audit sink and no conformance record.
+    expect(host.refusals).toEqual([
+      {
+        callId: "call-guessed",
+        tool: "files.delete",
+        reasonCode: "tool_unavailable",
+        cause: "not_offered",
+      },
+    ]);
+  });
+
+  it("records the terminal once, whatever the ending", async () => {
+    const host = recordingKernel();
+
+    await new SharedOSExecutor(host as never, runtime()).execute(request());
+
+    expect(host.turnEnds).toEqual([{ executionId: "execution-1", status: "succeeded" }]);
+  });
+
+  it("says whether the envelope refused the turn or the runtime reported its own failure", async () => {
+    const host = recordingKernel();
+    const thrown = runtime(async () => {
+      throw new Error("the plugin stopped obeying the protocol");
+    });
+
+    await new SharedOSExecutor(host as never, thrown).execute(request());
+
+    // A record reader crediting enforcement must not credit a plugin's
+    // self-reported error, so the two endings are distinguishable.
+    expect(host.turnEnds).toEqual([
+      {
+        executionId: "execution-1",
+        status: "failed",
+        reasonCode: "runtime_failed",
+        endedBy: "envelope",
+      },
+    ]);
+  });
+
+  it("runs a turn against a kernel that offers neither recorder", async () => {
+    // Both are optional members of `TurnKernel`. A kernel without them still
+    // runs a turn, exactly as one without `recordEscalation` does.
+    const result = await new SharedOSExecutor(kernel() as never, runtime()).execute(request());
+
+    expect(result.status).toBe("succeeded");
+  });
+
+  it("does not let a failing audit write change the turn it was recording", async () => {
+    const host = recordingKernel({ throws: true });
+
+    const result = await new SharedOSExecutor(host as never, runtime()).execute(request());
+
+    // A dropped audit write matters -- that is what `onAuditError` is for -- but
+    // it must not turn a turn that completed into one that threw.
+    expect(result.status).toBe("succeeded");
+    expect(host.recordTurnEnd).toHaveBeenCalledTimes(1);
+  });
+});
