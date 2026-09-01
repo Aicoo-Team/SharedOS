@@ -329,31 +329,32 @@ export class CapabilityAuthorizer {
       return decision;
     }
 
-    let verdict: HostCeilingVerdict;
+    // Reading the verdict is inside the try as well as producing it: a host
+    // outside TypeScript can answer with nothing at all, and a throw on the
+    // property access is the port failing, not the kernel.
     try {
-      verdict = this.#hostCeiling.narrow(
+      const verdict: HostCeilingVerdict = this.#hostCeiling.narrow(
         decision,
         structuredClone(request),
         structuredClone(context),
       );
+      if (verdict.allowed === false) {
+        return {
+          allowed: false,
+          reasonCode: "host_policy_denied",
+          ...(verdict.metadata === undefined ? {} : { metadata: verdict.metadata }),
+        };
+      }
+      if (verdict.allowed === true) {
+        return verdict.matchedGrantId === decision.matchedGrantId
+          ? decision
+          : deny("host_policy_unavailable");
+      }
     } catch {
       return deny("host_policy_unavailable");
     }
-
-    if (verdict.allowed === false) {
-      return {
-        allowed: false,
-        reasonCode: "host_policy_denied",
-        ...(verdict.metadata === undefined ? {} : { metadata: verdict.metadata }),
-      };
-    }
-    if (verdict.allowed === true) {
-      return verdict.matchedGrantId === decision.matchedGrantId
-        ? decision
-        : deny("host_policy_unavailable");
-    }
-    // Unreachable through the type. A host outside TypeScript that answers with
-    // neither arm has a broken port, not a permissive one.
+    // Unreachable through the type, and reached only by a host that answered
+    // with neither arm. That is a broken port, not a permissive one.
     return deny("host_policy_unavailable");
   }
 

@@ -579,6 +579,18 @@ describe("the host ceiling", () => {
     });
   });
 
+  it("fails closed when the port answers with neither arm", async () => {
+    const authorizer = new CapabilityAuthorizer({
+      // A host outside TypeScript can answer with anything, including nothing.
+      hostCeiling: { narrow: () => undefined } as unknown as HostCeiling,
+    });
+
+    await expect(authorizer.authorize(context([grant()]), READ)).resolves.toEqual({
+      allowed: false,
+      reasonCode: "host_policy_unavailable",
+    });
+  });
+
   it("separates the deliberate refusal from the broken port", () => {
     // A policy refusal is a decision the deployment made, and belongs in the
     // denial rate. A port that could not answer is SharedOS failing to

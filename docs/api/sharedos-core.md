@@ -2893,7 +2893,7 @@ Structural JSON equality for protocol values with unordered object keys.
 
 > **capabilityIntersectsCeiling**(`capability`, `ceiling`, `context`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:572](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L572)
+Defined in: [packages/core/src/authorization.ts:573](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L573)
 
 #### Parameters
 
@@ -2927,7 +2927,7 @@ Defined in: [packages/core/src/authorization.ts:572](https://github.com/Aicoo-Te
 
 > **capabilityMatches**(`capability`, `request`, `context`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:544](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L544)
+Defined in: [packages/core/src/authorization.ts:545](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L545)
 
 #### Parameters
 
