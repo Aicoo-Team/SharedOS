@@ -132,10 +132,12 @@ The contract is narrow on purpose:
 - return only grants issued to `access.actor` by `access.authority` inside
   `access.namespaceId`; anything else is treated as an unavailable source, not
   as partial authority;
-- apply the host ceiling here. Product or organization policy that reduces an
-  actor's authority is expressed by not returning the grant it forbids (and by
-  not enabling the namespaces it forbids); SharedOS applies no policy of its
-  own on top of what the source returns;
+- **do not apply policy here.** Return the grants the actor holds. Product or
+  organization policy that narrows what those grants may do is the host
+  ceiling, a step of the kernel's authorization algorithm (see
+  `docs/security/permission-model.md`); withholding a grant instead makes the
+  kernel record `no_matching_grant` for a call a grant did authorize, which
+  misattributes a policy refusal as absent authority;
 - return material that satisfies `CapabilityGrantSchema`, including signature or
   revocation verification the host requires;
 - throw when the store is unreachable. SharedOS converts that into a fail-closed
