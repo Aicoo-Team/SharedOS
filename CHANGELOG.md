@@ -202,6 +202,14 @@ each entry calls out what a host has to update.
   `grant_exhausted`, then `no_matching_grant`. Discovery consults the same port,
   so a catalogue is never offered on authority invocation would refuse.
 
+  The manifest gains a row for it, passing in all six columns. A grant covers
+  the frozen path, so the refusal that would otherwise read `no_matching_grant`
+  reads `host_policy_denied` instead — and the same ceiling withholds every
+  mutation tool from discovery, so the row also asserts the agreement ADR 0016
+  requires: what the ceiling refuses at invocation is absent from the catalogue.
+  Both boundaries appear in one cell, `envelope` and `kernel`. The case-set and
+  world-set hashes move with it.
+
   Every `authority.resolved` event now carries `hostCeiling: "installed"` or
   `"absent"`. Without it an audit stream containing no policy denials cannot be
   told apart from one produced by a deployment that has no policy port. It says a

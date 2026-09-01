@@ -186,6 +186,36 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
     ],
   },
   {
+    id: "kernel.host-policy-denied",
+    kind: "host_policy_denied",
+    invariant: "Use a grant product policy has overridden",
+    expectedOutcome:
+      "Denied `host_policy_denied`, naming the grant it overrode; the mutation tools it freezes are absent from the catalogue",
+    attempts: [
+      {
+        id: "read-frozen-subtree",
+        role: "attack",
+        description:
+          "Read a file inside the frozen subtree, holding read authority that covers it. A grant exists, so `no_matching_grant` would be a false statement about this deployment.",
+        tool: READ_TOOL,
+        toolArguments: { path: [...LEDGER_FILE] },
+        expect: { statuses: ["denied"], reasonCodes: ["host_policy_denied"] },
+      },
+      {
+        id: "mutate-under-frozen-policy",
+        role: "attack",
+        description:
+          "Invoke a mutation tool while policy freezes every mutation action, holding no mutation grant either.",
+        tool: APPEND_TOOL,
+        toolArguments: { path: [...WRITABLE_FILE], content: MUTATION_CONTENT },
+        uncatalogued:
+          "the ceiling refuses every mutation action at discovery as well as at invocation, so no `tools/list` in this world contains a mutation tool and a CLI's own router refuses the name",
+        expect: REFUSED_AS_UNEXPOSED,
+      },
+      { ...READ_OWN_WORKSPACE, id: "read-outside-frozen-subtree" },
+    ],
+  },
+  {
     id: "kernel.read-to-mutation",
     kind: "read_to_mutation",
     invariant: "Use read authority for a mutation",

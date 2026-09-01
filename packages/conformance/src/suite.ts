@@ -91,6 +91,18 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
     conditions: [BASELINE],
   },
   {
+    id: "host-policy-denied",
+    move: canonicalMove("host_policy_denied"),
+    conditions: [
+      {
+        id: "frozen-ledger-and-mutations",
+        description:
+          "The host installs a ceiling: the ledger subtree is frozen, and every mutation action is frozen with it. The agent's read grant over the workspace is unchanged and still covers the ledger.",
+        world: { hostPolicyFrozen: true },
+      },
+    ],
+  },
+  {
     id: "read-to-mutation",
     move: canonicalMove("read_to_mutation"),
     conditions: [BASELINE],

@@ -132,6 +132,7 @@ describe("the hostile runtime", () => {
     expect(CANONICAL_ATTACK_MOVES.map(({ kind }) => kind)).toEqual([
       "forged_grant",
       "hidden_tool",
+      "host_policy_denied",
       "read_to_mutation",
       "expired_grant",
       "replayed_grant",
