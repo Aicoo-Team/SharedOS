@@ -107,11 +107,6 @@ export const InitializeParamsSchema = z
   .passthrough();
 export type InitializeParams = z.infer<typeof InitializeParamsSchema>;
 
-export const ListToolsParamsSchema = z
-  .object({ cursor: z.string().optional() })
-  .passthrough()
-  .optional();
-
 export const CallToolParamsSchema = z
   .object({
     name: z.string().min(1),

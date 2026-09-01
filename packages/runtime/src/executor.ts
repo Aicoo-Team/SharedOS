@@ -484,6 +484,8 @@ export class SharedOSExecutor implements TurnExecutionPort {
 /**
  * Compatibility facade for the original driver-based API. New harnesses should
  * implement RuntimePlugin and use SharedOSExecutor directly.
+ *
+ * Retained pending a deprecation decision; see `docs/open-items.md`.
  */
 export class TurnExecutor implements TurnExecutionPort {
   readonly #executor: SharedOSExecutor;
@@ -504,6 +506,7 @@ export class TurnExecutor implements TurnExecutionPort {
       ...(options.defaultTimeoutMs === undefined
         ? {}
         : { defaultTimeoutMs: options.defaultTimeoutMs }),
+      ...(options.spans === undefined ? {} : { spans: options.spans }),
     };
     this.#executor = new SharedOSExecutor(
       kernel,
@@ -660,7 +663,7 @@ function resultFor(
     metadata,
   };
 
-  return status === "cancelled" ? { ...base, status, error } : { ...base, status, error };
+  return { ...base, status, error };
 }
 
 function cancelledResult(

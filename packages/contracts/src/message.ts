@@ -5,6 +5,10 @@ import { IdentifierSchema, ProtocolVersionSchema, TimestampSchema } from "./comm
 import { JsonObjectSchema, JsonValueSchema } from "./json.js";
 import { ProtocolErrorSchema } from "./protocol-error.js";
 
+/**
+ * Hop provenance a host may attach to an envelope. The kernel neither sets nor
+ * reads it; see `docs/open-items.md`.
+ */
 export const MessageProvenanceSchema = z
   .object({
     source: IdentifierSchema,

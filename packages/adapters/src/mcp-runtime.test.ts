@@ -26,6 +26,8 @@ import {
   ESCALATION_TOOL_NAMESPACE,
   SharedOSExecutor,
   createEscalationTool,
+  type RuntimeHost,
+  type RuntimeTurnRequest,
 } from "@aicoo/sharedos-runtime";
 import { InMemoryAuditSink } from "@aicoo/sharedos-testkit";
 
@@ -710,4 +712,40 @@ describe("a harness that asks for a human over MCP", () => {
     expect(meta(asked)["sharedos/code"]).toBe("tool_unavailable");
     expect(turn.events.filter((type) => type === "tool.requested")).toHaveLength(1);
   }, 30_000);
+});
+
+/**
+ * The plugin called outside `SharedOSExecutor`, the only way an aborted signal
+ * reaches `run` at all: the executor checks the signal before it runs a plugin
+ * and races the plugin against it after, so its own `cancelled` result always
+ * wins. A direct caller gets the platform's answer, not a second shape of
+ * `turn_cancelled`.
+ */
+describe("a harness runtime whose signal is aborted", () => {
+  it("rejects with the signal's reason instead of returning an outcome", async () => {
+    const controller = new AbortController();
+    const reason = new Error("turn closed");
+    controller.abort(reason);
+    const { context, ...request } = executionRequest();
+    const visible: RuntimeTurnRequest = {
+      ...request,
+      context: {
+        actor: context.actor,
+        owner: context.owner,
+        namespaceId: context.namespaceId,
+        purpose: context.purpose,
+        traceId: context.traceId,
+        now: context.now,
+      },
+    };
+    const host: RuntimeHost = {
+      limits: { maxSteps: 1, maxToolCalls: 1, timeoutMs: 1_000 },
+      invokeTool: () => Promise.reject(new Error("not reached")),
+      emit: () => undefined,
+    };
+
+    await expect(
+      createMcpHarnessRuntime(fakeHarness([])).run(visible, host, controller.signal),
+    ).rejects.toBe(reason);
+  });
 });

@@ -30,7 +30,8 @@ const turns = new SharedOSExecutor(kernel, runtime, {
 const result = await turns.execute(executionRequest);
 ```
 
-The original API remains available as a compatibility shorthand:
+The original API remains available as a compatibility shorthand, retained
+pending a deprecation decision (`docs/open-items.md`):
 
 ```ts
 import { TurnExecutor } from "@aicoo/sharedos-runtime";

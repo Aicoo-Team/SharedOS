@@ -6,7 +6,7 @@ import type {
   ToolDefinition,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
-import { SharedOSKernel } from "@aicoo/sharedos-core";
+import { SPAN, SharedOSKernel, type Span, type SpanSink } from "@aicoo/sharedos-core";
 import type { CapabilityGrant } from "@aicoo/sharedos-contracts";
 
 import {
@@ -590,6 +590,23 @@ describe("TurnExecutor", () => {
     }).execute(request());
 
     expect(result.status).toBe("succeeded");
+  });
+
+  it("forwards a span sink to the executor it fronts", async () => {
+    const spans: Span[] = [];
+    const sink: SpanSink = { record: (span) => void spans.push(span) };
+    const next = vi
+      .fn<AgentTurnSession["next"]>()
+      .mockResolvedValueOnce({ type: "complete", output: { ok: true } });
+
+    const result = await new TurnExecutor(
+      kernel(),
+      { open: async () => ({ next }) },
+      { clock: () => now, createId: () => "event-1", spans: sink },
+    ).execute(request());
+
+    expect(result.status).toBe("succeeded");
+    expect(spans.map((span) => span.name)).toContain(SPAN.TURN);
   });
 });
 

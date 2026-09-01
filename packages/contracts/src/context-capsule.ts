@@ -14,6 +14,9 @@ import { type ProtocolError } from "./protocol-error.js";
  *
  * The capsule carries content, never authority. Whether the receiver may act on
  * it is a separate capability decision.
+ *
+ * Not yet carried: no message, tool, or turn path in SharedOS accepts a capsule
+ * today. See `docs/open-items.md`.
  */
 
 const encoder = new TextEncoder();

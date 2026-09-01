@@ -239,11 +239,12 @@ const runtime = createMcpHarnessRuntime(CLAUDE_CODE_MCP_HARNESS);
 
 `CODEX_MCP_HARNESS`, `DEEPSEEK_MCP_HARNESS`, and `PI_MCP_HARNESS` are the others.
 
-Each spec generates its own connection file and nothing else:
+Each spec hands its CLI the connection in the one form that CLI takes, and
+nothing else:
 
-| Harness     | File               | Shape                                          |
+| Harness     | Form               | Shape                                          |
 | ----------- | ------------------ | ---------------------------------------------- |
-| Codex       | `config.toml`      | `[mcp_servers.sharedos]`, `required = true`    |
+| Codex       | `-c` overrides     | `mcp_servers.sharedos.url`, `required=true`    |
 | Claude Code | `.mcp.json`        | `{"type":"http","url":…}`                      |
 | DeepSeek    | `cordis.patch.yml` | one `@deepseek-ai/dsh-mcp-client` plugin entry |
 | Pi          | `.mcp.json`        | `{"url":…,"lifecycle":"eager"}`                |

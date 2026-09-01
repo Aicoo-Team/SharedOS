@@ -444,9 +444,7 @@ async function runHarness(
   signal: AbortSignal,
   options: McpHarnessRuntimeOptions,
 ): Promise<RuntimeTurnOutcome> {
-  if (signal.aborted) {
-    return fail("turn_cancelled", "The turn was cancelled before the harness started.");
-  }
+  signal.throwIfAborted();
 
   const child = spawn(launch.command, [...launch.args], {
     ...(launch.cwd === undefined ? {} : { cwd: launch.cwd }),
@@ -565,9 +563,7 @@ async function runHarness(
   closeStdin();
   signal.removeEventListener("abort", kill);
 
-  if (signal.aborted) {
-    return fail("turn_cancelled", "The turn was cancelled while the harness was running.");
-  }
+  signal.throwIfAborted();
   if (exit.error !== undefined) {
     return fail("harness_not_started", `The ${spec.id} CLI could not be started.`);
   }
@@ -688,7 +684,6 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   }) as RuntimeManifest,
   protocol: codexProtocol,
   serverName: "sharedos",
-  configFiles: (connection) => [harnessMcpConfigFile("codex", connection)],
   launch: ({ prompt, workspace, connection }) => ({
     command: "codex",
     args: [
@@ -817,12 +812,5 @@ export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
     keepStdinOpen: true,
   }),
 });
-
-export const MCP_HARNESSES: readonly McpHarnessSpec[] = Object.freeze([
-  CLAUDE_CODE_MCP_HARNESS,
-  CODEX_MCP_HARNESS,
-  DEEPSEEK_MCP_HARNESS,
-  PI_MCP_HARNESS,
-]);
 
 export { claudeAgentSdkMcpOptions };

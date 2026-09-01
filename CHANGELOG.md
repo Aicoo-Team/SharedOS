@@ -203,6 +203,22 @@ each entry calls out what a host has to update.
   packages left before `0.1.0-alpha.0` was published; with all eleven public
   and Apache-2.0, the command could only throw. `release:check` is the one
   release check.
+- `MCP_HARNESSES` from `@aicoo/sharedos-adapters/node`. Nothing read it: the
+  conformance script names the four specs it runs, and a host picks one.
+- `strictToolPolicy` and `ListToolsParamsSchema` from `@aicoo/sharedos-mcp`.
+  Neither had a caller; `declareToolPolicy({ mode: "strict" })` is what the
+  helper built, and the `tools/list` handler takes no parameters.
+- The `config.toml` the Codex conformance spec wrote into its temporary
+  workspace. Codex reads `$CODEX_HOME/config.toml`, never the working
+  directory, and the launch has always passed the connection as `-c`
+  overrides, so the file was written and never read. `codexMcpConfig` stays,
+  for a host that configures a persistent Codex.
+- The MCP harness runtime's own `turn_cancelled` outcome. Under
+  `SharedOSExecutor` it was unreachable -- the executor races the plugin
+  against the signal, and its own `cancelled` result wins -- and it gave the
+  code a second shape, `retryable: false` against the executor's `true`. A run
+  whose signal is aborted now rejects with the signal's reason, as any aborted
+  operation does; `docs/errors.md` no longer lists the code under Adapters.
 
 ### Fixed
 

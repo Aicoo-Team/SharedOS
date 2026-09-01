@@ -26,6 +26,7 @@ export interface HarnessMcpConnection {
   readonly url: string;
   /** The server name the harness will namespace its aliases under. */
   readonly name?: string;
+  /** Per-call timeout in the emitted config. Set by nothing today; see `docs/open-items.md`. */
   readonly timeoutSec?: number;
   /** Bearer token for a sandboxed or remote harness. */
   readonly token?: string;

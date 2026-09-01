@@ -46,7 +46,11 @@ export interface OpenToolBridgeOptions {
   /** The permission-filtered catalogue this turn resolved. */
   readonly tools: readonly ToolDefinition[];
   readonly host: BridgeToolInvoker;
-  /** Position in the harness's own loop, when the transport can report one. */
+  /**
+   * Position in the harness's own loop, when the transport can report one.
+   * Neither caller passes it today, so an MCP-mediated call declares no step and
+   * is bounded by `maxToolCalls` alone; see `docs/open-items.md`.
+   */
   readonly step?: number;
 }
 
