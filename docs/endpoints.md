@@ -96,6 +96,19 @@ authorized again immediately before execution. Per-tool actions, argument
 schemas, and the three availability gates are in the
 [tool catalog](tools.md).
 
+**Fourteen is the floor, not the ceiling.** This is the only closed list on this
+page. SharedOS ships a registry, not a tool set: calendar, email, GitHub, an
+internal API, and a user's connected MCP servers all enter the same catalog —
+statically through `registerTool`, or per context through a
+`ContextToolProvider`, which is what keeps one user's reload out of another
+user's registry. They are then subject to the identical three gates, because a
+tool is not trusted merely because it was registered. A published catalog holds
+at most 512 tools.
+
+`@aicoo/sharedos-conformance` also defines tools — a sealed one, an escaping one,
+a mismatched one, a brokered `notion.search`. Those are adversarial fixtures for
+the conformance matrix, not part of any shipped catalog.
+
 ## Capability space
 
 Every call above resolves to one row here. This is the coordinate system the
