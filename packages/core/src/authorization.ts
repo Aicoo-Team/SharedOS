@@ -413,7 +413,7 @@ export class CapabilityAuthorizer {
 
     const missing = deny("no_matching_grant");
     return describeMissing
-      ? { ...missing, requiredCapability: await describeRequiredCapability(context, request) }
+      ? { ...missing, requiredAuthority: await describeRequiredAuthority(context, request) }
       : missing;
   }
 
@@ -619,7 +619,7 @@ function isJsonObject(value: unknown): value is JsonObject {
  * across turns, and what keeps a conformance cell able to state the value it
  * observed rather than that a field was present.
  */
-async function describeRequiredCapability(
+async function describeRequiredAuthority(
   context: AccessContext,
   request: AuthorizationRequest,
 ): Promise<CapabilityRequest> {

@@ -27,7 +27,7 @@ describe("testkit", () => {
     ).resolves.toMatchObject({
       allowed: false,
       reasonCode: "no_matching_grant",
-      requiredCapability: {
+      requiredAuthority: {
         capabilities: [
           {
             resource: { namespace: "files", path: ["Workspace", "project-x"] },

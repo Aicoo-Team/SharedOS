@@ -30,13 +30,15 @@ each entry calls out what a host has to update.
   recorded on `tool.invoked` with its own `cause`. ADR 0021 records the shape.
 
 - **Optional fields were added to strict schemas, and the protocol version did
-  not move.** `AuthorizationDecision.requiredCapability`, `Escalation.request`,
-  and `AuditEvent.request` are optional and additive for anything that _writes_
+  not move.** `AuthorizationDecision.requiredAuthority`,
+  `Escalation.requestedAuthority`, and `AuditEvent.requestedAuthority` are
+  optional and additive for anything that _writes_
   them. Nothing in this repository's contracts is additive for a reader: the
   schemas are `.strict()`, so a consumer built against an earlier release
   rejects the unknown key rather than ignoring it. An older client parsing a
-  newer host's `ExecutionResult` fails on `escalation.request`; one parsing an
-  `AuthorizationDecision` fails on `requiredCapability`. Both surface as a
+  newer host's `ExecutionResult` fails on `escalation.requestedAuthority`; one
+  parsing an
+  `AuthorizationDecision` fails on `requiredAuthority`. Both surface as a
   malformed-response error with nothing to explain it.
 
   **Upgrade every consumer of these types in step with the host that writes
@@ -338,8 +340,8 @@ each entry calls out what a host has to update.
 
 - **A denial says which capability would have satisfied it, and an escalation
   can carry that.** `AuthorizationDecision` gains an optional
-  `requiredCapability: CapabilityRequest` on a `no_matching_grant` denial, and
-  `Escalation` gains an optional `request` that
+  `requiredAuthority: CapabilityRequest` on a `no_matching_grant` denial, and
+  `Escalation` gains an optional `requestedAuthority` that
   `SharedOSKernel.recordEscalation` accepts through its options and records on
   the `escalation.requested` audit event. A host running a consent workflow can
   now name the capability an approval is about instead of reconstructing the
@@ -364,7 +366,14 @@ each entry calls out what a host has to update.
   ADR 0016 allows to be broader than any call, so a description there would ask
   for more authority than an operation needed.
 
-  `AuditEvent` gains a top-level `request` field, which is a contract change to
+  The names are `requiredAuthority` on a decision and `requestedAuthority` on an
+  escalation and its audit event: one concept in two roles, both ending in the
+  noun this repository uses for what grants confer. Not `requiredCapability` —
+  `ToolDefinition.requiredCapability` already means something else in the same
+  package, a bare `CapabilityRequirement` rather than the fuller
+  `CapabilityRequest` these carry, and it is the field a reader meets first.
+
+  `AuditEvent` gains a top-level `requestedAuthority` field, which is a contract change to
   the audit vocabulary: hosts persist these events under closed schemas of their
   own. It appears on `escalation.requested` and only when the escalation named a
   capability.

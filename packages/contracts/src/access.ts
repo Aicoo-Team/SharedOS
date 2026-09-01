@@ -38,6 +38,11 @@ export const AuthorizationDecisionSchema = z
     /**
      * The authority that would have satisfied this request, when none did.
      *
+     * Named for what it is rather than for its type. A `CapabilityRequest` is
+     * not a `CapabilityRequirement`, and `ToolDefinition.requiredCapability` --
+     * the bare resource-and-action a tool declares -- is the field a reader of
+     * this package meets first.
+     *
      * A description, not an offer. It grants nothing, no port accepts one as
      * input, and the denial is still a denial: `allowed` stays `false` and
      * fail-closed behaviour is untouched. What it buys is that a host running a
@@ -59,7 +64,7 @@ export const AuthorizationDecisionSchema = z
      * exists, or who holds one -- and it must not be extended to, because a
      * denial that answered those would be an existence oracle.
      */
-    requiredCapability: CapabilityRequestSchema.optional(),
+    requiredAuthority: CapabilityRequestSchema.optional(),
     metadata: JsonObjectSchema.optional(),
   })
   .strict();

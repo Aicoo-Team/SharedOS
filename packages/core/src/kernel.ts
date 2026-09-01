@@ -172,12 +172,17 @@ export interface EscalationOptions extends KernelOperationOptions {
   /**
    * The authority this escalation is asking for.
    *
-   * A host escalating a denial passes the `requiredCapability` that denial
+   * A host escalating a denial passes the `requiredAuthority` that denial
    * described; a model-chosen escalation usually has none, because a sentence
    * is all it produced. Either way nothing here advances the escalation --
    * resolution stays host-owned work that ends in a grant the next turn loads.
+   *
+   * The two names are one concept in two roles, and both end in the noun this
+   * package uses for what grants confer: a denial says what was *required*, and
+   * an escalation *requests* it. `{ requestedAuthority: denial.requiredAuthority }`
+   * is the whole hop.
    */
-  readonly request?: CapabilityRequest;
+  readonly requestedAuthority?: CapabilityRequest;
 }
 
 export const EXECUTION_NAMESPACE = "sharedos.execution";
@@ -385,7 +390,9 @@ export class SharedOSKernel {
       reviewer: context.owner,
       requestedAt: context.now,
       status: "pending",
-      ...(options.request === undefined ? {} : { request: structuredClone(options.request) }),
+      ...(options.requestedAuthority === undefined
+        ? {}
+        : { requestedAuthority: structuredClone(options.requestedAuthority) }),
     });
     if (!parsed.success) {
       throw new TypeError("escalation does not match the SharedOS v1 contract");
@@ -405,7 +412,9 @@ export class SharedOSKernel {
         // Recorded so a reviewer's queue can be built from audit alone. The
         // reason is what a model wrote; this is what can be turned into a grant
         // without reading it (ADR 0019).
-        ...(parsed.data.request === undefined ? {} : { request: parsed.data.request }),
+        ...(parsed.data.requestedAuthority === undefined
+          ? {}
+          : { requestedAuthority: parsed.data.requestedAuthority }),
       }),
     );
 

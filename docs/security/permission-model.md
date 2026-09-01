@@ -92,7 +92,7 @@ by attaching an arbitrary grant object to its payload.
 `CapabilityRequest` expresses requested authority for a consent workflow. It is
 not usable authority until an eligible issuer turns it into a trusted grant. The
 kernel produces one and accepts none as input: an `AuthorizationDecision` that
-matched no grant carries `requiredCapability` describing what would have
+matched no grant carries `requiredAuthority` describing what would have
 satisfied it, and an `Escalation` may carry that description on to whoever
 resolves it. The issuing workflow stays the host's.
 

@@ -84,7 +84,7 @@ export const EscalationSchema = z
      * Optional because an escalation a model chose may be about something no
      * capability describes.
      */
-    request: CapabilityRequestSchema.optional(),
+    requestedAuthority: CapabilityRequestSchema.optional(),
     /** Always pending. Nothing inside SharedOS advances it. */
     status: z.literal("pending"),
   })

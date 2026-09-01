@@ -171,9 +171,9 @@ describe("JSON-safe protocol contracts", () => {
       AuthorizationDecisionSchema.parse({
         allowed: false,
         reasonCode: "no_matching_grant",
-        requiredCapability: request,
+        requiredAuthority: request,
       }),
-    ).toMatchObject({ allowed: false, requiredCapability: { id: "capreq-1" } });
+    ).toMatchObject({ allowed: false, requiredAuthority: { id: "capreq-1" } });
 
     expect(
       EscalationSchema.parse({
@@ -181,8 +181,8 @@ describe("JSON-safe protocol contracts", () => {
         reviewer: owner,
         requestedAt: now,
         status: "pending",
-        request,
-      }).request,
+        requestedAuthority: request,
+      }).requestedAuthority,
     ).toEqual(request);
 
     // Both are optional: the shapes that existed before this field still parse.
@@ -205,7 +205,7 @@ describe("JSON-safe protocol contracts", () => {
       AuthorizationDecisionSchema.safeParse({
         allowed: false,
         reasonCode: "no_matching_grant",
-        requiredCapability: { id: "capreq-1", capabilities: [] },
+        requiredAuthority: { id: "capreq-1", capabilities: [] },
       }).success,
     ).toBe(false);
   });

@@ -52,7 +52,7 @@ path.
 
 ### A denial may describe the authority that would have satisfied it
 
-`AuthorizationDecision` gains an optional `requiredCapability: CapabilityRequest`,
+`AuthorizationDecision` gains an optional `requiredAuthority: CapabilityRequest`,
 populated only on a `no_matching_grant` denial, where the authorizer already
 holds every field it needs: the request's resource and action, and the context's
 owner, namespace, purpose, and instant.
@@ -86,8 +86,11 @@ the remedy when it is not.
 
 ### An escalation may carry it
 
-`Escalation` gains an optional `request: CapabilityRequest`, and
-`recordEscalation` accepts one alongside the reason. The `escalation.requested`
+`Escalation` gains an optional `requestedAuthority: CapabilityRequest`, and
+`recordEscalation` accepts one alongside the reason. The two names are one
+concept in two roles, and both end in the noun this repository uses for what
+grants confer: a denial says what was _required_, an escalation _requests_ it,
+and `{ requestedAuthority: denial.requiredAuthority }` is the whole hop. The `escalation.requested`
 audit event records it.
 
 `CapabilityRequest` carries a required `id`, `requester` and `requestedAt`, and
@@ -120,8 +123,9 @@ Both fields are optional and both are additive for a writer. Neither is additive
 for a reader. The contract schemas are `.strict()`, so a consumer built against
 the current version rejects an object carrying an unknown key rather than
 ignoring it: an older client parsing a newer host's `ExecutionResult` fails on
-`escalation.request`, and one parsing an `AuthorizationDecision` fails on
-`requiredCapability`. "Additive" is a statement about writers that this
+`escalation.requestedAuthority`, and one parsing an `AuthorizationDecision`
+fails on
+`requiredAuthority`. "Additive" is a statement about writers that this
 repository's own strictness makes false for everyone else.
 
 The first draft of this ADR concluded that the version therefore moves with the

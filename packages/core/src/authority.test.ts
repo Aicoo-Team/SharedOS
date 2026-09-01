@@ -211,7 +211,7 @@ describe("SharedOSKernel authority boundary", () => {
     ).resolves.toMatchObject({
       allowed: false,
       reasonCode: "no_matching_grant",
-      requiredCapability: {
+      requiredAuthority: {
         capabilities: [
           { resource: READ_REQUEST.resource, actions: [READ_REQUEST.action], scope: "exact" },
         ],

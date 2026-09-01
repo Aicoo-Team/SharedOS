@@ -100,7 +100,7 @@ Walk these in order. Every one of them produces the identical code.
 
 ### The denial says which capability it wanted
 
-A `no_matching_grant` decision carries `requiredCapability`: a
+A `no_matching_grant` decision carries `requiredAuthority`: a
 `CapabilityRequest` naming the exact resource and action that would have
 satisfied it, with the requester, owner, namespace, and purpose from the context
 that asked. It is what a consent workflow needs in order to issue a grant on one
@@ -452,7 +452,7 @@ differently, so an outage is never reported as a policy decision.
 Every event carries `version`, `type`, `outcome`, `at`, `traceId`,
 `namespaceId`, `actor`, `authority`, `owner`, `purpose`, and where applicable
 `resource`, `action`, `grantId`, `authorityHash`, `operationId`, `tool`,
-`messageId`, `receiver`, `reason`, `request`, and `metadata`.
+`messageId`, `receiver`, `reason`, `requestedAuthority`, and `metadata`.
 
 `turn.ended` is the execution envelope's one event, written at the terminal
 through the kernel, which owns audit. It carries the turn's `executionId` as
@@ -463,8 +463,10 @@ a deadline from a defect. There is one event per turn, not one per transition �
 a `turn.denied` would double-count against the `authorization.checked` that
 admission already produced for the same refusal (ADR 0021).
 
-`request` appears on `escalation.requested`, and only when the escalation named
-a capability. It is the `CapabilityRequest` a reviewer's queue is built from — a
+`requestedAuthority` appears on `escalation.requested`, and only when the
+escalation named a capability. It is the same payload a denial carries as
+`requiredAuthority` — one concept in two roles: a denial says what was required,
+and an escalation requests it. It is the `CapabilityRequest` a reviewer's queue is built from — a
 top-level field rather than a `metadata` key because it is a contract type with
 its own schema, and a consumer reading it should be reading that shape rather
 than trusting an untyped bag to hold it (ADR 0019).

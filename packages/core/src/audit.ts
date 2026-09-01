@@ -74,7 +74,7 @@ export interface AuditEvent {
    * reviewer's queue built from audit reads it directly rather than trusting
    * that an untyped bag holds the right shape (ADR 0019).
    */
-  readonly request?: CapabilityRequest;
+  readonly requestedAuthority?: CapabilityRequest;
   readonly metadata?: JsonObject;
 }
 

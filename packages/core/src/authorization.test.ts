@@ -85,9 +85,9 @@ function expectNoMatchingGrant(
   request: { resource: ResourceRef; action: string },
   access: AccessContext = accessContext(),
 ): void {
-  const { requiredCapability, ...rest } = decision;
+  const { requiredAuthority, ...rest } = decision;
   expect(rest).toEqual({ allowed: false, reasonCode: "no_matching_grant" });
-  expect(requiredCapability).toEqual({
+  expect(requiredAuthority).toEqual({
     id: expect.stringMatching(/^capreq-[0-9a-f]{64}$/u) as unknown as string,
     namespaceId: access.namespaceId,
     requester: access.actor,
@@ -463,9 +463,9 @@ describe("the capability a denial describes", () => {
     // `context.now` per operation, so hashing it would give two identical
     // denials two ids -- and give a conformance case a different record on
     // every run.
-    expect(first.requiredCapability?.requestedAt).toBe(NOW);
-    expect(second.requiredCapability?.requestedAt).toBe(later.now);
-    expect(second.requiredCapability?.id).toBe(first.requiredCapability?.id);
+    expect(first.requiredAuthority?.requestedAt).toBe(NOW);
+    expect(second.requiredAuthority?.requestedAt).toBe(later.now);
+    expect(second.requiredAuthority?.id).toBe(first.requiredAuthority?.id);
   });
 
   it("gives one identifier whether an optional key is omitted or explicitly undefined", async () => {
@@ -482,8 +482,8 @@ describe("the capability a denial describes", () => {
     // `canonicalJson` emits one, so building the description by spreading the
     // request would hash these to two ids for one missing authority -- and a
     // host de-duplicating consent requests by id would raise two asks.
-    expect(explicit.requiredCapability?.id).toBe(omitted.requiredCapability?.id);
-    expect(explicit.requiredCapability?.capabilities[0]?.resource).not.toHaveProperty("owner");
+    expect(explicit.requiredAuthority?.id).toBe(omitted.requiredAuthority?.id);
+    expect(explicit.requiredAuthority?.capabilities[0]?.resource).not.toHaveProperty("owner");
   });
 
   it("takes the owner from the context's owner, not from its authority", async () => {
@@ -498,8 +498,8 @@ describe("the capability a denial describes", () => {
 
     const decision = await new CapabilityAuthorizer().authorize(authorityFor(access, []), request);
 
-    expect(decision.requiredCapability?.owner).toEqual(carol);
-    expect(decision.requiredCapability?.requester).toEqual(ACTOR);
+    expect(decision.requiredAuthority?.owner).toEqual(carol);
+    expect(decision.requiredAuthority?.requester).toEqual(ACTOR);
   });
 
   it("describes exactly one capability, whatever the schema permits", async () => {
@@ -508,7 +508,7 @@ describe("the capability a denial describes", () => {
     // `CapabilityRequestSchema` allows 64 for a host-built consent request. A
     // kernel-built description concerns the one resource and action the caller
     // named; a second entry could only be a guess at what else it wanted.
-    expect(decision.requiredCapability?.capabilities).toHaveLength(1);
+    expect(decision.requiredAuthority?.capabilities).toHaveLength(1);
   });
 
   it("is absent from grant_exhausted, where a grant exists and is spent", async () => {
@@ -557,7 +557,7 @@ describe("the host ceiling", () => {
     expect(isInfrastructureDenial(decision.reasonCode)).toBe(false);
     // No grant would satisfy it -- one was issued and overridden -- so
     // describing a capability would say issuing one is the remedy (ADR 0019).
-    expect(decision.requiredCapability).toBeUndefined();
+    expect(decision.requiredAuthority).toBeUndefined();
   });
 
   it("does not spend a bounded use on a call it refused", async () => {

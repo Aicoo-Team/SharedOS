@@ -233,17 +233,19 @@ describe("SharedOSKernel escalation", () => {
     expect(denial.reasonCode).toBe("no_matching_grant");
 
     const escalation = await kernel.recordEscalation(context(), "alice should decide this", {
-      ...(denial.requiredCapability === undefined ? {} : { request: denial.requiredCapability }),
+      ...(denial.requiredAuthority === undefined
+        ? {}
+        : { requestedAuthority: denial.requiredAuthority }),
     });
 
-    expect(escalation.request).toEqual(denial.requiredCapability);
+    expect(escalation.requestedAuthority).toEqual(denial.requiredAuthority);
     expect(escalation.status).toBe("pending");
     // A first-class audit field, so a reviewer's queue is built from audit alone
     // rather than from an untyped bag that happens to hold the right shape.
     expect(events.at(-1)).toMatchObject({
       type: "escalation.requested",
       outcome: "escalated",
-      request: {
+      requestedAuthority: {
         capabilities: [{ resource: request.resource, actions: ["read"], scope: "exact" }],
       },
     });
@@ -268,7 +270,9 @@ describe("SharedOSKernel escalation", () => {
       requestedAt: NOW,
     };
 
-    const escalation = await kernel.recordEscalation(context(), "alice should decide", { request });
+    const escalation = await kernel.recordEscalation(context(), "alice should decide", {
+      requestedAuthority: request,
+    });
     request.capabilities[0]!.actions.push("delete");
 
     // A reviewer's queue is built from what was recorded, so the record cannot
@@ -277,9 +281,9 @@ describe("SharedOSKernel escalation", () => {
     // property rather than either mechanism, so removing one does not quietly
     // leave the other as the only guard. Verified by mutation: dropping the
     // clone alone does not fail this test, which is the point of saying so.
-    expect(escalation.request?.capabilities[0]?.actions).toEqual(["read"]);
+    expect(escalation.requestedAuthority?.capabilities[0]?.actions).toEqual(["read"]);
     expect(events.at(-1)).toMatchObject({
-      request: { capabilities: [{ actions: ["read"] }] },
+      requestedAuthority: { capabilities: [{ actions: ["read"] }] },
     });
   });
 
@@ -291,8 +295,8 @@ describe("SharedOSKernel escalation", () => {
     // absent rather than being filled with a guess.
     const escalation = await kernel.recordEscalation(context(), "this needs a person");
 
-    expect(escalation.request).toBeUndefined();
-    expect(events.at(-1)).not.toHaveProperty("request");
+    expect(escalation.requestedAuthority).toBeUndefined();
+    expect(events.at(-1)).not.toHaveProperty("requestedAuthority");
   });
 });
 
@@ -808,7 +812,7 @@ describe("SharedOSKernel turn admission", () => {
     await expect(kernel.admitTurn(context(), RECEIVER)).resolves.toMatchObject({
       allowed: false,
       reasonCode: "no_matching_grant",
-      requiredCapability: {
+      requiredAuthority: {
         capabilities: [{ resource, actions: ["invoke"], scope: "exact" }],
       },
     });
@@ -828,7 +832,7 @@ describe("SharedOSKernel turn admission", () => {
     ).resolves.toMatchObject({
       allowed: false,
       reasonCode: "no_matching_grant",
-      requiredCapability: {
+      requiredAuthority: {
         capabilities: [
           {
             resource: {
