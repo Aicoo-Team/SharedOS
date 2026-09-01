@@ -4,7 +4,7 @@
 
 # API reference
 
-This reference is generated from the eight public SharedOS package entry points.
+This reference is generated from the eleven public SharedOS package entry points.
 It documents the same symbols that consumers can import from each package root;
 private workspace packages, examples, tests, and implementation-only modules are
 not included.
