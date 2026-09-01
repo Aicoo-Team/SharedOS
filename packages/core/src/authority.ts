@@ -134,9 +134,28 @@ export interface ResolvedAuthority {
   readonly snapshot: AuthoritySnapshot;
 }
 
+/**
+ * Which of the three scope conditions a loaded grant failed.
+ *
+ * `issuer` is the one people hit: `context.authority` is whose grants are being
+ * exercised, which on a delegated chain is the delegator and not the owner of
+ * the data. The caller is told only `authority_unavailable`; this reaches the
+ * host through the `authority.resolved` audit event.
+ */
+export type GrantScopeMismatch = "namespace" | "subject" | "issuer";
+
+export interface AuthorityUnavailableDetail {
+  readonly grantId: string;
+  readonly reason: GrantScopeMismatch;
+}
+
 export type AuthorityResolution =
   | { readonly status: "resolved"; readonly authority: ResolvedAuthority }
-  | { readonly status: "unavailable"; readonly code: AuthorityUnavailableCode };
+  | {
+      readonly status: "unavailable";
+      readonly code: AuthorityUnavailableCode;
+      readonly detail?: AuthorityUnavailableDetail;
+    };
 
 /**
  * Loads and validates authority for one access context.
@@ -180,8 +199,13 @@ export class TrustedAuthorityResolver {
       if (!parsed.success) {
         return { status: "unavailable", code: "invalid_grant_material" };
       }
-      if (!grantIsInScope(parsed.data, context)) {
-        return { status: "unavailable", code: "grant_scope_mismatch" };
+      const mismatch = grantScopeMismatch(parsed.data, context);
+      if (mismatch !== undefined) {
+        return {
+          status: "unavailable",
+          code: "grant_scope_mismatch",
+          detail: { grantId: parsed.data.id, reason: mismatch },
+        };
       }
       grants.push(parsed.data);
     }
@@ -219,10 +243,18 @@ export class TrustedAuthorityResolver {
   }
 }
 
-function grantIsInScope(grant: CapabilityGrant, context: AccessContext): boolean {
-  return (
-    grant.namespaceId === context.namespaceId &&
-    addressesEqual(grant.subject, context.actor) &&
-    addressesEqual(grant.issuer, context.authority)
-  );
+function grantScopeMismatch(
+  grant: CapabilityGrant,
+  context: AccessContext,
+): GrantScopeMismatch | undefined {
+  if (grant.namespaceId !== context.namespaceId) {
+    return "namespace";
+  }
+  if (!addressesEqual(grant.subject, context.actor)) {
+    return "subject";
+  }
+  if (!addressesEqual(grant.issuer, context.authority)) {
+    return "issuer";
+  }
+  return undefined;
 }

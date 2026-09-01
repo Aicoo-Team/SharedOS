@@ -96,6 +96,32 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **A denial now explains itself to the host.** The reason codes still collapse
+  for the caller — `no_matching_grant` covers nine causes and
+  `authority_unavailable` covers four, so that no caller can map the permission
+  topology by reading refusals — but the operator who wired the store and issued
+  the grant is not the caller. `authorization.checked` now carries
+  `grantsResolved` and a `rejectedGrants` array naming every resolved grant and
+  the first condition it failed (`issuer`, `subject`, `namespace`, `window`,
+  `purpose`, `verifier`, `capability`, `delegation`, `exhausted`), and
+  `authority.resolved` carries the same key for the three conditions checked
+  before the grant loop runs. `usage_store_unavailable` and
+  `delegation_chain_unverified` additionally carry
+  `missingDependency: "usageStore" | "delegationResolver"`, which distinguishes
+  a permission problem from a wiring one: a `maxUses` grant with no usage store,
+  or a derived grant with no delegation resolver, denies every call it should
+  have allowed and is otherwise indistinguishable from an absent grant.
+
+  **Host notes.** Nothing is added to `AuthorizationDecision`, so no response
+  body changes. `CapabilityAuthorizer` gains an optional
+  `AuthorizeOptions.onExplain` callback for hosts that call it directly;
+  `SharedOSKernel` supplies its own and needs no change. The `unavailable`
+  variant of `AuthorityResolution` gains an optional `detail`, so a host that
+  compares a resolution with `toEqual` rather than `toMatchObject` will see the
+  new field. Discovery checks do not explain: catalog filtering denies on nearly
+  every tool by design, and routing that through the record would bury the
+  denials somebody was looking for.
+
 - `messages.request`, a canonical recipient-scoped request/reply tool. The model
   supplies only a recipient and JSON-safe payload; trusted context supplies the
   sender, purpose, trace, timestamp, and message id. `MessageTransport` and
