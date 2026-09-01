@@ -197,8 +197,11 @@ published packages. From there:
 
 - [HTTP API reference](docs/http-api.md): every route, request body, status
   code, and header, plus where authentication enters.
-- [Tool catalog](docs/tools.md): the twelve `files` tools, the three
-  availability gates, and how to register native or MCP tools of your own.
+- [MCP API reference](docs/mcp-api.md): the same catalog as an MCP server —
+  both transports, every method, and the configuration each harness expects.
+- [Tool catalog](docs/tools.md): the twelve `files` tools, the two standard
+  tools outside them, the three availability gates, and how to register native
+  or MCP tools of your own.
 - [Reason and error codes](docs/errors.md): what every denial means and what to
   change in response.
 
@@ -319,6 +322,11 @@ transition are documented in the
 - [ADR 0011: Escalation is a terminal outcome, not a denial](docs/adr/0011-escalation-terminal-outcome.md)
 - [ADR 0012: One refusal vocabulary at both enforcement boundaries](docs/adr/0012-one-refusal-vocabulary.md)
 - [ADR 0013: The conformance matrix is the case set](docs/adr/0013-matrix-is-the-case-set.md)
+- [ADR 0014: MCP is the toolshare boundary](docs/adr/0014-mcp-toolshare.md)
+- [ADR 0015: One message purpose and recipient-owned execution](docs/adr/0015-message-purpose-and-recipient-execution.md)
+- [ADR 0016: Expiry is instant-bound, revocation is snapshot-bound](docs/adr/0016-expiry-is-instant-bound.md)
+- [ADR 0017: What a driver may declare about its own turn](docs/adr/0017-driver-declared-turn-control.md)
+- [ADR 0018: Escalation over MCP is recovered from the call, not returned by it](docs/adr/0018-escalation-over-mcp.md)
 
 ## License
 

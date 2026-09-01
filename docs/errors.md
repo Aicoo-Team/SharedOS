@@ -238,12 +238,15 @@ differently, so an outage is never reported as a policy decision.
 | `turn.failed`    | The runtime or driver failed                       |
 | `turn.denied`    | Admission or context validation refused the turn   |
 | `turn.cancelled` | Deadline expired or the host cancelled             |
+| `turn.escalated` | The driver ended the turn by asking a human        |
 
 ## Audit events
 
 | Type                               | Outcomes                        |
 | ---------------------------------- | ------------------------------- |
+| `authority.resolved`               | `succeeded`, `failed`           |
 | `authorization.checked`            | `allowed`, `denied`             |
+| `escalation.requested`             | `escalated`                     |
 | `resource.invoked`                 | `succeeded`, `denied`, `failed` |
 | `tool.invoked`                     | `succeeded`, `denied`, `failed` |
 | `tool.catalog.listed`              | `succeeded`                     |
@@ -251,10 +254,24 @@ differently, so an outage is never reported as a policy decision.
 | `tool.namespace.selection.updated` | `succeeded`, `failed`           |
 | `message.sent`                     | `succeeded`, `denied`, `failed` |
 
+`authority.resolved` opens a turn: a turn resolves authority once, and this is
+the event that records which grants it resolved to. It carries `authorityHash`
+and, in `metadata`, the `grantIds` and `grantCount` behind that hash — so every
+later decision in the turn, which carries the same hash, can be traced back to
+the exact authority set it was made against. A failure records
+`authority_unavailable` and `failClosed`, because a source that could not answer
+denies rather than widening.
+
+`escalation.requested` is the audit record of a turn that stopped and asked a
+human. Its outcome is `escalated`, which is deliberately not `denied`: a denial
+is a decision SharedOS made, an escalation is one it declined to make. Counting
+them together inflates every denial rate by the cases where the system correctly
+asked for help.
+
 Every event carries `version`, `type`, `outcome`, `at`, `traceId`,
 `namespaceId`, `actor`, `authority`, `owner`, `purpose`, and where applicable
-`resource`, `action`, `grantId`, `operationId`, `tool`, `messageId`,
-`receiver`, `reason`, and `metadata`.
+`resource`, `action`, `grantId`, `authorityHash`, `operationId`, `tool`,
+`messageId`, `receiver`, `reason`, and `metadata`.
 
 Wire `onAuditError` to alerting. A dropped audit write must not pass silently —
 it is the only record that separates "was allowed to" from "did it and nobody

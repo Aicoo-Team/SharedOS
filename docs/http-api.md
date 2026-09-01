@@ -255,7 +255,7 @@ at admission and nothing runs.
 
 `status` is `succeeded`, `denied`, `failed`, `cancelled`, or `escalated` — the
 last carries an `escalation` and no `error`. `events` is
-append-only and ordered by `sequence`; the eight types are listed in
+append-only and ordered by `sequence`; the nine types are listed in
 [events](errors.md#execution-events). `options` is clamped by the server —
 `maxToolCalls` at most 10,000, `timeoutMs` at most 600,000.
 
@@ -362,3 +362,8 @@ kernel serving several deployments.
 
 Whichever you choose, the authorization decision is the same one, and the
 context is always host-derived.
+
+These routes are for code you control. An external coding-agent CLI is served by
+the other network surface — the same catalogue and the same kernel, presented as
+an MCP server, with its own transports and methods in the
+[MCP API reference](mcp-api.md).

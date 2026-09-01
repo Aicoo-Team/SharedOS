@@ -1,7 +1,8 @@
 # Tool catalog
 
 A tool is how a model reaches live state or performs an action. SharedOS ships
-one plane of them — `files` — and a registry for yours.
+one plane of them — `files` — two standard tools outside it, and a registry for
+yours.
 
 ## Three gates, all required
 
@@ -73,6 +74,50 @@ against one is not portable to the other.
 
 If that matters to you, pin the host you integrate with and treat the shape as
 that host's contract, not SharedOS's. Constraining these outputs is open work.
+
+## Two standard tools outside `files`
+
+Neither is registered for you. Both go through `registerTool` like any other, and
+both are filtered by the same three gates — a caller with no grant over them does
+not see them.
+
+| Tool                | Namespace  | Capability                                            | Registered with            |
+| ------------------- | ---------- | ----------------------------------------------------- | -------------------------- |
+| `messages.request`  | `messages` | `sharedos.messaging` / `send`, scoped to the receiver | `createMessageRequestTool` |
+| `sharedos.escalate` | `sharedos` | `sharedos` / `request` on path `["escalation"]`       | a handler you supply       |
+
+### `messages.request`
+
+Send an authorized request to another agent and wait for its durable reply. Note
+the two namespaces: the tool lives in `messages`, so it is enabled or disabled
+with that namespace, but the grant it needs is written over `sharedos.messaging`.
+Enabling the namespace is not authority to send, and sending is never authority
+for the recipient to act ([ADR 0015](adr/0015-message-purpose-and-recipient-execution.md)).
+
+### `sharedos.escalate`
+
+End the turn by asking a human to decide. Escalation is a claim about SharedOS —
+the request is recorded and audited, and nothing is granted while it is pending —
+so it is an affordance a host grants, not a phrase a model can talk its way into.
+Publishing it as a tool is what makes it permission-filtered, and what lets a
+driver _choose_ it rather than have intent read out of its prose
+([ADR 0011](adr/0011-escalation-terminal-outcome.md),
+[ADR 0018](adr/0018-escalation-over-mcp.md)).
+
+It is nonetheless never invoked. A driver whose catalogue offers the name ends
+the turn with an escalate outcome instead of calling it, so nothing reaches the
+kernel. Register a handler anyway: it is what puts the tool in the catalogue, and
+it should **fail** if some driver forwards the call, because a handler that
+quietly succeeded would record an escalation on a turn that then completed
+normally. `ESCALATION_TOOL_DEFINITION`, `escalationRequest`, and
+`escalationReason` are exported from `@aicoo/sharedos-runtime`.
+
+Its single argument is `reason`, at most 512 characters. A longer one is cut to
+the bound rather than replaced — the first 512 characters of what was said are a
+truer record than a sentence saying nothing was. A call that names the affordance
+with unreadable arguments still escalates, under a reason saying so; forwarding
+it to a kernel that will refuse it would turn "the driver asked for a human" into
+"the agent made a malformed call", which is the wrong record of what happened.
 
 ## Registering your own tool
 
@@ -207,6 +252,7 @@ semantics if you only need persistence around it.
 ## Related
 
 - [HTTP API reference](http-api.md) — the tool routes on the wire
+- [MCP API reference](mcp-api.md) — the same catalog as an MCP server
 - [Reason and error codes](errors.md) — what each denial means
 - [ADR 0006: Tool namespace control plane](adr/0006-tool-namespace-control-plane.md)
 - [Permission model](security/permission-model.md) — the normative invariants
