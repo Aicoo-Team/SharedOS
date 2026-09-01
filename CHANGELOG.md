@@ -10,6 +10,26 @@ each entry calls out what a host has to update.
 
 ### Changed — breaking
 
+- **Optional fields were added to strict schemas, and the protocol version did
+  not move.** `AuthorizationDecision.requiredCapability`, `Escalation.request`,
+  and `AuditEvent.request` are optional and additive for anything that _writes_
+  them. Nothing in this repository's contracts is additive for a reader: the
+  schemas are `.strict()`, so a consumer built against an earlier release
+  rejects the unknown key rather than ignoring it. An older client parsing a
+  newer host's `ExecutionResult` fails on `escalation.request`; one parsing an
+  `AuthorizationDecision` fails on `requiredCapability`. Both surface as a
+  malformed-response error with nothing to explain it.
+
+  **Upgrade every consumer of these types in step with the host that writes
+  them.** `ProtocolVersionSchema` is deliberately left at `"1"`: it is one
+  literal shared by `ExecutionRequest`, `ExecutionEvent`, `ExecutionResult`,
+  `MessageEnvelope`, and `RuntimeManifest`, so moving it would re-stamp four
+  objects that did not change in order to signal one optional field on a fifth.
+  A reader re-pinning because `MessageEnvelope` said `"2"` would find nothing
+  about a message had changed. The bump rides the next release with its own
+  reason to move; `docs/open-items.md` holds the row, and ADR 0019 records the
+  decision and the failure mode it accepts.
+
 - **The conformance manifest's reference column is renamed.** `EMBEDDED_COLUMN`
   is now `ADVERSARY_COLUMN`, with id `adversary-embedded` and label `Adversary`
   in place of `sharedos-embedded` / `Standard`. The column is unchanged — the

@@ -114,6 +114,36 @@ state, resolved the same way. The kernel never decides to escalate on its own �
 it describes, and the host chooses — so there is exactly one place a turn can
 end this way and exactly one queue a reviewer reads.
 
+### The protocol version does not move, and that is a decision
+
+Both fields are optional and both are additive for a writer. Neither is additive
+for a reader. The contract schemas are `.strict()`, so a consumer built against
+the current version rejects an object carrying an unknown key rather than
+ignoring it: an older client parsing a newer host's `ExecutionResult` fails on
+`escalation.request`, and one parsing an `AuthorizationDecision` fails on
+`requiredCapability`. "Additive" is a statement about writers that this
+repository's own strictness makes false for everyone else.
+
+The first draft of this ADR concluded that the version therefore moves with the
+fields. It does not, and the reason is what `ProtocolVersionSchema` actually is:
+one `z.literal("1")` shared by `ExecutionRequest`, `ExecutionEvent`,
+`ExecutionResult`, `MessageEnvelope`, and `RuntimeManifest`. Moving it re-stamps
+every protocol object in the system — including the four that did not change —
+to signal one optional field on `Escalation`. A reader re-pinning because
+`MessageEnvelope` says `"2"` would find nothing about a message had changed,
+which is a version number that has stopped carrying information.
+
+So the break is documented rather than encoded, for this release. `0.x` is where
+that is affordable: the changelog names it under breaking changes, and the
+version moves at the next release that has its own reason to move, carrying this
+with it. `docs/open-items.md` holds the row until then.
+
+The failure mode being accepted is explicit: a host on a newer SharedOS talking
+to a client on an older one gets a strict-schema rejection reported as a
+malformed response, with no version difference to explain it. That is worse
+diagnostics than a version bump would give and better than a version number that
+means nothing.
+
 ## Consequences
 
 - The audit record for an escalation becomes machine-readable. A control plane
@@ -130,20 +160,15 @@ end this way and exactly one queue a reviewer reads.
   denial names the capability that denial described. It lands with the
   implementation — ADR 0013's gate covers every declared row, so a row added
   ahead of the code would have to be declared `notImplemented` with a reason.
+- Every consumer of `ExecutionResult` and `AuthorizationDecision` upgrades in
+  step with any host that writes these fields. Nothing in the protocol version
+  says so, by the decision above, so the changelog and this ADR are the only
+  notice a reader gets.
 - `CapabilityRequest` stops being a type with no port. It is still not authority
   and still not accepted as input. Its row in `docs/open-items.md` — "define a
   port or delete it" — is closed by **the implementing PR**, not by this ADR: an
   open item is closed by the code that closes it, not by a decision to write
   that code.
-
-### Protocol version
-
-The field is additive and optional for a writer, and still breaking for a
-reader: every schema here is `.strict()`, so a reader on the previous version
-rejects an envelope carrying the unknown key rather than ignoring it. **The
-protocol version is bumped**, on the rule that what decides a bump is whether an
-existing peer can still parse what it receives, not whether the author added or
-removed a field.
 
 ### Open
 
