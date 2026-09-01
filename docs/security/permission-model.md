@@ -43,7 +43,8 @@ A capability binds these fields together:
 - exact or descendant scope.
 
 Canonical resource namespaces include `files`, `sharedos.messaging`,
-`sharedos.execution`, and host-registered external tool namespaces. A file path
+`sharedos.execution`, `sharedos` (whose `["escalation"]` path governs the
+escalation affordance), and host-registered external tool namespaces. A file path
 identifies the smallest stable resource scope, such as
 `["Memory", "project-x"]`, `["Workspace", "public", "summary.md"]`, or a
 single file. Messaging uses a structured recipient address instead.

@@ -209,6 +209,8 @@ names such as:
 
 - `sharedos.execution` + `invoke`, scoped to a target agent
 - `sharedos.messaging` + `send`, scoped to a recipient
+- `sharedos` + `request` on path `["escalation"]`, which decides whether a turn
+  is offered the `sharedos.escalate` affordance at all
 - `files.list`, `files.stat`, `files.read`, `files.search`, `files.grep`
 - `files.create`, `files.replace`, `files.append`, `files.delete`
 - `files.snapshot.create`, `files.snapshot.list`, `files.snapshot.restore`
@@ -340,6 +342,15 @@ is returned as a typed result with HTTP 200. Message submission returns 202 only
 when the transport reports `accepted`; completed, denied, or failed delivery
 results use 200. Malformed, unauthenticated, and transport-level failures use
 4xx/5xx responses.
+
+### Harness-facing
+
+`@aicoo/sharedos-mcp` opens a turn-scoped MCP bridge — over stdio, or over
+Streamable HTTP on loopback — so an external coding-agent CLI runs on its own
+loop against a catalogue SharedOS filtered. The bridge holds no policy: every
+`tools/call` becomes an ordinary `ToolCall` re-authorized by the same kernel, and
+the bridge closes when the turn closes. This shape composes with either of the
+other two, because it is a view onto a kernel, not a third kernel.
 
 ## Dependency rule
 

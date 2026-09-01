@@ -1,6 +1,6 @@
 # npm release runbook
 
-SharedOS publishes eight public ESM packages at one synchronized prerelease
+SharedOS publishes eleven public ESM packages at one synchronized prerelease
 version. `@aicoo/sharedos` is the recommended entry point; the other packages let
 hosts choose a smaller dependency surface. Prereleases use the `next` dist-tag,
 so an alpha never becomes `latest` accidentally.
@@ -81,7 +81,7 @@ SHAREDOS_RELEASE_CONFIRM=v0.1.0-alpha.0 pnpm release:publish
 and that commit to be contained in `origin/main`. It always publishes with
 public access to the official npm registry under the `next` dist-tag.
 
-After all eight packages exist, configure `release.yml` as their trusted
+After all eleven packages exist, configure `release.yml` as their trusted
 publisher on npm and then push the tag:
 
 ```bash

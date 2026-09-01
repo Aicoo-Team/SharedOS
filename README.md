@@ -195,6 +195,8 @@ The [quickstart](docs/quickstart.md) is two working programs — the kernel
 embedded in your process, and the same kernel over HTTP — written against the
 published packages. From there:
 
+- [Every endpoint](docs/endpoints.md): one page naming all five surfaces, and
+  the capability space they all resolve to.
 - [HTTP API reference](docs/http-api.md): every route, request body, status
   code, and header, plus where authentication enters.
 - [MCP API reference](docs/mcp-api.md): the same catalog as an MCP server —

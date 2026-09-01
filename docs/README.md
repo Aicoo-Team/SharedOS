@@ -87,6 +87,9 @@ is the boundary between them and the agents that act on them.
 
 - [Quickstart](quickstart.md): two working programs — the kernel embedded in
   your process, and the same kernel over HTTP — against the published packages.
+- [Every endpoint](endpoints.md): one page naming all five surfaces — the HTTP
+  routes, the MCP methods, the tool catalog, the embedded API, and the one
+  outbound call — with the capability space they all resolve to.
 - [HTTP API reference](http-api.md): every route, request body, status code, and
   header, plus where authentication enters.
 - [Tool catalog](tools.md): the twelve `files` tools, the two standard tools

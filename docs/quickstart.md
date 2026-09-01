@@ -365,9 +365,11 @@ points at another subtree voids the grant without SharedOS seeing it. See the
 
 ## Next
 
+- [Every endpoint](endpoints.md) — all five surfaces on one page
 - [HTTP API reference](http-api.md) — every route, body, and status code
-- [Tool catalog](tools.md) — the twelve `files` tools, the three availability
-  gates, and how to register your own
+- [MCP API reference](mcp-api.md) — the same catalog served to a harness
+- [Tool catalog](tools.md) — the twelve `files` tools, the two standard tools
+  outside them, the three availability gates, and how to register your own
 - [Reason and error codes](errors.md) — what a denial means and what to do
 - [Host integration guide](host-integration.md) — the production ports
 - [Permission model](security/permission-model.md) — the normative invariants
