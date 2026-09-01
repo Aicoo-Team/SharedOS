@@ -10,6 +10,7 @@ import {
   SharedOSExecutor,
   StandardRuntime,
   type AgentTurnDriver,
+  createEscalationTool,
 } from "@aicoo/sharedos-runtime";
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
 
@@ -143,17 +144,7 @@ function testKernel(options: { readonly escalation?: boolean } = {}) {
       }),
     ],
   });
-  kernel.registerTool({
-    definition: ESCALATION_TOOL_DEFINITION,
-    parseArguments: (arguments_) => arguments_,
-    invoke: async (context, call) => ({
-      callId: call.id,
-      tool: call.tool,
-      status: "failed",
-      error: { code: "escalation_not_terminated", message: "should never be invoked" },
-      completedAt: context.now,
-    }),
-  });
+  kernel.registerTool(createEscalationTool());
   kernel.registerTool({
     definition: READ_TOOL,
     parseArguments: (arguments_) => arguments_,

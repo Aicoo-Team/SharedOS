@@ -82,9 +82,18 @@ export interface McpToolServerOptions {
 
 export const SHAREDOS_MCP_SERVER_NAME = "sharedos";
 
+/**
+ * The version a server built without `serverInfo` reports in `initialize`.
+ *
+ * It names the build a harness connected to, so it is kept equal to the
+ * synchronized package version by the release gate, like every other version
+ * constant that reaches a record or a wire.
+ */
+export const MCP_SERVER_VERSION = "0.1.0-alpha.3";
+
 const DEFAULT_SERVER_INFO: McpServerInfo = Object.freeze({
   name: SHAREDOS_MCP_SERVER_NAME,
-  version: "0.1.0-alpha.0",
+  version: MCP_SERVER_VERSION,
 });
 
 /**

@@ -4,6 +4,8 @@
 - Date: 2026-08-28
 - Amends: the vendor-harness consequence in
   `docs/adr/0011-escalation-terminal-outcome.md`
+- Amended by: `docs/adr/0018-escalation-over-mcp.md`, for the MCP-column
+  consequence below
 
 ## Context
 
@@ -40,6 +42,8 @@ already defined.
 permission-filtered like any other tool, with `ESCALATION_TOOL_DEFINITION`,
 `ESCALATION_RESOURCE_PATH` and `ESCALATION_ACTION` exported from
 `@aicoo/sharedos-runtime`. An agent holding no grant over it does not see it.
+(Amended 2026-08-29: `createEscalationTool()` in the same package is the
+handler a host registers; the conformance world registers it too.)
 
 It is nonetheless never invoked. Both drivers recognise the name and return an
 escalate decision, so no `ToolCall` is built and the kernel is never asked. The
@@ -102,10 +106,14 @@ driver's doing under their name.
   having gained a tool, a namespace, and the grant that makes it visible. The
   step declaration takes 117 to 121 and not applicable 8 to 4, world set hash
   `fca58c64` to `c75490de`.
-- The MCP columns keep the escalation row as not applicable, under a reason that
-  is now true of them specifically: on that path tool calls leave over MCP
-  rather than over the driver's decision channel, so a call to the affordance is
-  answered by the kernel instead of ending the turn.
+- The MCP columns kept the escalation row as not applicable when this was
+  written, under a reason that was true of them then: on that path tool calls
+  leave over MCP rather than over the driver's decision channel, so a call to
+  the affordance reached the kernel instead of ending the turn. Amended by ADR
+  0018: `createMcpHarnessRuntime` now recognises the ask at the invoker the
+  bridge is opened over, answers it with an instruction to stop, refuses every
+  later call `escalation_pending`, and returns `escalate` once the harness winds
+  down, so the row runs on the MCP columns and is graded like any other.
 - Below the ceiling, the record carries the step as the runtime declared it.
   The envelope enforces the ceiling and the distinct-step count (ADR 0012), not
   the truth of a position: a replacement plugin's steps are its own claim about

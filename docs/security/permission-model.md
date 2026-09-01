@@ -26,7 +26,10 @@ agent. A message carries data and one host-bound purpose, never authority.
 - **Issuer / authority**: the principal that issued or attests the grant.
 - **Owner**: the principal whose resource is being accessed.
 - **Host ceiling**: product or organization policy that can reduce, but never
-  increase, granted authority.
+  increase, granted authority. It is applied before SharedOS is asked: the
+  host's `GrantSource` returns only the grants its policy allows, and the host
+  enables only the tool namespaces its policy allows. The kernel has no policy
+  port of its own and applies nothing beyond those two inputs.
 - **Namespace / world**: the tenant or experiment isolation boundary within
   which identifiers and resources resolve.
 
@@ -43,7 +46,8 @@ A capability binds these fields together:
 - exact or descendant scope.
 
 Canonical resource namespaces include `files`, `sharedos.messaging`,
-`sharedos.execution`, and host-registered external tool namespaces. A file path
+`sharedos.execution`, `sharedos` — the kernel's own affordances, today only
+`["escalation"]` — and host-registered external tool namespaces. A file path
 identifies the smallest stable resource scope, such as
 `["Memory", "project-x"]`, `["Workspace", "public", "summary.md"]`, or a
 single file. Messaging uses a structured recipient address instead.
@@ -54,8 +58,17 @@ in another world even if its resource namespace, path, and owner text are the
 same.
 
 Writes are never implied by reads. Search is never implied by list. Registering
-a tool does not imply permission to discover or invoke it. Wildcard actions, if
-enabled by a host, require the same complete resource and constraint match.
+a tool does not imply permission to discover or invoke it.
+
+One action is special. A capability whose `actions` lists the literal `"*"`
+covers every action on its resource. There is no switch that enables it: a host
+enables it by issuing such a grant, and should do so rarely, because ADR 0005
+keeps create, replace, append, and delete distinct precisely so that authority
+can be narrower than everything. It widens only the action test — resource,
+owner, scope, purpose, time window, and bounded use are matched exactly as for
+a named action — and delegation treats it as the widest action set: a derived
+grant may carry `"*"` only when its parent does. Nothing else expands;
+`snapshot:*` is an ordinary string that matches no action.
 
 ## Grant shape and constraints
 
@@ -109,7 +122,8 @@ For each concrete resource or tool operation, the kernel evaluates:
 
 1. Validate the protocol object and namespace/world binding.
 2. Establish the authenticated actor independently from untrusted payload.
-3. Load authority from the trusted grant source, or deny.
+3. Load authority from the trusted grant source, or deny. The host ceiling has
+   already been applied here: the source returns only what host policy allows.
 4. Ensure the request owner matches the access context owner.
 5. Ignore grants whose subject or issuer does not match the access context.
 6. Ignore grants that are not active or have been revoked as of the turn's
@@ -117,12 +131,21 @@ For each concrete resource or tool operation, the kernel evaluates:
 7. Match the declared purpose when the grant restricts purposes.
 8. Match resource namespace, owner, path scope, and exact action together.
 9. Validate the delegation chain of a derived grant, or deny.
-10. Apply the host ceiling and any non-grant policy constraints.
-11. Atomically consume a bounded grant only for execution, not discovery.
-12. Return an explicit decision and append an audit event.
+10. Atomically consume a bounded grant only for execution, not discovery.
+11. Return an explicit decision and append an audit event.
 
 If no complete grant matches, deny. If trusted grant state, a delegation
 ancestor, or an atomic usage store is unavailable, fail closed.
+
+The host ceiling is not a step of this evaluation because it happens before it.
+A host applies product or organization policy in two places, both upstream of
+the kernel: in what its `GrantSource` returns for a context, and in which tool
+namespaces it enables for that context (a `ToolNamespaceSettingsStore` may
+narrow a requested selection, never widen it). A grant the ceiling forbids is
+simply not returned, so the kernel never sees it; a namespace the ceiling
+forbids is never enabled, so its tools are never discoverable. There is no
+policy port inside the kernel, and a non-grant constraint a host wants applied
+is applied the same way — by not issuing, not returning, or not enabling.
 
 ### Denials SharedOS caused
 
@@ -430,7 +453,7 @@ Any permission-related change must answer:
 - Where is the authenticated actor established?
 - How is the world/tenant boundary bound and checked?
 - Can two grants accidentally combine into broader authority?
-- Is expiry/revocation checked at the side effect?
+- Is expiry checked at the side effect, and revocation at the turn's admission?
 - Is bounded use atomic across instances?
 - Are discovery and invocation both gated?
 - Are allow and deny paths tested?

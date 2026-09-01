@@ -367,3 +367,62 @@ describe("CapabilityAuthorizer", () => {
     });
   });
 });
+
+describe('the "*" action', () => {
+  const everything = grant({
+    id: "grant-files-everything",
+    capabilities: [{ resource: RESOURCE, actions: ["*"], scope: "exact" }],
+  });
+
+  it("is a granted literal that covers every action on its resource", async () => {
+    const authorizer = new CapabilityAuthorizer();
+    for (const action of ["read", "delete", "snapshot:restore"]) {
+      await expect(
+        authorizer.authorize(context([everything]), { resource: RESOURCE, action }),
+      ).resolves.toEqual({
+        allowed: true,
+        reasonCode: "allowed",
+        matchedGrantId: "grant-files-everything",
+      });
+    }
+  });
+
+  it("widens the action test only: path, scope, and purpose still have to match", async () => {
+    const authorizer = new CapabilityAuthorizer();
+    await expect(
+      authorizer.authorize(context([everything]), {
+        resource: { ...RESOURCE, path: [...RESOURCE.path, "notes.md"] },
+        action: "read",
+      }),
+    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+    await expect(
+      authorizer.authorize(
+        authorityFor({ ...accessContext(), purpose: "publish-summary" }, [everything]),
+        { resource: RESOURCE, action: "read" },
+      ),
+    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+  });
+
+  it('is not a request pattern: asking for "*" against named actions is denied', async () => {
+    const authorizer = new CapabilityAuthorizer();
+    await expect(
+      authorizer.authorize(context([grant()]), { resource: RESOURCE, action: "*" }),
+    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+  });
+
+  it("makes every tool over the resource discoverable, and nothing outside it", async () => {
+    const authorizer = new CapabilityAuthorizer();
+    await expect(
+      authorizer.canDiscover(context([everything]), {
+        resource: { namespace: "files", path: [] },
+        action: "delete",
+      }),
+    ).resolves.toMatchObject({ allowed: true, matchedGrantId: "grant-files-everything" });
+    await expect(
+      authorizer.canDiscover(context([everything]), {
+        resource: { namespace: "calendar", path: [] },
+        action: "read",
+      }),
+    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+  });
+});

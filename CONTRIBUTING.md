@@ -90,7 +90,9 @@ Every permission change must preserve these invariants:
 - a complete resource-action-purpose tuple matches a complete grant;
 - discovery is filtered and execution is re-authorized;
 - tool arguments are runtime-validated and cancellation reaches providers;
-- expiry and revocation are checked at point of use;
+- expiry is checked at point of use; revocation, purpose withdrawal, `notBefore`,
+  and `issuedAt` are decided at the turn's admission instant and observed by the
+  next turn (ADR 0016);
 - bounded uses are atomic in multi-instance deployments;
 - namespace/world, owner, actor, authority, purpose, and trace reach audit;
 - provider failures do not trigger fallback to a wider identity.

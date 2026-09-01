@@ -182,12 +182,27 @@ each entry calls out what a host has to update.
   closing it surfaces as a JSON-RPC internal error, which carries nothing about
   authority and which harnesses retry into a frame limit. The grant is checked
   first, so an agent without it gets `tool_unavailable`. See ADR 0018.
+- `createEscalationTool()` in `@aicoo/sharedos-runtime`: the handler a host
+  registers so `sharedos.escalate` is catalogued. The definition was exported
+  and every host wrote the same failing handler by hand; the conformance world
+  and the adapter tests now register this one. It is never meant to run -- a
+  driver ends the turn on the name -- and fails with
+  `escalation_not_terminated` if a driver forwards the call anyway.
 - What enforcement costs, measured on both paths and reported in
   `docs/conformance/systems-cost.md`. `pnpm bench` regenerates it, against a
   monotonic clock added for the purpose — wall time is not a duration.
 - `pnpm release:promote-latest <version>` moves the `latest` dist-tag across the
   whole package set in one command, refusing to act unless every package has
   published that version.
+
+### Removed
+
+- `release:check:private`, and the `--allow-private` flag on
+  `scripts/release.mjs` behind it. The flag required every package to be
+  `private: true` under an `UNLICENSED` license, the preparation state the
+  packages left before `0.1.0-alpha.0` was published; with all eleven public
+  and Apache-2.0, the command could only throw. `release:check` is the one
+  release check.
 
 ### Fixed
 
@@ -205,9 +220,23 @@ each entry calls out what a host has to update.
   among them — were left at `0.1.0-alpha.0` while their packages moved. They
   name the build that produced an execution record, so a stale one misattributes
   evidence. `release:check` guarded two of the seven and now guards all of them.
-- The client example in the host integration guide passed a `token` option that
-  `SharedOSClientOptions` has never had. It is `headers`, which accepts a value
-  or an async function.
+  An eighth, the version the MCP server reports in `initialize.serverInfo` when
+  built without `serverInfo`, was still `0.1.0-alpha.0`; it is now
+  `MCP_SERVER_VERSION`, exported from `@aicoo/sharedos-mcp` and guarded too.
+- The publish order listed `@aicoo/sharedos-conformance` ahead of
+  `@aicoo/sharedos-mcp` and `@aicoo/sharedos-adapters`, both of which it depends
+  on, so a run that stopped part-way could leave it on the registry with
+  unpublished dependencies. `scripts/package-set.mjs` is now in dependency
+  order, `release:check` refuses an order that is not, and `test:release`
+  checks the order against the manifests.
+- `SharedOSClientOptions.token` and `SharedOSCallOptions.purpose` were
+  undocumented: the HTTP reference listed only `headers`, and an earlier note
+  here said `token` had never existed. Both have been there since the client was
+  written. `token` is a value or an async function sent as a Bearer
+  `authorization` header, `headers` carries anything else, and per-call
+  `purpose` sets `x-sharedos-purpose`, the header the quickstart's
+  `resolveContext` reads. All three are now in the HTTP reference and the
+  client README.
 - Publish verification retried the same registry URL with default caching, so a
   CDN edge holding a pre-publish `404` made the whole window unwinnable and a
   successful release reported failure. It now backs off up to five minutes and
