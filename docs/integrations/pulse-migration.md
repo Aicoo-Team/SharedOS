@@ -25,6 +25,12 @@ until a real process boundary is required.
 | `/api/v1/tools/namespaces`                       | Pulse-backed `ToolNamespaceSettingsStore` plus SharedOS GET/PUT semantics             |
 | `lib/tools/mcp/bridge.ts`                        | Per-user `ContextToolProvider`; remove process-global MCP registry mutation           |
 | Existing `agentPermissions` checks               | Pulse host ceiling and adapter to trusted `CapabilityGrant` records                   |
+| `lib/local-agent/grants.ts` route grants         | Route lease only; authorization moves to the kernel                                   |
+| `c2c_tool_grants` and `c2c_tool_approvals`       | `CapabilityGrant` records plus one host consent workflow                              |
+| `lib/local-agent/trusted-tool-policies.ts`       | Host-side activation bookkeeping in front of the `GrantSource`                        |
+| `lib/escalation/sanitizer.ts` and clustering     | `HostCeiling` implementation; it may narrow and never widen                           |
+| `lib/escalation/permission-request.ts`           | Host consent workflow resolving a `CapabilityRequest` into a grant                    |
+| c2c delivery, endpoints, and device pairing      | `MessageTransport` implementation; never a second authorization point                 |
 | `lib/ai/shared-agent-core.ts` and agent-v04      | Model driver and host wrapper around one SharedOS turn                                |
 | `packages/codex-cloud-runtime` and agent-v05     | Codex `RuntimePlugin`; keep sandbox/backend details outside SharedOS core             |
 | `/api/v1/agent/message`                          | Authenticated transport into messaging plus target execution capabilities             |
@@ -115,6 +121,10 @@ No Pulse type, schema, route, or billing dependency moves into SharedOS.
 ### 2. Shadow authorization
 
 - Introduce `SHAREDOS_MODE=off|shadow|enforce` at the Pulse integration boundary.
+- Make the mode **per plane**, not one switch. `sharedOSMigrationMode` today is
+  one global value with a per-account override, so enforcing files would also
+  enforce the c2c and escalation planes added in phases 8-11, and a rollback of
+  either would have to take both. Each plane cuts over and rolls back alone.
 - In shadow mode, the existing decision serves the request while SharedOS emits
   a comparison event.
 - Treat every `SharedOS allow / legacy deny` and `SharedOS allow outside the
@@ -187,6 +197,138 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
 - Expose `@aicoo/sharedos-http` only when an external runtime actually needs a process
   boundary; embedded and HTTP modes must pass the same conformance suite.
 
+### 8. One grant source for both agent planes
+
+- Extend `grant-adapter.ts` to translate the c2c tables — route grants, tool
+  grants, and activated trusted policies — into `CapabilityGrant` records
+  alongside `agentPermissions`, so the chat plane and the agent-to-agent plane
+  resolve authority through one `GrantSource`.
+- Keep every translation complete: one capability per bucket, no union of
+  independent permission fields into a synthetic authority.
+- Withhold a trusted policy that the local bridge has not yet attested. A grant
+  a `GrantSource` returns is active by contract, so "approved but not applied"
+  stays host bookkeeping and never reaches the kernel.
+- Split `requireActiveGrant`. A communication session answers whether the route
+  is still live; it must stop also answering whether the caller is permitted.
+- Land this behind the c2c plane's own migration mode, shadow first.
+
+### 9. One decision point for tool approval and escalation
+
+- Implement `PolicySource` and `HostCeiling` (ADR 0020). Load the folder grants,
+  precedents and session-scope decisions once per turn, beside the grant set,
+  and decide against them synchronously — their keys are a bounded table, not a
+  per-argument query, so no decision needs a database read.
+- Stop applying policy in the `GrantSource`. The `toolAccess.allowedTools`
+  intersection moves to the ceiling, where a refusal is recorded as
+  `host_policy_denied` instead of reaching audit as `no_matching_grant`.
+- Implement `HostCeiling` over the remaining judgment checks so they stop being
+  a second enforcement point. Separate the three things currently bundled as
+  "judgment", because they do not belong in the same place:
+  - The **precedent mechanism** — fingerprint a request shape, match it against
+    the owner's prior answers, and skip the prompt — is deterministic and is
+    already wanted by both planes. Converge it to one implementation with a
+    typed key. Today the c2c plane reuses the escalation precedent table by
+    string-encoding a structured key into fields meant for something else:
+    `relationshipCluster` holds `c2c:<principalId>` and `queryFingerprint` holds
+    a JSON tuple, where the escalation plane writes a computed cluster and a
+    SHA-256 of normalized intent. That is one mechanism with no home, not two
+    policies.
+
+    Name the home in this phase rather than after it. The matching logic is a
+    SharedOS package — deterministic, opt-in, depending on nothing Pulse owns —
+    and the rows stay host-side behind a lookup port, because a precedent is a
+    record of what one owner answered and SharedOS stores nothing. Leaving the
+    home unstated is how the second copy comes back.
+
+  - A precedent decides whether to **ask**, never whether to **permit**. It runs
+    after authorization has already allowed the call, so it can only skip an
+    owner prompt. Keep that property explicit wherever it lands.
+  - The **model-based sanitizer** is not a ceiling and does not move into the
+    kernel decision. A ceiling runs in the discovery path, once per tool per
+    catalogue build, so it must be deterministic and cheap (ADR 0020). The
+    sanitizer stays the host gate it already is, running before the call reaches
+    the kernel. What changes is that it emits its verdict through the same
+    `AuditSink` with the same outcome vocabulary. Its defect today is that
+    nothing records it, not that it runs host-side.
+- `computePermissionGaps` largely dissolves. "Which scope was never granted" is
+  the same computation as the `requiredCapability` a `no_matching_grant` denial
+  now describes (ADR 0019); keep only the owner-facing scope copy.
+- Replace the in-memory permission elevation used for escalation replay with a
+  grant scoped to the requesting guest: `subject`, `expiresAt`, and
+  `maxUses: 1`. The reason it was never persisted — that `agentPermissions` has
+  no way to bound a grant to one requester for one use — does not apply to a
+  `CapabilityGrant`.
+- Resolve an escalation by issuing that grant, as ADR 0011 requires, using the
+  `CapabilityRequest` the denial described (ADR 0019). Do not add a second
+  approval path for c2c; the owner prompt and the escalation notice are two
+  presentations of one record.
+- Retire the per-plane reason-code vocabularies. Separate policy denials,
+  fail-closed denials, and escalations before computing any rate.
+
+### 10. One capability vocabulary
+
+- Delete the preset-to-tool-name tables. A tool name is not a permission key;
+  the resource path is. `read-project` and `edit-project` become capabilities
+  over a path with actions, resolved identically in Pulse and in the local
+  agent.
+- Ship the vocabulary from one package so the server and the local agent cannot
+  drift. Today the same table exists in both repositories and disagrees.
+- Register the local agent's vetted Git subset as a tool provider in the kernel
+  registry, beside the files provider. It is a provider, not a permission name,
+  and not an MCP server.
+- **Give Git its own resource namespace. Do not model it as file access.**
+  `repo` and `files` may address the same directory and are still different
+  resources, and `capabilityMatches` requires the namespace to be equal, so
+  holding one grants nothing over the other. Modelling `git commit` as a write
+  under `files` would mean every holder of file-write authority could also
+  commit, which is a permission cross-product the model forbids and a real
+  widening of what the current `GitCommit` permission allows.
+- Keep the two kinds of restriction in `safe-git.ts` apart, because only one of
+  them is a permission:
+  - **Scope** — arguments must resolve inside the approved repository
+    (`validatePathArguments`) — is expressed by the capability's path, exactly
+    as it is today.
+  - **Execution hardening** — five subcommands, per-subcommand argument
+    allowlists, `core.hooksPath=/dev/null`, `GIT_CONFIG_NOSYSTEM`,
+    `GIT_CONFIG_GLOBAL=/dev/null`, `--no-ext-diff`, `--no-textconv`,
+    `hash-object --no-filters`, symlink refusal — is not authorization at all.
+    It survives because the provider is the only code that can turn a capability
+    into a Git invocation, and it can only emit the hardened form.
+- Anything outside that subset — `push`, `reset`, `checkout`, `clean`, `config`,
+  `remote` — remains `shell.command`, which is never silently granted. The
+  provider does not widen the reachable set of Git operations; it only removes
+  tool names from the permission vocabulary.
+
+### 11. Extract the transport
+
+- Move the route lease, device identity, delivery state machine, and revocation
+  cascade behind `MessageTransport`. The kernel already owns `sendMessage` and
+  authorizes before it delivers; the extracted package implements what
+  `deliver` does and holds no authorization decision of its own.
+- Name the two leases apart. `TurnAuthorityScope` is an authority lease; a
+  communication session is a route lease.
+- **Authorization does not replace the route-lease check, and the lease check
+  keeps its lock.** These answer different questions at different instants:
+  - The kernel decides whether the actor _may_ send to that recipient. It
+    decides against the turn's snapshot, resolved once at the turn boundary, so
+    by ADR 0010 it cannot see a revocation that lands mid-turn.
+  - The transport decides whether the route is _still live at the moment of
+    dispatch_, under the row lock that already exists —
+    `requireGrantForMessagePersistence` takes `.for('update')` on the
+    communication session and its collaboration, so a revocation must wait for
+    that transaction to commit.
+
+  Delivery is a side effect that outlives the decision authorizing it, so an
+  authorization that is deliberately one turn stale cannot be the only gate.
+  Move `.for('update')` behind `MessageTransport` unchanged; the port does not
+  take it over. A dispatch whose lease check is skipped because the kernel
+  already allowed the send is exactly the revocation race this preserves against,
+  and conformance should carry a row for it: a send authorized before a
+  revocation, dispatched after it, must terminate rather than deliver.
+
+- Embedded Pulse and a self-hosted deployment must pass the same conformance
+  suite, as with the HTTP boundary in phase 7.
+
 ## Observability and rollback
 
 Record decision mismatches, denied operations, matched grant IDs, actor, owner,
@@ -218,5 +360,13 @@ never takes ownership of Pulse data.
 - Agent-v05 Codex implements `RuntimePlugin`, routes SharedOS effects through
   `RuntimeHost`, and records runtime/backend/model provenance separately.
 - Heartbeat and benchmark/product completion policy remain outside SharedOS.
+- Exactly one component decides that an operation is allowed. The c2c and
+  escalation planes hold no grant storage and no authorization check of their
+  own; they contribute a route and a ceiling.
+- No tool-name-to-permission table exists in either repository.
+- An escalation approval is a bounded, auditable grant that expires, not an
+  in-process object.
+- Policy denials, fail-closed denials, and escalations are separable in audit,
+  so a denial rate can be computed at all.
 - Move/copy are either covered by multi-resource authorization or remain
   explicitly outside the standard SharedOS tool set.
