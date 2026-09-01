@@ -235,7 +235,7 @@ describe("the conformance suite", () => {
     // own, and one more gives the mid-turn row its expiry reading. A case set
     // that drifts below this has stopped covering the document it claims to
     // implement.
-    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(24);
+    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(25);
     expect(new Set(CANONICAL_ATTACK_MOVES.map(({ kind }) => kind)).size).toBe(
       CANONICAL_ATTACK_MOVES.length,
     );
@@ -313,27 +313,29 @@ describe("the conformance suite", () => {
   it("passes every implemented row and reports where each was refused", async () => {
     const { manifest, evidence } = await runConformanceSuite();
 
-    expect(manifest.rows).toHaveLength(27);
+    expect(manifest.rows).toHaveLength(28);
     expect(manifest.columns).toHaveLength(5);
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
-    expect(cells).toHaveLength(135);
+    expect(cells).toHaveLength(140);
     // Every implemented row passes in every column that can run it. The rest are
     // stated: two rows SharedOS does not implement, counted once per column, and
-    // one row per vendor column whose attempt a harness structurally cannot
-    // make -- reading the runtime surfaces it is never handed. Two others used
-    // to sit here and no longer do, and neither was a fact about harnesses:
-    // escalation is a catalogued tool now, and the step ceiling is reachable
-    // once a driver can name its own step.
-    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(121);
+    // two rows per vendor column it structurally cannot run -- one whose
+    // attempt reads the runtime surfaces a harness is never handed, and the
+    // ungranted-escalation row, which only a plugin that owns its outcome can
+    // attempt. Two others used to sit here and no longer do, and neither was a
+    // fact about harnesses: escalation is a catalogued tool now, and the step
+    // ceiling is reachable once a driver can name its own step.
+    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(122);
     expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(10);
-    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(4);
+    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(8);
     expect(strictFailures(manifest)).toEqual([]);
     // Evidence exists for every cell that ran a turn, and for no cell that did
-    // not: the two unimplemented rows in every column. The escalation row now
-    // runs everywhere, so it leaves evidence everywhere too. The step-ceiling
-    // row always did -- an unreachable *attempt* still runs its turn, unlike an
+    // not: the two unimplemented rows in every column, and the ungranted-
+    // escalation row in every column but the embedded one. The escalation row
+    // runs everywhere, so it leaves evidence everywhere. The step-ceiling row
+    // always did -- an unreachable *attempt* still runs its turn, unlike an
     // unsupported row, which is why that change moved cells without moving this.
-    expect(evidence).toHaveLength(125);
+    expect(evidence).toHaveLength(126);
 
     // Every vendor column lands on the same counts. That is the portability
     // claim in its smallest form: adding a harness adds a column, not an
@@ -341,7 +343,7 @@ describe("the conformance suite", () => {
     for (const column of manifest.columns.filter(({ id }) => id !== "sharedos-embedded")) {
       const columnCells = cells.filter((cell) => cell.columnId === column.id);
       expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(24);
-      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(1);
+      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(2);
       expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(2);
     }
 
@@ -387,6 +389,31 @@ describe("the conformance suite", () => {
     expect(escalation?.attempted).toBe(escalation?.declared);
     expect(escalation?.refusedBy).toEqual(["envelope"]);
     expect(escalation?.detail).toMatch(/ended as `escalated`/u);
+
+    // The ungranted-escalation row runs only where a plugin owns its outcome.
+    // The embedded adversary returns `escalate` whatever the catalogue holds,
+    // and the envelope refuses the outcome under the same code as any call
+    // outside the catalogue; the control read before it shows the runtime ran.
+    // Nothing reached the kernel, so the record carries no escalation and the
+    // audit stream no request. Every other column declares the row unsupported,
+    // which is a claim about the column, and leaves no evidence for it.
+    const refused = byCase("escalation-refused", "escalation-withheld");
+    expect(refused?.status).toBe("pass");
+    expect(refused?.attempted).toBe(refused?.declared);
+    expect(refused?.reasonCodes).toEqual(["tool_unavailable"]);
+    expect(refused?.refusedBy).toEqual(["envelope"]);
+    expect(refused?.detail).toMatch(/ended as `failed` with `tool_unavailable`/u);
+    const refusedEvidence = evidence.filter(({ caseId }) => caseId === "escalation-refused");
+    expect(refusedEvidence.map(({ columnId }) => columnId)).toEqual(["sharedos-embedded"]);
+    const refusedRecord = refusedEvidence[0]?.records[0];
+    expect(refusedRecord?.execution.status).toBe("failed");
+    expect(refusedRecord?.execution.terminalReasonCode).toBe("tool_unavailable");
+    expect(refusedRecord?.execution.escalation).toBeUndefined();
+    expect(refusedRecord?.execution.exposedTools).not.toContain("sharedos.escalate");
+    const refusedRow = manifest.rows.find((row) => row.caseId === "escalation-refused");
+    expect(refusedRow?.cells.slice(1).map(({ status }) => status)).toEqual(
+      Array.from({ length: 4 }, () => "not_applicable"),
+    );
 
     // The next-turn row is the one that needs two turns against one world.
     const revoked = byCase("revoked-mid-turn", "revoked-while-the-first-turn-runs");

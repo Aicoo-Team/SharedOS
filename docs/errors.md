@@ -263,17 +263,17 @@ differently, so an outage is never reported as a policy decision.
 
 `ExecutionResult.events`, append-only and ordered by `sequence`.
 
-| Type             | When                                                                 |
-| ---------------- | -------------------------------------------------------------------- |
-| `turn.started`   | Admission passed; the runtime is about to run                        |
-| `tool.requested` | The runtime asked for a call, before authorization                   |
-| `tool.completed` | Any outcome — succeeded, denied, or failed                           |
-| `runtime.event`  | A plugin's own event, wrapped rather than trusted                    |
-| `turn.completed` | The runtime finished                                                 |
-| `turn.escalated` | The runtime stopped and asked for a human; the result is `escalated` |
-| `turn.failed`    | The runtime or driver failed                                         |
-| `turn.denied`    | Admission or context validation refused the turn                     |
-| `turn.cancelled` | Deadline expired or the host cancelled                               |
+| Type             | When                                                                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `turn.started`   | Admission passed; the runtime is about to run                                                                                                                                        |
+| `tool.requested` | The runtime asked for a call, before authorization                                                                                                                                   |
+| `tool.completed` | Any outcome — succeeded, denied, or failed                                                                                                                                           |
+| `runtime.event`  | A plugin's own event, wrapped rather than trusted                                                                                                                                    |
+| `turn.completed` | The runtime finished                                                                                                                                                                 |
+| `turn.escalated` | The runtime stopped and asked for a human; the result is `escalated`                                                                                                                 |
+| `turn.failed`    | The turn ended in failure; `source` says who ended it — `envelope` (it refused the runtime's outcome, or the runtime threw) or `runtime` (a failure the runtime reported as its own) |
+| `turn.denied`    | Admission or context validation refused the turn                                                                                                                                     |
+| `turn.cancelled` | Deadline expired or the host cancelled                                                                                                                                               |
 
 ## Audit events
 

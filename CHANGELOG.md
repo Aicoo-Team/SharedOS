@@ -80,6 +80,15 @@ each entry calls out what a host has to update.
 
 ### Changed — behaviour
 
+- The conformance judge is at version 3: a failed turn that the envelope ended
+  names `envelope` as its enforcement point, read from the `turn.failed`
+  event's new `source`, where version 2 named a boundary for denied turns
+  only. Statuses are graded as before; a manifest or artifact produced under
+  version 2 differs from one under version 3 in that field alone.
+- `turn.failed` carries `source` beside `code`: `envelope` when the envelope
+  refused the runtime's outcome or the runtime threw, `runtime` when the
+  envelope relayed a failure the runtime reported as its own. Additive; the
+  event's shape is otherwise unchanged.
 - A failure an adapter ends its turn with — `harness_*`, `model_*` — now carries
   `retryable: false` on the driver path as it already did on the MCP path; the
   field was simply absent before. Nothing an adapter fails on is retryable:
@@ -119,6 +128,13 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- A conformance row for an escalation the turn was not granted. A runtime that
+  ends its turn with `escalate` while the catalogue does not offer the
+  affordance is refused by the envelope: the turn fails `tool_unavailable`,
+  and nothing is recorded or audited. Only a plugin that owns its outcome can
+  make the attempt, so the row runs on the embedded column and every driven,
+  MCP, and model column declares it `not applicable` -- the first use of
+  `ColumnLimits.unsupported`. The case-set and world-set hashes move.
 - `DriverRuntime` in `@aicoo/sharedos-adapters`: the one implementation behind
   `HarnessRuntime` and `ModelRuntime`, which are now its two named forms. A host
   installing another driver under its own identity uses it directly.

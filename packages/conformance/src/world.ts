@@ -1498,6 +1498,18 @@ export interface ConformanceWorldOptions {
    * rather than to a switch.
    */
   readonly broker?: "registered" | "granted";
+  /**
+   * Withhold the grant over the escalation affordance.
+   *
+   * The baseline world issues `ESCALATION_GRANT`, so the escalation row tests
+   * whether SharedOS records the request rather than whether the tool was
+   * visible. This asks the other question: with no grant the affordance is not
+   * in the catalogue, and a runtime that ends the turn by escalating anyway is
+   * a plugin returning an outcome it was never allowed to return. Withheld
+   * rather than revoked, because a host that never granted the affordance and
+   * a host that took it back are different rows, and revocation has its own.
+   */
+  readonly escalation?: "withheld";
   /** Bound the turn below the number of calls its move declares. */
   readonly maxToolCalls?: number;
   readonly maxSteps?: number;
@@ -1566,7 +1578,7 @@ export function createConformanceWorld(
     ...(options.overBroadDelegation === true ? overBroadGrants() : []),
     ...(options.restorable === true ? restoreGrants() : []),
     ...(options.broker === "granted" ? brokerGrants() : []),
-  ];
+  ].filter((grant) => options.escalation !== "withheld" || grant.id !== ESCALATION_GRANT);
   const all = [
     ...rootGrants(),
     ...(options.restorable === true ? restoreRootGrants() : []),

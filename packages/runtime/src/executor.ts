@@ -361,7 +361,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
           "invalid_runtime_outcome",
           "The runtime plugin returned an invalid terminal outcome.",
         );
-        emit("turn.failed", { code: error.code });
+        emit("turn.failed", { code: error.code, source: "envelope" });
         return resultFor(request, events, startedAt, this.#clock(), "failed", error, metadata);
       }
 
@@ -399,7 +399,10 @@ export class SharedOSExecutor implements TurnExecutionPort {
             "tool_unavailable",
             "The runtime ended the turn by escalation, but this turn's catalogue does not offer the affordance.",
           );
-          emit("turn.failed", { code: error.code });
+          // `source` says who ended the turn. A record reader -- the conformance
+          // judge is one -- can then credit the envelope with a refusal it made,
+          // and credit nothing for a failure the runtime reported as its own.
+          emit("turn.failed", { code: error.code, source: "envelope" });
           return resultFor(
             request,
             events,
@@ -445,7 +448,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
         };
       }
 
-      emit("turn.failed", { code: outcome.data.error.code });
+      emit("turn.failed", { code: outcome.data.error.code, source: "runtime" });
       return resultFor(
         request,
         events,
@@ -462,7 +465,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
       }
 
       const error = protocolError("runtime_failed", "The runtime plugin failed.", true);
-      emit("turn.failed", { code: error.code });
+      emit("turn.failed", { code: error.code, source: "envelope" });
       return resultFor(request, events, startedAt, this.#clock(), "failed", error, metadata);
     } finally {
       runtimeHostActive = false;

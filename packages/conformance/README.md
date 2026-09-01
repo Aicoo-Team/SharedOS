@@ -71,7 +71,7 @@ carrying the row's own wording — invariant, expected outcome, and every
 attempt's expectation — so the result table is regenerated from the definitions
 rather than transcribed beside them. The committed manifest,
 `docs/conformance/kernel-conformance.md`, is that table: it is where the rows,
-their signals, and each column's cell are read. The twenty-four moves, by what
+their signals, and each column's cell are read. The twenty-five moves, by what
 they attack:
 
 - **Authority a message cannot mint:** `forged_grant`, `read_to_mutation`,
@@ -84,7 +84,7 @@ they attack:
   `invalid_tool_result`, `budget_exceeded`.
 - **The runtime's reach:** `grant_material_unreachable`.
 - **How a turn ends and what it leaves:** `escalation_recorded`,
-  `record_completeness`.
+  `escalation_refused`, `record_completeness`.
 - **Declared and not built:** `typed_governed_views`, `replay_freshness`.
 
 The last two rows are declared and not built. They are here rather than omitted
@@ -298,10 +298,15 @@ per row and per condition, in four kinds (`ColumnLimits`):
 - `outOfScope` — a row SharedOS declares does not reach this path. The MCP
   columns declare the step-ceiling row out of scope: the harness owns its loop
   there, and SharedOS states the guarantee only while it owns the loop.
-- `unsupported` — a whole row the column cannot run. No committed column sets
-  it; it is retained for a host-authored column (see `docs/open-items.md`).
+- `unsupported` — a whole row the column cannot run. Every driven, MCP, and
+  model column sets it on the ungranted-escalation row: only a plugin that owns
+  its outcome can end a turn with an `escalate` the catalogue did not offer, so
+  the row runs on Standard alone and reads `not applicable` elsewhere, with the
+  reason.
 
 Escalation is no longer among the limits of any column. It is a catalogued
 tool, `sharedos.escalate`, so a driven column ends the turn by calling it, an
 MCP column has the ask recognised at the bridge and the turn settled from it,
-and the row is graded like any other.
+and the row is graded like any other. The one escalation row that _is_ among
+the limits is the ungranted one, for the reason above: a column that reads the
+catalogue before it escalates cannot make the attempt the row is about.
