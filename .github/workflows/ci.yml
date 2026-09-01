@@ -26,7 +26,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      # One build serves the three steps below; the pnpm scripts rebuild for a
+      # local run, which CI does not need after an explicit build.
       - run: pnpm build
-      - run: pnpm pack:lint
+      - run: node scripts/package-lint.mjs
       - run: pnpm --filter @aicoo/sharedos-example-quickstart start
-      - run: pnpm pack:check
+      - run: node scripts/pack-preview.mjs --check --no-build

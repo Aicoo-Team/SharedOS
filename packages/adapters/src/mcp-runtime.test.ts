@@ -29,9 +29,10 @@ import {
   type RuntimeHost,
   type RuntimeTurnRequest,
 } from "@aicoo/sharedos-runtime";
+import { codexMcpConfig, codexMcpServerSettings } from "@aicoo/sharedos-mcp";
 import { InMemoryAuditSink } from "@aicoo/sharedos-testkit";
 
-import { createMcpHarnessRuntime, type McpHarnessSpec } from "./mcp-runtime.js";
+import { CODEX_MCP_HARNESS, createMcpHarnessRuntime, type McpHarnessSpec } from "./mcp-runtime.js";
 import { claudeCodeProtocol } from "./claude-code/protocol.js";
 
 /**
@@ -747,5 +748,69 @@ describe("a harness runtime whose signal is aborted", () => {
     await expect(
       createMcpHarnessRuntime(fakeHarness([])).run(visible, host, controller.signal),
     ).rejects.toBe(reason);
+  });
+});
+
+describe("the Codex spec", () => {
+  it("passes the same server settings codexMcpConfig emits, as overrides", () => {
+    const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
+    const { context, ...request } = executionRequest();
+    const launch = CODEX_MCP_HARNESS.launch({
+      prompt: "read both files",
+      connection,
+      workspace: "/tmp/sharedos-test",
+      configPaths: {},
+      request: {
+        ...request,
+        context: {
+          actor: context.actor,
+          owner: context.owner,
+          namespaceId: context.namespaceId,
+          purpose: context.purpose,
+          traceId: context.traceId,
+          now: context.now,
+        },
+      },
+    });
+    const settings = codexMcpServerSettings(connection);
+    const emitted = codexMcpConfig(connection);
+
+    expect(settings.map(([key]) => key)).toEqual([
+      "url",
+      "required",
+      "tool_timeout_sec",
+      "default_tools_approval_mode",
+    ]);
+    for (const [key, value] of settings) {
+      expect(launch.args).toContain(`mcp_servers.sharedos.${key}=${value}`);
+      expect(emitted).toContain(`${key} = ${value}`);
+    }
+  });
+
+  it("keeps a bearer token off the command line", () => {
+    const connection = { url: "http://127.0.0.1:41234/mcp", token: "secret-bridge-token" };
+    const { context, ...request } = executionRequest();
+    const launch = CODEX_MCP_HARNESS.launch({
+      prompt: "read both files",
+      connection,
+      workspace: "/tmp/sharedos-test",
+      configPaths: {},
+      request: {
+        ...request,
+        context: {
+          actor: context.actor,
+          owner: context.owner,
+          namespaceId: context.namespaceId,
+          purpose: context.purpose,
+          traceId: context.traceId,
+          now: context.now,
+        },
+      },
+    });
+
+    expect(codexMcpServerSettings(connection).map(([key]) => key)).toContain("bearer_token");
+    expect(codexMcpConfig(connection)).toContain('bearer_token = "secret-bridge-token"');
+    expect(launch.args.some((arg) => arg.includes("secret-bridge-token"))).toBe(false);
+    expect(launch.args.some((arg) => arg.includes("bearer_token"))).toBe(false);
   });
 });

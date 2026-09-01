@@ -1319,6 +1319,30 @@ The arguments an escalation is requested with, for a driver writing the call.
 
 ---
 
+### escalationOffered()
+
+> **escalationOffered**(`tools`): `boolean`
+
+Defined in: [packages/runtime/src/escalation.ts:199](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L199)
+
+Whether a turn's catalogue offers the affordance.
+
+The gate on honouring the name (ADR 0017, "The catalogue gates the name"):
+a driver reads it from the same `tools` it offered the seat's occupant, and
+the executor from the catalogue the turn was actually served.
+
+#### Parameters
+
+| Parameter | Type                |
+| --------- | ------------------- |
+| `tools`   | readonly `object`[] |
+
+#### Returns
+
+`boolean`
+
+---
+
 ### escalationReason()
 
 > **escalationReason**(`value`): `string` \| `undefined`

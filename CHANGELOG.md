@@ -10,6 +10,13 @@ each entry calls out what a host has to update.
 
 ### Changed — breaking
 
+- **`InMemoryGrantChainResolver` and `UnavailableGrantChainResolver` in
+  `@aicoo/sharedos-testkit` are renamed** `InMemoryDelegationChainResolver` and
+  `UnavailableDelegationChainResolver`, after the port they implement. The port
+  was renamed from `GrantChainResolver` to `DelegationChainResolver` in this
+  release and the fixtures kept the old name. Rename the import; nothing else
+  changes.
+
 - **Messages now have one policy-bound reason: `purpose`.** The redundant
   `MessageEnvelope.intent` field is removed, and strict parsing rejects legacy
   envelopes that still carry it. Outbound sends execute as their sender; an
@@ -73,6 +80,22 @@ each entry calls out what a host has to update.
 
 ### Changed — behaviour
 
+- A failure an adapter ends its turn with — `harness_*`, `model_*` — now carries
+  `retryable: false` on the driver path as it already did on the MCP path; the
+  field was simply absent before. Nothing an adapter fails on is retryable:
+  asking the harness or the model again asks the same thing.
+
+- `codexMcpConfig` now emits `default_tools_approval_mode = "approve"` beside
+  `required = true`, the setting the conformance launch has always passed as an
+  override. Codex's default `auto` mode asks a human before any tool that is not
+  read-only; a run with no human then refuses every write inside Codex with the
+  kernel never consulted. The approval is scoped to the SharedOS server, and what
+  secures a call is the kernel re-authorizing it. A host that wants Codex's own
+  prompt as well can override the key.
+- The four MCP harness specs derive their server name from
+  `SHAREDOS_MCP_SERVER_NAME` and, for Claude Code's `--allowedTools` and Codex's
+  `-c` overrides, from the connection's `name`, instead of the literal
+  `sharedos`; a spec given another `serverName` is now launched under it.
 - **A grant that expires while a turn is running is now refused inside that
   turn**, at the next decision, rather than at the next turn. Revocation,
   purpose withdrawal, `issuedAt`, and `notBefore` are unchanged: they are still
@@ -96,6 +119,27 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- `DriverRuntime` in `@aicoo/sharedos-adapters`: the one implementation behind
+  `HarnessRuntime` and `ModelRuntime`, which are now its two named forms. A host
+  installing another driver under its own identity uses it directly.
+- `escalationOffered(tools)` in `@aicoo/sharedos-runtime`: the catalogue gate on
+  honouring `sharedos.escalate`, shared by the three adapters and the executor
+  instead of each spelling the check.
+
+- `canonicalActor` in `@aicoo/sharedos-mcp`: the one string form of an
+  `Address` an execution token carries as `actor`, `<kind>:<id>`, from the same
+  pair `addressPath` derives for a recipient-scoped grant. The form was
+  described in a docblock example and defined nowhere.
+
+- `MCP_HARNESS_IDS` in `@aicoo/sharedos-mcp`, the one list `McpHarnessId` is
+  derived from, and `CODEX_HARNESS_ID`, `CLAUDE_CODE_HARNESS_ID`,
+  `DEEPSEEK_HARNESS_ID`, `PI_HARNESS_ID` in `@aicoo/sharedos-adapters`: each
+  adapter's manifest, requirements, and MCP spec now name the harness from one
+  constant, checked against that list.
+- `codexMcpServerSettings` in `@aicoo/sharedos-mcp`: the settings a Codex MCP
+  server entry carries, as key and TOML value. `codexMcpConfig` renders it as a
+  table and the Codex conformance launch passes it as `-c` overrides, so the two
+  cannot disagree.
 - `messages.request`, a canonical recipient-scoped request/reply tool. The model
   supplies only a recipient and JSON-safe payload; trusted context supplies the
   sender, purpose, trace, timestamp, and message id. `MessageTransport` and

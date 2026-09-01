@@ -1,4 +1,5 @@
 import type { RuntimeManifest } from "@aicoo/sharedos-contracts";
+import type { McpHarnessId } from "@aicoo/sharedos-mcp";
 
 import { HarnessDriver, type HarnessDriverOptions } from "../driver.js";
 import { HarnessRuntime } from "../runtime.js";
@@ -8,6 +9,9 @@ import { DEEPSEEK_PROTOCOL_ID, deepseekProtocol } from "./protocol.js";
 
 export { DEEPSEEK_PROTOCOL_ID, deepseekProtocol } from "./protocol.js";
 
+/** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
+export const DEEPSEEK_HARNESS_ID = "deepseek" satisfies McpHarnessId;
+
 export const DEEPSEEK_ADAPTER_VERSION = "0.1.0-alpha.3";
 
 export const DEEPSEEK_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
@@ -16,7 +20,7 @@ export const DEEPSEEK_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   protocolVersion: "1",
   metadata: {
     package: "@aicoo/sharedos-adapters",
-    harness: "deepseek",
+    harness: DEEPSEEK_HARNESS_ID,
     wireProtocol: DEEPSEEK_PROTOCOL_ID,
     executionModel: "bounded-driver-loop",
     /**
@@ -31,7 +35,7 @@ export const DEEPSEEK_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
 
 /** What a live DeepSeek Harness session needs before it can run. */
 export const DEEPSEEK_REQUIREMENTS: HarnessRequirements = Object.freeze({
-  harness: "deepseek",
+  harness: DEEPSEEK_HARNESS_ID,
   executable: "dsh",
   credentialVariables: ["DEEPSEEK_API_KEY", "DSH_API_KEY"],
   /** `dsh` can also authenticate from a stored credentials file. */

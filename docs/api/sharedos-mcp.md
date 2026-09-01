@@ -720,14 +720,14 @@ One harness-side rewrite, kept for diagnosis and never for authorization.
 
 ### VerifyExecutionTokenOptions
 
-Defined in: [mcp/src/token.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L60)
+Defined in: [mcp/src/token.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L76)
 
 #### Properties
 
 | Property                               | Modifier   | Type                                                                                                                                    | Description                                                         | Defined in                                                                                            |
 | -------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| <a id="property-expect"></a> `expect?` | `readonly` | `Partial`\<\{ `actor`: `string`; `catalogHash`: `string`; `executionId`: `string`; `expiresAt`: `string`; `namespaceId`: `string`; \}\> | Claims the session already knows, each of which must match exactly. | [mcp/src/token.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L64) |
-| <a id="property-now-1"></a> `now`      | `readonly` | `string`                                                                                                                                | The instant to judge expiry against. RFC 3339.                      | [mcp/src/token.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L62) |
+| <a id="property-expect"></a> `expect?` | `readonly` | `Partial`\<\{ `actor`: `string`; `catalogHash`: `string`; `executionId`: `string`; `expiresAt`: `string`; `namespaceId`: `string`; \}\> | Claims the session already knows, each of which must match exactly. | [mcp/src/token.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L80) |
+| <a id="property-now-1"></a> `now`      | `readonly` | `string`                                                                                                                                | The instant to judge expiry against. RFC 3339.                      | [mcp/src/token.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L78) |
 
 ## Type Aliases
 
@@ -743,7 +743,7 @@ Defined in: [mcp/src/protocol.ts:117](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **ExecutionTokenClaims** = `z.infer`\<_typeof_ [`ExecutionTokenClaimsSchema`](#executiontokenclaimsschema)>\>
 
-Defined in: [mcp/src/token.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L30)
+Defined in: [mcp/src/token.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L34)
 
 ---
 
@@ -751,7 +751,7 @@ Defined in: [mcp/src/token.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/ma
 
 > **ExecutionTokenRejection** = `"malformed"` \| `"signature_mismatch"` \| `"expired"` \| `"claims_mismatch"`
 
-Defined in: [mcp/src/token.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L32)
+Defined in: [mcp/src/token.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L48)
 
 ---
 
@@ -759,7 +759,7 @@ Defined in: [mcp/src/token.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/ma
 
 > **ExecutionTokenVerification** = \{ `claims`: [`ExecutionTokenClaims`](#executiontokenclaims); `valid`: `true`; \} \| \{ `reason`: [`ExecutionTokenRejection`](#executiontokenrejection); `valid`: `false`; \}
 
-Defined in: [mcp/src/token.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L35)
+Defined in: [mcp/src/token.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L51)
 
 ---
 
@@ -805,9 +805,9 @@ Defined in: [mcp/src/protocol.ts:79](https://github.com/Aicoo-Team/SharedOS/blob
 
 ### McpHarnessId
 
-> **McpHarnessId** = `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"`
+> **McpHarnessId** = _typeof_ [`MCP_HARNESS_IDS`](#mcp_harness_ids)\[`number`\]
 
-Defined in: [mcp/src/harness-config.ts:185](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L185)
+Defined in: [mcp/src/harness-config.ts:213](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L213)
 
 ## Variables
 
@@ -823,7 +823,7 @@ Defined in: [mcp/src/protocol.ts:110](https://github.com/Aicoo-Team/SharedOS/blo
 
 > `const` **ExecutionTokenClaimsSchema**: `ZodObject`\<\{ `actor`: `ZodString`; `catalogHash`: `ZodString`; `executionId`: `ZodString`; `expiresAt`: `ZodString`; `namespaceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `actor`: `string`; `catalogHash`: `string`; `executionId`: `string`; `expiresAt`: `string`; `namespaceId`: `string`; \}, \{ `actor`: `string`; `catalogHash`: `string`; `executionId`: `string`; `expiresAt`: `string`; `namespaceId`: `string`; \}\>
 
-Defined in: [mcp/src/token.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L19)
+Defined in: [mcp/src/token.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L20)
 
 What a short-lived execution token asserts.
 
@@ -927,6 +927,16 @@ Defined in: [mcp/src/protocol.ts:21](https://github.com/Aicoo-Team/SharedOS/blob
 
 ---
 
+### MCP\_HARNESS\_IDS
+
+> `const` **MCP\_HARNESS\_IDS**: readonly \[`"codex"`, `"claude-code"`, `"deepseek"`, `"pi"`\]
+
+Defined in: [mcp/src/harness-config.ts:212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L212)
+
+The harnesses this package emits a connection for, by id.
+
+---
+
 ### MCP\_SERVER\_VERSION
 
 > `const` **MCP\_SERVER\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
@@ -958,6 +968,31 @@ Defined in: [mcp/src/protocol.ts:15](https://github.com/Aicoo-Team/SharedOS/blob
 Protocol revisions this server speaks, newest first.
 
 ## Functions
+
+### canonicalActor()
+
+> **canonicalActor**(`address`): `string`
+
+Defined in: [mcp/src/token.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L44)
+
+The one string form of an address a token carries as its `actor`.
+
+`<kind>:<id>`, from the same `[kind, id]` pair `addressPath` derives for a
+recipient-scoped grant, so the two never spell an address differently. It is
+a label for equality, not an encoding: nothing parses it back into an
+`Address`, and a token is matched on the exact string it was minted with.
+
+#### Parameters
+
+| Parameter | Type                                                                                                                                                                                                       |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `address` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} |
+
+#### Returns
+
+`string`
+
+---
 
 ### classifyTool()
 
@@ -995,7 +1030,7 @@ counted as harness-local.
 
 > **claudeAgentSdkMcpOptions**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L91)
+Defined in: [mcp/src/harness-config.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L117)
 
 Claude Agent SDK options for a non-interactive evaluation.
 
@@ -1021,7 +1056,7 @@ every one of those calls is re-authorized by the kernel.
 
 > **claudeCodeMcpConfig**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L67)
+Defined in: [mcp/src/harness-config.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L93)
 
 Claude Code's `.mcp.json`.
 
@@ -1041,14 +1076,9 @@ Claude Code's `.mcp.json`.
 
 > **codexMcpConfig**(`connection`): `string`
 
-Defined in: [mcp/src/harness-config.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L52)
+Defined in: [mcp/src/harness-config.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L83)
 
-Codex's `config.toml` fragment.
-
-`required = true` is deliberate. A Codex run whose SharedOS server failed to
-start should not quietly continue with only its own tools -- that run would
-look like a harness that declined to use the catalogue, which is a different
-finding entirely.
+Codex's `config.toml` fragment: [codexMcpServerSettings](#codexmcpserversettings) as a table.
 
 #### Parameters
 
@@ -1059,6 +1089,46 @@ finding entirely.
 #### Returns
 
 `string`
+
+---
+
+### codexMcpServerSettings()
+
+> **codexMcpServerSettings**(`connection`): readonly readonly \[`string`, `string`\][]
+
+Defined in: [mcp/src/harness-config.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L67)
+
+The settings a Codex MCP server entry carries, as key and TOML value.
+
+One list serves both forms Codex accepts -- the `[mcp_servers.<name>]` table
+[codexMcpConfig](#codexmcpconfig) emits, and the `-c mcp_servers.<name>.<key>=<value>`
+overrides a launch passes -- so the two cannot disagree. `bearer_token`,
+present only when the connection carries one, belongs to the file alone: a
+launch keeps it off the command line.
+
+`required = true` is deliberate. A Codex run whose SharedOS server failed to
+start should not quietly continue with only its own tools -- that run would
+look like a harness that declined to use the catalogue, which is a different
+finding entirely.
+
+`default_tools_approval_mode = "approve"` is the same decision as Claude
+Code's `--allowedTools`, and not an authorization one. Codex gates MCP calls
+itself, and its default mode, `auto`, decides from the tool's `readOnlyHint`:
+read-only tools run, everything else asks a human. A run with no human then
+refuses every write inside Codex, with the kernel never consulted. `approve`
+is scoped to this one server, leaves Codex's shell sandbox alone, and hands
+the decision to the only thing that should be making it:
+`RuntimeHost.invokeTool`, which re-authorizes every call.
+
+#### Parameters
+
+| Parameter    | Type                                            |
+| ------------ | ----------------------------------------------- |
+| `connection` | [`HarnessMcpConnection`](#harnessmcpconnection) |
+
+#### Returns
+
+readonly readonly \[`string`, `string`\][]
 
 ---
 
@@ -1100,7 +1170,7 @@ Defined in: [mcp/src/policy.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/m
 
 > **deepseekMcpConfig**(`connection`): `string`
 
-Defined in: [mcp/src/harness-config.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L123)
+Defined in: [mcp/src/harness-config.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L149)
 
 DeepSeek Harness's plugin patch overlay.
 
@@ -1140,16 +1210,16 @@ a harness that declined to use the catalogue, which is a different finding.
 
 > **harnessMcpConfigFile**(`harness`, `connection`): [`HarnessMcpConfigFile`](#harnessmcpconfigfile)
 
-Defined in: [mcp/src/harness-config.ts:188](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L188)
+Defined in: [mcp/src/harness-config.ts:216](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L216)
 
 Every emitter above, addressed by harness id.
 
 #### Parameters
 
-| Parameter    | Type                                            |
-| ------------ | ----------------------------------------------- |
-| `harness`    | [`McpHarnessId`](#mcpharnessid)                 |
-| `connection` | [`HarnessMcpConnection`](#harnessmcpconnection) |
+| Parameter    | Type                                                   |
+| ------------ | ------------------------------------------------------ |
+| `harness`    | `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` |
+| `connection` | [`HarnessMcpConnection`](#harnessmcpconnection)        |
 
 #### Returns
 
@@ -1161,7 +1231,7 @@ Every emitter above, addressed by harness id.
 
 > **harnessToolAlias**(`serverName`, `tool`): `string`
 
-Defined in: [mcp/src/harness-config.ts:227](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L227)
+Defined in: [mcp/src/harness-config.ts:255](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L255)
 
 The harness-facing alias a tool is likely to appear under.
 
@@ -1260,7 +1330,7 @@ long-running harness the host is supervising by other means.
 
 > **mintExecutionToken**(`claims`, `secret`): `Promise`\<`string`>\>
 
-Defined in: [mcp/src/token.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L47)
+Defined in: [mcp/src/token.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L63)
 
 Sign one execution token.
 
@@ -1271,15 +1341,15 @@ revoked by the host that deployed it.
 
 #### Parameters
 
-| Parameter            | Type                                                                                                                       | Description                                                             |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `claims`             | \{ `actor`: `string`; `catalogHash`: `string`; `executionId`: `string`; `expiresAt`: `string`; `namespaceId`: `string`; \} | -                                                                       |
-| `claims.actor`       | `string`                                                                                                                   | The acting principal in canonical string form, for example `agent:a-1`. |
-| `claims.catalogHash` | `string`                                                                                                                   | -                                                                       |
-| `claims.executionId` | `string`                                                                                                                   | -                                                                       |
-| `claims.expiresAt`   | `string`                                                                                                                   | RFC 3339. A token with no expiry is not issued.                         |
-| `claims.namespaceId` | `string`                                                                                                                   | -                                                                       |
-| `secret`             | `string`                                                                                                                   | -                                                                       |
+| Parameter            | Type                                                                                                                       | Description                                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `claims`             | \{ `actor`: `string`; `catalogHash`: `string`; `executionId`: `string`; `expiresAt`: `string`; `namespaceId`: `string`; \} | -                                                                                                                                                      |
+| `claims.actor`       | `string`                                                                                                                   | The acting principal as [canonicalActor](#canonicalactor) renders it: `<kind>:<id>`, for example `agent:a-1`. Compared by equality, never parsed back. |
+| `claims.catalogHash` | `string`                                                                                                                   | -                                                                                                                                                      |
+| `claims.executionId` | `string`                                                                                                                   | -                                                                                                                                                      |
+| `claims.expiresAt`   | `string`                                                                                                                   | RFC 3339. A token with no expiry is not issued.                                                                                                        |
+| `claims.namespaceId` | `string`                                                                                                                   | -                                                                                                                                                      |
+| `secret`             | `string`                                                                                                                   | -                                                                                                                                                      |
 
 #### Returns
 
@@ -1370,7 +1440,7 @@ Defined in: [mcp/src/policy.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/m
 
 > **piMcpConfig**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:169](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L169)
+Defined in: [mcp/src/harness-config.ts:195](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L195)
 
 Pi's `.mcp.json`, read by an MCP extension.
 
@@ -1544,7 +1614,7 @@ A content identifier for the declared policy, for the run's `policyHash`.
 
 > **verifyExecutionToken**(`token`, `secret`, `options`): `Promise`\<[`ExecutionTokenVerification`](#executiontokenverification)>\>
 
-Defined in: [mcp/src/token.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L76)
+Defined in: [mcp/src/token.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/token.ts#L92)
 
 Verify a token, then check it against what the session already knows.
 

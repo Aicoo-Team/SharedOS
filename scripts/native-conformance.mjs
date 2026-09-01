@@ -216,7 +216,7 @@ const HARNESSES = [
   },
   {
     id: "deepseek-live",
-    label: "Deepseek",
+    label: "DeepSeek",
     harness: "deepseek",
     protocol: deepseekProtocol,
     requirements: DEEPSEEK_REQUIREMENTS,
@@ -263,7 +263,7 @@ const HARNESSES = [
   },
   {
     id: "pi-live",
-    label: "pi",
+    label: "Pi",
     harness: "pi",
     protocol: piProtocol,
     requirements: PI_REQUIREMENTS,

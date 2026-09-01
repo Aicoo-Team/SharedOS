@@ -1,4 +1,5 @@
 import type { AccessContext, Address, JsonObject, ResourceRef } from "@aicoo/sharedos-contracts";
+import { deepFreeze } from "./internal.js";
 
 export type AuditEventType =
   | "authority.resolved"
@@ -95,14 +96,4 @@ export function auditEvent(
 
 function immutableAuditEvent(event: AuditEvent): AuditEvent {
   return deepFreeze(structuredClone(event));
-}
-
-function deepFreeze<T>(value: T): T {
-  if (value !== null && typeof value === "object") {
-    for (const child of Object.values(value)) {
-      deepFreeze(child);
-    }
-    Object.freeze(value);
-  }
-  return value;
 }

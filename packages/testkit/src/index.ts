@@ -23,6 +23,7 @@ import {
   type MessageTransport,
   type ResourceProvider,
   type ToolNamespaceSettingsStore,
+  canonicalJson,
 } from "@aicoo/sharedos-core";
 
 export class InMemoryAuditSink implements AuditSink {
@@ -132,7 +133,7 @@ export class UnavailableGrantSource implements GrantSource {
 }
 
 /** Namespace-scoped ancestor lookup for delegated-grant fixtures. */
-export class InMemoryGrantChainResolver implements DelegationChainResolver {
+export class InMemoryDelegationChainResolver implements DelegationChainResolver {
   readonly #grantsByNamespace = new Map<string, Map<string, CapabilityGrant>>();
 
   constructor(grants: readonly CapabilityGrant[] = []) {
@@ -169,7 +170,7 @@ export class InMemoryGrantChainResolver implements DelegationChainResolver {
 }
 
 /** A resolver whose authoritative source is down; every lookup must fail closed. */
-export class UnavailableGrantChainResolver implements DelegationChainResolver {
+export class UnavailableDelegationChainResolver implements DelegationChainResolver {
   async resolve(): Promise<CapabilityGrant | undefined> {
     await Promise.resolve();
     throw new Error("delegation chain resolver is unavailable");
@@ -297,20 +298,7 @@ export function createTestGrant(options: TestGrantOptions): CapabilityGrant {
 }
 
 function sameAddress(left: Address, right: Address): boolean {
-  return canonicalAddress(left) === canonicalAddress(right);
-}
-
-function canonicalAddress(address: Address): string {
-  switch (address.kind) {
-    case "human":
-      return `human:${address.userId}`;
-    case "agent":
-      return `agent:${address.agentId}`;
-    case "group":
-      return `group:${address.conversationId}`;
-    case "service":
-      return `service:${address.serviceId}`;
-  }
+  return canonicalJson(left) === canonicalJson(right);
 }
 
 async function echoResourceOperation(operation: ResourceOperation): Promise<ResourceResult> {

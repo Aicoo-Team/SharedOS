@@ -1,4 +1,5 @@
 import type { RuntimeManifest } from "@aicoo/sharedos-contracts";
+import type { McpHarnessId } from "@aicoo/sharedos-mcp";
 
 import { HarnessDriver, type HarnessDriverOptions } from "../driver.js";
 import { HarnessRuntime } from "../runtime.js";
@@ -8,6 +9,9 @@ import { PI_PROTOCOL_ID, piProtocol } from "./protocol.js";
 
 export { PI_PROTOCOL_ID, piProtocol } from "./protocol.js";
 
+/** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
+export const PI_HARNESS_ID = "pi" satisfies McpHarnessId;
+
 export const PI_ADAPTER_VERSION = "0.1.0-alpha.3";
 
 export const PI_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
@@ -16,7 +20,7 @@ export const PI_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   protocolVersion: "1",
   metadata: {
     package: "@aicoo/sharedos-adapters",
-    harness: "pi",
+    harness: PI_HARNESS_ID,
     wireProtocol: PI_PROTOCOL_ID,
     executionModel: "bounded-driver-loop",
     /**
@@ -31,7 +35,7 @@ export const PI_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
 
 /** What a live Pi session needs before it can run. */
 export const PI_REQUIREMENTS: HarnessRequirements = Object.freeze({
-  harness: "pi",
+  harness: PI_HARNESS_ID,
   executable: "pi",
   /**
    * Pi routes to whichever provider its model config names, so no single

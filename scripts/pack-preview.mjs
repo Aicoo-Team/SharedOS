@@ -17,6 +17,9 @@ import { packageDirectories } from "./package-set.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const checkOnly = process.argv.includes("--check");
+// `--no-build` trusts the `dist` already on disk. CI builds once and passes it;
+// the pnpm scripts still build, so a local run never packs a stale tree.
+const skipBuild = process.argv.includes("--no-build");
 const outputDirectory = checkOnly
   ? mkdtempSync(join(tmpdir(), "sharedos-pack-check-"))
   : join(repositoryRoot, "artifacts", "npm");
@@ -27,7 +30,9 @@ if (!checkOnly) {
 }
 
 try {
-  run("pnpm", ["build"], repositoryRoot);
+  if (!skipBuild) {
+    run("pnpm", ["build"], repositoryRoot);
+  }
 
   for (const directory of packageDirectories) {
     run(
