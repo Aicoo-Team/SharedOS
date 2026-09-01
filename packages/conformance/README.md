@@ -246,31 +246,49 @@ driver is in the seat. Adding a column is supplying a
 `(moves, options) => RuntimePlugin` factory; the suite and the grading do not
 change.
 
-Five columns are committed. `EMBEDDED_COLUMN` puts `HostileRuntime` in the seat
-directly. `CODEX_SCRIPTED_COLUMN`, `CLAUDE_CODE_SCRIPTED_COLUMN`,
-`DEEPSEEK_SCRIPTED_COLUMN`, and `PI_SCRIPTED_COLUMN` put each adapter there,
-driven by frames built from the same move: `movesToTranscript` renders each
-declared attempt into that vendor's own wire shape, and the adapter's real
-protocol translation reads them back. The kernel and the envelope are the real
-ones. What is left out is the transport that would carry those frames from a
-live CLI.
+Six columns are committed, and the first two are different kinds of thing.
 
-Three more kinds of column make that claim, and are run by the scripts rather
-than committed, because each depends on what is installed here and on what a
-model chooses:
+- `ADVERSARY_COLUMN` (`Adversary`) puts `HostileRuntime` in the seat directly: a
+  plugin that owns its outcome, issues every declared attempt itself, and calls
+  the host without a driver or a catalogue rendering in between. It is the
+  reference every other cell is read against, and the only column that can put
+  the ungranted-escalation row. It is not the native harness.
+- `MODEL_SCRIPTED_COLUMN` (`Standard`) is the native harness: `ModelRuntime`,
+  which is `StandardRuntime` with the model driver in the seat and the
+  permission-filtered catalogue rendered into the model's own tool-call shape.
+  In the committed manifest a transcript stands where the provider would —
+  `movesToModelTranscript` writes each declared attempt as a model reply in the
+  wire alphabet a provider accepts, `TranscriptModelClient` replays it, and the
+  driver's real codec, argument parsing, and escalation recognition read it back.
+  What is left out is the model. It is graded under `modelLimits`, the same
+  limits the live model column carries, because every one of them is the
+  driver's rather than the provider's.
+- `CODEX_SCRIPTED_COLUMN`, `CLAUDE_CODE_SCRIPTED_COLUMN`,
+  `DEEPSEEK_SCRIPTED_COLUMN`, and `PI_SCRIPTED_COLUMN` put each vendor adapter
+  there, driven by frames built from the same move: `movesToTranscript` renders
+  each declared attempt into that vendor's own wire shape, and the adapter's
+  real protocol translation reads them back. What is left out is the transport
+  that would carry those frames from a live CLI.
+
+In every column the kernel and the envelope are the real ones.
+
+Three more kinds of column make the live claim, and are run by the scripts
+rather than committed, because each depends on what is installed here and on
+what a model chooses:
 
 - `liveColumn` spawns the installed CLI as a driven harness over its real
   transport;
 - `mcpColumn` runs the installed CLI natively, with the catalogue served to it
   over MCP, so the harness owns its own loop;
 - `modelColumn` puts a model API in the seat with no vendor between it and the
-  kernel, which is the only column that separates what the model does from what
-  a vendor's scaffolding makes it do.
+  kernel — the live mode of `Standard`, and the only column that separates what
+  the model does from what a vendor's scaffolding makes it do.
 
 Each column leaves something out — the transport, the catalogue, the loop, the
-vendor — and the docblocks on `columns.ts` say precisely which. None of them
-replaces the scripted reference: a model chooses, and the rows only a scripted
-driver carries are reported `not exercised` rather than `pass` when it does not.
+vendor, the model — and the docblocks on `columns.ts` say precisely which. None
+of them replaces the scripted reference: a model chooses, and the rows only a
+scripted driver carries are reported `not exercised` rather than `pass` when it
+does not.
 
 A vendor column cannot report on itself: a harness does not know it is in a
 conformance run. Its attempts are recovered from the execution record instead,
@@ -301,7 +319,7 @@ per row and per condition, in four kinds (`ColumnLimits`):
 - `unsupported` — a whole row the column cannot run. Every driven, MCP, and
   model column sets it on the ungranted-escalation row: only a plugin that owns
   its outcome can end a turn with an `escalate` the catalogue did not offer, so
-  the row runs on Standard alone and reads `not applicable` elsewhere, with the
+  the row runs on Adversary alone and reads `not applicable` elsewhere, with the
   reason.
 
 Escalation is no longer among the limits of any column. It is a catalogued

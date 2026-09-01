@@ -34,12 +34,12 @@ the harness that produced it.
 
 ## Four ways to occupy the seat
 
-| Path                    | What is in the delegate seat                                       | Entry points                                                                                                           |
-| ----------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Driven harness          | A vendor CLI, run one turn at a time by SharedOS's own loop        | `createCodexRuntime`, `createClaudeCodeRuntime`, `createDeepseekRuntime`, `createPiRuntime`; `HarnessRuntime`          |
-| Driven model            | A model API, with no vendor between it and the kernel              | `ModelDriver`, `ModelRuntime`, `OpenAiCompatibleModelClient`                                                           |
-| Native harness over MCP | A vendor CLI running its own loop, with the catalogue served to it | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                          |
-| Transcript              | Supplied vendor frames, for testing the translation without a CLI  | `TranscriptTransport`, `HarnessTranscript`, and the `*FrameWriter`s that render a declared attempt in a vendor's shape |
+| Path                    | What is in the delegate seat                                                                     | Entry points                                                                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Driven harness          | A vendor CLI, run one turn at a time by SharedOS's own loop                                      | `createCodexRuntime`, `createClaudeCodeRuntime`, `createDeepseekRuntime`, `createPiRuntime`; `HarnessRuntime`                                                                         |
+| Driven model            | A model API, with no vendor between it and the kernel                                            | `ModelDriver`, `ModelRuntime`, `OpenAiCompatibleModelClient`; `TranscriptModelClient` for a scripted reply sequence                                                                   |
+| Native harness over MCP | A vendor CLI running its own loop, with the catalogue served to it                               | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                                                                                         |
+| Transcript              | Supplied vendor frames or model replies, for testing the translation without a CLI or a provider | `TranscriptTransport`, `HarnessTranscript`, and the `*FrameWriter`s that render a declared attempt in a vendor's shape; `TranscriptModelClient`, `ModelTranscript` for the model seat |
 
 The first two run inside `StandardRuntime`: SharedOS owns the loop, renders the
 permission-filtered catalogue into the harness's or the model's own tool shape,
@@ -126,7 +126,11 @@ envelope. Nothing in this package captures a vendor session: a transcript is
 whatever its caller hands it, and the conformance suite writes its own.
 `TranscriptTransport` replays vendor frames in batches and releases the next
 batch only once a result has been written, which is the shape of every
-tool-using harness.
+tool-using harness. `TranscriptModelClient` is its counterpart for the model
+seat: it replays supplied replies through the real `ModelDriver`, one reply per
+model call, and treats a spent transcript as an error rather than a completion,
+so a script that ends too early fails the turn instead of reading as a model
+choosing to stop.
 
 What a transcript cannot cover is the transport binding — the exact command-line
 flags each CLI wants, and the outer envelope it wraps its frames in — and what a

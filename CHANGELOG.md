@@ -10,6 +10,15 @@ each entry calls out what a host has to update.
 
 ### Changed — breaking
 
+- **The conformance manifest's reference column is renamed.** `EMBEDDED_COLUMN`
+  is now `ADVERSARY_COLUMN`, with id `adversary-embedded` and label `Adversary`
+  in place of `sharedos-embedded` / `Standard`. The column is unchanged — the
+  scripted `HostileRuntime` in the seat, owning its outcome — and the rename
+  says what it is: the reference adversary, not the harness SharedOS ships.
+  `Standard` now names that harness (below). Code importing the old constant
+  changes the name; a reader of `kernel-conformance.json`, or of a live
+  artifact, matches the column on its new id.
+
 - **`InMemoryGrantChainResolver` and `UnavailableGrantChainResolver` in
   `@aicoo/sharedos-testkit` are renamed** `InMemoryDelegationChainResolver` and
   `UnavailableDelegationChainResolver`, after the port they implement. The port
@@ -128,11 +137,31 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **The native harness has a committed conformance column.** `Standard`
+  (`MODEL_SCRIPTED_COLUMN`, id `model-scripted`) is `ModelRuntime` —
+  `StandardRuntime` with the model driver in the seat and the
+  permission-filtered catalogue rendered into the model's tool-call shape —
+  with a transcript where the provider would be. `movesToModelTranscript`
+  writes each declared attempt as a model reply in the wire alphabet a provider
+  accepts, and the driver's real codec, argument parsing, escalation
+  recognition, and step accounting read it back; what is left out is the model.
+  It is graded under `modelLimits`, as the live model column is, so the shipped
+  loop carries a driver's limits in a committed cell rather than standing in
+  for the kernel it runs on: the inspection row and the ungranted-escalation
+  row read `not applicable`, and the step-ceiling row `pass (driver)`. The
+  manifest goes from five columns to six; every hash is unchanged, because
+  neither the case set nor the world set moved.
+- `TranscriptModelClient` in `@aicoo/sharedos-adapters`: a `ModelClient` that
+  replays a supplied `ModelTranscript` through the real `ModelDriver`, the
+  counterpart of `TranscriptTransport` for a vendor harness. A spent transcript
+  fails the turn `model_call_failed` rather than completing on the recording's
+  behalf, so a script that ends too early is a visible result and not a model
+  choosing to stop.
 - A conformance row for an escalation the turn was not granted. A runtime that
   ends its turn with `escalate` while the catalogue does not offer the
   affordance is refused by the envelope: the turn fails `tool_unavailable`,
   and nothing is recorded or audited. Only a plugin that owns its outcome can
-  make the attempt, so the row runs on the embedded column and every driven,
+  make the attempt, so the row runs on the adversary column and every driven,
   MCP, and model column declares it `not applicable` -- the first use of
   `ColumnLimits.unsupported`. The case-set and world-set hashes move.
 - `DriverRuntime` in `@aicoo/sharedos-adapters`: the one implementation behind

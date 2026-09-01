@@ -146,7 +146,7 @@ const { declareToolPolicy, toolPolicyHash } = await import(
 );
 const {
   CANONICAL_CONFORMANCE_CASES,
-  EMBEDDED_COLUMN,
+  ADVERSARY_COLUMN,
   SHAREDOS_VERSION,
   mcpColumn,
   runConformanceSuite,
@@ -203,7 +203,7 @@ const DECLARED_HARNESSES = [
 ];
 
 // Same rule as `--case`, and the same check as `native-conformance.mjs`: a
-// filter that quietly matched nothing would attribute a green Standard-only run
+// filter that quietly matched nothing would attribute a green Adversary-only run
 // to a column that never ran.
 if (only !== undefined) {
   const declared = DECLARED_HARNESSES.map(({ spec }) => spec.id);
@@ -217,7 +217,7 @@ const HARNESSES = DECLARED_HARNESSES.filter(
 );
 
 const availability = [];
-const columns = [EMBEDDED_COLUMN];
+const columns = [ADVERSARY_COLUMN];
 const diagnostics = new Map();
 
 for (const harness of HARNESSES) {
@@ -479,7 +479,7 @@ for (const column of manifest.columns) {
  * suite is actually isolating. A run missing either is still evidence about each
  * column on its own, and is not evidence about the difference between them.
  */
-const measuredColumns = [...perColumn.entries()].filter(([id]) => id !== EMBEDDED_COLUMN.id);
+const measuredColumns = [...perColumn.entries()].filter(([id]) => id !== ADVERSARY_COLUMN.id);
 const declaredModels = new Set(measuredColumns.flatMap(([, seen]) => [...seen.models]));
 if (declaredModels.size > 1) {
   console.error(
@@ -515,7 +515,7 @@ if (sharedOsVersions.size > 1) {
  * would be a claim the check never made. And a column that published catalogues
  * elsewhere in the run but recorded none for a case is named, rather than left
  * out of that case's comparison: a case a column silently dropped out of would
- * read as one it agreed on. `Standard` records no catalogue at all and takes
+ * read as one it agreed on. `Adversary` records no catalogue at all and takes
  * part in neither.
  */
 const catalogueSignature = (hashes) => [...hashes].sort().join("+");
@@ -564,7 +564,7 @@ if (unrecorded.length > 0) {
 }
 
 const failures = strictFailures(manifest);
-const liveColumns = manifest.columns.filter(({ id }) => id !== EMBEDDED_COLUMN.id);
+const liveColumns = manifest.columns.filter(({ id }) => id !== ADVERSARY_COLUMN.id);
 await mkdir(outputDirectory, { recursive: true });
 await writeFile(
   outputJson,
