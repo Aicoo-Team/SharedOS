@@ -34,16 +34,28 @@ denials as successes.
 | `allowed`                     | A grant matched                                                    | —                                                      |
 | `no_matching_grant`           | Nothing the `GrantSource` returned covers this resource and action | See the checklist below                                |
 | `grant_exhausted`             | A matching grant exists but its `maxUses` is spent                 | Issue a new grant; usage is not resettable             |
+| `host_policy_denied`          | A grant matched and the host's own ceiling refused it anyway       | Working as intended — the deployment's policy said no  |
 | `invalid_context`             | The `AccessContext` failed its schema                              | A host bug. Build the context server-side              |
 | `invalid_request`             | The resource or action failed its schema, or names another world   | Check path segments, action naming, and the owner      |
 | `authority_unavailable`       | The `GrantSource` threw, or answered with unusable material        | Fail-closed. See the authority table below             |
 | `usage_store_unavailable`     | The grant has `maxUses` and there is no `usageStore`, or it threw  | Supply `CapabilityAuthorizer({ usageStore })`          |
+| `host_policy_unavailable`     | The `HostCeiling` threw, or answered with neither of its two arms  | Fail-closed. A host bug in the installed ceiling       |
 | `delegation_chain_unverified` | The chain could not be established at all                          | Supply `CapabilityAuthorizer({ delegationResolver })`  |
 | `delegation_chain_invalid`    | The chain resolved and broke a rule — often a revoked ancestor     | Usually working as intended — upstream authority ended |
 
-The last three are SharedOS failing to establish a fact, not a policy decision.
-They are named once, in `INFRASTRUCTURE_DENIAL_REASONS`, and their audit records
-carry `failClosed: true`. Exclude them before computing any denial rate.
+Four of these are SharedOS failing to establish a fact rather than a policy
+decision: `authority_unavailable`, `delegation_chain_unverified`,
+`host_policy_unavailable`, and `usage_store_unavailable`. They are named once,
+in `INFRASTRUCTURE_DENIAL_REASONS`, and their audit records carry
+`failClosed: true`. Exclude them before computing any denial rate.
+
+`host_policy_denied` is not one of them. It is a policy denial and its own
+bucket beside `no_matching_grant` and `grant_exhausted`: a grant matched and the
+deployment's own ceiling refused it, which is a different fact about a
+deployment from "no such authority exists". Its pair,
+`host_policy_unavailable`, is the same port broken; the shared prefix keeps them
+one line apart, and `failClosed` is what separates them. Which component
+refused is `OperationRecord.source`, never the code. See ADR 0020.
 
 `authority_unavailable` collapses four situations on purpose, so that no caller
 can tell a broken store from a rejected one:

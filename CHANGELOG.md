@@ -137,6 +137,28 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **The host ceiling is a port the kernel calls, not a convention hosts apply
+  upstream.** `CapabilityAuthorizer({ hostCeiling })` installs a `HostCeiling`,
+  one synchronous `narrow(decision, request, context)` consulted only after a
+  grant has matched, on an already-`allowed` decision, on both the `authorize`
+  and the `canDiscover` path -- so a tool a ceiling refuses at invocation is
+  also absent from the catalogue. Step 10 of the permission model's
+  authorization algorithm is now true of the code. It cannot widen anything: a
+  denial is never shown to it, its allow arm is pinned to the decision it was
+  handed, and an allow that does not carry the same `matchedGrantId` is a
+  malfunction that fails closed. Its refusal is `host_policy_denied`, a policy
+  denial in its own bucket -- not infrastructure, and not merged with
+  `no_matching_grant`, which says no such authority exists. A throw is
+  `host_policy_unavailable`, which joins `INFRASTRUCTURE_DENIAL_REASONS`. The
+  synchronous signature is the enforcement of "deterministic and cheap": a
+  synchronous return cannot await a network or model call. It is optional, and a
+  kernel constructed without one behaves exactly as it did, down to the audit
+  record; when one is installed the kernel records that, so a deployment that
+  denies everything through policy is legible rather than reading as one where
+  nobody was granted anything. ADR 0020's `PolicySource` is not implemented and
+  carries a row in `docs/open-items.md`. Hosts applying a ceiling today keep the
+  same logic and move the call site; withholding a grant instead still produces
+  `no_matching_grant` and still misattributes the refusal.
 - **A denial for want of a grant names the authority that would have satisfied
   it.** `AuthorizationDecision` gains an optional `requiredCapability`, a
   `CapabilityRequest` populated only on `no_matching_grant`, where the

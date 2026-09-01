@@ -11,7 +11,11 @@ import type {
 
 import type { AuditEvent, AuditSink } from "./audit.js";
 import type { GrantSource } from "./authority.js";
-import { CapabilityAuthorizer, InMemoryGrantUsageStore } from "./authorization.js";
+import {
+  CapabilityAuthorizer,
+  type HostCeiling,
+  InMemoryGrantUsageStore,
+} from "./authorization.js";
 import { SharedOSKernel, type SharedOSKernelOptions } from "./kernel.js";
 import {
   addressPath,
@@ -790,6 +794,90 @@ describe("SharedOSKernel tools", () => {
           reason: "no_matching_grant",
         }),
       ]),
+    );
+  });
+});
+
+describe("SharedOSKernel host ceiling", () => {
+  const REFUSE_EVERYTHING: HostCeiling = {
+    narrow: () => ({ allowed: false, reasonCode: "host_policy_denied" }),
+  };
+
+  function kernelWithCeiling(
+    hostCeiling: HostCeiling | undefined,
+    events: AuditEvent[],
+  ): SharedOSKernel {
+    return kernelWith([grant("grant-file-search", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (event) => void events.push(event) },
+      authorizer: new CapabilityAuthorizer(hostCeiling === undefined ? {} : { hostCeiling }),
+    });
+  }
+
+  it("records a refusal by policy as a denial that names host policy", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWithCeiling(REFUSE_EVERYTHING, events);
+
+    await expect(
+      kernel.authorize(context(), { resource: FILE_RESOURCE, action: "search" }),
+    ).resolves.toEqual({ allowed: false, reasonCode: "host_policy_denied" });
+
+    const decision = events.find(({ type }) => type === "authorization.checked");
+    expect(decision).toMatchObject({
+      outcome: "denied",
+      reason: "host_policy_denied",
+      // A deliberate refusal, not SharedOS failing to establish a fact. It
+      // belongs in the denial rate; a fail-closed denial does not.
+      metadata: { consumed: false, hostCeiling: true },
+    });
+    expect(decision?.metadata).not.toHaveProperty("failClosed");
+    // A grant existed and policy overrode it. That is the fact the record
+    // could not previously carry, because the host refused before the kernel.
+    expect(decision?.reason).not.toBe("no_matching_grant");
+  });
+
+  it("emits exactly the record it always did when no ceiling is installed", async () => {
+    const withCeiling: AuditEvent[] = [];
+    const withNone: AuditEvent[] = [];
+    const request = { resource: FILE_RESOURCE, action: "search" };
+
+    const allowedByPolicy = await kernelWithCeiling(
+      { narrow: (decision) => decision },
+      withCeiling,
+    ).authorize(context(), request);
+    const unceilinged = await kernelWithCeiling(undefined, withNone).authorize(context(), request);
+
+    // The decision itself is the same either way.
+    expect(unceilinged).toEqual(allowedByPolicy);
+    expect(unceilinged).toEqual({
+      allowed: true,
+      reasonCode: "allowed",
+      matchedGrantId: "grant-file-search",
+    });
+    // The record is the pre-port record, with no key for a port that is not
+    // there. The installed case says so, so a deployment's choice is legible.
+    expect(withNone.find(({ type }) => type === "authorization.checked")?.metadata).toEqual({
+      consumed: false,
+    });
+    expect(withCeiling.find(({ type }) => type === "authorization.checked")?.metadata).toEqual({
+      consumed: false,
+      hostCeiling: true,
+    });
+  });
+
+  it("hides a tool from the catalogue that it would refuse at invocation", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWithCeiling(REFUSE_EVERYTHING, events);
+    kernel.registerTool(successfulTool());
+
+    // The pairing: discovery and invocation see the same ceiling, so a tool
+    // that cannot be called is not offered either.
+    await expect(kernel.listTools(context())).resolves.toEqual([]);
+    await expect(kernel.invokeTool(context(), toolCall())).resolves.toMatchObject({
+      status: "denied",
+      error: { code: "tool_unavailable" },
+    });
+    expect(events.filter(({ reason }) => reason === "host_policy_denied").length).toBeGreaterThan(
+      0,
     );
   });
 });

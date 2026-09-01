@@ -147,6 +147,38 @@ A host that issues delegated grants also installs a `DelegationChainResolver`
 so ancestors can be re-resolved; see
 `docs/adr/0008-delegation-chain-validation.md`.
 
+### 1c. Install a host ceiling, if policy narrows what a grant may do
+
+Policy that reads the request -- which file, which recipient -- cannot be
+applied when authority is loaded. Install a `HostCeiling` instead, and the
+refusal is recorded and countable rather than invisible.
+
+```ts
+import { CapabilityAuthorizer, type HostCeiling } from "@aicoo/sharedos";
+
+const hostCeiling: HostCeiling = {
+  // Synchronous by contract: decide against state loaded on your own schedule,
+  // never with a query per call.
+  narrow(decision, request, context) {
+    return frozenNamespaces.has(request.resource.namespace)
+      ? { allowed: false, reasonCode: "host_policy_denied" }
+      : decision;
+  },
+};
+
+const kernel = new SharedOSKernel({
+  grantSource,
+  authorizer: new CapabilityAuthorizer({ hostCeiling }),
+});
+```
+
+It is consulted only on a decision a grant already allowed, on both discovery
+and invocation, and it can only keep that decision or refuse: returning an
+allow it was not handed fails closed, and a throw is recorded as
+`host_policy_unavailable`. A ceiling is not a second authorizer -- it cannot
+allow anything. Omit it entirely and the kernel behaves exactly as it does
+without one. See `docs/adr/0020-host-ceiling-is-a-port.md`.
+
 ### 2. Adapt host state to the `files` resource plane
 
 SharedOS uses one canonical `files` namespace. Memory, workspace, identity,

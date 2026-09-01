@@ -26,7 +26,9 @@ agent. A message carries data and one host-bound purpose, never authority.
 - **Issuer / authority**: the principal that issued or attests the grant.
 - **Owner**: the principal whose resource is being accessed.
 - **Host ceiling**: product or organization policy that can reduce, but never
-  increase, granted authority.
+  increase, granted authority. It is a port the kernel calls, `HostCeiling`, and
+  not a convention applied upstream; see below and
+  [ADR 0020](../adr/0020-host-ceiling-is-a-port.md).
 - **Namespace / world**: the tenant or experiment isolation boundary within
   which identifiers and resources resolve.
 
@@ -139,21 +141,50 @@ For each concrete resource or tool operation, the kernel evaluates:
 7. Match the declared purpose when the grant restricts purposes.
 8. Match resource namespace, owner, path scope, and exact action together.
 9. Validate the delegation chain of a derived grant, or deny.
-10. Apply the host ceiling and any non-grant policy constraints.
+10. Apply the host ceiling and any non-grant policy constraints, through the
+    optional `HostCeiling` port.
 11. Atomically consume a bounded grant only for execution, not discovery.
 12. Return an explicit decision and append an audit event.
 
 If no complete grant matches, deny. If trusted grant state, a delegation
 ancestor, or an atomic usage store is unavailable, fail closed.
 
+### The host ceiling
+
+Step 10 is an optional port, `HostCeiling`, installed through
+`CapabilityAuthorizer({ hostCeiling })`. It is consulted **only after a grant
+has matched**, on an already-`allowed` decision, on both the `authorize` and the
+`canDiscover` path -- so a tool a ceiling refuses at invocation is also absent
+from the catalogue. A denial is never shown to it, so it has nothing to turn
+into an allow; the allow it may return is the decision it was handed, and one
+that does not carry the same `matchedGrantId` is treated as a malfunction and
+fails closed. Widening is inexpressible, not merely forbidden.
+
+Its refusal is `host_policy_denied`, a policy denial in its own bucket: a grant
+matched and the deployment's policy overrode it, which is a different fact from
+`no_matching_grant`. A throw is `host_policy_unavailable` and fails closed like
+every other unavailable trusted component. The signature is synchronous, which
+is what makes "deterministic and cheap" a property of the contract rather than
+of a comment: a synchronous return cannot await a network or model call.
+
+A kernel constructed without one behaves exactly as it did before the port
+existed, down to the audit record. When one is installed, the kernel records
+that fact, so a deployment that denies everything through policy is legible
+rather than reading as one where nobody was granted anything.
+
+A host that refuses by withholding a grant instead bypasses all of this and
+produces `no_matching_grant`, which says no such authority exists. Return the
+grants the actor holds and refuse in the ceiling.
+
 ### Denials SharedOS caused
 
 Fail-closed behaviour makes an infrastructure failure look like a denial at the
 call site. The reason codes listed in `INFRASTRUCTURE_DENIAL_REASONS`
 (`authority_unavailable`, `delegation_chain_unverified`,
-`usage_store_unavailable`) mark that case, and their audit records carry
-`failClosed: true`. A measurement must separate them from policy denials before
-computing any rate.
+`host_policy_unavailable`, `usage_store_unavailable`) mark that case, and their
+audit records carry `failClosed: true`. A measurement must separate them from
+policy denials before computing any rate. `host_policy_denied` is deliberately
+not among them: it is a decision the deployment made.
 
 A turn that could not establish authority at all has no authority state to name,
 so record completeness does not require one from a decision that failed closed.

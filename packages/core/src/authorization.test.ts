@@ -12,7 +12,9 @@ import {
   type CapabilityGrantVerifier,
   CapabilityAuthorizer,
   type GrantUsageStore,
+  type HostCeiling,
   InMemoryGrantUsageStore,
+  isInfrastructureDenial,
 } from "./authorization.js";
 
 const NOW = "2026-08-03T09:00:00.000Z";
@@ -481,6 +483,151 @@ describe("a denial that names the authority it needed", () => {
     await expect(
       authorizer.authorize(context([]), { resource: RESOURCE, action: "read" }),
     ).resolves.toMatchObject({ allowed: false });
+  });
+});
+
+describe("the host ceiling", () => {
+  const READ = { resource: RESOURCE, action: "read" } as const;
+
+  /** A ceiling that refuses, and records what it was shown. */
+  function refusing(): HostCeiling & { seen: unknown[] } {
+    const seen: unknown[] = [];
+    return {
+      seen,
+      narrow(decision, request, context) {
+        seen.push({ decision, request, context });
+        return { allowed: false, reasonCode: "host_policy_denied" };
+      },
+    };
+  }
+
+  it("turns an allow into a refusal that says host policy refused it", async () => {
+    const hostCeiling = refusing();
+    const authorizer = new CapabilityAuthorizer({ hostCeiling });
+
+    await expect(authorizer.authorize(context([grant()]), READ)).resolves.toEqual({
+      allowed: false,
+      reasonCode: "host_policy_denied",
+    });
+    // It was shown the decision the grants produced, with the grant that
+    // produced it, plus the request and context it has to read to decide.
+    expect(hostCeiling.seen).toEqual([
+      {
+        decision: { allowed: true, reasonCode: "allowed", matchedGrantId: "grant-files-read" },
+        request: READ,
+        context: accessContext(),
+      },
+    ]);
+  });
+
+  it("is never shown a denial, so it has nothing to turn into an allow", async () => {
+    const hostCeiling = refusing();
+    const authorizer = new CapabilityAuthorizer({ hostCeiling });
+
+    // No grant matched. The ceiling does not run, and the denial the grants
+    // produced is the denial returned.
+    await expect(authorizer.authorize(context([]), READ)).resolves.toMatchObject({
+      allowed: false,
+      reasonCode: "no_matching_grant",
+    });
+    expect(hostCeiling.seen).toEqual([]);
+  });
+
+  it("cannot hand back an allow for a grant it was not given", async () => {
+    const authorizer = new CapabilityAuthorizer({
+      hostCeiling: {
+        narrow: () => ({
+          allowed: true,
+          reasonCode: "allowed",
+          matchedGrantId: "grant-the-ceiling-invented",
+        }),
+      },
+    });
+
+    // Not a wider decision -- a malfunctioning port. It fails closed under the
+    // same code a throw does.
+    await expect(authorizer.authorize(context([grant()]), READ)).resolves.toEqual({
+      allowed: false,
+      reasonCode: "host_policy_unavailable",
+    });
+  });
+
+  it("keeps the decision it was handed when it agrees with it", async () => {
+    const authorizer = new CapabilityAuthorizer({
+      hostCeiling: { narrow: (decision) => decision },
+    });
+
+    await expect(authorizer.authorize(context([grant()]), READ)).resolves.toEqual({
+      allowed: true,
+      reasonCode: "allowed",
+      matchedGrantId: "grant-files-read",
+    });
+  });
+
+  it("fails closed when the port throws", async () => {
+    const authorizer = new CapabilityAuthorizer({
+      hostCeiling: {
+        narrow: () => {
+          throw new Error("the policy table is unreachable");
+        },
+      },
+    });
+
+    await expect(authorizer.authorize(context([grant()]), READ)).resolves.toEqual({
+      allowed: false,
+      reasonCode: "host_policy_unavailable",
+    });
+  });
+
+  it("separates the deliberate refusal from the broken port", () => {
+    // A policy refusal is a decision the deployment made, and belongs in the
+    // denial rate. A port that could not answer is SharedOS failing to
+    // establish a fact, and must be excluded from it.
+    expect(isInfrastructureDenial("host_policy_denied")).toBe(false);
+    expect(isInfrastructureDenial("host_policy_unavailable")).toBe(true);
+  });
+
+  it("runs on discovery too, so a tool it refuses is absent from the catalogue", async () => {
+    const hostCeiling = refusing();
+    const authorizer = new CapabilityAuthorizer({ hostCeiling });
+    const ceiling = { resource: { namespace: "files", path: ["Workspace"] }, action: "read" };
+
+    await expect(authorizer.canDiscover(context([grant()]), ceiling)).resolves.toEqual({
+      allowed: false,
+      reasonCode: "host_policy_denied",
+    });
+    expect(hostCeiling.seen).toHaveLength(1);
+  });
+
+  it("changes nothing at all when there is none", async () => {
+    const withNone = new CapabilityAuthorizer();
+    const authority = context([grant()]);
+
+    await expect(withNone.authorize(authority, READ)).resolves.toEqual({
+      allowed: true,
+      reasonCode: "allowed",
+      matchedGrantId: "grant-files-read",
+    });
+    await expect(withNone.authorize(context([]), READ)).resolves.toEqual(
+      deniedForWantOfAGrant(RESOURCE, "read"),
+    );
+    expect(withNone.hasHostCeiling).toBe(false);
+  });
+
+  it("cannot express widening in the type either", () => {
+    const passthrough: HostCeiling = { narrow: (decision) => decision };
+    const denial = { allowed: false, reasonCode: "no_matching_grant" } as const;
+
+    // @ts-expect-error a ceiling is shown allowed decisions only, so there is
+    // no denial in its hand to return as an allow.
+    expect(passthrough.narrow(denial, READ, accessContext())).toBe(denial);
+
+    const invented: HostCeiling = {
+      // @ts-expect-error its denial arm is pinned to `host_policy_denied`, so a
+      // ceiling cannot borrow a code that means something else happened.
+      narrow: () => ({ allowed: false, reasonCode: "no_matching_grant" }),
+    };
+    expect(invented.narrow).toBeTypeOf("function");
   });
 });
 

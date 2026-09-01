@@ -3,6 +3,7 @@ import type {
   AuthorizationDecision,
   Capability,
   CapabilityGrant,
+  CapabilityRequest,
   JsonObject,
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
@@ -36,9 +37,11 @@ export type AuthorizationReasonCode =
   | "invalid_request"
   | "no_matching_grant"
   | "grant_exhausted"
+  | "host_policy_denied"
   | "delegation_chain_invalid"
   | "authority_unavailable"
   | "delegation_chain_unverified"
+  | "host_policy_unavailable"
   | "usage_store_unavailable";
 
 /**
@@ -52,11 +55,97 @@ export type AuthorizationReasonCode =
 export const INFRASTRUCTURE_DENIAL_REASONS: readonly AuthorizationReasonCode[] = [
   "authority_unavailable",
   "delegation_chain_unverified",
+  "host_policy_unavailable",
   "usage_store_unavailable",
 ];
 
 export function isInfrastructureDenial(reasonCode: string): boolean {
   return (INFRASTRUCTURE_DENIAL_REASONS as readonly string[]).includes(reasonCode);
+}
+
+/**
+ * A decision that allowed, and the grant that produced it.
+ *
+ * Named apart from {@link AuthorizationDecision} so a port can be given the
+ * allow arm alone. A denial is not assignable to it, which is how
+ * {@link HostCeiling} is prevented from ever seeing one.
+ */
+export interface AllowedDecision {
+  readonly allowed: true;
+  readonly reasonCode: "allowed";
+  readonly matchedGrantId: string;
+  readonly metadata?: JsonObject;
+}
+
+/** A decision that refused, and the one code saying what was refused. */
+export interface DeniedDecision {
+  readonly allowed: false;
+  readonly reasonCode: Exclude<AuthorizationReasonCode, "allowed">;
+  readonly requiredCapability?: CapabilityRequest;
+  readonly metadata?: JsonObject;
+}
+
+/**
+ * A refusal by host policy, the one input to a decision no grant expresses.
+ *
+ * The only denial a ceiling may author. Its code is fixed here rather than
+ * taken from the ceiling, so the vocabulary stays SharedOS's: a host cannot
+ * invent a reason code by returning one, and cannot borrow `no_matching_grant`
+ * to make its own refusal look like an absent grant.
+ */
+export interface HostPolicyDenial {
+  readonly allowed: false;
+  readonly reasonCode: "host_policy_denied";
+  readonly metadata?: JsonObject;
+}
+
+/**
+ * The only two things a ceiling may say: the decision it was handed, or no.
+ *
+ * Widening is inexpressible rather than forbidden. A ceiling is handed an
+ * {@link AllowedDecision} and can therefore never receive a denial to turn
+ * into an allow; the allow arm it may return is pinned to `reasonCode:
+ * "allowed"` and requires a `matchedGrantId`, which {@link CapabilityAuthorizer}
+ * checks is the one it handed over. Anything else is a malfunction and fails
+ * closed as `host_policy_unavailable`.
+ */
+export type HostCeilingVerdict = AllowedDecision | HostPolicyDenial;
+
+/**
+ * Product or organization policy, applied where step 10 of the permission
+ * model already puts it.
+ *
+ * Consulted only after a grant has matched, on an already-`allowed` decision,
+ * on both the `authorize` and the `canDiscover` path -- so a tool the ceiling
+ * refuses at invocation is also absent from the catalogue. It cannot widen
+ * anything: see {@link HostCeilingVerdict}.
+ *
+ * The signature is synchronous, and that is the enforcement. "Deterministic and
+ * cheap" cannot be asserted in prose and then relied on; a synchronous return
+ * cannot await a network call or a model call, so the constraint is carried by
+ * the type. A timeout was rejected for the same reason it would fail as a
+ * conformance signal: what it admits depends on how fast the machine is. A host
+ * whose policy lives in a database loads it on its own schedule and closes over
+ * the result -- ADR 0020's `PolicySource`, which moves that load to the turn
+ * boundary beside the grant set, is not implemented yet and carries a row in
+ * `docs/open-items.md`.
+ *
+ * A throw fails closed and is recorded as `host_policy_unavailable`, an
+ * infrastructure denial consistent with every other unavailable trusted
+ * component. A refusal is recorded as `host_policy_denied`, which is a policy
+ * denial and its own bucket: not merged with `no_matching_grant`, which says no
+ * such authority exists, and not counted as infrastructure. Which component
+ * refused is `OperationRecord.source` and lives only there.
+ *
+ * It is optional. A kernel constructed without one behaves exactly as it does
+ * today. See ADR 0020.
+ */
+export interface HostCeiling {
+  narrow(
+    decision: AllowedDecision,
+    request: AuthorizationRequest,
+    context: AccessContext,
+  ): HostCeilingVerdict;
 }
 
 export interface GrantUsageStore {
@@ -101,6 +190,13 @@ export interface CapabilityAuthorizerOptions {
    */
   readonly delegationResolver?: DelegationChainResolver;
   readonly maxDelegationChainLength?: number;
+  /**
+   * Host policy that may reduce, but never increase, granted authority.
+   *
+   * Absent by default, and an absent ceiling changes nothing: the decision the
+   * grants produced is the decision returned, code for code.
+   */
+  readonly hostCeiling?: HostCeiling;
 }
 
 /**
@@ -136,12 +232,25 @@ export class CapabilityAuthorizer {
   readonly #grantVerifier: CapabilityGrantVerifier | undefined;
   readonly #delegationResolver: DelegationChainResolver | undefined;
   readonly #maxDelegationChainLength: number | undefined;
+  readonly #hostCeiling: HostCeiling | undefined;
 
   constructor(options: CapabilityAuthorizerOptions = {}) {
     this.#usageStore = options.usageStore;
     this.#grantVerifier = options.grantVerifier;
     this.#delegationResolver = options.delegationResolver;
     this.#maxDelegationChainLength = options.maxDelegationChainLength;
+    this.#hostCeiling = options.hostCeiling;
+  }
+
+  /**
+   * Whether host policy is consulted on the decisions this authorizer makes.
+   *
+   * Read by {@link SharedOSKernel} so the choice is not silent: a deployment
+   * that denies everything through policy is then legible in the record rather
+   * than reading as a deployment where nobody was granted anything.
+   */
+  get hasHostCeiling(): boolean {
+    return this.#hostCeiling !== undefined;
   }
 
   async authorize(
@@ -171,6 +280,13 @@ export class CapabilityAuthorizer {
     return this.#decide(authority, ceiling, capabilityIntersectsCeiling, false, options.now);
   }
 
+  /**
+   * Steps 4 through 11 of the permission model, in that order.
+   *
+   * The grants decide first and the host ceiling decides last, on what the
+   * grants allowed. That order is what makes a ceiling unable to widen: it is
+   * only ever shown a decision that already matched a grant.
+   */
   async #decide(
     authority: ResolvedAuthority,
     request: AuthorizationRequest,
@@ -183,6 +299,76 @@ export class CapabilityAuthorizer {
     operationNow: string | undefined,
   ): Promise<AuthorizationDecision> {
     const context = structuredClone(authority.context);
+    const decision = await this.#decideOnGrants(
+      context,
+      authority,
+      request,
+      matches,
+      consume,
+      operationNow,
+    );
+    return decision.allowed ? this.#narrow(decision, request, context) : decision;
+  }
+
+  /**
+   * The host ceiling, applied to a decision the grants already allowed.
+   *
+   * A denial is never shown to it, and the decision it may hand back is the one
+   * it was given. A returned allow that does not carry the `matchedGrantId` it
+   * was handed is a malfunction rather than a wider decision, and fails closed
+   * as `host_policy_unavailable` -- the same code a throw produces, because both
+   * mean the port could not be relied on. That is what makes widening
+   * inexpressible instead of merely forbidden.
+   */
+  #narrow(
+    decision: AllowedDecision,
+    request: AuthorizationRequest,
+    context: AccessContext,
+  ): AllowedDecision | DeniedDecision {
+    if (this.#hostCeiling === undefined) {
+      return decision;
+    }
+
+    let verdict: HostCeilingVerdict;
+    try {
+      verdict = this.#hostCeiling.narrow(
+        decision,
+        structuredClone(request),
+        structuredClone(context),
+      );
+    } catch {
+      return deny("host_policy_unavailable");
+    }
+
+    if (verdict.allowed === false) {
+      return {
+        allowed: false,
+        reasonCode: "host_policy_denied",
+        ...(verdict.metadata === undefined ? {} : { metadata: verdict.metadata }),
+      };
+    }
+    if (verdict.allowed === true) {
+      return verdict.matchedGrantId === decision.matchedGrantId
+        ? decision
+        : deny("host_policy_unavailable");
+    }
+    // Unreachable through the type. A host outside TypeScript that answers with
+    // neither arm has a broken port, not a permissive one.
+    return deny("host_policy_unavailable");
+  }
+
+  async #decideOnGrants(
+    context: AccessContext,
+    authority: ResolvedAuthority,
+    request: AuthorizationRequest,
+    matches: (
+      capability: Capability,
+      request: AuthorizationRequest,
+      context: AccessContext,
+    ) => boolean,
+    consume: boolean,
+    operationNow: string | undefined,
+  ): Promise<AllowedDecision | DeniedDecision> {
     const grants = structuredClone([...authority.grants]);
     request = structuredClone(request);
     const admittedAt = parseTimestamp(context.now);
@@ -344,14 +530,14 @@ function worstDelegationFailure(
   return current;
 }
 
-function allow(grantId: string): AuthorizationDecision {
+function allow(grantId: string): AllowedDecision {
   return { allowed: true, reasonCode: "allowed", matchedGrantId: grantId };
 }
 
 function deny(
   reasonCode: Exclude<AuthorizationReasonCode, "allowed">,
   metadata?: JsonObject,
-): AuthorizationDecision {
+): DeniedDecision {
   return { allowed: false, reasonCode, ...(metadata === undefined ? {} : { metadata }) };
 }
 
