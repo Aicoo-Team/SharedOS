@@ -8,6 +8,7 @@ import type {
 import { PublishedToolDefinitionSchema } from "@aicoo/sharedos-contracts";
 
 import { canonicalJson, sha256Hex } from "./hashing.js";
+import { deepFreeze } from "./internal.js";
 
 /**
  * The fields of a published tool that `catalogHash` is computed over.
@@ -159,14 +160,4 @@ export async function buildToolCatalog(
  */
 export function portableToolName(name: string): string {
   return name.replace(/\./gu, "_");
-}
-
-function deepFreeze<T>(value: T): T {
-  if (value === null || typeof value !== "object" || Object.isFrozen(value)) {
-    return value;
-  }
-  for (const child of Object.values(value)) {
-    deepFreeze(child);
-  }
-  return Object.freeze(value);
 }

@@ -16,6 +16,23 @@ export function canonicalJson(value: unknown): string {
   return JSON.stringify(value) ?? "undefined";
 }
 
+/** Freeze a protocol value and everything reachable from it. */
+export function deepFreeze<T>(value: T): T {
+  if (value !== null && typeof value === "object") {
+    for (const child of Object.values(value)) {
+      deepFreeze(child);
+    }
+    Object.freeze(value);
+  }
+  return value;
+}
+
+export function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) {
+    throw signal.reason ?? new Error("operation aborted");
+  }
+}
+
 export function addressesEqual(left: Address, right: Address): boolean {
   return canonicalJson(left) === canonicalJson(right);
 }

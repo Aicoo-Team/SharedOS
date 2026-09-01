@@ -60,6 +60,9 @@ flowchart TD
   AD --> MCP
   MCP["@aicoo/sharedos-mcp"] --> CO
   MCP --> CT
+  CF --> OS
+  CF --> MCP
+  CF --> AD
 ```
 
 ### `@aicoo/sharedos-contracts`

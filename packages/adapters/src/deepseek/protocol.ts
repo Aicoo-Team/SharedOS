@@ -1,4 +1,5 @@
 import type { JsonObject, JsonValue, ToolDefinition, ToolResult } from "@aicoo/sharedos-contracts";
+import { parseToolArguments } from "../internal.js";
 import { z } from "zod";
 
 import { toolResultBody } from "../codex/protocol.js";
@@ -125,7 +126,7 @@ export const deepseekProtocol: HarnessProtocol = {
       if (!call.success) {
         return [];
       }
-      const parsed = parseArguments(call.data.arguments);
+      const parsed = parseToolArguments(call.data.arguments);
       return parsed === undefined
         ? [
             {
@@ -225,15 +226,4 @@ function readEvent(frame: HarnessFrame): { type: string; data: JsonObject } | un
   }
   const bare = EventEnvelopeSchema.safeParse(frame);
   return bare.success ? { type: bare.data.type, data: bare.data.data as JsonObject } : undefined;
-}
-
-function parseArguments(raw: string): JsonObject | undefined {
-  try {
-    const parsed: unknown = JSON.parse(raw === "" ? "{}" : raw);
-    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as JsonObject)
-      : undefined;
-  } catch {
-    return undefined;
-  }
 }

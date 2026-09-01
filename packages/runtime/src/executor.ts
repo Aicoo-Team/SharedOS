@@ -21,10 +21,10 @@ import {
   type ToolDefinition,
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
-import { SPAN, measure, type SpanSink } from "@aicoo/sharedos-core";
+import { SPAN, canonicalJson, measure, type SpanSink } from "@aicoo/sharedos-core";
 import type { SharedOSKernel, TurnAuthorityScope } from "@aicoo/sharedos-core";
 
-import { ESCALATION_TOOL_NAME } from "./escalation.js";
+import { escalationOffered } from "./escalation.js";
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
 import type {
   RuntimeHost,
@@ -361,7 +361,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
           "invalid_runtime_outcome",
           "The runtime plugin returned an invalid terminal outcome.",
         );
-        emit("turn.failed", { code: error.code });
+        emit("turn.failed", { code: error.code, source: "envelope" });
         return resultFor(request, events, startedAt, this.#clock(), "failed", error, metadata);
       }
 
@@ -394,12 +394,15 @@ export class SharedOSExecutor implements TurnExecutionPort {
         // runtime misbehaving, as with `invalid_runtime_outcome`. Nothing
         // reached the kernel, so nothing is audited; the event stream is where
         // an envelope refusal lives.
-        if (!effectiveToolNames.has(ESCALATION_TOOL_NAME)) {
+        if (!escalationOffered(effectiveTools)) {
           const error = protocolError(
             "tool_unavailable",
             "The runtime ended the turn by escalation, but this turn's catalogue does not offer the affordance.",
           );
-          emit("turn.failed", { code: error.code });
+          // `source` says who ended the turn. A record reader -- the conformance
+          // judge is one -- can then credit the envelope with a refusal it made,
+          // and credit nothing for a failure the runtime reported as its own.
+          emit("turn.failed", { code: error.code, source: "envelope" });
           return resultFor(
             request,
             events,
@@ -445,7 +448,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
         };
       }
 
-      emit("turn.failed", { code: outcome.data.error.code });
+      emit("turn.failed", { code: outcome.data.error.code, source: "runtime" });
       return resultFor(
         request,
         events,
@@ -462,7 +465,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
       }
 
       const error = protocolError("runtime_failed", "The runtime plugin failed.", true);
-      emit("turn.failed", { code: error.code });
+      emit("turn.failed", { code: error.code, source: "envelope" });
       return resultFor(request, events, startedAt, this.#clock(), "failed", error, metadata);
     } finally {
       runtimeHostActive = false;
@@ -484,6 +487,8 @@ export class SharedOSExecutor implements TurnExecutionPort {
 /**
  * Compatibility facade for the original driver-based API. New harnesses should
  * implement RuntimePlugin and use SharedOSExecutor directly.
+ *
+ * Retained pending a deprecation decision; see `docs/open-items.md`.
  */
 export class TurnExecutor implements TurnExecutionPort {
   readonly #executor: SharedOSExecutor;
@@ -504,6 +509,7 @@ export class TurnExecutor implements TurnExecutionPort {
       ...(options.defaultTimeoutMs === undefined
         ? {}
         : { defaultTimeoutMs: options.defaultTimeoutMs }),
+      ...(options.spans === undefined ? {} : { spans: options.spans }),
     };
     this.#executor = new SharedOSExecutor(
       kernel,
@@ -660,7 +666,7 @@ function resultFor(
     metadata,
   };
 
-  return status === "cancelled" ? { ...base, status, error } : { ...base, status, error };
+  return { ...base, status, error };
 }
 
 function cancelledResult(
@@ -734,17 +740,4 @@ function runtimeResultMetadata(
       ...(manifest.metadata === undefined ? {} : { metadata: manifest.metadata }),
     },
   };
-}
-
-function canonicalJson(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map(canonicalJson).join(",")}]`;
-  }
-  if (value !== null && typeof value === "object") {
-    return `{${Object.entries(value)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, child]) => `${JSON.stringify(key)}:${canonicalJson(child)}`)
-      .join(",")}}`;
-  }
-  return JSON.stringify(value) ?? "undefined";
 }

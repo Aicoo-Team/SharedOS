@@ -96,7 +96,7 @@ is the boundary between them and the agents that act on them.
   outside them, the three availability gates, and how to register native or MCP
   tools of your own.
 - [MCP toolshare](mcp-toolshare.md): the permission-filtered catalogue as an MCP
-  server, the boundary presented to Codex, Claude Code, and DeepSeek Harness.
+  server, the boundary presented to Codex, Claude Code, DeepSeek Harness, and Pi.
 - [MCP API reference](mcp-api.md): that boundary on the wire — both transports,
   every method, and the harness configuration each CLI expects.
 - [Reason and error codes](errors.md): what every denial and failure means, and
@@ -144,11 +144,15 @@ is the boundary between them and the agents that act on them.
 - [ADR 0016: Expiry is instant-bound, revocation is snapshot-bound](adr/0016-expiry-is-instant-bound.md)
 - [ADR 0017: What a driver may declare about its own turn](adr/0017-driver-declared-turn-control.md)
 - [ADR 0018: Escalation over MCP is recovered from the call, not returned by it](adr/0018-escalation-over-mcp.md)
+- [ADR 0019: An escalation names the authority it needs](adr/0019-escalation-names-the-authority-it-needs.md)
+- [ADR 0020: The host ceiling is a port, not a convention](adr/0020-host-ceiling-is-a-port.md)
 
 ## Project governance
 
 - [Contributing](../CONTRIBUTING.md)
 - [Security policy](../SECURITY.md)
+- [Open items for review](open-items.md) — declared surface kept pending a
+  decision, with the decision each needs
 
 The repository is in `0.x` development. If code and documentation disagree on a
 security invariant, treat that as a defect: do not weaken enforcement silently.

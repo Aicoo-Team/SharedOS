@@ -3,6 +3,17 @@ import { checkRecordCompleteness } from "./completeness.js";
 import type { ExecutionRecord } from "./record.js";
 
 /**
+ * Version of the grading rules, so a manifest names what produced it.
+ *
+ * Lives beside the rules it versions: a change to how a cell is graded is a
+ * change to this file, and the bump belongs in the same diff. Version 3 names
+ * the envelope as the enforcement point of a failed turn the envelope ended,
+ * read from the `turn.failed` event's `source`; version 2 named a boundary for
+ * denied turns only.
+ */
+export const JUDGE_VERSION = "3";
+
+/**
  * What a manifest cell may report.
  *
  * `not_exercised` is not a softer failure. It says the attempt never reached
@@ -78,7 +89,10 @@ export interface TurnExpectation {
 }
 
 export interface JudgeCaseOptions {
-  /** Set when the condition is expected to refuse the turn before it runs. */
+  /**
+   * Set when the row is graded on how the turn ends as well as on its attempts:
+   * refused before it runs, or ended by escalation.
+   */
   readonly expectTurn?: TurnExpectation;
   /**
    * Attempt ids the runtime under test structurally cannot issue, mapped to why.
@@ -168,7 +182,13 @@ export function judgeCase(
           // Only a refused turn names a boundary. An escalated turn met its
           // expectation without anything refusing it, and reporting the kernel
           // as its enforcement point would credit a refusal that never happened.
+          // A denied turn was refused at admission, by the kernel. A failed turn
+          // names the envelope only when the record says the envelope ended it;
+          // a failure the runtime reported as its own refused nothing.
           ...(turn?.met === true && turn.observedStatus === "denied" ? (["kernel"] as const) : []),
+          ...(turn?.met === true && turn.observedStatus === "failed" && turn.endedBy === "envelope"
+            ? (["envelope"] as const)
+            : []),
         ].filter((point): point is EnforcementPoint => point !== undefined),
       ),
     ].sort(),
@@ -192,6 +212,8 @@ interface TurnOutcome {
   readonly expected: TurnExpectation;
   readonly observedStatus: ExecutionRecord["execution"]["status"];
   readonly reasonCode: string | undefined;
+  /** Who ended a failed turn, as the `turn.failed` event says: the envelope, or the runtime. */
+  readonly endedBy: "envelope" | "runtime" | undefined;
 }
 
 /** Compare the turn's terminal outcome against the condition's expectation. */
@@ -207,7 +229,24 @@ function turnOutcome(
   const met =
     observedStatus === expected.status &&
     (expected.reasonCode === undefined || reasonCode === expected.reasonCode);
-  return { met, expected, observedStatus, reasonCode };
+  return { met, expected, observedStatus, reasonCode, endedBy: turnEndedBy(record) };
+}
+
+/**
+ * Who ended a failed turn, read from the record rather than inferred from the
+ * code: the executor stamps `source` on `turn.failed` -- `envelope` when it
+ * refused the runtime's outcome or the runtime threw, `runtime` when it relayed
+ * a failure the runtime reported as its own. Absent on a record written before
+ * the stamp existed, or on a turn that did not fail.
+ */
+function turnEndedBy(record: ExecutionRecord): "envelope" | "runtime" | undefined {
+  const failed = record.execution.events.find(({ type }) => type === "turn.failed");
+  const data = failed?.data;
+  if (data === undefined || data === null || typeof data !== "object" || Array.isArray(data)) {
+    return undefined;
+  }
+  const source = (data as { readonly source?: unknown }).source;
+  return source === "envelope" || source === "runtime" ? source : undefined;
 }
 
 /**

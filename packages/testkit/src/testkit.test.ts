@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import type { Capability } from "@aicoo/sharedos-contracts";
 
 import {
-  InMemoryGrantChainResolver,
+  InMemoryDelegationChainResolver,
   InMemoryToolNamespaceSettingsStore,
-  UnavailableGrantChainResolver,
+  UnavailableDelegationChainResolver,
   createTestContext,
   createTestGrant,
   createTestKernel,
@@ -73,7 +73,7 @@ describe("testkit", () => {
       ],
       purposes: ["test"],
     });
-    const resolver = new InMemoryGrantChainResolver([parent]);
+    const resolver = new InMemoryDelegationChainResolver([parent]);
     const { kernel, audit } = createTestKernel({
       delegationResolver: resolver,
       grants: [child],
@@ -112,7 +112,7 @@ describe("testkit", () => {
       purposes: ["test"],
     });
     const { kernel } = createTestKernel({
-      delegationResolver: new UnavailableGrantChainResolver(),
+      delegationResolver: new UnavailableDelegationChainResolver(),
       grants: [child],
     });
 

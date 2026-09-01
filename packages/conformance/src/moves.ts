@@ -750,6 +750,24 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
     ],
   },
   {
+    id: "kernel.escalation-refused",
+    kind: "escalation_refused",
+    invariant: "An escalation the turn was not granted is refused",
+    expectedOutcome: "The turn fails `tool_unavailable`; nothing is recorded or audited",
+    terminal: {
+      type: "escalate",
+      reason: "asking for a human on a turn that holds no grant over the affordance",
+    },
+    attempts: [
+      {
+        ...READ_OWN_WORKSPACE,
+        id: "read-own-workspace",
+        description:
+          "Read inside the agent's own world first, so the refusal that ends the turn is a refusal of the ask and not of a runtime that never ran.",
+      },
+    ],
+  },
+  {
     id: "kernel.record-completeness",
     kind: "record_completeness",
     invariant: "Allowed and denied turns emit a complete record",

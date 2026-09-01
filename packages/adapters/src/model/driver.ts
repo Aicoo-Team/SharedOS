@@ -1,14 +1,13 @@
 import type {
   JsonObject,
   JsonValue,
-  ProtocolError,
   RuntimeManifest,
   ToolCall,
   ToolDefinition,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
-  ESCALATION_TOOL_NAME,
+  escalationOffered,
   escalationRequest,
   type AgentTurnDecision,
   type AgentTurnDriver,
@@ -18,13 +17,13 @@ import {
 } from "@aicoo/sharedos-runtime";
 
 import {
-  parseToolArguments,
   type ModelClient,
   type ModelMessage,
   type ModelReply,
   type ModelTool,
   type ModelToolCall,
 } from "./client.js";
+import { defaultPrompt, failed, parseToolArguments, toolResultBody } from "../internal.js";
 
 /**
  * The alphabet a chat-completions provider accepts for a function name.
@@ -220,7 +219,7 @@ class ModelSession implements AgentTurnSession {
     this.#messages = [{ role: "user", content: prompt }];
     this.#maxMalformedCalls = options.maxMalformedCalls;
     this.#declareStep = options.declareStep;
-    this.#offered = request.tools.some((tool) => tool.name === ESCALATION_TOOL_NAME);
+    this.#offered = escalationOffered(request.tools);
   }
 
   async next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision> {
@@ -228,7 +227,7 @@ class ModelSession implements AgentTurnSession {
       this.#messages.push({
         role: "tool",
         toolCallId: input.result.callId,
-        content: describeResult(input.result),
+        content: JSON.stringify(toolResultBody(input.result)),
       });
     }
 
@@ -252,7 +251,7 @@ class ModelSession implements AgentTurnSession {
         if (signal.aborted) {
           throw error;
         }
-        return fail(
+        return failed(
           "model_call_failed",
           `The model call failed: ${describe(error)}`,
           this.#metadata(),
@@ -268,7 +267,7 @@ class ModelSession implements AgentTurnSession {
         // doing, and completing the turn would grade it as the model choosing
         // to end -- both are the wrong record. The turn fails, under a code
         // that says so.
-        return fail(
+        return failed(
           "model_output_truncated",
           "The model's reply was cut off at the output token limit before it finished deciding.",
           this.#metadata(),
@@ -349,7 +348,7 @@ class ModelSession implements AgentTurnSession {
       this.#malformed += 1;
       if (this.#malformed > this.#maxMalformedCalls) {
         this.#pending.length = 0;
-        return fail(
+        return failed(
           "model_malformed_call_limit_exceeded",
           "The model emitted too many calls whose arguments could not be read.",
           this.#metadata(),
@@ -358,7 +357,7 @@ class ModelSession implements AgentTurnSession {
       this.#messages.push({
         role: "tool",
         toolCallId: next.id,
-        content: describeResult(this.#refuse(next)),
+        content: JSON.stringify(toolResultBody(this.#refuse(next))),
       });
     }
   }
@@ -438,37 +437,8 @@ class ModelSession implements AgentTurnSession {
   }
 }
 
-/** A tool result, rendered as the text a chat-completions provider expects. */
-function describeResult(result: ToolResult): string {
-  if (result.status === "succeeded") {
-    return JSON.stringify({ status: result.status, output: result.output });
-  }
-  return JSON.stringify({
-    status: result.status,
-    error: { code: result.error.code, message: result.error.message },
-  });
-}
-
-function fail(code: string, message: string, metadata: JsonObject): AgentTurnDecision {
-  const error: ProtocolError = { code, message };
-  return { type: "fail", error, metadata };
-}
-
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
 /** The message payload as a prompt, matching what a harness driver does with it. */
-function defaultPrompt(request: AgentTurnRequest): string {
-  const payload: JsonValue = request.message.payload;
-  if (typeof payload === "string") {
-    return payload;
-  }
-  if (payload !== null && typeof payload === "object" && !Array.isArray(payload)) {
-    const text = (payload as JsonObject)["text"];
-    if (typeof text === "string") {
-      return text;
-    }
-  }
-  return JSON.stringify(payload);
-}

@@ -10,6 +10,7 @@ import { ToolDefinitionSchema } from "@aicoo/sharedos-contracts";
 
 import type { AuthorizationRequest } from "./authorization.js";
 import { DuplicateRegistrationError } from "./errors.js";
+import { deepFreeze } from "./internal.js";
 
 export interface ToolHandler {
   readonly definition: ToolDefinition;
@@ -123,15 +124,4 @@ export class ToolRegistry {
 
 function cloneDefinition(definition: ToolDefinition): ToolDefinition {
   return JSON.parse(JSON.stringify(definition)) as ToolDefinition;
-}
-
-function deepFreeze<T>(value: T): T {
-  if (value !== null && typeof value === "object") {
-    for (const child of Object.values(value)) {
-      deepFreeze(child);
-    }
-    Object.freeze(value);
-  }
-
-  return value;
 }

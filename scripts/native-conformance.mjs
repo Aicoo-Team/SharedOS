@@ -31,9 +31,14 @@
  *
  * Environment:
  *   SHAREDOS_MODEL_API_KEY   the model column's key (DEEPSEEK_API_KEY, DSH_API_KEY)
- *   SHAREDOS_MODEL           model name          (default deepseek-v4-flash)
+ *   SHAREDOS_MODEL           model name          (default DSH_MODEL, else the config's model.id, else deepseek-v4-flash)
  *   SHAREDOS_MODEL_BASE_URL  chat-completions root (default https://api.deepseek.com)
- *   SHAREDOS_MODEL_PROVIDER  provider label      (default deepseek)
+ *   SHAREDOS_MODEL_PROVIDER  provider label      (default the config's model.provider, else deepseek)
+ *   SHAREDOS_NATIVE_CONFIG   default for --config
+ *   DSH_RUNTIME_COMMAND      DeepSeek Harness JSON-RPC runtime (default dsh-jsonrpc-agent)
+ *   DSH_RUNTIME_CONFIG       its plugin composition, passed as the first argument
+ *   DSH_RUNTIME_CWD          its working directory, also the `initialize` cwd
+ *   DSH_PROVIDER, DSH_MODEL  what `initialize` names (default deepseek-official, deepseek-v4-flash)
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -62,7 +67,7 @@ const { OpenAiCompatibleModelClient } = await import(
 );
 const {
   CANONICAL_CONFORMANCE_CASES,
-  EMBEDDED_COLUMN,
+  ADVERSARY_COLUMN,
   liveColumn,
   modelColumn,
   runConformanceSuite,
@@ -111,7 +116,7 @@ const cases =
  * `mcp-conformance.mjs`.
  *
  * An id naming no column stops the run, for the reason `--case` does: quietly
- * falling back to a Standard-only run would attribute a green result to columns
+ * falling back to an Adversary-only run would attribute a green result to columns
  * that never ran.
  */
 const only = flag("harness", undefined);
@@ -211,7 +216,7 @@ const HARNESSES = [
   },
   {
     id: "deepseek-live",
-    label: "Deepseek",
+    label: "DeepSeek",
     harness: "deepseek",
     protocol: deepseekProtocol,
     requirements: DEEPSEEK_REQUIREMENTS,
@@ -258,7 +263,7 @@ const HARNESSES = [
   },
   {
     id: "pi-live",
-    label: "pi",
+    label: "Pi",
     harness: "pi",
     protocol: piProtocol,
     requirements: PI_REQUIREMENTS,
@@ -283,7 +288,7 @@ if (only !== undefined) {
 }
 
 const availability = [];
-const columns = [EMBEDDED_COLUMN];
+const columns = [ADVERSARY_COLUMN];
 
 for (const harness of HARNESSES.filter(({ harness: id }) => only === undefined || id === only)) {
   const host = harnessConfig(harness.harness);
@@ -481,7 +486,7 @@ for (const column of manifest.columns) {
 }
 
 const failures = strictFailures(manifest);
-const liveColumns = manifest.columns.filter(({ id }) => id !== EMBEDDED_COLUMN.id);
+const liveColumns = manifest.columns.filter(({ id }) => id !== ADVERSARY_COLUMN.id);
 await mkdir(outputDirectory, { recursive: true });
 await writeFile(
   outputJson,

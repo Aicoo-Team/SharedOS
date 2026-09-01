@@ -70,7 +70,11 @@ export const CapabilityConstraintsSchema = z
 
 export type CapabilityConstraints = z.infer<typeof CapabilityConstraintsSchema>;
 
-/** A request for authority. A request is not itself proof of authority. */
+/**
+ * A request for authority. A request is not itself proof of authority.
+ *
+ * No SharedOS port accepts one yet; see `docs/open-items.md`.
+ */
 export const CapabilityRequestSchema = z
   .object({
     id: IdentifierSchema,

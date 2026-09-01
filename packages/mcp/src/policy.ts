@@ -34,19 +34,6 @@ export function declareToolPolicy(options: DeclareToolPolicyOptions = {}): ToolP
   });
 }
 
-/**
- * The strictest policy a live harness can honestly declare.
- *
- * Not the empty policy: every CLI in scope keeps some tools it will not give up,
- * and pretending otherwise would be the exact misdeclaration this type exists to
- * prevent. What `strict` asserts is narrower and checkable -- that no
- * independently configured external server was reachable, so every effect
- * outside the harness's own sandbox went through SharedOS.
- */
-export function strictToolPolicy(harnessLocal: readonly string[] = []): ToolPolicy {
-  return declareToolPolicy({ mode: "strict", harnessLocal });
-}
-
 export function parseToolPolicy(value: unknown): ToolPolicy {
   const parsed = ToolPolicySchema.safeParse(value);
   if (!parsed.success) {

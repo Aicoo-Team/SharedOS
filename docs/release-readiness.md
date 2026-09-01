@@ -6,15 +6,19 @@ Prerelease packages use the `next` dist-tag.
 
 ## Distribution gates
 
-- Verify publish access to the `@aicoo` npm scope and perform the first manual
-  publication as `0.1.0-alpha.0`.
-- Configure GitHub trusted publishing for every package after its first
-  publication, then verify OIDC with the next prerelease.
+- `0.1.0-alpha.0` was published by hand, and `alpha.1` and `alpha.2` since; the
+  root version is the next prerelease.
+- Trusted publishing: `release.yml` publishes from a `v*` tag with OIDC. Confirm
+  on npm that every package's trusted publisher is configured and that a
+  prerelease has been published through a tag alone; the repository cannot show
+  whether that has happened.
+- `latest` is promoted deliberately with `pnpm release:promote-latest`, never by
+  a release.
 
 Completed distribution gates: Apache-2.0 is present in every package archive,
-the package set is fixed and package-linted, prereleases cannot become `latest`
-accidentally, and `founders@aicoo.io` is the private vulnerability-reporting
-contact.
+the package set is fixed, dependency-ordered, and package-linted, prereleases
+cannot become `latest` accidentally, and `founders@aicoo.io` is the private
+vulnerability-reporting contact.
 
 ## Production security gates
 

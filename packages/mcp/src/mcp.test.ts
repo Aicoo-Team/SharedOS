@@ -48,6 +48,7 @@ import {
   toCallToolResult,
   verifyExecutionToken,
   type ExecutionTokenClaims,
+  canonicalActor,
 } from "./index.js";
 import { createStreamableHttpMcpServer, serveMcpOverStdio } from "./node.js";
 
@@ -767,5 +768,14 @@ describe("a harness talking to the real transport", () => {
     const answered = JSON.parse(lines.join("").trim()) as JsonObject;
     const tools = (answered["result"] as JsonObject)["tools"] as JsonObject[];
     expect(tools.map((tool) => tool["name"])).toContain("files.search");
+  });
+});
+
+describe("canonicalActor", () => {
+  it("renders every address kind as kind:id, the pair a recipient grant path uses", () => {
+    expect(canonicalActor({ kind: "agent", agentId: "agent-bob" })).toBe("agent:agent-bob");
+    expect(canonicalActor({ kind: "human", userId: "user-alice" })).toBe("human:user-alice");
+    expect(canonicalActor({ kind: "group", conversationId: "c-1" })).toBe("group:c-1");
+    expect(canonicalActor({ kind: "service", serviceId: "svc" })).toBe("service:svc");
   });
 });

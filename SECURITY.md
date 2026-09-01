@@ -33,8 +33,8 @@ Email [founders@aicoo.io](mailto:founders@aicoo.io) with the subject
 - any suggested mitigation;
 - whether the issue is already public or under active exploitation.
 
-The source repository is private, so public npm users should use the email
-channel rather than a GitHub issue. Do not include secrets, production user
+Use the email channel rather than a public GitHub issue, so a vulnerability is
+not disclosed before a fix exists. Do not include secrets, production user
 data, live credentials, or destructive payloads in the initial message.
 
 Maintainers will acknowledge the report, validate impact, coordinate a fix and

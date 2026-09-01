@@ -76,7 +76,7 @@ await writeFile(summaryMarkdown, renderSystemsCostReport(published), "utf8");
 await mkdir(artifactDirectory, { recursive: true });
 await writeFile(
   artifactJson,
-  `${JSON.stringify({ version: "1", environment, runs: reports }, undefined, 2)}\n`,
+  `${JSON.stringify({ version: "1", runs: reports }, undefined, 2)}\n`,
   "utf8",
 );
 

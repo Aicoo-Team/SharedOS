@@ -7,8 +7,8 @@ real MCP server with the frames a client would send.
 
 - SharedOS: `0.1.0-alpha.3`
 - Measurement rules: version `1`
-- Workload: 24 declared attempts per turn, 200 measured turns after 60 discarded
-- Cases: `kernel.forged-grant`, `kernel.hidden-tool`, `kernel.read-to-mutation`, `kernel.namespace-crossing`, `kernel.tool-ceiling-escape`, `kernel.invalid-tool-result`, `kernel.grant-material`, `kernel.rollback-unavailable`, `kernel.record-completeness`
+- Workload: 24 issuable attempts per turn, 200 measured turns after 60 discarded
+- Cases: `forged-grant`, `hidden-tool`, `read-to-mutation`, `namespace-crossing`, `tool-ceiling-escape`, `invalid-tool-result`, `grant-material`, `rollback-unavailable`, `record-completeness`
 - Environment: node `v22.23.2`, platform `linux-x64`, cpu `AMD EPYC 7571`, cores `2`, memoryGb `8`
 
 Percentiles are nearest-rank: a printed p95 is a duration that occurred, not
@@ -88,13 +88,13 @@ turn rather than once per call and is outside these figures.
 
 | Column | Parse + translate per call | Catalogue width | n |
 | --- | --- | --- | --- |
-| Std | — | 17 | — |
+| Adversary | — | 17 | — |
 | Codex | 5.11 µs | 17 | 200 |
-| CC | 12.7 µs | 17 | 200 |
-| DS | 9.75 µs | 17 | 200 |
+| Claude Code | 12.7 µs | 17 | 200 |
+| DeepSeek | 9.75 µs | 17 | 200 |
 | Pi | 12.3 µs | 17 | 200 |
 
-Std's `—` is the absence of a translation layer, not a pending measurement.
+Adversary's `—` is the absence of a translation layer, not a pending measurement.
 
 The width is the catalogue SharedOS served. A harness that republishes it
 behind a proxy tool of its own -- Pi's installed extension does -- changes what

@@ -11,16 +11,19 @@ not included.
 
 ## Choose a package
 
-| Package                     | Use it for                                                     |
-| --------------------------- | -------------------------------------------------------------- |
-| `@aicoo/sharedos-contracts` | JSON-safe protocol types and runtime-validation schemas        |
-| `@aicoo/sharedos-core`      | Deny-by-default authorization, registries, dispatch, and audit |
-| `@aicoo/sharedos-os`        | Standard permission-controlled `files` tools and adapters      |
-| `@aicoo/sharedos-runtime`   | One-turn execution, runtime plugins, and the standard runtime  |
-| `@aicoo/sharedos-http`      | Fetch-compatible HTTP service adapter                          |
-| `@aicoo/sharedos-client`    | Runtime-validated HTTP client                                  |
-| `@aicoo/sharedos`           | Convenience re-export of the production packages               |
-| `@aicoo/sharedos-testkit`   | Deterministic in-memory fixtures for tests and examples        |
+| Package                       | Use it for                                                       |
+| ----------------------------- | ---------------------------------------------------------------- |
+| `@aicoo/sharedos-contracts`   | JSON-safe protocol types and runtime-validation schemas          |
+| `@aicoo/sharedos-core`        | Deny-by-default authorization, registries, dispatch, and audit   |
+| `@aicoo/sharedos-os`          | Standard permission-controlled `files` tools and adapters        |
+| `@aicoo/sharedos-runtime`     | One-turn execution, runtime plugins, and the standard runtime    |
+| `@aicoo/sharedos-http`        | Fetch-compatible HTTP service adapter                            |
+| `@aicoo/sharedos-client`      | Runtime-validated HTTP client                                    |
+| `@aicoo/sharedos`             | Convenience re-export of the production packages                 |
+| `@aicoo/sharedos-testkit`     | Deterministic in-memory fixtures for tests and examples          |
+| `@aicoo/sharedos-conformance` | Execution records and the adversarial conformance suite          |
+| `@aicoo/sharedos-mcp`         | The permission-filtered catalogue as an MCP tool server          |
+| `@aicoo/sharedos-adapters`    | Codex, Claude Code, DeepSeek Harness, Pi, and model-API runtimes |
 
 The SDK adds no independent symbols, so re-exported definitions appear once on
 their owning package pages rather than being duplicated on the SDK page.
