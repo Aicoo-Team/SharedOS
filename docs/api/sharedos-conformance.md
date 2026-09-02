@@ -91,6 +91,11 @@ they attack:
 - **The runtime's reach:** `grant_material_unreachable`.
 - **How a turn ends and what it leaves:** `escalation_recorded`,
   `escalation_refused`, `runtime_crashed`, `record_completeness`.
+- **A refusal SharedOS did not make:** `route_lease_revoked` -- the one row about
+  a decision the kernel does not own. The send is authorized, the host's
+  transport declines the dispatch under a route lease that closed after that
+  authorization, and the claim is that the kernel neither overrides that refusal
+  nor loses it (ADR 0025).
 - **Declared and not built:** `typed_governed_views`, `replay_freshness`.
 
 The last two rows are declared and not built. They are here rather than omitted
@@ -3841,7 +3846,7 @@ The refusal a closed route lease answers a dispatch with.
 Deliberately not `no_matching_grant`. A dead route and a missing capability
 are different findings, and a transport that borrowed the authorizer's code
 would make them indistinguishable in the record -- which is the whole reason
-the row below can say which gate refused the send.
+the `route-lease-revoked` row can say which gate refused the send.
 
 ---
 
