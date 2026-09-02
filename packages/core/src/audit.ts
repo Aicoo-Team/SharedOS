@@ -36,7 +36,7 @@ export type AuditOutcome = "allowed" | "denied" | "succeeded" | "failed" | "esca
  * kernel's, because the envelope wrote nothing -- and the moment that stopped
  * being true it became a fact with nowhere to live. ADR 0012 keeps one refusal
  * vocabulary across both boundaries on purpose: a code says what was refused,
- * and this says who refused it (ADR 0021).
+ * and this says who refused it (ADR 0023).
  */
 export type AuditSource = "kernel" | "envelope";
 

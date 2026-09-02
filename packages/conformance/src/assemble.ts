@@ -302,7 +302,7 @@ function operations(
       // Read, not assumed. Both boundaries record here now, and taking this from
       // the event rather than from the fact that an event exists is what keeps
       // `refusedBy` a claim about who refused rather than about who happened to
-      // own an audit sink (ADR 0021).
+      // own an audit sink (ADR 0023).
       source: event.metadata?.["source"] === "envelope" ? "envelope" : "kernel",
       outcome:
         event.outcome === "succeeded"
@@ -331,7 +331,7 @@ function operations(
  * or step ceiling, never reaches `SharedOSKernel.invokeTool`. Those attempts are
  * real attempted violations and belong in the record.
  *
- * Since ADR 0021 the envelope records them through the kernel, so for a kernel
+ * Since ADR 0023 the envelope records them through the kernel, so for a kernel
  * that offers `recordRefusedCall` they arrive as ordinary audit events carrying
  * `source: "envelope"` and this adds nothing -- the call id is already in
  * `mediated` and is skipped. It remains for the kernel that does not: the

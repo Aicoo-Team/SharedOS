@@ -444,7 +444,7 @@ export class SharedOSKernel {
    * called through the kernel rather than from an `AuditSink` of the envelope's
    * own, because one sink passed in two places is one sink a host can forget to
    * pass twice -- and the failure mode of forgetting is a turn that enforces
-   * correctly and records nothing (ADR 0021).
+   * correctly and records nothing (ADR 0023).
    *
    * One event, at the terminal. Not five: a lifecycle event per transition
    * would triple the audit volume of every successful turn to say nothing more,
@@ -490,7 +490,7 @@ export class SharedOSKernel {
    *
    * Recorded as `tool.invoked`, because that is what it is: a tool call that was
    * attempted and denied. `metadata.source` says `envelope`, which is the fact
-   * that stops being inferable the moment this method exists (ADR 0021).
+   * that stops being inferable the moment this method exists (ADR 0023).
    */
   async recordRefusedCall(
     context: AccessContext,
@@ -590,7 +590,7 @@ export class SharedOSKernel {
           // What a count cannot carry is the per-tool cause, and `failClosed`
           // keeps the one distinction a reader cannot do without: whether
           // something was withheld by an outage rather than by a decision
-          // (ADR 0021).
+          // (ADR 0023).
           catalogHash: await catalogHash(publishToolCatalog(allowed)),
           enabledNamespaces: [...context.enabledToolNamespaces],
           ...(hostPolicy?.status === "loaded" ? { hostPolicyVersion: hostPolicy.version } : {}),
@@ -848,7 +848,7 @@ export class SharedOSKernel {
       // catalogue refusal a host ceiling made is nameable as one. Without it,
       // `host_policy_denied` could only ever appear on the decision event, and
       // a host counting policy refusals from the operation events would get
-      // zero (ADR 0021).
+      // zero (ADR 0023).
       await this.#recordToolResult(context, call, result, {
         cause: discoverable.reasonCode,
         requirement: {
@@ -1623,7 +1623,7 @@ export class SharedOSKernel {
         metadata: {
           // Which boundary refused. Free to infer until the envelope started
           // recording too -- anything in audit was the kernel's -- and a fact
-          // with nowhere to live the moment that stopped being true (ADR 0021).
+          // with nowhere to live the moment that stopped being true (ADR 0023).
           source: "kernel",
           // `tool_unavailable` is one code over several situations by design,
           // so the model cannot tell them apart. An audit reader is not the

@@ -27,7 +27,7 @@ each entry calls out what a host has to update.
   identifiers instead.** The names a listing returned are what
   `listPublishedTools` returned, and `catalogHash` says whether two listings
   returned the same ones; an attempted call on a withheld tool is still
-  recorded on `tool.invoked` with its own `cause`. ADR 0021 records the shape.
+  recorded on `tool.invoked` with its own `cause`. ADR 0023 records the shape.
 
 - **Optional fields were added to strict schemas, and the protocol version did
   not move.** `AuthorizationDecision.requiredAuthority`,
@@ -209,7 +209,7 @@ each entry calls out what a host has to update.
   mismatch, and how a turn ended existed only in `ExecutionResult.events` — a
   required field hosts pay for on the wire whose every consumer in this
   repository is the conformance package. A host with an audit sink could not see
-  the clearest attempted violation the system produces (ADR 0021).
+  the clearest attempted violation the system produces (ADR 0023).
 
   `AuditEventType` gains one value, `turn.ended`: one event per turn, at the
   terminal, carrying the outcome and reason. Not one per transition — that would

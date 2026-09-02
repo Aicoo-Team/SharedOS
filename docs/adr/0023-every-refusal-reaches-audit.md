@@ -1,4 +1,4 @@
-# ADR 0021: Every refusal reaches audit, and the record names the boundary
+# ADR 0023: Every refusal reaches audit, and the record names the boundary
 
 - Status: Accepted
 - Date: 2026-08-31

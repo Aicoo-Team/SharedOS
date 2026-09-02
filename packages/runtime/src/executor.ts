@@ -236,7 +236,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
    * spent step budget, a spent call budget were visible only in the execution
    * event stream, which no production consumer reads. Swallowed on failure for
    * the reason {@link SharedOSExecutor.execute} records terminals: an
-   * observation must not change the outcome it observed (ADR 0021).
+   * observation must not change the outcome it observed (ADR 0023).
    */
   async #recordRefusedCall(
     context: AccessContext,

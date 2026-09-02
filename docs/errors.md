@@ -461,7 +461,7 @@ through the kernel, which owns audit. It carries the turn's `executionId` as
 the outcome vocabulary is a compatibility surface, and `reason` already separates
 a deadline from a defect. There is one event per turn, not one per transition —
 a `turn.denied` would double-count against the `authorization.checked` that
-admission already produced for the same refusal (ADR 0021).
+admission already produced for the same refusal (ADR 0023).
 
 `requestedAuthority` appears on `escalation.requested`, and only when the
 escalation named a capability. The kernel minted it: its `id`, `namespaceId`,

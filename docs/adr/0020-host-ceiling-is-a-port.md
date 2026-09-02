@@ -124,7 +124,7 @@ export type HostCeilingVerdict = AllowedDecision | HostPolicyDenial;
 resolved authority and handed back to the host's own ceiling. `version` is the
 one thing about it SharedOS reads. An opaque value has no canonical form to
 hash, so the source states what it loaded, and every `tool.catalog.listed` event
-in the turn records it as `hostPolicyVersion` beside `authorityHash` (ADR 0021).
+in the turn records it as `hostPolicyVersion` beside `authorityHash` (ADR 0023).
 
 ### Why the synchronous signature needs a second port
 

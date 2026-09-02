@@ -1020,7 +1020,7 @@ all, because the boundary that refused them does not own one.
 
 Recorded as `tool.invoked`, because that is what it is: a tool call that was
 attempted and denied. `metadata.source` says `envelope`, which is the fact
-that stops being inferable the moment this method exists (ADR 0021).
+that stops being inferable the moment this method exists (ADR 0023).
 
 ###### Parameters
 
@@ -1057,7 +1057,7 @@ join a set of tool calls to the one that made them beyond `traceId`. It is
 called through the kernel rather than from an `AuditSink` of the envelope's
 own, because one sink passed in two places is one sink a host can forget to
 pass twice -- and the failure mode of forgetting is a turn that enforces
-correctly and records nothing (ADR 0021).
+correctly and records nothing (ADR 0023).
 
 One event, at the terminal. Not five: a lifecycle event per transition
 would triple the audit volume of every successful turn to say nothing more,
@@ -2674,7 +2674,7 @@ execution envelope began recording as well -- anything in audit was the
 kernel's, because the envelope wrote nothing -- and the moment that stopped
 being true it became a fact with nowhere to live. ADR 0012 keeps one refusal
 vocabulary across both boundaries on purpose: a code says what was refused,
-and this says who refused it (ADR 0021).
+and this says who refused it (ADR 0023).
 
 ---
 

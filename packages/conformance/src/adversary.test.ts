@@ -203,7 +203,7 @@ describe("the hostile runtime", () => {
   it("records an envelope refusal once, from audit, not once per source", async () => {
     const run = await runMove("hidden_tool");
 
-    // The regression ADR 0021 named. The record assembler synthesizes envelope
+    // The regression ADR 0023 named. The record assembler synthesizes envelope
     // operations from `tool.completed` *because* those calls were ones audit
     // never saw; now audit sees them, and the same refusal arriving twice would
     // inflate the attempt counts in every column of the manifest.
@@ -269,7 +269,7 @@ describe("the hostile runtime", () => {
     // kernel for nothing, so `runtime_failed` existed only in the execution
     // event stream and a record built from audit alone showed a turn that read
     // a file and then stopped, with no account of why. It now says why, and
-    // says which boundary ended it (ADR 0021).
+    // says which boundary ended it (ADR 0023).
     expect(run.world.auditEvents.map(({ type }) => type)).not.toContain("escalation.requested");
     const ended = run.world.auditEvents.filter(({ type }) => type === "turn.ended");
     expect(ended).toHaveLength(1);

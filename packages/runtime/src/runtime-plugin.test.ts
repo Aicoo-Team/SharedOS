@@ -690,7 +690,7 @@ describe("RuntimeRegistry", () => {
 });
 
 describe("what the envelope writes into audit", () => {
-  /** The stub kernel, plus the two optional recorders ADR 0021 added. */
+  /** The stub kernel, plus the two optional recorders ADR 0023 added. */
   function recordingKernel(options: { readonly throws?: boolean } = {}) {
     const turnEnds: unknown[] = [];
     const refusals: unknown[] = [];
