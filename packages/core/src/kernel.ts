@@ -1247,6 +1247,12 @@ export class SharedOSKernel {
         metadata: {
           consumed: consume,
           ...(isInfrastructureDenial(decision.reasonCode) ? { failClosed: true } : {}),
+          // Whether host policy is installed at all, so the choice is not
+          // silent: a deployment that denies everything through a ceiling reads
+          // as that, and not as one where nobody was granted anything. Written
+          // only when there is one, so a kernel without a ceiling emits exactly
+          // the record it emitted before the port existed. See ADR 0020.
+          ...(this.#authorizer.hasHostCeiling ? { hostCeiling: true } : {}),
           ...(explanation === undefined ? {} : explanationMetadata(explanation)),
         },
       }),

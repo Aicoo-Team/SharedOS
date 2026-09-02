@@ -1,6 +1,6 @@
 # ADR 0020: The host ceiling is a port, not a convention
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-31
 - Reverts: the documentation change in `663dd94`
 
