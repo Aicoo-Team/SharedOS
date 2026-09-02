@@ -251,7 +251,7 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
     `AuditSink` with the same outcome vocabulary. Its defect today is that
     nothing records it, not that it runs host-side.
 - `computePermissionGaps` largely dissolves. "Which scope was never granted" is
-  the same computation as the `requiredCapability` a `no_matching_grant` denial
+  the same computation as the `requiredAuthority` a `no_matching_grant` denial
   now describes (ADR 0019); keep only the owner-facing scope copy.
 - Replace the in-memory permission elevation used for escalation replay with a
   grant scoped to the requesting guest: `subject`, `expiresAt`, and

@@ -20,6 +20,7 @@ import {
   type DelegationChainResolver,
   type GrantSource,
   type GrantUsageStore,
+  type HostCeiling,
   InMemoryGrantUsageStore,
   MESSAGE_REQUEST_TOOL_DEFINITION,
   MESSAGE_REQUEST_TOOL_NAME,
@@ -206,6 +207,15 @@ export const LEDGER_PATH = ["Workspace", "ledger"] as const;
 export const READ_ONLY_FILE = ["Workspace", "policy.md"] as const;
 export const WRITABLE_FILE = ["Workspace", "scratch", "draft.md"] as const;
 export const LEDGER_FILE = ["Workspace", "ledger", "entry.md"] as const;
+/**
+ * The subtree this world's host ceiling freezes, when one is installed.
+ *
+ * Inside the read grant on purpose. A path no grant covered would be refused
+ * `no_matching_grant` with or without a ceiling and would prove nothing; this
+ * one is authorized and refused anyway, which is the only shape that separates
+ * "nobody granted it" from "our own policy overrode a grant we issued".
+ */
+export const FROZEN_PATH = ["Workspace", "ledger"] as const;
 /** Outside every path the world's tools declare, and outside every grant. */
 export const OUT_OF_CEILING_FILE = ["Vault", "secrets.md"] as const;
 
@@ -1433,6 +1443,39 @@ class OperationIndexedClock {
   }
 }
 
+/**
+ * One deployment's product policy, expressed as the port ADR 0020 added.
+ *
+ * Two rules, because the row has to show both halves of what a ceiling does.
+ * The first is path-scoped and lands at invocation: the ledger subtree is frozen
+ * even though the read grant covers it, so the call is refused
+ * `host_policy_denied` while `no_matching_grant` would have been a lie. The
+ * second is action-scoped and lands at discovery: with mutations frozen, every
+ * tool whose declared capability needs one fails the discovery filter and never
+ * reaches the published catalogue -- which is the agreement ADR 0016 requires,
+ * now holding for policy and not only for expiry.
+ *
+ * Deterministic and free of ambient state, as the port's contract requires. It
+ * reads only the request it is given, so a conformance run that installs it
+ * produces the same manifest on every run.
+ */
+const FROZEN_CEILING: HostCeiling = {
+  narrow: (decision, request) => {
+    const frozenSubtree =
+      request.resource.namespace === FILES_NAMESPACE &&
+      FROZEN_PATH.every((segment, index) => request.resource.path[index] === segment);
+    const frozenAction = (MUTATION_ACTIONS as readonly string[]).includes(request.action);
+    if (!frozenSubtree && !frozenAction) {
+      return decision;
+    }
+    return {
+      allowed: false,
+      reasonCode: "host_policy_denied",
+      metadata: { rule: frozenAction ? "no-mutations" : "ledger-frozen" },
+    };
+  },
+};
+
 export interface ConformanceWorldOptions {
   /** Grant ids to revoke before the turn starts, as a host store would. */
   readonly revoked?: readonly string[];
@@ -1471,6 +1514,18 @@ export interface ConformanceWorldOptions {
   readonly bounded?: boolean;
   /** Make the bounded-use counter unreachable. Implies {@link bounded}. */
   readonly usageStoreUnavailable?: boolean;
+  /**
+   * Install this world's product-policy ceiling.
+   *
+   * It freezes the {@link FROZEN_PATH} subtree and every mutation action, so a
+   * grant that covers the path is overridden rather than absent.
+   *
+   * Per-condition rather than always on, because a ceiling changes the
+   * catalogue every other row is choosing from: it withholds the mutation tools
+   * from discovery, which would silently turn every mutation row into a
+   * discovery row.
+   */
+  readonly hostPolicyFrozen?: boolean;
   /** Issue a grant claiming more than the grant it was delegated from. */
   readonly overBroadDelegation?: boolean;
   /**
@@ -1640,6 +1695,7 @@ export function createConformanceWorld(
           ? new UnavailableGrantUsageStore()
           : new InMemoryGrantUsageStore(),
       delegationResolver: chain,
+      ...(options.hostPolicyFrozen === true ? { hostCeiling: FROZEN_CEILING } : {}),
     }),
   });
 

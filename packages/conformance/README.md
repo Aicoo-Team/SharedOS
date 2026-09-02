@@ -71,7 +71,7 @@ carrying the row's own wording — invariant, expected outcome, and every
 attempt's expectation — so the result table is regenerated from the definitions
 rather than transcribed beside them. The committed manifest,
 `docs/conformance/kernel-conformance.md`, is that table: it is where the rows,
-their signals, and each column's cell are read. The twenty-five moves, by what
+their signals, and each column's cell are read. The twenty-six moves, by what
 they attack:
 
 - **Authority a message cannot mint:** `forged_grant`, `read_to_mutation`,
@@ -84,7 +84,7 @@ they attack:
   `invalid_tool_result`, `budget_exceeded`.
 - **The runtime's reach:** `grant_material_unreachable`.
 - **How a turn ends and what it leaves:** `escalation_recorded`,
-  `escalation_refused`, `record_completeness`.
+  `escalation_refused`, `runtime_crashed`, `record_completeness`.
 - **Declared and not built:** `typed_governed_views`, `replay_freshness`.
 
 The last two rows are declared and not built. They are here rather than omitted

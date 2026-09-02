@@ -73,7 +73,19 @@ export type CapabilityConstraints = z.infer<typeof CapabilityConstraintsSchema>;
 /**
  * A request for authority. A request is not itself proof of authority.
  *
- * No SharedOS port accepts one yet; see `docs/open-items.md`.
+ * Two places produce one and none accepts one as input. A denial that matched no
+ * grant describes what would have satisfied it, and an escalation may carry that
+ * description on to whoever resolves it. Both are descriptions: turning one into
+ * usable authority is the host's issuing workflow, which ends in a grant the
+ * next turn loads (ADR 0019).
+ *
+ * `id`, `namespaceId`, `requester`, `owner`, and `requestedAt` are minted by the
+ * kernel from the trusted access context, whatever a caller wrote: a request
+ * the caller authored would be a caller-chosen correlation for a decision the
+ * kernel made. `id` is derived from the ask -- namespace, requester, owner,
+ * purpose, constraints, capabilities -- rather than generated, so the same ask
+ * describes itself the same way twice, and `requestedAt` is left out of it so
+ * the identifier survives across turns.
  */
 export const CapabilityRequestSchema = z
   .object({

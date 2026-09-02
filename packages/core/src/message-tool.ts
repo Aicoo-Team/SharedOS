@@ -9,6 +9,7 @@ import type {
 import { MessageEnvelopeSchema, MessageRequestArgumentsSchema } from "@aicoo/sharedos-contracts";
 
 import { addressesEqual } from "./authorization.js";
+import type { ProviderErrorContext } from "./diagnostics.js";
 import {
   MESSAGE_SEND_ACTION,
   MESSAGING_NAMESPACE,
@@ -120,11 +121,26 @@ export type AuthorizedMessageDelivery = (
   operationId: string,
 ) => Promise<MessageDeliveryResult>;
 
+/**
+ * How this tool hands a contained throw back to the kernel's diagnostic sink.
+ *
+ * The tool is built per invocation inside the kernel and holds no options of its
+ * own, so the reporter is passed in rather than read: the trace and namespace
+ * are filled in from the context the *handler* was called with, which is the
+ * one the operation was decided against.
+ */
+export type MessageRequestErrorReporter = (
+  error: unknown,
+  context: AccessContext,
+  operation: Omit<ProviderErrorContext, "traceId" | "namespaceId">,
+) => void;
+
 export interface MessageRequestToolOptions {
   readonly capabilityResolver: MessageCapabilityResolver;
   readonly router: MessageRequestRouter;
   readonly createMessageId: (context: AccessContext, call: ToolCall) => string;
   readonly deliverAuthorizedMessage: AuthorizedMessageDelivery;
+  readonly reportProviderError?: MessageRequestErrorReporter;
 }
 
 /** Create one invocation-local handler; its prepared envelope is never shared. */
@@ -202,6 +218,15 @@ export function createMessageRequestTool(options: MessageRequestToolOptions): To
         if (signal.aborted) {
           throw signal.reason ?? error;
         }
+        // The router is a host port like any other, and the code it is answered
+        // with is documented like any other; the error behind it was the one
+        // that had nowhere to go.
+        options.reportProviderError?.(error, context, {
+          kind: "message",
+          reasonCode: "message_reply_resolution_failed",
+          operationId: call.id,
+          tool: call.tool,
+        });
         return failedResult(
           call,
           context.now,

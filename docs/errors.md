@@ -29,21 +29,35 @@ denials as successes.
 `AuthorizationDecision.reasonCode`, and the `reason` field on
 `authorization.checked` audit events.
 
-| Code                          | Means                                                              | Fix                                                    |
-| ----------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------ |
-| `allowed`                     | A grant matched                                                    | —                                                      |
-| `no_matching_grant`           | Nothing the `GrantSource` returned covers this resource and action | See the checklist below                                |
-| `grant_exhausted`             | A matching grant exists but its `maxUses` is spent                 | Issue a new grant; usage is not resettable             |
-| `invalid_context`             | The `AccessContext` failed its schema                              | A host bug. Build the context server-side              |
-| `invalid_request`             | The resource or action failed its schema, or names another world   | Check path segments, action naming, and the owner      |
-| `authority_unavailable`       | The `GrantSource` threw, or answered with unusable material        | Fail-closed. See the authority table below             |
-| `usage_store_unavailable`     | The grant has `maxUses` and there is no `usageStore`, or it threw  | Supply `CapabilityAuthorizer({ usageStore })`          |
-| `delegation_chain_unverified` | The chain could not be established at all                          | Supply `CapabilityAuthorizer({ delegationResolver })`  |
-| `delegation_chain_invalid`    | The chain resolved and broke a rule — often a revoked ancestor     | Usually working as intended — upstream authority ended |
+| Code                          | Means                                                                                                  | Fix                                                    |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| `allowed`                     | A grant matched                                                                                        | —                                                      |
+| `no_matching_grant`           | Nothing the `GrantSource` returned covers this resource and action                                     | See the checklist below                                |
+| `grant_exhausted`             | A matching grant exists but its `maxUses` is spent                                                     | Issue a new grant; usage is not resettable             |
+| `host_policy_denied`          | A grant matched and the host ceiling overrode it                                                       | Product or organization policy, not authority          |
+| `invalid_context`             | The `AccessContext` failed its schema                                                                  | A host bug. Build the context server-side              |
+| `invalid_request`             | The resource or action failed its schema, or names another world                                       | Check path segments, action naming, and the owner      |
+| `authority_unavailable`       | The `GrantSource` threw, or answered with unusable material                                            | Fail-closed. See the authority table below             |
+| `usage_store_unavailable`     | The grant has `maxUses` and there is no `usageStore`, or it threw                                      | Supply `CapabilityAuthorizer({ usageStore })`          |
+| `delegation_chain_unverified` | The chain could not be established at all                                                              | Supply `CapabilityAuthorizer({ delegationResolver })`  |
+| `delegation_chain_invalid`    | The chain resolved and broke a rule — often a revoked ancestor                                         | Usually working as intended — upstream authority ended |
+| `host_policy_unavailable`     | The host ceiling threw, answered with a decision it was not shown, or the turn's `PolicySource` failed | Fail-closed. A ceiling may only narrow                 |
 
-The last three are SharedOS failing to establish a fact, not a policy decision.
-They are named once, in `INFRASTRUCTURE_DENIAL_REASONS`, and their audit records
-carry `failClosed: true`. Exclude them before computing any denial rate.
+Four of these are SharedOS failing to establish a fact rather than a policy
+decision: `authority_unavailable`, `usage_store_unavailable`,
+`delegation_chain_unverified`, and `host_policy_unavailable`. They are named once,
+in `INFRASTRUCTURE_DENIAL_REASONS`, and their audit records carry
+`failClosed: true`. Exclude them before computing any denial rate.
+`delegation_chain_invalid` is **not** among them: a chain that resolved and broke
+a rule is a real answer about authority, not a failure to get one.
+
+`host_policy_denied` is the opposite case and is kept apart from
+`no_matching_grant` for the reason the separation exists at all: "nobody
+authorized this" and "a grant authorized this and our own policy overrode it"
+are different facts about a deployment, and a host that expressed the second by
+withholding the grant made the kernel assert the first. It is not marked
+`failClosed` — a deliberate refusal is not an outage — and it carries the
+`grantId` it overrode, so the two are countable separately (ADR 0020).
 
 `authority_unavailable` collapses four situations on purpose, so that no caller
 can tell a broken store from a rejected one:
@@ -84,6 +98,33 @@ Walk these in order. Every one of them produces the identical code.
 9. **The capability is spread across grants.** One requirement must be satisfied
    by one grant. Path from one and action from another is refused deliberately.
 
+### The denial says which capability it wanted
+
+A `no_matching_grant` decision carries `requiredAuthority`: a
+`CapabilityRequest` naming the exact resource and action that would have
+satisfied it, with the requester, owner, namespace, and purpose from the context
+that asked. It is what a consent workflow needs in order to issue a grant on one
+action rather than parse a sentence, and `SharedOSKernel.recordEscalation`
+accepts it so an escalation carries it to whoever resolves it.
+
+It is a description and nothing else. It grants nothing, no port accepts one as
+input, `allowed` stays `false`, and a host that ignores it sees no change. Its
+`id` is derived from the fields rather than random, so the same missing
+authority has the same identifier every time it is described.
+
+Three things it is deliberately not:
+
+- **Not on any other denial.** `grant_exhausted` names a grant that exists,
+  `host_policy_denied` names one that exists and was overridden, and the
+  infrastructure denials name a fact SharedOS could not establish. Issuing a
+  grant is not the remedy for any of them.
+- **Not on discovery.** `canDiscover` is asked about a tool's declared
+  capability, which may be a broader ceiling than any call. A description there
+  would name more authority than an operation needed.
+- **Not an existence oracle.** It restates the request and the caller's own
+  context. It does not say whether the path exists, whether a grant for it
+  exists, or who holds one.
+
 ## `tool_unavailable` covers three different situations
 
 `kernel.invokeTool` returns `denied` with `tool_unavailable` — and the same
@@ -91,13 +132,26 @@ message — when the tool is not registered for this context, when its namespace
 is disabled, _and_ when no grant makes it discoverable. That is deliberate: the
 caller learns it cannot use the tool, not which of the three reasons applies.
 
-**The specific reason is in the audit trail.** An `authorization.checked` event
-is recorded immediately before, carrying the real reason code:
+**The specific reason is in the audit trail**, on the `tool.invoked` event
+itself, as `metadata.cause`:
 
 ```text
-authorization.checked  denied  files/Work/Finance  <- grant_exhausted
-tool.invoked           denied  files.read         <- tool_unavailable
+tool.invoked  denied  files.read  <- tool_unavailable, cause: namespace_disabled
 ```
+
+`cause` is one of `not_registered`, `namespace_disabled`, the reason code the
+discovery check returned (`no_matching_grant`, `host_policy_denied`, or a
+fail-closed code), or — from the execution envelope — `not_offered`, a tool name
+the turn's catalogue never held. `reason` stays the code the caller was given, so
+the audit code and the wire code remain comparable and one refusal keeps one
+name (ADR 0012).
+
+Where the refusal came from a decision, an `authorization.checked` event is also
+recorded immediately before and carries the same reason. Two of the situations
+produce no decision — nothing was checked when the tool is not registered, and
+nothing was checked when its namespace is off — so `cause` is what makes the
+disambiguation hold for all of them rather than for the one that happens to
+consult the authorizer.
 
 If you are debugging a `tool_unavailable` and have no audit sink wired, wire one
 first.
@@ -105,9 +159,10 @@ first.
 **Both boundaries use this one code.** The execution envelope refuses a tool
 outside the turn's permission-filtered catalogue with `tool_unavailable`, the
 same code the kernel uses. Which boundary refused is recorded separately, as
-`OperationRecord.source`: a code says what was refused, a source says who
-refused it. The earlier `tool_not_available` is gone rather than aliased — two
-names for one refusal is the defect.
+`metadata.source` on the audit event and as `OperationRecord.source` in a
+conformance record: a code says what was refused, a source says who refused it.
+The earlier `tool_not_available` is gone rather than aliased — two names for one
+refusal is the defect.
 
 An owner-crossing requirement is the other pair worth keeping apart:
 `invalid_request` is a denial, checked before the tool's declared ceiling and
@@ -117,20 +172,20 @@ impermissible.
 
 ## Tool invocation
 
-| Code                                 | Status | Means                                                                                                |
-| ------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------- |
-| `tool_unavailable`                   | denied | Not registered, namespace off, or not discoverable — see above                                       |
-| `no_matching_grant`                  | denied | The exact argument-selected resource is not authorized                                               |
-| `invalid_request`                    | denied | The resolved requirement names a world other than the caller's own                                   |
-| `invalid_tool_arguments`             | failed | `parseArguments` rejected the call                                                                   |
-| `invalid_tool_requirement`           | failed | `resolveRequirement` returned something outside the declared ceiling                                 |
-| `tool_requirement_resolution_failed` | failed | `resolveRequirement` threw                                                                           |
-| `tool_catalog_unavailable`           | failed | A `ContextToolProvider` threw. The catalog is never partially returned                               |
-| `tool_execution_failed`              | failed | Your `invoke` threw                                                                                  |
-| `invalid_tool_result`                | failed | Your handler returned something that is not a `ToolResult`                                           |
-| `trace_mismatch`                     | denied | `call.traceId` does not match the context                                                            |
-| `step_limit_exceeded`                | denied | The call names a step at or past the envelope's `maxSteps`. This call is refused; the turn continues |
-| `tool_call_limit_exceeded`           | denied | The envelope's `maxToolCalls` is spent. This call is refused; the turn continues                     |
+| Code                                 | Status | Means                                                                                                                                       |
+| ------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tool_unavailable`                   | denied | Not registered, namespace off, or not discoverable — see above                                                                              |
+| `no_matching_grant`                  | denied | The exact argument-selected resource is not authorized                                                                                      |
+| `invalid_request`                    | denied | The resolved requirement names a world other than the caller's own                                                                          |
+| `invalid_tool_arguments`             | failed | `parseArguments` rejected the call. The thrown error goes to `onProviderError` and nowhere else (below)                                     |
+| `invalid_tool_requirement`           | failed | `resolveRequirement` returned something outside the declared ceiling                                                                        |
+| `tool_requirement_resolution_failed` | failed | `resolveRequirement` threw. The thrown error goes to `onProviderError` and nowhere else (below)                                             |
+| `tool_catalog_unavailable`           | failed | A `ContextToolProvider` threw. The catalog is never partially returned. The thrown error goes to `onProviderError` and nowhere else (below) |
+| `tool_execution_failed`              | failed | Your `invoke` threw. The thrown error goes to `onProviderError` and nowhere else (below)                                                    |
+| `invalid_tool_result`                | failed | Your handler returned something that is not a `ToolResult`                                                                                  |
+| `trace_mismatch`                     | denied | `call.traceId` does not match the context                                                                                                   |
+| `step_limit_exceeded`                | denied | The call names a step at or past the envelope's `maxSteps`. This call is refused; the turn continues                                        |
+| `tool_call_limit_exceeded`           | denied | The envelope's `maxToolCalls` is spent. This call is refused; the turn continues                                                            |
 
 A budget refuses a call; it does not end a turn. The envelope answers the call
 that crosses `maxSteps` or `maxToolCalls` with `denied`, the runtime receives an
@@ -145,39 +200,143 @@ for `tool_unavailable`.
 | Code                          | Status | Means                                                                                          |
 | ----------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
 | `resource_provider_not_found` | failed | No provider registered for that namespace                                                      |
-| `resource_execution_failed`   | failed | Your provider threw                                                                            |
+| `resource_execution_failed`   | failed | Your provider threw. The thrown error goes to `onProviderError` and nowhere else (below)       |
 | `invalid_resource_result`     | failed | Your provider returned a malformed `ResourceResult`, or one whose `operationId` does not match |
 
 ## Messages
 
-| Code                                    | Status | Means                                                               |
-| --------------------------------------- | ------ | ------------------------------------------------------------------- |
-| `message_transport_not_configured`      | failed | No `messageTransport` was supplied to the kernel                    |
-| `message_context_mismatch`              | denied | The envelope's sender, purpose, or trace disagrees with the context |
-| `message_requirement_resolution_failed` | failed | The capability resolver threw                                       |
-| `message_delivery_failed`               | failed | Your transport threw                                                |
-| `invalid_message_receipt`               | failed | Your transport returned a malformed delivery result                 |
-| `message_request_not_prepared`          | failed | The request tool did not prepare the authorized call                |
-| `message_request_not_accepted`          | failed | The transport did not accept the request                            |
-| `message_reply_resolution_failed`       | failed | The host router could not resolve the durable reply                 |
-| `invalid_message_reply`                 | failed | The resolved reply did not preserve request context                 |
+| Code                                    | Status | Means                                                                                                                    |
+| --------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `message_transport_not_configured`      | failed | No `messageTransport` was supplied to the kernel                                                                         |
+| `message_context_mismatch`              | denied | The envelope's sender, purpose, or trace disagrees with the context                                                      |
+| `message_requirement_resolution_failed` | failed | The capability resolver threw. The thrown error goes to `onProviderError` and nowhere else (below)                       |
+| `message_delivery_failed`               | failed | Your transport threw. The thrown error goes to `onProviderError` and nowhere else (below)                                |
+| `invalid_message_receipt`               | failed | Your transport returned a malformed delivery result                                                                      |
+| `message_request_not_prepared`          | failed | The request tool did not prepare the authorized call                                                                     |
+| `message_request_not_accepted`          | failed | The transport did not accept the request                                                                                 |
+| `message_reply_resolution_failed`       | failed | The host router could not resolve the durable reply. The thrown error goes to `onProviderError` and nowhere else (below) |
+| `invalid_message_reply`                 | failed | The resolved reply did not preserve request context                                                                      |
 
 ## Turns
 
-| Code                       | Status    | Means                                                                                                                                                                                                                                                     |
-| -------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `actor_mismatch`           | denied    | The turn's agent is not the admitted one                                                                                                                                                                                                                  |
-| `receiver_mismatch`        | denied    | The delivered message's receiver is not the executing agent                                                                                                                                                                                               |
-| `message_context_mismatch` | denied    | The delivered message's trace or purpose disagrees with the context                                                                                                                                                                                       |
-| `no_matching_grant`        | denied    | No `sharedos.execution` / `invoke` grant for the target agent                                                                                                                                                                                             |
-| `escalation_requested`     | escalated | The runtime stopped and asked for a human. Nothing was granted                                                                                                                                                                                            |
-| `step_limit_exceeded`      | failed    | `StandardRuntime` spent its own steps while the driver was still asking for tools. The envelope's budgets refuse calls instead — see [tool invocation](#tool-invocation)                                                                                  |
-| `driver_failed`            | failed    | Your `AgentTurnDriver` threw                                                                                                                                                                                                                              |
-| `invalid_driver_decision`  | failed    | The driver returned something that is not a valid decision                                                                                                                                                                                                |
-| `runtime_failed`           | failed    | A `RuntimePlugin` threw                                                                                                                                                                                                                                   |
-| `invalid_runtime_outcome`  | failed    | A plugin returned a malformed outcome                                                                                                                                                                                                                     |
-| `tool_unavailable`         | failed    | A plugin returned `escalate` on a turn whose catalogue does not offer `sharedos.escalate`. The envelope refuses the outcome as it refuses a call outside the catalogue, under the same code; nothing reaches the kernel and nothing is audited (ADR 0017) |
-| `turn_cancelled`           | cancelled | Deadline expired, or the host aborted                                                                                                                                                                                                                     |
+| Code                       | Status    | Means                                                                                                                                                                                                                                            |
+| -------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `actor_mismatch`           | denied    | The turn's agent is not the admitted one                                                                                                                                                                                                         |
+| `receiver_mismatch`        | denied    | The delivered message's receiver is not the executing agent                                                                                                                                                                                      |
+| `message_context_mismatch` | denied    | The delivered message's trace or purpose disagrees with the context                                                                                                                                                                              |
+| `no_matching_grant`        | denied    | No `sharedos.execution` / `invoke` grant for the target agent                                                                                                                                                                                    |
+| `escalation_requested`     | escalated | The runtime stopped and asked for a human. Nothing was granted                                                                                                                                                                                   |
+| `step_limit_exceeded`      | failed    | `StandardRuntime` spent its own steps while the driver was still asking for tools. The envelope's budgets refuse calls instead — see [tool invocation](#tool-invocation)                                                                         |
+| `driver_failed`            | failed    | Your `AgentTurnDriver` threw. The thrown error goes to `onTurnError` and nowhere else (below)                                                                                                                                                    |
+| `invalid_driver_decision`  | failed    | The driver returned something that is not a valid decision                                                                                                                                                                                       |
+| `runtime_failed`           | failed    | A `RuntimePlugin` threw, or a host port the turn body called did. The message is fixed and the thrown error goes nowhere near the wire — install `onTurnError` to see it (below)                                                                 |
+| `invalid_runtime_outcome`  | failed    | A plugin returned a malformed outcome                                                                                                                                                                                                            |
+| `tool_unavailable`         | failed    | A plugin returned `escalate` on a turn whose catalogue does not offer `sharedos.escalate`. The envelope refuses the outcome as it refuses a call outside the catalogue, under the same code (ADR 0017); the turn's `turn.ended` event carries it |
+| `turn_cancelled`           | cancelled | Deadline expired, or the host aborted                                                                                                                                                                                                            |
+
+## Diagnosing a contained throw
+
+Every code in this document is a bounded fact: it says an operation stopped and
+does not say why. That is deliberate. A `ProtocolError.message` reaches the
+model, an `ExecutionEvent` reaches an `ExecutionRecord` that travels further than
+an audit sink, and audit has never carried call data — while a thrown message
+may hold arguments, rows, or credentials the thrower had in scope.
+
+So the error itself goes to a host-side sink instead, whole and unwrapped. There
+are two, one per layer that contains a throw, and neither changes anything a
+caller can see.
+
+**`SharedOSKernelOptions.onProviderError`** — a provider, tool handler,
+transport, or router threw, and the kernel answered with a reason code:
+
+```ts
+new SharedOSKernel({
+  grantSource,
+  onProviderError: (error, op) =>
+    logger.error({ err: error, ...op }, `${op.kind} port failed: ${op.reasonCode}`),
+});
+```
+
+One hook covers every such port. `op.kind` is `"tool"`, `"tool_catalog"`,
+`"resource"`, or `"message"`, so a host that wants to route a transport failure
+differently branches on it — and a port added later reaches the hook already
+installed. `op.reasonCode` is the code the kernel returned in its place and the
+one the matching audit event carries under `reason`, so a log line joins to
+audit without correlating on timing. It is usually also what the agent was told;
+the exception is a transport failure under the message-request tool, where audit
+records `message_delivery_failed` and the tool result says
+`message_request_not_accepted`. Both carry the same `operationId`.
+
+`kind` follows the entry point rather than the port where the two differ: a
+`MessageCapabilityResolver` that throws is `message` under `sendMessage` and
+`tool` under the message-request tool, which is a tool call resolving its
+requirement. Match on `reasonCode` to watch one port.
+
+The error arrives as thrown, with one exception: when a `ContextToolProvider`'s
+`listTools` throws, the kernel replaces it with one catalogue-failure sentence
+every caller can match on, and the provider's error survives as that wrapper's
+`cause`. A `tool_catalog` report from another origin — a returned handler the
+registry refuses, which throws a named `DuplicateRegistrationError` or
+`TypeError` a caller can branch on — carries that error unwrapped and has no
+`cause`. Log `error` and let a formatter walk it.
+
+The same provider failure reaches a different hook depending on who asked. A
+throw from `listTools` during a turn is contained by the execution envelope as
+`runtime_failed` and reported to `onTurnError`, because the turn body calls
+`listTools` itself; only a call made through `invokeTool` reaches
+`onProviderError` as `tool_catalog_unavailable`.
+
+**`SharedOSExecutorOptions.onTurnError`** — a turn ended on a throw:
+
+```ts
+new SharedOSExecutor(kernel, plugin, {
+  onTurnError: (error, { executionId, traceId }) =>
+    logger.error({ err: error, executionId, traceId }, "turn ended on a throw"),
+});
+```
+
+`StandardRuntime` takes the same option, because only one of the two catches any
+given throw: a driver's becomes the loop's cooperative `driver_failed` outcome,
+which the envelope never sees as an exception, and the executor catches
+everything else as `runtime_failed`. `TurnExecutor` forwards to both, so one sink
+covers both.
+
+Read the stack. `runtime_failed` is also what a throw from `openTurnAuthority`,
+`admitTurn`, or `listTools` ends a turn as, so the code alone does not say
+whether the plugin or one of your own ports failed; the stack does.
+
+Both hooks are observational and synchronous. One that throws is ignored, a
+component with none installed behaves identically, and neither is awaited —
+unlike `onAuditError`, which fires after the side effect where there is nothing
+left to hold up, these fire mid-flight with a result still to construct. A
+cancelled operation is not reported: every site that awaits a host port re-throws
+the abort ahead of the containment, and the three that do not — an argument
+parser, a requirement resolver, a message capability resolver — wrap synchronous
+code that is never handed the signal, so an abort cannot be what made them throw.
+A caller that stopped the work is not a defect.
+
+`HostCeiling` reports through the same shape, but from
+`CapabilityAuthorizerOptions.onProviderError` rather than the kernel's: the
+ceiling is installed on the authorizer, so the kernel's hook cannot reach it. A
+host wanting both passes one function to both. Its reports carry
+`kind: "policy"` and `reasonCode: "host_policy_unavailable"`. A `PolicySource`
+that throws reports the same `kind` and `reasonCode` through the kernel's hook,
+once per turn at the boundary rather than once per decision it fails, and with
+no resource or action, because no operation had started.
+
+Still uncovered: the four authority ports discard a throw the same way, and they
+are not equally bad. `GrantSource`, `GrantUsageStore`, and
+`DelegationChainResolver` at least fail closed under their own codes —
+`authority_unavailable`, `usage_store_unavailable`,
+`delegation_chain_unverified`, each marked `failClosed` — so the failure is
+classified even though the cause is gone.
+
+`CapabilityGrantVerifier` is the one to watch. A throw from `verify` is treated
+as `false` (reason 8 under
+[`no_matching_grant`](#when-you-get-no_matching_grant-and-expected-otherwise)), so
+the grant becomes invisible and the denial reads `no_matching_grant` — not a
+`failClosed` code, and indistinguishable from an actor who was simply never
+granted the capability. A broken verifier looks exactly like correct enforcement.
 
 ## Adapters and the MCP harness path
 
@@ -277,22 +436,42 @@ differently, so an outage is never reported as a policy decision.
 
 ## Audit events
 
-| Type                               | Outcomes                        | When                                                            |
-| ---------------------------------- | ------------------------------- | --------------------------------------------------------------- |
-| `authority.resolved`               | `succeeded`, `failed`           | A turn loaded its authority, once; `failed` is fail-closed      |
-| `authorization.checked`            | `allowed`, `denied`             | One decision, before any tool, resource, message, or turn       |
-| `escalation.requested`             | `escalated`                     | A turn ended by asking for a human; nothing was granted         |
-| `resource.invoked`                 | `succeeded`, `denied`, `failed` | A direct resource operation                                     |
-| `tool.invoked`                     | `succeeded`, `denied`, `failed` | A tool call                                                     |
-| `tool.catalog.listed`              | `succeeded`, `denied`           | A catalogue was computed; `denied` is an empty one, fail-closed |
-| `tool.namespace.catalog.listed`    | `succeeded`                     | The management-plane namespace catalogue was read               |
-| `tool.namespace.selection.updated` | `succeeded`, `failed`           | A namespace patch was applied                                   |
-| `message.sent`                     | `succeeded`, `denied`, `failed` | A message was delivered through the transport                   |
+| Type                               | Outcomes                                     | When                                                            |
+| ---------------------------------- | -------------------------------------------- | --------------------------------------------------------------- |
+| `authority.resolved`               | `succeeded`, `failed`                        | A turn loaded its authority, once; `failed` is fail-closed      |
+| `authorization.checked`            | `allowed`, `denied`                          | One decision, before any tool, resource, message, or turn       |
+| `escalation.requested`             | `escalated`                                  | A turn ended by asking for a human; nothing was granted         |
+| `resource.invoked`                 | `succeeded`, `denied`, `failed`              | A direct resource operation                                     |
+| `tool.invoked`                     | `succeeded`, `denied`, `failed`              | A tool call                                                     |
+| `tool.catalog.listed`              | `succeeded`, `denied`                        | A catalogue was computed; `denied` is an empty one, fail-closed |
+| `tool.namespace.catalog.listed`    | `succeeded`                                  | The management-plane namespace catalogue was read               |
+| `tool.namespace.selection.updated` | `succeeded`, `failed`                        | A namespace patch was applied                                   |
+| `message.sent`                     | `succeeded`, `denied`, `failed`              | A message was delivered through the transport                   |
+| `turn.ended`                       | `succeeded`, `denied`, `failed`, `escalated` | One turn reached a terminal outcome, recorded by the envelope   |
 
 Every event carries `version`, `type`, `outcome`, `at`, `traceId`,
 `namespaceId`, `actor`, `authority`, `owner`, `purpose`, and where applicable
 `resource`, `action`, `grantId`, `authorityHash`, `operationId`, `tool`,
-`messageId`, `receiver`, `reason`, and `metadata`.
+`messageId`, `receiver`, `reason`, `requestedAuthority`, and `metadata`.
+
+`turn.ended` is the execution envelope's one event, written at the terminal
+through the kernel, which owns audit. It carries the turn's `executionId` as
+`operationId` and the terminal code as `reason`. A cancelled turn is recorded
+`failed` with reason `turn_cancelled` rather than adding a sixth `AuditOutcome`:
+the outcome vocabulary is a compatibility surface, and `reason` already separates
+a deadline from a defect. There is one event per turn, not one per transition —
+a `turn.denied` would double-count against the `authorization.checked` that
+admission already produced for the same refusal (ADR 0023).
+
+`requestedAuthority` appears on `escalation.requested`, and only when the
+escalation named a capability. The kernel minted it: its `id`, `namespaceId`,
+`requester`, `owner`, and `requestedAt` come from the trusted context, not from
+the caller, and the `id` is derived from the ask. It is the same payload a denial carries as
+`requiredAuthority` — one concept in two roles: a denial says what was required,
+and an escalation requests it. It is the `CapabilityRequest` a reviewer's queue is built from — a
+top-level field rather than a `metadata` key because it is a contract type with
+its own schema, and a consumer reading it should be reading that shape rather
+than trusting an untyped bag to hold it (ADR 0019).
 
 `authorityHash` names the exact authority set a decision was made against. A
 turn resolves authority once, so the `authority.resolved` event that opened it
@@ -300,13 +479,42 @@ and every `authorization.checked` and `tool.catalog.listed` event inside it
 carry the same value (ADR 0010); a consumer reconstructing a turn can pin every
 decision to that one load.
 
+`source` is on every operation and terminal event, in `metadata`: `kernel` or
+`envelope`, the boundary that produced it. It was free to infer until the
+envelope began recording — anything in audit was the kernel's, because the
+envelope wrote nothing — and it exists so closing that gap did not open an
+ambiguity in its place.
+
 `metadata` keys a host may rely on: `authority.resolved` carries `grantIds` and
 `grantCount` (or `failClosed: true` and `authority`, the internal code, when it
-failed); `authorization.checked` carries `consumed`, whether a bounded use was
-spent, and `failClosed: true` on an infrastructure denial; `tool.catalog.listed`
-carries `visibleTools`, the names the caller was shown (empty, with
-`failClosed: true`, when denied); `escalation.requested` carries `detail` (the
-reason the runtime gave), `reviewer`, `reviewerAssumed`, and `resolution`.
+failed), and `hostCeiling`, `"installed"` or `"absent"`, on both;
+`authorization.checked` carries `consumed`, whether a bounded use was spent,
+`failClosed: true` on an infrastructure denial, and whatever the decision itself
+carried — a `HostCeiling`'s own keys, or `delegation` detail on a broken chain —
+less `consumed` and `failClosed`, which the kernel states itself and a port
+cannot overwrite; `tool.catalog.listed` carries `catalogHash`,
+`enabledNamespaces`, `hostPolicyVersion`, and `withheldCount` (below), and
+`failClosed: true` with `authority` when authority itself could not load and the
+catalogue is empty; `tool.invoked` carries `cause` where its code covers several
+situations; `turn.ended` carries `endedBy`, `envelope` or `runtime`, on a
+failure, so a reader crediting enforcement does not credit a plugin's
+self-reported error; `escalation.requested` carries `detail` (the reason the
+runtime gave), `reviewer`, `reviewerAssumed`, and `resolution`.
+
+A listing is recorded by what it was computed from, not by the names it
+returned or withheld. `catalogHash` is the catalogue the caller was shown,
+computed as `listPublishedTools` computes it, so an execution's manifest and the
+audit record match on one identifier; `enabledNamespaces` is the caller's own
+filter; `hostPolicyVersion` is the version the turn's `PolicySource` stated,
+present only when one loaded; and `withheldCount` is how many registered tools
+were not returned. With `authorityHash` at the top level, equal values on two
+events mean the same catalogue for the same reasons, and the record does not
+grow with the registry — a two-hundred-tool registry would otherwise write its
+names to audit on every turn to say what one digest says once. What a count
+cannot carry is the per-tool cause; `failClosed: true` keeps the one distinction
+a reader cannot do without, that something was withheld by an outage rather than
+by a decision, and an attempted call on a withheld tool is still recorded on
+`tool.invoked` with its own `cause`.
 
 This vocabulary is a compatibility surface. Hosts persist these events under
 closed schemas of their own, so a new type, outcome, or top-level field is a

@@ -1,6 +1,6 @@
 # ADR 0020: The host ceiling is a port, not a convention
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-31
 - Reverts: the documentation change in `663dd94`
 
@@ -97,22 +97,34 @@ restored.
 ```ts
 /** Loaded once per turn, beside the grant set. */
 export interface PolicySource {
-  load(context: AccessContext, signal: AbortSignal): Promise<HostPolicy>;
+  load(context: AccessContext, signal: AbortSignal): Promise<LoadedPolicy>;
+}
+
+/** The policy, and the source's own name for it: a revision, an etag, a hash. */
+export interface LoadedPolicy {
+  readonly policy: HostPolicy;
+  readonly version: string;
 }
 
 /** Consulted per decision, over already-loaded state. Synchronous by contract. */
 export interface HostCeiling {
   narrow(
-    decision: AuthorizationDecision,
+    decision: AllowedDecision,
     request: AuthorizationRequest,
     context: AccessContext,
     policy: HostPolicy,
-  ): AuthorizationDecision;
+  ): HostCeilingVerdict;
 }
+
+/** The allow arm alone in; that allow, or a `host_policy_denied`, out. */
+export type HostCeilingVerdict = AllowedDecision | HostPolicyDenial;
 ```
 
 `HostPolicy` is opaque to SharedOS: whatever the host loaded, carried beside the
-resolved authority and handed back to the host's own ceiling.
+resolved authority and handed back to the host's own ceiling. `version` is the
+one thing about it SharedOS reads. An opaque value has no canonical form to
+hash, so the source states what it loaded, and every `tool.catalog.listed` event
+in the turn records it as `hostPolicyVersion` beside `authorityHash` (ADR 0023).
 
 ### Why the synchronous signature needs a second port
 
@@ -139,12 +151,29 @@ A host with request-independent policy may ignore `PolicySource` entirely and
 close over its own state; the port exists so that a host whose policy lives in a
 database is not forced back outside the kernel by the signature.
 
-`PolicySource` is **not yet implemented**. The implementing branch lands
-`HostCeiling` first, with `narrow` taking the decision, request, and context and
-the host closing over state it loads and refreshes on its own schedule; the
-per-turn load moves into the kernel — and the `policy` argument arrives with
-it — in a follow-up on the same branch. `docs/open-items.md` carries the row
-until it does.
+`PolicySource` is installed as `SharedOSKernelOptions.policySource`, beside
+`grantSource`, because the load is a turn-boundary event and the kernel owns
+the turn boundary; the ceiling stays on the authorizer. The kernel loads it
+inside the same authority load — the two are in flight together and neither
+reads the other — holds the result on the turn's authority lease as
+`ResolvedAuthority.hostPolicy`, and hands it to `narrow` as the fourth argument
+on every decision in the turn, exactly as loaded: not cloned, validated, or
+hashed, because SharedOS does not know its shape and reads nothing from it. A
+kernel without a source hands the ceiling `undefined`, so a ceiling that closes
+over its own state stays a complete implementation, and the parameter admits
+`undefined` rather than promising a value whose pairing SharedOS cannot check.
+
+It fails closed the way the grant source does. A throw is reported once, at
+the boundary, to `SharedOSKernelOptions.onProviderError` as `kind: "policy"`,
+and the turn's policy is held `unavailable` for its whole length: every
+decision the ceiling would have been consulted on is refused
+`host_policy_unavailable` without `narrow` being called, on both paths, and
+before any bounded use is consumed. A kernel with no ceiling ignores it — the
+outage is the ceiling's, not authority's. Each `authority.resolved` event
+records `hostPolicy: "loaded" | "unavailable" | "absent"` beside `hostCeiling`,
+where `absent` means no source is installed, not that there is no policy. A
+result that is not a `LoadedPolicy` — no `version`, or an empty one — is the
+same outage, reported the same way.
 
 **The signature is synchronous, and that is the enforcement.** "Deterministic
 and cheap" cannot be asserted in prose and then relied on. A synchronous return
@@ -154,12 +183,15 @@ would fail as a conformance signal: what it admits depends on how fast the
 machine is, so the same ceiling could pass on one host and fail on another.
 
 - It is consulted **only after a grant has matched**, on an `allowed` decision.
-  A denial is never shown to it, so a ceiling cannot turn one into an allow.
-- It may return only the decision it was given or a denial. A returned `allowed`
-  that does not carry the `matchedGrantId` it was handed is treated as a
-  malfunction and fails closed, so widening is not expressible rather than
-  merely forbidden.
-- Its denial carries `host_policy_denied`. The name is the constraint that
+  A denial is never shown to it — the parameter is `AllowedDecision`, the allow
+  arm alone — so a ceiling cannot turn one into an allow.
+- It may return only the decision it was given or a `HostPolicyDenial`. A
+  returned `allowed` that does not carry the `matchedGrantId` it was handed is
+  treated as a malfunction and fails closed, so widening is not expressible
+  rather than merely forbidden.
+- Its denial carries `host_policy_denied`, and the type pins the code: a ceiling
+  cannot author one of its own or borrow `no_matching_grant`, and a host outside
+  TypeScript that returns another has it replaced. The name is the constraint that
   refused — host policy, the one input to this decision no grant expresses —
   not the component that refused, so ADR 0012's rule that "a code is what was
   refused; a source is who refused it" holds: which component refused is
@@ -170,7 +202,19 @@ machine is, so the same ceiling could pass on one host and fail on another.
   separated by `failClosed`, not by guesswork.
 - A throw fails closed and is recorded as `host_policy_unavailable`, an
   infrastructure denial consistent with every other unavailable trusted
-  component.
+  component. The thrown error goes to
+  `CapabilityAuthorizerOptions.onProviderError` and nowhere else — the same hook
+  shape the kernel takes, declared on the authorizer because that is where the
+  ceiling is installed and the kernel's own hook cannot reach it. A host wanting
+  both passes one function to both.
+- A malformed **return** fails closed the same way. `narrow` is host code that
+  may have no compiler in front of it, and the two mistakes it makes without a
+  type error — an `async narrow`, and a branch that falls off the end — both
+  produce something whose `allowed` is `undefined`. Read as a denial, the first
+  would be recorded as a deliberate `host_policy_denied` and would inflate the
+  one count this ADR exists to make trustworthy; read at all, the second throws
+  past every call site and ends the turn with no audit event. The shape is
+  checked before any field is read.
 - It is optional. A kernel constructed without one behaves exactly as it does
   today.
 

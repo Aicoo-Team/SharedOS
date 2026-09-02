@@ -4,6 +4,7 @@ import {
   AccessContextSchema,
   AuthorizationDecisionSchema,
   CapabilityGrantSchema,
+  EscalationSchema,
   ExecutionRequestSchema,
   JsonValueSchema,
   MAX_EXECUTION_TIMEOUT_MS,
@@ -145,6 +146,68 @@ describe("JSON-safe protocol contracts", () => {
       reasonCode: "grant_matched",
       matchedGrantId: "grant-1",
     });
+  });
+
+  it("lets a decision and an escalation name the authority they are about", () => {
+    const request = {
+      id: "capreq-1",
+      namespaceId: "aicoo:alice",
+      requester: actor,
+      owner,
+      capabilities: [
+        {
+          resource: { namespace: "files", path: ["Memory", "project-x"], owner },
+          actions: ["read"],
+          scope: "exact" as const,
+        },
+      ],
+      purpose: "prepare-update",
+      requestedAt: now,
+    };
+
+    // A description on a denial: allowed stays false, and the field is the only
+    // thing that changed about what a denial can say.
+    expect(
+      AuthorizationDecisionSchema.parse({
+        allowed: false,
+        reasonCode: "no_matching_grant",
+        requiredAuthority: request,
+      }),
+    ).toMatchObject({ allowed: false, requiredAuthority: { id: "capreq-1" } });
+
+    expect(
+      EscalationSchema.parse({
+        reason: "alice should decide this",
+        reviewer: owner,
+        requestedAt: now,
+        status: "pending",
+        requestedAuthority: request,
+      }).requestedAuthority,
+    ).toEqual(request);
+
+    // Both are optional: the shapes that existed before this field still parse.
+    expect(
+      AuthorizationDecisionSchema.safeParse({ allowed: false, reasonCode: "no_matching_grant" })
+        .success,
+    ).toBe(true);
+    expect(
+      EscalationSchema.safeParse({
+        reason: "this needs a person",
+        reviewer: owner,
+        requestedAt: now,
+        status: "pending",
+      }).success,
+    ).toBe(true);
+
+    // And neither accepts something that is not a capability request. The field
+    // is a contract type, so a host cannot smuggle a bag of its own through it.
+    expect(
+      AuthorizationDecisionSchema.safeParse({
+        allowed: false,
+        reasonCode: "no_matching_grant",
+        requiredAuthority: { id: "capreq-1", capabilities: [] },
+      }).success,
+    ).toBe(false);
   });
 
   it("rejects an invalid capability time window", () => {

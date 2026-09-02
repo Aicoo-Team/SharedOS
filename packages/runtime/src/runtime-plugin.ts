@@ -9,7 +9,66 @@ import {
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
 
+import { reportContainedError } from "@aicoo/sharedos-core";
+
 import { deepFreeze } from "./internal.js";
+
+/** Which turn a {@link TurnErrorReporter} notification is about. */
+export interface TurnErrorContext {
+  readonly executionId: string;
+  readonly traceId: string;
+}
+
+/**
+ * A host's sink for a throw the turn contained rather than propagated.
+ *
+ * Both layers that contain one take it: `SharedOSExecutor`, whose catch ends
+ * the turn `runtime_failed`, and `StandardRuntime`, whose catch ends it
+ * `driver_failed`. A terminal code says a turn stopped and does not say why;
+ * the thrown error is the only thing that does, so it is handed over whole and
+ * unwrapped, because its stack is what names the origin.
+ *
+ * It reaches nothing else. A `ProtocolError.message` is read by the model, and
+ * an `ExecutionEvent` becomes part of an `ExecutionRecord`, which travels
+ * further than an audit sink; a thrown message may carry anything the thrower
+ * had in scope. This is a host-side sink for host-side logs, in the position
+ * `SharedOSKernel.onAuditError` occupies for the same reason.
+ *
+ * Observational. One that throws is ignored -- it cannot replace an outcome
+ * already decided -- and a turn behaves identically with none installed.
+ * Cancellation never reaches it: a turn stopped by the deadline or by the
+ * caller's signal ends `cancelled`, which is a decision rather than a defect.
+ *
+ * The kernel makes the same promise about a provider's throw, under
+ * `SharedOSKernelOptions.onProviderError`. A host wanting both installs both;
+ * they are separate because they are about different things failing, and the
+ * turn's identifiers are not the ones a mediated call has.
+ */
+export type TurnErrorReporter = (error: unknown, turn: TurnErrorContext) => void;
+
+/**
+ * Call one turn-error sink without letting it change what happened.
+ *
+ * The turn-shaped name for `reportContainedError`, which is where the guard
+ * itself lives: a sink that throws is swallowed, because a diagnostic that can
+ * turn one failure into two is a liability rather than a diagnostic.
+ *
+ * It delegates rather than repeating the rule. The kernel contains a provider's
+ * throw and the runtime contains a plugin's, and the same promise is made to a
+ * host about both; two implementations of one promise is how it stops being
+ * true in one of them. Core owns it because the dependency runs runtime → core
+ * and cannot run back.
+ *
+ * Exported deliberately, for a host writing its own {@link RuntimePlugin} that
+ * offers the same hook.
+ */
+export function reportTurnError(
+  reporter: TurnErrorReporter | undefined,
+  error: unknown,
+  turn: TurnErrorContext,
+): void {
+  reportContainedError(reporter, error, turn);
+}
 
 export interface RuntimeVisibleContext {
   readonly actor: AccessContext["actor"];

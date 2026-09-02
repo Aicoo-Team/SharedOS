@@ -4,6 +4,7 @@ import type {
   AuthorizationDecision,
   Capability,
   Escalation,
+  JsonObject,
   MessageDeliveryResult,
   MessageEnvelope,
   ProtocolError,
@@ -31,7 +32,10 @@ import {
   type AuthorityResolution,
   type AuthorityUnavailableCode,
   type GrantSource,
+  type LoadedPolicy,
   MID_TURN_AUTHORITY_REFRESH,
+  type PolicyResolution,
+  type PolicySource,
   type ResolvedAuthority,
   TrustedAuthorityResolver,
   type TurnAuthorityScope,
@@ -43,6 +47,12 @@ import {
   addressesEqual,
   isInfrastructureDenial,
 } from "./authorization.js";
+import {
+  reportContainedError,
+  type ProviderErrorContext,
+  type ProviderErrorReporter,
+} from "./diagnostics.js";
+import { type CapabilityRequestPayload, mintCapabilityRequest } from "./capability-request.js";
 import {
   type MessageCapabilityResolver,
   type MessageRequestRouter,
@@ -57,7 +67,7 @@ import {
   ResourceProviderRegistry,
   toResourceOperation,
 } from "./resource-registry.js";
-import { buildToolCatalog } from "./published-tool.js";
+import { buildToolCatalog, catalogHash, publishToolCatalog } from "./published-tool.js";
 import { SPAN, measure, type SpanSink } from "./spans.js";
 import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
@@ -70,6 +80,18 @@ export interface SharedOSKernelOptions {
    * no authoritative grant source can only fail closed.
    */
   readonly grantSource: GrantSource;
+  /**
+   * The trusted boundary that loads host policy, once per turn, beside the
+   * grant set. See {@link PolicySource}.
+   *
+   * Optional. Without one the ceiling installed on the authorizer, if any, is
+   * handed `undefined` and decides over state it closes over. It is installed
+   * here rather than beside the ceiling because the load is a turn-boundary
+   * event and the kernel owns the turn boundary; a throw is reported to
+   * {@link SharedOSKernelOptions.onProviderError} as `kind: "policy"`, and the
+   * turn's policy fails closed.
+   */
+  readonly policySource?: PolicySource;
   readonly authorizer?: CapabilityAuthorizer;
   readonly resources?: ResourceProviderRegistry;
   readonly tools?: ToolRegistry;
@@ -83,6 +105,19 @@ export interface SharedOSKernelOptions {
   /** Notification for audit failures that occur after a side effect. */
   readonly onAuditError?: (error: unknown, event: AuditEvent) => void | Promise<void>;
   /**
+   * Notification for a throw the kernel contained rather than propagated.
+   *
+   * A provider, tool handler, transport, or router that throws is answered with
+   * a fixed reason code, and until a host installs this the error itself is
+   * gone: `tool_execution_failed` says an operation stopped and does not say
+   * why. One hook covers every such port, and {@link ProviderErrorContext.kind}
+   * is what a host branches on if it wants to treat them differently.
+   *
+   * Synchronous, unlike {@link SharedOSKernelOptions.onAuditError}, and see
+   * {@link reportContainedError} for why the two differ.
+   */
+  readonly onProviderError?: ProviderErrorReporter;
+  /**
    * Where the cost of enforcement is reported, when a host is measuring it.
    *
    * Absent by default and absent in every production path that does not ask for
@@ -94,6 +129,68 @@ export interface SharedOSKernelOptions {
 
 export interface KernelOperationOptions {
   readonly signal?: AbortSignal;
+}
+
+/** How a turn finished, as the boundary that finished it saw it. */
+export interface TurnEndRecord {
+  readonly executionId: string;
+  readonly status: "succeeded" | "denied" | "failed" | "cancelled" | "escalated";
+  /** The terminal code, where the ending had one. */
+  readonly reasonCode?: string;
+  /**
+   * Who produced a failure: the envelope refusing, or the runtime reporting its
+   * own. The same distinction `ExecutionEvent` carries, kept because a record
+   * reader crediting enforcement must not credit a plugin's self-reported error.
+   */
+  readonly endedBy?: "envelope" | "runtime";
+}
+
+/** One call an enforcement boundary refused without invoking anything. */
+export interface RefusedCall {
+  readonly callId: string;
+  readonly tool: string;
+  readonly reasonCode: string;
+  /** Which situation a coarse code was, where it covers several. */
+  readonly cause?: string;
+}
+
+/** What a `tool.invoked` event carries beyond the call and its result. */
+interface ToolResultAuditDetail {
+  readonly grantId?: string;
+  readonly requirement?: AuthorizationRequest;
+  /**
+   * Which situation a coarse refusal was, when the code covers several.
+   *
+   * `tool_unavailable` is deliberately one code over "not registered",
+   * "namespace disabled", and "not discoverable to you" so the caller learns it
+   * cannot use the tool and not which. An audit reader is not the caller.
+   */
+  readonly cause?: string;
+}
+
+export interface EscalationOptions extends KernelOperationOptions {
+  /**
+   * The authority this escalation is asking for.
+   *
+   * A host escalating a denial passes the `requiredAuthority` that denial
+   * described; a model-chosen escalation usually has none, because a sentence
+   * is all it produced. Either way nothing here advances the escalation --
+   * resolution stays host-owned work that ends in a grant the next turn loads.
+   *
+   * The two names are one concept in two roles, and both end in the noun this
+   * package uses for what grants confer: a denial says what was *required*, and
+   * an escalation *requests* it. `{ requestedAuthority: denial.requiredAuthority }`
+   * is the whole hop.
+   *
+   * What is recorded is minted, not copied. The ask -- capabilities, purpose,
+   * constraints, metadata -- is the caller's; `id`, `namespaceId`, `requester`,
+   * `owner`, and `requestedAt` come from the trusted context, whatever the
+   * caller wrote, because a request the caller authored would be a
+   * caller-chosen correlation for a decision the kernel made. The hop above
+   * still round-trips: the denial's description was minted from the same ask,
+   * so it comes back under the same identifier (ADR 0019).
+   */
+  readonly requestedAuthority?: CapabilityRequestPayload;
 }
 
 export const EXECUTION_NAMESPACE = "sharedos.execution";
@@ -124,6 +221,7 @@ interface AuthorityLease {
  */
 export class SharedOSKernel {
   readonly #authority: TrustedAuthorityResolver;
+  readonly #policySource: PolicySource | undefined;
   readonly #leases = new Map<string, AuthorityLease>();
   readonly #authorizer: CapabilityAuthorizer;
   readonly #resources: ResourceProviderRegistry;
@@ -136,10 +234,15 @@ export class SharedOSKernel {
   readonly #createMessageId: (context: AccessContext, call: ToolCall) => string;
   readonly #audit: AuditSink;
   readonly #onAuditError: ((error: unknown, event: AuditEvent) => void | Promise<void>) | undefined;
+  readonly #onProviderError: ProviderErrorReporter | undefined;
   readonly #spans: SpanSink | undefined;
 
   constructor(options: SharedOSKernelOptions) {
     this.#authority = new TrustedAuthorityResolver(options?.grantSource);
+    if (options.policySource !== undefined && typeof options.policySource?.load !== "function") {
+      throw new TypeError("SharedOS requires a policy source that provides a load function");
+    }
+    this.#policySource = options.policySource;
     this.#authorizer = options.authorizer ?? new CapabilityAuthorizer();
     this.#resources = options.resources ?? new ResourceProviderRegistry();
     this.#tools = options.tools ?? new ToolRegistry();
@@ -155,6 +258,7 @@ export class SharedOSKernel {
     this.#createMessageId = options.createMessageId ?? (() => crypto.randomUUID());
     this.#audit = options.audit ?? new NoopAuditSink();
     this.#onAuditError = options.onAuditError;
+    this.#onProviderError = options.onProviderError;
     this.#spans = options.spans;
   }
 
@@ -285,15 +389,23 @@ export class SharedOSKernel {
   async recordEscalation(
     context: AccessContext,
     reason: string,
-    options: KernelOperationOptions = {},
+    options: EscalationOptions = {},
   ): Promise<Escalation> {
     throwIfAborted(options.signal);
     context = structuredClone(context);
+    const requestedAuthority =
+      options.requestedAuthority === undefined
+        ? undefined
+        : await mintCapabilityRequest(context, structuredClone(options.requestedAuthority));
+    if (options.requestedAuthority !== undefined && requestedAuthority === undefined) {
+      throw new TypeError("escalation requestedAuthority does not match the SharedOS v1 contract");
+    }
     const parsed = EscalationSchema.safeParse({
       reason,
       reviewer: context.owner,
       requestedAt: context.now,
       status: "pending",
+      ...(requestedAuthority === undefined ? {} : { requestedAuthority }),
     });
     if (!parsed.success) {
       throw new TypeError("escalation does not match the SharedOS v1 contract");
@@ -310,10 +422,97 @@ export class SharedOSKernel {
           reviewerAssumed: true,
           resolution: "pending",
         },
+        // Recorded so a reviewer's queue can be built from audit alone. The
+        // reason is what a model wrote; this is what can be turned into a grant
+        // without reading it (ADR 0019).
+        ...(parsed.data.requestedAuthority === undefined
+          ? {}
+          : { requestedAuthority: parsed.data.requestedAuthority }),
       }),
     );
 
     return parsed.data;
+  }
+
+  /**
+   * Record how a turn ended, from the boundary that ended it.
+   *
+   * The envelope owns turn termination and, until this existed, owned no audit
+   * at all: a turn that started, completed, failed, or was cancelled left
+   * nothing in the trail, so a host reading audit could not bound a turn or
+   * join a set of tool calls to the one that made them beyond `traceId`. It is
+   * called through the kernel rather than from an `AuditSink` of the envelope's
+   * own, because one sink passed in two places is one sink a host can forget to
+   * pass twice -- and the failure mode of forgetting is a turn that enforces
+   * correctly and records nothing (ADR 0023).
+   *
+   * One event, at the terminal. Not five: a lifecycle event per transition
+   * would triple the audit volume of every successful turn to say nothing more,
+   * and a `turn.denied` would double-count against the `authorization.checked`
+   * {@link admitTurn} already produced for the same refusal.
+   *
+   * A cancelled turn is recorded `failed` with reason `turn_cancelled` rather
+   * than gaining an `AuditOutcome` of its own. The outcome vocabulary is a
+   * compatibility surface every host persists against, and `reason` already
+   * separates a deadline from a defect.
+   */
+  async recordTurnEnd(
+    context: AccessContext,
+    turn: TurnEndRecord,
+    options: KernelOperationOptions = {},
+  ): Promise<void> {
+    throwIfAborted(options.signal);
+    context = structuredClone(context);
+    await this.#recordOutcome(
+      auditEvent(context, {
+        type: "turn.ended",
+        outcome: turn.status === "cancelled" ? "failed" : turn.status,
+        operationId: turn.executionId,
+        ...(turn.reasonCode === undefined ? {} : { reason: turn.reasonCode }),
+        metadata: {
+          source: "envelope",
+          ...(turn.endedBy === undefined ? {} : { endedBy: turn.endedBy }),
+          ...(turn.reasonCode !== undefined && isInfrastructureDenial(turn.reasonCode)
+            ? { failClosed: true }
+            : {}),
+        },
+      }),
+    );
+  }
+
+  /**
+   * Record a tool call the envelope refused before the kernel was asked.
+   *
+   * A name the turn's catalogue never offered, a spent step budget, a spent
+   * tool-call budget. These are attempted violations -- the guessed tool name is
+   * the clearest one the system produces -- and they reached no audit sink at
+   * all, because the boundary that refused them does not own one.
+   *
+   * Recorded as `tool.invoked`, because that is what it is: a tool call that was
+   * attempted and denied. `metadata.source` says `envelope`, which is the fact
+   * that stops being inferable the moment this method exists (ADR 0023).
+   */
+  async recordRefusedCall(
+    context: AccessContext,
+    call: RefusedCall,
+    options: KernelOperationOptions = {},
+  ): Promise<void> {
+    throwIfAborted(options.signal);
+    context = structuredClone(context);
+    await this.#recordOutcome(
+      auditEvent(context, {
+        type: "tool.invoked",
+        outcome: "denied",
+        operationId: call.callId,
+        tool: call.tool,
+        reason: call.reasonCode,
+        metadata: {
+          source: "envelope",
+          ...(call.cause === undefined ? {} : { cause: call.cause }),
+          ...(isInfrastructureDenial(call.reasonCode) ? { failClosed: true } : {}),
+        },
+      }),
+    );
   }
 
   async listTools(
@@ -329,19 +528,29 @@ export class SharedOSKernel {
           type: "tool.catalog.listed",
           outcome: "denied",
           reason: "authority_unavailable",
-          metadata: { visibleTools: [], failClosed: true, authority: authority.code },
+          metadata: {
+            catalogHash: await catalogHash([]),
+            enabledNamespaces: [...context.enabledToolNamespaces],
+            withheldCount: 0,
+            failClosed: true,
+            authority: authority.code,
+            source: "kernel",
+          },
         }),
       );
       return [];
     }
 
     const allowed: ToolDefinition[] = [];
+    let withheldCount = 0;
+    let withheldByOutage = false;
     const enabledNamespaces = new Set(context.enabledToolNamespaces);
     const tools = await this.#resolveToolRegistry(context, options.signal);
 
     for (const definition of tools.definitions()) {
       throwIfAborted(options.signal);
       if (!enabledNamespaces.has(definition.namespace)) {
+        withheldCount += 1;
         continue;
       }
       const decision = await this.#authorizer.canDiscover(
@@ -354,15 +563,41 @@ export class SharedOSKernel {
       );
       if (decision.allowed) {
         allowed.push(definition);
+      } else {
+        withheldCount += 1;
+        withheldByOutage ||= isInfrastructureDenial(decision.reasonCode);
       }
     }
 
+    const { hostPolicy } = authority.authority;
     await this.#audit.record(
       auditEvent(context, {
         type: "tool.catalog.listed",
         outcome: "succeeded",
         authorityHash: authority.authority.snapshot.hash,
-        metadata: { visibleTools: allowed.map(({ name }) => name) },
+        metadata: {
+          // What the listing was computed from and what it came to, as
+          // identifiers and a count rather than as names. `catalogHash` is the
+          // catalogue the caller was shown -- the identifier `listPublishedTools`
+          // hands a harness, so audit and an execution's manifest match on it;
+          // `authorityHash` above and `hostPolicyVersion` are the two states it
+          // was decided against; `enabledNamespaces` is the caller's own
+          // filter. Equal values on two events mean the same catalogue for the
+          // same reasons, and the record does not grow with the registry: a
+          // two-hundred-tool registry would otherwise write its names to audit
+          // on every turn to say what one digest says once. A tool name is a
+          // registry constant, so what the names cost was volume, not secrecy.
+          // What a count cannot carry is the per-tool cause, and `failClosed`
+          // keeps the one distinction a reader cannot do without: whether
+          // something was withheld by an outage rather than by a decision
+          // (ADR 0023).
+          catalogHash: await catalogHash(publishToolCatalog(allowed)),
+          enabledNamespaces: [...context.enabledToolNamespaces],
+          ...(hostPolicy?.status === "loaded" ? { hostPolicyVersion: hostPolicy.version } : {}),
+          withheldCount,
+          ...(withheldByOutage ? { failClosed: true } : {}),
+          source: "kernel",
+        },
       }),
     );
 
@@ -532,6 +767,17 @@ export class SharedOSKernel {
       if (options.signal?.aborted) {
         throw options.signal.reason ?? error;
       }
+      // What arrives here is the wrapper `#resolveToolRegistry` threw, with the
+      // provider's own error as its `cause`. The wrapper is the sentence every
+      // caller of the catalogue reads; the cause is the only account of what
+      // actually broke, and it would have been destroyed without it. A host
+      // logging this wants both, which is why neither is unwrapped here.
+      this.#reportProviderError(error, context, {
+        kind: "tool_catalog",
+        reasonCode: "tool_catalog_unavailable",
+        operationId: call.id,
+        tool: call.tool,
+      });
       const result = failedToolResult(
         call,
         context.now,
@@ -550,7 +796,7 @@ export class SharedOSKernel {
         "tool_unavailable",
         "The requested tool is not available in this access context",
       );
-      await this.#recordToolResult(context, call, result);
+      await this.#recordToolResult(context, call, result, { cause: "not_registered" });
       return result;
     }
 
@@ -561,7 +807,7 @@ export class SharedOSKernel {
         "tool_unavailable",
         "The requested tool is not available in this access context",
       );
-      await this.#recordToolResult(context, call, result);
+      await this.#recordToolResult(context, call, result, { cause: "namespace_disabled" });
       return result;
     }
 
@@ -598,7 +844,18 @@ export class SharedOSKernel {
         "tool_unavailable",
         "The requested tool is not available in this access context",
       );
-      await this.#recordToolResult(context, call, result);
+      // The cause follows the decision rather than being hard-coded, so a
+      // catalogue refusal a host ceiling made is nameable as one. Without it,
+      // `host_policy_denied` could only ever appear on the decision event, and
+      // a host counting policy refusals from the operation events would get
+      // zero (ADR 0023).
+      await this.#recordToolResult(context, call, result, {
+        cause: discoverable.reasonCode,
+        requirement: {
+          resource: handler.definition.requiredCapability.resource,
+          action: handler.definition.requiredCapability.action,
+        },
+      });
       return result;
     }
 
@@ -614,7 +871,13 @@ export class SharedOSKernel {
           arguments: parsedArguments.data,
         }),
       );
-    } catch {
+    } catch (error) {
+      this.#reportProviderError(error, context, {
+        kind: "tool",
+        reasonCode: "invalid_tool_arguments",
+        operationId: call.id,
+        tool: call.tool,
+      });
       const result = failedToolResult(
         call,
         context.now,
@@ -629,7 +892,13 @@ export class SharedOSKernel {
     try {
       requirement =
         handler.resolveRequirement?.(context, parsedCall) ?? handler.definition.requiredCapability;
-    } catch {
+    } catch (error) {
+      this.#reportProviderError(error, context, {
+        kind: "tool",
+        reasonCode: "tool_requirement_resolution_failed",
+        operationId: call.id,
+        tool: call.tool,
+      });
       const result = failedToolResult(
         call,
         context.now,
@@ -661,7 +930,7 @@ export class SharedOSKernel {
         crossing.reasonCode,
         "The requested resource lies outside this access context's world",
       );
-      await this.#recordToolResult(context, call, result, undefined, requirement);
+      await this.#recordToolResult(context, call, result, { requirement });
       return result;
     }
 
@@ -690,7 +959,7 @@ export class SharedOSKernel {
         decision.reasonCode,
         "The access context does not grant this tool capability",
       );
-      await this.#recordToolResult(context, call, result, undefined, requirement);
+      await this.#recordToolResult(context, call, result, { requirement });
       return result;
     }
 
@@ -716,6 +985,14 @@ export class SharedOSKernel {
       if (options.signal?.aborted) {
         throw options.signal.reason ?? error;
       }
+      this.#reportProviderError(error, context, {
+        kind: "tool",
+        reasonCode: "tool_execution_failed",
+        operationId: call.id,
+        tool: call.tool,
+        resource: requirement.resource,
+        action: requirement.action,
+      });
       result = failedToolResult(
         call,
         context.now,
@@ -724,7 +1001,10 @@ export class SharedOSKernel {
       );
     }
 
-    await this.#recordToolResult(context, call, result, decision.matchedGrantId, requirement);
+    await this.#recordToolResult(context, call, result, {
+      ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
+      requirement,
+    });
     return result;
   }
 
@@ -802,6 +1082,13 @@ export class SharedOSKernel {
         if (options.signal?.aborted) {
           throw options.signal.reason ?? error;
         }
+        this.#reportProviderError(error, context, {
+          kind: "resource",
+          reasonCode: "resource_execution_failed",
+          operationId: request.operationId,
+          resource: request.resource,
+          action: request.action,
+        });
         result = failedResourceResult(
           request,
           context.now,
@@ -830,6 +1117,8 @@ export class SharedOSKernel {
           capabilityResolver: this.#messageCapabilityResolver,
           router: this.#messageRequestRouter,
           createMessageId: this.#createMessageId,
+          reportProviderError: (error, access, operation) =>
+            this.#reportProviderError(error, access, operation),
           deliverAuthorizedMessage: (access, envelope, operationSignal, operationId) =>
             this.#deliverAuthorizedMessage(
               access,
@@ -856,12 +1145,24 @@ export class SharedOSKernel {
         if (signal?.aborted) {
           throw signal.reason ?? error;
         }
-        throw new Error("A context tool provider failed to resolve its catalog");
+        // Wrapped rather than re-thrown, so every caller sees one sentence for
+        // "the catalogue could not be built" -- and `cause`d, so the provider's
+        // own error survives to whoever ends up looking. `listTools` lets this
+        // reach its caller; `invokeTool` contains it and reports it.
+        throw new Error("A context tool provider failed to resolve its catalog", { cause: error });
       }
       if (!Array.isArray(handlers)) {
         throw new TypeError("A context tool provider returned an invalid catalog");
       }
       for (const handler of handlers) {
+        // Deliberately not wrapped. A handler the registry refuses throws a
+        // named error -- `DuplicateRegistrationError`, or a `TypeError` naming
+        // what about the definition was wrong -- and a caller of `listTools`
+        // both sees and matches on those today. Wrapping them to make the
+        // diagnostic hook's `cause` unconditional would trade a typed error a
+        // host can branch on for a sentence it cannot, which is the wrong way
+        // round; the hook's contract says instead that it reports the error as
+        // thrown, and names the one case that is wrapped.
         resolved.register(handler);
       }
     }
@@ -907,7 +1208,11 @@ export class SharedOSKernel {
         structuredClone(context),
         structuredClone(envelope),
       );
-    } catch {
+    } catch (error) {
+      this.#reportProviderError(error, context, {
+        kind: "message",
+        reasonCode: "message_requirement_resolution_failed",
+      });
       const result = failedMessageResult(
         envelope,
         context.now,
@@ -998,6 +1303,11 @@ export class SharedOSKernel {
       if (signal.aborted) {
         throw signal.reason ?? error;
       }
+      this.#reportProviderError(error, trustedContext, {
+        kind: "message",
+        reasonCode: "message_delivery_failed",
+        ...(operationId === undefined ? {} : { operationId }),
+      });
       result = failedMessageResult(
         trustedEnvelope,
         trustedContext.now,
@@ -1130,7 +1440,18 @@ export class SharedOSKernel {
     context: AccessContext,
     signal: AbortSignal | undefined,
   ): Promise<AuthorityResolution> {
-    const resolution = await this.#authority.resolve(context, signal ?? neverAbortedSignal());
+    const abort = signal ?? neverAbortedSignal();
+    // A turn resolves one grant set and one policy set, and the two loads are
+    // in flight together: neither reads the other's result, and the record of
+    // the load says what each port did even on a turn where the other failed.
+    const [resolved, hostPolicy] = await Promise.all([
+      this.#authority.resolve(context, abort),
+      this.#loadHostPolicy(context, abort),
+    ]);
+    const resolution: AuthorityResolution =
+      resolved.status === "resolved" && hostPolicy !== undefined
+        ? { status: "resolved", authority: { ...resolved.authority, hostPolicy } }
+        : resolved;
     await this.#audit.record(
       auditEvent(
         context,
@@ -1142,17 +1463,89 @@ export class SharedOSKernel {
               metadata: {
                 grantIds: [...resolution.authority.snapshot.grantIds],
                 grantCount: resolution.authority.snapshot.grantCount,
+                hostCeiling: this.#hostCeilingState(),
+                hostPolicy: hostPolicyState(hostPolicy),
               },
             }
           : {
               type: "authority.resolved",
               outcome: "failed",
               reason: "authority_unavailable",
-              metadata: { failClosed: true, authority: resolution.code },
+              metadata: {
+                failClosed: true,
+                authority: resolution.code,
+                hostCeiling: this.#hostCeilingState(),
+                hostPolicy: hostPolicyState(hostPolicy),
+              },
             },
       ),
     );
     return resolution;
+  }
+
+  /**
+   * Read the turn's host policy from its source once, failing closed.
+   *
+   * `undefined` when no source is installed, which is a different fact from a
+   * source that failed: the first hands the ceiling nothing and lets it decide
+   * over its own state; the second refuses every decision the ceiling would
+   * have made. The error is reported here, once per turn, rather than on each
+   * decision it fails, because one outage is one report. A cancelled load is
+   * re-thrown, not reported: a caller that stopped the work is not a defect.
+   *
+   * A source that answered without naming what it loaded is as broken as one
+   * that threw. Nothing could pin a decision to the policy it was made against,
+   * so nothing is decided against it: the same outage, the same report.
+   */
+  async #loadHostPolicy(
+    context: AccessContext,
+    signal: AbortSignal,
+  ): Promise<PolicyResolution | undefined> {
+    if (this.#policySource === undefined) {
+      return undefined;
+    }
+    let loaded: unknown;
+    try {
+      loaded = await this.#policySource.load(structuredClone(context), signal);
+    } catch (error) {
+      if (signal.aborted) {
+        throw signal.reason ?? error;
+      }
+      this.#reportPolicyOutage(context, error);
+      return { status: "unavailable" };
+    }
+    if (!isLoadedPolicy(loaded)) {
+      this.#reportPolicyOutage(
+        context,
+        new TypeError(
+          "A policy source must resolve to { policy, version } with a non-empty version",
+        ),
+      );
+      return { status: "unavailable" };
+    }
+    return { status: "loaded", policy: loaded.policy, version: loaded.version };
+  }
+
+  #reportPolicyOutage(context: AccessContext, error: unknown): void {
+    reportContainedError(this.#onProviderError, error, {
+      kind: "policy",
+      reasonCode: "host_policy_unavailable",
+      traceId: context.traceId,
+      namespaceId: context.namespaceId,
+    });
+  }
+
+  /**
+   * Whether product policy can refuse anything in this deployment.
+   *
+   * Recorded on every turn's authority load so an audit stream is readable
+   * without knowing how the kernel was constructed. A stream with no
+   * `host_policy_denied` in it means one thing when no ceiling is installed and
+   * something else entirely when one is, and nothing else in the record
+   * separates them (ADR 0020).
+   */
+  #hostCeilingState(): "installed" | "absent" {
+    return this.#authorizer.hasHostCeiling ? "installed" : "absent";
   }
 
   async #denyUnavailableAuthority(
@@ -1189,6 +1582,16 @@ export class SharedOSKernel {
         ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
         ...(!decision.allowed ? { reason: decision.reasonCode } : {}),
         metadata: {
+          // A decision may carry metadata of its own: a host ceiling's rule,
+          // or the authorizer's delegation detail on a broken chain. The two
+          // keys the kernel states are removed from it rather than overwritten.
+          // Order alone would already win for `consumed`, but not for
+          // `failClosed`, which is only ever *set* on an infrastructure denial:
+          // a port's `failClosed: false` would stand on every other denial, and
+          // a `failClosed: true` would move a deliberate refusal out of the
+          // policy counts it belongs in. Both are stripped, so the rule is one
+          // rule rather than one that happens to hold for one of the keys.
+          ...decisionMetadata(decision.metadata),
           consumed: consume,
           ...(isInfrastructureDenial(decision.reasonCode) ? { failClosed: true } : {}),
         },
@@ -1200,9 +1603,9 @@ export class SharedOSKernel {
     context: AccessContext,
     call: ToolCall,
     result: ToolResult,
-    grantId?: string,
-    requirement?: AuthorizationRequest,
+    detail: ToolResultAuditDetail = {},
   ): Promise<void> {
+    const { grantId, requirement, cause } = detail;
     await this.#recordOutcome(
       auditEvent(context, {
         type: "tool.invoked",
@@ -1217,9 +1620,20 @@ export class SharedOSKernel {
             }),
         ...(grantId === undefined ? {} : { grantId }),
         ...(result.status === "succeeded" ? {} : { reason: result.error.code }),
-        ...(result.status !== "succeeded" && isInfrastructureDenial(result.error.code)
-          ? { metadata: { failClosed: true } }
-          : {}),
+        metadata: {
+          // Which boundary refused. Free to infer until the envelope started
+          // recording too -- anything in audit was the kernel's -- and a fact
+          // with nowhere to live the moment that stopped being true (ADR 0023).
+          source: "kernel",
+          // `tool_unavailable` is one code over several situations by design,
+          // so the model cannot tell them apart. An audit reader is not the
+          // model. `reason` stays the code the caller was given and this says
+          // which one it was.
+          ...(cause === undefined ? {} : { cause }),
+          ...(result.status !== "succeeded" && isInfrastructureDenial(result.error.code)
+            ? { failClosed: true }
+            : {}),
+        },
       }),
     );
   }
@@ -1239,6 +1653,7 @@ export class SharedOSKernel {
         action: request.action,
         ...(grantId === undefined ? {} : { grantId }),
         ...(result.status === "succeeded" ? {} : { reason: result.error.code }),
+        metadata: { source: "kernel" },
       }),
     );
   }
@@ -1264,8 +1679,29 @@ export class SharedOSKernel {
         ...(result.status === "denied" || result.status === "failed"
           ? { reason: result.error.code }
           : {}),
+        metadata: { source: "kernel" },
       }),
     );
+  }
+
+  /**
+   * Hand one contained throw to the host's diagnostic sink.
+   *
+   * The context is assembled here rather than at each catch so every call site
+   * contributes only what is specific to it -- what kind of port failed, the
+   * code returned in its place, and whichever identifiers that path has -- and
+   * the trace and namespace come from the one place that always knows them.
+   */
+  #reportProviderError(
+    error: unknown,
+    context: AccessContext,
+    operation: Omit<ProviderErrorContext, "traceId" | "namespaceId">,
+  ): void {
+    reportContainedError(this.#onProviderError, error, {
+      ...operation,
+      traceId: context.traceId,
+      namespaceId: context.namespaceId,
+    });
   }
 
   async #recordOutcome(event: AuditEvent): Promise<void> {
@@ -1279,6 +1715,22 @@ export class SharedOSKernel {
       }
     }
   }
+}
+
+/**
+ * Metadata the decision itself carried, less the two keys the kernel states.
+ *
+ * Two things produce it, and naming only the newer one would be misleading: a
+ * `HostCeiling` saying which rule refused, and the authorizer's own delegation
+ * detail on a broken chain. The latter is the reason this is a behaviour change
+ * as well as a guard -- until now no decision metadata reached audit at all.
+ */
+function decisionMetadata(metadata: JsonObject | undefined): JsonObject {
+  if (metadata === undefined) {
+    return {};
+  }
+  const { consumed: _consumed, failClosed: _failClosed, ...rest } = metadata;
+  return rest;
 }
 
 /**
@@ -1442,4 +1894,30 @@ let fallbackSignal: AbortSignal | undefined;
 function neverAbortedSignal(): AbortSignal {
   fallbackSignal ??= new AbortController().signal;
   return fallbackSignal;
+}
+
+/**
+ * What one turn's policy load came to, for the `authority.resolved` record.
+ *
+ * `absent` says no `PolicySource` is installed, not that there is no policy: a
+ * ceiling may close over its own. Beside `hostCeiling`, it lets a reader tell a
+ * deployment whose ceiling decides over loaded state from one whose ceiling
+ * decides over state it carries, and a turn that could not load its policy --
+ * every policy decision in it fail-closed -- from one that could (ADR 0020).
+ */
+function isLoadedPolicy(value: unknown): value is LoadedPolicy {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "policy" in value &&
+    "version" in value &&
+    typeof value.version === "string" &&
+    value.version.length > 0
+  );
+}
+
+function hostPolicyState(
+  hostPolicy: PolicyResolution | undefined,
+): "loaded" | "unavailable" | "absent" {
+  return hostPolicy === undefined ? "absent" : hostPolicy.status;
 }

@@ -18,6 +18,7 @@ import {
   type RuntimeHost,
   type RuntimePlugin,
   type RuntimeTurnRequest,
+  type TurnErrorContext,
 } from "./index.js";
 
 const now = "2026-08-14T00:00:00.000Z";
@@ -576,6 +577,75 @@ describe("RuntimePlugin security envelope", () => {
     expect(result.metadata).toMatchObject({ harness: "hostile" });
   });
 
+  it("hands a thrown plugin error to the host and puts none of it on the wire", async () => {
+    const thrown = new Error("connection pool exhausted at /srv/pulse/db.ts:88");
+    const plugin = runtime(async () => {
+      throw thrown;
+    });
+    const seen: { error: unknown; turn: TurnErrorContext }[] = [];
+
+    const result = await new SharedOSExecutor(kernel(), plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+      onTurnError: (error, turn) => void seen.push({ error, turn }),
+    }).execute(request());
+
+    // The error arrives whole. A host logging it gets the stack, which is the
+    // only thing that says where the throw came from -- the terminal code says
+    // a turn stopped and nothing more.
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.error).toBe(thrown);
+    expect(seen[0]?.turn).toEqual({ executionId: "execution-1", traceId: "trace-1" });
+
+    // And it arrives only there. The outcome is what it was before the hook
+    // existed, and nothing a thrower had in scope reaches the model or the
+    // event stream that becomes an execution record.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe("runtime_failed");
+    expect(result.status === "failed" ? result.error.message : undefined).toBe(
+      "The runtime plugin failed.",
+    );
+    expect(JSON.stringify(result)).not.toContain("connection pool exhausted");
+    expect(JSON.stringify(result)).not.toContain("/srv/pulse/db.ts");
+  });
+
+  it("does not report a cancelled turn as a turn error", async () => {
+    const plugin = runtime(async () => new Promise(() => undefined));
+    const input = request();
+    input.options = { timeoutMs: 5 };
+    const seen: unknown[] = [];
+
+    const result = await new SharedOSExecutor(kernel(), plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+      onTurnError: (error) => void seen.push(error),
+    }).execute(input);
+
+    // A deadline is the envelope's own decision, not a defect to diagnose. A
+    // hook that fired here would report every timed-out turn as a crash.
+    expect(result.status).toBe("cancelled");
+    expect(seen).toEqual([]);
+  });
+
+  it("does not let a turn-error sink replace the turn outcome", async () => {
+    const plugin = runtime(async () => {
+      throw new Error("the plugin failed");
+    });
+
+    const result = await new SharedOSExecutor(kernel(), plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+      onTurnError: () => {
+        throw new Error("the host's logger is down");
+      },
+    }).execute(request());
+
+    // Same rule as the event sink: a diagnostic that could turn one failure
+    // into a second one is a risk to install rather than a diagnostic.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe("runtime_failed");
+  });
+
   it("does not let an observational event sink replace the turn outcome", async () => {
     const result = await new SharedOSExecutor(kernel(), runtime(), {
       clock: () => now,
@@ -616,5 +686,106 @@ describe("RuntimeRegistry", () => {
 
     expect(() => new RuntimeRegistry([malformed])).toThrow("Runtime manifest");
     expect(() => new SharedOSExecutor(kernel(), malformed)).toThrow("Runtime manifest");
+  });
+});
+
+describe("what the envelope writes into audit", () => {
+  /** The stub kernel, plus the two optional recorders ADR 0023 added. */
+  function recordingKernel(options: { readonly throws?: boolean } = {}) {
+    const turnEnds: unknown[] = [];
+    const refusals: unknown[] = [];
+    return {
+      ...kernel(),
+      turnEnds,
+      refusals,
+      recordTurnEnd: vi.fn(async (_context: unknown, turn: unknown) => {
+        if (options.throws === true) {
+          throw new Error("audit store is unreachable");
+        }
+        turnEnds.push(turn);
+      }),
+      recordRefusedCall: vi.fn(async (_context: unknown, call: unknown) => {
+        if (options.throws === true) {
+          throw new Error("audit store is unreachable");
+        }
+        refusals.push(call);
+      }),
+    };
+  }
+
+  it("records a tool name the catalogue never offered, which reached no sink before", async () => {
+    const host = recordingKernel();
+    const plugin = runtime(async (_input, runtimeHost) => {
+      await runtimeHost.invokeTool({
+        id: "call-guessed",
+        tool: "files.delete",
+        arguments: {},
+        traceId: context.traceId,
+        requestedAt: now,
+      });
+      return { type: "complete", output: { ok: true } };
+    });
+
+    const result = await new SharedOSExecutor(host as never, plugin).execute(request());
+
+    expect(result.status).toBe("succeeded");
+    // Nothing reached the kernel, so nothing was audited: the clearest
+    // attempted violation the system produces was invisible to a host with an
+    // audit sink and no conformance record.
+    expect(host.refusals).toEqual([
+      {
+        callId: "call-guessed",
+        tool: "files.delete",
+        reasonCode: "tool_unavailable",
+        cause: "not_offered",
+      },
+    ]);
+  });
+
+  it("records the terminal once, whatever the ending", async () => {
+    const host = recordingKernel();
+
+    await new SharedOSExecutor(host as never, runtime()).execute(request());
+
+    expect(host.turnEnds).toEqual([{ executionId: "execution-1", status: "succeeded" }]);
+  });
+
+  it("says whether the envelope refused the turn or the runtime reported its own failure", async () => {
+    const host = recordingKernel();
+    const thrown = runtime(async () => {
+      throw new Error("the plugin stopped obeying the protocol");
+    });
+
+    await new SharedOSExecutor(host as never, thrown).execute(request());
+
+    // A record reader crediting enforcement must not credit a plugin's
+    // self-reported error, so the two endings are distinguishable.
+    expect(host.turnEnds).toEqual([
+      {
+        executionId: "execution-1",
+        status: "failed",
+        reasonCode: "runtime_failed",
+        endedBy: "envelope",
+      },
+    ]);
+  });
+
+  it("runs a turn against a kernel that offers neither recorder", async () => {
+    // Both are optional members of `TurnKernel`. A kernel without them still
+    // runs a turn, exactly as one without `recordEscalation` does.
+    const result = await new SharedOSExecutor(kernel() as never, runtime()).execute(request());
+
+    expect(result.status).toBe("succeeded");
+  });
+
+  it("does not let a failing audit write change the turn it was recording", async () => {
+    const host = recordingKernel({ throws: true });
+
+    const result = await new SharedOSExecutor(host as never, runtime()).execute(request());
+
+    // A dropped audit write matters -- that is what `onAuditError` is for -- but
+    // it must not turn a turn that completed into one that threw.
+    expect(result.status).toBe("succeeded");
+    expect(host.recordTurnEnd).toHaveBeenCalledTimes(1);
   });
 });

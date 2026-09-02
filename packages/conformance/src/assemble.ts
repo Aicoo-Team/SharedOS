@@ -299,7 +299,11 @@ function operations(
     records.push({
       at: event.at,
       kind,
-      source: "kernel",
+      // Read, not assumed. Both boundaries record here now, and taking this from
+      // the event rather than from the fact that an event exists is what keeps
+      // `refusedBy` a claim about who refused rather than about who happened to
+      // own an audit sink (ADR 0023).
+      source: event.metadata?.["source"] === "envelope" ? "envelope" : "kernel",
       outcome:
         event.outcome === "succeeded"
           ? "succeeded"
@@ -321,16 +325,23 @@ function operations(
 }
 
 /**
- * Tool calls the envelope terminated before the kernel saw them.
+ * Tool calls the envelope terminated that reached no audit sink.
  *
  * A runtime that guesses an unexposed tool name, or exceeds the hard tool-call
  * or step ceiling, never reaches `SharedOSKernel.invokeTool`. Those attempts are
  * real attempted violations and belong in the record.
  *
- * The refusal code comes from the `tool.completed` event, which is the only
- * record of a call audit never saw. It is read rather than inferred so the
- * record itself separates a guessed tool from a blown budget, without depending
- * on the runtime to report honestly about its own refusals.
+ * Since ADR 0023 the envelope records them through the kernel, so for a kernel
+ * that offers `recordRefusedCall` they arrive as ordinary audit events carrying
+ * `source: "envelope"` and this adds nothing -- the call id is already in
+ * `mediated` and is skipped. It remains for the kernel that does not: the
+ * recorder is an optional member of `TurnKernel`, so an older or partial kernel
+ * still runs a turn, and its record should still show what the envelope refused.
+ *
+ * The refusal code comes from the `tool.completed` event, which on that path is
+ * the only record of a call audit never saw. It is read rather than inferred so
+ * the record itself separates a guessed tool from a blown budget, without
+ * depending on the runtime to report honestly about its own refusals.
  */
 function envelopeOperations(
   mediated: readonly OperationRecord[],

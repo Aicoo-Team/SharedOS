@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type {
   AccessContext,
+  CapabilityRequest,
   CapabilityGrant,
   MessageEnvelope,
   ResourceRef,
@@ -10,8 +11,13 @@ import type {
 } from "@aicoo/sharedos-contracts";
 
 import type { AuditEvent, AuditSink } from "./audit.js";
-import type { GrantSource } from "./authority.js";
-import { CapabilityAuthorizer, InMemoryGrantUsageStore } from "./authorization.js";
+import type { GrantSource, LoadedPolicy, PolicySource } from "./authority.js";
+import {
+  CapabilityAuthorizer,
+  type HostCeiling,
+  InMemoryGrantUsageStore,
+} from "./authorization.js";
+import type { ProviderErrorContext, ProviderErrorReporter } from "./diagnostics.js";
 import { SharedOSKernel, type SharedOSKernelOptions } from "./kernel.js";
 import {
   addressPath,
@@ -19,7 +25,12 @@ import {
   type MessageTransport,
 } from "./message-service.js";
 import { MESSAGE_REQUEST_TOOL_DEFINITION, MESSAGE_REQUEST_TOOL_NAME } from "./message-tool.js";
-import type { ResourceInvocationRequest, ResourceProvider } from "./resource-registry.js";
+import { catalogHash, publishToolCatalog } from "./published-tool.js";
+import {
+  ResourceProviderRegistry,
+  type ResourceInvocationRequest,
+  type ResourceProvider,
+} from "./resource-registry.js";
 import {
   applyToolNamespaceUpdate,
   type ToolNamespaceSettingsStore,
@@ -206,6 +217,136 @@ describe("SharedOSKernel escalation", () => {
     const kernel = kernelWith([]);
 
     await expect(kernel.recordEscalation(context(), "   ")).rejects.toThrow(TypeError);
+  });
+
+  it("carries the capability a denial described into the escalation and its audit event", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (event) => void events.push(event) } });
+    const request = {
+      resource: { namespace: "files", path: ["Memory", "project-x"], owner: OWNER },
+      action: "read",
+    };
+
+    // The round trip ADR 0019 exists for: the authorizer says what was missing,
+    // and the host hands that back verbatim when it escalates the denial. No
+    // reconstruction from prose, and nothing here grants anything.
+    const denial = await kernel.authorize(context(), request);
+    expect(denial.reasonCode).toBe("no_matching_grant");
+
+    const escalation = await kernel.recordEscalation(context(), "alice should decide this", {
+      ...(denial.requiredAuthority === undefined
+        ? {}
+        : { requestedAuthority: denial.requiredAuthority }),
+    });
+
+    expect(escalation.requestedAuthority).toEqual(denial.requiredAuthority);
+    expect(escalation.status).toBe("pending");
+    // A first-class audit field, so a reviewer's queue is built from audit alone
+    // rather than from an untyped bag that happens to hold the right shape.
+    expect(events.at(-1)).toMatchObject({
+      type: "escalation.requested",
+      outcome: "escalated",
+      requestedAuthority: {
+        capabilities: [{ resource: request.resource, actions: ["read"], scope: "exact" }],
+      },
+    });
+  });
+
+  it("copies the capability request, so a later edit cannot rewrite the record", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (event) => void events.push(event) } });
+    const request = {
+      id: "capreq-1",
+      namespaceId: "world-alpha",
+      requester: ACTOR,
+      owner: OWNER,
+      capabilities: [
+        {
+          resource: { namespace: "files", path: ["Memory"], owner: OWNER },
+          actions: ["read"],
+          scope: "exact" as const,
+        },
+      ],
+      purpose: "prepare-update",
+      requestedAt: NOW,
+    };
+
+    const escalation = await kernel.recordEscalation(context(), "alice should decide", {
+      requestedAuthority: request,
+    });
+    request.capabilities[0]!.actions.push("delete");
+
+    // A reviewer's queue is built from what was recorded, so the record cannot
+    // be a live view of the caller's object. Guaranteed twice over today -- the
+    // schema parse copies, and so does the explicit clone -- and this pins the
+    // property rather than either mechanism, so removing one does not quietly
+    // leave the other as the only guard. Verified by mutation: dropping the
+    // clone alone does not fail this test, which is the point of saying so.
+    expect(escalation.requestedAuthority?.capabilities[0]?.actions).toEqual(["read"]);
+    expect(events.at(-1)).toMatchObject({
+      requestedAuthority: { capabilities: [{ actions: ["read"] }] },
+    });
+  });
+
+  it("mints the request from the trusted context, whatever the caller wrote about identity", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (event) => void events.push(event) } });
+    const denial = await kernel.authorize(context(), {
+      resource: { namespace: "files", path: ["Memory", "project-x"], owner: OWNER },
+      action: "read",
+    });
+    const described = denial.requiredAuthority;
+    if (described === undefined) {
+      throw new Error("expected the denial to describe what was missing");
+    }
+
+    const authored: CapabilityRequest = {
+      ...described,
+      id: "chosen-by-caller",
+      namespaceId: "world-other",
+      requester: RECEIVER,
+      owner: { kind: "human", userId: "user-mallory" },
+      requestedAt: "2020-01-01T00:00:00.000Z",
+    };
+    const escalation = await kernel.recordEscalation(context(), "alice should decide", {
+      requestedAuthority: authored,
+    });
+
+    // A request the caller authored would be a caller-chosen correlation for a
+    // decision the kernel made, so what it wrote about identity is discarded
+    // and minted again from the context (ADR 0019). It comes back as the same
+    // identifier the denial carried, because both were minted from one ask.
+    expect(escalation.requestedAuthority).toEqual(described);
+    expect(escalation.requestedAuthority).toMatchObject({
+      namespaceId: "world-alpha",
+      requester: ACTOR,
+      owner: OWNER,
+      requestedAt: NOW,
+    });
+    expect(escalation.requestedAuthority?.id).toMatch(/^capreq-[0-9a-f]{64}$/u);
+    expect(events.at(-1)?.requestedAuthority).toEqual(described);
+  });
+
+  it("refuses an escalation whose ask is not a valid request", async () => {
+    const kernel = kernelWith([]);
+
+    await expect(
+      kernel.recordEscalation(context(), "alice should decide", {
+        requestedAuthority: { capabilities: [], purpose: "prepare-update" },
+      }),
+    ).rejects.toThrow(TypeError);
+  });
+
+  it("records an escalation with no capability when nothing named one", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (event) => void events.push(event) } });
+
+    // A model-chosen escalation usually has only a sentence. The field stays
+    // absent rather than being filled with a guess.
+    const escalation = await kernel.recordEscalation(context(), "this needs a person");
+
+    expect(escalation.requestedAuthority).toBeUndefined();
+    expect(events.at(-1)).not.toHaveProperty("requestedAuthority");
   });
 });
 
@@ -715,9 +856,15 @@ describe("SharedOSKernel turn admission", () => {
       owner: OWNER,
     };
 
-    await expect(kernel.admitTurn(context(), RECEIVER)).resolves.toEqual({
+    // An admission denial describes the execution capability, which is the one
+    // a host would escalate: "this agent may not run for this owner" is exactly
+    // the ask a reviewer can answer by issuing a grant (ADR 0019).
+    await expect(kernel.admitTurn(context(), RECEIVER)).resolves.toMatchObject({
       allowed: false,
       reasonCode: "no_matching_grant",
+      requiredAuthority: {
+        capabilities: [{ resource, actions: ["invoke"], scope: "exact" }],
+      },
     });
 
     authority.serve([grant("grant-turn", resource, ["invoke"])]);
@@ -725,14 +872,29 @@ describe("SharedOSKernel turn admission", () => {
       allowed: true,
       matchedGrantId: "grant-turn",
     });
+    // A different agent: the description names that agent's execution path, not
+    // the one a grant was just served for. The field restates the request.
     await expect(
       kernel.admitTurn(context(), {
         kind: "agent",
         agentId: "agent-other",
       }),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       allowed: false,
       reasonCode: "no_matching_grant",
+      requiredAuthority: {
+        capabilities: [
+          {
+            resource: {
+              namespace: "sharedos.execution",
+              path: addressPath({ kind: "agent", agentId: "agent-other" }),
+              owner: OWNER,
+            },
+            actions: ["invoke"],
+            scope: "exact",
+          },
+        ],
+      },
     });
   });
 });
@@ -1518,5 +1680,990 @@ describe("SharedOSKernel messaging and audit", () => {
     });
     expect(invoke).toHaveBeenCalledOnce();
     expect(onAuditError).toHaveBeenCalledOnce();
+  });
+});
+
+describe("SharedOSKernel provider diagnostics", () => {
+  const SEARCH_GRANT = grant("grant-search", FILE_RESOURCE, ["search"]);
+
+  function reporter(): {
+    readonly onProviderError: ProviderErrorReporter;
+    readonly seen: { error: unknown; operation: ProviderErrorContext }[];
+  } {
+    const seen: { error: unknown; operation: ProviderErrorContext }[] = [];
+    return { onProviderError: (error, operation) => void seen.push({ error, operation }), seen };
+  }
+
+  it("hands a tool handler's throw to the host and puts none of it on the wire", async () => {
+    const thrown = new Error('postgres: relation "notes" does not exist');
+    const { onProviderError, seen } = reporter();
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([SEARCH_GRANT], {
+      onProviderError,
+      audit: { record: async (event) => void events.push(event) },
+    });
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      invoke: async () => {
+        throw thrown;
+      },
+    });
+
+    const result = await kernel.invokeTool(context(), toolCall());
+
+    // Whole and unwrapped: the stack is the only thing that says which provider
+    // failed and where, and a code cannot carry it.
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.error).toBe(thrown);
+    // `reasonCode` is what closes the loop -- it is exactly what the agent was
+    // told and exactly what audit recorded, so a host joins all three without
+    // correlating on timing.
+    expect(seen[0]?.operation).toEqual({
+      kind: "tool",
+      reasonCode: "tool_execution_failed",
+      traceId: "trace-1",
+      namespaceId: "world-alpha",
+      operationId: "call-1",
+      tool: FILE_TOOL.name,
+      resource: FILE_RESOURCE,
+      action: "search",
+    });
+    expect(result).toMatchObject({ status: "failed" });
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "tool_execution_failed",
+    );
+    // The join itself, which is the whole point of carrying `reasonCode`: the
+    // audit event for this operation records the same string the hook was
+    // given, so a host's log line and its audit trail meet without anyone
+    // correlating on timestamps.
+    expect(events.at(-1)).toMatchObject({
+      type: "tool.invoked",
+      reason: seen[0]?.operation.reasonCode,
+    });
+
+    // And nowhere else. Audit has never carried call data, and a thrown message
+    // may hold arguments, rows, or credentials the provider had in scope.
+    expect(JSON.stringify(result)).not.toContain("relation");
+    expect(JSON.stringify(events)).not.toContain("relation");
+  });
+
+  it("names the kind of port that failed, so one hook can be routed", async () => {
+    const { onProviderError, seen } = reporter();
+    const messagingResource: ResourceRef = {
+      namespace: "sharedos.messaging",
+      path: addressPath(RECEIVER),
+      owner: OWNER,
+    };
+    const resources = new ResourceProviderRegistry();
+    resources.register({
+      namespace: "files",
+      async invoke() {
+        throw new Error("blob store offline");
+      },
+    });
+    const kernel = kernelWith(
+      [
+        grant("grant-read", { ...FILE_RESOURCE, owner: OWNER }, ["read"]),
+        grant("grant-send", messagingResource, ["send"]),
+      ],
+      {
+        onProviderError,
+        resources,
+        messageTransport: {
+          async deliver() {
+            throw new Error("device unreachable");
+          },
+        },
+      },
+    );
+
+    await kernel.invokeResource(context(), {
+      operationId: "operation-1",
+      resource: { ...FILE_RESOURCE, owner: OWNER },
+      action: "read",
+    });
+    await kernel.sendMessage(context(), {
+      version: "1",
+      id: "message-1",
+      sender: ACTOR,
+      receiver: RECEIVER,
+      purpose: "prepare-update",
+      payload: { request: "Summarize the architecture" },
+      traceId: "trace-1",
+      createdAt: NOW,
+    });
+
+    // One hook, two ports, and the difference is data rather than a second
+    // option a host would have had to know to install. A fifth port added later
+    // reaches every host that installed this one.
+    expect(seen.map(({ operation }) => [operation.kind, operation.reasonCode])).toEqual([
+      ["resource", "resource_execution_failed"],
+      ["message", "message_delivery_failed"],
+    ]);
+    expect(seen[0]?.operation.operationId).toBe("operation-1");
+  });
+
+  it("carries a tool provider's own error under the catalogue failure it caused", async () => {
+    const thrown = new Error("notion: 401 unauthorized");
+    const { onProviderError, seen } = reporter();
+    const provider: ContextToolProvider = {
+      id: "notion",
+      async listTools() {
+        throw thrown;
+      },
+    };
+    const kernel = kernelWith([SEARCH_GRANT], { onProviderError, toolProviders: [provider] });
+
+    const result = await kernel.invokeTool(context(), toolCall());
+
+    expect(result.status).toBe("failed");
+    expect(seen[0]?.operation).toMatchObject({
+      kind: "tool_catalog",
+      reasonCode: "tool_catalog_unavailable",
+    });
+    // The kernel wraps a provider failure in one sentence every caller can read,
+    // which would have destroyed the only account of what actually broke. It is
+    // the `cause` instead, so the wrapper is what a caller matches on and the
+    // provider's error is what an operator reads.
+    expect((seen[0]?.error as Error).message).toMatch(/failed to resolve its catalog/u);
+    expect((seen[0]?.error as Error).cause).toBe(thrown);
+  });
+
+  it("is observational: a sink that throws changes nothing", async () => {
+    let called = false;
+    const kernel = kernelWith([SEARCH_GRANT], {
+      onProviderError: () => {
+        called = true;
+        throw new Error("the host's logger is down");
+      },
+    });
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      invoke: async () => {
+        throw new Error("provider failed");
+      },
+    });
+
+    // A diagnostic that can turn one failure into two is a liability, so the
+    // guarantee is that installing it is free.
+    await expect(kernel.invokeTool(context(), toolCall())).resolves.toMatchObject({
+      status: "failed",
+      error: { code: "tool_execution_failed" },
+    });
+    // Asserted, because without it this test passes with the hook entirely
+    // dead -- it would be restating the plain tool-failure case under a name
+    // that claims to be about the guard.
+    expect(called).toBe(true);
+  });
+
+  it("reports the synchronous tool callbacks that run before execution", async () => {
+    const parseThrow = new Error("argument parser blew up");
+    const requirementThrow = new Error("requirement resolver blew up");
+    const { onProviderError, seen } = reporter();
+    const kernel = kernelWith(
+      [
+        SEARCH_GRANT,
+        grant("grant-calendar", { namespace: "calendar", path: ["primary"] }, ["create"]),
+      ],
+      { onProviderError },
+    );
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: () => {
+        throw parseThrow;
+      },
+      invoke: successfulTool().invoke,
+    });
+    kernel.registerTool({
+      definition: CALENDAR_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      resolveRequirement: () => {
+        throw requirementThrow;
+      },
+      invoke: successfulTool(CALENDAR_TOOL).invoke,
+    });
+
+    const parsed = await kernel.invokeTool(context(), toolCall());
+    const resolved = await kernel.invokeTool(
+      context(),
+      toolCall({ id: "call-2", tool: CALENDAR_TOOL.name }),
+    );
+
+    // Both are the tool's own code, so both are `kind: "tool"`. Neither has a
+    // requirement to name yet -- the parser runs before one is resolved, and
+    // the resolver is what failed to produce one.
+    expect(seen[0]).toEqual({
+      error: parseThrow,
+      operation: {
+        kind: "tool",
+        reasonCode: "invalid_tool_arguments",
+        traceId: "trace-1",
+        namespaceId: "world-alpha",
+        operationId: "call-1",
+        tool: FILE_TOOL.name,
+      },
+    });
+    expect(seen[1]).toEqual({
+      error: requirementThrow,
+      operation: {
+        kind: "tool",
+        reasonCode: "tool_requirement_resolution_failed",
+        traceId: "trace-1",
+        namespaceId: "world-alpha",
+        operationId: "call-2",
+        tool: CALENDAR_TOOL.name,
+      },
+    });
+    // Traced to the consumer, not just to the context object: each reported
+    // code is the one the caller was actually answered with.
+    expect(parsed.status === "failed" ? parsed.error.code : undefined).toBe(
+      seen[0]?.operation.reasonCode,
+    );
+    expect(resolved.status === "failed" ? resolved.error.code : undefined).toBe(
+      seen[1]?.operation.reasonCode,
+    );
+  });
+
+  it("reports a message capability resolver that cannot decide, naming no call", async () => {
+    const thrown = new Error("recipient directory unreachable");
+    const { onProviderError, seen } = reporter();
+    const kernel = kernelWith([], {
+      onProviderError,
+      messageCapabilityResolver: {
+        resolve() {
+          throw thrown;
+        },
+      },
+    });
+
+    const result = await kernel.sendMessage(context(), {
+      version: "1",
+      id: "message-1",
+      sender: ACTOR,
+      receiver: RECEIVER,
+      purpose: "prepare-update",
+      payload: { request: "Summarize the architecture" },
+      traceId: "trace-1",
+      createdAt: NOW,
+    });
+
+    // A send outside a tool call has no call id and no tool, so the context
+    // carries only what the kernel actually knew.
+    expect(seen).toEqual([
+      {
+        error: thrown,
+        operation: {
+          kind: "message",
+          reasonCode: "message_requirement_resolution_failed",
+          traceId: "trace-1",
+          namespaceId: "world-alpha",
+        },
+      },
+    ]);
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "message_requirement_resolution_failed",
+    );
+  });
+
+  it("reports a router that cannot resolve the reply it was asked for", async () => {
+    const thrown = new Error("reply queue unreachable");
+    const { onProviderError, seen } = reporter();
+    const kernel = kernelWith(
+      [
+        grant(
+          "grant-send",
+          { namespace: "sharedos.messaging", path: addressPath(RECEIVER), owner: OWNER },
+          ["send"],
+        ),
+      ],
+      {
+        onProviderError,
+        messageTransport: {
+          async deliver(_context, envelope) {
+            return { messageId: envelope.id, status: "accepted" as const, timestamp: NOW };
+          },
+        },
+        messageRequestRouter: {
+          async resolveReply() {
+            throw thrown;
+          },
+        },
+      },
+    );
+
+    const result = await kernel.invokeTool(context(["messages"]), {
+      id: "call-1",
+      tool: MESSAGE_REQUEST_TOOL_NAME,
+      arguments: { recipient: RECEIVER, payload: { question: "status" } },
+      traceId: "trace-1",
+      requestedAt: NOW,
+    });
+
+    // The router is a host port, reached only through the request tool, so the
+    // report names the tool call it arrived under.
+    expect(seen).toEqual([
+      {
+        error: thrown,
+        operation: {
+          kind: "message",
+          reasonCode: "message_reply_resolution_failed",
+          traceId: "trace-1",
+          namespaceId: "world-alpha",
+          operationId: "call-1",
+          tool: MESSAGE_REQUEST_TOOL_NAME,
+        },
+      },
+    ]);
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "message_reply_resolution_failed",
+    );
+  });
+
+  it("is not awaited, so a sink that never returns cannot stall the operation", async () => {
+    const kernel = kernelWith([SEARCH_GRANT], {
+      onProviderError: () => {
+        // A host logger that hangs. If the kernel awaited this, the call below
+        // would never settle and the test would time out rather than fail.
+        void new Promise(() => undefined);
+      },
+    });
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      invoke: async () => {
+        throw new Error("provider failed");
+      },
+    });
+
+    await expect(kernel.invokeTool(context(), toolCall())).resolves.toMatchObject({
+      status: "failed",
+    });
+  });
+
+  it("leaves the authority ports it does not cover alone", async () => {
+    const { onProviderError, seen } = reporter();
+    const kernel = new SharedOSKernel({
+      onProviderError,
+      grantSource: {
+        async load() {
+          throw new Error("grant store unreachable");
+        },
+      },
+    });
+    kernel.registerTool(successfulTool());
+
+    // The negative half of the documented boundary. `GrantSource` and the other
+    // authority ports still discard their cause, and the docs say so; a later
+    // change that wired them without saying so would show up here.
+    await expect(kernel.invokeTool(context(), toolCall())).resolves.toMatchObject({
+      status: "denied",
+      error: { code: "authority_unavailable" },
+    });
+    expect(seen).toEqual([]);
+  });
+
+  it("does not report an operation the caller aborted", async () => {
+    const { onProviderError, seen } = reporter();
+    const controller = new AbortController();
+    const kernel = kernelWith([SEARCH_GRANT], { onProviderError });
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      invoke: async () => {
+        controller.abort(new Error("caller went away"));
+        throw new Error("aborted mid-flight");
+      },
+    });
+
+    // An abort is re-thrown ahead of the containment. A caller that stopped the
+    // work is not a defect, and a hook that fired here would report every
+    // cancelled call as a provider failure.
+    await expect(
+      kernel.invokeTool(context(), toolCall(), { signal: controller.signal }),
+    ).rejects.toThrow(/caller went away/u);
+    expect(seen).toEqual([]);
+  });
+});
+
+describe("SharedOSKernel host ceiling", () => {
+  const frozen: HostCeiling = {
+    narrow: () => ({
+      allowed: false,
+      reasonCode: "host_policy_denied",
+      metadata: { rule: "hr-freeze" },
+    }),
+  };
+
+  it("audits a policy refusal as its own reason, on a grant that existed", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([grant("grant-files", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (event) => void events.push(event) },
+      authorizer: new CapabilityAuthorizer({ hostCeiling: frozen }),
+    });
+    kernel.registerTool(successfulTool());
+
+    const result = await kernel.invokeTool(context(), toolCall());
+
+    // The wire stays coarse, deliberately: telling the model that policy
+    // overrode a grant would confirm the grant exists.
+    expect(result).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+
+    // Audit is where the real reason lives, and it is not `no_matching_grant`.
+    const decision = events.find(({ type }) => type === "authorization.checked");
+    expect(decision).toMatchObject({
+      outcome: "denied",
+      reason: "host_policy_denied",
+      grantId: "grant-files",
+      metadata: { rule: "hr-freeze" },
+    });
+    // Not an infrastructure denial: a deliberate decision the deployment made.
+    expect(decision?.metadata).not.toHaveProperty("failClosed");
+  });
+
+  it("says on every authority load whether a ceiling could refuse anything", async () => {
+    const withCeiling: AuditEvent[] = [];
+    const withoutCeiling: AuditEvent[] = [];
+
+    await kernelWith([], {
+      audit: { record: async (event) => void withCeiling.push(event) },
+      authorizer: new CapabilityAuthorizer({ hostCeiling: frozen }),
+    }).listTools(context());
+    await kernelWith([], {
+      audit: { record: async (event) => void withoutCeiling.push(event) },
+    }).listTools(context());
+
+    // Without this, an audit stream containing no policy denials cannot be told
+    // apart from one produced by a deployment that has no policy port at all.
+    expect(withCeiling.find(({ type }) => type === "authority.resolved")?.metadata).toMatchObject({
+      hostCeiling: "installed",
+    });
+    expect(
+      withoutCeiling.find(({ type }) => type === "authority.resolved")?.metadata,
+    ).toMatchObject({ hostCeiling: "absent" });
+  });
+
+  it.each([false, true])(
+    "does not let a ceiling stamp failClosed: %s onto its own refusal",
+    async (forged) => {
+      const events: AuditEvent[] = [];
+      const forging: HostCeiling = {
+        narrow: () => ({
+          allowed: false,
+          reasonCode: "host_policy_denied",
+          metadata: { failClosed: forged, consumed: true, rule: "hr-freeze" },
+        }),
+      };
+      const kernel = kernelWith([grant("grant-files", FILE_RESOURCE, ["search"])], {
+        audit: { record: async (event) => void events.push(event) },
+        authorizer: new CapabilityAuthorizer({ hostCeiling: forging }),
+      });
+      kernel.registerTool(successfulTool());
+
+      await kernel.invokeTool(context(), toolCall());
+
+      // `true` is the dangerous direction and the reason the key is stripped
+      // rather than overwritten: the kernel only ever *sets* `failClosed` on an
+      // infrastructure denial, so a ceiling could otherwise relabel a deliberate
+      // refusal as an outage and move it out of the policy counts.
+      expect(events.find(({ type }) => type === "authorization.checked")?.metadata).toEqual({
+        rule: "hr-freeze",
+        consumed: false,
+      });
+    },
+  );
+
+  it("fails an operation closed and audits it when the ceiling itself is broken", async () => {
+    const events: AuditEvent[] = [];
+    const broken: HostCeiling = {
+      narrow: () => {
+        throw new Error("policy table is malformed");
+      },
+    };
+    const kernel = kernelWith([grant("grant-files", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (event) => void events.push(event) },
+      authorizer: new CapabilityAuthorizer({ hostCeiling: broken }),
+    });
+    kernel.registerTool(successfulTool());
+
+    const result = await kernel.invokeTool(context(), toolCall());
+
+    // This is the path where one bad policy row denies every operation in the
+    // deployment, so the record has to say it was an outage and not a decision.
+    expect(result).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+    expect(events.find(({ type }) => type === "authorization.checked")).toMatchObject({
+      outcome: "denied",
+      reason: "host_policy_unavailable",
+      metadata: { failClosed: true },
+    });
+  });
+
+  it("says a ceiling is installed even on the turn where authority could not load", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        load: async () => {
+          throw new Error("grant store is unreachable");
+        },
+      },
+      audit: { record: async (event) => void events.push(event) },
+      authorizer: new CapabilityAuthorizer({ hostCeiling: frozen }),
+    });
+
+    await kernel.listTools(context());
+
+    // "Every authority load" includes the failed ones. A reader excluding
+    // fail-closed turns would otherwise lose the flag exactly when a deployment
+    // is misbehaving.
+    expect(events.find(({ type }) => type === "authority.resolved")).toMatchObject({
+      outcome: "failed",
+      metadata: { failClosed: true, hostCeiling: "installed" },
+    });
+  });
+
+  it("withholds a tool from the catalogue that the ceiling would refuse", async () => {
+    const kernel = kernelWith([grant("grant-files", FILE_RESOURCE, ["search"])], {
+      authorizer: new CapabilityAuthorizer({ hostCeiling: frozen }),
+    });
+    kernel.registerTool(successfulTool());
+
+    // Discovery and invocation agree, which is the property ADR 0016 requires
+    // and this ADR extends to policy.
+    await expect(kernel.listTools(context())).resolves.toEqual([]);
+  });
+});
+
+describe("SharedOSKernel host policy", () => {
+  /** Freezes whichever namespaces the turn's loaded policy names. */
+  const fromPolicy: HostCeiling<{ readonly frozen: readonly string[] }> = {
+    narrow: (decision, request, _context, policy) =>
+      policy !== undefined && policy.frozen.includes(request.resource.namespace)
+        ? { allowed: false, reasonCode: "host_policy_denied", metadata: { rule: "loaded-freeze" } }
+        : decision,
+  };
+
+  it("loads policy once at the turn boundary and decides every operation in the turn against it", async () => {
+    const events: AuditEvent[] = [];
+    let loads = 0;
+    const kernel = kernelWith([grant("grant-files", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (event) => void events.push(event) },
+      policySource: {
+        load: async () => {
+          loads += 1;
+          return { policy: { frozen: ["files"] }, version: "freeze-7" };
+        },
+      },
+      authorizer: new CapabilityAuthorizer({ hostCeiling: fromPolicy }),
+    });
+    kernel.registerTool(successfulTool());
+
+    const turn = await kernel.openTurnAuthority(context());
+    const listed = await kernel.listTools(context());
+    const result = await kernel.invokeTool(context(), toolCall());
+    turn.close();
+
+    // One load, however many decisions: the rule the grant set is held to.
+    expect(loads).toBe(1);
+    expect(turn.status).toBe("resolved");
+    expect(listed).toEqual([]);
+    expect(result).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+    expect(events.find(({ type }) => type === "authority.resolved")?.metadata).toMatchObject({
+      hostCeiling: "installed",
+      hostPolicy: "loaded",
+    });
+    // The listing names the policy state it was decided against, beside the
+    // authority it was decided against, and counts what that cost: one tool,
+    // by a decision rather than an outage.
+    const listing = events.find(({ type }) => type === "tool.catalog.listed");
+    expect(listing).toMatchObject({
+      outcome: "succeeded",
+      metadata: { hostPolicyVersion: "freeze-7", withheldCount: 1 },
+    });
+    expect(listing?.metadata).not.toHaveProperty("failClosed");
+    expect(events.filter(({ type }) => type === "authorization.checked").at(-1)).toMatchObject({
+      outcome: "denied",
+      reason: "host_policy_denied",
+      grantId: "grant-files",
+      metadata: { rule: "loaded-freeze" },
+    });
+  });
+
+  it("hands the source its own copy of the context, and the turn's signal", async () => {
+    const seenByCeiling: string[] = [];
+    let seenSignal: unknown;
+    const kernel = kernelWith([grant("grant-files", FILE_RESOURCE, ["search"])], {
+      policySource: {
+        load: async (access, signal) => {
+          seenSignal = signal;
+          // A source that edits the context it was handed edits a copy.
+          (access as { purpose: string }).purpose = "tampered";
+          return { policy: {}, version: "empty-1" };
+        },
+      },
+      authorizer: new CapabilityAuthorizer({
+        hostCeiling: {
+          narrow: (decision, _request, ceilingContext) => {
+            seenByCeiling.push(ceilingContext.purpose);
+            return decision;
+          },
+        },
+      }),
+    });
+
+    const turn = await kernel.openTurnAuthority(context());
+    await kernel.authorize(context(), { resource: FILE_RESOURCE, action: "search" });
+    turn.close();
+
+    expect(seenSignal).toBeInstanceOf(AbortSignal);
+    expect(seenByCeiling).toEqual(["prepare-update"]);
+  });
+
+  it("fails every policy decision in the turn closed when the policy could not be loaded, and says so once", async () => {
+    const events: AuditEvent[] = [];
+    const reports: ProviderErrorContext[] = [];
+    let loads = 0;
+    let consulted = 0;
+    const kernel = kernelWith([grant("grant-files", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (event) => void events.push(event) },
+      onProviderError: (_error, operation) => void reports.push(operation),
+      policySource: {
+        load: async () => {
+          loads += 1;
+          throw new Error("policy table is unreachable");
+        },
+      },
+      authorizer: new CapabilityAuthorizer({
+        hostCeiling: {
+          narrow: (decision) => {
+            consulted += 1;
+            return decision;
+          },
+        },
+      }),
+    });
+    kernel.registerTool(successfulTool());
+
+    const turn = await kernel.openTurnAuthority(context());
+    const first = await kernel.invokeTool(context(), toolCall());
+    const second = await kernel.invokeTool(context(), toolCall());
+    const listed = await kernel.listTools(context());
+    turn.close();
+
+    // Authority itself loaded. It is the policy the turn cannot decide against.
+    expect(turn.status).toBe("resolved");
+    for (const result of [first, second]) {
+      expect(result).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+    }
+    // Held for the turn like an unavailable grant source: not retried per
+    // decision, reported once, and the ceiling is never asked to decide
+    // without it.
+    expect(loads).toBe(1);
+    expect(consulted).toBe(0);
+    expect(reports).toEqual([
+      {
+        kind: "policy",
+        reasonCode: "host_policy_unavailable",
+        traceId: "trace-1",
+        namespaceId: "world-alpha",
+      },
+    ]);
+    expect(events.find(({ type }) => type === "authority.resolved")?.metadata).toMatchObject({
+      hostCeiling: "installed",
+      hostPolicy: "unavailable",
+    });
+    const decisions = events.filter(({ type }) => type === "authorization.checked");
+    expect(decisions.length).toBeGreaterThan(0);
+    for (const decision of decisions) {
+      // An outage, not a decision: the record says so, and the bucket is the
+      // one a broken ceiling already uses.
+      expect(decision).toMatchObject({
+        outcome: "denied",
+        reason: "host_policy_unavailable",
+        metadata: { failClosed: true },
+      });
+    }
+    // The catalogue was computed, and empty, and the record says why the
+    // difference matters: what it withheld, it withheld by an outage, and it
+    // has no policy version to name.
+    expect(listed).toEqual([]);
+    const listing = events.find(({ type }) => type === "tool.catalog.listed");
+    expect(listing).toMatchObject({
+      outcome: "succeeded",
+      metadata: { withheldCount: 1, failClosed: true },
+    });
+    expect(listing?.metadata).not.toHaveProperty("hostPolicyVersion");
+  });
+
+  it("treats a source that answered without naming its version as an outage", async () => {
+    const events: AuditEvent[] = [];
+    const errors: unknown[] = [];
+    const reports: ProviderErrorContext[] = [];
+    const kernel = kernelWith([grant("grant-files", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (event) => void events.push(event) },
+      onProviderError: (error, operation) => {
+        errors.push(error);
+        reports.push(operation);
+      },
+      // The pre-`LoadedPolicy` shape: a bare policy, nothing to record it by.
+      policySource: { load: async () => ({ frozen: [] }) as unknown as LoadedPolicy },
+      authorizer: new CapabilityAuthorizer({ hostCeiling: { narrow: (decision) => decision } }),
+    });
+
+    await expect(
+      kernel.authorize(context(), { resource: FILE_RESOURCE, action: "search" }),
+    ).resolves.toMatchObject({ allowed: false, reasonCode: "host_policy_unavailable" });
+
+    // Nothing could pin a decision to the policy it was made against, so
+    // nothing was decided against it -- and the host is told, once, in the
+    // shape a throw would have been.
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toBeInstanceOf(TypeError);
+    expect(reports).toEqual([
+      {
+        kind: "policy",
+        reasonCode: "host_policy_unavailable",
+        traceId: "trace-1",
+        namespaceId: "world-alpha",
+      },
+    ]);
+    expect(events.find(({ type }) => type === "authority.resolved")?.metadata).toMatchObject({
+      hostPolicy: "unavailable",
+    });
+  });
+
+  it("records what the policy load came to even on a turn where authority could not load", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        load: async () => {
+          throw new Error("grant store is unreachable");
+        },
+      },
+      policySource: { load: async () => ({ policy: { frozen: [] }, version: "freeze-0" }) },
+      audit: { record: async (event) => void events.push(event) },
+    });
+
+    await kernel.listTools(context());
+
+    // The two loads are independent, and the record says what each did.
+    expect(events.find(({ type }) => type === "authority.resolved")).toMatchObject({
+      outcome: "failed",
+      metadata: { failClosed: true, hostCeiling: "absent", hostPolicy: "loaded" },
+    });
+  });
+
+  it("says no policy was loaded when no source is installed", async () => {
+    const events: AuditEvent[] = [];
+
+    await kernelWith([], { audit: { record: async (event) => void events.push(event) } }).listTools(
+      context(),
+    );
+
+    // `absent` is "no source", not "no policy": a ceiling may close over its
+    // own, and the record beside it says whether one is installed.
+    expect(events.find(({ type }) => type === "authority.resolved")?.metadata).toMatchObject({
+      hostCeiling: "absent",
+      hostPolicy: "absent",
+    });
+  });
+
+  it("re-throws a cancelled load rather than reporting it as an outage", async () => {
+    const reports: ProviderErrorContext[] = [];
+    const controller = new AbortController();
+    const kernel = kernelWith([], {
+      onProviderError: (_error, operation) => void reports.push(operation),
+      policySource: {
+        load: async (_access, signal) => {
+          controller.abort(new Error("caller went away"));
+          throw signal.reason;
+        },
+      },
+    });
+
+    await expect(
+      kernel.openTurnAuthority(context(), { signal: controller.signal }),
+    ).rejects.toThrow(/caller went away/u);
+    expect(reports).toEqual([]);
+  });
+
+  it("refuses a policy source that cannot load", () => {
+    expect(
+      () =>
+        new SharedOSKernel({
+          grantSource: new TestGrantSource(),
+          policySource: {} as PolicySource,
+        }),
+    ).toThrow(TypeError);
+  });
+});
+
+describe("SharedOSKernel audit routing", () => {
+  it("names the boundary and the cause on every tool refusal it records", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (e) => void events.push(e) } });
+    kernel.registerTool(successfulTool());
+
+    // Not registered, and the wire code cannot say which of the three this is.
+    await kernel.invokeTool(context(), { ...toolCall(), tool: "files.invented" });
+    // Registered, granted, but its namespace is off for this context.
+    await kernel.invokeTool({ ...context(), enabledToolNamespaces: [] }, toolCall());
+    // Registered and enabled, but no grant makes it discoverable.
+    await kernel.invokeTool(context(), toolCall());
+
+    const invoked = events.filter(({ type }) => type === "tool.invoked");
+    expect(invoked.map(({ reason }) => reason)).toEqual([
+      "tool_unavailable",
+      "tool_unavailable",
+      "tool_unavailable",
+    ]);
+    // One code on the wire, three situations in the trail. `errors.md` has
+    // promised this disambiguation all along and delivered it for one of them.
+    expect(invoked.map(({ metadata }) => metadata?.["cause"])).toEqual([
+      "not_registered",
+      "namespace_disabled",
+      "no_matching_grant",
+    ]);
+    expect(invoked.every(({ metadata }) => metadata?.["source"] === "kernel")).toBe(true);
+  });
+
+  it("records a listing by what it was computed from, not by the names it returned or withheld", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (e) => void events.push(e) },
+    });
+    kernel.registerTool(successfulTool(CALENDAR_TOOL));
+    kernel.registerTool(successfulTool());
+
+    const visible = await kernel.listTools(context(["files"]));
+
+    // The file tool shown; the calendar tool withheld by the caller's own
+    // filter. The record carries the catalogue as an identifier, the filter,
+    // and a count -- and, above metadata, the authority it was decided against.
+    expect(visible).toEqual([FILE_TOOL]);
+    const listed = events.filter(({ type }) => type === "tool.catalog.listed");
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?.authorityHash).toBe(
+      events.find(({ type }) => type === "authority.resolved")?.authorityHash,
+    );
+    expect(listed[0]?.metadata).toEqual({
+      catalogHash: await catalogHash(publishToolCatalog([FILE_TOOL])),
+      enabledNamespaces: ["files"],
+      withheldCount: 1,
+      source: "kernel",
+    });
+  });
+
+  it("records the catalogue under the identifier a harness is handed for it", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith(
+      [
+        grant("grant-search", FILE_RESOURCE, ["search"]),
+        grant("grant-calendar", CALENDAR_TOOL.requiredCapability.resource, ["create"]),
+      ],
+      { audit: { record: async (e) => void events.push(e) } },
+    );
+    kernel.registerTool(successfulTool(CALENDAR_TOOL));
+    kernel.registerTool(successfulTool());
+
+    const published = await kernel.listPublishedTools(context(), { executionId: "exec-1" });
+
+    // One catalogue, one identifier, wherever it is read: the manifest a
+    // harness reports and the audit record the kernel wrote match on it, and
+    // registration order is not part of it.
+    expect(published.tools.map(({ name }) => name)).toEqual([CALENDAR_TOOL.name, FILE_TOOL.name]);
+    expect(events.find(({ type }) => type === "tool.catalog.listed")?.metadata).toMatchObject({
+      catalogHash: published.catalogHash,
+      enabledNamespaces: ["files", "calendar"],
+      withheldCount: 0,
+    });
+  });
+
+  it("records a refused listing with the same identifiers and an empty catalogue", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        load: async () => {
+          throw new Error("grant store is unreachable");
+        },
+      },
+      audit: { record: async (e) => void events.push(e) },
+    });
+
+    await expect(kernel.listTools(context(["files"]))).resolves.toEqual([]);
+
+    expect(events.find(({ type }) => type === "tool.catalog.listed")).toMatchObject({
+      outcome: "denied",
+      reason: "authority_unavailable",
+      metadata: {
+        catalogHash: await catalogHash([]),
+        enabledNamespaces: ["files"],
+        withheldCount: 0,
+        failClosed: true,
+        authority: "grant_source_failed",
+        source: "kernel",
+      },
+    });
+  });
+
+  it("records how a turn ended, once, from the boundary that ended it", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (e) => void events.push(e) } });
+
+    await kernel.recordTurnEnd(context(), {
+      executionId: "exec-1",
+      status: "failed",
+      reasonCode: "runtime_failed",
+      endedBy: "envelope",
+    });
+
+    expect(events).toEqual([
+      expect.objectContaining({
+        type: "turn.ended",
+        outcome: "failed",
+        reason: "runtime_failed",
+        operationId: "exec-1",
+        metadata: { source: "envelope", endedBy: "envelope" },
+      }),
+    ]);
+  });
+
+  it("records a cancelled turn as failed with its own reason, adding no outcome", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (e) => void events.push(e) } });
+
+    await kernel.recordTurnEnd(context(), {
+      executionId: "exec-2",
+      status: "cancelled",
+      reasonCode: "turn_cancelled",
+    });
+
+    // `AuditOutcome` is a compatibility surface every host persists against, so
+    // a deadline is `failed` with a reason rather than a sixth value.
+    expect(events[0]).toMatchObject({ type: "turn.ended", outcome: "failed" });
+    expect(events[0]?.reason).toBe("turn_cancelled");
+  });
+
+  it("records a call the envelope refused as the attempted call it was", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (e) => void events.push(e) } });
+
+    await kernel.recordRefusedCall(context(), {
+      callId: "call-9",
+      tool: "files.delete",
+      reasonCode: "tool_unavailable",
+      cause: "not_offered",
+    });
+
+    // An agent naming a tool it was never offered is the clearest attempted
+    // violation the system produces, and it reached no audit sink at all.
+    expect(events[0]).toMatchObject({
+      type: "tool.invoked",
+      outcome: "denied",
+      reason: "tool_unavailable",
+      operationId: "call-9",
+      tool: "files.delete",
+      metadata: { source: "envelope", cause: "not_offered" },
+    });
   });
 });

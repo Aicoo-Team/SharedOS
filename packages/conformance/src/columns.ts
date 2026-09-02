@@ -171,12 +171,23 @@ export const ADVERSARY_COLUMN: RuntimeColumn = Object.freeze({
  *   the driver names the out-of-budget step itself: the attempt is issued and
  *   graded, and marked `driverIssued` so the cell reads `pass (driver)` rather
  *   than filing the driver's reach under the harness's name.
+ *
+ * Two whole rows are declared unsupported rather than narrowed attempt by
+ * attempt, and for one reason between them: an ungranted `escalate` and a throw
+ * out of the turn are both outcomes, and this column does not own the outcome.
+ * `StandardRuntime` does, and it produces neither on request.
  */
 export function harnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
   if (move.kind === "escalation_refused") {
     return {
       unsupported:
         "the driver inside the standard loop honours `escalate` only when the catalogue offers it; an ask on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn. Only a plugin that owns its outcome can return an ungranted `escalate`",
+    };
+  }
+  if (move.kind === "runtime_crashed") {
+    return {
+      unsupported:
+        "a scripted harness returns frames and has no way to declare that it throws out of its turn. Making one throw would test the adapter's own error handling rather than what the envelope does with a plugin that stops obeying the protocol; only a plugin the column constructs can be made to throw on purpose",
     };
   }
   const unreachable = new Map<string, string>();
@@ -699,12 +710,25 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
  * driven column the turn never continues, and here SharedOS stops answering and
  * lets the harness wind down, with the harness's own ending kept in the
  * record's metadata.
+ *
+ * Two whole rows are declared unsupported rather than narrowed attempt by
+ * attempt: an ungranted `escalate` and a throw out of `run` are outcomes rather
+ * than calls, and this column returns neither. The harness on the far side of
+ * the bridge has no outcome of its own to return, and its own crash arrives as
+ * a lost connection, which is a different event from the plugin SharedOS called
+ * throwing.
  */
 export function mcpHarnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
   if (move.kind === "escalation_refused") {
     return {
       unsupported:
         "the MCP runtime settles `escalate` only from a call to the catalogued affordance, which an ungranted turn does not serve; the harness has no outcome of its own to return",
+    };
+  }
+  if (move.kind === "runtime_crashed") {
+    return {
+      unsupported:
+        "the harness runs on the far side of a bridge, so its own crash is a lost connection rather than a throw out of `run`. This row is about what the envelope does when the plugin it called throws, which is a shape only an in-process plugin can produce",
     };
   }
   const unreachable = new Map<string, string>();
@@ -825,6 +849,13 @@ export interface ModelColumnOptions {
  * variant exists now and the affordance is catalogued, so the model chooses it
  * or does not, and the row is graded either way.
  *
+ * Two whole rows stay unsupported for the reason escalation stopped being one:
+ * they are claims about a *terminal outcome* the seat produces, and this seat
+ * returns a decision rather than an outcome. `AgentTurnDecision` gained an
+ * escalate variant, so that row is graded; there is no decision that means throw
+ * out of the turn, and inventing one would be adding a way for a driver to crash
+ * a turn in order to test what happens when one does.
+ *
  * What is deliberately absent is `uncatalogued`. Nothing between this model and
  * the envelope filters a tool name, so an invented one is issued and refused
  * rather than being stopped by a client's own router. Declaring it unreachable
@@ -835,6 +866,12 @@ export function modelLimits(move: AttackMove, condition: ConformanceCondition): 
     return {
       unsupported:
         "the model driver honours `escalate` only when the catalogue offers it; an ask the model makes on an ungranted turn is passed through as an ordinary call and refused, and the loop completes the turn",
+    };
+  }
+  if (move.kind === "runtime_crashed") {
+    return {
+      unsupported:
+        "a model driver returns a decision and `StandardRuntime` turns it into an outcome; neither a transcript nor a live model can express throwing out of the turn. Only a plugin that owns its outcome can, so the row is run where that is true and declared here rather than approximated",
     };
   }
   const unreachable = new Map<string, string>();

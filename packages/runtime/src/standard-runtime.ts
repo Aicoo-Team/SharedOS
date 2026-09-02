@@ -15,11 +15,13 @@ import {
 
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
 import { escalationReason } from "./escalation.js";
-import type {
-  RuntimeHost,
-  RuntimePlugin,
-  RuntimeTurnRequest,
-  RuntimeVisibleContext,
+import {
+  reportTurnError,
+  type RuntimeHost,
+  type RuntimePlugin,
+  type RuntimeTurnRequest,
+  type RuntimeVisibleContext,
+  type TurnErrorReporter,
 } from "./runtime-plugin.js";
 
 export type AgentTurnInput =
@@ -97,6 +99,15 @@ export interface AgentTurnDriver {
 
 export interface StandardRuntimeOptions {
   closeTimeoutMs?: number;
+  /**
+   * Notification for a throw the loop contained rather than propagated.
+   *
+   * A driver that throws ends the turn `driver_failed`, which is a cooperative
+   * outcome the envelope never sees as an exception -- so the executor's own
+   * hook cannot report it and this one exists. Same contract either way; see
+   * {@link TurnErrorReporter}.
+   */
+  onTurnError?: TurnErrorReporter;
 }
 
 /** Kept equal to the synchronized package version by the release gate. */
@@ -117,9 +128,11 @@ export class StandardRuntime implements RuntimePlugin {
   readonly manifest = STANDARD_RUNTIME_MANIFEST;
   readonly #driver: AgentTurnDriver;
   readonly #closeTimeoutMs: number;
+  readonly #onTurnError: TurnErrorReporter | undefined;
 
   constructor(driver: AgentTurnDriver, options: StandardRuntimeOptions = {}) {
     this.#driver = driver;
+    this.#onTurnError = options.onTurnError;
     this.#closeTimeoutMs = options.closeTimeoutMs ?? 1_000;
     if (!Number.isInteger(this.#closeTimeoutMs) || this.#closeTimeoutMs <= 0) {
       throw new TypeError("closeTimeoutMs must be a positive integer");
@@ -205,6 +218,14 @@ export class StandardRuntime implements RuntimePlugin {
         throw error;
       }
       closeOutcome = "failed";
+      // `driver_failed` is the whole of what the turn is told, and it says a
+      // driver stopped rather than why. The error goes to the host's own sink
+      // and no further -- the outcome below is unchanged, and a thrown message
+      // may carry anything the driver had in scope.
+      reportTurnError(this.#onTurnError, error, {
+        executionId: request.executionId,
+        traceId: request.context.traceId,
+      });
       return {
         type: "fail",
         error: protocolError("driver_failed", "The agent turn driver failed.", true),

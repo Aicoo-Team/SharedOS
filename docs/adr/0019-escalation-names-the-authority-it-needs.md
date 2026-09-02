@@ -1,6 +1,6 @@
 # ADR 0019: An escalation names the authority it needs
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-31
 - Extends: `docs/adr/0011-escalation-terminal-outcome.md`
 
@@ -52,10 +52,18 @@ path.
 
 ### A denial may describe the authority that would have satisfied it
 
-`AuthorizationDecision` gains an optional `requiredCapability: CapabilityRequest`,
+`AuthorizationDecision` gains an optional `requiredAuthority: CapabilityRequest`,
 populated only on a `no_matching_grant` denial, where the authorizer already
 holds every field it needs: the request's resource and action, and the context's
 owner, namespace, purpose, and instant.
+
+**On invocation, not on discovery.** `authorize` describes; `canDiscover` does
+not. The requirement a discovery check is made against is the tool's _declared
+ceiling_, which ADR 0012 allows to be broader than the argument-selected
+resource of any particular call — so a description built there would ask a reviewer to issue more authority
+than the operation needed, and would produce one request per hidden tool on
+every catalogue build. The denial worth escalating is the one where an agent
+tried to do something.
 
 It is a description, not an offer. It grants nothing, it is not accepted as
 input anywhere, and the denial is still a denial — `allowed` stays `false` and
@@ -78,8 +86,11 @@ the remedy when it is not.
 
 ### An escalation may carry it
 
-`Escalation` gains an optional `request: CapabilityRequest`, and
-`recordEscalation` accepts one alongside the reason. The `escalation.requested`
+`Escalation` gains an optional `requestedAuthority: CapabilityRequest`, and
+`recordEscalation` accepts one alongside the reason. The two names are one
+concept in two roles, and both end in the noun this repository uses for what
+grants confer: a denial says what was _required_, an escalation _requests_ it,
+and `{ requestedAuthority: denial.requiredAuthority }` is the whole hop. The `escalation.requested`
 audit event records it.
 
 `CapabilityRequest` carries a required `id`, `requester` and `requestedAt`, and
@@ -89,10 +100,19 @@ kernel made. They come from the trusted context and nothing else: `requester` is
 `context.actor`, `owner` is `context.owner`, and `requestedAt` is `context.now`.
 
 `id` is **derived deterministically** from those fields together with the
-resource and action, not generated randomly. A random UUID would make a
-conformance cell that cannot state what it observed: the row would have to
-either ignore the identifier or re-derive it, and a manifest that ignores a
-field is a manifest that does not check it.
+resource and action — and any constraints — not generated randomly. A random
+UUID would make a conformance cell that cannot state what it observed: the row
+would have to either ignore the identifier or re-derive it, and a manifest that
+ignores a field is a manifest that does not check it. `requestedAt` is not part
+of it, so one missing authority keeps one identifier across turns.
+
+`recordEscalation` mints the same way. What a caller passes as
+`requestedAuthority` is read as the ask — capabilities, purpose, constraints,
+metadata — and the identity fields it carries are discarded and minted again
+from the context, which is why the hop above round-trips: the denial's
+description and the escalation's request are the same ask, and so the same
+identifier. `mintCapabilityRequest` is exported for a host assembling a consent
+request of its own.
 
 The reviewer is still assumed, the status is still always `pending`, and nothing
 inside SharedOS advances it. Resolution is unchanged and still host-owned: the
@@ -105,6 +125,37 @@ policy marks as askable produce the same `Escalation`, in the same terminal
 state, resolved the same way. The kernel never decides to escalate on its own —
 it describes, and the host chooses — so there is exactly one place a turn can
 end this way and exactly one queue a reviewer reads.
+
+### The protocol version does not move, and that is a decision
+
+Both fields are optional and both are additive for a writer. Neither is additive
+for a reader. The contract schemas are `.strict()`, so a consumer built against
+the current version rejects an object carrying an unknown key rather than
+ignoring it: an older client parsing a newer host's `ExecutionResult` fails on
+`escalation.requestedAuthority`, and one parsing an `AuthorizationDecision`
+fails on
+`requiredAuthority`. "Additive" is a statement about writers that this
+repository's own strictness makes false for everyone else.
+
+The first draft of this ADR concluded that the version therefore moves with the
+fields. It does not, and the reason is what `ProtocolVersionSchema` actually is:
+one `z.literal("1")` shared by `ExecutionRequest`, `ExecutionEvent`,
+`ExecutionResult`, `MessageEnvelope`, and `RuntimeManifest`. Moving it re-stamps
+every protocol object in the system — including the four that did not change —
+to signal one optional field on `Escalation`. A reader re-pinning because
+`MessageEnvelope` says `"2"` would find nothing about a message had changed,
+which is a version number that has stopped carrying information.
+
+So the break is documented rather than encoded, for this release. `0.x` is where
+that is affordable: the changelog names it under breaking changes, and the
+version moves at the next release that has its own reason to move, carrying this
+with it. `docs/open-items.md` holds the row until then.
+
+The failure mode being accepted is explicit: a host on a newer SharedOS talking
+to a client on an older one gets a strict-schema rejection reported as a
+malformed response, with no version difference to explain it. That is worse
+diagnostics than a version bump would give and better than a version number that
+means nothing.
 
 ## Consequences
 
@@ -122,20 +173,15 @@ end this way and exactly one queue a reviewer reads.
   denial names the capability that denial described. It lands with the
   implementation — ADR 0013's gate covers every declared row, so a row added
   ahead of the code would have to be declared `notImplemented` with a reason.
+- Every consumer of `ExecutionResult` and `AuthorizationDecision` upgrades in
+  step with any host that writes these fields. Nothing in the protocol version
+  says so, by the decision above, so the changelog and this ADR are the only
+  notice a reader gets.
 - `CapabilityRequest` stops being a type with no port. It is still not authority
   and still not accepted as input. Its row in `docs/open-items.md` — "define a
   port or delete it" — is closed by **the implementing PR**, not by this ADR: an
   open item is closed by the code that closes it, not by a decision to write
   that code.
-
-### Protocol version
-
-The field is additive and optional for a writer, and still breaking for a
-reader: every schema here is `.strict()`, so a reader on the previous version
-rejects an envelope carrying the unknown key rather than ignoring it. **The
-protocol version is bumped**, on the rule that what decides a bump is whether an
-existing peer can still parse what it receives, not whether the author added or
-removed a field.
 
 ### Open
 

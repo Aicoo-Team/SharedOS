@@ -608,6 +608,34 @@ describe("TurnExecutor", () => {
     expect(result.status).toBe("succeeded");
     expect(spans.map((span) => span.name)).toContain(SPAN.TURN);
   });
+
+  it("forwards a turn-error sink to the executor it fronts", async () => {
+    // The same defect the span sink had: the facade forwards its options one by
+    // one, so a new one is dropped silently unless it is added here too, and a
+    // host installing a diagnostic on the facade would be told nothing by a
+    // hook that never fires.
+    const thrown = new Error("the driver's session store is down");
+    const seen: unknown[] = [];
+    const driver: AgentTurnDriver = {
+      open: async () => {
+        throw thrown;
+      },
+    };
+
+    const result = await new TurnExecutor(kernel(), driver, {
+      clock: () => now,
+      createId: () => "event-1",
+      onTurnError: (error) => void seen.push(error),
+    }).execute(request());
+
+    // The loop caught this one, not the envelope: a driver's throw becomes the
+    // cooperative `driver_failed` outcome and never reaches the executor's
+    // catch. So the facade has to forward the sink to both, and one hook covers
+    // both containment sites.
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe("driver_failed");
+    expect(seen).toEqual([thrown]);
+  });
 });
 
 describe("turn-scoped authority", () => {

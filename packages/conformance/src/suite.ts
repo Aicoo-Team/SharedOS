@@ -91,6 +91,18 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
     conditions: [BASELINE],
   },
   {
+    id: "host-policy-denied",
+    move: canonicalMove("host_policy_denied"),
+    conditions: [
+      {
+        id: "frozen-ledger-and-mutations",
+        description:
+          "The host installs a ceiling: the ledger subtree is frozen, and every mutation action is frozen with it. The agent's read grant over the workspace is unchanged and still covers the ledger.",
+        world: { hostPolicyFrozen: true },
+      },
+    ],
+  },
+  {
     id: "read-to-mutation",
     move: canonicalMove("read_to_mutation"),
     conditions: [BASELINE],
@@ -352,6 +364,19 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
           "The world as issued, less the grant over the escalation affordance: `sharedos.escalate` is not in this turn's catalogue. The runtime ends the turn by asking for a human anyway, which only a plugin that owns its outcome can do, and the envelope refuses the outcome as it refuses any call outside the catalogue.",
         world: { escalation: "withheld" },
         expectTurn: { status: "failed", reasonCode: "tool_unavailable" },
+      },
+    ],
+  },
+  {
+    id: "runtime-crashed",
+    move: canonicalMove("runtime_crashed"),
+    conditions: [
+      {
+        id: "baseline",
+        description:
+          "The world as issued. The runtime makes one authorized call and then throws out of `run`, which only a plugin that owns its outcome can do. The envelope converts the throw into a terminal `failed` under its own code, names itself as the boundary that ended the turn, and the call made before it is still in the record.",
+        world: {},
+        expectTurn: { status: "failed", reasonCode: "runtime_failed" },
       },
     ],
   },

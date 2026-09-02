@@ -133,11 +133,11 @@ The contract is narrow on purpose:
   `access.namespaceId`; anything else is treated as an unavailable source, not
   as partial authority;
 - **do not apply policy here.** Return the grants the actor holds. Product or
-  organization policy that narrows what those grants may do is the host
-  ceiling, a step of the kernel's authorization algorithm (see
-  `docs/security/permission-model.md`); withholding a grant instead makes the
-  kernel record `no_matching_grant` for a call a grant did authorize, which
-  misattributes a policy refusal as absent authority;
+  organization policy that narrows what those grants may do belongs in a
+  `HostCeiling` (below); withholding a grant instead makes the kernel record
+  `no_matching_grant` for a call a grant did authorize, which is a false
+  statement in your own audit trail and the reason denial counts cannot be
+  trusted without this rule;
 - return material that satisfies `CapabilityGrantSchema`, including signature or
   revocation verification the host requires;
 - throw when the store is unreachable. SharedOS converts that into a fail-closed
@@ -146,6 +146,124 @@ The contract is narrow on purpose:
 A host that issues delegated grants also installs a `DelegationChainResolver`
 so ancestors can be re-resolved; see
 `docs/adr/0008-delegation-chain-validation.md`.
+
+That rule holds because `AuthoritySnapshot.hash` identifies **authority held**,
+not authority usable. A request-dependent filter in the source would make the
+snapshot depend on the call, which is the property ADR 0010 relies on for one
+snapshot per turn. The trade is worth naming: a snapshot now lists grants a
+ceiling may refuse, so an auditor reading a snapshot alone overstates what the
+turn could do, and must read the decisions too.
+
+#### The host ceiling
+
+Judgment a grant cannot express — a relationship model, a content-sensitivity
+check, an org-wide freeze — goes here:
+
+```ts
+const kernel = new SharedOSKernel({
+  grantSource: stores,
+  authorizer: new CapabilityAuthorizer({
+    usageStore: stores,
+    hostCeiling: {
+      // Synchronous by contract: no network call, no database read, no model
+      // call on the authorization path. Load policy into memory and refresh it
+      // on your own schedule.
+      narrow: (decision, request) =>
+        frozenNamespaces.has(request.resource.namespace)
+          ? { allowed: false, reasonCode: "host_policy_denied", metadata: { rule: "freeze" } }
+          : decision,
+    },
+    // The ceiling lives here, not on the kernel, so the kernel's own
+    // `onProviderError` cannot reach it. Pass the same function to both.
+    onProviderError: (error, op) => logger.error({ err: error, ...op }, op.reasonCode),
+  }),
+});
+```
+
+Return the decision you were given, or a `HostPolicyDenial`: `allowed: false`,
+`reasonCode: "host_policy_denied"`, and whatever you want to say in `metadata`.
+The types admit nothing else — `narrow` takes an `AllowedDecision`, so a denial
+cannot be passed in, and returns a `HostCeilingVerdict`, so a code cannot be
+authored — and anything else at runtime fails closed as
+`host_policy_unavailable`, including an `async narrow`, whose promise has no
+`allowed` to read, and a branch that falls off the end.
+
+It is consulted only on a grant that would otherwise allow, so it can narrow and
+never widen, and it is consulted before a bounded use is consumed, so a refused
+call does not spend one. Its refusal is recorded as `host_policy_denied` with
+the `grantId` it overrode — separable from `no_matching_grant` in every count,
+and not marked `failClosed`, because a deliberate refusal is not an outage. A
+host outside TypeScript that returns some other `reasonCode` has it replaced;
+`metadata` is preserved except for the `consumed` and `failClosed` keys the
+kernel states itself.
+
+A ceiling whose policy lives in a database does not close over a stale copy
+and does not read the store on the authorization path. It installs a
+`PolicySource` on the kernel, beside the grant source, and reads what that
+loaded as `narrow`'s fourth argument:
+
+```ts
+interface FolderPolicy {
+  readonly frozen: ReadonlySet<string>;
+}
+
+const kernel = new SharedOSKernel({
+  grantSource: stores,
+  // Loaded once per turn, in flight beside the grant load, and held for the
+  // turn: a decision inside it never reads the store. Throw on an outage.
+  policySource: {
+    load: async (access, signal): Promise<LoadedPolicy<FolderPolicy>> => {
+      const { revision, folders } = await policyDb.frozenFolders(access.owner, { signal });
+      // `version` is the one thing SharedOS reads: your own name for what was
+      // loaded, recorded on every catalogue listing in the turn.
+      return { policy: { frozen: new Set(folders) }, version: `frozen-folders@${revision}` };
+    },
+  },
+  authorizer: new CapabilityAuthorizer({
+    usageStore: stores,
+    hostCeiling: {
+      // `policy` is what `load` returned, exactly as returned -- not cloned,
+      // because SharedOS does not know its shape. It is `undefined` when no
+      // source is installed, which is how the closure above stays valid.
+      narrow: (decision, request, _context, policy: FolderPolicy | undefined) =>
+        policy?.frozen.has(request.resource.path[0] ?? "") === true
+          ? {
+              allowed: false,
+              reasonCode: "host_policy_denied",
+              metadata: { rule: "folder-freeze" },
+            }
+          : decision,
+    } satisfies HostCeiling<FolderPolicy>,
+  }),
+});
+```
+
+The pairing is yours: SharedOS cannot check that the type a ceiling expects is
+the type its source produced. A source that throws fails the turn's policy
+closed — every decision the ceiling would have made is refused
+`host_policy_unavailable`, `narrow` is never called, and the error goes to the
+kernel's `onProviderError` as `kind: "policy"`, once per turn. A result without
+a `version` is treated the same way. A cancelled load re-throws the abort
+instead. Every `authority.resolved` event says which case the turn was:
+`hostPolicy: "loaded"`, `"unavailable"`, or `"absent"` when no source is
+installed, and every `tool.catalog.listed` event in the turn carries the
+`version` a loaded source stated as `hostPolicyVersion`, beside `authorityHash`
+and `catalogHash`, so a catalogue can be pinned to the policy state it was
+decided against.
+
+Two things it does not cover, and both are yours to close:
+
+- **Namespace availability.** `enabledToolNamespaces` still carries the user's
+  own settings choice, and a namespace withheld by _policy_ is still invisible.
+  Routing it through the ceiling is the intended direction and is **not possible
+  yet**: `listTools` filters on namespace before it asks the authorizer, so a
+  disabled namespace never reaches the port, and `narrow` is shown a resource
+  namespace rather than a tool namespace. ADR 0020 records this as an open
+  question.
+- **Anything upstream of the kernel.** A gate that has to call a model cannot be
+  this port. Run it where you run it, and emit its verdict to the same
+  `AuditSink` with the same vocabulary, or that refusal is missing from the
+  record.
 
 ### 2. Adapt host state to the `files` resource plane
 
@@ -204,6 +322,10 @@ const kernel = new SharedOSKernel({
   messageTransport: durableMessageLog,
   messageRequestRouter: durableReplyRouter,
   createMessageId: () => crypto.randomUUID(),
+  // Where a throw from any of the ports above goes. Without it, one of them
+  // failing is reported to the agent as a reason code and to you as nothing;
+  // see [Diagnosing a contained throw](errors.md#diagnosing-a-contained-throw).
+  onProviderError: (error, op) => logger.error({ err: error, ...op }, op.reasonCode),
 });
 
 kernel.registerResourceProvider(files);
@@ -444,6 +566,10 @@ Before production use, the host must provide:
 - isolated file and tool providers with cancellation-safe side effects;
 - durable tool namespace settings and credential isolation;
 - durable, append-only audit storage and operational alerting;
+- a diagnostic sink on `onProviderError`, so a failing provider, transport, or
+  router is debuggable: the kernel answers the agent with a reason code and
+  keeps the thrown error off the wire deliberately, which leaves that hook as
+  the only place the cause appears;
 - replay and idempotency controls around externally visible mutations;
 - model-driver limits, product scheduling, retries, budgets, and stopping;
 - consent, policy administration, retention, deletion, and incident response.

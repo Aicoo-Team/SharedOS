@@ -185,17 +185,37 @@ describe("SharedOSKernel authority boundary", () => {
     expect(firstDecision?.authorityHash).toBe(firstResolved?.authorityHash);
     expect(secondDecision?.authorityHash).toBe(secondResolved?.authorityHash);
     expect(firstDecision?.authorityHash).not.toBe(secondDecision?.authorityHash);
-    expect(firstResolved?.metadata).toEqual({ grantIds: ["grant-read"], grantCount: 1 });
-    expect(secondResolved?.metadata).toEqual({ grantIds: [], grantCount: 0 });
+    // `hostCeiling` and `hostPolicy` ride on every authority load so a reader
+    // can tell an absent policy port from one that never fired, and a ceiling
+    // deciding over loaded state from one deciding over its own (ADR 0020).
+    expect(firstResolved?.metadata).toEqual({
+      grantIds: ["grant-read"],
+      grantCount: 1,
+      hostCeiling: "absent",
+      hostPolicy: "absent",
+    });
+    expect(secondResolved?.metadata).toEqual({
+      grantIds: [],
+      grantCount: 0,
+      hostCeiling: "absent",
+      hostPolicy: "absent",
+    });
   });
 
   it("authorizes only what the trusted source served", async () => {
     await expect(
       kernelWith(staticSource([grant()])).authorize(context(), READ_REQUEST),
     ).resolves.toEqual({ allowed: true, reasonCode: "allowed", matchedGrantId: "grant-read" });
-    await expect(kernelWith(staticSource([])).authorize(context(), READ_REQUEST)).resolves.toEqual({
+    await expect(
+      kernelWith(staticSource([])).authorize(context(), READ_REQUEST),
+    ).resolves.toMatchObject({
       allowed: false,
       reasonCode: "no_matching_grant",
+      requiredAuthority: {
+        capabilities: [
+          { resource: READ_REQUEST.resource, actions: [READ_REQUEST.action], scope: "exact" },
+        ],
+      },
     });
   });
 
