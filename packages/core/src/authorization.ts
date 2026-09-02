@@ -3,14 +3,13 @@ import type {
   AuthorizationDecision,
   Capability,
   CapabilityGrant,
-  CapabilityRequest,
   JsonObject,
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
 
 import type { HostPolicy, PolicyResolution, ResolvedAuthority } from "./authority.js";
+import { describeRequiredAuthority } from "./capability-request.js";
 import { reportContainedError, type ProviderErrorReporter } from "./diagnostics.js";
-import { hashJson } from "./hashing.js";
 import {
   type DelegationChainResolver,
   type DelegationValidation,
@@ -412,9 +411,11 @@ export class CapabilityAuthorizer {
     }
 
     const missing = deny("no_matching_grant");
-    return describeMissing
-      ? { ...missing, requiredAuthority: await describeRequiredAuthority(context, request) }
-      : missing;
+    if (!describeMissing) {
+      return missing;
+    }
+    const requiredAuthority = await describeRequiredAuthority(context, request);
+    return requiredAuthority === undefined ? missing : { ...missing, requiredAuthority };
   }
 
   /**
@@ -592,63 +593,6 @@ function isVerdict(value: unknown): value is AuthorizationDecision {
  */
 function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/**
- * The authority that would have satisfied a request nothing matched.
- *
- * Every field is already in hand at the point of denial -- the caller named the
- * resource and the action, and its own context names the requester, the owner,
- * the namespace, and the purpose -- so nothing is resolved and no port is
- * called. That is what keeps this affordable on a denial path and what keeps it
- * from revealing anything: it restates the request rather than answering a
- * question about the world (ADR 0019).
- *
- * Exactly one capability, always. The schema's bound of 64 is there for a
- * host-built consent request that legitimately asks for several; this describes
- * the one resource and one action the caller named, and a second entry could
- * only be a guess at what else it might have wanted.
- *
- * The identifier is derived rather than random, and `requestedAt` is
- * deliberately not part of what it is derived from. `requestedAt` is the instant
- * of the authority the decision was made against -- the turn's admission instant
- * inside a turn, since `context` comes from the authority lease and not from the
- * operation -- so it is stable within a turn but moves between turns describing
- * the same missing authority, and it moves on every conformance run. Hashing
- * only the authority itself is what gives one missing authority one identifier
- * across turns, and what keeps a conformance cell able to state the value it
- * observed rather than that a field was present.
- */
-async function describeRequiredAuthority(
-  context: AccessContext,
-  request: AuthorizationRequest,
-): Promise<CapabilityRequest> {
-  const capability: Capability = {
-    // Rebuilt key by key rather than spread. `structuredClone` keeps an own
-    // property whose value is `undefined`, and `canonicalJson` emits one, so a
-    // caller that passed `owner: undefined` and one that omitted the key would
-    // hash to two different identifiers for one missing authority -- defeating
-    // the deduplication the derived identifier exists to give.
-    resource: {
-      namespace: request.resource.namespace,
-      path: [...request.resource.path],
-      ...(request.resource.owner === undefined ? {} : { owner: request.resource.owner }),
-    },
-    actions: [request.action],
-    scope: "exact",
-  };
-  const identity = {
-    namespaceId: context.namespaceId,
-    requester: context.actor,
-    owner: context.owner,
-    capabilities: [capability],
-    purpose: context.purpose,
-  };
-  return {
-    id: `capreq-${await hashJson(identity)}`,
-    ...identity,
-    requestedAt: context.now,
-  };
 }
 
 export function capabilityMatches(

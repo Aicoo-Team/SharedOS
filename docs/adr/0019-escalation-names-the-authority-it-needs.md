@@ -100,10 +100,19 @@ kernel made. They come from the trusted context and nothing else: `requester` is
 `context.actor`, `owner` is `context.owner`, and `requestedAt` is `context.now`.
 
 `id` is **derived deterministically** from those fields together with the
-resource and action, not generated randomly. A random UUID would make a
-conformance cell that cannot state what it observed: the row would have to
-either ignore the identifier or re-derive it, and a manifest that ignores a
-field is a manifest that does not check it.
+resource and action — and any constraints — not generated randomly. A random
+UUID would make a conformance cell that cannot state what it observed: the row
+would have to either ignore the identifier or re-derive it, and a manifest that
+ignores a field is a manifest that does not check it. `requestedAt` is not part
+of it, so one missing authority keeps one identifier across turns.
+
+`recordEscalation` mints the same way. What a caller passes as
+`requestedAuthority` is read as the ask — capabilities, purpose, constraints,
+metadata — and the identity fields it carries are discarded and minted again
+from the context, which is why the hop above round-trips: the denial's
+description and the escalation's request are the same ask, and so the same
+identifier. `mintCapabilityRequest` is exported for a host assembling a consent
+request of its own.
 
 The reviewer is still assumed, the status is still always `pending`, and nothing
 inside SharedOS advances it. Resolution is unchanged and still host-owned: the

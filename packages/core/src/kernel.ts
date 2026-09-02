@@ -3,7 +3,6 @@ import type {
   Address,
   AuthorizationDecision,
   Capability,
-  CapabilityRequest,
   Escalation,
   JsonObject,
   MessageDeliveryResult,
@@ -53,6 +52,7 @@ import {
   type ProviderErrorContext,
   type ProviderErrorReporter,
 } from "./diagnostics.js";
+import { type CapabilityRequestPayload, mintCapabilityRequest } from "./capability-request.js";
 import {
   type MessageCapabilityResolver,
   type MessageRequestRouter,
@@ -181,8 +181,16 @@ export interface EscalationOptions extends KernelOperationOptions {
    * package uses for what grants confer: a denial says what was *required*, and
    * an escalation *requests* it. `{ requestedAuthority: denial.requiredAuthority }`
    * is the whole hop.
+   *
+   * What is recorded is minted, not copied. The ask -- capabilities, purpose,
+   * constraints, metadata -- is the caller's; `id`, `namespaceId`, `requester`,
+   * `owner`, and `requestedAt` come from the trusted context, whatever the
+   * caller wrote, because a request the caller authored would be a
+   * caller-chosen correlation for a decision the kernel made. The hop above
+   * still round-trips: the denial's description was minted from the same ask,
+   * so it comes back under the same identifier (ADR 0019).
    */
-  readonly requestedAuthority?: CapabilityRequest;
+  readonly requestedAuthority?: CapabilityRequestPayload;
 }
 
 export const EXECUTION_NAMESPACE = "sharedos.execution";
@@ -385,14 +393,19 @@ export class SharedOSKernel {
   ): Promise<Escalation> {
     throwIfAborted(options.signal);
     context = structuredClone(context);
+    const requestedAuthority =
+      options.requestedAuthority === undefined
+        ? undefined
+        : await mintCapabilityRequest(context, structuredClone(options.requestedAuthority));
+    if (options.requestedAuthority !== undefined && requestedAuthority === undefined) {
+      throw new TypeError("escalation requestedAuthority does not match the SharedOS v1 contract");
+    }
     const parsed = EscalationSchema.safeParse({
       reason,
       reviewer: context.owner,
       requestedAt: context.now,
       status: "pending",
-      ...(options.requestedAuthority === undefined
-        ? {}
-        : { requestedAuthority: structuredClone(options.requestedAuthority) }),
+      ...(requestedAuthority === undefined ? {} : { requestedAuthority }),
     });
     if (!parsed.success) {
       throw new TypeError("escalation does not match the SharedOS v1 contract");

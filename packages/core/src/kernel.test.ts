@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type {
   AccessContext,
+  CapabilityRequest,
   CapabilityGrant,
   MessageEnvelope,
   ResourceRef,
@@ -285,6 +286,55 @@ describe("SharedOSKernel escalation", () => {
     expect(events.at(-1)).toMatchObject({
       requestedAuthority: { capabilities: [{ actions: ["read"] }] },
     });
+  });
+
+  it("mints the request from the trusted context, whatever the caller wrote about identity", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (event) => void events.push(event) } });
+    const denial = await kernel.authorize(context(), {
+      resource: { namespace: "files", path: ["Memory", "project-x"], owner: OWNER },
+      action: "read",
+    });
+    const described = denial.requiredAuthority;
+    if (described === undefined) {
+      throw new Error("expected the denial to describe what was missing");
+    }
+
+    const authored: CapabilityRequest = {
+      ...described,
+      id: "chosen-by-caller",
+      namespaceId: "world-other",
+      requester: RECEIVER,
+      owner: { kind: "human", userId: "user-mallory" },
+      requestedAt: "2020-01-01T00:00:00.000Z",
+    };
+    const escalation = await kernel.recordEscalation(context(), "alice should decide", {
+      requestedAuthority: authored,
+    });
+
+    // A request the caller authored would be a caller-chosen correlation for a
+    // decision the kernel made, so what it wrote about identity is discarded
+    // and minted again from the context (ADR 0019). It comes back as the same
+    // identifier the denial carried, because both were minted from one ask.
+    expect(escalation.requestedAuthority).toEqual(described);
+    expect(escalation.requestedAuthority).toMatchObject({
+      namespaceId: "world-alpha",
+      requester: ACTOR,
+      owner: OWNER,
+      requestedAt: NOW,
+    });
+    expect(escalation.requestedAuthority?.id).toMatch(/^capreq-[0-9a-f]{64}$/u);
+    expect(events.at(-1)?.requestedAuthority).toEqual(described);
+  });
+
+  it("refuses an escalation whose ask is not a valid request", async () => {
+    const kernel = kernelWith([]);
+
+    await expect(
+      kernel.recordEscalation(context(), "alice should decide", {
+        requestedAuthority: { capabilities: [], purpose: "prepare-update" },
+      }),
+    ).rejects.toThrow(TypeError);
   });
 
   it("records an escalation with no capability when nothing named one", async () => {

@@ -350,6 +350,17 @@ each entry calls out what a host has to update.
   `CapabilityRequest` had existed since the first release with no port
   (ADR 0019).
 
+  What `recordEscalation` records is minted, not copied. `requestedAuthority`
+  is read as the ask — capabilities, purpose, constraints, metadata — and
+  `id`, `namespaceId`, `requester`, `owner`, and `requestedAt` come from the
+  trusted context whatever the caller wrote, because a request the caller
+  authored would be a caller-chosen correlation for a decision the kernel made.
+  The `id` is derived from the ask, so `{ requestedAuthority:
+denial.requiredAuthority }` comes back under the identifier it went in with.
+  An ask the contract refuses throws a `TypeError`. `mintCapabilityRequest` is
+  exported from `@aicoo/sharedos-core` for a host assembling a consent request
+  of its own.
+
   It grants nothing. No port accepts one as input, `allowed` stays `false`, and
   a host that ignores both fields behaves exactly as before. The description is
   built from what the caller already named — the request's resource and action,

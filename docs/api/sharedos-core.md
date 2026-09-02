@@ -27,7 +27,7 @@ SharedOS is currently an `0.x` prerelease.
 
 ### CapabilityAuthorizer
 
-Defined in: [packages/core/src/authorization.ts:227](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L227)
+Defined in: [packages/core/src/authorization.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L226)
 
 #### Constructors
 
@@ -35,7 +35,7 @@ Defined in: [packages/core/src/authorization.ts:227](https://github.com/Aicoo-Te
 
 > **new CapabilityAuthorizer**(`options?`): [`CapabilityAuthorizer`](#capabilityauthorizer)
 
-Defined in: [packages/core/src/authorization.ts:235](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L235)
+Defined in: [packages/core/src/authorization.ts:234](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L234)
 
 ###### Parameters
 
@@ -55,7 +55,7 @@ Defined in: [packages/core/src/authorization.ts:235](https://github.com/Aicoo-Te
 
 > **get** **hasHostCeiling**(): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:252](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L252)
+Defined in: [packages/core/src/authorization.ts:251](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L251)
 
 Whether a host ceiling is installed.
 
@@ -74,7 +74,7 @@ the difference between a count and a guess (ADR 0020).
 
 > **authorize**(`authority`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/authorization.ts:256](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L256)
+Defined in: [packages/core/src/authorization.ts:255](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L255)
 
 ###### Parameters
 
@@ -92,7 +92,7 @@ Defined in: [packages/core/src/authorization.ts:256](https://github.com/Aicoo-Te
 
 > **canDiscover**(`authority`, `ceiling`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/authorization.ts:278](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L278)
+Defined in: [packages/core/src/authorization.ts:277](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L277)
 
 Non-consuming catalog check. A narrow grant can discover a tool whose
 declared resource is a broader ceiling; invocation still checks the exact
@@ -299,7 +299,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### InMemoryGrantUsageStore
 
-Defined in: [packages/core/src/authorization.ts:203](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L203)
+Defined in: [packages/core/src/authorization.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L202)
 
 An atomic, process-local usage store suitable for tests and single-process
 hosts. Distributed hosts should inject a durable compare-and-set store.
@@ -324,7 +324,7 @@ hosts. Distributed hosts should inject a durable compare-and-set store.
 
 > **getUsage**(`namespaceId`, `grantId`): `Promise`\<`number`>\>
 
-Defined in: [packages/core/src/authorization.ts:206](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L206)
+Defined in: [packages/core/src/authorization.ts:205](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L205)
 
 ###### Parameters
 
@@ -345,7 +345,7 @@ Defined in: [packages/core/src/authorization.ts:206](https://github.com/Aicoo-Te
 
 > **tryConsume**(`namespaceId`, `grantId`, `maximumUses`): `Promise`\<`boolean`>\>
 
-Defined in: [packages/core/src/authorization.ts:210](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L210)
+Defined in: [packages/core/src/authorization.ts:209](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L209)
 
 ###### Parameters
 
@@ -692,7 +692,7 @@ Defined in: [packages/core/src/resource-registry.ts:26](https://github.com/Aicoo
 
 ### SharedOSKernel
 
-Defined in: [packages/core/src/kernel.ts:214](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L214)
+Defined in: [packages/core/src/kernel.ts:222](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L222)
 
 Host-neutral facade for every permission-controlled SharedOS operation.
 AccessContext is a trusted host-created boundary; never construct it from an
@@ -704,7 +704,7 @@ unverified request body.
 
 > **new SharedOSKernel**(`options`): [`SharedOSKernel`](#sharedoskernel)
 
-Defined in: [packages/core/src/kernel.ts:232](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L232)
+Defined in: [packages/core/src/kernel.ts:240](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L240)
 
 ###### Parameters
 
@@ -722,7 +722,7 @@ Defined in: [packages/core/src/kernel.ts:232](https://github.com/Aicoo-Team/Shar
 
 > **admitTurn**(`context`, `agent`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:345](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L345)
+Defined in: [packages/core/src/kernel.ts:353](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L353)
 
 Consume permission to invoke exactly one target agent turn.
 
@@ -750,7 +750,7 @@ Consume permission to invoke exactly one target agent turn.
 
 > **authorize**(`context`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:329](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L329)
+Defined in: [packages/core/src/kernel.ts:337](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L337)
 
 ###### Parameters
 
@@ -776,7 +776,7 @@ Defined in: [packages/core/src/kernel.ts:329](https://github.com/Aicoo-Team/Shar
 
 > **invokeResource**(`context`, `request`, `options?`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:998](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L998)
+Defined in: [packages/core/src/kernel.ts:1011](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1011)
 
 ###### Parameters
 
@@ -802,7 +802,7 @@ Defined in: [packages/core/src/kernel.ts:998](https://github.com/Aicoo-Team/Shar
 
 > **invokeTool**(`context`, `call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:697](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L697)
+Defined in: [packages/core/src/kernel.ts:710](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L710)
 
 Re-authorize and dispatch one tool call.
 
@@ -841,7 +841,7 @@ SharedOS. Both spans exist or neither does.
 
 > **listPublishedTools**(`context`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:609](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L609)
+Defined in: [packages/core/src/kernel.ts:622](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L622)
 
 The effective catalogue as an external harness receives it.
 
@@ -880,7 +880,7 @@ harness would have to interpret.
 
 > **listToolNamespaces**(`context`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:617](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L617)
+Defined in: [packages/core/src/kernel.ts:630](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L630)
 
 ###### Parameters
 
@@ -905,7 +905,7 @@ Defined in: [packages/core/src/kernel.ts:617](https://github.com/Aicoo-Team/Shar
 
 > **listTools**(`context`, `options?`): `Promise`\<readonly `object`[]\>
 
-Defined in: [packages/core/src/kernel.ts:505](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L505)
+Defined in: [packages/core/src/kernel.ts:518](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L518)
 
 ###### Parameters
 
@@ -930,7 +930,7 @@ Defined in: [packages/core/src/kernel.ts:505](https://github.com/Aicoo-Team/Shar
 
 > **openTurnAuthority**(`context`, `options?`): `Promise`\<[`TurnAuthorityScope`](#turnauthorityscope)>\>
 
-Defined in: [packages/core/src/kernel.ts:293](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L293)
+Defined in: [packages/core/src/kernel.ts:301](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L301)
 
 Resolve the authority one turn will be decided against, and hold it.
 
@@ -971,7 +971,7 @@ lease resolves its own authority, which is a turn of one operation.
 
 > **recordEscalation**(`context`, `reason`, `options?`): `Promise`\<\{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:381](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L381)
+Defined in: [packages/core/src/kernel.ts:389](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L389)
 
 Record that a turn stopped and asked a human to decide.
 
@@ -1009,7 +1009,7 @@ deliberately no path from here back into the running turn.
 
 > **recordRefusedCall**(`context`, `call`, `options?`): `Promise`\<`void`>\>
 
-Defined in: [packages/core/src/kernel.ts:482](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L482)
+Defined in: [packages/core/src/kernel.ts:495](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L495)
 
 Record a tool call the envelope refused before the kernel was asked.
 
@@ -1046,7 +1046,7 @@ that stops being inferable the moment this method exists (ADR 0021).
 
 > **recordTurnEnd**(`context`, `turn`, `options?`): `Promise`\<`void`>\>
 
-Defined in: [packages/core/src/kernel.ts:446](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L446)
+Defined in: [packages/core/src/kernel.ts:459](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L459)
 
 Record how a turn ended, from the boundary that ended it.
 
@@ -1093,7 +1093,7 @@ separates a deadline from a defect.
 
 > **registerResourceProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:257](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L257)
+Defined in: [packages/core/src/kernel.ts:265](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L265)
 
 ###### Parameters
 
@@ -1109,7 +1109,7 @@ Defined in: [packages/core/src/kernel.ts:257](https://github.com/Aicoo-Team/Shar
 
 > **registerTool**(`handler`): `void`
 
-Defined in: [packages/core/src/kernel.ts:261](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L261)
+Defined in: [packages/core/src/kernel.ts:269](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L269)
 
 ###### Parameters
 
@@ -1125,7 +1125,7 @@ Defined in: [packages/core/src/kernel.ts:261](https://github.com/Aicoo-Team/Shar
 
 > **registerToolProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:265](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L265)
+Defined in: [packages/core/src/kernel.ts:273](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L273)
 
 ###### Parameters
 
@@ -1141,7 +1141,7 @@ Defined in: [packages/core/src/kernel.ts:265](https://github.com/Aicoo-Team/Shar
 
 > **sendMessage**(`context`, `envelope`, `options?`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:1160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1160)
+Defined in: [packages/core/src/kernel.ts:1173](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1173)
 
 ###### Parameters
 
@@ -1180,7 +1180,7 @@ Defined in: [packages/core/src/kernel.ts:1160](https://github.com/Aicoo-Team/Sha
 
 > **updateToolNamespaces**(`context`, `update`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:640](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L640)
+Defined in: [packages/core/src/kernel.ts:653](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L653)
 
 ###### Parameters
 
@@ -1408,20 +1408,20 @@ Defined in: [packages/core/src/audit.ts:43](https://github.com/Aicoo-Team/Shared
 | <a id="property-reason"></a> `reason?`                         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | [packages/core/src/audit.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L68) |
 | <a id="property-receiver"></a> `receiver?`                     | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                  | [packages/core/src/audit.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L67) |
 | <a id="property-requestedauthority"></a> `requestedAuthority?` | `readonly` | `object`                                                                                                                                                                                                   | The authority an escalation is asking for, when it names one. A first-class field rather than something folded into `metadata`, for the same reason `resource` is: it is a contract type with its own schema, and a reviewer's queue built from audit reads it directly rather than trusting that an untyped bag holds the right shape (ADR 0019). | [packages/core/src/audit.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L77) |
-| `requestedAuthority.capabilities`                              | `public`   | `object`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:503                                                                      |
-| `requestedAuthority.constraints?`                              | `public`   | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:526                                                                      |
-| `requestedAuthority.constraints.delegationDepth?`              | `public`   | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:531                                                                      |
-| `requestedAuthority.constraints.expiresAt?`                    | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:529                                                                      |
-| `requestedAuthority.constraints.maxUses?`                      | `public`   | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:530                                                                      |
-| `requestedAuthority.constraints.notBefore?`                    | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:528                                                                      |
-| `requestedAuthority.constraints.purposes?`                     | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:527                                                                      |
-| `requestedAuthority.id`                                        | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:488                                                                      |
-| `requestedAuthority.metadata?`                                 | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:533                                                                      |
-| `requestedAuthority.namespaceId`                               | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:489                                                                      |
-| `requestedAuthority.owner`                                     | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:475                                                                      |
-| `requestedAuthority.purpose`                                   | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:524                                                                      |
-| `requestedAuthority.requestedAt`                               | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:525                                                                      |
-| `requestedAuthority.requester`                                 | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:490                                                                      |
+| `requestedAuthority.capabilities`                              | `public`   | `object`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:511                                                                      |
+| `requestedAuthority.constraints?`                              | `public`   | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:534                                                                      |
+| `requestedAuthority.constraints.delegationDepth?`              | `public`   | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:539                                                                      |
+| `requestedAuthority.constraints.expiresAt?`                    | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:537                                                                      |
+| `requestedAuthority.constraints.maxUses?`                      | `public`   | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:538                                                                      |
+| `requestedAuthority.constraints.notBefore?`                    | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:536                                                                      |
+| `requestedAuthority.constraints.purposes?`                     | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:535                                                                      |
+| `requestedAuthority.id`                                        | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:496                                                                      |
+| `requestedAuthority.metadata?`                                 | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:541                                                                      |
+| `requestedAuthority.namespaceId`                               | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:497                                                                      |
+| `requestedAuthority.owner`                                     | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:483                                                                      |
+| `requestedAuthority.purpose`                                   | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:532                                                                      |
+| `requestedAuthority.requestedAt`                               | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:533                                                                      |
+| `requestedAuthority.requester`                                 | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:498                                                                      |
 | <a id="property-resource"></a> `resource?`                     | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | [packages/core/src/audit.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/audit.ts#L54) |
 | `resource.namespace`                                           | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:54                                                                       |
 | `resource.owner?`                                              | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/capability.d.ts:55                                                                       |
@@ -1484,7 +1484,7 @@ change the shape of the evidence.
 
 ### AuthorizationInstantOptions
 
-Defined in: [packages/core/src/authorization.ts:153](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L153)
+Defined in: [packages/core/src/authorization.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L152)
 
 The instant one decision is made at, when it is not the turn's own.
 
@@ -1505,20 +1505,20 @@ move and which do not, and ADR 0016 for why.
 
 | Property                         | Modifier   | Type     | Defined in                                                                                                                         |
 | -------------------------------- | ---------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-now"></a> `now?` | `readonly` | `string` | [packages/core/src/authorization.ts:154](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L154) |
+| <a id="property-now"></a> `now?` | `readonly` | `string` | [packages/core/src/authorization.ts:153](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L153) |
 
 ---
 
 ### AuthorizationRequest
 
-Defined in: [packages/core/src/authorization.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L30)
+Defined in: [packages/core/src/authorization.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L29)
 
 #### Properties
 
 | Property                                    | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                                       |
 | ------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-action-1"></a> `action`     | `readonly` | `string`                                                                                                                                                                                                   | [packages/core/src/authorization.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L32) |
-| <a id="property-resource-1"></a> `resource` | `readonly` | `object`                                                                                                                                                                                                   | [packages/core/src/authorization.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L31) |
+| <a id="property-action-1"></a> `action`     | `readonly` | `string`                                                                                                                                                                                                   | [packages/core/src/authorization.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L31) |
+| <a id="property-resource-1"></a> `resource` | `readonly` | `object`                                                                                                                                                                                                   | [packages/core/src/authorization.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L30) |
 | `resource.namespace`                        | `public`   | `string`                                                                                                                                                                                                   | packages/contracts/dist/capability.d.ts:54                                                                                       |
 | `resource.owner?`                           | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | packages/contracts/dist/capability.d.ts:55                                                                                       |
 | `resource.path`                             | `public`   | `string`[]                                                                                                                                                                                                 | packages/contracts/dist/capability.d.ts:53                                                                                       |
@@ -1527,7 +1527,7 @@ Defined in: [packages/core/src/authorization.ts:30](https://github.com/Aicoo-Tea
 
 ### AuthorizeOptions
 
-Defined in: [packages/core/src/authorization.ts:157](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L157)
+Defined in: [packages/core/src/authorization.ts:156](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L156)
 
 The instant one decision is made at, when it is not the turn's own.
 
@@ -1548,31 +1548,31 @@ move and which do not, and ADR 0016 for why.
 
 | Property                                 | Modifier   | Type      | Description                                                                                                                            | Inherited from                                                                       | Defined in                                                                                                                         |
 | ---------------------------------------- | ---------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-consume"></a> `consume?` | `readonly` | `boolean` | Consumption is reserved for execution. Discovery calls must leave this false so merely viewing a catalog cannot spend a bounded grant. | -                                                                                    | [packages/core/src/authorization.ts:162](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L162) |
-| <a id="property-now-1"></a> `now?`       | `readonly` | `string`  | -                                                                                                                                      | [`AuthorizationInstantOptions`](#authorizationinstantoptions).[`now`](#property-now) | [packages/core/src/authorization.ts:154](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L154) |
+| <a id="property-consume"></a> `consume?` | `readonly` | `boolean` | Consumption is reserved for execution. Discovery calls must leave this false so merely viewing a catalog cannot spend a bounded grant. | -                                                                                    | [packages/core/src/authorization.ts:161](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L161) |
+| <a id="property-now-1"></a> `now?`       | `readonly` | `string`  | -                                                                                                                                      | [`AuthorizationInstantOptions`](#authorizationinstantoptions).[`now`](#property-now) | [packages/core/src/authorization.ts:153](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L153) |
 
 ---
 
 ### CapabilityAuthorizerOptions
 
-Defined in: [packages/core/src/authorization.ts:165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L165)
+Defined in: [packages/core/src/authorization.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L164)
 
 #### Properties
 
 | Property                                                                   | Modifier   | Type                                                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Defined in                                                                                                                         |
 | -------------------------------------------------------------------------- | ---------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-delegationresolver"></a> `delegationResolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | Trusted ancestor lookup for delegated grants. Without it, a grant that claims a parent can never authorize anything.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/authorization.ts:172](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L172) |
-| <a id="property-grantverifier"></a> `grantVerifier?`                       | `readonly` | [`CapabilityGrantVerifier`](#capabilitygrantverifier) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:167](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L167) |
-| <a id="property-hostceiling"></a> `hostCeiling?`                           | `readonly` | [`HostCeiling`](#hostceiling)\<`unknown`\>            | Product or organization policy the kernel consults. See [HostCeiling](#hostceiling). Installed by whoever constructs the authorizer, which is the party that already chooses the `GrantSource`. That is not a new privilege: anyone who decides what authority exists can already decide it is none. The per-turn policy it decides against, when it has one, comes from `SharedOSKernelOptions.policySource` -- on the kernel rather than here, because the load is a turn-boundary event and the kernel owns the turn boundary. The authorizer only carries what was loaded to the ceiling. | [packages/core/src/authorization.ts:186](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L186) |
-| <a id="property-maxdelegationchainlength"></a> `maxDelegationChainLength?` | `readonly` | `number`                                              | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:173](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L173) |
-| <a id="property-onprovidererror"></a> `onProviderError?`                   | `readonly` | [`ProviderErrorReporter`](#providererrorreporter)     | Where a throw from [HostCeiling.narrow](#narrow) is reported. The same shape `SharedOSKernelOptions.onProviderError` takes, and a host wanting both passes one function to both: the ceiling is installed here rather than on the kernel, so the kernel's hook cannot reach it. Without this, a ceiling that fails denies every operation in the deployment as `host_policy_unavailable` and says nothing about why.                                                                                                                                                                          | [packages/core/src/authorization.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L196) |
-| <a id="property-usagestore"></a> `usageStore?`                             | `readonly` | [`GrantUsageStore`](#grantusagestore)                 | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:166](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L166) |
+| <a id="property-delegationresolver"></a> `delegationResolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | Trusted ancestor lookup for delegated grants. Without it, a grant that claims a parent can never authorize anything.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/authorization.ts:171](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L171) |
+| <a id="property-grantverifier"></a> `grantVerifier?`                       | `readonly` | [`CapabilityGrantVerifier`](#capabilitygrantverifier) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:166](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L166) |
+| <a id="property-hostceiling"></a> `hostCeiling?`                           | `readonly` | [`HostCeiling`](#hostceiling)\<`unknown`\>            | Product or organization policy the kernel consults. See [HostCeiling](#hostceiling). Installed by whoever constructs the authorizer, which is the party that already chooses the `GrantSource`. That is not a new privilege: anyone who decides what authority exists can already decide it is none. The per-turn policy it decides against, when it has one, comes from `SharedOSKernelOptions.policySource` -- on the kernel rather than here, because the load is a turn-boundary event and the kernel owns the turn boundary. The authorizer only carries what was loaded to the ceiling. | [packages/core/src/authorization.ts:185](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L185) |
+| <a id="property-maxdelegationchainlength"></a> `maxDelegationChainLength?` | `readonly` | `number`                                              | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:172](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L172) |
+| <a id="property-onprovidererror"></a> `onProviderError?`                   | `readonly` | [`ProviderErrorReporter`](#providererrorreporter)     | Where a throw from [HostCeiling.narrow](#narrow) is reported. The same shape `SharedOSKernelOptions.onProviderError` takes, and a host wanting both passes one function to both: the ceiling is installed here rather than on the kernel, so the kernel's hook cannot reach it. Without this, a ceiling that fails denies every operation in the deployment as `host_policy_unavailable` and says nothing about why.                                                                                                                                                                          | [packages/core/src/authorization.ts:195](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L195) |
+| <a id="property-usagestore"></a> `usageStore?`                             | `readonly` | [`GrantUsageStore`](#grantusagestore)                 | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L165) |
 
 ---
 
 ### CapabilityGrantVerifier
 
-Defined in: [packages/core/src/authorization.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L72)
+Defined in: [packages/core/src/authorization.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L71)
 
 #### Methods
 
@@ -1580,7 +1580,7 @@ Defined in: [packages/core/src/authorization.ts:72](https://github.com/Aicoo-Tea
 
 > **verify**(`grant`, `context`): `Promise`\<`boolean`>\>
 
-Defined in: [packages/core/src/authorization.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L73)
+Defined in: [packages/core/src/authorization.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L72)
 
 ###### Parameters
 
@@ -1735,24 +1735,10 @@ Defined in: [packages/core/src/kernel.ts:171](https://github.com/Aicoo-Team/Shar
 
 #### Properties
 
-| Property                                                         | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Inherited from                                                                     | Defined in                                                                                                           |
-| ---------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-requestedauthority-1"></a> `requestedAuthority?` | `readonly` | `object`                                                                                                                                                                                                   | The authority this escalation is asking for. A host escalating a denial passes the `requiredAuthority` that denial described; a model-chosen escalation usually has none, because a sentence is all it produced. Either way nothing here advances the escalation -- resolution stays host-owned work that ends in a grant the next turn loads. The two names are one concept in two roles, and both end in the noun this package uses for what grants confer: a denial says what was _required_, and an escalation _requests_ it. `{ requestedAuthority: denial.requiredAuthority }` is the whole hop. | -                                                                                  | [packages/core/src/kernel.ts:185](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L185) |
-| `requestedAuthority.capabilities`                                | `public`   | `object`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:503                                                                          |
-| `requestedAuthority.constraints?`                                | `public`   | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:526                                                                          |
-| `requestedAuthority.constraints.delegationDepth?`                | `public`   | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:531                                                                          |
-| `requestedAuthority.constraints.expiresAt?`                      | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:529                                                                          |
-| `requestedAuthority.constraints.maxUses?`                        | `public`   | `number`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:530                                                                          |
-| `requestedAuthority.constraints.notBefore?`                      | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:528                                                                          |
-| `requestedAuthority.constraints.purposes?`                       | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:527                                                                          |
-| `requestedAuthority.id`                                          | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:488                                                                          |
-| `requestedAuthority.metadata?`                                   | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:533                                                                          |
-| `requestedAuthority.namespaceId`                                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:489                                                                          |
-| `requestedAuthority.owner`                                       | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:475                                                                          |
-| `requestedAuthority.purpose`                                     | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:524                                                                          |
-| `requestedAuthority.requestedAt`                                 | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:525                                                                          |
-| `requestedAuthority.requester`                                   | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                                                                  | packages/contracts/dist/capability.d.ts:490                                                                          |
-| <a id="property-signal"></a> `signal?`                           | `readonly` | `AbortSignal`                                                                                                                                                                                              | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | [`KernelOperationOptions`](#kerneloperationoptions).[`signal`](#property-signal-1) | [packages/core/src/kernel.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L131) |
+| Property                                                         | Modifier   | Type                                                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Inherited from                                                                     | Defined in                                                                                                           |
+| ---------------------------------------------------------------- | ---------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-requestedauthority-1"></a> `requestedAuthority?` | `readonly` | [`CapabilityRequestPayload`](#capabilityrequestpayload) | The authority this escalation is asking for. A host escalating a denial passes the `requiredAuthority` that denial described; a model-chosen escalation usually has none, because a sentence is all it produced. Either way nothing here advances the escalation -- resolution stays host-owned work that ends in a grant the next turn loads. The two names are one concept in two roles, and both end in the noun this package uses for what grants confer: a denial says what was _required_, and an escalation _requests_ it. `{ requestedAuthority: denial.requiredAuthority }` is the whole hop. What is recorded is minted, not copied. The ask -- capabilities, purpose, constraints, metadata -- is the caller's; `id`, `namespaceId`, `requester`, `owner`, and `requestedAt` come from the trusted context, whatever the caller wrote, because a request the caller authored would be a caller-chosen correlation for a decision the kernel made. The hop above still round-trips: the denial's description was minted from the same ask, so it comes back under the same identifier (ADR 0019). | -                                                                                  | [packages/core/src/kernel.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L193) |
+| <a id="property-signal"></a> `signal?`                           | `readonly` | `AbortSignal`                                           | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [`KernelOperationOptions`](#kerneloperationoptions).[`signal`](#property-signal-1) | [packages/core/src/kernel.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L131) |
 
 ---
 
@@ -1803,7 +1789,7 @@ Defined in: [packages/core/src/authority.ts:96](https://github.com/Aicoo-Team/Sh
 
 ### GrantUsageStore
 
-Defined in: [packages/core/src/authorization.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L67)
+Defined in: [packages/core/src/authorization.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L66)
 
 #### Methods
 
@@ -1811,7 +1797,7 @@ Defined in: [packages/core/src/authorization.ts:67](https://github.com/Aicoo-Tea
 
 > **getUsage**(`namespaceId`, `grantId`): `Promise`\<`number`>\>
 
-Defined in: [packages/core/src/authorization.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L68)
+Defined in: [packages/core/src/authorization.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L67)
 
 ###### Parameters
 
@@ -1828,7 +1814,7 @@ Defined in: [packages/core/src/authorization.ts:68](https://github.com/Aicoo-Tea
 
 > **tryConsume**(`namespaceId`, `grantId`, `maximumUses`): `Promise`\<`boolean`>\>
 
-Defined in: [packages/core/src/authorization.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L69)
+Defined in: [packages/core/src/authorization.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L68)
 
 ###### Parameters
 
@@ -1846,7 +1832,7 @@ Defined in: [packages/core/src/authorization.ts:69](https://github.com/Aicoo-Tea
 
 ### HostCeiling
 
-Defined in: [packages/core/src/authorization.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L132)
+Defined in: [packages/core/src/authorization.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L131)
 
 Product or organization policy, consulted on a grant that would otherwise
 allow.
@@ -1915,7 +1901,7 @@ like every other unavailable trusted component.
 
 > **narrow**(`decision`, `request`, `context`, `policy`): `object`
 
-Defined in: [packages/core/src/authorization.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L133)
+Defined in: [packages/core/src/authorization.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L132)
 
 ###### Parameters
 
@@ -2763,7 +2749,25 @@ Why authority could not be established for one decision.
 
 > **AuthorizationReasonCode** = `"allowed"` \| `"invalid_context"` \| `"invalid_request"` \| `"no_matching_grant"` \| `"grant_exhausted"` \| `"delegation_chain_invalid"` \| `"authority_unavailable"` \| `"delegation_chain_unverified"` \| `"usage_store_unavailable"` \| `"host_policy_denied"` \| `"host_policy_unavailable"`
 
-Defined in: [packages/core/src/authorization.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L35)
+Defined in: [packages/core/src/authorization.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L34)
+
+---
+
+### CapabilityRequestPayload
+
+> **CapabilityRequestPayload** = `Pick`\<[`CapabilityRequest`](sharedos-contracts.md#capabilityrequest), `"capabilities"` \| `"purpose"` \| `"constraints"` \| `"metadata"`>\>
+
+Defined in: packages/core/src/capability-request.ts:18
+
+What a caller may say about the authority it asks for.
+
+Everything else on a [CapabilityRequest](sharedos-contracts.md#capabilityrequest) is the kernel's to state. A
+whole request is accepted here too -- the `requiredAuthority` a denial
+described is the usual one -- and the `id`, `namespaceId`, `requester`,
+`owner`, and `requestedAt` it carries are discarded and minted again from the
+trusted context. That is why `{ requestedAuthority: denial.requiredAuthority }`
+comes back with the identifier it went in with: both were minted from the
+same ask.
 
 ---
 
@@ -2997,7 +3001,7 @@ Defined in: [packages/core/src/authority.ts:79](https://github.com/Aicoo-Team/Sh
 
 > `const` **AGENT\_INVOKE\_ACTION**: `"invoke"` = `"invoke"`
 
-Defined in: [packages/core/src/kernel.ts:189](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L189)
+Defined in: [packages/core/src/kernel.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L197)
 
 ---
 
@@ -3036,7 +3040,7 @@ The longest ancestor chain SharedOS will walk before failing closed.
 
 > `const` **EXECUTION\_NAMESPACE**: `"sharedos.execution"` = `"sharedos.execution"`
 
-Defined in: [packages/core/src/kernel.ts:188](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L188)
+Defined in: [packages/core/src/kernel.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L196)
 
 ---
 
@@ -3044,7 +3048,7 @@ Defined in: [packages/core/src/kernel.ts:188](https://github.com/Aicoo-Team/Shar
 
 > `const` **INFRASTRUCTURE\_DENIAL\_REASONS**: readonly [`AuthorizationReasonCode`](#authorizationreasoncode)[]
 
-Defined in: [packages/core/src/authorization.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L56)
+Defined in: [packages/core/src/authorization.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L55)
 
 Denials caused by SharedOS being unable to establish a fact, not by policy.
 
@@ -3199,7 +3203,7 @@ Stable, segment-safe grant path for recipient-scoped messaging.
 
 > **agentExecutionCapability**(`agent`, `owner`): `object`
 
-Defined in: [packages/core/src/kernel.ts:191](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L191)
+Defined in: [packages/core/src/kernel.ts:199](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L199)
 
 #### Parameters
 
@@ -3333,7 +3337,7 @@ Structural JSON equality for protocol values with unordered object keys.
 
 > **capabilityIntersectsCeiling**(`capability`, `ceiling`, `context`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:682](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L682)
+Defined in: [packages/core/src/authorization.ts:626](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L626)
 
 #### Parameters
 
@@ -3367,7 +3371,7 @@ Defined in: [packages/core/src/authorization.ts:682](https://github.com/Aicoo-Te
 
 > **capabilityMatches**(`capability`, `request`, `context`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:654](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L654)
+Defined in: [packages/core/src/authorization.ts:598](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L598)
 
 #### Parameters
 
@@ -3477,6 +3481,47 @@ on its own: a host that issues one must also install a
 
 ---
 
+### describeRequiredAuthority()
+
+> **describeRequiredAuthority**(`context`, `request`): `Promise`\<\{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
+
+Defined in: packages/core/src/capability-request.ts:98
+
+The authority that would have satisfied a request nothing matched.
+
+Every field is already in hand at the point of denial -- the caller named the
+resource and the action, and its own context names the requester, the owner,
+the namespace, and the purpose -- so nothing is resolved and no port is
+called. That is what keeps this affordable on a denial path and what keeps it
+from revealing anything: it restates the request rather than answering a
+question about the world (ADR 0019).
+
+Exactly one capability, always. The schema's bound of 64 is there for a
+host-built consent request that legitimately asks for several; this describes
+the one resource and one action the caller named, and a second entry could
+only be a guess at what else it might have wanted.
+
+#### Parameters
+
+| Parameter                       | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `context`                       | \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \} |
+| `context.actor`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.authority`             | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.enabledToolNamespaces` | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.namespaceId`           | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.now`                   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.owner`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.purpose`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.traceId`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `request`                       | [`AuthorizationRequest`](#authorizationrequest)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+
+#### Returns
+
+`Promise`\<\{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`\>
+
+---
+
 ### formatCatalogHash()
 
 > **formatCatalogHash**(`hash`): `string`
@@ -3525,7 +3570,7 @@ rather than `node:crypto` so the kernel stays host-neutral.
 
 > **isInfrastructureDenial**(`reasonCode`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L63)
+Defined in: [packages/core/src/authorization.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L62)
 
 #### Parameters
 
@@ -3655,6 +3700,54 @@ Defined in: [packages/core/src/message-service.ts:15](https://github.com/Aicoo-T
 ##### scope
 
 > **scope**: `"exact"` \| `"descendants"`
+
+---
+
+### mintCapabilityRequest()
+
+> **mintCapabilityRequest**(`context`, `payload`): `Promise`\<\{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
+
+Defined in: packages/core/src/capability-request.ts:53
+
+Mint a request for authority from the trusted context and what was asked.
+
+`namespaceId`, `requester`, `owner`, and `requestedAt` come from the context
+and nothing else: a request the caller authored would be a caller-chosen
+correlation for a decision the kernel made (ADR 0019).
+
+`id` is derived rather than generated -- SHA-256 over the namespace,
+requester, owner, purpose, constraints, and capabilities -- so the same ask
+describes itself the same way twice. `requestedAt` is deliberately not part
+of it: it is the instant of the authority a decision was made against, stable
+within a turn but moving between turns that describe the same missing
+authority, and moving on every conformance run. Hashing only the ask is what
+gives one missing authority one identifier across turns, and what keeps a
+conformance cell able to state the value it observed rather than that a field
+was present. `metadata` is not part of it either: it annotates an ask, and
+does not make it a different one.
+
+`undefined` when what was asked is not a valid ask -- no capabilities, a
+purpose the schema refuses -- so the caller decides whether that is a thrown
+contract violation or a field to omit.
+
+#### Parameters
+
+| Parameter                       | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `context`                       | \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \} |
+| `context.actor`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.authority`             | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.enabledToolNamespaces` | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.namespaceId`           | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.now`                   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.owner`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.purpose`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.traceId`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `payload`                       | [`CapabilityRequestPayload`](#capabilityrequestpayload)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+
+#### Returns
+
+`Promise`\<\{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`\>
 
 ---
 

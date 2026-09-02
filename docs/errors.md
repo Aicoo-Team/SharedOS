@@ -464,7 +464,9 @@ a `turn.denied` would double-count against the `authorization.checked` that
 admission already produced for the same refusal (ADR 0021).
 
 `requestedAuthority` appears on `escalation.requested`, and only when the
-escalation named a capability. It is the same payload a denial carries as
+escalation named a capability. The kernel minted it: its `id`, `namespaceId`,
+`requester`, `owner`, and `requestedAt` come from the trusted context, not from
+the caller, and the `id` is derived from the ask. It is the same payload a denial carries as
 `requiredAuthority` — one concept in two roles: a denial says what was required,
 and an escalation requests it. It is the `CapabilityRequest` a reviewer's queue is built from — a
 top-level field rather than a `metadata` key because it is a contract type with
