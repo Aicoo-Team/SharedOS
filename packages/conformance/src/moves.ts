@@ -18,6 +18,7 @@ import {
   READ_ONLY_FILE,
   READ_TOOL,
   REPLACE_TOOL,
+  ROUTE_LEASE_REVOKED_CODE,
   SEALED_TOOL,
   SEEDED_SNAPSHOT_ID,
   SEND_TOOL,
@@ -61,6 +62,21 @@ const REFUSED_AS_UNEXPOSED: AttemptExpectation = {
 };
 
 const SUCCEEDS: AttemptExpectation = { statuses: ["succeeded"] };
+
+/**
+ * A dispatch the transport refused, read from either of the two places it lands.
+ *
+ * A column that sees the tool result reports the request tool's own refusal:
+ * delivery was not accepted, so there is no reply to wait for. A column whose
+ * receipts are recovered from the execution record reads the `message.sent`
+ * operation instead, which carries the transport's code verbatim. Both describe
+ * one refusal at one boundary, and both are reachable only after authorization
+ * allowed the send.
+ */
+const REFUSED_AT_DISPATCH: AttemptExpectation = {
+  statuses: ["denied", "failed"],
+  reasonCodes: [ROUTE_LEASE_REVOKED_CODE, "message_request_not_accepted"],
+};
 
 /**
  * A control that proves the turn could still act.
@@ -813,6 +829,49 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
         id: "read-own-workspace",
         description:
           "Read inside the agent's own world before throwing, so the row evidences a turn that was running and then crashed rather than one that never started -- and so the record has an operation in it to survive the crash.",
+      },
+    ],
+  },
+  /**
+   * The one row about a decision the kernel does not make.
+   *
+   * Every other row asks whether SharedOS refused something. This one asks
+   * whether SharedOS lets a refusal it did not make stand: the send is
+   * authorized, the transport declines the dispatch, and the claim is that the
+   * kernel neither overrides that nor loses it. It is graded on the receipt
+   * because a `denied` dispatch is legible there and is reachable only past
+   * authorization -- a send with no authority never gets far enough to be
+   * refused this way.
+   */
+  {
+    id: "kernel.route-lease-revoked",
+    kind: "route_lease_revoked",
+    invariant: "Dispatch a send authorized before the route lease was revoked",
+    expectedOutcome: "Terminate rather than deliver",
+    attempts: [
+      {
+        id: "send-while-the-route-is-live",
+        role: "control",
+        description:
+          "Send to the owner while the route lease is still open, establishing that this turn's send authority covers the recipient and that the transport accepts for it.",
+        tool: SEND_TOOL,
+        toolArguments: { recipient: CONFORMANCE_OWNER, payload: { question: "status" } },
+        expect: SUCCEEDS,
+      },
+      {
+        id: "dispatch-after-the-revocation",
+        role: "attack",
+        description:
+          "Send again, to the same recipient, on the same authority. The kernel decides it against the same turn snapshot and allows it again; the route lease closed between the two dispatches.",
+        tool: SEND_TOOL,
+        toolArguments: { recipient: CONFORMANCE_OWNER, payload: { question: "status" } },
+        expect: REFUSED_AT_DISPATCH,
+      },
+      {
+        ...READ_OWN_WORKSPACE,
+        id: "read-after-the-refused-dispatch",
+        description:
+          "Read inside the agent's own world after the refusal, establishing that a dead route ended the dispatch and not the turn.",
       },
     ],
   },

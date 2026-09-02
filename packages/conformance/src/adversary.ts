@@ -58,6 +58,7 @@ export const ATTACK_MOVE_KINDS = [
   "escalation_refused",
   "runtime_crashed",
   "host_policy_denied",
+  "route_lease_revoked",
   "record_completeness",
   "typed_governed_views",
   "replay_freshness",

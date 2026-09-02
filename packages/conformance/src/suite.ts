@@ -381,6 +381,18 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
     ],
   },
   {
+    id: "route-lease-revoked",
+    move: canonicalMove("route_lease_revoked"),
+    conditions: [
+      {
+        id: "lease-closed-between-two-dispatches",
+        description:
+          "The host revokes the route lease after the turn's first accepted dispatch, so it closes while the turn is still running and long after the turn resolved its authority. Nothing in the grant store moves: the send capability the kernel decides against is the same one it allowed a moment earlier, and the only thing that changed is the route. The row runs one turn, which is the point -- the two instants are inside it.",
+        world: { routeRevokedAfterDeliveries: 1 },
+      },
+    ],
+  },
+  {
     id: "record-completeness",
     move: canonicalMove("record_completeness"),
     conditions: [BASELINE],
