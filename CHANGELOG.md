@@ -277,6 +277,36 @@ each entry calls out what a host has to update.
   ceiling exists, not that the `GrantSource` stopped filtering — a host can do
   both, and audit cannot tell.
 
+- **The ceiling's policy can be loaded per turn, beside the grant set.**
+  `SharedOSKernelOptions.policySource` installs a `PolicySource`, one
+  asynchronous `load(context, signal)` the kernel calls once per turn, in flight
+  beside the grant load, and holds on the turn's authority lease as
+  `ResolvedAuthority.hostPolicy`. `HostCeiling.narrow` gains a fourth argument,
+  `policy`, which is what that source loaded — exactly as loaded, not cloned or
+  validated, because SharedOS does not know its shape and reads nothing from it
+  — and is `undefined` when no source is installed, so a ceiling that closes
+  over its own state is unchanged. `HostCeiling<Policy>` and
+  `PolicySource<Policy>` take the type as a parameter for the host's own
+  documentation; the pairing is not checked. This is the second port ADR 0020
+  defined, and the reason the synchronous signature can serve a policy that
+  lives in a database: it is read once at the turn boundary, the way authority
+  is, and never on the authorization path.
+
+  It fails closed the way the grant source does. A throw is reported once to
+  `SharedOSKernelOptions.onProviderError` as `kind: "policy"` and the turn's
+  policy is held `unavailable` for its whole length: every decision the ceiling
+  would have been consulted on is refused `host_policy_unavailable` without
+  `narrow` being called, on both paths and before any bounded use is consumed.
+  A kernel with no ceiling ignores it. A cancelled load re-throws the abort.
+
+  **Host notes.** Nothing changes for a host that installs no source. A
+  `HostCeiling` written before this release still compiles and still runs: the
+  new parameter is trailing and admits `undefined`. Every `authority.resolved`
+  event gains `hostPolicy: "loaded" | "unavailable" | "absent"` beside
+  `hostCeiling`, where `absent` means no source is installed; a host comparing
+  that event's `metadata` with `toEqual` sees the new key. The `PolicySource`
+  row leaves `docs/open-items.md`.
+
 - **A denial says which capability would have satisfied it, and an escalation
   can carry that.** `AuthorizationDecision` gains an optional
   `requiredCapability: CapabilityRequest` on a `no_matching_grant` denial, and

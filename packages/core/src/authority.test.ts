@@ -185,17 +185,20 @@ describe("SharedOSKernel authority boundary", () => {
     expect(firstDecision?.authorityHash).toBe(firstResolved?.authorityHash);
     expect(secondDecision?.authorityHash).toBe(secondResolved?.authorityHash);
     expect(firstDecision?.authorityHash).not.toBe(secondDecision?.authorityHash);
-    // `hostCeiling` rides on every authority load so a reader can tell an
-    // absent policy port from one that never fired (ADR 0020).
+    // `hostCeiling` and `hostPolicy` ride on every authority load so a reader
+    // can tell an absent policy port from one that never fired, and a ceiling
+    // deciding over loaded state from one deciding over its own (ADR 0020).
     expect(firstResolved?.metadata).toEqual({
       grantIds: ["grant-read"],
       grantCount: 1,
       hostCeiling: "absent",
+      hostPolicy: "absent",
     });
     expect(secondResolved?.metadata).toEqual({
       grantIds: [],
       grantCount: 0,
       hostCeiling: "absent",
+      hostPolicy: "absent",
     });
   });
 

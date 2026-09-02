@@ -1,6 +1,6 @@
 # ADR 0021: Every refusal reaches audit, and the record names the boundary
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-31
 - Extends: `docs/adr/0012-one-refusal-vocabulary.md`
 

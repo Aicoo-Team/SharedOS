@@ -96,6 +96,53 @@ export interface GrantSource {
   load(context: AccessContext, signal: AbortSignal): Promise<readonly CapabilityGrant[]>;
 }
 
+/**
+ * What a turn's host policy is, to SharedOS: nothing it reads.
+ *
+ * Whatever a {@link PolicySource} loaded, carried beside the resolved authority
+ * and handed back to the host's own `HostCeiling` as the fourth argument of
+ * `narrow`. It is never cloned, validated, hashed, or audited: a policy may be
+ * a compiled matcher or a table with methods on it, and SharedOS decides nothing
+ * from it -- the ceiling does. A host pairs the two ports itself, and the
+ * pairing is the host's to get right (ADR 0020).
+ */
+export type HostPolicy = unknown;
+
+/**
+ * The trusted boundary that loads host policy, once per turn, beside the grant
+ * set.
+ *
+ * A `HostCeiling` is synchronous by contract, so it can only decide against
+ * state it already holds. This is where that state comes from when it lives in
+ * a store: one asynchronous load at the turn boundary, in the same place and at
+ * the same moment authority is resolved, and every decision inside the turn
+ * made against the result without reading the store again. A ceiling whose
+ * policy is fixed before a run starts needs no source at all and closes over
+ * its own state; the port exists so a policy that lives in a database is not
+ * forced back outside the kernel by the signature (ADR 0020).
+ *
+ * Throwing is the correct response to an outage. SharedOS fails the turn's
+ * policy closed: every decision a ceiling would have been consulted on is
+ * refused `host_policy_unavailable`, the error goes to
+ * `SharedOSKernelOptions.onProviderError`, and nothing falls back to a cached
+ * or caller-supplied policy.
+ */
+export interface PolicySource<Policy = HostPolicy> {
+  load(context: AccessContext, signal: AbortSignal): Promise<Policy>;
+}
+
+/**
+ * The policy one turn decides against, or the fact that it could not be
+ * loaded.
+ *
+ * Held beside the grant set for the length of the turn, so a source that failed
+ * at the boundary stays failed for every decision in the turn rather than being
+ * retried on each and possibly changing its mind -- the same rule an
+ * unavailable {@link GrantSource} is held to.
+ */
+export type PolicyResolution<Policy = HostPolicy> =
+  { readonly status: "loaded"; readonly policy: Policy } | { readonly status: "unavailable" };
+
 /** Why authority could not be established for one decision. */
 export type AuthorityUnavailableCode =
   | "grant_source_failed"
@@ -134,6 +181,13 @@ export interface ResolvedAuthority {
   readonly context: AccessContext;
   readonly grants: readonly CapabilityGrant[];
   readonly snapshot: AuthoritySnapshot;
+  /**
+   * The host policy loaded for this turn, when a {@link PolicySource} is
+   * installed. Absent when none is, and the ceiling -- if one is installed --
+   * decides over state it closes over. Not part of {@link AuthoritySnapshot}:
+   * policy is not authority, and an opaque value has no canonical form to hash.
+   */
+  readonly hostPolicy?: PolicyResolution;
 }
 
 export type AuthorityResolution =

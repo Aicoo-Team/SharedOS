@@ -8,7 +8,7 @@ import type {
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
 
-import type { ResolvedAuthority } from "./authority.js";
+import type { HostPolicy, PolicyResolution, ResolvedAuthority } from "./authority.js";
 import { reportContainedError, type ProviderErrorReporter } from "./diagnostics.js";
 import { hashJson } from "./hashing.js";
 import {
@@ -115,14 +115,26 @@ export interface CapabilityGrantVerifier {
  * what it is asked there: a tool's *declared* ceiling, which ADR 0012 allows to
  * be broader than the argument-selected resource of any particular call.
  *
+ * **Its policy arrives as the fourth argument.** When the kernel was given a
+ * `PolicySource`, `policy` is what that source loaded for this turn, handed
+ * back exactly as loaded -- not cloned, because SharedOS does not know its
+ * shape -- and the same value for every decision in the turn. When it was not,
+ * `policy` is `undefined` and the ceiling decides over state it closes over.
+ * The pairing is the host's: SharedOS cannot check that the type a ceiling
+ * expects is the type its source produces, which is why the parameter admits
+ * `undefined` rather than promising a value. A turn whose policy could not be
+ * loaded never reaches `narrow`: every decision the ceiling would have been
+ * consulted on is refused `host_policy_unavailable` instead.
+ *
  * A throw fails closed as `host_policy_unavailable`, an infrastructure denial
  * like every other unavailable trusted component.
  */
-export interface HostCeiling {
+export interface HostCeiling<Policy = HostPolicy> {
   narrow(
     decision: AuthorizationDecision,
     request: AuthorizationRequest,
     context: AccessContext,
+    policy: Policy | undefined,
   ): AuthorizationDecision;
 }
 
@@ -165,6 +177,11 @@ export interface CapabilityAuthorizerOptions {
    * Installed by whoever constructs the authorizer, which is the party that
    * already chooses the `GrantSource`. That is not a new privilege: anyone who
    * decides what authority exists can already decide it is none.
+   *
+   * The per-turn policy it decides against, when it has one, comes from
+   * `SharedOSKernelOptions.policySource` -- on the kernel rather than here,
+   * because the load is a turn-boundary event and the kernel owns the turn
+   * boundary. The authorizer only carries what was loaded to the ceiling.
    */
   readonly hostCeiling?: HostCeiling;
   /**
@@ -337,7 +354,7 @@ export class CapabilityAuthorizer {
       // bounded use. The walk continues rather than stopping: two grants can
       // match one request and differ in ways a policy distinguishes, and
       // stopping here would deny a call the next grant would have allowed.
-      const narrowed = this.#applyCeiling(grant.id, request, context);
+      const narrowed = this.#applyCeiling(grant.id, request, context, authority.hostPolicy);
       if (narrowed.reasonCode === "host_policy_unavailable") {
         return narrowed;
       }
@@ -405,17 +422,6 @@ export class CapabilityAuthorizer {
    *
    * The returned decision is rebuilt here rather than passed through, so a
    * ceiling cannot widen by construction rather than by prohibition: an
-   * `allowed` result is answered with *our* decision, and one naming a different
-   * grant than the one it was shown is a malfunction that fails closed. A denial
-   * keeps only its metadata; its reason code is replaced, because a ceiling free
-   * to return `no_matching_grant` could reintroduce the misattribution the
-   * separate code exists to end (ADR 0020).
-   */
-  /**
-   * Hand one would-be allow to the host ceiling, and read only what it may say.
-   *
-   * The returned decision is rebuilt here rather than passed through, so a
-   * ceiling cannot widen by construction rather than by prohibition: an
    * `allowed` result is answered with a decision built here, and one naming a
    * different grant than the one it was shown is a malfunction that fails
    * closed. A denial keeps only its metadata; its reason code is replaced,
@@ -430,14 +436,23 @@ export class CapabilityAuthorizer {
    * `host_policy_denied`, inflating the one count this port exists to make
    * trustworthy, and the second would throw past every call site and end the
    * turn with no audit event at all. Both are malfunctions, so both fail closed.
+   *
+   * A turn whose policy could not be loaded is refused here without consulting
+   * the ceiling, under the same code a broken ceiling produces: the port is
+   * unavailable either way, and it was reported once, at the turn boundary,
+   * rather than on each decision it fails.
    */
   #applyCeiling(
     grantId: string,
     request: AuthorizationRequest,
     context: AccessContext,
+    hostPolicy: PolicyResolution | undefined,
   ): AuthorizationDecision {
     if (this.#hostCeiling === undefined) {
       return allow(grantId);
+    }
+    if (hostPolicy?.status === "unavailable") {
+      return deny("host_policy_unavailable");
     }
 
     let narrowed: unknown;
@@ -446,6 +461,7 @@ export class CapabilityAuthorizer {
         allow(grantId),
         structuredClone(request),
         structuredClone(context),
+        hostPolicy?.policy,
       );
     } catch (error) {
       reportContainedError(this.#onProviderError, error, {

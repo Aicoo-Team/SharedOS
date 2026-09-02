@@ -10,7 +10,7 @@ import type {
 } from "@aicoo/sharedos-contracts";
 
 import type { AuditEvent, AuditSink } from "./audit.js";
-import type { GrantSource } from "./authority.js";
+import type { GrantSource, PolicySource } from "./authority.js";
 import {
   CapabilityAuthorizer,
   type HostCeiling,
@@ -2172,6 +2172,213 @@ describe("SharedOSKernel host ceiling", () => {
     // Discovery and invocation agree, which is the property ADR 0016 requires
     // and this ADR extends to policy.
     await expect(kernel.listTools(context())).resolves.toEqual([]);
+  });
+});
+
+describe("SharedOSKernel host policy", () => {
+  /** Freezes whichever namespaces the turn's loaded policy names. */
+  const fromPolicy: HostCeiling<{ readonly frozen: readonly string[] }> = {
+    narrow: (decision, request, _context, policy) =>
+      policy !== undefined && policy.frozen.includes(request.resource.namespace)
+        ? { allowed: false, reasonCode: "frozen", metadata: { rule: "loaded-freeze" } }
+        : decision,
+  };
+
+  it("loads policy once at the turn boundary and decides every operation in the turn against it", async () => {
+    const events: AuditEvent[] = [];
+    let loads = 0;
+    const kernel = kernelWith([grant("grant-files", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (event) => void events.push(event) },
+      policySource: {
+        load: async () => {
+          loads += 1;
+          return { frozen: ["files"] };
+        },
+      },
+      authorizer: new CapabilityAuthorizer({ hostCeiling: fromPolicy }),
+    });
+    kernel.registerTool(successfulTool());
+
+    const turn = await kernel.openTurnAuthority(context());
+    const listed = await kernel.listTools(context());
+    const result = await kernel.invokeTool(context(), toolCall());
+    turn.close();
+
+    // One load, however many decisions: the rule the grant set is held to.
+    expect(loads).toBe(1);
+    expect(turn.status).toBe("resolved");
+    expect(listed).toEqual([]);
+    expect(result).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+    expect(events.find(({ type }) => type === "authority.resolved")?.metadata).toMatchObject({
+      hostCeiling: "installed",
+      hostPolicy: "loaded",
+    });
+    expect(events.filter(({ type }) => type === "authorization.checked").at(-1)).toMatchObject({
+      outcome: "denied",
+      reason: "host_policy_denied",
+      grantId: "grant-files",
+      metadata: { rule: "loaded-freeze" },
+    });
+  });
+
+  it("hands the source its own copy of the context, and the turn's signal", async () => {
+    const seenByCeiling: string[] = [];
+    let seenSignal: unknown;
+    const kernel = kernelWith([grant("grant-files", FILE_RESOURCE, ["search"])], {
+      policySource: {
+        load: async (access, signal) => {
+          seenSignal = signal;
+          // A source that edits the context it was handed edits a copy.
+          (access as { purpose: string }).purpose = "tampered";
+          return {};
+        },
+      },
+      authorizer: new CapabilityAuthorizer({
+        hostCeiling: {
+          narrow: (decision, _request, ceilingContext) => {
+            seenByCeiling.push(ceilingContext.purpose);
+            return decision;
+          },
+        },
+      }),
+    });
+
+    const turn = await kernel.openTurnAuthority(context());
+    await kernel.authorize(context(), { resource: FILE_RESOURCE, action: "search" });
+    turn.close();
+
+    expect(seenSignal).toBeInstanceOf(AbortSignal);
+    expect(seenByCeiling).toEqual(["prepare-update"]);
+  });
+
+  it("fails every policy decision in the turn closed when the policy could not be loaded, and says so once", async () => {
+    const events: AuditEvent[] = [];
+    const reports: ProviderErrorContext[] = [];
+    let loads = 0;
+    let consulted = 0;
+    const kernel = kernelWith([grant("grant-files", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (event) => void events.push(event) },
+      onProviderError: (_error, operation) => void reports.push(operation),
+      policySource: {
+        load: async () => {
+          loads += 1;
+          throw new Error("policy table is unreachable");
+        },
+      },
+      authorizer: new CapabilityAuthorizer({
+        hostCeiling: {
+          narrow: (decision) => {
+            consulted += 1;
+            return decision;
+          },
+        },
+      }),
+    });
+    kernel.registerTool(successfulTool());
+
+    const turn = await kernel.openTurnAuthority(context());
+    const first = await kernel.invokeTool(context(), toolCall());
+    const second = await kernel.invokeTool(context(), toolCall());
+    turn.close();
+
+    // Authority itself loaded. It is the policy the turn cannot decide against.
+    expect(turn.status).toBe("resolved");
+    for (const result of [first, second]) {
+      expect(result).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+    }
+    // Held for the turn like an unavailable grant source: not retried per
+    // decision, reported once, and the ceiling is never asked to decide
+    // without it.
+    expect(loads).toBe(1);
+    expect(consulted).toBe(0);
+    expect(reports).toEqual([
+      {
+        kind: "policy",
+        reasonCode: "host_policy_unavailable",
+        traceId: "trace-1",
+        namespaceId: "world-alpha",
+      },
+    ]);
+    expect(events.find(({ type }) => type === "authority.resolved")?.metadata).toMatchObject({
+      hostCeiling: "installed",
+      hostPolicy: "unavailable",
+    });
+    const decisions = events.filter(({ type }) => type === "authorization.checked");
+    expect(decisions.length).toBeGreaterThan(0);
+    for (const decision of decisions) {
+      // An outage, not a decision: the record says so, and the bucket is the
+      // one a broken ceiling already uses.
+      expect(decision).toMatchObject({
+        outcome: "denied",
+        reason: "host_policy_unavailable",
+        metadata: { failClosed: true },
+      });
+    }
+  });
+
+  it("records what the policy load came to even on a turn where authority could not load", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        load: async () => {
+          throw new Error("grant store is unreachable");
+        },
+      },
+      policySource: { load: async () => ({ frozen: [] }) },
+      audit: { record: async (event) => void events.push(event) },
+    });
+
+    await kernel.listTools(context());
+
+    // The two loads are independent, and the record says what each did.
+    expect(events.find(({ type }) => type === "authority.resolved")).toMatchObject({
+      outcome: "failed",
+      metadata: { failClosed: true, hostCeiling: "absent", hostPolicy: "loaded" },
+    });
+  });
+
+  it("says no policy was loaded when no source is installed", async () => {
+    const events: AuditEvent[] = [];
+
+    await kernelWith([], { audit: { record: async (event) => void events.push(event) } }).listTools(
+      context(),
+    );
+
+    // `absent` is "no source", not "no policy": a ceiling may close over its
+    // own, and the record beside it says whether one is installed.
+    expect(events.find(({ type }) => type === "authority.resolved")?.metadata).toMatchObject({
+      hostCeiling: "absent",
+      hostPolicy: "absent",
+    });
+  });
+
+  it("re-throws a cancelled load rather than reporting it as an outage", async () => {
+    const reports: ProviderErrorContext[] = [];
+    const controller = new AbortController();
+    const kernel = kernelWith([], {
+      onProviderError: (_error, operation) => void reports.push(operation),
+      policySource: {
+        load: async (_access, signal) => {
+          controller.abort(new Error("caller went away"));
+          throw signal.reason;
+        },
+      },
+    });
+
+    await expect(
+      kernel.openTurnAuthority(context(), { signal: controller.signal }),
+    ).rejects.toThrow(/caller went away/u);
+    expect(reports).toEqual([]);
+  });
+
+  it("refuses a policy source that cannot load", () => {
+    expect(
+      () =>
+        new SharedOSKernel({
+          grantSource: new TestGrantSource(),
+          policySource: {} as PolicySource,
+        }),
+    ).toThrow(TypeError);
   });
 });
 

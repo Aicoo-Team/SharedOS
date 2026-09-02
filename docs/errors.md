@@ -29,19 +29,19 @@ denials as successes.
 `AuthorizationDecision.reasonCode`, and the `reason` field on
 `authorization.checked` audit events.
 
-| Code                          | Means                                                                | Fix                                                    |
-| ----------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------ |
-| `allowed`                     | A grant matched                                                      | —                                                      |
-| `no_matching_grant`           | Nothing the `GrantSource` returned covers this resource and action   | See the checklist below                                |
-| `grant_exhausted`             | A matching grant exists but its `maxUses` is spent                   | Issue a new grant; usage is not resettable             |
-| `host_policy_denied`          | A grant matched and the host ceiling overrode it                     | Product or organization policy, not authority          |
-| `invalid_context`             | The `AccessContext` failed its schema                                | A host bug. Build the context server-side              |
-| `invalid_request`             | The resource or action failed its schema, or names another world     | Check path segments, action naming, and the owner      |
-| `authority_unavailable`       | The `GrantSource` threw, or answered with unusable material          | Fail-closed. See the authority table below             |
-| `usage_store_unavailable`     | The grant has `maxUses` and there is no `usageStore`, or it threw    | Supply `CapabilityAuthorizer({ usageStore })`          |
-| `delegation_chain_unverified` | The chain could not be established at all                            | Supply `CapabilityAuthorizer({ delegationResolver })`  |
-| `delegation_chain_invalid`    | The chain resolved and broke a rule — often a revoked ancestor       | Usually working as intended — upstream authority ended |
-| `host_policy_unavailable`     | The host ceiling threw, or answered with a decision it was not shown | Fail-closed. A ceiling may only narrow                 |
+| Code                          | Means                                                                                                  | Fix                                                    |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| `allowed`                     | A grant matched                                                                                        | —                                                      |
+| `no_matching_grant`           | Nothing the `GrantSource` returned covers this resource and action                                     | See the checklist below                                |
+| `grant_exhausted`             | A matching grant exists but its `maxUses` is spent                                                     | Issue a new grant; usage is not resettable             |
+| `host_policy_denied`          | A grant matched and the host ceiling overrode it                                                       | Product or organization policy, not authority          |
+| `invalid_context`             | The `AccessContext` failed its schema                                                                  | A host bug. Build the context server-side              |
+| `invalid_request`             | The resource or action failed its schema, or names another world                                       | Check path segments, action naming, and the owner      |
+| `authority_unavailable`       | The `GrantSource` threw, or answered with unusable material                                            | Fail-closed. See the authority table below             |
+| `usage_store_unavailable`     | The grant has `maxUses` and there is no `usageStore`, or it threw                                      | Supply `CapabilityAuthorizer({ usageStore })`          |
+| `delegation_chain_unverified` | The chain could not be established at all                                                              | Supply `CapabilityAuthorizer({ delegationResolver })`  |
+| `delegation_chain_invalid`    | The chain resolved and broke a rule — often a revoked ancestor                                         | Usually working as intended — upstream authority ended |
+| `host_policy_unavailable`     | The host ceiling threw, answered with a decision it was not shown, or the turn's `PolicySource` failed | Fail-closed. A ceiling may only narrow                 |
 
 Four of these are SharedOS failing to establish a fact rather than a policy
 decision: `authority_unavailable`, `usage_store_unavailable`,
@@ -319,7 +319,10 @@ A caller that stopped the work is not a defect.
 `CapabilityAuthorizerOptions.onProviderError` rather than the kernel's: the
 ceiling is installed on the authorizer, so the kernel's hook cannot reach it. A
 host wanting both passes one function to both. Its reports carry
-`kind: "policy"` and `reasonCode: "host_policy_unavailable"`.
+`kind: "policy"` and `reasonCode: "host_policy_unavailable"`. A `PolicySource`
+that throws reports the same `kind` and `reasonCode` through the kernel's hook,
+once per turn at the boundary rather than once per decision it fails, and with
+no resource or action, because no operation had started.
 
 Still uncovered: the four authority ports discard a throw the same way, and they
 are not equally bad. `GrantSource`, `GrantUsageStore`, and

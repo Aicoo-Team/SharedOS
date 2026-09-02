@@ -192,12 +192,48 @@ and not marked `failClosed`, because a deliberate refusal is not an outage. Your
 own `reasonCode` is replaced; say more in `metadata`, which is preserved except
 for the `consumed` and `failClosed` keys the kernel states itself.
 
-ADR 0020 also defines `PolicySource` — a per-turn, kernel-owned policy load
-that hands `narrow` the loaded state as a fourth argument, so a database-backed
-policy is read once at the turn boundary the way authority is. It is **not
-implemented yet**; `docs/open-items.md` carries the row. Until it lands, the
-closure above is the contract: load policy into memory and refresh it on your
-own schedule.
+A ceiling whose policy lives in a database does not close over a stale copy
+and does not read the store on the authorization path. It installs a
+`PolicySource` on the kernel, beside the grant source, and reads what that
+loaded as `narrow`'s fourth argument:
+
+```ts
+interface FolderPolicy {
+  readonly frozen: ReadonlySet<string>;
+}
+
+const kernel = new SharedOSKernel({
+  grantSource: stores,
+  // Loaded once per turn, in flight beside the grant load, and held for the
+  // turn: a decision inside it never reads the store. Throw on an outage.
+  policySource: {
+    load: async (access, signal): Promise<FolderPolicy> => ({
+      frozen: new Set(await policyDb.frozenFolders(access.owner, { signal })),
+    }),
+  },
+  authorizer: new CapabilityAuthorizer({
+    usageStore: stores,
+    hostCeiling: {
+      // `policy` is what `load` returned, exactly as returned -- not cloned,
+      // because SharedOS does not know its shape. It is `undefined` when no
+      // source is installed, which is how the closure above stays valid.
+      narrow: (decision, request, _context, policy: FolderPolicy | undefined) =>
+        policy?.frozen.has(request.resource.path[0] ?? "") === true
+          ? { allowed: false, reasonCode: "frozen", metadata: { rule: "folder-freeze" } }
+          : decision,
+    } satisfies HostCeiling<FolderPolicy>,
+  }),
+});
+```
+
+The pairing is yours: SharedOS cannot check that the type a ceiling expects is
+the type its source produced. A source that throws fails the turn's policy
+closed — every decision the ceiling would have made is refused
+`host_policy_unavailable`, `narrow` is never called, and the error goes to the
+kernel's `onProviderError` as `kind: "policy"`, once per turn. A cancelled load
+re-throws the abort instead. Every `authority.resolved` event says which case
+the turn was: `hostPolicy: "loaded"`, `"unavailable"`, or `"absent"` when no
+source is installed.
 
 Two things it does not cover, and both are yours to close:
 

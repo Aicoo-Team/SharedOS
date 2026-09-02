@@ -1,6 +1,6 @@
 # ADR 0019: An escalation names the authority it needs
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-31
 - Extends: `docs/adr/0011-escalation-terminal-outcome.md`
 

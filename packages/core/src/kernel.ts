@@ -34,6 +34,8 @@ import {
   type AuthorityUnavailableCode,
   type GrantSource,
   MID_TURN_AUTHORITY_REFRESH,
+  type PolicyResolution,
+  type PolicySource,
   type ResolvedAuthority,
   TrustedAuthorityResolver,
   type TurnAuthorityScope,
@@ -77,6 +79,18 @@ export interface SharedOSKernelOptions {
    * no authoritative grant source can only fail closed.
    */
   readonly grantSource: GrantSource;
+  /**
+   * The trusted boundary that loads host policy, once per turn, beside the
+   * grant set. See {@link PolicySource}.
+   *
+   * Optional. Without one the ceiling installed on the authorizer, if any, is
+   * handed `undefined` and decides over state it closes over. It is installed
+   * here rather than beside the ceiling because the load is a turn-boundary
+   * event and the kernel owns the turn boundary; a throw is reported to
+   * {@link SharedOSKernelOptions.onProviderError} as `kind: "policy"`, and the
+   * turn's policy fails closed.
+   */
+  readonly policySource?: PolicySource;
   readonly authorizer?: CapabilityAuthorizer;
   readonly resources?: ResourceProviderRegistry;
   readonly tools?: ToolRegistry;
@@ -193,6 +207,7 @@ interface AuthorityLease {
  */
 export class SharedOSKernel {
   readonly #authority: TrustedAuthorityResolver;
+  readonly #policySource: PolicySource | undefined;
   readonly #leases = new Map<string, AuthorityLease>();
   readonly #authorizer: CapabilityAuthorizer;
   readonly #resources: ResourceProviderRegistry;
@@ -210,6 +225,10 @@ export class SharedOSKernel {
 
   constructor(options: SharedOSKernelOptions) {
     this.#authority = new TrustedAuthorityResolver(options?.grantSource);
+    if (options.policySource !== undefined && typeof options.policySource?.load !== "function") {
+      throw new TypeError("SharedOS requires a policy source that provides a load function");
+    }
+    this.#policySource = options.policySource;
     this.#authorizer = options.authorizer ?? new CapabilityAuthorizer();
     this.#resources = options.resources ?? new ResourceProviderRegistry();
     this.#tools = options.tools ?? new ToolRegistry();
@@ -1387,7 +1406,18 @@ export class SharedOSKernel {
     context: AccessContext,
     signal: AbortSignal | undefined,
   ): Promise<AuthorityResolution> {
-    const resolution = await this.#authority.resolve(context, signal ?? neverAbortedSignal());
+    const abort = signal ?? neverAbortedSignal();
+    // A turn resolves one grant set and one policy set, and the two loads are
+    // in flight together: neither reads the other's result, and the record of
+    // the load says what each port did even on a turn where the other failed.
+    const [resolved, hostPolicy] = await Promise.all([
+      this.#authority.resolve(context, abort),
+      this.#loadHostPolicy(context, abort),
+    ]);
+    const resolution: AuthorityResolution =
+      resolved.status === "resolved" && hostPolicy !== undefined
+        ? { status: "resolved", authority: { ...resolved.authority, hostPolicy } }
+        : resolved;
     await this.#audit.record(
       auditEvent(
         context,
@@ -1400,6 +1430,7 @@ export class SharedOSKernel {
                 grantIds: [...resolution.authority.snapshot.grantIds],
                 grantCount: resolution.authority.snapshot.grantCount,
                 hostCeiling: this.#hostCeilingState(),
+                hostPolicy: hostPolicyState(hostPolicy),
               },
             }
           : {
@@ -1410,11 +1441,46 @@ export class SharedOSKernel {
                 failClosed: true,
                 authority: resolution.code,
                 hostCeiling: this.#hostCeilingState(),
+                hostPolicy: hostPolicyState(hostPolicy),
               },
             },
       ),
     );
     return resolution;
+  }
+
+  /**
+   * Read the turn's host policy from its source once, failing closed.
+   *
+   * `undefined` when no source is installed, which is a different fact from a
+   * source that failed: the first hands the ceiling nothing and lets it decide
+   * over its own state; the second refuses every decision the ceiling would
+   * have made. The error is reported here, once per turn, rather than on each
+   * decision it fails, because one outage is one report. A cancelled load is
+   * re-thrown, not reported: a caller that stopped the work is not a defect.
+   */
+  async #loadHostPolicy(
+    context: AccessContext,
+    signal: AbortSignal,
+  ): Promise<PolicyResolution | undefined> {
+    if (this.#policySource === undefined) {
+      return undefined;
+    }
+    try {
+      const policy = await this.#policySource.load(structuredClone(context), signal);
+      return { status: "loaded", policy };
+    } catch (error) {
+      if (signal.aborted) {
+        throw signal.reason ?? error;
+      }
+      reportContainedError(this.#onProviderError, error, {
+        kind: "policy",
+        reasonCode: "host_policy_unavailable",
+        traceId: context.traceId,
+        namespaceId: context.namespaceId,
+      });
+      return { status: "unavailable" };
+    }
   }
 
   /**
@@ -1776,4 +1842,19 @@ let fallbackSignal: AbortSignal | undefined;
 function neverAbortedSignal(): AbortSignal {
   fallbackSignal ??= new AbortController().signal;
   return fallbackSignal;
+}
+
+/**
+ * What one turn's policy load came to, for the `authority.resolved` record.
+ *
+ * `absent` says no `PolicySource` is installed, not that there is no policy: a
+ * ceiling may close over its own. Beside `hostCeiling`, it lets a reader tell a
+ * deployment whose ceiling decides over loaded state from one whose ceiling
+ * decides over state it carries, and a turn that could not load its policy --
+ * every policy decision in it fail-closed -- from one that could (ADR 0020).
+ */
+function hostPolicyState(
+  hostPolicy: PolicyResolution | undefined,
+): "loaded" | "unavailable" | "absent" {
+  return hostPolicy === undefined ? "absent" : hostPolicy.status;
 }

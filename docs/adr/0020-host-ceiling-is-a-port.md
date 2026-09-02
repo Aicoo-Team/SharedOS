@@ -1,6 +1,6 @@
 # ADR 0020: The host ceiling is a port, not a convention
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-31
 - Reverts: the documentation change in `663dd94`
 
@@ -139,12 +139,27 @@ A host with request-independent policy may ignore `PolicySource` entirely and
 close over its own state; the port exists so that a host whose policy lives in a
 database is not forced back outside the kernel by the signature.
 
-`PolicySource` is **not yet implemented**. The implementing branch lands
-`HostCeiling` first, with `narrow` taking the decision, request, and context and
-the host closing over state it loads and refreshes on its own schedule; the
-per-turn load moves into the kernel — and the `policy` argument arrives with
-it — in a follow-up on the same branch. `docs/open-items.md` carries the row
-until it does.
+`PolicySource` is installed as `SharedOSKernelOptions.policySource`, beside
+`grantSource`, because the load is a turn-boundary event and the kernel owns
+the turn boundary; the ceiling stays on the authorizer. The kernel loads it
+inside the same authority load — the two are in flight together and neither
+reads the other — holds the result on the turn's authority lease as
+`ResolvedAuthority.hostPolicy`, and hands it to `narrow` as the fourth argument
+on every decision in the turn, exactly as loaded: not cloned, validated, or
+hashed, because SharedOS does not know its shape and reads nothing from it. A
+kernel without a source hands the ceiling `undefined`, so a ceiling that closes
+over its own state stays a complete implementation, and the parameter admits
+`undefined` rather than promising a value whose pairing SharedOS cannot check.
+
+It fails closed the way the grant source does. A throw is reported once, at
+the boundary, to `SharedOSKernelOptions.onProviderError` as `kind: "policy"`,
+and the turn's policy is held `unavailable` for its whole length: every
+decision the ceiling would have been consulted on is refused
+`host_policy_unavailable` without `narrow` being called, on both paths, and
+before any bounded use is consumed. A kernel with no ceiling ignores it — the
+outage is the ceiling's, not authority's. Each `authority.resolved` event
+records `hostPolicy: "loaded" | "unavailable" | "absent"` beside `hostCeiling`,
+where `absent` means no source is installed, not that there is no policy.
 
 **The signature is synchronous, and that is the enforcement.** "Deterministic
 and cheap" cannot be asserted in prose and then relied on. A synchronous return

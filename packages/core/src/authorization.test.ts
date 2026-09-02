@@ -8,7 +8,7 @@ import type {
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
 
-import type { ResolvedAuthority } from "./authority.js";
+import type { PolicyResolution, ResolvedAuthority } from "./authority.js";
 import {
   type CapabilityGrantVerifier,
   CapabilityAuthorizer,
@@ -856,5 +856,101 @@ describe("the host ceiling", () => {
   it("reports whether one is installed at all", () => {
     expect(new CapabilityAuthorizer().hasHostCeiling).toBe(false);
     expect(new CapabilityAuthorizer({ hostCeiling: refuseAll }).hasHostCeiling).toBe(true);
+  });
+});
+
+describe("the policy a host ceiling decides against", () => {
+  const REQUEST = { resource: RESOURCE, action: "read" };
+  /** Authority as the kernel resolves it when a `PolicySource` is installed. */
+  const withPolicy = (
+    grants: CapabilityGrant[],
+    hostPolicy: PolicyResolution,
+  ): ResolvedAuthority => ({
+    ...context(grants),
+    hostPolicy,
+  });
+
+  it("hands the ceiling what the turn loaded, as loaded, on both paths", async () => {
+    // Not JSON on purpose: a `Set` and a function do not survive
+    // `structuredClone`. SharedOS does not know a policy's shape and reads
+    // nothing from it, so it hands back the object it was given.
+    const policy = { frozen: new Set(["files"]), rule: () => "org-freeze" };
+    const seen: unknown[] = [];
+    const fromPolicy: HostCeiling<typeof policy> = {
+      narrow: (decision, request, _context, loaded) => {
+        seen.push(loaded);
+        return loaded !== undefined && loaded.frozen.has(request.resource.namespace)
+          ? { allowed: false, reasonCode: "frozen", metadata: { rule: loaded.rule() } }
+          : decision;
+      },
+    };
+    const authorizer = new CapabilityAuthorizer({ hostCeiling: fromPolicy });
+    const authority = withPolicy([grant()], { status: "loaded", policy });
+
+    await expect(authorizer.authorize(authority, REQUEST)).resolves.toMatchObject({
+      reasonCode: "host_policy_denied",
+      metadata: { rule: "org-freeze" },
+    });
+    await expect(authorizer.canDiscover(authority, REQUEST)).resolves.toMatchObject({
+      reasonCode: "host_policy_denied",
+    });
+    expect(seen).toHaveLength(2);
+    expect(seen[0]).toBe(policy);
+    expect(seen[1]).toBe(policy);
+  });
+
+  it("fails closed without consulting the ceiling when the turn's policy could not be loaded", async () => {
+    const consulted: string[] = [];
+    const ceiling: HostCeiling = {
+      narrow: (decision) => {
+        consulted.push(decision.matchedGrantId ?? "");
+        return decision;
+      },
+    };
+    const usageStore = new InMemoryGrantUsageStore();
+    const bounded = grant({ constraints: { purposes: ["prepare-update"], maxUses: 1 } });
+    const authorizer = new CapabilityAuthorizer({ hostCeiling: ceiling, usageStore });
+    const authority = withPolicy([bounded], { status: "unavailable" });
+
+    const decision = await authorizer.authorize(authority, REQUEST, { consume: true });
+
+    // The same code a broken ceiling produces: the port is unavailable either
+    // way, and a reader separating outages from decisions needs one bucket.
+    expect(decision).toEqual({ allowed: false, reasonCode: "host_policy_unavailable" });
+    expect(isInfrastructureDenial(decision.reasonCode)).toBe(true);
+    expect(consulted).toEqual([]);
+    // Discovery agrees, so a catalogue is not offered on authority the turn
+    // cannot decide about.
+    await expect(authorizer.canDiscover(authority, REQUEST)).resolves.toMatchObject({
+      reasonCode: "host_policy_unavailable",
+    });
+    // And the bounded use is still there: refused before consumption, as
+    // every ceiling refusal is.
+    await expect(usageStore.getUsage("world-alpha", bounded.id)).resolves.toBe(0);
+  });
+
+  it("is the ceiling's outage, not authority's: with no ceiling installed it changes nothing", async () => {
+    const authority = withPolicy([grant()], { status: "unavailable" });
+
+    await expect(new CapabilityAuthorizer().authorize(authority, REQUEST)).resolves.toEqual({
+      allowed: true,
+      reasonCode: "allowed",
+      matchedGrantId: "grant-files-read",
+    });
+  });
+
+  it("hands a ceiling with no source `undefined`, and lets it decide over its own state", async () => {
+    const seen: unknown[] = [];
+    const closure: HostCeiling = {
+      narrow: (decision, _request, _context, policy) => {
+        seen.push(policy);
+        return decision;
+      },
+    };
+
+    await expect(
+      new CapabilityAuthorizer({ hostCeiling: closure }).authorize(context([grant()]), REQUEST),
+    ).resolves.toMatchObject({ allowed: true });
+    expect(seen).toEqual([undefined]);
   });
 });

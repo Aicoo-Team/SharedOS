@@ -104,6 +104,15 @@ required `GrantSource`, once per turn, and is held beside the context in a
 `ResolvedAuthority` that no provider, tool handler, transport, or runtime can
 receive.
 
+Host policy enters the same way, at the same moment. A kernel given an optional
+`PolicySource` loads it once per turn beside the grant set and holds the result
+on the same `ResolvedAuthority`, so the host ceiling decides every operation in
+the turn against one policy state without reading a store. What it loads is
+opaque to SharedOS: not validated, not hashed into the authority snapshot, and
+never read by anything but the host's own ceiling. A source that throws fails
+the turn's policy closed, and every decision the ceiling would have made in it
+is refused `host_policy_unavailable`.
+
 A `GrantSource` must answer from the issuing store with exactly the grants
 issued to the context's actor by the context's authority inside the context's
 namespace. Material outside that scope, material that fails the grant contract,
@@ -128,7 +137,8 @@ For each concrete resource or tool operation, the kernel evaluates:
 1. Validate the protocol object and namespace/world binding.
 2. Establish the authenticated actor independently from untrusted payload.
 3. Load authority from the trusted grant source, or deny. The source returns the
-   grants the actor holds and applies no policy of its own.
+   grants the actor holds and applies no policy of its own. Load the turn's
+   host policy beside it, when a `PolicySource` is installed.
 4. Ensure the request owner matches the access context owner.
 5. Ignore grants whose subject or issuer does not match the access context.
 6. Ignore grants that are not active or have been revoked as of the turn's
@@ -163,13 +173,20 @@ The ceiling may only narrow. It is never shown a denial, so it cannot turn one
 into an allow; an `allowed` result naming a grant it was not shown fails closed;
 and a refusal's reason code is replaced with `host_policy_denied` so one refusal
 vocabulary survives. It is synchronous, which structurally forbids a network or
-model call on the authorization path. Discovery consults the same port, so a
-catalogue is not offered on authority invocation would refuse.
+model call on the authorization path; the state it decides against is either
+what it closes over or what the turn's `PolicySource` loaded at step 3, handed
+to it unchanged on every decision. A turn whose policy could not be loaded
+never reaches the ceiling: each decision it would have made is refused
+`host_policy_unavailable`, before any bounded use is consumed. Discovery
+consults the same port, so a catalogue is not offered on authority invocation
+would refuse.
 
 A host that installs none behaves exactly as it did before the port existed.
-Every turn's `authority.resolved` audit event records which case it is, because
-an audit stream with no policy denials in it is otherwise ambiguous between a
-deployment that has no policy port and one whose port never fired.
+Every turn's `authority.resolved` audit event records which case it is —
+`hostCeiling` says whether a ceiling is installed, `hostPolicy` whether a
+per-turn policy was loaded, could not be, or has no source — because an audit
+stream with no policy denials in it is otherwise ambiguous between a deployment
+that has no policy port and one whose port never fired.
 
 ### Denials SharedOS caused
 

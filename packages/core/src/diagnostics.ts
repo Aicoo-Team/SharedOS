@@ -57,13 +57,17 @@ export type ProviderErrorKind = "tool" | "tool_catalog" | "resource" | "message"
  * where audit records `message_delivery_failed` and the tool result says
  * `message_request_not_accepted`. Both records carry the same `operationId`.
  *
- * `policy` is the one kind that is not an operation: it is a `HostCeiling` that
- * threw while narrowing a decision, answered with `host_policy_unavailable`.
- * The ceiling is installed on `CapabilityAuthorizer` rather than on the kernel,
- * so a host that wants these reports passes the same function to both --
- * `CapabilityAuthorizerOptions.onProviderError` and
- * `SharedOSKernelOptions.onProviderError` -- which is why they share one shape
- * rather than the ceiling growing a hook of its own.
+ * `policy` is the one kind that is not an operation. It is a `HostCeiling` that
+ * threw while narrowing a decision, or a `PolicySource` that threw while loading
+ * the turn's policy; both are answered with `host_policy_unavailable`. The
+ * ceiling is installed on `CapabilityAuthorizer` and the source on the kernel,
+ * so each reports through the hook where it lives --
+ * `CapabilityAuthorizerOptions.onProviderError` for the ceiling,
+ * `SharedOSKernelOptions.onProviderError` for the source -- and a host that
+ * wants both passes the same function to both, which is why they share one
+ * shape rather than the ceiling growing a hook of its own. A source's report
+ * names no resource or action: it fires at the turn boundary, before any
+ * operation, and once per turn rather than once per decision it fails.
  *
  * `kind` follows the *entry point*, not the port, where the two differ. A
  * `MessageCapabilityResolver` that throws is `message` when the turn called
