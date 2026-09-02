@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/contracts" },
     { "path": "./packages/core" },
+    { "path": "./packages/precedent" },
     { "path": "./packages/os" },
     { "path": "./packages/runtime" },
     { "path": "./packages/http" },

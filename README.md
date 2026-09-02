@@ -125,6 +125,7 @@ generated [package API reference](docs/api/README.md), the complete
 | `@aicoo/sharedos-contracts`   | JSON-safe protocol types, schemas, and stable identifiers       |
 | `@aicoo/sharedos-core`        | Deterministic authorization, routing, and dispatch decisions    |
 | `@aicoo/sharedos-os`          | Standard `files` operations and guarded OS tools                |
+| `@aicoo/sharedos-precedent`   | R1-R4 admission for an auto-decision proposed from precedent    |
 | `@aicoo/sharedos-runtime`     | Fixed turn envelope, standard runtime, and plugin contract      |
 | `@aicoo/sharedos-client`      | Typed client for a remote SharedOS HTTP boundary                |
 | `@aicoo/sharedos-http`        | Transport adapter over the same runtime and contracts           |

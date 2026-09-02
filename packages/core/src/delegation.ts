@@ -188,11 +188,30 @@ function linkViolation(
   return constraintsAreAttenuated(child, parent) ? undefined : "constraints_widened";
 }
 
-/** True when every access `capability` permits is also permitted by `ancestor`. */
-function capabilityIsWithin(
+/**
+ * True when every access `capability` permits is also permitted by `ancestor`.
+ *
+ * The one containment predicate, exported so that nothing has to write a second
+ * one. Namespace, resolved owner, action set, and path by segment -- with an
+ * `exact` ancestor covering only its own path and a `descendants` ancestor
+ * covering everything beneath it. ADR 0008 has already paid for what happens
+ * when two definitions of "narrower" drift, and a containment rule that is
+ * right in one place and approximate in another is worse than one that is
+ * missing.
+ *
+ * Only the owner is read off the context, so a caller that has resolved an
+ * owner without holding a whole access context -- precedent admission, ADR 0022
+ * R2 -- passes `{ owner }`. An unowned resource on either side resolves against
+ * it, which is what makes "the same owner" a comparison rather than a guess.
+ *
+ * This is the deciding-side question: is `capability` within `ancestor` *in
+ * this context*. The issuing side asks whether it holds in every context, which
+ * is a stricter question with its own predicate inside `deriveGrant`.
+ */
+export function capabilityIsWithin(
   capability: Capability,
   ancestor: Capability,
-  context: AccessContext,
+  context: Pick<AccessContext, "owner">,
 ): boolean {
   if (capability.resource.namespace !== ancestor.resource.namespace) {
     return false;

@@ -1,0 +1,51 @@
+{
+  "name": "@aicoo/sharedos-precedent",
+  "version": "0.1.0-alpha.3",
+  "description": "Admission rules for auto-decisions proposed from an owner's prior answers",
+  "license": "Apache-2.0",
+  "keywords": [
+    "agents",
+    "authorization",
+    "capabilities",
+    "escalation",
+    "precedent"
+  ],
+  "homepage": "https://www.aicoo.io",
+  "bugs": {
+    "email": "founders@aicoo.io"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aicoo-Team/SharedOS.git",
+    "directory": "packages/precedent"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "tag": "next",
+    "registry": "https://registry.npmjs.org"
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "src/**/*.ts",
+    "!dist/**/*.test.*",
+    "!src/**/*.test.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@aicoo/sharedos-contracts": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*"
+  }
+}

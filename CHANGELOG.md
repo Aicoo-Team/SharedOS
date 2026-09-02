@@ -203,6 +203,8 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **`@aicoo/sharedos-precedent` decides whether an auto-decision may stand in for a person.** A new opt-in package: `PrecedentKey` and `precedentKeyDigest` give the mechanism a typed key instead of a string-encoded one, `PrecedentLookup` keeps the rows host-side, and `admitAutoDecision` applies ADR 0022's R1-R4 to a proposal a host's matcher already made. It never widens: a refusal carries no width to read, R2 reuses `capabilityIsWithin` (now exported from `@aicoo/sharedos-core`), R3 takes the tightest envelope with `delegationDepth: 0`, and R4 marks every decision so a matcher's whole output can be revoked at once. Nothing here is an `AuthorizationDecision`, and `escalation.auto_decided` joins `AuditEventType`.
+
 - **Every refusal reaches audit, and the record names the boundary that made
   it.** The execution envelope made no audit call of its own: a tool name the
   turn's catalogue never offered, a spent step or tool-call budget, a context
