@@ -109,12 +109,15 @@ export interface LoadedPolicy {
 /** Consulted per decision, over already-loaded state. Synchronous by contract. */
 export interface HostCeiling {
   narrow(
-    decision: AuthorizationDecision,
+    decision: AllowedDecision,
     request: AuthorizationRequest,
     context: AccessContext,
     policy: HostPolicy,
-  ): AuthorizationDecision;
+  ): HostCeilingVerdict;
 }
+
+/** The allow arm alone in; that allow, or a `host_policy_denied`, out. */
+export type HostCeilingVerdict = AllowedDecision | HostPolicyDenial;
 ```
 
 `HostPolicy` is opaque to SharedOS: whatever the host loaded, carried beside the
@@ -180,12 +183,15 @@ would fail as a conformance signal: what it admits depends on how fast the
 machine is, so the same ceiling could pass on one host and fail on another.
 
 - It is consulted **only after a grant has matched**, on an `allowed` decision.
-  A denial is never shown to it, so a ceiling cannot turn one into an allow.
-- It may return only the decision it was given or a denial. A returned `allowed`
-  that does not carry the `matchedGrantId` it was handed is treated as a
-  malfunction and fails closed, so widening is not expressible rather than
-  merely forbidden.
-- Its denial carries `host_policy_denied`. The name is the constraint that
+  A denial is never shown to it — the parameter is `AllowedDecision`, the allow
+  arm alone — so a ceiling cannot turn one into an allow.
+- It may return only the decision it was given or a `HostPolicyDenial`. A
+  returned `allowed` that does not carry the `matchedGrantId` it was handed is
+  treated as a malfunction and fails closed, so widening is not expressible
+  rather than merely forbidden.
+- Its denial carries `host_policy_denied`, and the type pins the code: a ceiling
+  cannot author one of its own or borrow `no_matching_grant`, and a host outside
+  TypeScript that returns another has it replaced. The name is the constraint that
   refused — host policy, the one input to this decision no grant expresses —
   not the component that refused, so ADR 0012's rule that "a code is what was
   refused; a source is who refused it" holds: which component refused is

@@ -2089,7 +2089,11 @@ describe("SharedOSKernel provider diagnostics", () => {
 
 describe("SharedOSKernel host ceiling", () => {
   const frozen: HostCeiling = {
-    narrow: () => ({ allowed: false, reasonCode: "frozen", metadata: { rule: "hr-freeze" } }),
+    narrow: () => ({
+      allowed: false,
+      reasonCode: "host_policy_denied",
+      metadata: { rule: "hr-freeze" },
+    }),
   };
 
   it("audits a policy refusal as its own reason, on a grant that existed", async () => {
@@ -2147,7 +2151,7 @@ describe("SharedOSKernel host ceiling", () => {
       const forging: HostCeiling = {
         narrow: () => ({
           allowed: false,
-          reasonCode: "frozen",
+          reasonCode: "host_policy_denied",
           metadata: { failClosed: forged, consumed: true, rule: "hr-freeze" },
         }),
       };
@@ -2235,7 +2239,7 @@ describe("SharedOSKernel host policy", () => {
   const fromPolicy: HostCeiling<{ readonly frozen: readonly string[] }> = {
     narrow: (decision, request, _context, policy) =>
       policy !== undefined && policy.frozen.includes(request.resource.namespace)
-        ? { allowed: false, reasonCode: "frozen", metadata: { rule: "loaded-freeze" } }
+        ? { allowed: false, reasonCode: "host_policy_denied", metadata: { rule: "loaded-freeze" } }
         : decision,
   };
 

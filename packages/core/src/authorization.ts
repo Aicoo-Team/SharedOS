@@ -73,6 +73,48 @@ export interface CapabilityGrantVerifier {
 }
 
 /**
+ * A decision that allowed, and the grant that produced it.
+ *
+ * Named apart from `AuthorizationDecision` so a port can be given the allow arm
+ * alone. A denial is not assignable to it, which is how {@link HostCeiling} is
+ * prevented from ever seeing one.
+ */
+export interface AllowedDecision {
+  readonly allowed: true;
+  readonly reasonCode: "allowed";
+  readonly matchedGrantId: string;
+  readonly metadata?: JsonObject;
+}
+
+/**
+ * A refusal by host policy, the one input to a decision no grant expresses.
+ *
+ * The only denial a ceiling may author. Its code is fixed here rather than
+ * taken from the ceiling, so the vocabulary stays SharedOS's: a host cannot
+ * invent a reason code by returning one, and cannot borrow `no_matching_grant`
+ * to make its own refusal look like an absent grant. Say more in `metadata`.
+ */
+export interface HostPolicyDenial {
+  readonly allowed: false;
+  readonly reasonCode: "host_policy_denied";
+  readonly metadata?: JsonObject;
+}
+
+/**
+ * The only two things a ceiling may say: the decision it was handed, or no.
+ *
+ * Widening is inexpressible rather than forbidden. A ceiling is handed an
+ * {@link AllowedDecision} and can therefore never receive a denial to turn into
+ * an allow; the allow arm it may return is pinned to `reasonCode: "allowed"`
+ * and requires a `matchedGrantId`, which {@link CapabilityAuthorizer} checks is
+ * the one it handed over. Anything else is a malfunction and fails closed as
+ * `host_policy_unavailable`. A host outside TypeScript is held to the same at
+ * runtime, where a foreign `reasonCode` on a refusal is replaced rather than
+ * carried.
+ */
+export type HostCeilingVerdict = AllowedDecision | HostPolicyDenial;
+
+/**
  * Product or organization policy, consulted on a grant that would otherwise
  * allow.
  *
@@ -90,12 +132,16 @@ export interface CapabilityGrantVerifier {
  * Load the policy into memory and refresh it on your own schedule, which is what
  * correctness would require anyway.
  *
- * **It may only narrow.** It is never shown a denial, so it cannot turn one into
- * an allow. It may return the decision it was given or a denial, and nothing
- * else is read from what it returns: an `allowed` result carrying a different
- * `matchedGrantId` is treated as a malfunction and fails closed, and a denial's
- * `reasonCode` is replaced with `host_policy_denied` so one refusal vocabulary
- * survives (ADR 0012). Say more in `metadata`, which is preserved -- except that
+ * **It may only narrow, and the types say so.** `narrow` takes an
+ * {@link AllowedDecision} and returns a {@link HostCeilingVerdict}: the decision
+ * it was given, or a {@link HostPolicyDenial} whose code is fixed. A denial
+ * cannot be passed in, so none can be turned into an allow, and a code cannot
+ * be authored. A host outside TypeScript is held to the same at runtime, and
+ * nothing else is read from what it returns: an `allowed` result carrying a
+ * different `matchedGrantId` is treated as a malfunction and fails closed, and
+ * any other `reasonCode` on a refusal is replaced with `host_policy_denied` so
+ * one refusal vocabulary survives (ADR 0012). Say more in `metadata`, which is
+ * preserved -- except that
  * audit drops the `consumed` and `failClosed` keys the kernel states itself, and
  * anything that is not a JSON object is dropped whole.
  *
@@ -130,11 +176,11 @@ export interface CapabilityGrantVerifier {
  */
 export interface HostCeiling<Policy = HostPolicy> {
   narrow(
-    decision: AuthorizationDecision,
+    decision: AllowedDecision,
     request: AuthorizationRequest,
     context: AccessContext,
     policy: Policy | undefined,
-  ): AuthorizationDecision;
+  ): HostCeilingVerdict;
 }
 
 /**
@@ -554,7 +600,7 @@ function worstDelegationFailure(
   return current;
 }
 
-function allow(grantId: string): AuthorizationDecision {
+function allow(grantId: string): AllowedDecision {
   return { allowed: true, reasonCode: "allowed", matchedGrantId: grantId };
 }
 

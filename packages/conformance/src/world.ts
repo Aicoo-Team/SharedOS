@@ -1470,7 +1470,7 @@ const FROZEN_CEILING: HostCeiling = {
     }
     return {
       allowed: false,
-      reasonCode: "refused-by-policy",
+      reasonCode: "host_policy_denied",
       metadata: { rule: frozenAction ? "no-mutations" : "ledger-frozen" },
     };
   },

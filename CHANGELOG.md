@@ -255,14 +255,18 @@ each entry calls out what a host has to update.
   about a call a grant did authorize, so no deployment could answer how often
   its own policy overrode a grant it issued (ADR 0020).
 
-  It may only narrow, and by construction rather than by rule. It is never shown
+  It may only narrow, and by construction rather than by rule. `narrow` takes
+  an `AllowedDecision` — the allow arm alone — and returns a
+  `HostCeilingVerdict`: that decision, or a `HostPolicyDenial` whose
+  `reasonCode` is fixed to `host_policy_denied`. A denial cannot be passed in
+  and a code cannot be authored, at the type level. At runtime it is never shown
   a denial; an `allowed` result naming a grant it was not shown fails closed as
   `host_policy_unavailable`, as does a throw, and as does a malformed return —
   an `async narrow` or a branch that falls off the end both yield something whose
   `allowed` is `undefined`, and reading that as a denial would file a broken port
-  as a deliberate refusal. A refusal's `reasonCode` is replaced with
-  `host_policy_denied` so a ceiling cannot re-emit the very misattribution the
-  separate code ends. Its `metadata` is preserved except for `consumed` and
+  as a deliberate refusal. A refusal's `reasonCode`, should a host outside
+  TypeScript return another, is replaced with `host_policy_denied` so a ceiling
+  cannot re-emit the very misattribution the separate code ends. Its `metadata` is preserved except for `consumed` and
   `failClosed`, which the kernel states itself, and except for anything that is
   not a JSON object, which is dropped whole.
 

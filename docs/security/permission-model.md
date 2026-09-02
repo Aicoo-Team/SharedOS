@@ -172,10 +172,13 @@ _not_ fail-closed — because a chain that resolved and broke a rule says the gr
 is not valid authority at all, which is upstream of whether policy would have
 allowed it.
 
-The ceiling may only narrow. It is never shown a denial, so it cannot turn one
-into an allow; an `allowed` result naming a grant it was not shown fails closed;
-and a refusal's reason code is replaced with `host_policy_denied` so one refusal
-vocabulary survives. It is synchronous, which structurally forbids a network or
+The ceiling may only narrow, and the types say so before the kernel does: it is
+handed the allow arm alone, so it cannot turn a denial into an allow, and the
+only refusal it may return carries `host_policy_denied`, so it cannot author a
+code or borrow `no_matching_grant`. At runtime the same holds for a host outside
+TypeScript: an `allowed` result naming a grant it was not shown fails closed,
+and any other reason code on a refusal is replaced with `host_policy_denied` so
+one refusal vocabulary survives. It is synchronous, which structurally forbids a network or
 model call on the authorization path; the state it decides against is either
 what it closes over or what the turn's `PolicySource` loaded at step 3, handed
 to it unchanged on every decision. A turn whose policy could not be loaded

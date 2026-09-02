@@ -540,7 +540,9 @@ describe("the capability a denial describes", () => {
 describe("the host ceiling", () => {
   const REQUEST = { resource: RESOURCE, action: "read" };
   /** Refuses everything it is shown. */
-  const refuseAll: HostCeiling = { narrow: () => ({ allowed: false, reasonCode: "frozen" }) };
+  const refuseAll: HostCeiling = {
+    narrow: () => ({ allowed: false, reasonCode: "host_policy_denied" }),
+  };
 
   it("refuses a grant that would have allowed, and names the grant it overrode", async () => {
     const authorizer = new CapabilityAuthorizer({ hostCeiling: refuseAll });
@@ -586,7 +588,7 @@ describe("the host ceiling", () => {
     const exceptLegacy: HostCeiling = {
       narrow: (decision) =>
         decision.matchedGrantId === "grant-legacy"
-          ? { allowed: false, reasonCode: "frozen" }
+          ? { allowed: false, reasonCode: "host_policy_denied" }
           : decision,
     };
     const authorizer = new CapabilityAuthorizer({ hostCeiling: exceptLegacy });
@@ -638,17 +640,19 @@ describe("the host ceiling", () => {
   });
 
   it("keeps a refusal's metadata but not its reason code", async () => {
-    const detailed: HostCeiling = {
+    // Not expressible in the type -- `HostPolicyDenial` pins the code -- so
+    // this is what a host outside TypeScript can still do.
+    const detailed = {
       narrow: () => ({
         allowed: false,
         reasonCode: "no_matching_grant",
         metadata: { rule: "hr-freeze" },
       }),
-    };
+    } as unknown as HostCeiling;
 
     // A ceiling free to name its own code could return the very
     // misattribution the separate bucket exists to end, so the code is
-    // replaced; what it wanted to say survives in metadata.
+    // replaced at runtime as well; what it wanted to say survives in metadata.
     await expect(
       new CapabilityAuthorizer({ hostCeiling: detailed }).authorize(context([grant()]), REQUEST),
     ).resolves.toMatchObject({
@@ -698,7 +702,7 @@ describe("the host ceiling", () => {
     const onlyRefused: HostCeiling = {
       narrow: (decision) =>
         decision.matchedGrantId === "grant-refused"
-          ? { allowed: false, reasonCode: "frozen" }
+          ? { allowed: false, reasonCode: "host_policy_denied" }
           : decision,
     };
     const authorizer = new CapabilityAuthorizer({ hostCeiling: onlyRefused, usageStore });
@@ -756,7 +760,7 @@ describe("the host ceiling", () => {
         (ceilingContext as { purpose: string }).purpose = "unrelated-purpose";
         (request as { action: string }).action = "delete";
         return decision.matchedGrantId === "grant-first"
-          ? { allowed: false, reasonCode: "frozen" }
+          ? { allowed: false, reasonCode: "host_policy_denied" }
           : decision;
       },
     };
@@ -834,9 +838,11 @@ describe("the host ceiling", () => {
   it("drops metadata that is not a JSON object rather than carrying it", async () => {
     const badMetadata: HostCeiling = {
       narrow: () =>
-        ({ allowed: false, reasonCode: "frozen", metadata: "hr-freeze" }) as unknown as ReturnType<
-          HostCeiling["narrow"]
-        >,
+        ({
+          allowed: false,
+          reasonCode: "host_policy_denied",
+          metadata: "hr-freeze",
+        }) as unknown as ReturnType<HostCeiling["narrow"]>,
     };
 
     // The refusal is still true and useful without it, and letting a non-JSON
@@ -880,7 +886,7 @@ describe("the policy a host ceiling decides against", () => {
       narrow: (decision, request, _context, loaded) => {
         seen.push(loaded);
         return loaded !== undefined && loaded.frozen.has(request.resource.namespace)
-          ? { allowed: false, reasonCode: "frozen", metadata: { rule: loaded.rule() } }
+          ? { allowed: false, reasonCode: "host_policy_denied", metadata: { rule: loaded.rule() } }
           : decision;
       },
     };

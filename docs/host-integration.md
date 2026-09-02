@@ -170,7 +170,7 @@ const kernel = new SharedOSKernel({
       // on your own schedule.
       narrow: (decision, request) =>
         frozenNamespaces.has(request.resource.namespace)
-          ? { allowed: false, reasonCode: "frozen", metadata: { rule: "freeze" } }
+          ? { allowed: false, reasonCode: "host_policy_denied", metadata: { rule: "freeze" } }
           : decision,
     },
     // The ceiling lives here, not on the kernel, so the kernel's own
@@ -180,17 +180,22 @@ const kernel = new SharedOSKernel({
 });
 ```
 
-Return the decision you were given, or a denial. Anything else fails closed as
-`host_policy_unavailable` — including an `async narrow`, whose promise has no
+Return the decision you were given, or a `HostPolicyDenial`: `allowed: false`,
+`reasonCode: "host_policy_denied"`, and whatever you want to say in `metadata`.
+The types admit nothing else — `narrow` takes an `AllowedDecision`, so a denial
+cannot be passed in, and returns a `HostCeilingVerdict`, so a code cannot be
+authored — and anything else at runtime fails closed as
+`host_policy_unavailable`, including an `async narrow`, whose promise has no
 `allowed` to read, and a branch that falls off the end.
 
 It is consulted only on a grant that would otherwise allow, so it can narrow and
 never widen, and it is consulted before a bounded use is consumed, so a refused
 call does not spend one. Its refusal is recorded as `host_policy_denied` with
 the `grantId` it overrode — separable from `no_matching_grant` in every count,
-and not marked `failClosed`, because a deliberate refusal is not an outage. Your
-own `reasonCode` is replaced; say more in `metadata`, which is preserved except
-for the `consumed` and `failClosed` keys the kernel states itself.
+and not marked `failClosed`, because a deliberate refusal is not an outage. A
+host outside TypeScript that returns some other `reasonCode` has it replaced;
+`metadata` is preserved except for the `consumed` and `failClosed` keys the
+kernel states itself.
 
 A ceiling whose policy lives in a database does not close over a stale copy
 and does not read the store on the authorization path. It installs a
@@ -222,7 +227,11 @@ const kernel = new SharedOSKernel({
       // source is installed, which is how the closure above stays valid.
       narrow: (decision, request, _context, policy: FolderPolicy | undefined) =>
         policy?.frozen.has(request.resource.path[0] ?? "") === true
-          ? { allowed: false, reasonCode: "frozen", metadata: { rule: "folder-freeze" } }
+          ? {
+              allowed: false,
+              reasonCode: "host_policy_denied",
+              metadata: { rule: "folder-freeze" },
+            }
           : decision,
     } satisfies HostCeiling<FolderPolicy>,
   }),
