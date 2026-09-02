@@ -110,6 +110,19 @@ export interface GrantInstants {
  * can never outlive a well-formed one.
  */
 export function grantIsActive(grant: CapabilityGrant, purpose: string, at: GrantInstants): boolean {
+  return grantInactiveReason(grant, purpose, at) === undefined;
+}
+
+/**
+ * Which of the two activity conditions a grant failed, for the host-facing
+ * explanation. `grantIsActive` is this function's only other caller, so the
+ * decision and the account of it can never disagree.
+ */
+export function grantInactiveReason(
+  grant: CapabilityGrant,
+  purpose: string,
+  at: GrantInstants,
+): "window" | "purpose" | undefined {
   const issuedAt = parseTimestamp(grant.issuedAt);
   const notBefore = parseTimestamp(grant.constraints.notBefore);
   const expiresAt = parseTimestamp(grant.constraints.expiresAt);
@@ -130,9 +143,9 @@ export function grantIsActive(grant: CapabilityGrant, purpose: string, at: Grant
     (grant.revokedAt !== undefined && revokedAt === undefined) ||
     (revokedAt !== undefined && at.admittedAt >= revokedAt)
   ) {
-    return false;
+    return "window";
   }
 
   const purposes = grant.constraints.purposes;
-  return purposes === undefined || purposes.includes(purpose);
+  return purposes === undefined || purposes.includes(purpose) ? undefined : "purpose";
 }

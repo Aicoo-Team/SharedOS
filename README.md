@@ -195,10 +195,15 @@ The [quickstart](docs/quickstart.md) is two working programs — the kernel
 embedded in your process, and the same kernel over HTTP — written against the
 published packages. From there:
 
+- [Every endpoint](docs/endpoints.md): one page naming all five surfaces, and
+  the capability space they all resolve to.
 - [HTTP API reference](docs/http-api.md): every route, request body, status
   code, and header, plus where authentication enters.
-- [Tool catalog](docs/tools.md): the twelve `files` tools, the three
-  availability gates, and how to register native or MCP tools of your own.
+- [MCP API reference](docs/mcp-api.md): the same catalog as an MCP server —
+  both transports, every method, and the configuration each harness expects.
+- [Tool catalog](docs/tools.md): the twelve `files` tools, the two standard
+  tools outside them, the three availability gates, and how to register native
+  or MCP tools of your own.
 - [Reason and error codes](docs/errors.md): what every denial means and what to
   change in response.
 

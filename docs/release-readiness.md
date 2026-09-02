@@ -34,6 +34,9 @@ vulnerability-reporting contact.
   effects and enforces namespace/owner filtering inside its query.
 - Add authentication, payload/rate limits, connector egress controls, secret
   handling, and host-specific policy ceilings at deployment boundaries.
+- Keep the MCP bridge on loopback, or supply its `authorize` hook and terminate
+  TLS ahead of it. A bridge bound past loopback without a token is reachable by
+  anything on that network.
 - Run host adapter conformance suites covering allow, deny, expiry,
   revocation, bounded-use races, cross-world isolation, replay, cancellation,
   and malformed provider responses.
