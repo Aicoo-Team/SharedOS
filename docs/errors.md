@@ -321,6 +321,20 @@ differently, so an outage is never reported as a policy decision.
 | `tool.namespace.selection.updated` | `succeeded`, `failed`           | A namespace patch was applied                                   |
 | `message.sent`                     | `succeeded`, `denied`, `failed` | A message was delivered through the transport                   |
 
+`authority.resolved` opens a turn: a turn resolves authority once, and this is
+the event that records which grants it resolved to. It carries `authorityHash`
+and, in `metadata`, the `grantIds` and `grantCount` behind that hash — so every
+later decision in the turn, which carries the same hash, can be traced back to
+the exact authority set it was made against. A failure records
+`authority_unavailable` and `failClosed`, because a source that could not answer
+denies rather than widening.
+
+`escalation.requested` is the audit record of a turn that stopped and asked a
+human. Its outcome is `escalated`, which is deliberately not `denied`: a denial
+is a decision SharedOS made, an escalation is one it declined to make. Counting
+them together inflates every denial rate by the cases where the system correctly
+asked for help.
+
 Every event carries `version`, `type`, `outcome`, `at`, `traceId`,
 `namespaceId`, `actor`, `authority`, `owner`, `purpose`, and where applicable
 `resource`, `action`, `grantId`, `authorityHash`, `operationId`, `tool`,

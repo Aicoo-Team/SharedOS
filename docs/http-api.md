@@ -377,3 +377,8 @@ kernel serving several deployments.
 
 Whichever you choose, the authorization decision is the same one, and the
 context is always host-derived.
+
+These routes are for code you control. An external coding-agent CLI is served by
+the other network surface — the same catalogue and the same kernel, presented as
+an MCP server, with its own transports and methods in the
+[MCP API reference](mcp-api.md).

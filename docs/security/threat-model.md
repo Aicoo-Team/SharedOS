@@ -100,6 +100,17 @@ Authentication, rate limiting, payload limits, CORS, and denial-of-service
 controls are deployment responsibilities. Transport auth never replaces a
 capability decision.
 
+The MCP bridge is a second listener and must be reviewed as one. It binds
+loopback by default and is scoped to a single turn, so its default exposure is
+the subprocess it was opened for. Its controls are the `authorize` hook, which
+validates a bearer token on every request, and a session id that binds requests
+to one bridge — a request presenting another bridge's session is refused rather
+than adopted. Widening the bind address turns a loopback bridge into a network
+service: require the token, terminate TLS ahead of it, and treat the port as
+reachable by anything on that network. The execution token identifies a session.
+It carries no authority, and a valid token still buys nothing that a capability
+grant does not allow.
+
 ### Grant injection and tampering
 
 `ExecutionRequest` carries an access context for embedded portability.
