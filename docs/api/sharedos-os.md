@@ -29,13 +29,14 @@ SharedOS is currently an `0.x` prerelease.
 
 ### StandardOsProviders
 
-Defined in: [index.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L138)
+Defined in: [index.ts:210](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L210)
 
 #### Properties
 
 | Property                             | Modifier   | Type                                                    | Defined in                                                                                     |
 | ------------------------------------ | ---------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| <a id="property-files"></a> `files?` | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L139) |
+| <a id="property-files"></a> `files?` | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L211) |
+| <a id="property-repo"></a> `repo?`   | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L212) |
 
 ## Type Aliases
 
@@ -43,7 +44,7 @@ Defined in: [index.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **FilePath** = `z.infer`\<_typeof_ [`FilePathSchema`](#filepathschema)>\>
 
-Defined in: [index.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L23)
+Defined in: [index.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L36)
 
 ---
 
@@ -51,7 +52,7 @@ Defined in: [index.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **FilesAppendArguments** = `z.infer`\<_typeof_ [`FilesAppendArgumentsSchema`](#filesappendargumentsschema)>\>
 
-Defined in: [index.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L92)
+Defined in: [index.ts:105](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L105)
 
 ---
 
@@ -59,7 +60,7 @@ Defined in: [index.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **FilesCreateArguments** = `z.infer`\<_typeof_ [`FilesCreateArgumentsSchema`](#filescreateargumentsschema)>\>
 
-Defined in: [index.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L56)
+Defined in: [index.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L69)
 
 ---
 
@@ -67,7 +68,7 @@ Defined in: [index.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **FilesDeleteArguments** = `z.infer`\<_typeof_ [`FilesDeleteArgumentsSchema`](#filesdeleteargumentsschema)>\>
 
-Defined in: [index.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L101)
+Defined in: [index.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L114)
 
 ---
 
@@ -75,7 +76,7 @@ Defined in: [index.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **FilesGrepArguments** = `z.infer`\<_typeof_ [`FilesGrepArgumentsSchema`](#filesgrepargumentsschema)>\>
 
-Defined in: [index.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L47)
+Defined in: [index.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L60)
 
 ---
 
@@ -83,7 +84,7 @@ Defined in: [index.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **FilesPathArguments** = `z.infer`\<_typeof_ [`FilesPathArgumentsSchema`](#filespathargumentsschema)>\>
 
-Defined in: [index.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L26)
+Defined in: [index.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L39)
 
 ---
 
@@ -91,7 +92,7 @@ Defined in: [index.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **FilesReplaceArguments** = `z.infer`\<_typeof_ [`FilesReplaceArgumentsSchema`](#filesreplaceargumentsschema)>\>
 
-Defined in: [index.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L82)
+Defined in: [index.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L95)
 
 ---
 
@@ -99,7 +100,7 @@ Defined in: [index.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **FilesSearchArguments** = `z.infer`\<_typeof_ [`FilesSearchArgumentsSchema`](#filessearchargumentsschema)>\>
 
-Defined in: [index.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L35)
+Defined in: [index.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L48)
 
 ---
 
@@ -107,7 +108,7 @@ Defined in: [index.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **FilesSnapshotCreateArguments** = `z.infer`\<_typeof_ [`FilesSnapshotCreateArgumentsSchema`](#filessnapshotcreateargumentsschema)>\>
 
-Defined in: [index.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L109)
+Defined in: [index.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L122)
 
 ---
 
@@ -115,7 +116,7 @@ Defined in: [index.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **FilesSnapshotListArguments** = `z.infer`\<_typeof_ [`FilesSnapshotListArgumentsSchema`](#filessnapshotlistargumentsschema)>\>
 
-Defined in: [index.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L117)
+Defined in: [index.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L130)
 
 ---
 
@@ -123,7 +124,55 @@ Defined in: [index.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **FilesSnapshotRestoreArguments** = `z.infer`\<_typeof_ [`FilesSnapshotRestoreArgumentsSchema`](#filessnapshotrestoreargumentsschema)>\>
 
-Defined in: [index.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L126)
+Defined in: [index.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L139)
+
+---
+
+### RepoCommitArguments
+
+> **RepoCommitArguments** = `z.infer`\<_typeof_ [`RepoCommitArgumentsSchema`](#repocommitargumentsschema)>\>
+
+Defined in: [index.ts:198](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L198)
+
+---
+
+### RepoDiffArguments
+
+> **RepoDiffArguments** = `z.infer`\<_typeof_ [`RepoDiffArgumentsSchema`](#repodiffargumentsschema)>\>
+
+Defined in: [index.ts:180](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L180)
+
+---
+
+### RepoLogArguments
+
+> **RepoLogArguments** = `z.infer`\<_typeof_ [`RepoLogArgumentsSchema`](#repologargumentsschema)>\>
+
+Defined in: [index.ts:188](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L188)
+
+---
+
+### RepoPathspec
+
+> **RepoPathspec** = `z.infer`\<_typeof_ [`RepoPathspecSchema`](#repopathspecschema)>\>
+
+Defined in: [index.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L152)
+
+---
+
+### RepoStageArguments
+
+> **RepoStageArguments** = `z.infer`\<_typeof_ [`RepoStageArgumentsSchema`](#repostageargumentsschema)>\>
+
+Defined in: [index.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L193)
+
+---
+
+### RepoStatusArguments
+
+> **RepoStatusArguments** = `z.infer`\<_typeof_ [`RepoStatusArgumentsSchema`](#repostatusargumentsschema)>\>
+
+Defined in: [index.ts:171](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L171)
 
 ## Variables
 
@@ -131,7 +180,7 @@ Defined in: [index.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > `const` **FilePathSchema**: `ZodArray`\<`ZodString`, `"many"`>\>
 
-Defined in: [index.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L22)
+Defined in: [index.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L35)
 
 ---
 
@@ -149,7 +198,7 @@ The canonical SharedOS resource plane. Memory is a role of files, not a second s
 
 > `const` **FilesAppendArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>>\>\>; `metadata`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>>>\>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L84)
+Defined in: [index.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L97)
 
 ---
 
@@ -157,7 +206,7 @@ Defined in: [index.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **FilesCreateArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `metadata`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>>>\>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L49)
+Defined in: [index.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L62)
 
 ---
 
@@ -165,7 +214,7 @@ Defined in: [index.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **FilesDeleteArgumentsSchema**: `ZodObject`\<\{ `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `recursive`: `ZodDefault`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `expectedVersion?`: `string`; `path`: `string`[]; `recursive`: `boolean`; \}, \{ `expectedVersion?`: `string`; `path`: `string`[]; `recursive?`: `boolean`; \}\>
 
-Defined in: [index.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L94)
+Defined in: [index.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L107)
 
 ---
 
@@ -173,7 +222,7 @@ Defined in: [index.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **FilesGrepArgumentsSchema**: `ZodObject`\<\{ `caseSensitive`: `ZodDefault`\<`ZodBoolean`>\>; `contextAfter`: `ZodDefault`\<`ZodNumber`>\>; `contextBefore`: `ZodDefault`\<`ZodNumber`>\>; `mode`: `ZodDefault`\<`ZodEnum`\<\[`"literal"`, `"regex"`\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `pattern`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `caseSensitive`: `boolean`; `contextAfter`: `number`; `contextBefore`: `number`; `mode`: `"literal"` \| `"regex"`; `path`: `string`[]; `pattern`: `string`; \}, \{ `caseSensitive?`: `boolean`; `contextAfter?`: `number`; `contextBefore?`: `number`; `mode?`: `"literal"` \| `"regex"`; `path`: `string`[]; `pattern`: `string`; \}\>
 
-Defined in: [index.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L37)
+Defined in: [index.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L50)
 
 ---
 
@@ -181,7 +230,7 @@ Defined in: [index.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **FilesPathArgumentsSchema**: `ZodObject`\<\{ `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `path`: `string`[]; \}, \{ `path`: `string`[]; \}\>
 
-Defined in: [index.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L25)
+Defined in: [index.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L38)
 
 ---
 
@@ -189,7 +238,7 @@ Defined in: [index.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **FilesReplaceArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L75)
+Defined in: [index.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L88)
 
 ---
 
@@ -197,7 +246,7 @@ Defined in: [index.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **FilesSearchArgumentsSchema**: `ZodObject`\<\{ `limit`: `ZodOptional`\<`ZodNumber`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `query`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `limit?`: `number`; `path`: `string`[]; `query`: `string`; \}, \{ `limit?`: `number`; `path`: `string`[]; `query`: `string`; \}\>
 
-Defined in: [index.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L28)
+Defined in: [index.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L41)
 
 ---
 
@@ -205,7 +254,7 @@ Defined in: [index.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **FilesSnapshotCreateArgumentsSchema**: `ZodObject`\<\{ `label`: `ZodOptional`\<`ZodString`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `label?`: `string`; `path`: `string`[]; \}, \{ `label?`: `string`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:103](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L103)
+Defined in: [index.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L116)
 
 ---
 
@@ -213,7 +262,7 @@ Defined in: [index.ts:103](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > `const` **FilesSnapshotListArgumentsSchema**: `ZodObject`\<\{ `limit`: `ZodOptional`\<`ZodNumber`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `limit?`: `number`; `path`: `string`[]; \}, \{ `limit?`: `number`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L111)
+Defined in: [index.ts:124](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L124)
 
 ---
 
@@ -221,7 +270,82 @@ Defined in: [index.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > `const` **FilesSnapshotRestoreArgumentsSchema**: `ZodObject`\<\{ `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `snapshotId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `expectedVersion?`: `string`; `path`: `string`[]; `snapshotId`: `string`; \}, \{ `expectedVersion?`: `string`; `path`: `string`[]; `snapshotId`: `string`; \}\>
 
-Defined in: [index.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L119)
+Defined in: [index.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L132)
+
+---
+
+### REPO\_NAMESPACE
+
+> `const` **REPO\_NAMESPACE**: `"repo"` = `"repo"`
+
+Defined in: [index.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L32)
+
+The Git resource plane.
+
+`repo` and [FILES\_NAMESPACE](#files_namespace) may address the same directory and share
+no authority: `capabilityMatches` compares `resource.namespace` before it
+looks at anything else, so a file grant over a working tree matches nothing
+here and a repository grant matches nothing there. Modelling `commit` as a
+write under `files` would have made every holder of file-write authority a
+committer, which is the permission cross-product ADR 0005 refuses. See
+ADR 0024.
+
+---
+
+### RepoCommitArgumentsSchema
+
+> `const` **RepoCommitArgumentsSchema**: `ZodObject`\<\{ `message`: `ZodEffects`\<`ZodString`, `string`, `string`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `message`: `string`; `path`: `string`[]; \}, \{ `message`: `string`; `path`: `string`[]; \}\>
+
+Defined in: [index.ts:195](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L195)
+
+---
+
+### RepoDiffArgumentsSchema
+
+> `const` **RepoDiffArgumentsSchema**: `ZodObject`\<\{ `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `pathspec`: `ZodOptional`\<`ZodArray`\<`ZodArray`\<`ZodString`, `"many"`>\>, `"many"`>>\>\>; `staged`: `ZodDefault`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `path`: `string`[]; `pathspec?`: `string`[][]; `staged`: `boolean`; \}, \{ `path`: `string`[]; `pathspec?`: `string`[][]; `staged?`: `boolean`; \}\>
+
+Defined in: [index.ts:173](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L173)
+
+---
+
+### RepoLogArgumentsSchema
+
+> `const` **RepoLogArgumentsSchema**: `ZodObject`\<\{ `maxCount`: `ZodOptional`\<`ZodNumber`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `maxCount?`: `number`; `path`: `string`[]; \}, \{ `maxCount?`: `number`; `path`: `string`[]; \}\>
+
+Defined in: [index.ts:182](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L182)
+
+---
+
+### RepoPathspecSchema
+
+> `const` **RepoPathspecSchema**: `ZodArray`\<`ZodArray`\<`ZodString`, `"many"`>\>, `"many"`>\>
+
+Defined in: [index.ts:151](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L151)
+
+Paths inside a repository, selecting what a diff or a stage covers.
+
+Provider input, not a second resource: staging is authorized at the
+repository, and the provider confines every entry beneath it exactly as
+`validatePathArguments` does today. They are carried in the same canonical
+segment vocabulary as any other path (ADR 0004), so a traversal marker is
+refused before the provider is reached -- a vocabulary constraint, not the
+authorization boundary. See ADR 0024.
+
+---
+
+### RepoStageArgumentsSchema
+
+> `const` **RepoStageArgumentsSchema**: `ZodObject`\<\{ `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `pathspec`: `ZodArray`\<`ZodArray`\<`ZodString`, `"many"`>\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `path`: `string`[]; `pathspec`: `string`[][]; \}, \{ `path`: `string`[]; `pathspec`: `string`[][]; \}\>
+
+Defined in: [index.ts:190](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L190)
+
+---
+
+### RepoStatusArgumentsSchema
+
+> `const` **RepoStatusArgumentsSchema**: `ZodObject`\<\{ `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `path`: `string`[]; \}, \{ `path`: `string`[]; \}\>
+
+Defined in: [index.ts:170](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L170)
 
 ---
 
@@ -229,7 +353,7 @@ Defined in: [index.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > `const` **SHAREDOS\_TOOL\_SOURCE**: `"sharedos"` = `"sharedos"`
 
-Defined in: [index.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L20)
+Defined in: [index.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L33)
 
 ## Functions
 
@@ -237,7 +361,7 @@ Defined in: [index.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **createFileTools**(`provider`): readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
-Defined in: [index.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L160)
+Defined in: [index.ts:238](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L238)
 
 Portable file tools over one host-owned provider.
 
@@ -257,11 +381,45 @@ readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
 ---
 
+### createRepoTools()
+
+> **createRepoTools**(`provider`): readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
+
+Defined in: [index.ts:472](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L472)
+
+The vetted Git subset over one host-owned provider, beside the file tools.
+
+Five tools, one per subcommand the host's `safe-git` allows, each resolving
+to an action of its own: a plane with a single `write` could not express "may
+stage, never commit", which is the distinction hosts already make. `push`,
+`reset`, `checkout`, `clean`, `config`, and `remote` are deliberately absent
+and stay behind whatever authorizes an arbitrary shell command.
+
+The capability names the repository; the provider confines every path
+argument beneath it. SharedOS ships the vocabulary and the authorization and
+never a Git implementation, so the execution hardening the host applies --
+disabled hooks, no system or global config, no external diff or textconv
+drivers, no clean filters, refused symlinks -- holds because the provider is
+the only code that can turn a capability into an invocation, not because any
+grant asked for it. See ADR 0024.
+
+#### Parameters
+
+| Parameter  | Type                                                    |
+| ---------- | ------------------------------------------------------- |
+| `provider` | [`ResourceProvider`](sharedos-core.md#resourceprovider) |
+
+#### Returns
+
+readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
+
+---
+
 ### registerStandardOsTools()
 
 > **registerStandardOsTools**(`kernel`, `providers`): `void`
 
-Defined in: [index.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L142)
+Defined in: [index.ts:215](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/os/src/index.ts#L215)
 
 #### Parameters
 

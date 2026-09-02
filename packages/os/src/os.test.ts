@@ -12,18 +12,25 @@ import { SharedOSKernel, type GrantSource, type ResourceProvider } from "@aicoo/
 
 import {
   createFileTools,
+  createRepoTools,
   FILES_NAMESPACE,
   FilesAppendArgumentsSchema,
   FilesDeleteArgumentsSchema,
   FilesReplaceArgumentsSchema,
   FilesSnapshotRestoreArgumentsSchema,
+  REPO_NAMESPACE,
+  registerStandardOsTools,
 } from "./index.js";
 
 const now = "2026-08-03T00:00:00.000Z";
 const actor = { kind: "agent", agentId: "agent-bob" } as const;
 const owner = { kind: "human", userId: "user-alice" } as const;
 
-function grantFor(actions: string[], path = ["Memory", "Self"]): CapabilityGrant {
+function grantFor(
+  actions: string[],
+  path = ["Memory", "Self"],
+  namespace = FILES_NAMESPACE,
+): CapabilityGrant {
   return {
     id: "grant-1",
     namespaceId: "world-1",
@@ -31,7 +38,7 @@ function grantFor(actions: string[], path = ["Memory", "Self"]): CapabilityGrant
     issuer: owner,
     capabilities: [
       {
-        resource: { namespace: FILES_NAMESPACE, path, owner },
+        resource: { namespace, path, owner },
         actions,
         scope: "descendants",
       },
@@ -41,13 +48,13 @@ function grantFor(actions: string[], path = ["Memory", "Self"]): CapabilityGrant
   };
 }
 
-function contextFor(): AccessContext {
+function contextFor(enabledToolNamespaces: string[] = [FILES_NAMESPACE]): AccessContext {
   return {
     actor,
     authority: owner,
     owner,
     namespaceId: "world-1",
-    enabledToolNamespaces: [FILES_NAMESPACE],
+    enabledToolNamespaces,
     purpose: "prepare-report",
     traceId: "trace-1",
     now,
@@ -83,6 +90,17 @@ function provider(
   })),
 ): ResourceProvider {
   return { namespace: FILES_NAMESPACE, invoke };
+}
+
+function repoProvider(
+  invoke = vi.fn(async (operation: ResourceOperation): Promise<ResourceResult> => ({
+    operationId: operation.operationId,
+    status: "succeeded",
+    output: { ok: true },
+    completedAt: now,
+  })),
+): ResourceProvider {
+  return { namespace: REPO_NAMESPACE, invoke };
 }
 
 describe("standard OS file tools", () => {
@@ -393,6 +411,174 @@ describe("standard OS file tools", () => {
 
   it("rejects providers from a second resource namespace", () => {
     expect(() => createFileTools({ ...provider(), namespace: "memory" })).toThrow(
+      "Expected a files provider",
+    );
+  });
+});
+
+describe("standard OS repository tools", () => {
+  const REPOSITORY = ["Projects", "sharedos"];
+  const BOTH_PLANES = [FILES_NAMESPACE, REPO_NAMESPACE];
+
+  function tracked() {
+    return vi.fn(async (operation: ResourceOperation): Promise<ResourceResult> => ({
+      operationId: operation.operationId,
+      status: "succeeded",
+      output: { action: operation.action },
+      completedAt: now,
+    }));
+  }
+
+  /** Both planes registered over the same directory, so only the grant differs. */
+  function kernelFor(grant: CapabilityGrant, files = tracked(), repo = tracked()) {
+    const kernel = new SharedOSKernel({ grantSource: grantSource([grant]) });
+    for (const handler of createFileTools(provider(files))) kernel.registerTool(handler);
+    for (const handler of createRepoTools(repoProvider(repo))) kernel.registerTool(handler);
+    return { kernel, files, repo };
+  }
+
+  it("does not let a files capability reach the repo plane, or a repo capability reach files", async () => {
+    const context = contextFor(BOTH_PLANES);
+
+    // The broadest file authority expressible -- every action, over the very
+    // directory the repository occupies. `capabilityMatches` compares the
+    // namespace first, so none of it is repository authority.
+    const holder = kernelFor(grantFor(["*"], REPOSITORY, FILES_NAMESPACE));
+    const visible = (await holder.kernel.listTools(context)).map(({ name }) => name);
+    expect(visible).toContain("files.delete");
+    expect(visible.filter((name) => name.startsWith("repo."))).toEqual([]);
+
+    const committed = await holder.kernel.invokeTool(
+      context,
+      call("repo.commit", { path: REPOSITORY, message: "chore: rebuild the index" }),
+    );
+    expect(committed).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+    expect(holder.repo).not.toHaveBeenCalled();
+
+    // And the reverse. A repository grant is not a licence to read the working
+    // tree through `files.read`, which would reach paths the Git subset never
+    // exposes.
+    const committer = kernelFor(grantFor(["*"], REPOSITORY, REPO_NAMESPACE));
+    const reachable = (await committer.kernel.listTools(context)).map(({ name }) => name);
+    expect(reachable).toContain("repo.commit");
+    expect(reachable.filter((name) => name.startsWith("files."))).toEqual([]);
+
+    const read = await committer.kernel.invokeTool(
+      context,
+      call("files.read", { path: [...REPOSITORY, "README.md"] }),
+    );
+    expect(read).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+    expect(committer.files).not.toHaveBeenCalled();
+
+    // The refusals are authorization, not a namespace that was switched off:
+    // both planes are enabled for this context and both were consulted.
+    expect(context.enabledToolNamespaces).toEqual(BOTH_PLANES);
+  });
+
+  it("publishes the vetted git subset as five actions and nothing outside it", () => {
+    const definitions = createRepoTools(repoProvider()).map(({ definition }) => definition);
+
+    expect(
+      definitions.map(({ name, requiredCapability }) => [name, requiredCapability.action]),
+    ).toEqual([
+      ["repo.status", "status"],
+      ["repo.diff", "diff"],
+      ["repo.log", "log"],
+      ["repo.stage", "stage"],
+      ["repo.commit", "commit"],
+    ]);
+
+    for (const { namespace, requiredCapability } of definitions) {
+      expect(namespace).toBe(REPO_NAMESPACE);
+      expect(requiredCapability.resource.namespace).toBe(REPO_NAMESPACE);
+    }
+
+    // Everything else stays behind whatever authorizes an arbitrary shell
+    // command; the provider must not widen the reachable set of Git operations.
+    const names = definitions.map(({ name }) => name);
+    for (const forbidden of ["push", "reset", "checkout", "clean", "config", "remote"]) {
+      expect(names.some((name) => name.includes(forbidden))).toBe(false);
+    }
+  });
+
+  it("does not widen staging authority into commit", async () => {
+    const context = contextFor(BOTH_PLANES);
+    const held = kernelFor(
+      grantFor(["status", "diff", "log", "stage"], REPOSITORY, REPO_NAMESPACE),
+    );
+
+    const staged = await held.kernel.invokeTool(
+      context,
+      call("repo.stage", { path: REPOSITORY, pathspec: [["packages", "os", "src", "index.ts"]] }),
+    );
+    const committed = await held.kernel.invokeTool(
+      context,
+      call("repo.commit", { path: REPOSITORY, message: "feat: give git its own plane" }),
+    );
+
+    expect(staged.status).toBe("succeeded");
+    expect(committed).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+    expect((await held.kernel.listTools(context)).map(({ name }) => name)).not.toContain(
+      "repo.commit",
+    );
+    expect(held.repo.mock.calls.map(([operation]) => operation.action)).toEqual(["stage"]);
+  });
+
+  it("authorizes the repository the arguments name and passes the pathspec as input", async () => {
+    const context = contextFor(BOTH_PLANES);
+    const held = kernelFor(grantFor(["stage"], REPOSITORY, REPO_NAMESPACE));
+
+    const outside = await held.kernel.invokeTool(
+      context,
+      call("repo.stage", { path: ["Projects", "other"], pathspec: [["README.md"]] }),
+    );
+    expect(outside.status).toBe("denied");
+
+    // A traversal marker is not a path segment, so the contract refuses it
+    // before the provider's own confinement is reached.
+    const traversal = await held.kernel.invokeTool(
+      context,
+      call("repo.stage", { path: REPOSITORY, pathspec: [["..", "secrets.env"]] }),
+    );
+    expect(traversal.status).toBe("failed");
+
+    const allowed = await held.kernel.invokeTool(
+      context,
+      call("repo.stage", { path: REPOSITORY, pathspec: [["docs", "adr"]] }),
+    );
+    expect(allowed.status).toBe("succeeded");
+    expect(held.repo).toHaveBeenCalledOnce();
+    expect(held.repo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resource: expect.objectContaining({ namespace: REPO_NAMESPACE, path: REPOSITORY }),
+        action: "stage",
+        input: { pathspec: [["docs", "adr"]] },
+      }),
+      expect.any(AbortSignal),
+    );
+  });
+
+  it("registers a git provider beside the files provider", () => {
+    const registered: string[] = [];
+    registerStandardOsTools(
+      { registerTool: (handler) => registered.push(handler.definition.name) },
+      { files: provider(), repo: repoProvider() },
+    );
+    expect(registered.filter((name) => name.startsWith("files."))).toHaveLength(12);
+    expect(registered.filter((name) => name.startsWith("repo."))).toHaveLength(5);
+
+    // The kernel's resource registry is keyed by namespace, so the second plane
+    // needed no kernel change to sit beside the first.
+    const kernel = new SharedOSKernel({ grantSource: grantSource([]) });
+    kernel.registerResourceProvider(provider());
+    expect(() => kernel.registerResourceProvider(repoProvider())).not.toThrow();
+  });
+
+  it("refuses to build either plane's tools over the other plane's provider", () => {
+    expect(() => createRepoTools({ ...repoProvider(), namespace: FILES_NAMESPACE })).toThrow(
+      "Expected a repo provider",
+    );
+    expect(() => createFileTools({ ...provider(), namespace: REPO_NAMESPACE })).toThrow(
       "Expected a files provider",
     );
   });

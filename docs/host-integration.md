@@ -336,6 +336,14 @@ Registering the provider enables direct resource operations. Registering the
 standard tools exposes the same operations as model-callable tools such as
 `files.search` and `files.append`. Neither registration grants access.
 
+A host that vets a Git subset registers it the same way, as a second provider
+whose namespace is `repo`: `kernel.registerResourceProvider(repo)` and
+`registerStandardOsTools(kernel, { files, repo })`. The two planes may address
+the same directory and share no authority — a file grant over a working tree
+grants nothing under `repo`, and the reverse — so a host issues commit authority
+deliberately instead of inheriting it from file access
+([ADR 0024](adr/0024-git-is-its-own-resource-namespace.md)).
+
 The in-memory stores from `@aicoo/sharedos-testkit` are useful for tests and
 isolated experiment worlds. They are not production persistence.
 
