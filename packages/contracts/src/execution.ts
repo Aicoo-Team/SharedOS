@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { AccessContextSchema } from "./access.js";
 import { AddressSchema, AgentAddressSchema } from "./address.js";
+import { CapabilityRequestSchema } from "./capability.js";
 import { IdentifierSchema, ProtocolVersionSchema, TimestampSchema } from "./common.js";
 import { JsonObjectSchema, JsonValueSchema } from "./json.js";
 import { MessageEnvelopeSchema } from "./message.js";
@@ -71,6 +72,20 @@ export const EscalationSchema = z
     reason: z.string().trim().min(1).max(512),
     reviewer: AddressSchema,
     requestedAt: TimestampSchema,
+    /**
+     * The authority the turn asked for, when the asker could name it.
+     *
+     * Optional, because a runtime that stopped on prose has none to give, and
+     * an escalation without one is the escalation ADR 0011 already recorded.
+     * With one, the host that resolves it reads which capability to issue
+     * instead of reconstructing a resource, action, owner and purpose from a
+     * sentence a model wrote.
+     *
+     * It changes nothing about resolution. The request is not authority, the
+     * status is still always `pending`, and nothing inside SharedOS advances
+     * it. See ADR 0019.
+     */
+    request: CapabilityRequestSchema.optional(),
     /** Always pending. Nothing inside SharedOS advances it. */
     status: z.literal("pending"),
   })

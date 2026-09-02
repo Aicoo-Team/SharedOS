@@ -21,7 +21,7 @@ describe("testkit", () => {
         resource: { namespace: "files", path: ["Workspace", "project-x"] },
         action: "search",
       }),
-    ).resolves.toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+    ).resolves.toMatchObject({ allowed: false, reasonCode: "no_matching_grant" });
   });
 
   it("builds grants bound to the same namespace as the context", async () => {

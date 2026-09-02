@@ -73,7 +73,18 @@ export type CapabilityConstraints = z.infer<typeof CapabilityConstraintsSchema>;
 /**
  * A request for authority. A request is not itself proof of authority.
  *
- * No SharedOS port accepts one yet; see `docs/open-items.md`.
+ * SharedOS produces one and never consumes one as authority. A
+ * `no_matching_grant` denial describes the authority that would have satisfied
+ * it in `AuthorizationDecision.requiredCapability`, and an escalation may carry
+ * one in `Escalation.request` so the host resolving it reads a capability
+ * rather than a sentence. Turning either into a grant is host-owned
+ * control-plane work, and the next turn loads the result. See ADR 0019.
+ *
+ * `id`, `requester` and `requestedAt` are minted by the kernel from the trusted
+ * access context: a request the caller authored would be a caller-chosen
+ * correlation for a decision the kernel made. `id` is derived from those fields
+ * together with the capabilities asked for rather than generated, so the same
+ * ask describes itself the same way twice.
  */
 export const CapabilityRequestSchema = z
   .object({
