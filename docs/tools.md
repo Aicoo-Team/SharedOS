@@ -266,6 +266,7 @@ semantics if you only need persistence around it.
 ## Related
 
 - [HTTP API reference](http-api.md) — the tool routes on the wire
+- [MCP API reference](mcp-api.md) — the same catalog as an MCP server
 - [Reason and error codes](errors.md) — what each denial means
 - [ADR 0006: Tool namespace control plane](adr/0006-tool-namespace-control-plane.md)
 - [Permission model](security/permission-model.md) — the normative invariants

@@ -87,12 +87,18 @@ is the boundary between them and the agents that act on them.
 
 - [Quickstart](quickstart.md): two working programs — the kernel embedded in
   your process, and the same kernel over HTTP — against the published packages.
+- [Every endpoint](endpoints.md): one page naming all five surfaces — the HTTP
+  routes, the MCP methods, the tool catalog, the embedded API, and the one
+  outbound call — with the capability space they all resolve to.
 - [HTTP API reference](http-api.md): every route, request body, status code, and
   header, plus where authentication enters.
-- [Tool catalog](tools.md): the twelve `files` tools, the three availability
-  gates, and how to register native or MCP tools of your own.
+- [Tool catalog](tools.md): the twelve `files` tools, the two standard tools
+  outside them, the three availability gates, and how to register native or MCP
+  tools of your own.
 - [MCP toolshare](mcp-toolshare.md): the permission-filtered catalogue as an MCP
   server, the boundary presented to Codex, Claude Code, DeepSeek Harness, and Pi.
+- [MCP API reference](mcp-api.md): that boundary on the wire — both transports,
+  every method, and the harness configuration each CLI expects.
 - [Reason and error codes](errors.md): what every denial and failure means, and
   what to change in response.
 - [Architecture](architecture.md): responsibilities, packages, fixed security
@@ -140,6 +146,8 @@ is the boundary between them and the agents that act on them.
 - [ADR 0018: Escalation over MCP is recovered from the call, not returned by it](adr/0018-escalation-over-mcp.md)
 - [ADR 0019: An escalation names the authority it needs](adr/0019-escalation-names-the-authority-it-needs.md)
 - [ADR 0020: The host ceiling is a port, not a convention](adr/0020-host-ceiling-is-a-port.md)
+- [ADR 0021: An agent card, with reach computed at read time](adr/0021-agent-card-reach-computed-at-read-time.md)
+- [ADR 0022: A precedent proposes; the kernel decides whether it may](adr/0022-precedent-proposes-the-kernel-admits.md)
 
 ## Project governance
 

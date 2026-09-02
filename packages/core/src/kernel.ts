@@ -19,6 +19,7 @@ import type {
 import {
   EnabledToolNamespacesSchema,
   EscalationSchema,
+  type JsonObject,
   JsonObjectSchema,
   MessageDeliveryResultSchema,
   MessageEnvelopeSchema,
@@ -39,6 +40,7 @@ import {
   turnAuthorityKey,
 } from "./authority.js";
 import {
+  type AuthorizationExplanation,
   type AuthorizationRequest,
   CapabilityAuthorizer,
   addressesEqual,
@@ -1107,9 +1109,13 @@ export class SharedOSKernel {
     consume: boolean,
     operationId?: string,
   ): Promise<AuthorizationDecision> {
+    let explanation: AuthorizationExplanation | undefined;
     const decision = await this.#authorizer.authorize(authority, request, {
       consume,
       now: context.now,
+      onExplain: (received) => {
+        explanation = received;
+      },
     });
 
     await this.#recordAuthorizationDecision(
@@ -1119,6 +1125,7 @@ export class SharedOSKernel {
       consume,
       authority.snapshot.hash,
       operationId,
+      explanation,
     );
 
     return decision;
@@ -1186,7 +1193,17 @@ export class SharedOSKernel {
               type: "authority.resolved",
               outcome: "failed",
               reason: "authority_unavailable",
-              metadata: { failClosed: true, authority: resolution.code },
+              metadata: {
+                failClosed: true,
+                authority: resolution.code,
+                ...(resolution.detail === undefined
+                  ? {}
+                  : {
+                      rejectedGrants: [
+                        { grantId: resolution.detail.grantId, reason: resolution.detail.reason },
+                      ],
+                    }),
+              },
             },
       ),
     );
@@ -1215,6 +1232,7 @@ export class SharedOSKernel {
     consume: boolean,
     authorityHash?: string,
     operationId?: string,
+    explanation?: AuthorizationExplanation,
   ): Promise<void> {
     await this.#audit.record(
       auditEvent(context, {
@@ -1235,6 +1253,7 @@ export class SharedOSKernel {
           // only when there is one, so a kernel without a ceiling emits exactly
           // the record it emitted before the port existed. See ADR 0020.
           ...(this.#authorizer.hasHostCeiling ? { hostCeiling: true } : {}),
+          ...(explanation === undefined ? {} : explanationMetadata(explanation)),
         },
       }),
     );
@@ -1431,6 +1450,33 @@ function failedMessageResult(
     status: "failed",
     timestamp: completedAt,
     error: protocolError(code, message),
+  };
+}
+
+/**
+ * The host-facing account of a denial, flattened onto the audit record.
+ *
+ * This is the only place the collapsed reason codes are taken apart, and it is
+ * deliberately the audit sink rather than the response: the caller learns that
+ * it may not proceed, the operator learns why. `grantsResolved: 0` with no
+ * rejections says the store returned nothing for this context, which is a
+ * different fault from every grant being rejected and is indistinguishable
+ * from the reason code alone.
+ */
+function explanationMetadata(explanation: AuthorizationExplanation): JsonObject {
+  return {
+    grantsResolved: explanation.grantsResolved,
+    ...(explanation.rejections.length === 0
+      ? {}
+      : {
+          rejectedGrants: explanation.rejections.map((rejection) => ({
+            grantId: rejection.grantId,
+            reason: rejection.reason,
+          })),
+        }),
+    ...(explanation.missingDependency === undefined
+      ? {}
+      : { missingDependency: explanation.missingDependency }),
   };
 }
 

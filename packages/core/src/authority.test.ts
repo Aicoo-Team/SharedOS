@@ -115,14 +115,19 @@ describe("TrustedAuthorityResolver", () => {
   });
 
   it("fails closed instead of quietly filtering out-of-scope authority", async () => {
-    for (const outOfScope of [
-      grant({ namespaceId: "world-beta" }),
-      grant({ subject: { kind: "agent", agentId: "agent-other" } }),
-      grant({ issuer: { kind: "human", userId: "user-mallory" } }),
-    ]) {
+    // One code for the caller, and the dimension named for the host: the
+    // decision stays `authority_unavailable` either way, but an operator
+    // reading the audit record should not have to guess which of the three
+    // conditions the grant failed.
+    for (const [reason, outOfScope] of [
+      ["namespace", grant({ namespaceId: "world-beta" })],
+      ["subject", grant({ subject: { kind: "agent", agentId: "agent-other" } })],
+      ["issuer", grant({ issuer: { kind: "human", userId: "user-mallory" } })],
+    ] as const) {
       await expect(resolve(staticSource([grant(), outOfScope]))).resolves.toEqual({
         status: "unavailable",
         code: "grant_scope_mismatch",
+        detail: { grantId: outOfScope.id, reason },
       });
     }
   });
