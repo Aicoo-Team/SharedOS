@@ -400,6 +400,38 @@ and cannot escalate. The tool is never executed — a driver ends the turn on th
 name — so the handler only fails if a driver forwards the call; see
 [kernel-supplied tools](tools.md#kernel-supplied-tools).
 
+#### Ports a grant can need
+
+Two grant features do not work on a default authorizer, and both fail closed
+rather than loudly: a grant is issued, everything about it looks right, and every
+call it should have allowed is denied.
+
+| Grant feature             | Port needed          | Without it                                |
+| ------------------------- | -------------------- | ----------------------------------------- |
+| `constraints.maxUses`     | `usageStore`         | denies with `usage_store_unavailable`     |
+| `parentGrantId` (derived) | `delegationResolver` | denies with `delegation_chain_unverified` |
+
+```ts
+const authorizer = new CapabilityAuthorizer({
+  usageStore: new InMemoryGrantUsageStore(), // single process only
+  delegationResolver,
+});
+```
+
+`InMemoryGrantUsageStore` is process-local and suitable for tests and
+single-process hosts; a distributed host owes a durable compare-and-set store,
+because a bounded grant is only bounded if two nodes cannot both spend its last
+use. Both denials carry `missingDependency` on the audit record naming the port
+that was absent, so this is diagnosable from the trail rather than by inspection.
+
+**A denial you did not expect is answered by the audit record, not the response
+body.** The reason codes collapse deliberately — `no_matching_grant` covers nine
+causes and `authority_unavailable` covers four — so that a caller cannot map the
+permission topology by reading refusals. The host is not the caller: every
+denial records `grantsResolved` and a `rejectedGrants` array naming each grant
+and the first condition it failed. Wire an `audit` sink before you need it. See
+[errors](errors.md).
+
 ### 5. Add native, connector, or MCP tools
 
 Live systems such as calendar, email, GitHub, and Notion remain tools because

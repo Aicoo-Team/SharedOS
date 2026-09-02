@@ -59,6 +59,14 @@ withholding the grant made the kernel assert the first. It is not marked
 `failClosed` — a deliberate refusal is not an outage — and it carries the
 `grantId` it overrode, so the two are countable separately (ADR 0020).
 
+Two of them are usually not faults at all but omissions, and say so:
+`usage_store_unavailable` and `delegation_chain_unverified` add
+`missingDependency: "usageStore" | "delegationResolver"` to the audit record when
+the authorizer was built without the port the grant needed. A `maxUses` grant
+with no `usageStore`, or a derived grant with no `delegationResolver`, denies
+every time and looks exactly like a permission problem. It is a wiring problem;
+see [host integration](host-integration.md#ports-a-grant-can-need).
+
 `authority_unavailable` collapses four situations on purpose, so that no caller
 can tell a broken store from a rejected one:
 
@@ -71,7 +79,9 @@ can tell a broken store from a rejected one:
 
 A source that answers with a superset fails closed rather than being quietly
 filtered: pre-filtering to (namespace, actor, authority) is part of the
-contract.
+contract. Which of the three the grant broke, and which grant it was, is on the
+`authority.resolved` audit event as `rejectedGrants` — the caller still sees one
+code.
 
 ### When you get `no_matching_grant` and expected otherwise
 
@@ -97,6 +107,28 @@ Walk these in order. Every one of them produces the identical code.
 8. **A `grantVerifier` returned false or threw.** A throw is treated as false.
 9. **The capability is spread across grants.** One requirement must be satisfied
    by one grant. Path from one and action from another is refused deliberately.
+
+**You do not have to walk the list by hand.** The reason code is the same for
+all nine because a caller may not learn which one it was; the host may. Every
+denial records a `rejectedGrants` array on its `authorization.checked` audit
+event, naming each resolved grant and the first condition it failed:
+
+```text
+authorization.checked  denied  files/Work/Finance  no_matching_grant
+  grantsResolved: 2
+  rejectedGrants: [ { grantId: "grant-17", reason: "issuer" },
+                    { grantId: "grant-19", reason: "capability" } ]
+```
+
+`reason` is one of `issuer`, `subject`, `namespace`, `window`, `purpose`,
+`verifier`, `capability`, `delegation`, or `exhausted`. `grantsResolved: 0` with
+no rejections is a different fault from every grant being rejected: the store
+returned nothing for this context at all.
+
+Three of the nine — `namespace`, `subject`, and `issuer` — are checked earlier,
+when authority is resolved, and refuse the whole set rather than one grant. Those
+appear on the `authority.resolved` event instead, under the same key, beside
+`authority: "grant_scope_mismatch"`.
 
 ### The denial says which capability it wanted
 

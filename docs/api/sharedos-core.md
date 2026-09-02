@@ -27,7 +27,7 @@ SharedOS is currently an `0.x` prerelease.
 
 ### CapabilityAuthorizer
 
-Defined in: [packages/core/src/authorization.ts:272](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L272)
+Defined in: [packages/core/src/authorization.ts:327](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L327)
 
 #### Constructors
 
@@ -35,7 +35,7 @@ Defined in: [packages/core/src/authorization.ts:272](https://github.com/Aicoo-Te
 
 > **new CapabilityAuthorizer**(`options?`): [`CapabilityAuthorizer`](#capabilityauthorizer)
 
-Defined in: [packages/core/src/authorization.ts:280](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L280)
+Defined in: [packages/core/src/authorization.ts:335](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L335)
 
 ###### Parameters
 
@@ -55,7 +55,7 @@ Defined in: [packages/core/src/authorization.ts:280](https://github.com/Aicoo-Te
 
 > **get** **hasHostCeiling**(): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:297](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L297)
+Defined in: [packages/core/src/authorization.ts:352](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L352)
 
 Whether a host ceiling is installed.
 
@@ -74,7 +74,7 @@ the difference between a count and a guess (ADR 0020).
 
 > **authorize**(`authority`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/authorization.ts:301](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L301)
+Defined in: [packages/core/src/authorization.ts:356](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L356)
 
 ###### Parameters
 
@@ -92,7 +92,7 @@ Defined in: [packages/core/src/authorization.ts:301](https://github.com/Aicoo-Te
 
 > **canDiscover**(`authority`, `ceiling`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/authorization.ts:323](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L323)
+Defined in: [packages/core/src/authorization.ts:379](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L379)
 
 Non-consuming catalog check. A narrow grant can discover a tool whose
 declared resource is a broader ceiling; invocation still checks the exact
@@ -299,7 +299,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### InMemoryGrantUsageStore
 
-Defined in: [packages/core/src/authorization.ts:248](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L248)
+Defined in: [packages/core/src/authorization.ts:303](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L303)
 
 An atomic, process-local usage store suitable for tests and single-process
 hosts. Distributed hosts should inject a durable compare-and-set store.
@@ -324,7 +324,7 @@ hosts. Distributed hosts should inject a durable compare-and-set store.
 
 > **getUsage**(`namespaceId`, `grantId`): `Promise`\<`number`>\>
 
-Defined in: [packages/core/src/authorization.ts:251](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L251)
+Defined in: [packages/core/src/authorization.ts:306](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L306)
 
 ###### Parameters
 
@@ -345,7 +345,7 @@ Defined in: [packages/core/src/authorization.ts:251](https://github.com/Aicoo-Te
 
 > **tryConsume**(`namespaceId`, `grantId`, `maximumUses`): `Promise`\<`boolean`>\>
 
-Defined in: [packages/core/src/authorization.ts:255](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L255)
+Defined in: [packages/core/src/authorization.ts:310](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L310)
 
 ###### Parameters
 
@@ -692,7 +692,7 @@ Defined in: [packages/core/src/resource-registry.ts:26](https://github.com/Aicoo
 
 ### SharedOSKernel
 
-Defined in: [packages/core/src/kernel.ts:222](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L222)
+Defined in: [packages/core/src/kernel.ts:223](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L223)
 
 Host-neutral facade for every permission-controlled SharedOS operation.
 AccessContext is a trusted host-created boundary; never construct it from an
@@ -704,7 +704,7 @@ unverified request body.
 
 > **new SharedOSKernel**(`options`): [`SharedOSKernel`](#sharedoskernel)
 
-Defined in: [packages/core/src/kernel.ts:240](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L240)
+Defined in: [packages/core/src/kernel.ts:241](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L241)
 
 ###### Parameters
 
@@ -722,7 +722,7 @@ Defined in: [packages/core/src/kernel.ts:240](https://github.com/Aicoo-Team/Shar
 
 > **admitTurn**(`context`, `agent`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:353](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L353)
+Defined in: [packages/core/src/kernel.ts:354](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L354)
 
 Consume permission to invoke exactly one target agent turn.
 
@@ -750,7 +750,7 @@ Consume permission to invoke exactly one target agent turn.
 
 > **authorize**(`context`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:337](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L337)
+Defined in: [packages/core/src/kernel.ts:338](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L338)
 
 ###### Parameters
 
@@ -776,7 +776,7 @@ Defined in: [packages/core/src/kernel.ts:337](https://github.com/Aicoo-Team/Shar
 
 > **invokeResource**(`context`, `request`, `options?`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:1011](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1011)
+Defined in: [packages/core/src/kernel.ts:1012](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1012)
 
 ###### Parameters
 
@@ -802,7 +802,7 @@ Defined in: [packages/core/src/kernel.ts:1011](https://github.com/Aicoo-Team/Sha
 
 > **invokeTool**(`context`, `call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:710](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L710)
+Defined in: [packages/core/src/kernel.ts:711](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L711)
 
 Re-authorize and dispatch one tool call.
 
@@ -841,7 +841,7 @@ SharedOS. Both spans exist or neither does.
 
 > **listPublishedTools**(`context`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:622](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L622)
+Defined in: [packages/core/src/kernel.ts:623](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L623)
 
 The effective catalogue as an external harness receives it.
 
@@ -880,7 +880,7 @@ harness would have to interpret.
 
 > **listToolNamespaces**(`context`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:630](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L630)
+Defined in: [packages/core/src/kernel.ts:631](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L631)
 
 ###### Parameters
 
@@ -905,7 +905,7 @@ Defined in: [packages/core/src/kernel.ts:630](https://github.com/Aicoo-Team/Shar
 
 > **listTools**(`context`, `options?`): `Promise`\<readonly `object`[]\>
 
-Defined in: [packages/core/src/kernel.ts:518](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L518)
+Defined in: [packages/core/src/kernel.ts:519](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L519)
 
 ###### Parameters
 
@@ -930,7 +930,7 @@ Defined in: [packages/core/src/kernel.ts:518](https://github.com/Aicoo-Team/Shar
 
 > **openTurnAuthority**(`context`, `options?`): `Promise`\<[`TurnAuthorityScope`](#turnauthorityscope)>\>
 
-Defined in: [packages/core/src/kernel.ts:301](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L301)
+Defined in: [packages/core/src/kernel.ts:302](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L302)
 
 Resolve the authority one turn will be decided against, and hold it.
 
@@ -971,7 +971,7 @@ lease resolves its own authority, which is a turn of one operation.
 
 > **recordEscalation**(`context`, `reason`, `options?`): `Promise`\<\{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:389](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L389)
+Defined in: [packages/core/src/kernel.ts:390](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L390)
 
 Record that a turn stopped and asked a human to decide.
 
@@ -1009,7 +1009,7 @@ deliberately no path from here back into the running turn.
 
 > **recordRefusedCall**(`context`, `call`, `options?`): `Promise`\<`void`>\>
 
-Defined in: [packages/core/src/kernel.ts:495](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L495)
+Defined in: [packages/core/src/kernel.ts:496](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L496)
 
 Record a tool call the envelope refused before the kernel was asked.
 
@@ -1046,7 +1046,7 @@ that stops being inferable the moment this method exists (ADR 0023).
 
 > **recordTurnEnd**(`context`, `turn`, `options?`): `Promise`\<`void`>\>
 
-Defined in: [packages/core/src/kernel.ts:459](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L459)
+Defined in: [packages/core/src/kernel.ts:460](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L460)
 
 Record how a turn ended, from the boundary that ended it.
 
@@ -1093,7 +1093,7 @@ separates a deadline from a defect.
 
 > **registerResourceProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:265](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L265)
+Defined in: [packages/core/src/kernel.ts:266](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L266)
 
 ###### Parameters
 
@@ -1109,7 +1109,7 @@ Defined in: [packages/core/src/kernel.ts:265](https://github.com/Aicoo-Team/Shar
 
 > **registerTool**(`handler`): `void`
 
-Defined in: [packages/core/src/kernel.ts:269](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L269)
+Defined in: [packages/core/src/kernel.ts:270](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L270)
 
 ###### Parameters
 
@@ -1125,7 +1125,7 @@ Defined in: [packages/core/src/kernel.ts:269](https://github.com/Aicoo-Team/Shar
 
 > **registerToolProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:273](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L273)
+Defined in: [packages/core/src/kernel.ts:274](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L274)
 
 ###### Parameters
 
@@ -1141,7 +1141,7 @@ Defined in: [packages/core/src/kernel.ts:273](https://github.com/Aicoo-Team/Shar
 
 > **sendMessage**(`context`, `envelope`, `options?`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:1173](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1173)
+Defined in: [packages/core/src/kernel.ts:1174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1174)
 
 ###### Parameters
 
@@ -1180,7 +1180,7 @@ Defined in: [packages/core/src/kernel.ts:1173](https://github.com/Aicoo-Team/Sha
 
 > **updateToolNamespaces**(`context`, `update`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:653](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L653)
+Defined in: [packages/core/src/kernel.ts:654](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L654)
 
 ###### Parameters
 
@@ -1330,7 +1330,7 @@ Defined in: [packages/core/src/tool-registry.ts:38](https://github.com/Aicoo-Tea
 
 ### TrustedAuthorityResolver
 
-Defined in: [packages/core/src/authority.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L226)
+Defined in: [packages/core/src/authority.ts:245](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L245)
 
 Loads and validates authority for one access context.
 
@@ -1343,7 +1343,7 @@ against a partially trusted authority set.
 
 > **new TrustedAuthorityResolver**(`source`): [`TrustedAuthorityResolver`](#trustedauthorityresolver)
 
-Defined in: [packages/core/src/authority.ts:231](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L231)
+Defined in: [packages/core/src/authority.ts:250](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L250)
 
 ###### Parameters
 
@@ -1361,7 +1361,7 @@ Defined in: [packages/core/src/authority.ts:231](https://github.com/Aicoo-Team/S
 
 > **resolve**(`context`, `signal`): `Promise`\<[`AuthorityResolution`](#authorityresolution)>\>
 
-Defined in: [packages/core/src/authority.ts:238](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L238)
+Defined in: [packages/core/src/authority.ts:257](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L257)
 
 ###### Parameters
 
@@ -1386,7 +1386,7 @@ Defined in: [packages/core/src/authority.ts:238](https://github.com/Aicoo-Team/S
 
 ### AllowedDecision
 
-Defined in: [packages/core/src/authorization.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L82)
+Defined in: [packages/core/src/authorization.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L127)
 
 A decision that allowed, and the grant that produced it.
 
@@ -1396,12 +1396,12 @@ prevented from ever seeing one.
 
 #### Properties
 
-| Property                                              | Modifier   | Type                                             | Defined in                                                                                                                       |
-| ----------------------------------------------------- | ---------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-allowed"></a> `allowed`               | `readonly` | `true`                                           | [packages/core/src/authorization.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L83) |
-| <a id="property-matchedgrantid"></a> `matchedGrantId` | `readonly` | `string`                                         | [packages/core/src/authorization.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L85) |
-| <a id="property-metadata"></a> `metadata?`            | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/core/src/authorization.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L86) |
-| <a id="property-reasoncode"></a> `reasonCode`         | `readonly` | `"allowed"`                                      | [packages/core/src/authorization.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L84) |
+| Property                                              | Modifier   | Type                                             | Defined in                                                                                                                         |
+| ----------------------------------------------------- | ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-allowed"></a> `allowed`               | `readonly` | `true`                                           | [packages/core/src/authorization.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L128) |
+| <a id="property-matchedgrantid"></a> `matchedGrantId` | `readonly` | `string`                                         | [packages/core/src/authorization.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L130) |
+| <a id="property-metadata"></a> `metadata?`            | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/core/src/authorization.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L131) |
+| <a id="property-reasoncode"></a> `reasonCode`         | `readonly` | `"allowed"`                                      | [packages/core/src/authorization.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L129) |
 
 ---
 
@@ -1503,9 +1503,51 @@ change the shape of the evidence.
 
 ---
 
+### AuthorityUnavailableDetail
+
+Defined in: [packages/core/src/authority.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L226)
+
+#### Properties
+
+| Property                                  | Modifier   | Type                                        | Defined in                                                                                                                 |
+| ----------------------------------------- | ---------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-grantid-1"></a> `grantId` | `readonly` | `string`                                    | [packages/core/src/authority.ts:227](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L227) |
+| <a id="property-reason-1"></a> `reason`   | `readonly` | [`GrantScopeMismatch`](#grantscopemismatch) | [packages/core/src/authority.ts:228](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L228) |
+
+---
+
+### AuthorizationExplanation
+
+Defined in: [packages/core/src/authorization.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L104)
+
+Why a denial happened, addressed to the host rather than to the caller.
+
+Three reason codes are deliberately indistinguishable at the call site --
+`no_matching_grant` collapses nine causes, and `authority_unavailable`
+collapses four -- so that no caller can map the permission topology by
+reading refusals. That reticence is owed to the caller, not to the operator:
+the host wired the store, issued the grant, and built the context, and is
+entitled to know which of those was wrong. `SharedOSKernel` records this on
+the `authorization.checked` audit event, which never leaves the host.
+
+`missingDependency` is the one field that reports a configuration fault
+rather than a policy outcome: a grant matched and could not be honoured
+because the authorizer was constructed without the store it needed.
+
+#### Properties
+
+| Property                                                     | Modifier   | Type                                                  | Defined in                                                                                                                         |
+| ------------------------------------------------------------ | ---------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-grantsresolved"></a> `grantsResolved`        | `readonly` | `number`                                              | [packages/core/src/authorization.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L106) |
+| <a id="property-missingdependency"></a> `missingDependency?` | `readonly` | `"usageStore"` \| `"delegationResolver"`              | [packages/core/src/authorization.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L108) |
+| <a id="property-reasoncode-1"></a> `reasonCode`              | `readonly` | [`AuthorizationReasonCode`](#authorizationreasoncode) | [packages/core/src/authorization.ts:105](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L105) |
+| <a id="property-rejections"></a> `rejections`                | `readonly` | readonly [`GrantRejection`](#grantrejection)[]        | [packages/core/src/authorization.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L107) |
+
+---
+
 ### AuthorizationInstantOptions
 
-Defined in: [packages/core/src/authorization.ts:198](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L198)
+Defined in: [packages/core/src/authorization.ts:243](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L243)
 
 The instant one decision is made at, when it is not the turn's own.
 
@@ -1526,7 +1568,7 @@ move and which do not, and ADR 0016 for why.
 
 | Property                         | Modifier   | Type     | Defined in                                                                                                                         |
 | -------------------------------- | ---------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-now"></a> `now?` | `readonly` | `string` | [packages/core/src/authorization.ts:199](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L199) |
+| <a id="property-now"></a> `now?` | `readonly` | `string` | [packages/core/src/authorization.ts:244](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L244) |
 
 ---
 
@@ -1548,7 +1590,7 @@ Defined in: [packages/core/src/authorization.ts:29](https://github.com/Aicoo-Tea
 
 ### AuthorizeOptions
 
-Defined in: [packages/core/src/authorization.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L202)
+Defined in: [packages/core/src/authorization.ts:247](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L247)
 
 The instant one decision is made at, when it is not the turn's own.
 
@@ -1567,33 +1609,34 @@ move and which do not, and ADR 0016 for why.
 
 #### Properties
 
-| Property                                 | Modifier   | Type      | Description                                                                                                                            | Inherited from                                                                       | Defined in                                                                                                                         |
-| ---------------------------------------- | ---------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-consume"></a> `consume?` | `readonly` | `boolean` | Consumption is reserved for execution. Discovery calls must leave this false so merely viewing a catalog cannot spend a bounded grant. | -                                                                                    | [packages/core/src/authorization.ts:207](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L207) |
-| <a id="property-now-1"></a> `now?`       | `readonly` | `string`  | -                                                                                                                                      | [`AuthorizationInstantOptions`](#authorizationinstantoptions).[`now`](#property-now) | [packages/core/src/authorization.ts:199](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L199) |
+| Property                                     | Modifier   | Type                      | Description                                                                                                                                                                                                                                                                                                                                                                                        | Inherited from                                                                       | Defined in                                                                                                                         |
+| -------------------------------------------- | ---------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-consume"></a> `consume?`     | `readonly` | `boolean`                 | Consumption is reserved for execution. Discovery calls must leave this false so merely viewing a catalog cannot spend a bounded grant.                                                                                                                                                                                                                                                             | -                                                                                    | [packages/core/src/authorization.ts:252](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L252) |
+| <a id="property-now-1"></a> `now?`           | `readonly` | `string`                  | -                                                                                                                                                                                                                                                                                                                                                                                                  | [`AuthorizationInstantOptions`](#authorizationinstantoptions).[`now`](#property-now) | [packages/core/src/authorization.ts:244](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L244) |
+| <a id="property-onexplain"></a> `onExplain?` | `readonly` | (`explanation`) => `void` | Called once with the host-facing account of a denial, before it is returned. Never called for an allow, and never for a discovery check -- catalog filtering denies constantly and by design, and explaining each one would bury the denials that surprised somebody. The callback runs synchronously on a frozen value and must not throw: a diagnostic that can change a decision is a decision. | -                                                                                    | [packages/core/src/authorization.ts:262](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L262) |
 
 ---
 
 ### CapabilityAuthorizerOptions
 
-Defined in: [packages/core/src/authorization.ts:210](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L210)
+Defined in: [packages/core/src/authorization.ts:265](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L265)
 
 #### Properties
 
 | Property                                                                   | Modifier   | Type                                                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Defined in                                                                                                                         |
 | -------------------------------------------------------------------------- | ---------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-delegationresolver"></a> `delegationResolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | Trusted ancestor lookup for delegated grants. Without it, a grant that claims a parent can never authorize anything.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/authorization.ts:217](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L217) |
-| <a id="property-grantverifier"></a> `grantVerifier?`                       | `readonly` | [`CapabilityGrantVerifier`](#capabilitygrantverifier) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L212) |
-| <a id="property-hostceiling"></a> `hostCeiling?`                           | `readonly` | [`HostCeiling`](#hostceiling)\<`unknown`\>            | Product or organization policy the kernel consults. See [HostCeiling](#hostceiling). Installed by whoever constructs the authorizer, which is the party that already chooses the `GrantSource`. That is not a new privilege: anyone who decides what authority exists can already decide it is none. The per-turn policy it decides against, when it has one, comes from `SharedOSKernelOptions.policySource` -- on the kernel rather than here, because the load is a turn-boundary event and the kernel owns the turn boundary. The authorizer only carries what was loaded to the ceiling. | [packages/core/src/authorization.ts:231](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L231) |
-| <a id="property-maxdelegationchainlength"></a> `maxDelegationChainLength?` | `readonly` | `number`                                              | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:218](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L218) |
-| <a id="property-onprovidererror"></a> `onProviderError?`                   | `readonly` | [`ProviderErrorReporter`](#providererrorreporter)     | Where a throw from [HostCeiling.narrow](#narrow) is reported. The same shape `SharedOSKernelOptions.onProviderError` takes, and a host wanting both passes one function to both: the ceiling is installed here rather than on the kernel, so the kernel's hook cannot reach it. Without this, a ceiling that fails denies every operation in the deployment as `host_policy_unavailable` and says nothing about why.                                                                                                                                                                          | [packages/core/src/authorization.ts:241](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L241) |
-| <a id="property-usagestore"></a> `usageStore?`                             | `readonly` | [`GrantUsageStore`](#grantusagestore)                 | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L211) |
+| <a id="property-delegationresolver"></a> `delegationResolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | Trusted ancestor lookup for delegated grants. Without it, a grant that claims a parent can never authorize anything.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/authorization.ts:272](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L272) |
+| <a id="property-grantverifier"></a> `grantVerifier?`                       | `readonly` | [`CapabilityGrantVerifier`](#capabilitygrantverifier) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:267](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L267) |
+| <a id="property-hostceiling"></a> `hostCeiling?`                           | `readonly` | [`HostCeiling`](#hostceiling)\<`unknown`\>            | Product or organization policy the kernel consults. See [HostCeiling](#hostceiling). Installed by whoever constructs the authorizer, which is the party that already chooses the `GrantSource`. That is not a new privilege: anyone who decides what authority exists can already decide it is none. The per-turn policy it decides against, when it has one, comes from `SharedOSKernelOptions.policySource` -- on the kernel rather than here, because the load is a turn-boundary event and the kernel owns the turn boundary. The authorizer only carries what was loaded to the ceiling. | [packages/core/src/authorization.ts:286](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L286) |
+| <a id="property-maxdelegationchainlength"></a> `maxDelegationChainLength?` | `readonly` | `number`                                              | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:273](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L273) |
+| <a id="property-onprovidererror"></a> `onProviderError?`                   | `readonly` | [`ProviderErrorReporter`](#providererrorreporter)     | Where a throw from [HostCeiling.narrow](#narrow) is reported. The same shape `SharedOSKernelOptions.onProviderError` takes, and a host wanting both passes one function to both: the ceiling is installed here rather than on the kernel, so the kernel's hook cannot reach it. Without this, a ceiling that fails denies every operation in the deployment as `host_policy_unavailable` and says nothing about why.                                                                                                                                                                          | [packages/core/src/authorization.ts:296](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L296) |
+| <a id="property-usagestore"></a> `usageStore?`                             | `readonly` | [`GrantUsageStore`](#grantusagestore)                 | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:266](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L266) |
 
 ---
 
 ### CapabilityGrantVerifier
 
-Defined in: [packages/core/src/authorization.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L71)
+Defined in: [packages/core/src/authorization.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L116)
 
 #### Methods
 
@@ -1601,7 +1644,7 @@ Defined in: [packages/core/src/authorization.ts:71](https://github.com/Aicoo-Tea
 
 > **verify**(`grant`, `context`): `Promise`\<`boolean`>\>
 
-Defined in: [packages/core/src/authorization.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L72)
+Defined in: [packages/core/src/authorization.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L117)
 
 ###### Parameters
 
@@ -1748,7 +1791,7 @@ Defined in: [packages/core/src/delegation.ts:290](https://github.com/Aicoo-Team/
 
 ### EscalationOptions
 
-Defined in: [packages/core/src/kernel.ts:171](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L171)
+Defined in: [packages/core/src/kernel.ts:172](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L172)
 
 #### Extends
 
@@ -1758,8 +1801,21 @@ Defined in: [packages/core/src/kernel.ts:171](https://github.com/Aicoo-Team/Shar
 
 | Property                                                         | Modifier   | Type                                                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Inherited from                                                                     | Defined in                                                                                                           |
 | ---------------------------------------------------------------- | ---------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-requestedauthority-1"></a> `requestedAuthority?` | `readonly` | [`CapabilityRequestPayload`](#capabilityrequestpayload) | The authority this escalation is asking for. A host escalating a denial passes the `requiredAuthority` that denial described; a model-chosen escalation usually has none, because a sentence is all it produced. Either way nothing here advances the escalation -- resolution stays host-owned work that ends in a grant the next turn loads. The two names are one concept in two roles, and both end in the noun this package uses for what grants confer: a denial says what was _required_, and an escalation _requests_ it. `{ requestedAuthority: denial.requiredAuthority }` is the whole hop. What is recorded is minted, not copied. The ask -- capabilities, purpose, constraints, metadata -- is the caller's; `id`, `namespaceId`, `requester`, `owner`, and `requestedAt` come from the trusted context, whatever the caller wrote, because a request the caller authored would be a caller-chosen correlation for a decision the kernel made. The hop above still round-trips: the denial's description was minted from the same ask, so it comes back under the same identifier (ADR 0019). | -                                                                                  | [packages/core/src/kernel.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L193) |
-| <a id="property-signal"></a> `signal?`                           | `readonly` | `AbortSignal`                                           | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [`KernelOperationOptions`](#kerneloperationoptions).[`signal`](#property-signal-1) | [packages/core/src/kernel.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L131) |
+| <a id="property-requestedauthority-1"></a> `requestedAuthority?` | `readonly` | [`CapabilityRequestPayload`](#capabilityrequestpayload) | The authority this escalation is asking for. A host escalating a denial passes the `requiredAuthority` that denial described; a model-chosen escalation usually has none, because a sentence is all it produced. Either way nothing here advances the escalation -- resolution stays host-owned work that ends in a grant the next turn loads. The two names are one concept in two roles, and both end in the noun this package uses for what grants confer: a denial says what was _required_, and an escalation _requests_ it. `{ requestedAuthority: denial.requiredAuthority }` is the whole hop. What is recorded is minted, not copied. The ask -- capabilities, purpose, constraints, metadata -- is the caller's; `id`, `namespaceId`, `requester`, `owner`, and `requestedAt` come from the trusted context, whatever the caller wrote, because a request the caller authored would be a caller-chosen correlation for a decision the kernel made. The hop above still round-trips: the denial's description was minted from the same ask, so it comes back under the same identifier (ADR 0019). | -                                                                                  | [packages/core/src/kernel.ts:194](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L194) |
+| <a id="property-signal"></a> `signal?`                           | `readonly` | `AbortSignal`                                           | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [`KernelOperationOptions`](#kerneloperationoptions).[`signal`](#property-signal-1) | [packages/core/src/kernel.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L132) |
+
+---
+
+### GrantRejection
+
+Defined in: [packages/core/src/authorization.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L84)
+
+#### Properties
+
+| Property                                  | Modifier   | Type                                            | Defined in                                                                                                                       |
+| ----------------------------------------- | ---------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-grantid-2"></a> `grantId` | `readonly` | `string`                                        | [packages/core/src/authorization.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L85) |
+| <a id="property-reason-2"></a> `reason`   | `readonly` | [`GrantRejectionReason`](#grantrejectionreason) | [packages/core/src/authorization.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L86) |
 
 ---
 
@@ -1810,7 +1866,7 @@ Defined in: [packages/core/src/authority.ts:96](https://github.com/Aicoo-Team/Sh
 
 ### GrantUsageStore
 
-Defined in: [packages/core/src/authorization.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L66)
+Defined in: [packages/core/src/authorization.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L111)
 
 #### Methods
 
@@ -1818,7 +1874,7 @@ Defined in: [packages/core/src/authorization.ts:66](https://github.com/Aicoo-Tea
 
 > **getUsage**(`namespaceId`, `grantId`): `Promise`\<`number`>\>
 
-Defined in: [packages/core/src/authorization.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L67)
+Defined in: [packages/core/src/authorization.ts:112](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L112)
 
 ###### Parameters
 
@@ -1835,7 +1891,7 @@ Defined in: [packages/core/src/authorization.ts:67](https://github.com/Aicoo-Tea
 
 > **tryConsume**(`namespaceId`, `grantId`, `maximumUses`): `Promise`\<`boolean`>\>
 
-Defined in: [packages/core/src/authorization.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L68)
+Defined in: [packages/core/src/authorization.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L113)
 
 ###### Parameters
 
@@ -1853,7 +1909,7 @@ Defined in: [packages/core/src/authorization.ts:68](https://github.com/Aicoo-Tea
 
 ### HostCeiling
 
-Defined in: [packages/core/src/authorization.ts:177](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L177)
+Defined in: [packages/core/src/authorization.ts:222](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L222)
 
 Product or organization policy, consulted on a grant that would otherwise
 allow.
@@ -1926,7 +1982,7 @@ like every other unavailable trusted component.
 
 > **narrow**(`decision`, `request`, `context`, `policy`): [`HostCeilingVerdict`](#hostceilingverdict)
 
-Defined in: [packages/core/src/authorization.ts:178](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L178)
+Defined in: [packages/core/src/authorization.ts:223](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L223)
 
 ###### Parameters
 
@@ -1953,7 +2009,7 @@ Defined in: [packages/core/src/authorization.ts:178](https://github.com/Aicoo-Te
 
 ### HostPolicyDenial
 
-Defined in: [packages/core/src/authorization.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L97)
+Defined in: [packages/core/src/authorization.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L142)
 
 A refusal by host policy, the one input to a decision no grant expresses.
 
@@ -1966,15 +2022,15 @@ to make its own refusal look like an absent grant. Say more in `metadata`.
 
 | Property                                        | Modifier   | Type                                             | Defined in                                                                                                                         |
 | ----------------------------------------------- | ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-allowed-1"></a> `allowed`       | `readonly` | `false`                                          | [packages/core/src/authorization.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L98)   |
-| <a id="property-metadata-3"></a> `metadata?`    | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/core/src/authorization.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L100) |
-| <a id="property-reasoncode-1"></a> `reasonCode` | `readonly` | `"host_policy_denied"`                           | [packages/core/src/authorization.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L99)   |
+| <a id="property-allowed-1"></a> `allowed`       | `readonly` | `false`                                          | [packages/core/src/authorization.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L143) |
+| <a id="property-metadata-3"></a> `metadata?`    | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/core/src/authorization.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L145) |
+| <a id="property-reasoncode-2"></a> `reasonCode` | `readonly` | `"host_policy_denied"`                           | [packages/core/src/authorization.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L144) |
 
 ---
 
 ### KernelOperationOptions
 
-Defined in: [packages/core/src/kernel.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L130)
+Defined in: [packages/core/src/kernel.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L131)
 
 #### Extended by
 
@@ -1984,7 +2040,7 @@ Defined in: [packages/core/src/kernel.ts:130](https://github.com/Aicoo-Team/Shar
 
 | Property                                 | Modifier   | Type          | Defined in                                                                                                           |
 | ---------------------------------------- | ---------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-signal-1"></a> `signal?` | `readonly` | `AbortSignal` | [packages/core/src/kernel.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L131) |
+| <a id="property-signal-1"></a> `signal?` | `readonly` | `AbortSignal` | [packages/core/src/kernel.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L132) |
 
 ---
 
@@ -2274,7 +2330,7 @@ tool; a resource names no tool.
 | <a id="property-kind"></a> `kind`                  | `readonly` | [`ProviderErrorKind`](#providererrorkind)                                                                                                                                                                  | -                                     | [packages/core/src/diagnostics.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L84) |
 | <a id="property-namespaceid-1"></a> `namespaceId`  | `readonly` | `string`                                                                                                                                                                                                   | -                                     | [packages/core/src/diagnostics.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L88) |
 | <a id="property-operationid-1"></a> `operationId?` | `readonly` | `string`                                                                                                                                                                                                   | The call id, where the path has one.  | [packages/core/src/diagnostics.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L90) |
-| <a id="property-reasoncode-2"></a> `reasonCode`    | `readonly` | `string`                                                                                                                                                                                                   | The code the kernel returned instead. | [packages/core/src/diagnostics.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L86) |
+| <a id="property-reasoncode-3"></a> `reasonCode`    | `readonly` | `string`                                                                                                                                                                                                   | The code the kernel returned instead. | [packages/core/src/diagnostics.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L86) |
 | <a id="property-resource-2"></a> `resource?`       | `readonly` | `object`                                                                                                                                                                                                   | -                                     | [packages/core/src/diagnostics.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/diagnostics.ts#L92) |
 | `resource.namespace`                               | `public`   | `string`                                                                                                                                                                                                   | -                                     | packages/contracts/dist/capability.d.ts:54                                                                                   |
 | `resource.owner?`                                  | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                     | packages/contracts/dist/capability.d.ts:55                                                                                   |
@@ -2286,7 +2342,7 @@ tool; a resource names no tool.
 
 ### RefusedCall
 
-Defined in: [packages/core/src/kernel.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L149)
+Defined in: [packages/core/src/kernel.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L150)
 
 One call an enforcement boundary refused without invoking anything.
 
@@ -2294,10 +2350,10 @@ One call an enforcement boundary refused without invoking anything.
 
 | Property                                        | Modifier   | Type     | Description                                                 | Defined in                                                                                                           |
 | ----------------------------------------------- | ---------- | -------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-callid"></a> `callId`           | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L150) |
-| <a id="property-cause-2"></a> `cause?`          | `readonly` | `string` | Which situation a coarse code was, where it covers several. | [packages/core/src/kernel.ts:154](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L154) |
-| <a id="property-reasoncode-3"></a> `reasonCode` | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L152) |
-| <a id="property-tool-2"></a> `tool`             | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:151](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L151) |
+| <a id="property-callid"></a> `callId`           | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:151](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L151) |
+| <a id="property-cause-2"></a> `cause?`          | `readonly` | `string` | Which situation a coarse code was, where it covers several. | [packages/core/src/kernel.ts:155](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L155) |
+| <a id="property-reasoncode-4"></a> `reasonCode` | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:153](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L153) |
+| <a id="property-tool-2"></a> `tool`             | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L152) |
 
 ---
 
@@ -2400,27 +2456,27 @@ Defined in: [packages/core/src/resource-registry.ts:20](https://github.com/Aicoo
 
 ### SharedOSKernelOptions
 
-Defined in: [packages/core/src/kernel.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L77)
+Defined in: [packages/core/src/kernel.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L78)
 
 #### Properties
 
 | Property                                                                     | Modifier   | Type                                                        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Defined in                                                                                                           |
 | ---------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-audit"></a> `audit?`                                         | `readonly` | [`AuditSink`](#auditsink)                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L104) |
-| <a id="property-authorizer"></a> `authorizer?`                               | `readonly` | [`CapabilityAuthorizer`](#capabilityauthorizer)             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L95)   |
-| <a id="property-createmessageid"></a> `createMessageId?`                     | `readonly` | (`context`, `call`) => `string`                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:103](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L103) |
-| <a id="property-grantsource"></a> `grantSource`                              | `readonly` | [`GrantSource`](#grantsource)                               | The trusted boundary that loads authority. It is required: a kernel with no authoritative grant source can only fail closed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [packages/core/src/kernel.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L82)   |
-| <a id="property-messagecapabilityresolver"></a> `messageCapabilityResolver?` | `readonly` | [`MessageCapabilityResolver`](#messagecapabilityresolver)   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L102) |
-| <a id="property-messagerequestrouter"></a> `messageRequestRouter?`           | `readonly` | [`MessageRequestRouter`](#messagerequestrouter)             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L101) |
-| <a id="property-messagetransport"></a> `messageTransport?`                   | `readonly` | [`MessageTransport`](#messagetransport)                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L100) |
-| <a id="property-onauditerror"></a> `onAuditError?`                           | `readonly` | (`error`, `event`) => `void` \| `Promise`\<`void`\>         | Notification for audit failures that occur after a side effect.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | [packages/core/src/kernel.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L106) |
-| <a id="property-onprovidererror-1"></a> `onProviderError?`                   | `readonly` | [`ProviderErrorReporter`](#providererrorreporter)           | Notification for a throw the kernel contained rather than propagated. A provider, tool handler, transport, or router that throws is answered with a fixed reason code, and until a host installs this the error itself is gone: `tool_execution_failed` says an operation stopped and does not say why. One hook covers every such port, and [ProviderErrorContext.kind](#property-kind) is what a host branches on if it wants to treat them differently. Synchronous, unlike [SharedOSKernelOptions.onAuditError](#property-onauditerror), and see [reportContainedError](#reportcontainederror) for why the two differ. | [packages/core/src/kernel.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L119) |
-| <a id="property-policysource"></a> `policySource?`                           | `readonly` | [`PolicySource`](#policysource)\<`unknown`\>                | The trusted boundary that loads host policy, once per turn, beside the grant set. See [PolicySource](#policysource). Optional. Without one the ceiling installed on the authorizer, if any, is handed `undefined` and decides over state it closes over. It is installed here rather than beside the ceiling because the load is a turn-boundary event and the kernel owns the turn boundary; a throw is reported to [SharedOSKernelOptions.onProviderError](#property-onprovidererror-1) as `kind: "policy"`, and the turn's policy fails closed.                                                                         | [packages/core/src/kernel.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L94)   |
-| <a id="property-resources"></a> `resources?`                                 | `readonly` | [`ResourceProviderRegistry`](#resourceproviderregistry)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L96)   |
-| <a id="property-spans"></a> `spans?`                                         | `readonly` | [`SpanSink`](#spansink)                                     | Where the cost of enforcement is reported, when a host is measuring it. Absent by default and absent in every production path that does not ask for it, which is what keeps a measured run and an unmeasured one the same run. See [SpanSink](#spansink).                                                                                                                                                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L127) |
-| <a id="property-toolnamespacesettings"></a> `toolNamespaceSettings?`         | `readonly` | [`ToolNamespaceSettingsStore`](#toolnamespacesettingsstore) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L99)   |
-| <a id="property-toolproviders"></a> `toolProviders?`                         | `readonly` | readonly [`ContextToolProvider`](#contexttoolprovider)[]    | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L98)   |
-| <a id="property-tools"></a> `tools?`                                         | `readonly` | [`ToolRegistry`](#toolregistry)                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L97)   |
+| <a id="property-audit"></a> `audit?`                                         | `readonly` | [`AuditSink`](#auditsink)                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:105](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L105) |
+| <a id="property-authorizer"></a> `authorizer?`                               | `readonly` | [`CapabilityAuthorizer`](#capabilityauthorizer)             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L96)   |
+| <a id="property-createmessageid"></a> `createMessageId?`                     | `readonly` | (`context`, `call`) => `string`                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L104) |
+| <a id="property-grantsource"></a> `grantSource`                              | `readonly` | [`GrantSource`](#grantsource)                               | The trusted boundary that loads authority. It is required: a kernel with no authoritative grant source can only fail closed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [packages/core/src/kernel.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L83)   |
+| <a id="property-messagecapabilityresolver"></a> `messageCapabilityResolver?` | `readonly` | [`MessageCapabilityResolver`](#messagecapabilityresolver)   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:103](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L103) |
+| <a id="property-messagerequestrouter"></a> `messageRequestRouter?`           | `readonly` | [`MessageRequestRouter`](#messagerequestrouter)             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L102) |
+| <a id="property-messagetransport"></a> `messageTransport?`                   | `readonly` | [`MessageTransport`](#messagetransport)                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L101) |
+| <a id="property-onauditerror"></a> `onAuditError?`                           | `readonly` | (`error`, `event`) => `void` \| `Promise`\<`void`\>         | Notification for audit failures that occur after a side effect.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | [packages/core/src/kernel.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L107) |
+| <a id="property-onprovidererror-1"></a> `onProviderError?`                   | `readonly` | [`ProviderErrorReporter`](#providererrorreporter)           | Notification for a throw the kernel contained rather than propagated. A provider, tool handler, transport, or router that throws is answered with a fixed reason code, and until a host installs this the error itself is gone: `tool_execution_failed` says an operation stopped and does not say why. One hook covers every such port, and [ProviderErrorContext.kind](#property-kind) is what a host branches on if it wants to treat them differently. Synchronous, unlike [SharedOSKernelOptions.onAuditError](#property-onauditerror), and see [reportContainedError](#reportcontainederror) for why the two differ. | [packages/core/src/kernel.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L120) |
+| <a id="property-policysource"></a> `policySource?`                           | `readonly` | [`PolicySource`](#policysource)\<`unknown`\>                | The trusted boundary that loads host policy, once per turn, beside the grant set. See [PolicySource](#policysource). Optional. Without one the ceiling installed on the authorizer, if any, is handed `undefined` and decides over state it closes over. It is installed here rather than beside the ceiling because the load is a turn-boundary event and the kernel owns the turn boundary; a throw is reported to [SharedOSKernelOptions.onProviderError](#property-onprovidererror-1) as `kind: "policy"`, and the turn's policy fails closed.                                                                         | [packages/core/src/kernel.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L95)   |
+| <a id="property-resources"></a> `resources?`                                 | `readonly` | [`ResourceProviderRegistry`](#resourceproviderregistry)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L97)   |
+| <a id="property-spans"></a> `spans?`                                         | `readonly` | [`SpanSink`](#spansink)                                     | Where the cost of enforcement is reported, when a host is measuring it. Absent by default and absent in every production path that does not ask for it, which is what keeps a measured run and an unmeasured one the same run. See [SpanSink](#spansink).                                                                                                                                                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L128) |
+| <a id="property-toolnamespacesettings"></a> `toolNamespaceSettings?`         | `readonly` | [`ToolNamespaceSettingsStore`](#toolnamespacesettingsstore) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L100) |
+| <a id="property-toolproviders"></a> `toolProviders?`                         | `readonly` | readonly [`ContextToolProvider`](#contexttoolprovider)[]    | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L99)   |
+| <a id="property-tools"></a> `tools?`                                         | `readonly` | [`ToolRegistry`](#toolregistry)                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/kernel.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L98)   |
 
 ---
 
@@ -2624,7 +2680,7 @@ Defined in: [packages/core/src/tool-namespace-control.ts:12](https://github.com/
 
 ### TurnEndRecord
 
-Defined in: [packages/core/src/kernel.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L135)
+Defined in: [packages/core/src/kernel.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L136)
 
 How a turn finished, as the boundary that finished it saw it.
 
@@ -2632,10 +2688,10 @@ How a turn finished, as the boundary that finished it saw it.
 
 | Property                                          | Modifier   | Type                                                                        | Description                                                                                                                                                                                                                        | Defined in                                                                                                           |
 | ------------------------------------------------- | ---------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-endedby"></a> `endedBy?`          | `readonly` | `"envelope"` \| `"runtime"`                                                 | Who produced a failure: the envelope refusing, or the runtime reporting its own. The same distinction `ExecutionEvent` carries, kept because a record reader crediting enforcement must not credit a plugin's self-reported error. | [packages/core/src/kernel.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L145) |
-| <a id="property-executionid-1"></a> `executionId` | `readonly` | `string`                                                                    | -                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L136) |
-| <a id="property-reasoncode-4"></a> `reasonCode?`  | `readonly` | `string`                                                                    | The terminal code, where the ending had one.                                                                                                                                                                                       | [packages/core/src/kernel.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L139) |
-| <a id="property-status"></a> `status`             | `readonly` | `"denied"` \| `"succeeded"` \| `"failed"` \| `"escalated"` \| `"cancelled"` | -                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L137) |
+| <a id="property-endedby"></a> `endedBy?`          | `readonly` | `"envelope"` \| `"runtime"`                                                 | Who produced a failure: the envelope refusing, or the runtime reporting its own. The same distinction `ExecutionEvent` carries, kept because a record reader crediting enforcement must not credit a plugin's self-reported error. | [packages/core/src/kernel.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L146) |
+| <a id="property-executionid-1"></a> `executionId` | `readonly` | `string`                                                                    | -                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L137) |
+| <a id="property-reasoncode-5"></a> `reasonCode?`  | `readonly` | `string`                                                                    | The terminal code, where the ending had one.                                                                                                                                                                                       | [packages/core/src/kernel.ts:140](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L140) |
+| <a id="property-status"></a> `status`             | `readonly` | `"denied"` \| `"succeeded"` \| `"failed"` \| `"escalated"` \| `"cancelled"` | -                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L138) |
 
 ## Type Aliases
 
@@ -2680,9 +2736,9 @@ and this says who refused it (ADR 0023).
 
 ### AuthorityResolution
 
-> **AuthorityResolution** = \{ `authority`: [`ResolvedAuthority`](#resolvedauthority); `status`: `"resolved"`; \} \| \{ `code`: [`AuthorityUnavailableCode`](#authorityunavailablecode); `status`: `"unavailable"`; \}
+> **AuthorityResolution** = \{ `authority`: [`ResolvedAuthority`](#resolvedauthority); `status`: `"resolved"`; \} \| \{ `code`: [`AuthorityUnavailableCode`](#authorityunavailablecode); `detail?`: [`AuthorityUnavailableDetail`](#authorityunavailabledetail); `status`: `"unavailable"`; \}
 
-Defined in: [packages/core/src/authority.ts:216](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L216)
+Defined in: [packages/core/src/authority.ts:231](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L231)
 
 ---
 
@@ -2768,11 +2824,40 @@ Defined in: [packages/core/src/delegation.ts:286](https://github.com/Aicoo-Team/
 
 ---
 
+### GrantRejectionReason
+
+> **GrantRejectionReason** = `"issuer"` \| `"subject"` \| `"namespace"` \| `"window"` \| `"purpose"` \| `"verifier"` \| `"capability"` \| `"delegation"` \| `"exhausted"`
+
+Defined in: [packages/core/src/authorization.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L73)
+
+The first condition a resolved grant failed, in the order they are checked.
+
+These are the causes the `no_matching_grant` checklist enumerates, and a
+denial names them only to the host. A caller learns that it may not proceed;
+which of its grants nearly matched, and how, is the host's to see.
+
+---
+
+### GrantScopeMismatch
+
+> **GrantScopeMismatch** = `"namespace"` \| `"subject"` \| `"issuer"`
+
+Defined in: [packages/core/src/authority.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L224)
+
+Which of the three scope conditions a loaded grant failed.
+
+`issuer` is the one people hit: `context.authority` is whose grants are being
+exercised, which on a delegated chain is the delegator and not the owner of
+the data. The caller is told only `authority_unavailable`; this reaches the
+host through the `authority.resolved` audit event.
+
+---
+
 ### HostCeilingVerdict
 
 > **HostCeilingVerdict** = [`AllowedDecision`](#alloweddecision) \| [`HostPolicyDenial`](#hostpolicydenial)
 
-Defined in: [packages/core/src/authorization.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L115)
+Defined in: [packages/core/src/authorization.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L160)
 
 The only two things a ceiling may say: the decision it was handed, or no.
 
@@ -2971,7 +3056,7 @@ Defined in: [packages/core/src/authority.ts:79](https://github.com/Aicoo-Team/Sh
 
 > `const` **AGENT\_INVOKE\_ACTION**: `"invoke"` = `"invoke"`
 
-Defined in: [packages/core/src/kernel.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L197)
+Defined in: [packages/core/src/kernel.ts:198](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L198)
 
 ---
 
@@ -3010,7 +3095,7 @@ The longest ancestor chain SharedOS will walk before failing closed.
 
 > `const` **EXECUTION\_NAMESPACE**: `"sharedos.execution"` = `"sharedos.execution"`
 
-Defined in: [packages/core/src/kernel.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L196)
+Defined in: [packages/core/src/kernel.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L197)
 
 ---
 
@@ -3173,7 +3258,7 @@ Stable, segment-safe grant path for recipient-scoped messaging.
 
 > **agentExecutionCapability**(`agent`, `owner`): `object`
 
-Defined in: [packages/core/src/kernel.ts:199](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L199)
+Defined in: [packages/core/src/kernel.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L200)
 
 #### Parameters
 
@@ -3307,7 +3392,7 @@ Structural JSON equality for protocol values with unordered object keys.
 
 > **capabilityIntersectsCeiling**(`capability`, `ceiling`, `context`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:672](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L672)
+Defined in: [packages/core/src/authorization.ts:793](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L793)
 
 #### Parameters
 
@@ -3341,7 +3426,7 @@ Defined in: [packages/core/src/authorization.ts:672](https://github.com/Aicoo-Te
 
 > **capabilityMatches**(`capability`, `request`, `context`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:644](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L644)
+Defined in: [packages/core/src/authorization.ts:765](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authorization.ts#L765)
 
 #### Parameters
 

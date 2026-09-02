@@ -18,7 +18,7 @@ import {
 import {
   addressesEqual,
   type GrantInstants,
-  grantIsActive,
+  grantInactiveReason,
   parseTimestamp,
   pathIsWithin,
   pathsEqual,
@@ -61,6 +61,51 @@ export const INFRASTRUCTURE_DENIAL_REASONS: readonly AuthorizationReasonCode[] =
 
 export function isInfrastructureDenial(reasonCode: string): boolean {
   return (INFRASTRUCTURE_DENIAL_REASONS as readonly string[]).includes(reasonCode);
+}
+
+/**
+ * The first condition a resolved grant failed, in the order they are checked.
+ *
+ * These are the causes the `no_matching_grant` checklist enumerates, and a
+ * denial names them only to the host. A caller learns that it may not proceed;
+ * which of its grants nearly matched, and how, is the host's to see.
+ */
+export type GrantRejectionReason =
+  | "issuer"
+  | "subject"
+  | "namespace"
+  | "window"
+  | "purpose"
+  | "verifier"
+  | "capability"
+  | "delegation"
+  | "exhausted";
+
+export interface GrantRejection {
+  readonly grantId: string;
+  readonly reason: GrantRejectionReason;
+}
+
+/**
+ * Why a denial happened, addressed to the host rather than to the caller.
+ *
+ * Three reason codes are deliberately indistinguishable at the call site --
+ * `no_matching_grant` collapses nine causes, and `authority_unavailable`
+ * collapses four -- so that no caller can map the permission topology by
+ * reading refusals. That reticence is owed to the caller, not to the operator:
+ * the host wired the store, issued the grant, and built the context, and is
+ * entitled to know which of those was wrong. `SharedOSKernel` records this on
+ * the `authorization.checked` audit event, which never leaves the host.
+ *
+ * `missingDependency` is the one field that reports a configuration fault
+ * rather than a policy outcome: a grant matched and could not be honoured
+ * because the authorizer was constructed without the store it needed.
+ */
+export interface AuthorizationExplanation {
+  readonly reasonCode: AuthorizationReasonCode;
+  readonly grantsResolved: number;
+  readonly rejections: readonly GrantRejection[];
+  readonly missingDependency?: "usageStore" | "delegationResolver";
 }
 
 export interface GrantUsageStore {
@@ -205,6 +250,16 @@ export interface AuthorizeOptions extends AuthorizationInstantOptions {
    * false so merely viewing a catalog cannot spend a bounded grant.
    */
   readonly consume?: boolean;
+  /**
+   * Called once with the host-facing account of a denial, before it is
+   * returned. Never called for an allow, and never for a discovery check --
+   * catalog filtering denies constantly and by design, and explaining each
+   * one would bury the denials that surprised somebody.
+   *
+   * The callback runs synchronously on a frozen value and must not throw: a
+   * diagnostic that can change a decision is a decision.
+   */
+  readonly onExplain?: (explanation: AuthorizationExplanation) => void;
 }
 
 export interface CapabilityAuthorizerOptions {
@@ -312,6 +367,7 @@ export class CapabilityAuthorizer {
       // Describes what was missing when nothing matched; see
       // `describeRequiredCapability`.
       true,
+      options.onExplain,
     );
   }
 
@@ -325,10 +381,20 @@ export class CapabilityAuthorizer {
     ceiling: AuthorizationRequest,
     options: AuthorizationInstantOptions = {},
   ): Promise<AuthorizationDecision> {
-    // The last argument is `false`: a discovery check is made against a tool's
-    // declared capability, which may be a broader ceiling than any call, so a
-    // description built here would name authority no operation needed.
-    return this.#decide(authority, ceiling, capabilityIntersectsCeiling, false, options.now, false);
+    // The last two arguments are `false` and `undefined`: a discovery check is
+    // made against a tool's declared capability, which may be a broader ceiling
+    // than any call, so a description built here would name authority no
+    // operation needed; and catalogue filtering denies constantly and by
+    // design, so nothing is explained.
+    return this.#decide(
+      authority,
+      ceiling,
+      capabilityIntersectsCeiling,
+      false,
+      options.now,
+      false,
+      undefined,
+    );
   }
 
   async #decide(
@@ -342,6 +408,7 @@ export class CapabilityAuthorizer {
     consume: boolean,
     operationNow: string | undefined,
     describeMissing: boolean,
+    onExplain: ((explanation: AuthorizationExplanation) => void) | undefined,
   ): Promise<AuthorizationDecision> {
     const context = structuredClone(authority.context);
     const grants = structuredClone([...authority.grants]);
@@ -357,16 +424,42 @@ export class CapabilityAuthorizer {
       context.purpose.length === 0 ||
       context.traceId.length === 0
     ) {
+      onExplain?.(
+        Object.freeze({
+          reasonCode: "invalid_context" as const,
+          grantsResolved: grants.length,
+          rejections: Object.freeze([]) as readonly GrantRejection[],
+        }),
+      );
       return deny("invalid_context");
     }
     const at: GrantInstants = { admittedAt, now };
+
+    const rejections: GrantRejection[] = [];
+    let missingDependency: AuthorizationExplanation["missingDependency"];
+    // Every denial leaves through here, so the host-facing account cannot drift
+    // from the caller-facing code. An allow needs no account: `matchedGrantId`
+    // already names the grant that carried it.
+    const explained = (decision: AuthorizationDecision): AuthorizationDecision => {
+      if (!decision.allowed && onExplain !== undefined) {
+        onExplain(
+          Object.freeze({
+            reasonCode: decision.reasonCode as AuthorizationReasonCode,
+            grantsResolved: grants.length,
+            rejections: Object.freeze([...rejections]) as readonly GrantRejection[],
+            ...(missingDependency === undefined ? {} : { missingDependency }),
+          }),
+        );
+      }
+      return decision;
+    };
 
     if (
       request.action.length === 0 ||
       request.resource.namespace.length === 0 ||
       !resourceBelongsToContext(request.resource, context)
     ) {
-      return deny("invalid_request");
+      return explained(deny("invalid_request"));
     }
 
     let foundExhaustedGrant = false;
@@ -374,7 +467,9 @@ export class CapabilityAuthorizer {
     let delegationFailure: DelegationFailure | undefined;
 
     for (const grant of grants) {
-      if (!(await this.#grantIsEligible(context, grant, at))) {
+      const ineligible = await this.#grantRejection(context, grant, at);
+      if (ineligible !== undefined) {
+        rejections.push({ grantId: grant.id, reason: ineligible });
         continue;
       }
 
@@ -382,11 +477,13 @@ export class CapabilityAuthorizer {
         matches(candidate, request, context),
       );
       if (capability === undefined) {
+        rejections.push({ grantId: grant.id, reason: "capability" });
         continue;
       }
 
       const delegation = await this.#validateDelegation(context, grant, at);
       if (delegation.status !== "valid") {
+        rejections.push({ grantId: grant.id, reason: "delegation" });
         delegationFailure = worstDelegationFailure(delegationFailure, {
           status: delegation.status,
           code: delegation.code,
@@ -401,7 +498,7 @@ export class CapabilityAuthorizer {
       // stopping here would deny a call the next grant would have allowed.
       const narrowed = this.#applyCeiling(grant.id, request, context, authority.hostPolicy);
       if (narrowed.reasonCode === "host_policy_unavailable") {
-        return narrowed;
+        return explained(narrowed);
       }
       if (!narrowed.allowed) {
         policyDenial ??= narrowed;
@@ -414,7 +511,11 @@ export class CapabilityAuthorizer {
       }
 
       if (this.#usageStore === undefined) {
-        return deny("usage_store_unavailable");
+        // A grant that matched in every other respect. Nothing about the
+        // request is wrong; the authorizer was built without the store a
+        // bounded grant is spent against.
+        missingDependency = "usageStore";
+        return explained(deny("usage_store_unavailable"));
       }
 
       try {
@@ -426,18 +527,24 @@ export class CapabilityAuthorizer {
           return allow(grant.id);
         }
 
+        rejections.push({ grantId: grant.id, reason: "exhausted" });
         foundExhaustedGrant = true;
       } catch {
-        return deny("usage_store_unavailable");
+        return explained(deny("usage_store_unavailable"));
       }
     }
 
     if (delegationFailure !== undefined) {
-      return deny(
-        delegationFailure.status === "unverified"
-          ? "delegation_chain_unverified"
-          : "delegation_chain_invalid",
-        { delegation: { code: delegationFailure.code, grantId: delegationFailure.grantId } },
+      if (delegationFailure.status === "unverified" && this.#delegationResolver === undefined) {
+        missingDependency = "delegationResolver";
+      }
+      return explained(
+        deny(
+          delegationFailure.status === "unverified"
+            ? "delegation_chain_unverified"
+            : "delegation_chain_invalid",
+          { delegation: { code: delegationFailure.code, grantId: delegationFailure.grantId } },
+        ),
       );
     }
 
@@ -447,21 +554,22 @@ export class CapabilityAuthorizer {
     // deliberate refusal in its place would hide an infrastructure failure
     // behind a policy label; an invalid chain is not fail-closed, but it says
     // the grant is not valid authority at all, which is upstream of whether
-    // policy would have allowed it.
+    // policy would have allowed it. The grant policy refused is not among the
+    // rejections: it matched, and the decision's `matchedGrantId` names it.
     if (policyDenial !== undefined) {
-      return policyDenial;
+      return explained(policyDenial);
     }
 
     if (foundExhaustedGrant) {
-      return deny("grant_exhausted");
+      return explained(deny("grant_exhausted"));
     }
 
     const missing = deny("no_matching_grant");
     if (!describeMissing) {
-      return missing;
+      return explained(missing);
     }
     const requiredAuthority = await describeRequiredAuthority(context, request);
-    return requiredAuthority === undefined ? missing : { ...missing, requiredAuthority };
+    return explained(requiredAuthority === undefined ? missing : { ...missing, requiredAuthority });
   }
 
   /**
@@ -552,31 +660,44 @@ export class CapabilityAuthorizer {
     });
   }
 
-  async #grantIsEligible(
+  /**
+   * The first eligibility condition this grant failed, or `undefined` if it
+   * passed them all.
+   *
+   * `issuer` is checked first because it is the mistake people actually make:
+   * `context.authority` is whose grants are being exercised, which on a
+   * delegated chain is the delegator and not the owner of the data.
+   */
+  async #grantRejection(
     context: AccessContext,
     grant: CapabilityGrant,
     at: GrantInstants,
-  ): Promise<boolean> {
-    if (
-      !addressesEqual(grant.subject, context.actor) ||
-      !addressesEqual(grant.issuer, context.authority) ||
-      grant.namespaceId !== context.namespaceId ||
-      !grantIsActive(grant, context.purpose, at)
-    ) {
-      return false;
+  ): Promise<GrantRejectionReason | undefined> {
+    if (!addressesEqual(grant.issuer, context.authority)) {
+      return "issuer";
+    }
+    if (!addressesEqual(grant.subject, context.actor)) {
+      return "subject";
+    }
+    if (grant.namespaceId !== context.namespaceId) {
+      return "namespace";
+    }
+    const inactive = grantInactiveReason(grant, context.purpose, at);
+    if (inactive !== undefined) {
+      return inactive;
     }
 
     if (this.#grantVerifier !== undefined) {
       try {
         if (!(await this.#grantVerifier.verify(grant, context))) {
-          return false;
+          return "verifier";
         }
       } catch {
-        return false;
+        return "verifier";
       }
     }
 
-    return true;
+    return undefined;
   }
 }
 
