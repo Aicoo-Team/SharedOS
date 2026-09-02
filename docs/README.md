@@ -147,6 +147,7 @@ is the boundary between them and the agents that act on them.
 - [ADR 0019: An escalation names the authority it needs](adr/0019-escalation-names-the-authority-it-needs.md)
 - [ADR 0020: The host ceiling is a port, not a convention](adr/0020-host-ceiling-is-a-port.md)
 - [ADR 0021: An agent card, with reach computed at read time](adr/0021-agent-card-reach-computed-at-read-time.md)
+- [ADR 0022: A precedent proposes; the kernel decides whether it may](adr/0022-precedent-proposes-the-kernel-admits.md)
 - [ADR 0023: Every refusal reaches audit, and the record names the boundary](adr/0023-every-refusal-reaches-audit.md)
 
 ## Project governance
