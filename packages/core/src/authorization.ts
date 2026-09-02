@@ -4,6 +4,7 @@ import type {
   Capability,
   CapabilityGrant,
   JsonObject,
+  ResourceReach,
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
 
@@ -17,6 +18,7 @@ import {
 } from "./delegation.js";
 import {
   addressesEqual,
+  canonicalJson,
   type GrantInstants,
   grantInactiveReason,
   parseTimestamp,
@@ -395,6 +397,117 @@ export class CapabilityAuthorizer {
       false,
       undefined,
     );
+  }
+
+  /**
+   * The reachable surface an authority describes, with the authority removed.
+   *
+   * Answers "where may this actor look" without disclosing who allowed it, for
+   * how long, or how much budget is left. Only grants that would authorize
+   * something at this instant contribute: an expired, revoked, wrong-purpose,
+   * wrong-subject, unverified or chain-broken grant is not reach, and neither
+   * is a bounded grant whose budget is spent -- advertising a door that is
+   * already closed is worse than not advertising it.
+   *
+   * Nothing is consumed. Asking is not opening, so reading reach never spends a
+   * bounded grant, and a usage store that cannot be read omits the grant rather
+   * than assuming it available.
+   *
+   * This is descriptive, never permissive. Every operation is authorized
+   * independently afterwards, which is what makes an over-wide entry harmless
+   * and what makes reach safe to put in front of a model. The host ceiling is
+   * deliberately not consulted: a `descendants` entry is not one request, so a
+   * per-entry verdict would be neither sound nor complete, and a ceiling that
+   * refuses still refuses at the operation.
+   *
+   * Entries are deduplicated and canonically ordered, so the same authority
+   * produces the same reach however the store happened to order its grants.
+   *
+   * See ADR 0021, which reads this for a *subject* by deriving a context from
+   * the reader's own, and PR #13, which reads it for the turn's own scope.
+   */
+  async reach(
+    authority: ResolvedAuthority,
+    options: AuthorizationInstantOptions = {},
+  ): Promise<readonly ResourceReach[]> {
+    const context = structuredClone(authority.context);
+    const admittedAt = parseTimestamp(context.now);
+    const now = options.now === undefined ? admittedAt : parseTimestamp(options.now);
+    if (
+      admittedAt === undefined ||
+      now === undefined ||
+      context.purpose.length === 0 ||
+      context.traceId.length === 0
+    ) {
+      // The same contexts `#decideOnGrants` refuses as `invalid_context`. A
+      // context that can authorize nothing reaches nothing.
+      return [];
+    }
+    const at: GrantInstants = { admittedAt, now };
+
+    const entries = new Map<string, { readonly order: string; readonly entry: ResourceReach }>();
+    for (const grant of structuredClone([...authority.grants])) {
+      if ((await this.#grantRejection(context, grant, at)) !== undefined) {
+        continue;
+      }
+      if ((await this.#validateDelegation(context, grant, at)).status !== "valid") {
+        continue;
+      }
+      if (!(await this.#hasBudgetLeft(context, grant))) {
+        continue;
+      }
+
+      for (const capability of grant.capabilities) {
+        // A capability naming another owner cannot authorize anything here --
+        // a request outside this context's world is `invalid_request` before a
+        // grant is even consulted -- so listing it would advertise a door this
+        // context has no handle for. Reach describes one world, and the owner
+        // is therefore implied rather than carried.
+        if (!addressesEqual(capability.resource.owner ?? context.owner, context.owner)) {
+          continue;
+        }
+        const entry: ResourceReach = {
+          namespace: capability.resource.namespace,
+          path: [...capability.resource.path],
+          actions: [...capability.actions].sort(),
+          scope: capability.scope,
+        };
+        entries.set(canonicalJson(entry), {
+          // Namespace first, then path, then scope, then actions: the order a
+          // reader would group them in. Deduplication uses the whole entry;
+          // ordering deliberately does not, so two entries that differ only in
+          // their actions still sit together.
+          order: canonicalJson([entry.namespace, entry.path, entry.scope, entry.actions]),
+          entry,
+        });
+      }
+    }
+
+    return [...entries.values()]
+      .sort((left, right) => (left.order < right.order ? -1 : left.order > right.order ? 1 : 0))
+      .map(({ entry }) => entry);
+  }
+
+  /**
+   * Whether a bounded grant still has a use left, read without spending one.
+   *
+   * An unbounded grant always does. A bounded one whose store cannot be read is
+   * treated as spent: guessing in the other direction would advertise authority
+   * SharedOS could not establish.
+   */
+  async #hasBudgetLeft(context: AccessContext, grant: CapabilityGrant): Promise<boolean> {
+    const maximumUses = grant.constraints.maxUses;
+    if (maximumUses === undefined) {
+      return true;
+    }
+    if (this.#usageStore === undefined) {
+      return false;
+    }
+    try {
+      return (await this.#usageStore.getUsage(context.namespaceId, grant.id)) < maximumUses;
+    } catch {
+      return false;
+    }
   }
 
   async #decide(

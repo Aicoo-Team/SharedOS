@@ -203,6 +203,29 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **SharedOS can describe an agent, not only address and authorize one.**
+  `SharedOSKernel.readAgentCard(context, subject, { view })` serves a card made
+  of identity and computed reach and nothing else. Reach is derived at read
+  time, by `CapabilityAuthorizer.reach`, from the grants in force at that
+  instant, and is never stored: a stored reach is the one description of
+  authority nothing invalidates, because revocation, purpose withdrawal, expiry
+  and a spent budget all work by not matching at the next decision. Reading a
+  card is itself authorized over `sharedos` / `["directory", <subject>]` /
+  `read` (`agentCardCapability`, `directoryCapability`); without that gate the
+  directory answers "does this agent exist", and through reach "what resources
+  exist and where", in one call rather than one refusal at a time. Nothing is
+  consumed, and the subject's grants are not loaded until a reader has been
+  authorized to ask about that subject. A card is a view rather than a record:
+  `identity` and `namespaces` are narrower resources beneath the subject's own
+  path, so a less-authorized reader is served a narrower card and is told which
+  views it may still ask for. The card carries no grant id, issuer, expiry or
+  budget, and no display name, avatar or skill -- a host composes those around
+  it. **Host note:** a `GrantSource` is now called with a context whose actor is
+  not the caller, so one that reads an ambient session user instead of
+  `context.actor` answers with the wrong principal's grants; SharedOS refuses
+  such a card as `grant_scope_mismatch` rather than serving it, but a source
+  that filters by session and returns nothing understates silently. See ADR 0021.
+
 - **Every refusal reaches audit, and the record names the boundary that made
   it.** The execution envelope made no audit call of its own: a tool name the
   turn's catalogue never offered, a spent step or tool-call budget, a context

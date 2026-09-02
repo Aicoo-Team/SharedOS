@@ -1,3 +1,4 @@
+export * from "./agent-card.js";
 export * from "./audit.js";
 export * from "./authority.js";
 export * from "./authorization.js";
