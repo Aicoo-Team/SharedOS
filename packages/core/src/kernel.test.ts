@@ -10,7 +10,7 @@ import type {
 } from "@aicoo/sharedos-contracts";
 
 import type { AuditEvent, AuditSink } from "./audit.js";
-import type { GrantSource, PolicySource } from "./authority.js";
+import type { GrantSource, LoadedPolicy, PolicySource } from "./authority.js";
 import {
   CapabilityAuthorizer,
   type HostCeiling,
@@ -24,6 +24,7 @@ import {
   type MessageTransport,
 } from "./message-service.js";
 import { MESSAGE_REQUEST_TOOL_DEFINITION, MESSAGE_REQUEST_TOOL_NAME } from "./message-tool.js";
+import { catalogHash, publishToolCatalog } from "./published-tool.js";
 import {
   ResourceProviderRegistry,
   type ResourceInvocationRequest,
@@ -2192,7 +2193,7 @@ describe("SharedOSKernel host policy", () => {
       policySource: {
         load: async () => {
           loads += 1;
-          return { frozen: ["files"] };
+          return { policy: { frozen: ["files"] }, version: "freeze-7" };
         },
       },
       authorizer: new CapabilityAuthorizer({ hostCeiling: fromPolicy }),
@@ -2213,6 +2214,15 @@ describe("SharedOSKernel host policy", () => {
       hostCeiling: "installed",
       hostPolicy: "loaded",
     });
+    // The listing names the policy state it was decided against, beside the
+    // authority it was decided against, and counts what that cost: one tool,
+    // by a decision rather than an outage.
+    const listing = events.find(({ type }) => type === "tool.catalog.listed");
+    expect(listing).toMatchObject({
+      outcome: "succeeded",
+      metadata: { hostPolicyVersion: "freeze-7", withheldCount: 1 },
+    });
+    expect(listing?.metadata).not.toHaveProperty("failClosed");
     expect(events.filter(({ type }) => type === "authorization.checked").at(-1)).toMatchObject({
       outcome: "denied",
       reason: "host_policy_denied",
@@ -2230,7 +2240,7 @@ describe("SharedOSKernel host policy", () => {
           seenSignal = signal;
           // A source that edits the context it was handed edits a copy.
           (access as { purpose: string }).purpose = "tampered";
-          return {};
+          return { policy: {}, version: "empty-1" };
         },
       },
       authorizer: new CapabilityAuthorizer({
@@ -2279,6 +2289,7 @@ describe("SharedOSKernel host policy", () => {
     const turn = await kernel.openTurnAuthority(context());
     const first = await kernel.invokeTool(context(), toolCall());
     const second = await kernel.invokeTool(context(), toolCall());
+    const listed = await kernel.listTools(context());
     turn.close();
 
     // Authority itself loaded. It is the policy the turn cannot decide against.
@@ -2314,6 +2325,53 @@ describe("SharedOSKernel host policy", () => {
         metadata: { failClosed: true },
       });
     }
+    // The catalogue was computed, and empty, and the record says why the
+    // difference matters: what it withheld, it withheld by an outage, and it
+    // has no policy version to name.
+    expect(listed).toEqual([]);
+    const listing = events.find(({ type }) => type === "tool.catalog.listed");
+    expect(listing).toMatchObject({
+      outcome: "succeeded",
+      metadata: { withheldCount: 1, failClosed: true },
+    });
+    expect(listing?.metadata).not.toHaveProperty("hostPolicyVersion");
+  });
+
+  it("treats a source that answered without naming its version as an outage", async () => {
+    const events: AuditEvent[] = [];
+    const errors: unknown[] = [];
+    const reports: ProviderErrorContext[] = [];
+    const kernel = kernelWith([grant("grant-files", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (event) => void events.push(event) },
+      onProviderError: (error, operation) => {
+        errors.push(error);
+        reports.push(operation);
+      },
+      // The pre-`LoadedPolicy` shape: a bare policy, nothing to record it by.
+      policySource: { load: async () => ({ frozen: [] }) as unknown as LoadedPolicy },
+      authorizer: new CapabilityAuthorizer({ hostCeiling: { narrow: (decision) => decision } }),
+    });
+
+    await expect(
+      kernel.authorize(context(), { resource: FILE_RESOURCE, action: "search" }),
+    ).resolves.toMatchObject({ allowed: false, reasonCode: "host_policy_unavailable" });
+
+    // Nothing could pin a decision to the policy it was made against, so
+    // nothing was decided against it -- and the host is told, once, in the
+    // shape a throw would have been.
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toBeInstanceOf(TypeError);
+    expect(reports).toEqual([
+      {
+        kind: "policy",
+        reasonCode: "host_policy_unavailable",
+        traceId: "trace-1",
+        namespaceId: "world-alpha",
+      },
+    ]);
+    expect(events.find(({ type }) => type === "authority.resolved")?.metadata).toMatchObject({
+      hostPolicy: "unavailable",
+    });
   });
 
   it("records what the policy load came to even on a turn where authority could not load", async () => {
@@ -2324,7 +2382,7 @@ describe("SharedOSKernel host policy", () => {
           throw new Error("grant store is unreachable");
         },
       },
-      policySource: { load: async () => ({ frozen: [] }) },
+      policySource: { load: async () => ({ policy: { frozen: [] }, version: "freeze-0" }) },
       audit: { record: async (event) => void events.push(event) },
     });
 
@@ -2411,18 +2469,82 @@ describe("SharedOSKernel audit routing", () => {
     expect(invoked.every(({ metadata }) => metadata?.["source"] === "kernel")).toBe(true);
   });
 
-  it("records what a catalogue withheld, and why, without one event per tool", async () => {
+  it("records a listing by what it was computed from, not by the names it returned or withheld", async () => {
     const events: AuditEvent[] = [];
-    const kernel = kernelWith([], { audit: { record: async (e) => void events.push(e) } });
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (e) => void events.push(e) },
+    });
+    kernel.registerTool(successfulTool(CALENDAR_TOOL));
     kernel.registerTool(successfulTool());
 
-    await kernel.listTools({ ...context(), enabledToolNamespaces: [] });
+    const visible = await kernel.listTools(context(["files"]));
 
+    // The file tool shown; the calendar tool withheld by the caller's own
+    // filter. The record carries the catalogue as an identifier, the filter,
+    // and a count -- and, above metadata, the authority it was decided against.
+    expect(visible).toEqual([FILE_TOOL]);
     const listed = events.filter(({ type }) => type === "tool.catalog.listed");
     expect(listed).toHaveLength(1);
-    expect(listed[0]?.metadata).toMatchObject({
-      visibleTools: [],
-      withheld: [{ tool: FILE_TOOL.name, cause: "namespace_disabled" }],
+    expect(listed[0]?.authorityHash).toBe(
+      events.find(({ type }) => type === "authority.resolved")?.authorityHash,
+    );
+    expect(listed[0]?.metadata).toEqual({
+      catalogHash: await catalogHash(publishToolCatalog([FILE_TOOL])),
+      enabledNamespaces: ["files"],
+      withheldCount: 1,
+      source: "kernel",
+    });
+  });
+
+  it("records the catalogue under the identifier a harness is handed for it", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith(
+      [
+        grant("grant-search", FILE_RESOURCE, ["search"]),
+        grant("grant-calendar", CALENDAR_TOOL.requiredCapability.resource, ["create"]),
+      ],
+      { audit: { record: async (e) => void events.push(e) } },
+    );
+    kernel.registerTool(successfulTool(CALENDAR_TOOL));
+    kernel.registerTool(successfulTool());
+
+    const published = await kernel.listPublishedTools(context(), { executionId: "exec-1" });
+
+    // One catalogue, one identifier, wherever it is read: the manifest a
+    // harness reports and the audit record the kernel wrote match on it, and
+    // registration order is not part of it.
+    expect(published.tools.map(({ name }) => name)).toEqual([CALENDAR_TOOL.name, FILE_TOOL.name]);
+    expect(events.find(({ type }) => type === "tool.catalog.listed")?.metadata).toMatchObject({
+      catalogHash: published.catalogHash,
+      enabledNamespaces: ["files", "calendar"],
+      withheldCount: 0,
+    });
+  });
+
+  it("records a refused listing with the same identifiers and an empty catalogue", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        load: async () => {
+          throw new Error("grant store is unreachable");
+        },
+      },
+      audit: { record: async (e) => void events.push(e) },
+    });
+
+    await expect(kernel.listTools(context(["files"]))).resolves.toEqual([]);
+
+    expect(events.find(({ type }) => type === "tool.catalog.listed")).toMatchObject({
+      outcome: "denied",
+      reason: "authority_unavailable",
+      metadata: {
+        catalogHash: await catalogHash([]),
+        enabledNamespaces: ["files"],
+        withheldCount: 0,
+        failClosed: true,
+        authority: "grant_source_failed",
+        source: "kernel",
+      },
     });
   });
 

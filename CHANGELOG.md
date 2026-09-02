@@ -10,6 +10,25 @@ each entry calls out what a host has to update.
 
 ### Changed — breaking
 
+- **`tool.catalog.listed` no longer lists tool names.** Its `metadata` carried
+  `visibleTools`, and in this release's earlier shape `withheld`, one
+  `{ tool, cause }` per tool a listing did not return. Both are gone. The event
+  now records what the listing was computed from and what it came to, as
+  identifiers and a count: `catalogHash`, the catalogue the caller was shown,
+  computed exactly as `listPublishedTools` computes it so an execution's
+  manifest and the audit record match on one value; `enabledNamespaces`, the
+  caller's own filter; `hostPolicyVersion`, the version the turn's
+  `PolicySource` stated, when one loaded; and `withheldCount`. `authorityHash`
+  stays at the top level. `failClosed: true` now also appears on a `succeeded`
+  listing when at least one tool was withheld by an outage rather than by a
+  decision, which the count alone could not say.
+
+  **A consumer reading `visibleTools` or `withheld` from audit rebuilds from the
+  identifiers instead.** The names a listing returned are what
+  `listPublishedTools` returned, and `catalogHash` says whether two listings
+  returned the same ones; an attempted call on a withheld tool is still
+  recorded on `tool.invoked` with its own `cause`. ADR 0021 records the shape.
+
 - **Optional fields were added to strict schemas, and the protocol version did
   not move.** `AuthorizationDecision.requiredCapability`, `Escalation.request`,
   and `AuditEvent.request` are optional and additive for anything that _writes_
@@ -213,9 +232,10 @@ each entry calls out what a host has to update.
   situations; it now holds for all of them, including a policy refusal, which
   could otherwise only ever appear on a decision event.
 
-  `tool.catalog.listed` gains `withheld`: one `{ tool, cause }` per tool a
-  listing did not return. Discovery refusals had no code on either side before —
-  the caller is not told and the record said nothing either.
+  `tool.catalog.listed` gains `withheldCount`, with `failClosed: true` when what
+  it withheld, it withheld by an outage. Discovery refusals had no code on
+  either side before — the caller is not told and the record said nothing
+  either. The listing's other new keys are under _Changed — breaking_.
 
   Kept out deliberately: the MCP transport's `unauthorized` refusal, which
   happens before an `AccessContext` exists and would need a fabricated principal
@@ -281,8 +301,9 @@ each entry calls out what a host has to update.
   `SharedOSKernelOptions.policySource` installs a `PolicySource`, one
   asynchronous `load(context, signal)` the kernel calls once per turn, in flight
   beside the grant load, and holds on the turn's authority lease as
-  `ResolvedAuthority.hostPolicy`. `HostCeiling.narrow` gains a fourth argument,
-  `policy`, which is what that source loaded — exactly as loaded, not cloned or
+  `ResolvedAuthority.hostPolicy`. It resolves to a `LoadedPolicy`,
+  `{ policy, version }`. `HostCeiling.narrow` gains a fourth argument, `policy`,
+  which is the `policy` that source loaded — exactly as loaded, not cloned or
   validated, because SharedOS does not know its shape and reads nothing from it
   — and is `undefined` when no source is installed, so a ceiling that closes
   over its own state is unchanged. `HostCeiling<Policy>` and
@@ -292,7 +313,15 @@ each entry calls out what a host has to update.
   lives in a database: it is read once at the turn boundary, the way authority
   is, and never on the authorization path.
 
-  It fails closed the way the grant source does. A throw is reported once to
+  `version` is the one thing about a policy SharedOS reads: the source's own
+  name for what it loaded — a revision, an etag, the hash of the table it read —
+  recorded as `hostPolicyVersion` on every `tool.catalog.listed` event in the
+  turn, beside `authorityHash`. An opaque value has no canonical form to hash,
+  and the record needs to pin a catalogue to the policy state it was decided
+  against, so the source says.
+
+  It fails closed the way the grant source does. A throw, or a result that is
+  not a `LoadedPolicy`, is reported once to
   `SharedOSKernelOptions.onProviderError` as `kind: "policy"` and the turn's
   policy is held `unavailable` for its whole length: every decision the ceiling
   would have been consulted on is refused `host_policy_unavailable` without

@@ -104,7 +104,9 @@ export interface GrantSource {
  * `narrow`. It is never cloned, validated, hashed, or audited: a policy may be
  * a compiled matcher or a table with methods on it, and SharedOS decides nothing
  * from it -- the ceiling does. A host pairs the two ports itself, and the
- * pairing is the host's to get right (ADR 0020).
+ * pairing is the host's to get right (ADR 0020). The one thing read is the
+ * `version` the source states beside it ({@link LoadedPolicy}), and that is
+ * what audit records -- never the policy.
  */
 export type HostPolicy = unknown;
 
@@ -125,10 +127,30 @@ export type HostPolicy = unknown;
  * policy closed: every decision a ceiling would have been consulted on is
  * refused `host_policy_unavailable`, the error goes to
  * `SharedOSKernelOptions.onProviderError`, and nothing falls back to a cached
- * or caller-supplied policy.
+ * or caller-supplied policy. A result that is not a {@link LoadedPolicy} -- no
+ * `version`, or an empty one -- is a defect of the same weight and is treated
+ * the same way.
  */
 export interface PolicySource<Policy = HostPolicy> {
-  load(context: AccessContext, signal: AbortSignal): Promise<Policy>;
+  load(context: AccessContext, signal: AbortSignal): Promise<LoadedPolicy<Policy>>;
+}
+
+/**
+ * What a {@link PolicySource} loaded: the policy, and the source's name for it.
+ *
+ * `version` is the one thing about a policy SharedOS reads. It is not derived
+ * from the policy -- an opaque value has no canonical form to hash, and a
+ * compiled matcher has no bytes to digest -- so the source states it: a
+ * revision, an etag, the content hash of the table it read. Two loads that
+ * would decide the same way should carry the same version and two that would
+ * not, different ones; nothing else about it is checked. It is recorded on
+ * every `tool.catalog.listed` event in the turn as `hostPolicyVersion`, which
+ * is what lets a reader pin the catalogue a turn was shown to the policy state
+ * it was decided against, the way `authorityHash` pins it to the grant set.
+ */
+export interface LoadedPolicy<Policy = HostPolicy> {
+  readonly policy: Policy;
+  readonly version: string;
 }
 
 /**
@@ -141,7 +163,8 @@ export interface PolicySource<Policy = HostPolicy> {
  * unavailable {@link GrantSource} is held to.
  */
 export type PolicyResolution<Policy = HostPolicy> =
-  { readonly status: "loaded"; readonly policy: Policy } | { readonly status: "unavailable" };
+  | { readonly status: "loaded"; readonly policy: Policy; readonly version: string }
+  | { readonly status: "unavailable" };
 
 /** Why authority could not be established for one decision. */
 export type AuthorityUnavailableCode =

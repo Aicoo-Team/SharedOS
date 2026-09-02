@@ -109,7 +109,10 @@ Host policy enters the same way, at the same moment. A kernel given an optional
 on the same `ResolvedAuthority`, so the host ceiling decides every operation in
 the turn against one policy state without reading a store. What it loads is
 opaque to SharedOS: not validated, not hashed into the authority snapshot, and
-never read by anything but the host's own ceiling. A source that throws fails
+never read by anything but the host's own ceiling. The source states a `version`
+for what it loaded, and every catalogue listing in the turn records it beside
+the authority hash and the catalogue's own hash, so a reader can pin what a turn
+was shown to the policy state it was decided against. A source that throws fails
 the turn's policy closed, and every decision the ceiling would have made in it
 is refused `host_policy_unavailable`.
 

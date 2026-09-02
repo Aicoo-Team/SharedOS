@@ -33,6 +33,7 @@ import {
   type AuthorityResolution,
   type AuthorityUnavailableCode,
   type GrantSource,
+  type LoadedPolicy,
   MID_TURN_AUTHORITY_REFRESH,
   type PolicyResolution,
   type PolicySource,
@@ -66,7 +67,7 @@ import {
   ResourceProviderRegistry,
   toResourceOperation,
 } from "./resource-registry.js";
-import { buildToolCatalog } from "./published-tool.js";
+import { buildToolCatalog, catalogHash, publishToolCatalog } from "./published-tool.js";
 import { SPAN, measure, type SpanSink } from "./spans.js";
 import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
@@ -506,8 +507,9 @@ export class SharedOSKernel {
           outcome: "denied",
           reason: "authority_unavailable",
           metadata: {
-            visibleTools: [],
-            withheld: [],
+            catalogHash: await catalogHash([]),
+            enabledNamespaces: [...context.enabledToolNamespaces],
+            withheldCount: 0,
             failClosed: true,
             authority: authority.code,
             source: "kernel",
@@ -518,14 +520,15 @@ export class SharedOSKernel {
     }
 
     const allowed: ToolDefinition[] = [];
-    const withheld: JsonObject[] = [];
+    let withheldCount = 0;
+    let withheldByOutage = false;
     const enabledNamespaces = new Set(context.enabledToolNamespaces);
     const tools = await this.#resolveToolRegistry(context, options.signal);
 
     for (const definition of tools.definitions()) {
       throwIfAborted(options.signal);
       if (!enabledNamespaces.has(definition.namespace)) {
-        withheld.push({ tool: definition.name, cause: "namespace_disabled" });
+        withheldCount += 1;
         continue;
       }
       const decision = await this.#authorizer.canDiscover(
@@ -539,29 +542,38 @@ export class SharedOSKernel {
       if (decision.allowed) {
         allowed.push(definition);
       } else {
-        withheld.push({ tool: definition.name, cause: decision.reasonCode });
+        withheldCount += 1;
+        withheldByOutage ||= isInfrastructureDenial(decision.reasonCode);
       }
     }
 
+    const { hostPolicy } = authority.authority;
     await this.#audit.record(
       auditEvent(context, {
         type: "tool.catalog.listed",
         outcome: "succeeded",
         authorityHash: authority.authority.snapshot.hash,
         metadata: {
-          visibleTools: allowed.map(({ name }) => name),
-          // What was not returned, and why. A discovery refusal had no code on
-          // either side before this: the caller is not told, and the record said
-          // nothing either, so a tool withheld by a disabled namespace and one
-          // withheld because no grant reached it were indistinguishable from a
-          // registry that never held them.
-          //
-          // Aggregated into the one event the listing already writes rather
-          // than emitted per tool. A two-hundred-tool registry would otherwise
-          // pay two hundred awaited sink writes per turn to record what a list
-          // records once. The reason is volume, not secrecy -- a tool name is a
-          // registry constant and says nothing about the world (ADR 0021).
-          withheld,
+          // What the listing was computed from and what it came to, as
+          // identifiers and a count rather than as names. `catalogHash` is the
+          // catalogue the caller was shown -- the identifier `listPublishedTools`
+          // hands a harness, so audit and an execution's manifest match on it;
+          // `authorityHash` above and `hostPolicyVersion` are the two states it
+          // was decided against; `enabledNamespaces` is the caller's own
+          // filter. Equal values on two events mean the same catalogue for the
+          // same reasons, and the record does not grow with the registry: a
+          // two-hundred-tool registry would otherwise write its names to audit
+          // on every turn to say what one digest says once. A tool name is a
+          // registry constant, so what the names cost was volume, not secrecy.
+          // What a count cannot carry is the per-tool cause, and `failClosed`
+          // keeps the one distinction a reader cannot do without: whether
+          // something was withheld by an outage rather than by a decision
+          // (ADR 0021).
+          catalogHash: await catalogHash(publishToolCatalog(allowed)),
+          enabledNamespaces: [...context.enabledToolNamespaces],
+          ...(hostPolicy?.status === "loaded" ? { hostPolicyVersion: hostPolicy.version } : {}),
+          withheldCount,
+          ...(withheldByOutage ? { failClosed: true } : {}),
           source: "kernel",
         },
       }),
@@ -1458,6 +1470,10 @@ export class SharedOSKernel {
    * have made. The error is reported here, once per turn, rather than on each
    * decision it fails, because one outage is one report. A cancelled load is
    * re-thrown, not reported: a caller that stopped the work is not a defect.
+   *
+   * A source that answered without naming what it loaded is as broken as one
+   * that threw. Nothing could pin a decision to the policy it was made against,
+   * so nothing is decided against it: the same outage, the same report.
    */
   async #loadHostPolicy(
     context: AccessContext,
@@ -1466,21 +1482,35 @@ export class SharedOSKernel {
     if (this.#policySource === undefined) {
       return undefined;
     }
+    let loaded: unknown;
     try {
-      const policy = await this.#policySource.load(structuredClone(context), signal);
-      return { status: "loaded", policy };
+      loaded = await this.#policySource.load(structuredClone(context), signal);
     } catch (error) {
       if (signal.aborted) {
         throw signal.reason ?? error;
       }
-      reportContainedError(this.#onProviderError, error, {
-        kind: "policy",
-        reasonCode: "host_policy_unavailable",
-        traceId: context.traceId,
-        namespaceId: context.namespaceId,
-      });
+      this.#reportPolicyOutage(context, error);
       return { status: "unavailable" };
     }
+    if (!isLoadedPolicy(loaded)) {
+      this.#reportPolicyOutage(
+        context,
+        new TypeError(
+          "A policy source must resolve to { policy, version } with a non-empty version",
+        ),
+      );
+      return { status: "unavailable" };
+    }
+    return { status: "loaded", policy: loaded.policy, version: loaded.version };
+  }
+
+  #reportPolicyOutage(context: AccessContext, error: unknown): void {
+    reportContainedError(this.#onProviderError, error, {
+      kind: "policy",
+      reasonCode: "host_policy_unavailable",
+      traceId: context.traceId,
+      namespaceId: context.namespaceId,
+    });
   }
 
   /**
@@ -1853,6 +1883,17 @@ function neverAbortedSignal(): AbortSignal {
  * decides over state it carries, and a turn that could not load its policy --
  * every policy decision in it fail-closed -- from one that could (ADR 0020).
  */
+function isLoadedPolicy(value: unknown): value is LoadedPolicy {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "policy" in value &&
+    "version" in value &&
+    typeof value.version === "string" &&
+    value.version.length > 0
+  );
+}
+
 function hostPolicyState(
   hostPolicy: PolicyResolution | undefined,
 ): "loaded" | "unavailable" | "absent" {

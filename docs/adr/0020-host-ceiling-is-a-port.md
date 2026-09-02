@@ -97,7 +97,13 @@ restored.
 ```ts
 /** Loaded once per turn, beside the grant set. */
 export interface PolicySource {
-  load(context: AccessContext, signal: AbortSignal): Promise<HostPolicy>;
+  load(context: AccessContext, signal: AbortSignal): Promise<LoadedPolicy>;
+}
+
+/** The policy, and the source's own name for it: a revision, an etag, a hash. */
+export interface LoadedPolicy {
+  readonly policy: HostPolicy;
+  readonly version: string;
 }
 
 /** Consulted per decision, over already-loaded state. Synchronous by contract. */
@@ -112,7 +118,10 @@ export interface HostCeiling {
 ```
 
 `HostPolicy` is opaque to SharedOS: whatever the host loaded, carried beside the
-resolved authority and handed back to the host's own ceiling.
+resolved authority and handed back to the host's own ceiling. `version` is the
+one thing about it SharedOS reads. An opaque value has no canonical form to
+hash, so the source states what it loaded, and every `tool.catalog.listed` event
+in the turn records it as `hostPolicyVersion` beside `authorityHash` (ADR 0021).
 
 ### Why the synchronous signature needs a second port
 
@@ -159,7 +168,9 @@ decision the ceiling would have been consulted on is refused
 before any bounded use is consumed. A kernel with no ceiling ignores it — the
 outage is the ceiling's, not authority's. Each `authority.resolved` event
 records `hostPolicy: "loaded" | "unavailable" | "absent"` beside `hostCeiling`,
-where `absent` means no source is installed, not that there is no policy.
+where `absent` means no source is installed, not that there is no policy. A
+result that is not a `LoadedPolicy` — no `version`, or an empty one — is the
+same outage, reported the same way.
 
 **The signature is synchronous, and that is the enforcement.** "Deterministic
 and cheap" cannot be asserted in prose and then relied on. A synchronous return

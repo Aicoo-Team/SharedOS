@@ -115,14 +115,23 @@ the events a host actually reads.
 
 ### Discovery is recorded in aggregate
 
-`tool.catalog.listed` gains `withheld`: the tools that were not returned, each
-with the cause that withheld it. One event per listing, as now.
+`tool.catalog.listed` records what a listing was computed from and what it came
+to, as identifiers and a count: `catalogHash`, the catalogue the caller was
+shown, computed as `listPublishedTools` computes it so an execution's manifest
+and the audit record match on one value; `enabledNamespaces`, the caller's own
+filter; `hostPolicyVersion`, the version the turn's `PolicySource` stated (ADR
+0020), when one loaded; and `withheldCount`, how many registered tools were not
+returned. `authorityHash` is already on the event. Equal values on two events
+mean the same catalogue for the same reasons. One event per listing, as now.
 
-Not one event per tool. A registry of two hundred tools would produce two
-hundred awaited sink writes per catalogue build, which is a cost a host pays on
-every turn to record the same fact a list records once. The reason to aggregate
-is volume, not secrecy: a tool name is a registry constant and reveals nothing
-about the world.
+Not one event per tool, and not the names. A registry of two hundred tools would
+produce two hundred awaited sink writes per catalogue build, or two hundred
+names in one event on every turn, to record what a digest records once. Volume,
+not secrecy: a tool name is a registry constant and reveals nothing about the
+world. What a count cannot carry is the per-tool cause. `failClosed: true` on
+the event keeps the one distinction a reader cannot do without — something was
+withheld by an outage rather than by a decision — and an attempted call on a
+withheld tool is still recorded on `tool.invoked` with its own `cause`.
 
 ### What stays out, and why
 
@@ -179,6 +188,12 @@ made. Recording one would put a decision in the trail that never happened, which
 is the same defect as recording `no_matching_grant` for a withheld grant.
 
 **One audit event per withheld tool at discovery.** Rejected on volume, above.
+
+**One `{ tool, cause }` per withheld tool inside the listing event.** The shape
+this decision first took, replaced before release. It still grew with the
+registry on every turn, and what it bought — the name and cause of each withheld
+tool — is recoverable from the registry and the identifiers when a reader needs
+it, and is recorded on `tool.invoked` the moment a withheld tool is called.
 
 **Leave the event stream as the record and tell hosts to read it.** Rejected. It
 is a required field on `ExecutionResult`, so hosts already pay for it on the

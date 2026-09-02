@@ -488,20 +488,29 @@ failed), and `hostCeiling`, `"installed"` or `"absent"`, on both;
 `failClosed: true` on an infrastructure denial, and whatever the decision itself
 carried — a `HostCeiling`'s own keys, or `delegation` detail on a broken chain —
 less `consumed` and `failClosed`, which the kernel states itself and a port
-cannot overwrite; `tool.catalog.listed`
-carries `visibleTools`, the names the caller was shown (empty, with
-`failClosed: true`, when denied), and `withheld`, one `{ tool, cause }` per tool
-it did not return; `tool.invoked` carries `cause` where its code covers several
+cannot overwrite; `tool.catalog.listed` carries `catalogHash`,
+`enabledNamespaces`, `hostPolicyVersion`, and `withheldCount` (below), and
+`failClosed: true` with `authority` when authority itself could not load and the
+catalogue is empty; `tool.invoked` carries `cause` where its code covers several
 situations; `turn.ended` carries `endedBy`, `envelope` or `runtime`, on a
 failure, so a reader crediting enforcement does not credit a plugin's
 self-reported error; `escalation.requested` carries `detail` (the reason the
 runtime gave), `reviewer`, `reviewerAssumed`, and `resolution`.
 
-`withheld` is aggregated into the one event a listing already writes rather than
-emitted per tool: a two-hundred-tool registry would otherwise pay two hundred
-awaited sink writes per turn to record what a list records once. The reason is
-volume, not secrecy — a tool name is a registry constant and says nothing about
-the world.
+A listing is recorded by what it was computed from, not by the names it
+returned or withheld. `catalogHash` is the catalogue the caller was shown,
+computed as `listPublishedTools` computes it, so an execution's manifest and the
+audit record match on one identifier; `enabledNamespaces` is the caller's own
+filter; `hostPolicyVersion` is the version the turn's `PolicySource` stated,
+present only when one loaded; and `withheldCount` is how many registered tools
+were not returned. With `authorityHash` at the top level, equal values on two
+events mean the same catalogue for the same reasons, and the record does not
+grow with the registry — a two-hundred-tool registry would otherwise write its
+names to audit on every turn to say what one digest says once. What a count
+cannot carry is the per-tool cause; `failClosed: true` keeps the one distinction
+a reader cannot do without, that something was withheld by an outage rather than
+by a decision, and an attempted call on a withheld tool is still recorded on
+`tool.invoked` with its own `cause`.
 
 This vocabulary is a compatibility surface. Hosts persist these events under
 closed schemas of their own, so a new type, outcome, or top-level field is a

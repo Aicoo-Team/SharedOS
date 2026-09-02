@@ -885,7 +885,7 @@ describe("the policy a host ceiling decides against", () => {
       },
     };
     const authorizer = new CapabilityAuthorizer({ hostCeiling: fromPolicy });
-    const authority = withPolicy([grant()], { status: "loaded", policy });
+    const authority = withPolicy([grant()], { status: "loaded", policy, version: "org-freeze-3" });
 
     await expect(authorizer.authorize(authority, REQUEST)).resolves.toMatchObject({
       reasonCode: "host_policy_denied",

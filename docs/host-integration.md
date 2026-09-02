@@ -207,9 +207,12 @@ const kernel = new SharedOSKernel({
   // Loaded once per turn, in flight beside the grant load, and held for the
   // turn: a decision inside it never reads the store. Throw on an outage.
   policySource: {
-    load: async (access, signal): Promise<FolderPolicy> => ({
-      frozen: new Set(await policyDb.frozenFolders(access.owner, { signal })),
-    }),
+    load: async (access, signal): Promise<LoadedPolicy<FolderPolicy>> => {
+      const { revision, folders } = await policyDb.frozenFolders(access.owner, { signal });
+      // `version` is the one thing SharedOS reads: your own name for what was
+      // loaded, recorded on every catalogue listing in the turn.
+      return { policy: { frozen: new Set(folders) }, version: `frozen-folders@${revision}` };
+    },
   },
   authorizer: new CapabilityAuthorizer({
     usageStore: stores,
@@ -230,10 +233,14 @@ The pairing is yours: SharedOS cannot check that the type a ceiling expects is
 the type its source produced. A source that throws fails the turn's policy
 closed — every decision the ceiling would have made is refused
 `host_policy_unavailable`, `narrow` is never called, and the error goes to the
-kernel's `onProviderError` as `kind: "policy"`, once per turn. A cancelled load
-re-throws the abort instead. Every `authority.resolved` event says which case
-the turn was: `hostPolicy: "loaded"`, `"unavailable"`, or `"absent"` when no
-source is installed.
+kernel's `onProviderError` as `kind: "policy"`, once per turn. A result without
+a `version` is treated the same way. A cancelled load re-throws the abort
+instead. Every `authority.resolved` event says which case the turn was:
+`hostPolicy: "loaded"`, `"unavailable"`, or `"absent"` when no source is
+installed, and every `tool.catalog.listed` event in the turn carries the
+`version` a loaded source stated as `hostPolicyVersion`, beside `authorityHash`
+and `catalogHash`, so a catalogue can be pinned to the policy state it was
+decided against.
 
 Two things it does not cover, and both are yours to close:
 
