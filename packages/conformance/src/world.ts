@@ -1350,7 +1350,7 @@ class UnavailableGrantUsageStore implements GrantUsageStore {
  * Deliberately not `no_matching_grant`. A dead route and a missing capability
  * are different findings, and a transport that borrowed the authorizer's code
  * would make them indistinguishable in the record -- which is the whole reason
- * the row below can say which gate refused the send.
+ * the `route-lease-revoked` row can say which gate refused the send.
  */
 export const ROUTE_LEASE_REVOKED_CODE = "route_lease_revoked";
 
