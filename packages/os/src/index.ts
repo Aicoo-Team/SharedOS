@@ -17,6 +17,19 @@ import type { ResourceProvider, SharedOSKernel, ToolHandler } from "@aicoo/share
 
 /** The canonical SharedOS resource plane. Memory is a role of files, not a second store. */
 export const FILES_NAMESPACE = "files";
+
+/**
+ * The Git resource plane.
+ *
+ * `repo` and {@link FILES_NAMESPACE} may address the same directory and share
+ * no authority: `capabilityMatches` compares `resource.namespace` before it
+ * looks at anything else, so a file grant over a working tree matches nothing
+ * here and a repository grant matches nothing there. Modelling `commit` as a
+ * write under `files` would have made every holder of file-write authority a
+ * committer, which is the permission cross-product ADR 0005 refuses. See
+ * ADR 0024.
+ */
+export const REPO_NAMESPACE = "repo";
 export const SHAREDOS_TOOL_SOURCE = "sharedos";
 
 export const FilePathSchema = z.array(PathSegmentSchema).max(64);
@@ -125,6 +138,65 @@ export const FilesSnapshotRestoreArgumentsSchema = z
   .strict();
 export type FilesSnapshotRestoreArguments = z.infer<typeof FilesSnapshotRestoreArgumentsSchema>;
 
+/**
+ * Paths inside a repository, selecting what a diff or a stage covers.
+ *
+ * Provider input, not a second resource: staging is authorized at the
+ * repository, and the provider confines every entry beneath it exactly as
+ * `validatePathArguments` does today. They are carried in the same canonical
+ * segment vocabulary as any other path (ADR 0004), so a traversal marker is
+ * refused before the provider is reached -- a vocabulary constraint, not the
+ * authorization boundary. See ADR 0024.
+ */
+export const RepoPathspecSchema = z.array(FilePathSchema.min(1)).min(1).max(64);
+export type RepoPathspec = z.infer<typeof RepoPathspecSchema>;
+
+/**
+ * A single-line commit subject and body, bounded as the vetted Git subset
+ * bounds it. Control characters are refused so a message cannot smuggle a
+ * second argument past a provider that builds a command line.
+ */
+const CommitMessageSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(500)
+  .refine((value) => !/[\u0000-\u0008\u000a-\u001f\u007f]/u.test(value), {
+    message: "commit messages must not contain line breaks or control characters",
+  });
+
+const commitMessageJsonSchema = { type: "string", minLength: 1, maxLength: 500 } as const;
+
+export const RepoStatusArgumentsSchema = z.object({ path: FilePathSchema }).strict();
+export type RepoStatusArguments = z.infer<typeof RepoStatusArgumentsSchema>;
+
+export const RepoDiffArgumentsSchema = z
+  .object({
+    path: FilePathSchema,
+    staged: z.boolean().default(false),
+    pathspec: RepoPathspecSchema.optional(),
+  })
+  .strict();
+export type RepoDiffArguments = z.infer<typeof RepoDiffArgumentsSchema>;
+
+export const RepoLogArgumentsSchema = z
+  .object({
+    path: FilePathSchema,
+    maxCount: z.number().int().positive().max(100).optional(),
+  })
+  .strict();
+export type RepoLogArguments = z.infer<typeof RepoLogArgumentsSchema>;
+
+export const RepoStageArgumentsSchema = z
+  .object({ path: FilePathSchema, pathspec: RepoPathspecSchema })
+  .strict();
+export type RepoStageArguments = z.infer<typeof RepoStageArgumentsSchema>;
+
+export const RepoCommitArgumentsSchema = z
+  .object({ path: FilePathSchema, message: CommitMessageSchema })
+  .strict();
+export type RepoCommitArguments = z.infer<typeof RepoCommitArgumentsSchema>;
+
 interface ParsedResourceCall {
   readonly path: string[];
   readonly input?: JsonValue;
@@ -137,6 +209,7 @@ interface ResourceToolSpec {
 
 export interface StandardOsProviders {
   readonly files?: ResourceProvider;
+  readonly repo?: ResourceProvider;
 }
 
 export function registerStandardOsTools(
@@ -145,6 +218,11 @@ export function registerStandardOsTools(
 ): void {
   if (providers.files !== undefined) {
     for (const handler of createFileTools(providers.files)) {
+      kernel.registerTool(handler);
+    }
+  }
+  if (providers.repo !== undefined) {
+    for (const handler of createRepoTools(providers.repo)) {
       kernel.registerTool(handler);
     }
   }
@@ -166,6 +244,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
     resourceTool(provider, {
       definition: definition({
         name: "files.search",
+        namespace: FILES_NAMESPACE,
         description: "Semantically search files inside an explicitly granted path.",
         action: "search",
         inputSchema: {
@@ -191,6 +270,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
     resourceTool(provider, {
       definition: definition({
         name: "files.grep",
+        namespace: FILES_NAMESPACE,
         description: "Run deterministic literal or regex search with line context.",
         action: "grep",
         inputSchema: {
@@ -216,6 +296,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
     resourceTool(provider, {
       definition: definition({
         name: "files.create",
+        namespace: FILES_NAMESPACE,
         description: "Create a file at an explicitly granted, previously absent path.",
         action: "create",
         inputSchema: {
@@ -237,6 +318,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
     resourceTool(provider, {
       definition: definition({
         name: "files.replace",
+        namespace: FILES_NAMESPACE,
         description: "Replace a file's complete content, optionally at an expected version.",
         action: "replace",
         inputSchema: {
@@ -259,6 +341,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
     resourceTool(provider, {
       definition: definition({
         name: "files.append",
+        namespace: FILES_NAMESPACE,
         description: "Append content to a file at an explicitly granted path.",
         action: "append",
         inputSchema: {
@@ -282,6 +365,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
     resourceTool(provider, {
       definition: definition({
         name: "files.delete",
+        namespace: FILES_NAMESPACE,
         description: "Delete a file path; recursive deletion must be requested explicitly.",
         action: "delete",
         inputSchema: {
@@ -304,6 +388,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
     resourceTool(provider, {
       definition: definition({
         name: "files.snapshot.create",
+        namespace: FILES_NAMESPACE,
         description: "Create a restorable snapshot of a granted file path.",
         action: "snapshot:create",
         inputSchema: {
@@ -321,6 +406,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
     resourceTool(provider, {
       definition: definition({
         name: "files.snapshot.list",
+        namespace: FILES_NAMESPACE,
         description: "List snapshots for a granted file path.",
         action: "snapshot:list",
         inputSchema: {
@@ -342,6 +428,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
     resourceTool(provider, {
       definition: definition({
         name: "files.snapshot.restore",
+        namespace: FILES_NAMESPACE,
         description: "Restore a granted file path from a named snapshot.",
         action: "snapshot:restore",
         inputSchema: {
@@ -365,6 +452,126 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
   ];
 }
 
+/**
+ * The vetted Git subset over one host-owned provider, beside the file tools.
+ *
+ * Five tools, one per subcommand the host's `safe-git` allows, each resolving
+ * to an action of its own: a plane with a single `write` could not express "may
+ * stage, never commit", which is the distinction hosts already make. `push`,
+ * `reset`, `checkout`, `clean`, `config`, and `remote` are deliberately absent
+ * and stay behind whatever authorizes an arbitrary shell command.
+ *
+ * The capability names the repository; the provider confines every path
+ * argument beneath it. SharedOS ships the vocabulary and the authorization and
+ * never a Git implementation, so the execution hardening the host applies --
+ * disabled hooks, no system or global config, no external diff or textconv
+ * drivers, no clean filters, refused symlinks -- holds because the provider is
+ * the only code that can turn a capability into an invocation, not because any
+ * grant asked for it. See ADR 0024.
+ */
+export function createRepoTools(provider: ResourceProvider): readonly ToolHandler[] {
+  requireProviderNamespace(provider, REPO_NAMESPACE);
+  return [
+    resourceTool(provider, {
+      definition: definition({
+        name: "repo.status",
+        description: "Report the working-tree status of a granted repository.",
+        namespace: REPO_NAMESPACE,
+        action: "status",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["path"],
+          properties: { path: pathJsonSchema() },
+        },
+        readOnly: true,
+      }),
+      parse: (arguments_) => ({ path: RepoStatusArgumentsSchema.parse(arguments_).path }),
+    }),
+    resourceTool(provider, {
+      definition: definition({
+        name: "repo.diff",
+        description: "Read the working-tree or staged diff of a granted repository.",
+        namespace: REPO_NAMESPACE,
+        action: "diff",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["path"],
+          properties: {
+            path: pathJsonSchema(),
+            staged: { type: "boolean", default: false },
+            pathspec: pathspecJsonSchema(),
+          },
+        },
+        readOnly: true,
+      }),
+      parse: (arguments_) => {
+        const { path, staged, pathspec } = RepoDiffArgumentsSchema.parse(arguments_);
+        return { path, input: compactObject({ staged, pathspec }) };
+      },
+    }),
+    resourceTool(provider, {
+      definition: definition({
+        name: "repo.log",
+        description: "Read commit history for a granted repository.",
+        namespace: REPO_NAMESPACE,
+        action: "log",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["path"],
+          properties: {
+            path: pathJsonSchema(),
+            maxCount: { type: "integer", minimum: 1, maximum: 100 },
+          },
+        },
+        readOnly: true,
+      }),
+      parse: (arguments_) => {
+        const { path, maxCount } = RepoLogArgumentsSchema.parse(arguments_);
+        return maxCount === undefined ? { path } : { path, input: { maxCount } };
+      },
+    }),
+    resourceTool(provider, {
+      definition: definition({
+        name: "repo.stage",
+        description: "Add paths inside a granted repository to its index.",
+        namespace: REPO_NAMESPACE,
+        action: "stage",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["path", "pathspec"],
+          properties: { path: pathJsonSchema(), pathspec: pathspecJsonSchema() },
+        },
+      }),
+      parse: (arguments_) => {
+        const { path, pathspec } = RepoStageArgumentsSchema.parse(arguments_);
+        return { path, input: { pathspec } };
+      },
+    }),
+    resourceTool(provider, {
+      definition: definition({
+        name: "repo.commit",
+        description: "Commit the staged index of a granted repository.",
+        namespace: REPO_NAMESPACE,
+        action: "commit",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["path", "message"],
+          properties: { path: pathJsonSchema(), message: commitMessageJsonSchema },
+        },
+      }),
+      parse: (arguments_) => {
+        const { path, message } = RepoCommitArgumentsSchema.parse(arguments_);
+        return { path, input: { message } };
+      },
+    }),
+  ];
+}
+
 function pathOnlyTool(
   provider: ResourceProvider,
   name: string,
@@ -375,6 +582,7 @@ function pathOnlyTool(
     definition: definition({
       name,
       description,
+      namespace: provider.namespace,
       action,
       inputSchema: {
         type: "object",
@@ -461,6 +669,7 @@ function toToolResult(
 function definition(args: {
   name: string;
   description: string;
+  namespace: string;
   action: string;
   inputSchema: JsonObject;
   readOnly?: boolean;
@@ -469,12 +678,12 @@ function definition(args: {
   return {
     name: args.name,
     description: args.description,
-    namespace: FILES_NAMESPACE,
+    namespace: args.namespace,
     source: SHAREDOS_TOOL_SOURCE,
     readWrite: args.readOnly === true ? "read" : "write",
     inputSchema: args.inputSchema,
     requiredCapability: {
-      resource: { namespace: FILES_NAMESPACE, path: [] },
+      resource: { namespace: args.namespace, path: [] },
       action: args.action,
     },
     annotations: {
@@ -491,6 +700,10 @@ function pathJsonSchema(minItems = 0): JsonObject {
     minItems,
     maxItems: 64,
   };
+}
+
+function pathspecJsonSchema(): JsonObject {
+  return { type: "array", items: pathJsonSchema(1), minItems: 1, maxItems: 64 };
 }
 
 function compactObject(values: Record<string, JsonValue | undefined>): JsonObject {

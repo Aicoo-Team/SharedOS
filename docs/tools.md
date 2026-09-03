@@ -1,8 +1,8 @@
 # Tool catalog
 
 A tool is how a model reaches live state or performs an action. SharedOS ships
-one plane of them — `files` — two affordances of its own — `messages.request`
-and `sharedos.escalate` — and a registry for yours.
+two planes of them — `files` and `repo` — two affordances of its own —
+`messages.request` and `sharedos.escalate` — and a registry for yours.
 
 ## Three gates, all required
 
@@ -76,6 +76,48 @@ against one is not portable to the other.
 
 If that matters to you, pin the host you integrate with and treat the shape as
 that host's contract, not SharedOS's. Constraining these outputs is open work.
+The same is true of the `repo` plane below.
+
+## The `repo` plane
+
+`registerStandardOsTools(kernel, { files, repo })` exposes a second
+`ResourceProvider` as five Git tools, beside the file tools and sharing no
+authority with them ([ADR 0024](adr/0024-git-is-its-own-resource-namespace.md)).
+
+| Tool          | Action   | Class | Arguments beyond `path` |
+| ------------- | -------- | ----- | ----------------------- |
+| `repo.status` | `status` | read  | —                       |
+| `repo.diff`   | `diff`   | read  | `staged`, `pathspec?`   |
+| `repo.log`    | `log`    | read  | `maxCount?`             |
+| `repo.stage`  | `stage`  | write | `pathspec`              |
+| `repo.commit` | `commit` | write | `message`               |
+
+`path` is the repository. `pathspec` selects paths **inside** it — an array of
+segment arrays, in the same canonical vocabulary — and is provider input rather
+than a second resource: staging is authorized at the repository, and the
+provider confines every entry beneath it.
+
+**A `files` grant over a working tree grants nothing here, and a `repo` grant
+grants nothing in `files`.** Capability matching compares the namespace before
+it looks at the path or the action, so the two planes may address the same
+directory and still share no authority. That is deliberate: `commit` as a write
+action under `files` would have made every holder of file-write authority a
+committer, without anybody granting it.
+
+`stage` and `commit` are separate actions for the same reason `append` and
+`replace` are — "may stage, never commit" is a real arrangement, and one broad
+action cannot express it.
+
+Five subcommands is the whole plane. `push`, `reset`, `checkout`, `clean`,
+`config`, and `remote` are not tools here and stay behind whatever authorizes an
+arbitrary shell command. SharedOS ships the vocabulary and the authorization,
+never a Git implementation: the provider is host code, and the hardening it
+applies — disabled hooks, no system or global config, no external diff, textconv,
+or clean filters, refused symlinks — is a property of that code, not an
+authority anyone grants or withholds.
+
+Argument schemas are exported as `RepoDiffArgumentsSchema`,
+`RepoStageArgumentsSchema`, `RepoCommitArgumentsSchema`, and so on.
 
 ## Kernel-supplied tools
 

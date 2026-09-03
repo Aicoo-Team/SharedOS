@@ -633,6 +633,12 @@ denial.requiredAuthority }` comes back under the identifier it went in with.
 - `pnpm release:promote-latest <version>` moves the `latest` dist-tag across the
   whole package set in one command, refusing to act unless every package has
   published that version.
+- **A `repo` resource namespace, beside `files`.** `createRepoTools` and
+  `registerStandardOsTools(kernel, { files, repo })` publish `repo.status`,
+  `repo.diff`, `repo.log`, `repo.stage`, and `repo.commit` over a host-owned Git
+  provider. A `files` grant over a working tree grants nothing under `repo` and
+  the reverse, so committing is authority a host issues rather than a
+  consequence of file-write authority. See ADR 0024.
 
 ### Removed
 
