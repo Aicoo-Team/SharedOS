@@ -4,6 +4,7 @@ import type {
   Capability,
   CapabilityGrant,
   JsonObject,
+  ReachResult,
   ResourceReach,
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
@@ -246,19 +247,6 @@ export interface AuthorizationInstantOptions {
   readonly now?: string;
 }
 
-/**
- * What {@link CapabilityAuthorizer.reach} answers.
- *
- * `computed` carries the reachable surface, possibly empty. `unavailable` means
- * the surface could not be established: a live bounded grant's budget could not
- * be read, and a reach that silently omitted it would look exactly like one
- * that is true. The code is the one the decide path fails closed with, so a
- * host reading audit sees one outage under one name (ADR 0021).
- */
-export type ReachResult =
-  | { readonly status: "computed"; readonly reach: readonly ResourceReach[] }
-  | { readonly status: "unavailable"; readonly reasonCode: "usage_store_unavailable" };
-
 export interface AuthorizeOptions extends AuthorizationInstantOptions {
   /**
    * Consumption is reserved for execution. Discovery calls must leave this
@@ -438,8 +426,12 @@ export class CapabilityAuthorizer {
    * Entries are deduplicated and canonically ordered, so the same authority
    * produces the same reach however the store happened to order its grants.
    *
+   * Only `usage_store_unavailable` is emitted here; `SharedOSKernel.reach` adds
+   * `authority_unavailable` when the authority itself could not be loaded.
+   *
    * See ADR 0021, which reads this for a *subject* by deriving a context from
-   * the reader's own, and PR #13, which reads it for the turn's own scope.
+   * the reader's own, and `SharedOSKernel.reach`, which reads it for the turn's
+   * own scope.
    */
   async reach(
     authority: ResolvedAuthority,

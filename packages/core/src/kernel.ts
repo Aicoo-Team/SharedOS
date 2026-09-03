@@ -9,6 +9,7 @@ import type {
   MessageDeliveryResult,
   MessageEnvelope,
   ProtocolError,
+  ReachResult,
   ResourceResult,
   SharedOSToolCatalog,
   ToolCall,
@@ -669,6 +670,44 @@ export class SharedOSKernel {
       }
     }
     return servable;
+  }
+
+  /**
+   * Where this actor may operate, with the authority stripped out.
+   *
+   * The turn's own reach: namespace, path, actions and scope from the grants
+   * that would authorize something at this instant, and nothing about who
+   * granted them, for how long, or how many uses remain. A runtime is handed it
+   * as `RuntimeVisibleContext.reach`, so a model can be told where to look
+   * without the host reading raw grants to write a prompt -- at exactly the
+   * boundary designed to keep grants away from the model. The card in
+   * {@link readAgentCard} is this same derivation pointed at somebody else.
+   *
+   * Grant reach, over the whole world this context names. The host ceiling is
+   * not consulted, for the reason ADR 0021 gives, and `enabledToolNamespaces`
+   * is not applied here: the resource plane is not gated by tool namespaces, so
+   * an actor may reach through `invokeResource` what no enabled tool offers. A
+   * caller acting only through tools narrows to its catalogue with
+   * `reachThroughTools`, which is what the execution envelope does for a turn.
+   *
+   * Non-consuming, and never a substitute for authorization: an over-wide entry
+   * is harmless because every operation is decided independently afterwards.
+   *
+   * Fails whole rather than narrow. Authority that cannot be loaded and a
+   * bounded budget that cannot be read both answer `unavailable`, under the
+   * code the decide path fails closed with, because a reach that quietly
+   * omitted a live grant would be indistinguishable from one that is true. The
+   * authority load records itself; a turn that ends on an unavailable reach is
+   * recorded by the envelope as the turn's terminal.
+   */
+  async reach(context: AccessContext, options: KernelOperationOptions = {}): Promise<ReachResult> {
+    throwIfAborted(options.signal);
+    context = structuredClone(context);
+    const authority = await this.#resolveAuthority(context, options.signal);
+    if (authority.status !== "resolved") {
+      return { status: "unavailable", reasonCode: "authority_unavailable" };
+    }
+    return this.#authorizer.reach(authority.authority, { now: context.now });
   }
 
   async listTools(

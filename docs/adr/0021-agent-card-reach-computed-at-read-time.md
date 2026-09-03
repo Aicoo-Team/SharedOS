@@ -26,14 +26,15 @@ The directory can therefore advertise access the kernel would refuse, and cannot
 advertise access that arrived any other way. It is not wrong so much as
 answering a different question than the one its reader is asking.
 
-The computation is not the missing piece. PR #13 built it for the turn's own
-scope: `RuntimeVisibleContext.reach` and `kernel.reach(context)` derive
+The computation is not the hard part. `CapabilityAuthorizer.reach` derives
 namespace, path, actions and scope from the grants that would authorize
-something at that instant — no grant id, no issuer, no expiry — and a bounded
-grant whose budget is spent does not appear at all. What a card needs is that
-computation pointed at somebody else. The moment it points at somebody else it
-stops being self-description and becomes disclosure, and that is the part that
-needs deciding rather than implementing.
+something at an instant — no grant id, no issuer, no expiry — and a bounded
+grant whose budget is spent does not appear at all. Read for the turn's own
+scope it is `SharedOSKernel.reach(context)` and `RuntimeVisibleContext.reach`,
+which tell a runtime where to look without the host reading raw grants to write
+a prompt. What a card needs is that computation pointed at somebody else. The
+moment it points at somebody else it stops being self-description and becomes
+disclosure, and that is the part that needs deciding rather than implementing.
 
 ## Decision
 
@@ -43,7 +44,7 @@ computed reach, and nothing a product would want to put next to them.
 ### Reach is computed, never stored
 
 A card's reach is derived when the card is read, from the grants in force at
-that instant, by the same derivation `kernel.reach` already performs for the
+that instant, by the same derivation `SharedOSKernel.reach` performs for the
 turn's own scope. It is not a column, not a cached projection, and not written
 anywhere.
 
@@ -58,7 +59,7 @@ one description of authority in the system that nothing invalidates. The
 refresh job that would fix it is the tell: if a value needs a job to stay true,
 it was a query.
 
-Computing it is affordable for the same reason `kernel.reach` is: it reads
+Computing it is affordable for the same reason the turn's own reach is: it reads
 already-resolved authority and consults no provider.
 
 The reach of a **subject** requires the subject's authority, and authority is
