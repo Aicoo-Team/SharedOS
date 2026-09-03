@@ -220,7 +220,11 @@ each entry calls out what a host has to update.
   path, so a less-authorized reader is served a narrower card and is told which
   views it may still ask for. The card carries no grant id, issuer, expiry or
   budget, and no display name, avatar or skill -- a host composes those around
-  it. **Host note:** a `GrantSource` is now called with a context whose actor is
+  it. Reach is grant reach: the host ceiling is not consulted, so a card can name
+  a path product policy refuses, and the refusal names the ceiling. A bounded
+  grant whose usage store is missing or throws refuses the card
+  `usage_store_unavailable` rather than narrowing it (`CapabilityAuthorizer.reach`
+  answers a `ReachResult`); a spent budget still omits the grant. **Host note:** a `GrantSource` is now called with a context whose actor is
   not the caller, so one that reads an ambient session user instead of
   `context.actor` answers with the wrong principal's grants; SharedOS refuses
   such a card as `grant_scope_mismatch` rather than serving it, but a source

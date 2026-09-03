@@ -246,6 +246,19 @@ export interface AuthorizationInstantOptions {
   readonly now?: string;
 }
 
+/**
+ * What {@link CapabilityAuthorizer.reach} answers.
+ *
+ * `computed` carries the reachable surface, possibly empty. `unavailable` means
+ * the surface could not be established: a live bounded grant's budget could not
+ * be read, and a reach that silently omitted it would look exactly like one
+ * that is true. The code is the one the decide path fails closed with, so a
+ * host reading audit sees one outage under one name (ADR 0021).
+ */
+export type ReachResult =
+  | { readonly status: "computed"; readonly reach: readonly ResourceReach[] }
+  | { readonly status: "unavailable"; readonly reasonCode: "usage_store_unavailable" };
+
 export interface AuthorizeOptions extends AuthorizationInstantOptions {
   /**
    * Consumption is reserved for execution. Discovery calls must leave this
@@ -410,8 +423,10 @@ export class CapabilityAuthorizer {
    * already closed is worse than not advertising it.
    *
    * Nothing is consumed. Asking is not opening, so reading reach never spends a
-   * bounded grant, and a usage store that cannot be read omits the grant rather
-   * than assuming it available.
+   * bounded grant. A usage store that cannot be read makes the whole answer
+   * `unavailable` rather than the reach narrower: a surface that silently omits
+   * a live grant because a dependency is down looks exactly like one that is
+   * true, and the reader has no way to tell (ADR 0021).
    *
    * This is descriptive, never permissive. Every operation is authorized
    * independently afterwards, which is what makes an over-wide entry harmless
@@ -429,7 +444,7 @@ export class CapabilityAuthorizer {
   async reach(
     authority: ResolvedAuthority,
     options: AuthorizationInstantOptions = {},
-  ): Promise<readonly ResourceReach[]> {
+  ): Promise<ReachResult> {
     const context = structuredClone(authority.context);
     const admittedAt = parseTimestamp(context.now);
     const now = options.now === undefined ? admittedAt : parseTimestamp(options.now);
@@ -441,7 +456,7 @@ export class CapabilityAuthorizer {
     ) {
       // The same contexts `#decideOnGrants` refuses as `invalid_context`. A
       // context that can authorize nothing reaches nothing.
-      return [];
+      return { status: "computed", reach: [] };
     }
     const at: GrantInstants = { admittedAt, now };
 
@@ -453,7 +468,11 @@ export class CapabilityAuthorizer {
       if ((await this.#validateDelegation(context, grant, at)).status !== "valid") {
         continue;
       }
-      if (!(await this.#hasBudgetLeft(context, grant))) {
+      const budget = await this.#budgetLeft(context, grant);
+      if (budget === "unavailable") {
+        return { status: "unavailable", reasonCode: "usage_store_unavailable" };
+      }
+      if (budget === "spent") {
         continue;
       }
 
@@ -483,30 +502,40 @@ export class CapabilityAuthorizer {
       }
     }
 
-    return [...entries.values()]
-      .sort((left, right) => (left.order < right.order ? -1 : left.order > right.order ? 1 : 0))
-      .map(({ entry }) => entry);
+    return {
+      status: "computed",
+      reach: [...entries.values()]
+        .sort((left, right) => (left.order < right.order ? -1 : left.order > right.order ? 1 : 0))
+        .map(({ entry }) => entry),
+    };
   }
 
   /**
    * Whether a bounded grant still has a use left, read without spending one.
    *
-   * An unbounded grant always does. A bounded one whose store cannot be read is
-   * treated as spent: guessing in the other direction would advertise authority
-   * SharedOS could not establish.
+   * An unbounded grant always does. A bounded one whose store is missing or
+   * throws is `unavailable` rather than `spent`: guessing available would
+   * advertise authority SharedOS could not establish, and guessing spent would
+   * make reach narrower for a reason the reader cannot see. The caller decides
+   * what an unreadable budget means for the whole answer.
    */
-  async #hasBudgetLeft(context: AccessContext, grant: CapabilityGrant): Promise<boolean> {
+  async #budgetLeft(
+    context: AccessContext,
+    grant: CapabilityGrant,
+  ): Promise<"available" | "spent" | "unavailable"> {
     const maximumUses = grant.constraints.maxUses;
     if (maximumUses === undefined) {
-      return true;
+      return "available";
     }
     if (this.#usageStore === undefined) {
-      return false;
+      return "unavailable";
     }
     try {
-      return (await this.#usageStore.getUsage(context.namespaceId, grant.id)) < maximumUses;
+      return (await this.#usageStore.getUsage(context.namespaceId, grant.id)) < maximumUses
+        ? "available"
+        : "spent";
     } catch {
-      return false;
+      return "unavailable";
     }
   }
 

@@ -962,8 +962,20 @@ describe("the policy a host ceiling decides against", () => {
 });
 
 describe("CapabilityAuthorizer.reach", () => {
+  async function reachOf(
+    authorizer: CapabilityAuthorizer,
+    authority: Parameters<CapabilityAuthorizer["reach"]>[0],
+    options?: Parameters<CapabilityAuthorizer["reach"]>[1],
+  ) {
+    const result = await authorizer.reach(authority, options);
+    if (result.status !== "computed") {
+      throw new Error(`reach was ${result.reasonCode}`);
+    }
+    return result.reach;
+  }
+
   it("describes the reachable surface without the authority behind it", async () => {
-    const reach = await new CapabilityAuthorizer().reach(context([grant()]));
+    const reach = await reachOf(new CapabilityAuthorizer(), context([grant()]));
 
     expect(reach).toEqual([
       {
@@ -983,20 +995,24 @@ describe("CapabilityAuthorizer.reach", () => {
   it("omits a grant that would not authorize anything right now", async () => {
     const authorizer = new CapabilityAuthorizer();
 
-    const expired = await authorizer.reach(
+    const expired = await reachOf(
+      authorizer,
       context([
         grant({
           constraints: { purposes: ["prepare-update"], expiresAt: "2026-08-03T08:30:00.000Z" },
         }),
       ]),
     );
-    const revoked = await authorizer.reach(
+    const revoked = await reachOf(
+      authorizer,
       context([grant({ revokedAt: "2026-08-03T08:45:00.000Z" })]),
     );
-    const wrongPurpose = await authorizer.reach(
+    const wrongPurpose = await reachOf(
+      authorizer,
       context([grant({ constraints: { purposes: ["something-else"] } })]),
     );
-    const wrongSubject = await authorizer.reach(
+    const wrongSubject = await reachOf(
+      authorizer,
       context([grant({ subject: { kind: "agent", agentId: "agent-carol" } as Address })]),
     );
 
@@ -1008,7 +1024,8 @@ describe("CapabilityAuthorizer.reach", () => {
 
   it("omits a grant a verifier rejects", async () => {
     const revoked: CapabilityGrantVerifier = { verify: async () => false };
-    const reach = await new CapabilityAuthorizer({ grantVerifier: revoked }).reach(
+    const reach = await reachOf(
+      new CapabilityAuthorizer({ grantVerifier: revoked }),
       context([grant()]),
     );
 
@@ -1016,7 +1033,8 @@ describe("CapabilityAuthorizer.reach", () => {
   });
 
   it("omits a delegated grant whose chain cannot be verified", async () => {
-    const reach = await new CapabilityAuthorizer().reach(
+    const reach = await reachOf(
+      new CapabilityAuthorizer(),
       context([grant({ parentGrantId: "grant-parent" })]),
     );
 
@@ -1028,9 +1046,9 @@ describe("CapabilityAuthorizer.reach", () => {
     const authorizer = new CapabilityAuthorizer({ usageStore });
     const bounded = context([grant({ constraints: { purposes: ["prepare-update"], maxUses: 1 } })]);
 
-    expect(await authorizer.reach(bounded)).toHaveLength(1);
+    expect(await reachOf(authorizer, bounded)).toHaveLength(1);
     // Asking repeatedly must not consume the budget.
-    expect(await authorizer.reach(bounded)).toHaveLength(1);
+    expect(await reachOf(authorizer, bounded)).toHaveLength(1);
     expect(await usageStore.getUsage("world-alpha", "grant-files-read")).toBe(0);
 
     const spent = await authorizer.authorize(
@@ -1039,25 +1057,30 @@ describe("CapabilityAuthorizer.reach", () => {
       { consume: true },
     );
     expect(spent.allowed).toBe(true);
-    expect(await authorizer.reach(bounded)).toEqual([]);
+    expect(await reachOf(authorizer, bounded)).toEqual([]);
   });
 
-  it("reports nothing rather than guessing when the bounded budget cannot be read", async () => {
+  it("is unavailable rather than narrower when a bounded budget cannot be read", async () => {
+    const bounded = context([grant({ constraints: { purposes: ["prepare-update"], maxUses: 5 } })]);
     const broken: GrantUsageStore = {
       getUsage: async () => {
         throw new Error("store down");
       },
       tryConsume: async () => false,
     };
-    const reach = await new CapabilityAuthorizer({ usageStore: broken }).reach(
-      context([grant({ constraints: { purposes: ["prepare-update"], maxUses: 5 } })]),
-    );
+    const unavailable = { status: "unavailable", reasonCode: "usage_store_unavailable" };
 
-    expect(reach).toEqual([]);
+    await expect(new CapabilityAuthorizer({ usageStore: broken }).reach(bounded)).resolves.toEqual(
+      unavailable,
+    );
+    await expect(new CapabilityAuthorizer().reach(bounded)).resolves.toEqual(unavailable);
+    // An unbounded grant reads no budget, so its reach needs no store.
+    expect(await reachOf(new CapabilityAuthorizer(), context([grant()]))).toHaveLength(1);
   });
 
   it("is empty for a context that could not authorize anything", async () => {
-    const reach = await new CapabilityAuthorizer().reach(
+    const reach = await reachOf(
+      new CapabilityAuthorizer(),
       authorityFor({ ...accessContext(), purpose: "" }, [grant()]),
     );
 
@@ -1072,8 +1095,8 @@ describe("CapabilityAuthorizer.reach", () => {
       }),
     ]);
 
-    expect(await authorizer.reach(bounded)).toHaveLength(1);
-    expect(await authorizer.reach(bounded, { now: "2026-08-03T10:00:00.000Z" })).toEqual([]);
+    expect(await reachOf(authorizer, bounded)).toHaveLength(1);
+    expect(await reachOf(authorizer, bounded, { now: "2026-08-03T10:00:00.000Z" })).toEqual([]);
   });
 
   it("omits a capability that names another owner, which could authorize nothing here", async () => {
@@ -1088,7 +1111,7 @@ describe("CapabilityAuthorizer.reach", () => {
       ],
     });
 
-    await expect(new CapabilityAuthorizer().reach(context([elsewhere]))).resolves.toEqual([]);
+    expect(await reachOf(new CapabilityAuthorizer(), context([elsewhere]))).toEqual([]);
   });
 
   it("is deduplicated and ordered the same way whatever order the store served", async () => {
@@ -1119,7 +1142,7 @@ describe("CapabilityAuthorizer.reach", () => {
         scope: "exact",
       },
     ];
-    expect(await authorizer.reach(context([grant(), calendar, duplicate]))).toEqual(expected);
-    expect(await authorizer.reach(context([duplicate, calendar, grant()]))).toEqual(expected);
+    expect(await reachOf(authorizer, context([grant(), calendar, duplicate]))).toEqual(expected);
+    expect(await reachOf(authorizer, context([duplicate, calendar, grant()]))).toEqual(expected);
   });
 });

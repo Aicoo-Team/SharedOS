@@ -366,6 +366,54 @@ describe("SharedOSKernel.readAgentCard", () => {
     });
   });
 
+  it("omits a bounded grant whose budget is spent, and says nothing about it", async () => {
+    const usageStore = new InMemoryGrantUsageStore();
+    const spent = grant("grant-subject-spent", SUBJECT, [...SUBJECT_CALENDAR.capabilities], {
+      constraints: { maxUses: 1 },
+    });
+    await usageStore.tryConsume("world-alpha", "grant-subject-spent", 1);
+    const kernel = kernelWith(new DirectoryGrantSource([READER_CARD, SUBJECT_FILES, spent]), {
+      authorizer: new CapabilityAuthorizer({ usageStore }),
+    });
+
+    await expect(kernel.readAgentCard(context(), SUBJECT)).resolves.toMatchObject({
+      status: "served",
+      card: { reach: [{ namespace: "files", path: ["Workspace", "roadmap"] }] },
+    });
+  });
+
+  it("refuses the card rather than narrowing it when a bounded budget cannot be read", async () => {
+    const bounded = grant("grant-subject-bounded", SUBJECT, [...SUBJECT_CALENDAR.capabilities], {
+      constraints: { maxUses: 4 },
+    });
+    const source = new DirectoryGrantSource([READER_DIRECTORY, SUBJECT_FILES, bounded]);
+    // The default authorizer installs no usage store.
+    const missing = kernelWith(source);
+    const throwing = kernelWith(source, {
+      authorizer: new CapabilityAuthorizer({
+        usageStore: {
+          getUsage: async () => {
+            throw new Error("usage store down");
+          },
+          tryConsume: async () => {
+            throw new Error("usage store down");
+          },
+        },
+      }),
+    });
+    const refused = { status: "refused", reasonCode: "usage_store_unavailable", servableViews: [] };
+
+    await expect(missing.readAgentCard(context(), SUBJECT)).resolves.toEqual(refused);
+    await expect(throwing.readAgentCard(context(), SUBJECT)).resolves.toEqual(refused);
+    await expect(
+      missing.readAgentCard(context(), SUBJECT, { view: "namespaces" }),
+    ).resolves.toEqual(refused);
+    // A view made of no reach reads no budget, and is served.
+    await expect(
+      missing.readAgentCard(context(), SUBJECT, { view: "identity" }),
+    ).resolves.toMatchObject({ status: "served", card: { view: "identity" } });
+  });
+
   it("costs the reader no bounded use, however many times it is read", async () => {
     const usageStore = new InMemoryGrantUsageStore();
     const bounded = grant("grant-reader-bounded", READER, [directoryCapability(OWNER)], {

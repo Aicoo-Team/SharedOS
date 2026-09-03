@@ -629,7 +629,12 @@ export class SharedOSKernel {
     }
 
     const reach = await this.#authorizer.reach(subjectAuthority.authority, { now: context.now });
-    return { status: "served", card: composeAgentCard(view, subject, context, reach) };
+    if (reach.status !== "computed") {
+      // A budget that cannot be read refuses the card rather than narrowing it,
+      // under the code the decide path already fails closed with (ADR 0021).
+      return { status: "refused", reasonCode: reach.reasonCode, servableViews: [] };
+    }
+    return { status: "served", card: composeAgentCard(view, subject, context, reach.reach) };
   }
 
   /**
