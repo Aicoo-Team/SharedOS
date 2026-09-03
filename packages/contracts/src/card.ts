@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { AddressSchema } from "./address.js";
-import { ResourceReachSchema } from "./capability.js";
+import { ReachListSchema, ResourceReachSchema } from "./capability.js";
 import { IdentifierSchema, TimestampSchema } from "./common.js";
 
 /**
@@ -91,7 +91,7 @@ export const AgentCardSchema = z.discriminatedUnion("view", [
     .object({
       view: z.literal("reach"),
       ...cardIdentity,
-      reach: z.array(ResourceReachSchema).max(16_384),
+      reach: ReachListSchema,
     })
     .strict(),
   z.object({ view: z.literal("identity"), ...cardIdentity }).strict(),

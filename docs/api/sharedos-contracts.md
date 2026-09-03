@@ -340,11 +340,27 @@ Defined in: [tool.ts:173](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 ---
 
+### ReachResult
+
+> **ReachResult** = `z.infer`\<_typeof_ [`ReachResultSchema`](#reachresultschema)>\>
+
+Defined in: [capability.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L211)
+
+---
+
 ### ReachSummary
 
 > **ReachSummary** = `z.infer`\<_typeof_ [`ReachSummarySchema`](#reachsummaryschema)>\>
 
 Defined in: [card.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/card.ts#L49)
+
+---
+
+### ReachUnavailableReason
+
+> **ReachUnavailableReason** = `z.infer`\<_typeof_ [`ReachUnavailableReasonSchema`](#reachunavailablereasonschema)>\>
+
+Defined in: [capability.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L196)
 
 ---
 
@@ -1085,6 +1101,32 @@ Catalogue provenance a harness may see. Metadata, never proof of authority.
 
 ---
 
+### ReachListSchema
+
+> `const` **ReachListSchema**: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `namespace`: `ZodString`; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>
+
+Defined in: [capability.ts:180](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L180)
+
+As many entries as one reach may carry, on a card or on the wire.
+
+---
+
+### ReachResultSchema
+
+> `const` **ReachResultSchema**: `ZodDiscriminatedUnion`\<`"status"`, \[`ZodObject`\<\{ `reach`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `namespace`: `ZodString`; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `status`: `ZodLiteral`\<`"computed"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reach`: `object`[]; `status`: `"computed"`; \}, \{ `reach`: `object`[]; `status`: `"computed"`; \}\>, `ZodObject`\<\{ `reasonCode`: `ZodEnum`\<\[`"authority_unavailable"`, `"usage_store_unavailable"`\]\>; `status`: `ZodLiteral`\<`"unavailable"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCode`: `"authority_unavailable"` \| `"usage_store_unavailable"`; `status`: `"unavailable"`; \}, \{ `reasonCode`: `"authority_unavailable"` \| `"usage_store_unavailable"`; `status`: `"unavailable"`; \}\>\]\>
+
+Defined in: [capability.ts:207](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L207)
+
+What asking for a reach answers.
+
+`computed` carries the reachable surface, possibly empty: a context that can
+authorize nothing reaches nothing, and that is a true answer. `unavailable`
+means no answer could be established, and says why in the vocabulary a denial
+uses. The shape crosses the HTTP boundary unchanged, so a remote caller reads
+the same result an embedded host does.
+
+---
+
 ### ReachSummarySchema
 
 > `const` **ReachSummarySchema**: `ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `entries`: `ZodNumber`; `namespace`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `entries`: `number`; `namespace`: `string`; \}, \{ `actions`: `string`[]; `entries`: `number`; `namespace`: `string`; \}\>
@@ -1097,6 +1139,23 @@ One namespace the subject reaches, and how much of it, without paths.
 single `descendants` entry over a whole tree counts once, exactly as it
 appears in `reach`. Counting resources would require asking a provider what
 exists, which is the lookup a card must never become.
+
+---
+
+### ReachUnavailableReasonSchema
+
+> `const` **ReachUnavailableReasonSchema**: `ZodEnum`\<\[`"authority_unavailable"`, `"usage_store_unavailable"`\]\>
+
+Defined in: [capability.ts:192](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L192)
+
+Why a reach could not be established.
+
+Both are infrastructure codes the decide path already fails closed with: the
+authority behind the reach could not be loaded, or a bounded grant's budget
+could not be read. Neither narrows the answer. A reach that silently omitted
+a live grant because a dependency is down would look exactly like one that is
+true, so the whole answer is withheld under a code the reader can act on
+(ADR 0021).
 
 ---
 
