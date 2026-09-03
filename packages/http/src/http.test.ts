@@ -26,6 +26,7 @@ function createApi(): SharedOSApi {
   return {
     authorize: vi.fn(async () => ({ allowed: false, reasonCode: "no_matching_grant" })),
     listTools: vi.fn(async () => []),
+    reach: vi.fn(async () => ({ status: "computed" as const, reach: [] })),
     listToolNamespaces: vi.fn(async () => ({
       namespaces: [],
       summary: { total: 0, enabled: 0, disabled: 0 },
@@ -122,6 +123,43 @@ describe("createSharedOSHandler", () => {
       context,
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
+  });
+
+  it("answers reach for the resolved context, as the kernel answers it", async () => {
+    const api = createApi();
+    const resolveContext = vi.fn(async () => context);
+    const handler = createSharedOSHandler({ api, resolveContext });
+
+    const response = await handler(new Request("https://sharedos.test/v1/reach"));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ status: "computed", reach: [] });
+    expect(resolveContext).toHaveBeenCalledOnce();
+    expect(api.reach).toHaveBeenCalledWith(
+      context,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it("returns a reach that could not be established as a typed answer, not an error", async () => {
+    const api = createApi();
+    api.reach = vi.fn(async () => ({
+      status: "unavailable" as const,
+      reasonCode: "usage_store_unavailable" as const,
+    }));
+    const handler = createSharedOSHandler({ api, resolveContext: async () => context });
+
+    const response = await handler(new Request("https://sharedos.test/v1/reach"));
+    const wrongVerb = await handler(
+      new Request("https://sharedos.test/v1/reach", { method: "POST" }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      status: "unavailable",
+      reasonCode: "usage_store_unavailable",
+    });
+    expect(wrongVerb.status).toBe(405);
   });
 
   it("does not resolve auth context for health checks", async () => {
@@ -306,6 +344,7 @@ describe("createSharedOSHandler", () => {
     });
 
     await expect(client.listTools()).resolves.toEqual([]);
+    await expect(client.reach()).resolves.toEqual({ status: "computed", reach: [] });
     await expect(client.listToolNamespaces()).resolves.toEqual({
       namespaces: [],
       summary: { total: 0, enabled: 0, disabled: 0 },
