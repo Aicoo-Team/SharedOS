@@ -154,6 +154,7 @@ describe("the hostile runtime", () => {
       "escalation_recorded",
       "escalation_refused",
       "runtime_crashed",
+      "route_lease_revoked",
       "record_completeness",
       "typed_governed_views",
       "replay_freshness",

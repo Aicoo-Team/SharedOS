@@ -1344,11 +1344,50 @@ class UnavailableGrantUsageStore implements GrantUsageStore {
   }
 }
 
+/**
+ * The refusal a closed route lease answers a dispatch with.
+ *
+ * Deliberately not `no_matching_grant`. A dead route and a missing capability
+ * are different findings, and a transport that borrowed the authorizer's code
+ * would make them indistinguishable in the record -- which is the whole reason
+ * the `route-lease-revoked` row can say which gate refused the send.
+ */
+export const ROUTE_LEASE_REVOKED_CODE = "route_lease_revoked";
+
+/**
+ * The host's message transport, with the route lease it dispatches under.
+ *
+ * The lease is the host's own state and is checked at the moment of dispatch,
+ * not at the turn boundary where authority was resolved. It is closed by
+ * trusted setup rather than by anything the runtime can reach: revoking a route
+ * is host-owned control-plane state, exactly as revoking a grant is.
+ */
 class RecordingTransport implements MessageTransport {
   readonly delivered: MessageEnvelope[] = [];
+  #closesAfterDeliveries: number | undefined;
+
+  /** Revoke the route lease once this many dispatches have been accepted. */
+  closeLeaseAfter(deliveries: number): this {
+    this.#closesAfterDeliveries = deliveries;
+    return this;
+  }
 
   async deliver(context: AccessContext, envelope: MessageEnvelope): Promise<MessageDeliveryResult> {
     await Promise.resolve();
+    if (
+      this.#closesAfterDeliveries !== undefined &&
+      this.delivered.length >= this.#closesAfterDeliveries
+    ) {
+      return {
+        messageId: envelope.id,
+        status: "denied",
+        timestamp: context.now,
+        error: {
+          code: ROUTE_LEASE_REVOKED_CODE,
+          message: "The route lease was revoked before this dispatch",
+        },
+      };
+    }
     this.delivered.push(structuredClone(envelope));
     return { messageId: envelope.id, status: "accepted", timestamp: context.now };
   }
@@ -1510,6 +1549,18 @@ export interface ConformanceWorldOptions {
   };
   /** Arm a grant-store outage that begins after this many successful loads. */
   readonly authorityFailsAfterLoads?: number;
+  /**
+   * Revoke the host's route lease after this many accepted dispatches.
+   *
+   * Armed on the transport rather than on the grant store, and that is the
+   * claim. The turn's authority is resolved once, at admission, so nothing the
+   * store could be edited to say would change what the kernel decides for the
+   * rest of it; a route lease is not in the store at all and its removal is
+   * invisible to the kernel by construction. Closing it between two dispatches
+   * of one turn is what puts the two instants either side of a revocation while
+   * holding the authorization identical across them.
+   */
+  readonly routeRevokedAfterDeliveries?: number;
   /** Issue the single-use ledger grant, without which nothing is bounded. */
   readonly bounded?: boolean;
   /** Make the bounded-use counter unreachable. Implies {@link bounded}. */
@@ -1679,6 +1730,9 @@ export function createConformanceWorld(
     operationClock === undefined ? undefined : (event) => operationClock.observe(event),
   );
   const transport = new RecordingTransport();
+  if (options.routeRevokedAfterDeliveries !== undefined) {
+    transport.closeLeaseAfter(options.routeRevokedAfterDeliveries);
+  }
   const messageRouter = new RecordingMessageRouter(transport);
   const files = new ConformanceFileStore();
   const broker = new ConformanceBrokerStore();

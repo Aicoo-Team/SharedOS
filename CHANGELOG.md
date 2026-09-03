@@ -203,6 +203,11 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **A conformance row for the route lease.** `route-lease-revoked` sends twice
+  on one turn's authority with the host's route lease revoked between the
+  dispatches, so a send the kernel authorized is refused at delivery and
+  terminates rather than delivering. See ADR 0025.
+
 - **Every refusal reaches audit, and the record names the boundary that made
   it.** The execution envelope made no audit call of its own: a tool name the
   turn's catalogue never offered, a spent step or tool-call budget, a context

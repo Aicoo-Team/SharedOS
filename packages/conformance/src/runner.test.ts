@@ -235,10 +235,10 @@ describe("the conformance suite", () => {
     // reinforcements it names but does not tabulate, two more give the recovery
     // surface its own readings, two more give the brokered external surface its
     // own, one more gives the mid-turn row its expiry reading, and one more
-    // covers the ending no plugin cooperates in producing. A case set that
-    // drifts below this has stopped covering the document it claims to
-    // implement.
-    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(27);
+    // covers the ending no plugin cooperates in producing, and one more covers
+    // the dispatch-time route lease (ADR 0025). A case set that drifts below
+    // this has stopped covering the document it claims to implement.
+    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(28);
     expect(new Set(CANONICAL_ATTACK_MOVES.map(({ kind }) => kind)).size).toBe(
       CANONICAL_ATTACK_MOVES.length,
     );
@@ -316,10 +316,10 @@ describe("the conformance suite", () => {
   it("passes every implemented row and reports where each was refused", async () => {
     const { manifest, evidence } = await runConformanceSuite();
 
-    expect(manifest.rows).toHaveLength(30);
+    expect(manifest.rows).toHaveLength(31);
     expect(manifest.columns).toHaveLength(6);
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
-    expect(cells).toHaveLength(180);
+    expect(cells).toHaveLength(186);
     // Every implemented row passes in every column that can run it. The rest are
     // stated: two rows SharedOS does not implement, counted once per column, and
     // three rows per driven column it structurally cannot run -- one whose
@@ -331,7 +331,7 @@ describe("the conformance suite", () => {
     // the adversary's. Two others used to sit here and no longer do, and neither
     // was a fact about harnesses: escalation is a catalogued tool now, and the
     // step ceiling is reachable once a driver can name its own step.
-    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(153);
+    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(159);
     expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(12);
     expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(15);
     expect(strictFailures(manifest)).toEqual([]);
@@ -342,14 +342,14 @@ describe("the conformance suite", () => {
     // step-ceiling row always did -- an unreachable *attempt* still runs its
     // turn, unlike an unsupported row, which is why that change moved cells
     // without moving this.
-    expect(evidence).toHaveLength(158);
+    expect(evidence).toHaveLength(164);
 
     // Every driven column lands on the same counts, the native harness
     // included. That is the portability claim in its smallest form: adding a
     // harness adds a column, not an exception.
     for (const column of manifest.columns.filter(({ id }) => id !== ADVERSARY_COLUMN.id)) {
       const columnCells = cells.filter((cell) => cell.columnId === column.id);
-      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(25);
+      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(26);
       expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(3);
       expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(2);
     }
