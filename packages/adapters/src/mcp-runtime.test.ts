@@ -737,6 +737,7 @@ describe("a harness runtime whose signal is aborted", () => {
         purpose: context.purpose,
         traceId: context.traceId,
         now: context.now,
+        reach: { status: "computed", reach: [] },
       },
     };
     const host: RuntimeHost = {
@@ -769,6 +770,7 @@ describe("the Codex spec", () => {
           purpose: context.purpose,
           traceId: context.traceId,
           now: context.now,
+          reach: { status: "computed", reach: [] },
         },
       },
     });
@@ -804,6 +806,7 @@ describe("the Codex spec", () => {
           purpose: context.purpose,
           traceId: context.traceId,
           now: context.now,
+          reach: { status: "computed", reach: [] },
         },
       },
     });

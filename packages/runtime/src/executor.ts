@@ -14,6 +14,7 @@ import {
   type JsonObject,
   type JsonValue,
   type ProtocolError,
+  type ReachResult,
   type RuntimeEvent,
   type RuntimeManifest,
   type RuntimeTurnOutcome,
@@ -21,7 +22,13 @@ import {
   type ToolDefinition,
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
-import { SPAN, canonicalJson, measure, type SpanSink } from "@aicoo/sharedos-core";
+import {
+  SPAN,
+  canonicalJson,
+  measure,
+  reachThroughTools,
+  type SpanSink,
+} from "@aicoo/sharedos-core";
 import type { SharedOSKernel, TurnAuthorityScope } from "@aicoo/sharedos-core";
 
 import { escalationOffered } from "./escalation.js";
@@ -63,7 +70,7 @@ export interface SharedOSExecutorOptions {
    * See {@link TurnErrorReporter} for what it may and may not be used for.
    *
    * Not only the plugin's. The turn body also calls `openTurnAuthority`,
-   * `admitTurn`, and `listTools`, and a host port that throws arrives here too
+   * `admitTurn`, `reach`, and `listTools`, and a host port that throws arrives here too
    * under the same terminal code. That conflation is in the wire vocabulary and
    * is not fixed by this hook; the error's own stack is what separates them,
    * which is the reason for handing it over rather than classifying it here.
@@ -90,7 +97,7 @@ export interface TurnExecutorOptions extends SharedOSExecutorOptions, StandardRu
  * permits narrow test doubles without granting a runtime direct access to
  * registries, namespace settings, or other host policy state.
  */
-export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> &
+export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "reach" | "listTools" | "invokeTool"> &
   /**
    * Optional so a narrow test double stays viable. A kernel that does not offer
    * `openTurnAuthority` resolves authority per operation, which is the older and
@@ -333,6 +340,17 @@ export class SharedOSExecutor implements TurnExecutionPort {
         return resultFor(request, events, startedAt, this.#clock(), "denied", error, metadata);
       }
 
+      // Where the turn may operate, read from the same authority every decision
+      // in it is made against. Handed to the runtime as answered: a reach that
+      // could not be established says so, rather than becoming an empty list
+      // that would read as "nothing" -- a true answer for a turn that reaches
+      // nothing, and a false one here. The turn runs either way; a call that
+      // depends on the unreadable budget fails closed on its own (ADR 0021).
+      const reach = await raceWithAbort(
+        this.#kernel.reach(executionContext, { signal: abort.signal }),
+        abort.signal,
+      );
+
       const allowedTools = await raceWithAbort(
         this.#kernel.listTools(executionContext, { signal: abort.signal }),
         abort.signal,
@@ -340,7 +358,17 @@ export class SharedOSExecutor implements TurnExecutionPort {
       const requestedNames = new Set(request.tools.map(({ name }) => name));
       const effectiveTools = allowedTools.filter(({ name }) => requestedNames.has(name));
       const effectiveToolNames = new Set(effectiveTools.map(({ name }) => name));
-      const runtimeRequest = toRuntimeTurnRequest(request, executionContext, effectiveTools);
+      // Narrowed to what this turn's catalogue operates on: a runtime acts only
+      // through the tools it was handed, so reach it cannot exercise is not
+      // somewhere it can work.
+      const runtimeRequest = toRuntimeTurnRequest(
+        request,
+        executionContext,
+        effectiveTools,
+        reach.status === "computed"
+          ? { status: "computed", reach: [...reachThroughTools(reach.reach, effectiveTools)] }
+          : reach,
+      );
 
       emit("turn.started", {
         agent: request.agent,
@@ -640,6 +668,7 @@ function toRuntimeTurnRequest(
   request: ExecutionRequest,
   context: AccessContext,
   tools: readonly ToolDefinition[],
+  reach: ReachResult,
 ): RuntimeTurnRequest {
   return deepFreeze(
     structuredClone({
@@ -655,6 +684,7 @@ function toRuntimeTurnRequest(
         purpose: context.purpose,
         traceId: context.traceId,
         now: context.now,
+        reach,
       },
       ...(request.state === undefined ? {} : { state: request.state }),
       ...(request.options === undefined ? {} : { options: request.options }),

@@ -108,6 +108,27 @@ because a dependency is down looks exactly like a card that is true, and the
 reader has no way to tell; a refusal it can act on is worth more than a card it
 cannot trust. The `identity` view reads no budget and is unaffected.
 
+The turn's own reach follows the same rule with a different consequence.
+`SharedOSKernel.reach` answers `unavailable` under the codes the decide path
+fails closed with — `usage_store_unavailable`, or `authority_unavailable` when
+the authority itself could not be loaded again after admission — and the
+execution envelope hands the runtime that answer as `RuntimeVisibleContext.reach`
+rather than an empty list — an empty list is a true answer for a turn that
+reaches nothing, and a false one here. The turn is not refused: every call is
+decided on its own, and a call that depends on what could not be read fails
+closed under the same code, which is also what keeps the conformance row for a
+usage-store outage a statement about the call rather than about admission.
+
+The turn's reach is grant reach narrowed to what its catalogue can act on.
+`reachThroughTools` keeps the entries whose namespace some offered tool
+operates on, keyed on the _resource_ namespace a tool requires a capability
+over rather than on `enabledToolNamespaces`: those are different vocabularies —
+the message tool lives in `messages` and operates on `sharedos.messaging` — and
+the resource plane is not gated by tool namespaces at all, so the kernel's own
+answer, and the HTTP route that serves it, stay unfiltered. A card is not
+narrowed this way, for the reason above: it describes what the subject was
+authorized, not what one caller's catalogue offers.
+
 ### Reading a card is an authorized operation
 
 A card is served only to an actor holding a capability over the directory:

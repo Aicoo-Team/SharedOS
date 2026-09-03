@@ -2,6 +2,7 @@ import {
   RuntimeManifestSchema,
   type AccessContext,
   type ExecutionRequest,
+  type ReachResult,
   type RuntimeEvent,
   type RuntimeManifest,
   type RuntimeTurnOutcome,
@@ -77,6 +78,31 @@ export interface RuntimeVisibleContext {
   readonly purpose: string;
   readonly traceId: string;
   readonly now: string;
+  /**
+   * Where this turn may operate, with the authority stripped out.
+   *
+   * The catalogue says which tools exist; this says which resources they are
+   * worth pointing at. Without it a runtime can only guess paths and collect
+   * denials, or the host reads raw grants to describe the boundary in a prompt
+   * -- at exactly the seam designed to keep grants away from the model.
+   *
+   * `computed` is derived by `SharedOSKernel.reach` from the grants the turn's
+   * decisions are made against, then narrowed to the namespaces this turn's
+   * catalogue operates on. It carries no grant id, issuer, expiry, or budget,
+   * and a bounded grant whose budget is spent does not appear. `unavailable`
+   * means the reach could not be established, and `reasonCode` says why:
+   * `usage_store_unavailable` when a bounded budget could not be read, or
+   * `authority_unavailable` when the authority could not be loaded again
+   * after admission. Either is handed over as such rather than as an empty
+   * list that would read as "nothing", which is a true answer for some turns
+   * and not for this one. The turn still runs: every call is decided on its
+   * own, and a call that depends on what could not be read fails closed under
+   * the same code.
+   *
+   * Descriptive, never permissive: every call is authorized independently, so
+   * an entry here is not a permission and a stale one cannot open anything.
+   */
+  readonly reach: ReachResult;
 }
 
 /**

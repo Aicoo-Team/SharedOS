@@ -89,7 +89,7 @@ function request(options: { readonly escalation?: boolean } = {}): ExecutionRequ
 function kernel(
   result?: ToolResult,
   options: { readonly escalation?: boolean } = {},
-): Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> {
+): Pick<SharedOSKernel, "admitTurn" | "reach" | "listTools" | "invokeTool"> {
   const catalogue = options.escalation === true ? [tool, ESCALATION_TOOL_DEFINITION] : [tool];
   return {
     admitTurn: vi.fn(async () => ({
@@ -98,6 +98,7 @@ function kernel(
       matchedGrantId: "grant-turn",
     })),
     listTools: vi.fn(async () => catalogue),
+    reach: vi.fn(async () => ({ status: "computed" as const, reach: [] })),
     invokeTool: vi.fn(async (_context, call): Promise<ToolResult> => {
       return (
         result ?? {

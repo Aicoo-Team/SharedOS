@@ -191,6 +191,8 @@ const driver: AgentTurnDriver = {
           asked = true;
           // request.tools is the effective catalog. Hand it to your model as
           // its tool definitions; `inputSchema` is already JSON Schema.
+          // request.context.reach says where those tools are worth pointing:
+          // the paths some grant covers, with the grant itself left out.
           return {
             type: "tool_call",
             call: {
