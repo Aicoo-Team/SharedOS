@@ -81,6 +81,32 @@ reach shape — and authorizes nothing. ADR 0009's wrapper is what makes that
 checkable rather than promised: it is not assignable to `AccessContext`, so a
 subject's grants cannot reach a provider, a handler, or a runtime by accident.
 
+### Reach is grant reach, and a budget that cannot be read refuses the card
+
+Reach describes what the owner authorized. The host ceiling (ADR 0020) is not
+consulted when it is computed, so a card may list a path the host's product
+policy would refuse, and a reader that acts on it learns so at the operation, as
+`host_policy_denied` — a code that names the boundary that refused, and one the
+reader can tell from a missing grant.
+
+Three reasons, and the first decides it. The ceiling answers about one request
+or one tool; a `descendants` entry is not one request, so a per-entry verdict
+would be neither sound nor complete. The catalogue, which the ceiling does
+filter, and the card answer different questions by design: the catalogue is what
+this turn may call, the card is what the subject was authorized. And a card
+narrowed by product policy would be a description whose truth depends on the
+deployment it was read in, which is the host-shaped directory this ADR rejects
+with one more layer on it.
+
+A bounded grant is different, because its budget is part of the grant. A grant
+whose budget is spent would authorize nothing and does not appear. A grant whose
+budget cannot be read — no usage store installed, or one that throws — does not
+narrow the card: `readAgentCard` is refused `usage_store_unavailable`, the code
+the decide path already fails closed with. A card that omits a live grant
+because a dependency is down looks exactly like a card that is true, and the
+reader has no way to tell; a refusal it can act on is worth more than a card it
+cannot trust. The `identity` view reads no budget and is unaffected.
+
 ### Reading a card is an authorized operation
 
 A card is served only to an actor holding a capability over the directory:
@@ -171,6 +197,12 @@ by construction rather than by both being maintained.
   authority the reader's authority did not issue, and it is descriptive: every
   operation is still authorized independently, so a stale or over-wide entry
   permits nothing. That is what makes it safe to serve to a model at all.
+- A card can list a path the host ceiling would refuse. That is reach doing its
+  job — describing the owner's authorization — and the refusal, when it comes,
+  names the ceiling rather than a missing grant.
+- While a usage store is down, a card for any subject holding a live bounded
+  grant is refused rather than served narrower. A host that maps a refused card
+  to "no reach" has rebuilt the silent case by hand.
 - Two agents reading the same subject may see different cards, and both are
   correct. Any consumer that caches a card must key the cache by reader, and a
   host that caches across readers has rebuilt the public directory this ADR
@@ -188,6 +220,18 @@ that matters: a stale card overstates authority, and the reader has no way to
 know. Every proposal to fix it — a refresh job, a TTL, an invalidation hook on
 revoke — is a reconstruction of the read-time query with a window during which
 the answer is wrong.
+
+**Narrow reach through the host ceiling.** Rejected. The ceiling answers about a
+request or a tool, and a `descendants` entry is neither, so the narrowing would
+be a guess dressed as a verdict. It would also make two cards of the same
+subject disagree across deployments of the same host, for a reason no reader can
+see. The ceiling still refuses at the operation, and names itself when it does.
+
+**Omit a bounded grant whose budget cannot be read.** Rejected, and it was the
+first draft. It is fail-closed for the entry and fail-silent for the card: the
+reader receives a card that is narrower than the truth and indistinguishable
+from one that is not. Refusing under the code the decide path already uses costs
+no new type and leaves one fewer place where an outage looks like an answer.
 
 **An unauthenticated public directory.** Rejected. It is the enumeration oracle
 in its purest form, and it discards the argument ADR 0012 and ADR 0019 both

@@ -960,3 +960,189 @@ describe("the policy a host ceiling decides against", () => {
     expect(seen).toEqual([undefined]);
   });
 });
+
+describe("CapabilityAuthorizer.reach", () => {
+  async function reachOf(
+    authorizer: CapabilityAuthorizer,
+    authority: Parameters<CapabilityAuthorizer["reach"]>[0],
+    options?: Parameters<CapabilityAuthorizer["reach"]>[1],
+  ) {
+    const result = await authorizer.reach(authority, options);
+    if (result.status !== "computed") {
+      throw new Error(`reach was ${result.reasonCode}`);
+    }
+    return result.reach;
+  }
+
+  it("describes the reachable surface without the authority behind it", async () => {
+    const reach = await reachOf(new CapabilityAuthorizer(), context([grant()]));
+
+    expect(reach).toEqual([
+      {
+        namespace: "files",
+        path: ["Workspace", "projects", "sharedos"],
+        actions: ["read"],
+        scope: "exact",
+      },
+    ]);
+    // The point of the shape: nothing here says who allowed it, for how long,
+    // or how much budget is left.
+    for (const entry of reach) {
+      expect(Object.keys(entry).sort()).toEqual(["actions", "namespace", "path", "scope"]);
+    }
+  });
+
+  it("omits a grant that would not authorize anything right now", async () => {
+    const authorizer = new CapabilityAuthorizer();
+
+    const expired = await reachOf(
+      authorizer,
+      context([
+        grant({
+          constraints: { purposes: ["prepare-update"], expiresAt: "2026-08-03T08:30:00.000Z" },
+        }),
+      ]),
+    );
+    const revoked = await reachOf(
+      authorizer,
+      context([grant({ revokedAt: "2026-08-03T08:45:00.000Z" })]),
+    );
+    const wrongPurpose = await reachOf(
+      authorizer,
+      context([grant({ constraints: { purposes: ["something-else"] } })]),
+    );
+    const wrongSubject = await reachOf(
+      authorizer,
+      context([grant({ subject: { kind: "agent", agentId: "agent-carol" } as Address })]),
+    );
+
+    expect(expired).toEqual([]);
+    expect(revoked).toEqual([]);
+    expect(wrongPurpose).toEqual([]);
+    expect(wrongSubject).toEqual([]);
+  });
+
+  it("omits a grant a verifier rejects", async () => {
+    const revoked: CapabilityGrantVerifier = { verify: async () => false };
+    const reach = await reachOf(
+      new CapabilityAuthorizer({ grantVerifier: revoked }),
+      context([grant()]),
+    );
+
+    expect(reach).toEqual([]);
+  });
+
+  it("omits a delegated grant whose chain cannot be verified", async () => {
+    const reach = await reachOf(
+      new CapabilityAuthorizer(),
+      context([grant({ parentGrantId: "grant-parent" })]),
+    );
+
+    expect(reach).toEqual([]);
+  });
+
+  it("does not advertise a door that is already closed, and never spends one to look", async () => {
+    const usageStore = new InMemoryGrantUsageStore();
+    const authorizer = new CapabilityAuthorizer({ usageStore });
+    const bounded = context([grant({ constraints: { purposes: ["prepare-update"], maxUses: 1 } })]);
+
+    expect(await reachOf(authorizer, bounded)).toHaveLength(1);
+    // Asking repeatedly must not consume the budget.
+    expect(await reachOf(authorizer, bounded)).toHaveLength(1);
+    expect(await usageStore.getUsage("world-alpha", "grant-files-read")).toBe(0);
+
+    const spent = await authorizer.authorize(
+      bounded,
+      { resource: RESOURCE, action: "read" },
+      { consume: true },
+    );
+    expect(spent.allowed).toBe(true);
+    expect(await reachOf(authorizer, bounded)).toEqual([]);
+  });
+
+  it("is unavailable rather than narrower when a bounded budget cannot be read", async () => {
+    const bounded = context([grant({ constraints: { purposes: ["prepare-update"], maxUses: 5 } })]);
+    const broken: GrantUsageStore = {
+      getUsage: async () => {
+        throw new Error("store down");
+      },
+      tryConsume: async () => false,
+    };
+    const unavailable = { status: "unavailable", reasonCode: "usage_store_unavailable" };
+
+    await expect(new CapabilityAuthorizer({ usageStore: broken }).reach(bounded)).resolves.toEqual(
+      unavailable,
+    );
+    await expect(new CapabilityAuthorizer().reach(bounded)).resolves.toEqual(unavailable);
+    // An unbounded grant reads no budget, so its reach needs no store.
+    expect(await reachOf(new CapabilityAuthorizer(), context([grant()]))).toHaveLength(1);
+  });
+
+  it("is empty for a context that could not authorize anything", async () => {
+    const reach = await reachOf(
+      new CapabilityAuthorizer(),
+      authorityFor({ ...accessContext(), purpose: "" }, [grant()]),
+    );
+
+    expect(reach).toEqual([]);
+  });
+
+  it("expires at the operation instant a caller names, not only at the turn's", async () => {
+    const authorizer = new CapabilityAuthorizer();
+    const bounded = context([
+      grant({
+        constraints: { purposes: ["prepare-update"], expiresAt: "2026-08-03T09:30:00.000Z" },
+      }),
+    ]);
+
+    expect(await reachOf(authorizer, bounded)).toHaveLength(1);
+    expect(await reachOf(authorizer, bounded, { now: "2026-08-03T10:00:00.000Z" })).toEqual([]);
+  });
+
+  it("omits a capability that names another owner, which could authorize nothing here", async () => {
+    const elsewhere = grant({
+      id: "grant-other-owner",
+      capabilities: [
+        {
+          resource: { ...RESOURCE, owner: { kind: "human", userId: "user-dana" } },
+          actions: ["read"],
+          scope: "exact",
+        },
+      ],
+    });
+
+    expect(await reachOf(new CapabilityAuthorizer(), context([elsewhere]))).toEqual([]);
+  });
+
+  it("is deduplicated and ordered the same way whatever order the store served", async () => {
+    const calendar: CapabilityGrant = grant({
+      id: "grant-calendar",
+      capabilities: [
+        {
+          resource: { namespace: "calendar", path: ["primary"], owner: OWNER },
+          actions: ["write", "read"],
+          scope: "descendants",
+        },
+      ],
+    });
+    const duplicate = grant({ id: "grant-files-read-again" });
+    const authorizer = new CapabilityAuthorizer();
+
+    const expected = [
+      {
+        namespace: "calendar",
+        path: ["primary"],
+        actions: ["read", "write"],
+        scope: "descendants",
+      },
+      {
+        namespace: "files",
+        path: ["Workspace", "projects", "sharedos"],
+        actions: ["read"],
+        scope: "exact",
+      },
+    ];
+    expect(await reachOf(authorizer, context([grant(), calendar, duplicate]))).toEqual(expected);
+    expect(await reachOf(authorizer, context([duplicate, calendar, grant()]))).toEqual(expected);
+  });
+});

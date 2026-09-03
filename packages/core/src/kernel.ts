@@ -1,6 +1,7 @@
 import type {
   AccessContext,
   Address,
+  AgentCardView,
   AuthorizationDecision,
   Capability,
   Escalation,
@@ -17,6 +18,8 @@ import type {
   ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
+  AGENT_CARD_VIEWS,
+  AddressSchema,
   EnabledToolNamespacesSchema,
   EscalationSchema,
   JsonObjectSchema,
@@ -27,6 +30,12 @@ import {
   ToolResultSchema,
 } from "@aicoo/sharedos-contracts";
 
+import {
+  type AgentCardRead,
+  agentCardRequest,
+  composeAgentCard,
+  subjectCardContext,
+} from "./agent-card.js";
 import { type AuditEvent, type AuditSink, NoopAuditSink, auditEvent } from "./audit.js";
 import {
   type AuthorityResolution,
@@ -192,6 +201,19 @@ export interface EscalationOptions extends KernelOperationOptions {
    * so it comes back under the same identifier (ADR 0019).
    */
   readonly requestedAuthority?: CapabilityRequestPayload;
+}
+
+export interface AgentCardReadOptions extends KernelOperationOptions {
+  /**
+   * The view to serve, defaulting to `reach`.
+   *
+   * `reach` is the default because a directory without reach is not the
+   * feature: an agent asking about a colleague's agent is asking what it can be
+   * asked for. A reader that holds only a narrower view is refused and told
+   * which views it may still ask for, rather than being quietly served a
+   * different card than the one it asked for.
+   */
+  readonly view?: AgentCardView;
 }
 
 export const EXECUTION_NAMESPACE = "sharedos.execution";
@@ -514,6 +536,139 @@ export class SharedOSKernel {
         },
       }),
     );
+  }
+
+  /**
+   * The kernel's description of one agent: identity, computed reach, nothing
+   * else.
+   *
+   * SharedOS can address an agent and can authorize one; this is how it
+   * describes one, so an agent asking a colleague's agent for something can
+   * find out what that agent may be asked for instead of learning it out of
+   * band. Reach is derived here, from the grants in force at this instant, and
+   * is never stored: a stored reach would keep advertising a revoked grant,
+   * and it is the one description of authority in SharedOS that nothing would
+   * invalidate.
+   *
+   * Reading a card is itself authorized, over `sharedos` /
+   * `["directory", <subject>]` / `read`. Without that gate the directory is an
+   * enumeration oracle: it would answer "does this agent exist" and, through
+   * reach, "what resources exist and where", in one call rather than one
+   * refusal at a time -- exactly the disclosure ADR 0012 and ADR 0019 decline
+   * to make. The gate is also what pays for the second authority load: nothing
+   * loads a subject's grants until a reader has been authorized to ask about
+   * that subject, and the `identity` view never loads them at all.
+   *
+   * A card is a view rather than a record. A less-authorized reader is served a
+   * narrower card, built from the fields that view declares, and never a wider
+   * one with a redaction pass over it. See `agentCardPath` for how the
+   * views are addressed and ADR 0021 for why the coarse answer is its own view
+   * rather than a filter inside `reach`.
+   *
+   * Nothing is consumed. Reading that a door exists is not opening it, for the
+   * same reason discovery does not spend a bounded grant.
+   *
+   * The host's richer card composes around this one. Display names, avatars,
+   * skills and protocol bindings stay in the host: the test is not whether a
+   * field is useful but whether it is authority.
+   */
+  async readAgentCard(
+    context: AccessContext,
+    subject: Address,
+    options: AgentCardReadOptions = {},
+  ): Promise<AgentCardRead> {
+    throwIfAborted(options.signal);
+    context = structuredClone(context);
+    const parsedSubject = AddressSchema.safeParse(structuredClone(subject));
+    if (!parsedSubject.success) {
+      throw new TypeError("agent card subject does not match the SharedOS v1 contract");
+    }
+    subject = parsedSubject.data;
+    const view = options.view ?? "reach";
+    const request = agentCardRequest(subject, context.owner, view);
+
+    const reader = await this.#resolveAuthority(context, options.signal);
+    if (reader.status !== "resolved") {
+      const decision = await this.#denyUnavailableAuthority(context, request, reader.code, false);
+      return { status: "refused", reasonCode: decision.reasonCode, servableViews: [] };
+    }
+
+    const decision = await this.#authorize(context, reader.authority, request, false);
+    if (!decision.allowed) {
+      return {
+        status: "refused",
+        reasonCode: decision.reasonCode,
+        servableViews: await this.#servableCardViews(
+          context,
+          reader.authority,
+          subject,
+          view,
+          options.signal,
+        ),
+        ...(decision.requiredAuthority === undefined
+          ? {}
+          : { requiredAuthority: decision.requiredAuthority }),
+      };
+    }
+
+    if (view === "identity") {
+      // No reach on this view, so no second load: the subject's grants are read
+      // only when the card the reader was authorized for is made of them.
+      return { status: "served", card: composeAgentCard(view, subject, context, []) };
+    }
+
+    // The second load. Same namespace, same instant, same authority as the
+    // reader's own -- only the actor differs, which is what bounds the card to
+    // what the subject holds under the authority the reader is operating under.
+    // A subject authority that cannot be established refuses the read rather
+    // than serving an empty reach, which would understate silently.
+    const subjectContext = subjectCardContext(context, subject);
+    const subjectAuthority = await this.#resolveAuthority(subjectContext, options.signal);
+    if (subjectAuthority.status !== "resolved") {
+      return { status: "refused", reasonCode: "authority_unavailable", servableViews: [] };
+    }
+
+    const reach = await this.#authorizer.reach(subjectAuthority.authority, { now: context.now });
+    if (reach.status !== "computed") {
+      // A budget that cannot be read refuses the card rather than narrowing it,
+      // under the code the decide path already fails closed with (ADR 0021).
+      return { status: "refused", reasonCode: reach.reasonCode, servableViews: [] };
+    }
+    return { status: "served", card: composeAgentCard(view, subject, context, reach.reach) };
+  }
+
+  /**
+   * Which other views of this subject this same reader could be served.
+   *
+   * Advice attached to a refusal, not decisions about the operation, so they
+   * are checked against the authority already in hand and are not audited: one
+   * card read is one recorded `authorization.checked`, on the view that was
+   * asked for. They are non-consuming, and they disclose nothing the reader did
+   * not already hold -- every entry is a grant this reader has.
+   */
+  async #servableCardViews(
+    context: AccessContext,
+    authority: ResolvedAuthority,
+    subject: Address,
+    refused: AgentCardView,
+    signal: AbortSignal | undefined,
+  ): Promise<readonly AgentCardView[]> {
+    const servable: AgentCardView[] = [];
+    for (const view of AGENT_CARD_VIEWS) {
+      throwIfAborted(signal);
+      if (view === refused) {
+        continue;
+      }
+      const decision = await this.#authorizer.authorize(
+        authority,
+        agentCardRequest(subject, context.owner, view),
+        { now: context.now },
+      );
+      if (decision.allowed) {
+        servable.push(view);
+      }
+    }
+    return servable;
   }
 
   async listTools(
