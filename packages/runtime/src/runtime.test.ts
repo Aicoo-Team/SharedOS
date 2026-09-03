@@ -80,7 +80,7 @@ function request(options: { readonly escalation?: boolean } = {}): ExecutionRequ
 function kernel(
   result?: ToolResult,
   options: { readonly escalation?: boolean } = {},
-): Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> {
+): Pick<SharedOSKernel, "admitTurn" | "reach" | "listTools" | "invokeTool"> {
   const catalogue = options.escalation === true ? [tool, ESCALATION_TOOL_DEFINITION] : [tool];
   return {
     admitTurn: vi.fn(async () => ({
@@ -89,6 +89,7 @@ function kernel(
       matchedGrantId: "grant-turn",
     })),
     listTools: vi.fn(async () => catalogue),
+    reach: vi.fn(async () => ({ status: "computed" as const, reach: [] })),
     invokeTool: vi.fn(async (_context, call): Promise<ToolResult> => {
       return (
         result ?? {
@@ -104,6 +105,65 @@ function kernel(
 }
 
 describe("TurnExecutor", () => {
+  it("tells the driver where it may operate, narrowed to what its catalogue can act on", async () => {
+    const seen: unknown[] = [];
+    const driver: AgentTurnDriver = {
+      open: async (request) => {
+        seen.push(request.context.reach);
+        return { next: async () => ({ type: "complete" as const, output: null }) };
+      },
+    };
+    const turnKernel = kernel();
+    const files = {
+      namespace: "files",
+      path: ["Work", "atlas"],
+      actions: ["read", "search"],
+      scope: "descendants" as const,
+    };
+    turnKernel.reach = vi.fn(async () => ({
+      status: "computed" as const,
+      reach: [
+        files,
+        // Authorized, but no offered tool acts on it: not somewhere this turn
+        // can work, so the driver is not sent there.
+        {
+          namespace: "sharedos.execution",
+          path: ["agent", "agent-alice"],
+          actions: ["invoke"],
+          scope: "exact" as const,
+        },
+      ],
+    }));
+
+    await new TurnExecutor(turnKernel, driver).execute(request());
+
+    expect(seen[0]).toEqual({ status: "computed", reach: [files] });
+    // The point of the shape: nothing about who allowed it, for how long, or
+    // how much budget is left.
+    expect(JSON.stringify(seen[0])).not.toContain("grant");
+  });
+
+  it("hands the driver a reach it could not establish as such, and still runs the turn", async () => {
+    const seen: unknown[] = [];
+    const driver: AgentTurnDriver = {
+      open: async (request) => {
+        seen.push(request.context.reach);
+        return { next: async () => ({ type: "complete" as const, output: null }) };
+      },
+    };
+    const turnKernel = kernel();
+    turnKernel.reach = vi.fn(async () => ({
+      status: "unavailable" as const,
+      reasonCode: "usage_store_unavailable" as const,
+    }));
+
+    const result = await new TurnExecutor(turnKernel, driver).execute(request());
+
+    // Not an empty list, which would read as "nothing" and be false here.
+    expect(seen[0]).toEqual({ status: "unavailable", reasonCode: "usage_store_unavailable" });
+    expect(result.status).toBe("succeeded");
+  });
+
   it("executes an inbound message as its recipient", async () => {
     const input = request();
     const runtimeKernel = kernel();
@@ -501,15 +561,17 @@ describe("TurnExecutor", () => {
   });
 
   it("applies timeout while loading the visible tool catalog", async () => {
-    const runtimeKernel: Pick<SharedOSKernel, "admitTurn" | "listTools" | "invokeTool"> = {
-      admitTurn: async () => ({
-        allowed: true,
-        reasonCode: "allowed",
-        matchedGrantId: "grant-turn",
-      }),
-      listTools: async () => new Promise(() => undefined),
-      invokeTool: vi.fn(),
-    };
+    const runtimeKernel: Pick<SharedOSKernel, "admitTurn" | "reach" | "listTools" | "invokeTool"> =
+      {
+        admitTurn: async () => ({
+          allowed: true,
+          reasonCode: "allowed",
+          matchedGrantId: "grant-turn",
+        }),
+        reach: async () => ({ status: "computed", reach: [] }),
+        listTools: async () => new Promise(() => undefined),
+        invokeTool: vi.fn(),
+      };
     const input = request();
     input.options = { timeoutMs: 5 };
     const driver: AgentTurnDriver = { open: vi.fn() };

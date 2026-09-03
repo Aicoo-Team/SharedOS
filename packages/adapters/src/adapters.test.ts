@@ -353,6 +353,7 @@ describe("a harness driven as a SharedOS turn", () => {
       "now",
       "owner",
       "purpose",
+      "reach",
       "traceId",
     ]);
     expect(JSON.stringify(transport.opened)).not.toContain("grant-files");
@@ -822,6 +823,7 @@ describe("the DeepSeek and Pi harnesses driven as SharedOS turns", () => {
         "now",
         "owner",
         "purpose",
+        "reach",
         "traceId",
       ]);
       expect(JSON.stringify(transport.opened)).not.toContain("grant-files");
