@@ -182,6 +182,15 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
 
+  packages/precedent:
+    dependencies:
+      '@aicoo/sharedos-contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@aicoo/sharedos-core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/runtime:
     dependencies:
       '@aicoo/sharedos-contracts':

@@ -11,6 +11,16 @@ export type AuditEventType =
   | "authority.resolved"
   | "authorization.checked"
   | "escalation.requested"
+  /**
+   * An escalation answered from precedent instead of by a person.
+   *
+   * Written by the host's control plane through `@aicoo/sharedos-precedent`,
+   * never by a turn: the turn that escalated ended when it escalated. Its
+   * outcome is `allowed` or `denied` -- a decision that was made -- and its
+   * metadata names the matcher and the precedents cited, which is how an
+   * operator selects everything one matcher produced. See ADR 0022 R4.
+   */
+  | "escalation.auto_decided"
   | "resource.invoked"
   | "tool.catalog.listed"
   | "tool.namespace.catalog.listed"

@@ -5,6 +5,7 @@
   "entryPoints": [
     "packages/contracts",
     "packages/core",
+    "packages/precedent",
     "packages/os",
     "packages/runtime",
     "packages/http",

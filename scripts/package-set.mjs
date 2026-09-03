@@ -13,6 +13,7 @@ export const prereleaseTag = "next";
 export const packageDirectories = [
   "contracts",
   "core",
+  "precedent",
   "os",
   "runtime",
   "client",

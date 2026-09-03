@@ -70,5 +70,6 @@ below provide the complete generated signatures and member-level reference.
 | [@aicoo/sharedos-http](sharedos-http.md)               | Fetch-compatible HTTP adapter for SharedOS                                                               |
 | [@aicoo/sharedos-mcp](sharedos-mcp.md)                 | Model Context Protocol toolshare bridge for SharedOS: the permission-filtered catalogue as an MCP server |
 | [@aicoo/sharedos-os](sharedos-os.md)                   | Standard permission-controlled file capabilities for SharedOS                                            |
+| [@aicoo/sharedos-precedent](sharedos-precedent.md)     | Admission rules for auto-decisions proposed from an owner's prior answers                                |
 | [@aicoo/sharedos-runtime](sharedos-runtime.md)         | Fixed SharedOS security envelope with standard and pluggable one-turn runtimes                           |
 | [@aicoo/sharedos-testkit](sharedos-testkit.md)         | In-memory conformance helpers for SharedOS hosts                                                         |

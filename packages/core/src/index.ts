@@ -2,6 +2,7 @@ export * from "./audit.js";
 export * from "./authority.js";
 export * from "./authorization.js";
 export * from "./capability-request.js";
+export * from "./constraints.js";
 export * from "./delegation.js";
 export * from "./diagnostics.js";
 export * from "./errors.js";

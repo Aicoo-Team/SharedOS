@@ -14,6 +14,7 @@ import {
   pathIsWithin,
   pathsEqual,
 } from "./internal.js";
+import { constraintEnvelopeViolation, constraintsAreWithin } from "./constraints.js";
 
 /** The longest ancestor chain SharedOS will walk before failing closed. */
 export const DEFAULT_MAX_DELEGATION_CHAIN_LENGTH = 16;
@@ -188,11 +189,30 @@ function linkViolation(
   return constraintsAreAttenuated(child, parent) ? undefined : "constraints_widened";
 }
 
-/** True when every access `capability` permits is also permitted by `ancestor`. */
-function capabilityIsWithin(
+/**
+ * True when every access `capability` permits is also permitted by `ancestor`.
+ *
+ * The one containment predicate, exported so that nothing has to write a second
+ * one. Namespace, resolved owner, action set, and path by segment -- with an
+ * `exact` ancestor covering only its own path and a `descendants` ancestor
+ * covering everything beneath it. ADR 0008 has already paid for what happens
+ * when two definitions of "narrower" drift, and a containment rule that is
+ * right in one place and approximate in another is worse than one that is
+ * missing.
+ *
+ * Only the owner is read off the context, so a caller that has resolved an
+ * owner without holding a whole access context -- precedent admission, ADR 0022
+ * R2 -- passes `{ owner }`. An unowned resource on either side resolves against
+ * it, which is what makes "the same owner" a comparison rather than a guess.
+ *
+ * This is the deciding-side question: is `capability` within `ancestor` *in
+ * this context*. The issuing side asks whether it holds in every context, which
+ * is a stricter question with its own predicate inside `deriveGrant`.
+ */
+export function capabilityIsWithin(
   capability: Capability,
   ancestor: Capability,
-  context: AccessContext,
+  context: Pick<AccessContext, "owner">,
 ): boolean {
   if (capability.resource.namespace !== ancestor.resource.namespace) {
     return false;
@@ -232,35 +252,17 @@ function constraintsAreAttenuated(child: CapabilityGrant, parent: CapabilityGran
     return false;
   }
 
-  if (parent.constraints.expiresAt !== undefined) {
-    const parentExpiry = parseTimestamp(parent.constraints.expiresAt);
-    const childExpiry = parseTimestamp(child.constraints.expiresAt);
-    if (parentExpiry === undefined || childExpiry === undefined || childExpiry > parentExpiry) {
-      return false;
-    }
-  }
-
-  if (parent.constraints.notBefore !== undefined) {
-    const parentNotBefore = parseTimestamp(parent.constraints.notBefore);
-    const childNotBefore = parseTimestamp(child.constraints.notBefore ?? child.issuedAt);
-    if (
-      parentNotBefore === undefined ||
-      childNotBefore === undefined ||
-      childNotBefore < parentNotBefore
-    ) {
-      return false;
-    }
-  }
-
-  if (parent.constraints.purposes !== undefined) {
-    const allowed = new Set(parent.constraints.purposes);
-    const purposes = child.constraints.purposes;
-    if (purposes === undefined || !purposes.every((purpose) => allowed.has(purpose))) {
-      return false;
-    }
-  }
-
-  return true;
+  // A child that names no start begins when it was issued, and that is the
+  // start the parent's window has to contain. The ordering itself lives in one
+  // place: `constraintsAreWithin` is the same check `deriveGrant` makes before
+  // it issues, so a chain cannot validate under a rule its issuer did not use.
+  return constraintsAreWithin(
+    {
+      ...child.constraints,
+      ...(child.constraints.notBefore === undefined ? { notBefore: child.issuedAt } : {}),
+    },
+    parent.constraints,
+  );
 }
 
 function invalid(
@@ -349,37 +351,6 @@ function capabilityIsWithinInAnyContext(parent: Capability, child: Capability): 
  * inherited is written onto the derived grant below, because the chain check
  * reads an omitted constraint as a widening rather than as an inheritance.
  */
-function purposesAreWithin(
-  parent: CapabilityConstraints,
-  child: DeriveGrantRequest["constraints"],
-): boolean {
-  const parentPurposes = parent.purposes;
-  const childPurposes = child?.purposes;
-  if (parentPurposes === undefined || childPurposes === undefined) return true;
-  const allowed = new Set(parentPurposes);
-  return childPurposes.every((purpose) => allowed.has(purpose));
-}
-
-function windowIsWithin(
-  parent: CapabilityConstraints,
-  child: DeriveGrantRequest["constraints"],
-): boolean {
-  const parentNotBefore = parseTimestamp(parent.notBefore);
-  const childNotBefore = parseTimestamp(child?.notBefore);
-  if (child?.notBefore !== undefined && childNotBefore === undefined) return false;
-  if (parentNotBefore !== undefined && childNotBefore !== undefined) {
-    if (childNotBefore < parentNotBefore) return false;
-  }
-
-  const parentExpiresAt = parseTimestamp(parent.expiresAt);
-  const childExpiresAt = parseTimestamp(child?.expiresAt);
-  if (child?.expiresAt !== undefined && childExpiresAt === undefined) return false;
-  if (parentExpiresAt !== undefined && childExpiresAt !== undefined) {
-    if (childExpiresAt > parentExpiresAt) return false;
-  }
-
-  return true;
-}
 
 /**
  * Derive a narrower grant from one the delegator already holds.
@@ -431,10 +402,14 @@ export function deriveGrant(
   if (!withinParent) {
     return { ok: false, reason: "capability_not_within_parent" };
   }
-  if (!purposesAreWithin(parent.constraints, request.constraints)) {
+  // A bound the request leaves unset is inherited from the parent, so what is
+  // checked is the envelope the child will actually carry.
+  const envelope = inheritedEnvelope(parent.constraints, request.constraints);
+  const violation = constraintEnvelopeViolation(envelope, parent.constraints);
+  if (violation === "purposes") {
     return { ok: false, reason: "purpose_not_within_parent" };
   }
-  if (!windowIsWithin(parent.constraints, request.constraints)) {
+  if (violation !== undefined) {
     return { ok: false, reason: "window_not_within_parent" };
   }
 
@@ -446,19 +421,7 @@ export function deriveGrant(
 
   const depth = requestedDepth ?? remainingDepth;
   const constraints: CapabilityConstraints = {
-    ...(parent.constraints.purposes !== undefined || request.constraints?.purposes !== undefined
-      ? { purposes: [...(request.constraints?.purposes ?? parent.constraints.purposes!)] }
-      : {}),
-    ...(request.constraints?.notBefore !== undefined
-      ? { notBefore: request.constraints.notBefore }
-      : parent.constraints.notBefore !== undefined
-        ? { notBefore: parent.constraints.notBefore }
-        : {}),
-    ...(request.constraints?.expiresAt !== undefined
-      ? { expiresAt: request.constraints.expiresAt }
-      : parent.constraints.expiresAt !== undefined
-        ? { expiresAt: parent.constraints.expiresAt }
-        : {}),
+    ...envelope,
     ...(request.constraints?.maxUses !== undefined ? { maxUses: request.constraints.maxUses } : {}),
     delegationDepth: depth,
   };
@@ -482,6 +445,24 @@ export function deriveGrant(
       parentGrantId: parent.id,
       ...(request.metadata ? { metadata: request.metadata } : {}),
     },
+  };
+}
+
+/**
+ * The window and purposes a derived grant carries: each bound as the request
+ * asked for it, or as the parent holds it when the request said nothing.
+ */
+function inheritedEnvelope(
+  parent: CapabilityConstraints,
+  request: DeriveGrantRequest["constraints"],
+): CapabilityConstraints {
+  const purposes = request?.purposes ?? parent.purposes;
+  const notBefore = request?.notBefore ?? parent.notBefore;
+  const expiresAt = request?.expiresAt ?? parent.expiresAt;
+  return {
+    ...(purposes === undefined ? {} : { purposes: [...purposes] }),
+    ...(notBefore === undefined ? {} : { notBefore }),
+    ...(expiresAt === undefined ? {} : { expiresAt }),
   };
 }
 
