@@ -6,7 +6,7 @@ import type {
   JsonObject,
 } from "@aicoo/sharedos-contracts";
 import { CapabilityConstraintsSchema } from "@aicoo/sharedos-contracts";
-import { addressesEqual, capabilityIsWithin } from "@aicoo/sharedos-core";
+import { addressesEqual, capabilityIsWithin, tightestConstraints } from "@aicoo/sharedos-core";
 
 import { precedentKey, precedentKeyDigest } from "./key.js";
 import type { ApprovedPrecedent, Precedent, PrecedentLookup } from "./lookup.js";
@@ -322,58 +322,26 @@ function admitAllow(
  * Disjoint bounds have no envelope. Purposes that intersect to nothing, or a
  * window whose start is past its end, is refused rather than clamped: an empty
  * envelope is a proposal no cited human decision supports.
+ *
+ * The meet itself is `tightestConstraints` in `@aicoo/sharedos-core`, the same
+ * ordering delegation checks containment against, so "tighter" means one thing
+ * whether a person delegated or a matcher proposed.
  */
 function tightestEnvelope(
   precedents: readonly ApprovedPrecedent[],
 ): CapabilityConstraints | undefined {
-  let expiresAt: string | undefined;
-  let notBefore: string | undefined;
-  let maxUses: number | undefined;
-  let purposes: Set<string> | undefined;
-
-  for (const { constraints } of precedents) {
-    expiresAt = earlier(expiresAt, constraints.expiresAt);
-    notBefore = later(notBefore, constraints.notBefore);
-    maxUses =
-      constraints.maxUses === undefined
-        ? maxUses
-        : Math.min(maxUses ?? constraints.maxUses, constraints.maxUses);
-    if (constraints.purposes !== undefined) {
-      const allowed = new Set(constraints.purposes);
-      purposes =
-        purposes === undefined
-          ? allowed
-          : new Set([...purposes].filter((purpose) => allowed.has(purpose)));
-    }
-  }
-
-  if (purposes !== undefined && purposes.size === 0) {
+  const envelope = tightestConstraints(precedents.map(({ constraints }) => constraints));
+  if (envelope === undefined) {
     return undefined;
   }
-
   const parsed = CapabilityConstraintsSchema.safeParse({
-    ...(purposes === undefined ? {} : { purposes: [...purposes].sort() }),
-    ...(notBefore === undefined ? {} : { notBefore }),
-    ...(expiresAt === undefined ? {} : { expiresAt }),
-    ...(maxUses === undefined ? {} : { maxUses }),
+    ...envelope,
     // An auto-issued grant may not be passed on. A machine-made grant that can
     // be delegated is a machine-made grant whose blast radius is decided by
     // somebody else.
     delegationDepth: 0,
   });
   return parsed.success ? parsed.data : undefined;
-}
-
-function earlier(current: string | undefined, candidate: string | undefined): string | undefined {
-  if (candidate === undefined) return current;
-  if (current === undefined) return candidate;
-  return Date.parse(candidate) < Date.parse(current) ? candidate : current;
-}
-
-function later(current: string | undefined, candidate: string | undefined): string | undefined {
-  if (candidate === undefined) return current;
-  if (current === undefined) return candidate;
-  return Date.parse(candidate) > Date.parse(current) ? candidate : current;
 }
 
 /**

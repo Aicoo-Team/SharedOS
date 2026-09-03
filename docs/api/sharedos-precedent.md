@@ -726,7 +726,7 @@ cannot collide with a digest computed under this one.
 
 > **readAutoDecided**(`metadata`): [`AutoDecidedRecord`](#autodecidedrecord) \| `undefined`
 
-Defined in: [precedent/src/admission.ts:443](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L443)
+Defined in: [precedent/src/admission.ts:411](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L411)
 
 The marker on a grant, or `undefined` when it carries none.
 

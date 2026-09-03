@@ -205,6 +205,15 @@ each entry calls out what a host has to update.
 
 - **`@aicoo/sharedos-precedent` decides whether an auto-decision may stand in for a person.** A new opt-in package: `PrecedentKey` and `precedentKeyDigest` give the mechanism a typed key instead of a string-encoded one, `PrecedentLookup` keeps the rows host-side, and `admitAutoDecision` applies ADR 0022's R1-R4 to a proposal a host's matcher already made. It never widens: a refusal carries no width to read, R2 reuses `capabilityIsWithin` (now exported from `@aicoo/sharedos-core`), R3 takes the tightest envelope with `delegationDepth: 0`, and R4 marks every decision so a matcher's whole output can be revoked at once. Nothing here is an `AuthorizationDecision`, and `escalation.auto_decided` joins `AuditEventType`.
 
+- **One ordering for a constraint envelope.** `tightestConstraints` and
+  `constraintsAreWithin` in `@aicoo/sharedos-core` are the meet and the
+  containment check over `purposes`, `notBefore`, and `expiresAt`. Delegation's
+  attenuation and derivation checks and precedent R3 all read the same one, so
+  the three places that each spelled it out cannot drift. One alignment falls
+  out: a present timestamp that does not parse now violates its field on either
+  side, where attenuation previously ignored a malformed child bound beneath an
+  unbounded parent.
+
 - **Every refusal reaches audit, and the record names the boundary that made
   it.** The execution envelope made no audit call of its own: a tool name the
   turn's catalogue never offered, a spent step or tool-call budget, a context

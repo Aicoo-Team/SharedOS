@@ -1728,7 +1728,7 @@ Defined in: [packages/core/src/tool-registry.ts:32](https://github.com/Aicoo-Tea
 
 ### DelegationChainResolver
 
-Defined in: [packages/core/src/delegation.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L29)
+Defined in: [packages/core/src/delegation.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L30)
 
 The trusted lookup for ancestors of a derived grant.
 
@@ -1743,7 +1743,7 @@ throw rather than return a partial or stale ancestor.
 
 > **resolve**(`namespaceId`, `grantId`): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: [packages/core/src/delegation.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L30)
+Defined in: [packages/core/src/delegation.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L31)
 
 ###### Parameters
 
@@ -1760,32 +1760,32 @@ Defined in: [packages/core/src/delegation.ts:30](https://github.com/Aicoo-Team/S
 
 ### DelegationValidationOptions
 
-Defined in: [packages/core/src/delegation.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L65)
+Defined in: [packages/core/src/delegation.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L66)
 
 #### Properties
 
 | Property                                               | Modifier   | Type                                                  | Description                                                                                                                                                                                                                                                                                       | Defined in                                                                                                                 |
 | ------------------------------------------------------ | ---------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-admittedat"></a> `admittedAt?`         | `readonly` | `number`                                              | The instant the turn's authority was resolved, when it is not `now`. An ancestor is subject to the same split as the grant that names it: its expiry is observed at `now`, everything else at the instant the turn was admitted. Defaults to `now`, which decides the whole chain at one instant. | [packages/core/src/delegation.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L75) |
-| <a id="property-maxchainlength"></a> `maxChainLength?` | `readonly` | `number`                                              | -                                                                                                                                                                                                                                                                                                 | [packages/core/src/delegation.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L67) |
-| <a id="property-resolver"></a> `resolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | -                                                                                                                                                                                                                                                                                                 | [packages/core/src/delegation.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L66) |
+| <a id="property-admittedat"></a> `admittedAt?`         | `readonly` | `number`                                              | The instant the turn's authority was resolved, when it is not `now`. An ancestor is subject to the same split as the grant that names it: its expiry is observed at `now`, everything else at the instant the turn was admitted. Defaults to `now`, which decides the whole chain at one instant. | [packages/core/src/delegation.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L76) |
+| <a id="property-maxchainlength"></a> `maxChainLength?` | `readonly` | `number`                                              | -                                                                                                                                                                                                                                                                                                 | [packages/core/src/delegation.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L68) |
+| <a id="property-resolver"></a> `resolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | -                                                                                                                                                                                                                                                                                                 | [packages/core/src/delegation.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L67) |
 
 ---
 
 ### DeriveGrantRequest
 
-Defined in: [packages/core/src/delegation.ts:309](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L309)
+Defined in: [packages/core/src/delegation.ts:292](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L292)
 
 #### Properties
 
 | Property                                          | Modifier   | Type                                                                                                                                                                                                       | Description                                                                      | Defined in                                                                                                                   |
 | ------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-capabilities"></a> `capabilities` | `readonly` | readonly `object`[]                                                                                                                                                                                        | The subset being passed on. Must be within the parent, capability by capability. | [packages/core/src/delegation.ts:315](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L315) |
-| <a id="property-constraints"></a> `constraints?`  | `readonly` | `Omit`\<\{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, `"delegationDepth"`\> & `object`                               | -                                                                                | [packages/core/src/delegation.ts:316](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L316) |
-| <a id="property-id-1"></a> `id`                   | `readonly` | `string`                                                                                                                                                                                                   | Identifier for the derived grant. Must be unique within the namespace.           | [packages/core/src/delegation.ts:311](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L311) |
-| <a id="property-issuedat"></a> `issuedAt`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                | [packages/core/src/delegation.ts:319](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L319) |
-| <a id="property-metadata-2"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                | [packages/core/src/delegation.ts:320](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L320) |
-| <a id="property-subject"></a> `subject`           | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Who receives the derived authority.                                              | [packages/core/src/delegation.ts:313](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L313) |
+| <a id="property-capabilities"></a> `capabilities` | `readonly` | readonly `object`[]                                                                                                                                                                                        | The subset being passed on. Must be within the parent, capability by capability. | [packages/core/src/delegation.ts:298](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L298) |
+| <a id="property-constraints"></a> `constraints?`  | `readonly` | `Omit`\<\{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, `"delegationDepth"`\> & `object`                               | -                                                                                | [packages/core/src/delegation.ts:299](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L299) |
+| <a id="property-id-1"></a> `id`                   | `readonly` | `string`                                                                                                                                                                                                   | Identifier for the derived grant. Must be unique within the namespace.           | [packages/core/src/delegation.ts:294](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L294) |
+| <a id="property-issuedat"></a> `issuedAt`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                | [packages/core/src/delegation.ts:302](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L302) |
+| <a id="property-metadata-2"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                | [packages/core/src/delegation.ts:303](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L303) |
+| <a id="property-subject"></a> `subject`           | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Who receives the derived authority.                                              | [packages/core/src/delegation.ts:296](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L296) |
 
 ---
 
@@ -2778,11 +2778,26 @@ same ask.
 
 ---
 
+### ConstraintEnvelopeField
+
+> **ConstraintEnvelopeField** = `"purposes"` \| `"notBefore"` \| `"expiresAt"`
+
+Defined in: [packages/core/src/constraints.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/constraints.ts#L13)
+
+The fields that bound _when_ and _for what_ a capability may be used.
+
+These three are ordered: one window sits inside another, one purpose set is
+a subset of another. `maxUses` and `delegationDepth` are budgets, spent where
+they are counted -- the usage store and the delegation chain -- and a
+containment check has nothing to say about them.
+
+---
+
 ### DelegationRefusal
 
 > **DelegationRefusal** = `"empty_capabilities"` \| `"id_collides_with_parent"` \| `"bounded_parent_not_delegable"` \| `"parent_not_delegable"` \| `"depth_exhausted"` \| `"capability_not_within_parent"` \| `"purpose_not_within_parent"` \| `"window_not_within_parent"` \| `"issued_before_parent"`
 
-Defined in: [packages/core/src/delegation.ts:294](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L294)
+Defined in: [packages/core/src/delegation.ts:277](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L277)
 
 Why a delegation was refused at the point it was issued.
 
@@ -2792,7 +2807,7 @@ Why a delegation was refused at the point it was issued.
 
 > **DelegationUnverifiedCode** = `"resolver_unavailable"` \| `"parent_not_found"` \| `"resolver_failed"`
 
-Defined in: [packages/core/src/delegation.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L47)
+Defined in: [packages/core/src/delegation.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L48)
 
 The chain could not be established, which is never treated as valid.
 
@@ -2802,7 +2817,7 @@ The chain could not be established, which is never treated as valid.
 
 > **DelegationValidation** = \{ `chain`: readonly `string`[]; `status`: `"valid"`; \} \| \{ `chain`: readonly `string`[]; `code`: [`DelegationViolationCode`](#delegationviolationcode); `grantId`: `string`; `status`: `"invalid"`; \} \| \{ `chain`: readonly `string`[]; `code`: [`DelegationUnverifiedCode`](#delegationunverifiedcode); `grantId`: `string`; `status`: `"unverified"`; \}
 
-Defined in: [packages/core/src/delegation.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L50)
+Defined in: [packages/core/src/delegation.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L51)
 
 ---
 
@@ -2810,7 +2825,7 @@ Defined in: [packages/core/src/delegation.ts:50](https://github.com/Aicoo-Team/S
 
 > **DelegationViolationCode** = `"delegation_not_permitted"` \| `"delegation_depth_exceeded"` \| `"bounded_parent_not_delegable"` \| `"issuer_not_parent_subject"` \| `"namespace_mismatch"` \| `"parent_inactive"` \| `"capability_widened"` \| `"constraints_widened"` \| `"chain_cycle"` \| `"chain_too_long"`
 
-Defined in: [packages/core/src/delegation.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L34)
+Defined in: [packages/core/src/delegation.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L35)
 
 A structural rule the presented chain broke.
 
@@ -2820,7 +2835,7 @@ A structural rule the presented chain broke.
 
 > **DeriveGrantResult** = \{ `grant`: [`CapabilityGrant`](sharedos-contracts.md#capabilitygrant); `ok`: `true`; \} \| \{ `ok`: `false`; `reason`: [`DelegationRefusal`](#delegationrefusal); \}
 
-Defined in: [packages/core/src/delegation.ts:305](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L305)
+Defined in: [packages/core/src/delegation.ts:288](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L288)
 
 ---
 
@@ -3085,7 +3100,7 @@ on equal terms -- which is the only reason it exists.
 
 > `const` **DEFAULT\_MAX\_DELEGATION\_CHAIN\_LENGTH**: `16` = `16`
 
-Defined in: [packages/core/src/delegation.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L19)
+Defined in: [packages/core/src/delegation.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L20)
 
 The longest ancestor chain SharedOS will walk before failing closed.
 
@@ -3426,7 +3441,7 @@ Defined in: [packages/core/src/authorization.ts:793](https://github.com/Aicoo-Te
 
 > **capabilityIsWithin**(`capability`, `ancestor`, `context`): `boolean`
 
-Defined in: [packages/core/src/delegation.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L211)
+Defined in: [packages/core/src/delegation.ts:212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L212)
 
 True when every access `capability` permits is also permitted by `ancestor`.
 
@@ -3538,11 +3553,87 @@ tool, and a stale discovery cache alike.
 
 ---
 
+### constraintEnvelopeViolation()
+
+> **constraintEnvelopeViolation**(`inner`, `outer`): [`ConstraintEnvelopeField`](#constraintenvelopefield) \| `undefined`
+
+Defined in: [packages/core/src/constraints.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/constraints.ts#L29)
+
+The first field on which `inner` reaches outside `outer`, or `undefined`
+when `inner` is within `outer`.
+
+One ordering, written once. An absent bound on `outer` admits anything; a
+present one requires the same bound on `inner`, readable and at least as
+tight: an expiry no later, a start no earlier, purposes that are a subset. A
+present timestamp that does not parse, on either side, violates its field
+rather than counting as absent, because a bound that cannot be read must not
+read as unbounded.
+
+Fields are checked in the order they are declared, so a caller that reports
+one violation reports the same one every time.
+
+#### Parameters
+
+| Parameter                | Type                                                                                                                               |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `inner`                  | \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \} |
+| `inner.delegationDepth?` | `number`                                                                                                                           |
+| `inner.expiresAt?`       | `string`                                                                                                                           |
+| `inner.maxUses?`         | `number`                                                                                                                           |
+| `inner.notBefore?`       | `string`                                                                                                                           |
+| `inner.purposes?`        | `string`[]                                                                                                                         |
+| `outer`                  | \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \} |
+| `outer.delegationDepth?` | `number`                                                                                                                           |
+| `outer.expiresAt?`       | `string`                                                                                                                           |
+| `outer.maxUses?`         | `number`                                                                                                                           |
+| `outer.notBefore?`       | `string`                                                                                                                           |
+| `outer.purposes?`        | `string`[]                                                                                                                         |
+
+#### Returns
+
+[`ConstraintEnvelopeField`](#constraintenvelopefield) \| `undefined`
+
+---
+
+### constraintsAreWithin()
+
+> **constraintsAreWithin**(`inner`, `outer`): `boolean`
+
+Defined in: [packages/core/src/constraints.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/constraints.ts#L57)
+
+True when every use `inner` admits, `outer` admits too.
+
+The boolean of [constraintEnvelopeViolation](#constraintenvelopeviolation), for callers with nothing
+to report about which field failed.
+
+#### Parameters
+
+| Parameter                | Type                                                                                                                               |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `inner`                  | \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \} |
+| `inner.delegationDepth?` | `number`                                                                                                                           |
+| `inner.expiresAt?`       | `string`                                                                                                                           |
+| `inner.maxUses?`         | `number`                                                                                                                           |
+| `inner.notBefore?`       | `string`                                                                                                                           |
+| `inner.purposes?`        | `string`[]                                                                                                                         |
+| `outer`                  | \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \} |
+| `outer.delegationDepth?` | `number`                                                                                                                           |
+| `outer.expiresAt?`       | `string`                                                                                                                           |
+| `outer.maxUses?`         | `number`                                                                                                                           |
+| `outer.notBefore?`       | `string`                                                                                                                           |
+| `outer.purposes?`        | `string`[]                                                                                                                         |
+
+#### Returns
+
+`boolean`
+
+---
+
 ### deriveGrant()
 
 > **deriveGrant**(`parent`, `request`): [`DeriveGrantResult`](#derivegrantresult)
 
-Defined in: [packages/core/src/delegation.ts:419](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L419)
+Defined in: [packages/core/src/delegation.ts:371](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L371)
 
 Derive a narrower grant from one the delegator already holds.
 
@@ -4072,6 +4163,38 @@ Defined in: [packages/core/src/hashing.ts:16](https://github.com/Aicoo-Team/Shar
 
 ---
 
+### tightestConstraints()
+
+> **tightestConstraints**(`sets`): \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \} \| `undefined`
+
+Defined in: [packages/core/src/constraints.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/constraints.ts#L79)
+
+The tightest envelope every set admits, or `undefined` when they admit
+nothing in common.
+
+The meet of the ordering [constraintEnvelopeViolation](#constraintenvelopeviolation) checks: the
+earliest expiry, the latest start, the intersection of purposes, the fewest
+uses, the shallowest delegation. An absent bound on one set is not a bound
+of zero -- an approval with no expiry does not stop a co-cited approval's
+expiry from being the tightest one -- so absent bounds are skipped, and the
+meet of no sets is unbounded.
+
+Disjoint bounds have no envelope. Purposes that intersect to nothing, a
+window whose start is past its end, or a timestamp that cannot be read all
+yield `undefined` rather than a clamped or guessed bound.
+
+#### Parameters
+
+| Parameter | Type                |
+| --------- | ------------------- |
+| `sets`    | readonly `object`[] |
+
+#### Returns
+
+\{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \} \| `undefined`
+
+---
+
 ### toResourceOperation()
 
 > **toResourceOperation**(`context`, `request`): `object`
@@ -4205,7 +4328,7 @@ a lease can never answer for a context it was not resolved for.
 
 > **validateDelegationChain**(`grant`, `context`, `now`, `options?`): `Promise`\<[`DelegationValidation`](#delegationvalidation)>\>
 
-Defined in: [packages/core/src/delegation.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L102)
+Defined in: [packages/core/src/delegation.ts:103](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/delegation.ts#L103)
 
 Validate the complete ancestor chain of one grant.
 
