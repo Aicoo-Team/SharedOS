@@ -4,6 +4,7 @@ import type {
   ExecutionResult,
   MessageDeliveryResult,
   MessageEnvelope,
+  ReachResult,
   ResourceResult,
   ToolCall,
   ToolDefinition,
@@ -15,6 +16,7 @@ import {
   AuthorizationDecisionSchema,
   ExecutionResultSchema,
   MessageDeliveryResultSchema,
+  ReachResultSchema,
   RemoteExecutionRequestSchema,
   RemoteResourceOperationSchema,
   ResourceResultSchema,
@@ -84,6 +86,21 @@ export class SharedOSClient {
 
   listTools(options?: SharedOSCallOptions): Promise<readonly ToolDefinition[]> {
     return this.#request("/v1/tools", { method: "GET" }, ToolDefinitionSchema.array(), options);
+  }
+
+  /**
+   * Where this caller may operate, with the authority stripped out.
+   *
+   * Grant reach for the context the server resolved, as `SharedOSKernel.reach`
+   * answers it: where some call would be authorized, not that any call will be.
+   * It is not narrowed to the tool catalogue, because `invokeResource` is not
+   * gated by tool namespaces; a client driving a model from `listTools()`
+   * keeps the entries whose namespace one of those tools operates on, which is
+   * what the execution envelope does for a turn. `unavailable` is an answer
+   * rather than an error: nothing could be established, and the code says why.
+   */
+  reach(options?: SharedOSCallOptions): Promise<ReachResult> {
+    return this.#request("/v1/reach", { method: "GET" }, ReachResultSchema, options);
   }
 
   listToolNamespaces(options?: SharedOSCallOptions): Promise<ToolNamespaceCatalog> {

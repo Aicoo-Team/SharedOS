@@ -28,17 +28,18 @@ one decision. A `tools/call` over MCP, a `POST /v1/tools/invoke`, and an embedde
 `createSharedOSHandler` mounts as a `(Request) => Promise<Response>` in any
 runtime that speaks Fetch.
 
-| Method | Path                   | Purpose                                        |
-| ------ | ---------------------- | ---------------------------------------------- |
-| GET    | `/health`              | Liveness and protocol version                  |
-| POST   | `/v1/authorize`        | Would this be allowed? Performs nothing        |
-| GET    | `/v1/tools`            | The effective catalog for this context         |
-| GET    | `/v1/tools/namespaces` | Namespace descriptors and summary              |
-| PUT    | `/v1/tools/namespaces` | Idempotent enable/disable patch                |
-| POST   | `/v1/tools/invoke`     | Run one tool, re-authorized from its arguments |
-| POST   | `/v1/resources/invoke` | Reach a resource plane directly                |
-| POST   | `/v1/messages`         | Deliver one message envelope                   |
-| POST   | `/v1/turns`            | Run one bounded agent turn                     |
+| Method | Path                   | Purpose                                            |
+| ------ | ---------------------- | -------------------------------------------------- |
+| GET    | `/health`              | Liveness and protocol version                      |
+| POST   | `/v1/authorize`        | Would this be allowed? Performs nothing            |
+| GET    | `/v1/tools`            | The effective catalog for this context             |
+| GET    | `/v1/reach`            | Where this context may operate, authority left out |
+| GET    | `/v1/tools/namespaces` | Namespace descriptors and summary                  |
+| PUT    | `/v1/tools/namespaces` | Idempotent enable/disable patch                    |
+| POST   | `/v1/tools/invoke`     | Run one tool, re-authorized from its arguments     |
+| POST   | `/v1/resources/invoke` | Reach a resource plane directly                    |
+| POST   | `/v1/messages`         | Deliver one message envelope                       |
+| POST   | `/v1/turns`            | Run one bounded agent turn                         |
 
 `/health` is the only route that resolves no context. Unknown paths are `404`; a
 known path with the wrong verb is `405`. There is no streaming route, no
