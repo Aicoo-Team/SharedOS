@@ -1237,7 +1237,35 @@ registries, namespace settings, or other host policy state.
 
 > `const` **ESCALATION\_ACTION**: `"request"` = `"request"`
 
-Defined in: [packages/runtime/src/escalation.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L8)
+Defined in: [packages/runtime/src/escalation.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L13)
+
+---
+
+### ESCALATION\_ASKED\_EVENT
+
+> `const` **ESCALATION\_ASKED\_EVENT**: `"escalation.asked"` = `"escalation.asked"`
+
+Defined in: [packages/runtime/src/escalation.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L42)
+
+The runtime event a delegate announces the ask under.
+
+Every path that honours the affordance ends the turn without forwarding the
+call -- a driver in the standard loop returns an `escalate` decision, the MCP
+latch settles the harness's outcome -- so a working ask leaves no operation
+in the record. Neither would an ask the envelope then failed to honour, and
+the two would be indistinguishable from a delegate that never asked: a
+conformance row graded on the ending could not tell "SharedOS was never
+asked" from "SharedOS was asked and did the wrong thing". So the ask is
+announced through `RuntimeHost.emit` at the moment it is recognised, before
+anything acts on it, and lands in the record as a `runtime.event` whatever
+the turn then does.
+
+It is the delegate's own claim, which is the safe direction of trust. A
+reader can only grade a turn _harder_ on it -- an ask announced and not
+honoured is a failure -- and never credit one, because a pass still needs
+the turn to have ended `escalated`. Distinct from the `escalation.requested`
+audit event, which the kernel writes when the envelope records an escalation
+it honoured.
 
 ---
 
@@ -1245,7 +1273,7 @@ Defined in: [packages/runtime/src/escalation.ts:8](https://github.com/Aicoo-Team
 
 > `const` **ESCALATION\_REASON\_MAX\_LENGTH**: `512` = `512`
 
-Defined in: [packages/runtime/src/escalation.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L14)
+Defined in: [packages/runtime/src/escalation.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L19)
 
 The longest reason an escalation can carry, restating the contract's bound on
 `RuntimeTurnOutcome.reason` and `Escalation.reason` rather than importing a
@@ -1257,7 +1285,7 @@ schema this package does not validate with.
 
 > `const` **ESCALATION\_RESOURCE\_PATH**: readonly `string`[]
 
-Defined in: [packages/runtime/src/escalation.ts:7](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L7)
+Defined in: [packages/runtime/src/escalation.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L12)
 
 The resource an escalation grant is written over.
 
@@ -1267,7 +1295,7 @@ The resource an escalation grant is written over.
 
 > `const` **ESCALATION\_TOOL\_DEFINITION**: [`ToolDefinition`](sharedos-contracts.md#tooldefinition)
 
-Defined in: [packages/runtime/src/escalation.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L44)
+Defined in: [packages/runtime/src/escalation.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L82)
 
 The affordance a driver offers so escalation can be chosen rather than inferred.
 
@@ -1302,7 +1330,7 @@ like any other unpublished tool.
 
 > `const` **ESCALATION\_TOOL\_NAME**: `"sharedos.escalate"` = `"sharedos.escalate"`
 
-Defined in: [packages/runtime/src/escalation.ts:5](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L5)
+Defined in: [packages/runtime/src/escalation.ts:10](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L10)
 
 ---
 
@@ -1310,7 +1338,7 @@ Defined in: [packages/runtime/src/escalation.ts:5](https://github.com/Aicoo-Team
 
 > `const` **ESCALATION\_TOOL\_NAMESPACE**: `"sharedos"` = `"sharedos"`
 
-Defined in: [packages/runtime/src/escalation.ts:4](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L4)
+Defined in: [packages/runtime/src/escalation.ts:9](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L9)
 
 ---
 
@@ -1336,7 +1364,7 @@ Kept equal to the synchronized package version by the release gate.
 
 > **createEscalationTool**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [packages/runtime/src/escalation.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L90)
+Defined in: [packages/runtime/src/escalation.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L128)
 
 The handler a host registers so the affordance is catalogued.
 
@@ -1365,7 +1393,7 @@ record the wrong defect.
 
 > **escalationArguments**(`reason`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/runtime/src/escalation.ts:165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L165)
+Defined in: [packages/runtime/src/escalation.ts:203](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L203)
 
 The arguments an escalation is requested with, for a driver writing the call.
 
@@ -1381,11 +1409,42 @@ The arguments an escalation is requested with, for a driver writing the call.
 
 ---
 
+### escalationAskedEvent()
+
+> **escalationAskedEvent**(`reason`): `object`
+
+Defined in: [packages/runtime/src/escalation.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L50)
+
+The announcement a delegate emits when it recognises the affordance.
+
+Emitted for the record, not for the turn: a delegate that cannot announce
+the ask still ends the turn on it, and only the trace is lost.
+
+#### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `reason`  | `string` |
+
+#### Returns
+
+`object`
+
+##### data
+
+> **data**: [`JsonValue`](sharedos-contracts.md#jsonvalue)
+
+##### type
+
+> **type**: `string`
+
+---
+
 ### escalationOffered()
 
 > **escalationOffered**(`tools`): `boolean`
 
-Defined in: [packages/runtime/src/escalation.ts:199](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L199)
+Defined in: [packages/runtime/src/escalation.ts:237](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L237)
 
 Whether a turn's catalogue offers the affordance.
 
@@ -1409,7 +1468,7 @@ the executor from the catalogue the turn was actually served.
 
 > **escalationReason**(`value`): `string` \| `undefined`
 
-Defined in: [packages/runtime/src/escalation.ts:182](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L182)
+Defined in: [packages/runtime/src/escalation.ts:220](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L220)
 
 A reason string bounded exactly as `RuntimeTurnOutcome`'s is.
 
@@ -1439,7 +1498,7 @@ than quietly trimmed away.
 
 > **escalationRequest**(`tool`, `arguments_`): `string` \| `undefined`
 
-Defined in: [packages/runtime/src/escalation.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L132)
+Defined in: [packages/runtime/src/escalation.ts:170](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L170)
 
 Read an escalation out of a call a driver is about to make, if that is what it is.
 

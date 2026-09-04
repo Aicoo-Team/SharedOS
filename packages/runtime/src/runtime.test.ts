@@ -10,6 +10,7 @@ import { SPAN, SharedOSKernel, type Span, type SpanSink } from "@aicoo/sharedos-
 import type { CapabilityGrant } from "@aicoo/sharedos-contracts";
 
 import {
+  ESCALATION_ASKED_EVENT,
   ESCALATION_REASON_MAX_LENGTH,
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAME,
@@ -236,6 +237,21 @@ describe("TurnExecutor", () => {
     // different events, and collapsing them would lose the distinction the row
     // exists to record.
     expect(result.status).not.toBe("failed");
+    // And the ask is in the record on its own, announced before the loop ended
+    // on it: a reader can tell a turn that asked from one that never did even
+    // when the ending is not the one the ask should have had.
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        type: "runtime.event",
+        data: expect.objectContaining({
+          type: ESCALATION_ASKED_EVENT,
+          data: {
+            tool: ESCALATION_TOOL_NAME,
+            reason: "issuing a control-plane grant is outside this agent's authority",
+          },
+        }),
+      }),
+    );
   });
 
   it("refuses an escalate decision whose reason is not a usable string", async () => {
