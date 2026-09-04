@@ -18,6 +18,10 @@ import {
   ModelDriver,
   ModelRuntime,
   ToolNameCodec,
+  decodeChatCompletion,
+  encodeModelMessage,
+  modelToolResultMessage,
+  readModelToolCall,
   type ModelClient,
   type ModelCompletionRequest,
   type ModelReply,
@@ -231,6 +235,92 @@ describe("the model tool-name codec", () => {
   it("refuses a catalogue two of whose names collapse onto one wire name", () => {
     const underscored: ToolDefinition = { ...READ_TOOL, name: "files_read" };
     expect(() => new ToolNameCodec([READ_TOOL, underscored])).toThrow(/ambiguous/u);
+  });
+});
+
+describe("the model driver's translation layer, read on its own", () => {
+  const codec = new ToolNameCodec([READ_TOOL, ESCALATION_TOOL_DEFINITION]);
+  const context = { traceId: "trace-1", now: NOW };
+
+  it("reads a call the way the session does: name decoded, arguments parsed", () => {
+    const reading = readModelToolCall(
+      { id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a.txt"]}' },
+      codec,
+      false,
+      context,
+    );
+    expect(reading).toEqual({
+      type: "tool_call",
+      call: {
+        id: "call-1",
+        tool: "files.read",
+        arguments: { path: ["Workspace", "a.txt"] },
+        traceId: "trace-1",
+        requestedAt: NOW,
+      },
+    });
+  });
+
+  it("refuses unreadable arguments in place, and honours the affordance only when offered", () => {
+    const malformed = readModelToolCall(
+      { id: "call-2", name: "files_read", arguments: "not json" },
+      codec,
+      false,
+      context,
+    );
+    expect(malformed.type).toBe("malformed");
+    expect(malformed.type === "malformed" && malformed.refusal.status).toBe("failed");
+
+    const ask = {
+      id: "call-3",
+      name: codec.toWire(ESCALATION_TOOL_DEFINITION.name),
+      arguments: JSON.stringify({ reason: "a human has to decide" }),
+    };
+    expect(readModelToolCall(ask, codec, true, context)).toEqual({
+      type: "escalate",
+      reason: "a human has to decide",
+    });
+    expect(readModelToolCall(ask, codec, false, context).type).toBe("tool_call");
+  });
+
+  it("decodes one reply and encodes one answer in the provider's wire shape", () => {
+    const reply = decodeChatCompletion({
+      model: "served-model",
+      choices: [
+        {
+          finish_reason: "tool_calls",
+          message: {
+            content: null,
+            tool_calls: [{ id: "call-4", function: { name: "files_read", arguments: "{}" } }],
+          },
+        },
+      ],
+      usage: { prompt_tokens: 3, completion_tokens: 2 },
+    });
+    expect(reply).toEqual({
+      text: "",
+      toolCalls: [{ id: "call-4", name: "files_read", arguments: "{}" }],
+      model: "served-model",
+      finishReason: "tool_calls",
+      usage: { inputTokens: 3, outputTokens: 2 },
+    });
+    expect(decodeChatCompletion({ choices: [] })).toBeUndefined();
+
+    const answer = modelToolResultMessage({
+      callId: "call-4",
+      tool: "files.read",
+      status: "denied",
+      error: { code: "no_matching_grant", message: "Not granted." },
+      completedAt: NOW,
+    });
+    expect(encodeModelMessage(answer)).toEqual({
+      role: "tool",
+      tool_call_id: "call-4",
+      content: JSON.stringify({
+        status: "denied",
+        error: { code: "no_matching_grant", message: "Not granted." },
+      }),
+    });
   });
 });
 

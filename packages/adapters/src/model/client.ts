@@ -222,7 +222,7 @@ export class OpenAiCompatibleModelClient implements ModelClient {
   async complete(request: ModelCompletionRequest, signal: AbortSignal): Promise<ModelReply> {
     const body = JSON.stringify({
       model: this.model,
-      messages: request.messages.map(encodeMessage),
+      messages: request.messages.map(encodeModelMessage),
       ...(request.tools.length === 0
         ? {}
         : {
@@ -289,38 +289,56 @@ export class OpenAiCompatibleModelClient implements ModelClient {
       );
     }
 
-    const parsed = ChatCompletionSchema.safeParse(await response.json());
-    if (!parsed.success) {
+    const reply = decodeChatCompletion(await response.json());
+    if (reply === undefined) {
       throw new ModelRequestError("the model provider returned an unreadable completion");
     }
-
-    const [choice] = parsed.data.choices;
-    const message = choice?.message;
-    const usage = parsed.data.usage;
-    return {
-      text: message?.content ?? "",
-      toolCalls: (message?.tool_calls ?? []).map((call) => ({
-        id: call.id,
-        name: call.function.name,
-        arguments: call.function.arguments,
-      })),
-      ...(parsed.data.model === undefined ? {} : { model: parsed.data.model }),
-      ...(typeof choice?.finish_reason === "string" ? { finishReason: choice.finish_reason } : {}),
-      ...(usage === undefined || usage === null
-        ? {}
-        : {
-            usage: {
-              ...(usage.prompt_tokens === undefined ? {} : { inputTokens: usage.prompt_tokens }),
-              ...(usage.completion_tokens === undefined
-                ? {}
-                : { outputTokens: usage.completion_tokens }),
-            },
-          }),
-    };
+    return reply;
   }
 }
 
-function encodeMessage(message: ModelMessage): JsonObject {
+/**
+ * One chat-completions response body, read into what the driver needs of it.
+ *
+ * `undefined` is a body the schema refused, and the caller decides what that
+ * means -- the client turns it into a request error. It is a function rather
+ * than a method so the read can be measured on its own: this is the native
+ * harness's frame parse, the counterpart of a vendor adapter's `interpret`, and
+ * the bench charges it per call the way it charges the others.
+ */
+export function decodeChatCompletion(payload: unknown): ModelReply | undefined {
+  const parsed = ChatCompletionSchema.safeParse(payload);
+  if (!parsed.success) {
+    return undefined;
+  }
+
+  const [choice] = parsed.data.choices;
+  const message = choice?.message;
+  const usage = parsed.data.usage;
+  return {
+    text: message?.content ?? "",
+    toolCalls: (message?.tool_calls ?? []).map((call) => ({
+      id: call.id,
+      name: call.function.name,
+      arguments: call.function.arguments,
+    })),
+    ...(parsed.data.model === undefined ? {} : { model: parsed.data.model }),
+    ...(typeof choice?.finish_reason === "string" ? { finishReason: choice.finish_reason } : {}),
+    ...(usage === undefined || usage === null
+      ? {}
+      : {
+          usage: {
+            ...(usage.prompt_tokens === undefined ? {} : { inputTokens: usage.prompt_tokens }),
+            ...(usage.completion_tokens === undefined
+              ? {}
+              : { outputTokens: usage.completion_tokens }),
+          },
+        }),
+  };
+}
+
+/** One message in the shape the provider's wire carries it. */
+export function encodeModelMessage(message: ModelMessage): JsonObject {
   if (message.role === "tool") {
     return { role: "tool", tool_call_id: message.toolCallId, content: message.content };
   }

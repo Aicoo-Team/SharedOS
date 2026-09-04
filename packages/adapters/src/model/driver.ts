@@ -3,7 +3,6 @@ import type {
   JsonValue,
   RuntimeManifest,
   ToolCall,
-  ToolDefinition,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
@@ -54,7 +53,7 @@ export class ToolNameCodec {
   readonly #toWire = new Map<string, string>();
   readonly #fromWire = new Map<string, string>();
 
-  constructor(tools: readonly ToolDefinition[]) {
+  constructor(tools: ReadonlyArray<{ readonly name: string }>) {
     for (const tool of tools) {
       const wire = tool.name.replaceAll(".", "_");
       if (!WIRE_NAME_PATTERN.test(wire)) {
@@ -224,11 +223,7 @@ class ModelSession implements AgentTurnSession {
 
   async next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision> {
     if (input.type === "tool_result") {
-      this.#messages.push({
-        role: "tool",
-        toolCallId: input.result.callId,
-        content: JSON.stringify(toolResultBody(input.result)),
-      });
+      this.#messages.push(modelToolResultMessage(input.result));
     }
 
     for (;;) {
@@ -333,17 +328,14 @@ class ModelSession implements AgentTurnSession {
         return undefined;
       }
 
-      const parsed = parseToolArguments(next.arguments);
-      const escalation = this.#offered
-        ? escalationRequest(this.#codec.fromWire(next.name), parsed)
-        : undefined;
-      if (escalation !== undefined) {
+      const reading = readModelToolCall(next, this.#codec, this.#offered, this.#request.context);
+      if (reading.type === "escalate") {
         this.#pending.length = 0;
-        return { type: "escalate", reason: escalation, metadata: this.#metadata() };
+        return { type: "escalate", reason: reading.reason, metadata: this.#metadata() };
       }
 
-      if (parsed !== undefined) {
-        return this.#call(next, parsed);
+      if (reading.type === "tool_call") {
+        return this.#call(reading.call);
       }
       this.#malformed += 1;
       if (this.#malformed > this.#maxMalformedCalls) {
@@ -354,11 +346,7 @@ class ModelSession implements AgentTurnSession {
           this.#metadata(),
         );
       }
-      this.#messages.push({
-        role: "tool",
-        toolCallId: next.id,
-        content: JSON.stringify(toolResultBody(this.#refuse(next))),
-      });
+      this.#messages.push(modelToolResultMessage(reading.refusal));
     }
   }
 
@@ -401,40 +389,86 @@ class ModelSession implements AgentTurnSession {
     }
   }
 
-  #call(call: ModelToolCall, arguments_: JsonObject): AgentTurnDecision {
+  #call(call: ToolCall): AgentTurnDecision {
     const index = this.#released;
     this.#released += 1;
     const step = this.#declareStep?.(index, this.#request);
     return {
       type: "tool_call",
-      call: this.#toolCall(call, arguments_),
+      call,
       ...(step === undefined ? {} : { step }),
     };
   }
+}
 
-  /** The refusal the model is shown for a call it made with unreadable arguments. */
-  #refuse(call: ModelToolCall): ToolResult {
+/** Where one call the model asked for goes once it has been read. */
+export type ModelToolCallReading =
+  | { readonly type: "escalate"; readonly reason: string }
+  | { readonly type: "tool_call"; readonly call: ToolCall }
+  | {
+      readonly type: "malformed";
+      /** The refusal the model is shown for a call made with unreadable arguments. */
+      readonly refusal: ToolResult;
+    };
+
+/**
+ * Read one call off a reply: the provider's alphabet back to the catalogue's,
+ * the argument blob parsed, and the escalate affordance recognised by name when
+ * the turn was offered it. `#release` on the session says what each answer
+ * means and why; this is only the reading.
+ *
+ * A function rather than a method because the native harness has a
+ * translation layer like any vendor adapter -- this, and the reply decode in
+ * the client -- and the bench charges it per call the way it charges the
+ * others. Measuring a copy of the driver's logic would not be measuring the
+ * driver, so the session calls exactly this.
+ */
+export function readModelToolCall(
+  call: ModelToolCall,
+  codec: ToolNameCodec,
+  offered: boolean,
+  context: { readonly traceId: string; readonly now: string },
+): ModelToolCallReading {
+  const tool = codec.fromWire(call.name);
+  const parsed = parseToolArguments(call.arguments);
+  const escalation = offered ? escalationRequest(tool, parsed) : undefined;
+  if (escalation !== undefined) {
+    return { type: "escalate", reason: escalation };
+  }
+  if (parsed === undefined) {
     return {
-      callId: call.id,
-      tool: this.#codec.fromWire(call.name),
-      status: "failed",
-      error: {
-        code: "invalid_tool_arguments",
-        message: "The tool arguments were not a JSON object, so the call was not made.",
+      type: "malformed",
+      refusal: {
+        callId: call.id,
+        tool,
+        status: "failed",
+        error: {
+          code: "invalid_tool_arguments",
+          message: "The tool arguments were not a JSON object, so the call was not made.",
+        },
+        completedAt: context.now,
       },
-      completedAt: this.#request.context.now,
     };
   }
-
-  #toolCall(call: ModelToolCall, arguments_: JsonObject): ToolCall {
-    return {
+  return {
+    type: "tool_call",
+    call: {
       id: call.id,
-      tool: this.#codec.fromWire(call.name),
-      arguments: arguments_,
-      traceId: this.#request.context.traceId,
-      requestedAt: this.#request.context.now,
-    };
-  }
+      tool,
+      arguments: parsed,
+      traceId: context.traceId,
+      requestedAt: context.now,
+    },
+  };
+}
+
+/** The message that answers one call, in the shape the model reads it back. */
+export function modelToolResultMessage(result: ToolResult): ModelMessage {
+  return {
+    role: "tool",
+    toolCallId: result.callId,
+    content: JSON.stringify(toolResultBody(result)),
+  };
 }
 
 function describe(error: unknown): string {
