@@ -21,6 +21,7 @@ import {
 } from "@aicoo/sharedos-core";
 import {
   ESCALATION_ACTION,
+  ESCALATION_ASKED_EVENT,
   ESCALATION_RESOURCE_PATH,
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAMESPACE,
@@ -618,6 +619,23 @@ describe("a harness that asks for a human over MCP", () => {
     // reached, and the record carries no operation for the ask.
     expect(turn.events.filter((type) => type === "tool.requested")).toHaveLength(1);
     expect(turn.audited.some(({ reason }) => reason === "escalation_not_terminated")).toBe(false);
+  }, 30_000);
+
+  it("announces the ask for the record the moment it is recognised", async () => {
+    const turn = await runAffordance([READ, ASK]);
+
+    // No operation, but not no trace. The ask is a runtime event emitted before
+    // the harness winds down and the outcome settles, so a record can tell a
+    // turn that asked from one that never did even if the ending is wrong.
+    expect(turn.result.events).toContainEqual(
+      expect.objectContaining({
+        type: "runtime.event",
+        data: expect.objectContaining({
+          type: ESCALATION_ASKED_EVENT,
+          data: { tool: "sharedos.escalate", reason: ESCALATION_REASON },
+        }),
+      }),
+    );
   }, 30_000);
 
   it("answers the ask in band, and says the turn is over", async () => {

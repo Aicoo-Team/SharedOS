@@ -1,4 +1,9 @@
-import { JsonObjectSchema, type JsonObject, type ToolDefinition } from "@aicoo/sharedos-contracts";
+import {
+  JsonObjectSchema,
+  type JsonObject,
+  type RuntimeEvent,
+  type ToolDefinition,
+} from "@aicoo/sharedos-contracts";
 import type { ToolHandler } from "@aicoo/sharedos-core";
 
 export const ESCALATION_TOOL_NAMESPACE = "sharedos";
@@ -12,6 +17,39 @@ export const ESCALATION_ACTION = "request";
  * schema this package does not validate with.
  */
 export const ESCALATION_REASON_MAX_LENGTH = 512;
+
+/**
+ * The runtime event a delegate announces the ask under.
+ *
+ * Every path that honours the affordance ends the turn without forwarding the
+ * call -- a driver in the standard loop returns an `escalate` decision, the MCP
+ * latch settles the harness's outcome -- so a working ask leaves no operation
+ * in the record. Neither would an ask the envelope then failed to honour, and
+ * the two would be indistinguishable from a delegate that never asked: a
+ * conformance row graded on the ending could not tell "SharedOS was never
+ * asked" from "SharedOS was asked and did the wrong thing". So the ask is
+ * announced through `RuntimeHost.emit` at the moment it is recognised, before
+ * anything acts on it, and lands in the record as a `runtime.event` whatever
+ * the turn then does.
+ *
+ * It is the delegate's own claim, which is the safe direction of trust. A
+ * reader can only grade a turn *harder* on it -- an ask announced and not
+ * honoured is a failure -- and never credit one, because a pass still needs
+ * the turn to have ended `escalated`. Distinct from the `escalation.requested`
+ * audit event, which the kernel writes when the envelope records an escalation
+ * it honoured.
+ */
+export const ESCALATION_ASKED_EVENT = "escalation.asked";
+
+/**
+ * The announcement a delegate emits when it recognises the affordance.
+ *
+ * Emitted for the record, not for the turn: a delegate that cannot announce
+ * the ask still ends the turn on it, and only the trace is lost.
+ */
+export function escalationAskedEvent(reason: string): RuntimeEvent {
+  return { type: ESCALATION_ASKED_EVENT, data: { tool: ESCALATION_TOOL_NAME, reason } };
+}
 
 /**
  * The affordance a driver offers so escalation can be chosen rather than inferred.
