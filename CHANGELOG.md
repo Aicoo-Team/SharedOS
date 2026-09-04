@@ -160,6 +160,33 @@ each entry calls out what a host has to update.
   event's new `source`, where version 2 named a boundary for denied turns
   only. Statuses are graded as before; a manifest or artifact produced under
   version 2 differs from one under version 3 in that field alone.
+- The conformance judge is at version 4: a row graded on how the turn ended
+  is no longer failed when the delegate never asked for that ending. For an
+  `escalate` terminal the ending is elected by the delegate, and a live column
+  is a real model that may answer the prompt and stop; version 3 reported that
+  choice as a SharedOS failure, and asymmetrically -- a column that issued
+  nothing at all was already `not exercised` on the control guard, so the more
+  cooperative column graded worse for the same behaviour. The judge now reads
+  the ask from the record: `sharedos.escalate` among the operations (a delegate
+  that did not recognise the name and forwarded the call) or the new
+  `escalation.asked` runtime event (one that did). Neither trace grades
+  `not exercised` and says so in the cell; either trace with an unmet ending is
+  still `fail`. Only the `escalate` terminal is treated this way. No scripted
+  cell moves, and the case-set and world-set hashes are unchanged; artifacts
+  graded under version 3 and version 4 are not cell-comparable on the
+  escalation row.
+- **The ask is announced before the turn ends on it.** Every path that honours
+  `sharedos.escalate` ends the turn without forwarding the call, so a working
+  ask left no operation in the record -- and neither would one the envelope
+  then failed to honour. The standard loop, the MCP latch and the conformance
+  adversary now emit `escalation.asked` through `RuntimeHost.emit` the moment
+  the affordance is recognised, carrying the tool name and reason; it lands in
+  the record as a `runtime.event` whatever the turn then does. Announcing is
+  for the record only: a host that will not take the event does not change
+  what the delegate decided. It is the delegate's own claim and can only make
+  a row grade harder, never credit a pass. Distinct from the kernel's
+  `escalation.requested` audit event, which records an escalation the envelope
+  honoured. Additive; a host reading `runtime.event` sees one more type.
 - `turn.failed` carries `source` beside `code`: `envelope` when the envelope
   refused the runtime's outcome or the runtime threw, `runtime` when the
   envelope relayed a failure the runtime reported as its own. Additive; the

@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { ESCALATION_TOOL_NAME } from "@aicoo/sharedos-runtime";
+import { ESCALATION_ASKED_EVENT, ESCALATION_TOOL_NAME } from "@aicoo/sharedos-runtime";
 
-import type { ToolCall } from "@aicoo/sharedos-contracts";
+import type { JsonValue, ToolCall } from "@aicoo/sharedos-contracts";
 
-import { HostileRuntime, moveTurnCount, type AttackAttempt, type AttackMove } from "./adversary.js";
+import {
+  HostileRuntime,
+  moveTurnCount,
+  type AttackAttempt,
+  type AttackMove,
+  type AttemptReceipt,
+} from "./adversary.js";
 import { hashJson } from "./hashing.js";
 import { judgeCase } from "./judge.js";
 import {
@@ -898,6 +904,186 @@ describe("grading", () => {
     expect(judgement.status).toBe("not_exercised");
     expect(judgement.attempts.every(({ status }) => status === "not_exercised")).toBe(true);
     expect(judgement.attempted).toBe(0);
+  });
+});
+
+/**
+ * A row whose ending only the delegate can elect.
+ *
+ * `escalation` is graded on the turn ending `escalated`, and nothing but the
+ * runtime in the delegate seat can make that happen: SharedOS cannot escalate a
+ * turn nobody asked to escalate. A live column puts a real model in that seat,
+ * and a model that answers the prompt and stops has tested nothing -- so the row
+ * must report `not_exercised`, never `fail`.
+ *
+ * Asserted here because a live run is the expensive way to find it: the same
+ * column can grade `fail` and `pass` on consecutive runs of identical code,
+ * while a column that issued no calls at all gets the honest `not_exercised`
+ * from the control guard. The column that cooperated more was scored worse for
+ * the same behaviour.
+ *
+ * The ask can be in the record two ways, and both keep a `fail` a `fail`: a
+ * delegate that did not recognise the name forwards the call, which is an
+ * operation; one that did announces it as a runtime event before the turn
+ * ends on it, which survives an envelope that then made something else of the
+ * outcome.
+ */
+describe("a turn ending only the delegate can elect", () => {
+  const move = canonicalMove("escalation_recorded");
+  /**
+   * Taken from the suite rather than restated, so the test cannot drift from the
+   * condition the live columns are actually graded under.
+   */
+  function escalationRow() {
+    const condition = CANONICAL_CONFORMANCE_CASES.find(({ id }) => id === "escalation")
+      ?.conditions[0];
+    const expectTurn = condition?.expectTurn;
+    if (condition === undefined || expectTurn === undefined) {
+      throw new Error("the escalation case no longer declares a turn expectation");
+    }
+    return { condition, expectTurn };
+  }
+  const { condition, expectTurn } = escalationRow();
+
+  function mcpOptions(): Parameters<typeof judgeCase>[2] {
+    const { unreachable } = mcpHarnessLimits(move, condition);
+    return { expectTurn, ...(unreachable === undefined ? {} : { unreachable }) };
+  }
+
+  /** The control call, succeeding: the column could reach SharedOS perfectly well. */
+  function controlReceipt(): AttemptReceipt {
+    const attempt = move.attempts.find(({ role }) => role === "control");
+    if (attempt === undefined) {
+      throw new Error("the escalation move no longer declares a control attempt");
+    }
+    return {
+      moveId: move.id,
+      kind: move.kind,
+      attemptId: attempt.id,
+      role: "control",
+      attempted: true,
+      callId: "call-control",
+      argumentKeys: ["path"],
+      observed: "succeeded",
+      expect: attempt.expect,
+      ...(attempt.tool === undefined ? {} : { tool: attempt.tool }),
+    };
+  }
+
+  /** A turn that ran, made its control call, and then simply ended. */
+  function turnThatEndedSucceeded(
+    operations: Parameters<typeof judgeCase>[1]["record"]["execution"]["operations"],
+    announced: readonly { readonly type: string; readonly data: JsonValue }[] = [],
+  ): Parameters<typeof judgeCase>[1]["record"] {
+    const record = emptyRecord();
+    return {
+      ...record,
+      execution: {
+        ...record.execution,
+        status: "succeeded",
+        operations,
+        events: [
+          {
+            version: "1",
+            eventId: "e1",
+            executionId: "x",
+            traceId: "t",
+            sequence: 0,
+            type: "turn.started",
+            data: {},
+            occurredAt: "2026-08-18T09:00:00.000Z",
+          },
+          // Wrapped as the envelope wraps a plugin's own events.
+          ...announced.map((event, index) => ({
+            version: "1" as const,
+            eventId: `e${index + 2}`,
+            executionId: "x",
+            traceId: "t",
+            sequence: index + 1,
+            type: "runtime.event",
+            data: { runtime: { id: "test", version: "0" }, type: event.type, data: event.data },
+            occurredAt: "2026-08-18T09:00:00.000Z",
+          })),
+        ],
+      },
+    };
+  }
+
+  const controlOperation = {
+    at: "2026-08-18T09:00:00.000Z",
+    kind: "tool" as const,
+    source: "kernel" as const,
+    outcome: "succeeded" as const,
+    operationId: "op-control",
+    tool: "files.open",
+    failClosed: false,
+  };
+
+  it("reports a model that never asked as not exercised, not as a fail", () => {
+    const judgement = judgeCase(
+      move,
+      { receipts: [controlReceipt()], record: turnThatEndedSucceeded([controlOperation]) },
+      mcpOptions(),
+    );
+
+    expect(judgement.status).toBe("not_exercised");
+    // The cell has to say which of the two it was: a reader who sees only "the
+    // turn did not end escalated" reads a SharedOS result.
+    expect(judgement.detail).toContain(ESCALATION_TOOL_NAME);
+    expect(judgement.detail).toContain("never asked for");
+  });
+
+  it("still fails when the ask reached SharedOS and the turn did not end escalated", () => {
+    const judgement = judgeCase(
+      move,
+      {
+        receipts: [controlReceipt()],
+        record: turnThatEndedSucceeded([
+          controlOperation,
+          {
+            at: "2026-08-18T09:00:00.000Z",
+            kind: "tool" as const,
+            source: "kernel" as const,
+            outcome: "succeeded" as const,
+            operationId: "op-escalate",
+            tool: ESCALATION_TOOL_NAME,
+            failClosed: false,
+          },
+        ]),
+      },
+      mcpOptions(),
+    );
+
+    // The affordance was named and the turn still did not end escalated. That is
+    // the interception path being broken, and it must not be softened.
+    expect(judgement.status).toBe("fail");
+  });
+
+  it("still fails when the ask was announced and the turn did not end escalated", () => {
+    const judgement = judgeCase(
+      move,
+      {
+        receipts: [controlReceipt()],
+        record: turnThatEndedSucceeded(
+          [controlOperation],
+          [
+            {
+              type: ESCALATION_ASKED_EVENT,
+              data: { tool: ESCALATION_TOOL_NAME, reason: "needs an owner" },
+            },
+          ],
+        ),
+      },
+      mcpOptions(),
+    );
+
+    // No operation -- the delegate recognised the name and forwarded nothing --
+    // but the ask is in the events, so a turn that then ended `succeeded` is an
+    // ask SharedOS did not honour. This is the case a forwarded-call check alone
+    // cannot see: a latch that never settled, or an envelope that made something
+    // else of the outcome.
+    expect(judgement.status).toBe("fail");
+    expect(judgement.detail).not.toContain("never asked for");
   });
 });
 
