@@ -615,7 +615,7 @@ async function runHarness(
 /** Two minutes of silence from a session harness is a stall, not a long step. */
 const DEFAULT_SESSION_IDLE_MS = 120_000;
 
-export const MCP_ADAPTER_VERSION = "0.1.0-alpha.3";
+export const MCP_ADAPTER_VERSION = "0.1.0-alpha.4";
 
 /**
  * Claude Code, connected to the SharedOS bridge.

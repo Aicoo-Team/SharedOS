@@ -89,7 +89,7 @@ export const SHAREDOS_MCP_SERVER_NAME = "sharedos";
  * synchronized package version by the release gate, like every other version
  * constant that reaches a record or a wire.
  */
-export const MCP_SERVER_VERSION = "0.1.0-alpha.3";
+export const MCP_SERVER_VERSION = "0.1.0-alpha.4";
 
 const DEFAULT_SERVER_INFO: McpServerInfo = Object.freeze({
   name: SHAREDOS_MCP_SERVER_NAME,

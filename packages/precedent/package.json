@@ -1,6 +1,6 @@
 {
   "name": "@aicoo/sharedos-precedent",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "description": "Admission rules for auto-decisions proposed from an owner's prior answers",
   "license": "Apache-2.0",
   "keywords": [

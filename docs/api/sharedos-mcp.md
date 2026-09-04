@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.3**](README.md)
+[**SharedOS API v0.1.0-alpha.4**](README.md)
 
 ---
 
@@ -939,7 +939,7 @@ The harnesses this package emits a connection for, by id.
 
 ### MCP\_SERVER\_VERSION
 
-> `const` **MCP\_SERVER\_VERSION**: `"0.1.0-alpha.3"` = `"0.1.0-alpha.3"`
+> `const` **MCP\_SERVER\_VERSION**: `"0.1.0-alpha.4"` = `"0.1.0-alpha.4"`
 
 Defined in: [mcp/src/server.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L92)
 

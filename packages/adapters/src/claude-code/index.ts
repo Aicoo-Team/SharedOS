@@ -12,7 +12,7 @@ export { CLAUDE_CODE_PROTOCOL_ID, claudeCodeProtocol } from "./protocol.js";
 /** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
 export const CLAUDE_CODE_HARNESS_ID = "claude-code" satisfies McpHarnessId;
 
-export const CLAUDE_CODE_ADAPTER_VERSION = "0.1.0-alpha.3";
+export const CLAUDE_CODE_ADAPTER_VERSION = "0.1.0-alpha.4";
 
 export const CLAUDE_CODE_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   id: "sharedos.claude-code",

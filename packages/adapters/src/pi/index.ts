@@ -12,7 +12,7 @@ export { PI_PROTOCOL_ID, piProtocol } from "./protocol.js";
 /** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
 export const PI_HARNESS_ID = "pi" satisfies McpHarnessId;
 
-export const PI_ADAPTER_VERSION = "0.1.0-alpha.3";
+export const PI_ADAPTER_VERSION = "0.1.0-alpha.4";
 
 export const PI_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   id: "sharedos.pi",

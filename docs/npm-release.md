@@ -1,6 +1,6 @@
 # npm release runbook
 
-SharedOS publishes eleven public ESM packages at one synchronized prerelease
+SharedOS publishes twelve public ESM packages at one synchronized prerelease
 version. `@aicoo/sharedos` is the recommended entry point; the other packages let
 hosts choose a smaller dependency surface. Prereleases use the `next` dist-tag,
 so an alpha never becomes `latest` accidentally.
@@ -14,15 +14,16 @@ deprecate the old one with a migration message, and support an overlap window.
 
 1. `@aicoo/sharedos-contracts`
 2. `@aicoo/sharedos-core`
-3. `@aicoo/sharedos-os`
-4. `@aicoo/sharedos-runtime`
-5. `@aicoo/sharedos-client`
-6. `@aicoo/sharedos-http`
-7. `@aicoo/sharedos-testkit`
-8. `@aicoo/sharedos-mcp`
-9. `@aicoo/sharedos-adapters`
-10. `@aicoo/sharedos-conformance`
-11. `@aicoo/sharedos`
+3. `@aicoo/sharedos-precedent`
+4. `@aicoo/sharedos-os`
+5. `@aicoo/sharedos-runtime`
+6. `@aicoo/sharedos-client`
+7. `@aicoo/sharedos-http`
+8. `@aicoo/sharedos-testkit`
+9. `@aicoo/sharedos-mcp`
+10. `@aicoo/sharedos-adapters`
+11. `@aicoo/sharedos-conformance`
+12. `@aicoo/sharedos`
 
 The order is the one in `scripts/package-set.mjs`, and it is a dependency
 order: every package appears after everything it depends on, so a run that
@@ -86,8 +87,8 @@ into an issue, pull request, shell history, or chat.
 ```bash
 git switch main
 git pull --ff-only
-git tag -a v0.1.0-alpha.3 -m "SharedOS v0.1.0-alpha.3"
-SHAREDOS_RELEASE_CONFIRM=v0.1.0-alpha.3 pnpm release:publish
+git tag -a v0.1.0-alpha.4 -m "SharedOS v0.1.0-alpha.4"
+SHAREDOS_RELEASE_CONFIRM=v0.1.0-alpha.4 pnpm release:publish
 ```
 
 `release:publish` requires a clean worktree, the exact version tag on `HEAD`,
@@ -100,7 +101,7 @@ Pushing the tag runs `release.yml`, which repeats the verification and
 publishes whatever the tag's version is missing on the registry:
 
 ```bash
-git push origin v0.1.0-alpha.3
+git push origin v0.1.0-alpha.4
 ```
 
 With trusted publishing configured, pushing the tag is the whole release and

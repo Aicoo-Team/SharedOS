@@ -12,7 +12,7 @@ export { CODEX_PROTOCOL_ID, codexProtocol } from "./protocol.js";
 /** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
 export const CODEX_HARNESS_ID = "codex" satisfies McpHarnessId;
 
-export const CODEX_ADAPTER_VERSION = "0.1.0-alpha.3";
+export const CODEX_ADAPTER_VERSION = "0.1.0-alpha.4";
 
 export const CODEX_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   id: "sharedos.codex",
