@@ -6,13 +6,12 @@ version and are published together under npm's `next` dist-tag.
 SharedOS is a `0.x` prerelease: contracts may change between prereleases, and
 each entry calls out what a host has to update.
 
-## 0.1.0-alpha.3
+## 0.1.0-alpha.4
 
 ### Changed — breaking
 
 - **`tool.catalog.listed` no longer lists tool names.** Its `metadata` carried
-  `visibleTools`, and in this release's earlier shape `withheld`, one
-  `{ tool, cause }` per tool a listing did not return. Both are gone. The event
+  `visibleTools`, one name per tool the listing returned. It is gone. The event
   now records what the listing was computed from and what it came to, as
   identifiers and a count: `catalogHash`, the catalogue the caller was shown,
   computed exactly as `listPublishedTools` computes it so an execution's
@@ -23,116 +22,75 @@ each entry calls out what a host has to update.
   listing when at least one tool was withheld by an outage rather than by a
   decision, which the count alone could not say.
 
-  **A consumer reading `visibleTools` or `withheld` from audit rebuilds from the
-  identifiers instead.** The names a listing returned are what
+  **A consumer reading `visibleTools` from audit rebuilds from the identifiers
+  instead.** The names a listing returned are what
   `listPublishedTools` returned, and `catalogHash` says whether two listings
   returned the same ones; an attempted call on a withheld tool is still
   recorded on `tool.invoked` with its own `cause`. ADR 0023 records the shape.
 
-- **Optional fields were added to strict schemas, and the protocol version did
-  not move.** `AuthorizationDecision.requiredAuthority`,
-  `Escalation.requestedAuthority`, and `AuditEvent.requestedAuthority` are
-  optional and additive for anything that _writes_
-  them. Nothing in this repository's contracts is additive for a reader: the
-  schemas are `.strict()`, so a consumer built against an earlier release
-  rejects the unknown key rather than ignoring it. An older client parsing a
-  newer host's `ExecutionResult` fails on `escalation.requestedAuthority`; one
-  parsing an
-  `AuthorizationDecision` fails on `requiredAuthority`. Both surface as a
-  malformed-response error with nothing to explain it.
+- **`requiredCapability` on a denial is now `requiredAuthority`, and `Escalation.request`
+  is now `requestedAuthority`.** 0.1.0-alpha.3 shipped `AuthorizationDecision.requiredCapability`,
+  the `CapabilityRequest` a `no_matching_grant` denial describes, and `Escalation.request`, with
+  `EscalationOptions.request` carrying one into `SharedOSKernel.recordEscalation`. Both are
+  renamed: one concept in two roles, each ending in the noun this repository uses for what grants
+  confer — and not `requiredCapability`, because `ToolDefinition.requiredCapability` already means
+  something else in the same package, a bare `CapabilityRequirement` rather than the fuller
+  `CapabilityRequest` these carry, and it is the field a reader meets first. What they carry is
+  unchanged: a description and not an offer, minted from the trusted context, granting nothing.
+  `AuditEvent` gains a top-level `requestedAuthority`, written on `escalation.requested` when the
+  escalation named a capability. ADR 0019 is rewritten around the new names.
 
-  **Upgrade every consumer of these types in step with the host that writes
-  them.** `ProtocolVersionSchema` is deliberately left at `"1"`: it is one
-  literal shared by `ExecutionRequest`, `ExecutionEvent`, `ExecutionResult`,
-  `MessageEnvelope`, and `RuntimeManifest`, so moving it would re-stamp four
-  objects that did not change in order to signal one optional field on a fifth.
-  A reader re-pinning because `MessageEnvelope` said `"2"` would find nothing
-  about a message had changed. The bump rides the next release with its own
-  reason to move; `docs/open-items.md` holds the row, and ADR 0019 records the
-  decision and the failure mode it accepts.
+  **A host reading `requiredCapability` off a decision, or passing `request` to
+  `recordEscalation`, renames both; a consumer of audit events admits `requestedAuthority`.** The
+  schemas are `.strict()`, so nothing here is additive for a reader: a consumer built against
+  alpha.3 rejects `requestedAuthority` on an `ExecutionResult`'s escalation as an unknown key
+  rather than ignoring it, and surfaces a malformed-response error with nothing to explain it.
+  Upgrade every consumer of these types in step with the host that writes them.
+  `ProtocolVersionSchema` is deliberately left at `"1"`: it is one literal shared by
+  `ExecutionRequest`, `ExecutionEvent`, `ExecutionResult`, `MessageEnvelope`, and
+  `RuntimeManifest`, so moving it would re-stamp four objects that did not change in order to
+  signal one renamed field on a fifth. The bump rides the next release with its own reason to
+  move; `docs/open-items.md` holds the row, and ADR 0019 records the decision and the failure mode
+  it accepts.
 
-- **The conformance manifest's reference column is renamed.** `EMBEDDED_COLUMN`
-  is now `ADVERSARY_COLUMN`, with id `adversary-embedded` and label `Adversary`
-  in place of `sharedos-embedded` / `Standard`. The column is unchanged — the
-  scripted `HostileRuntime` in the seat, owning its outcome — and the rename
-  says what it is: the reference adversary, not the harness SharedOS ships.
-  `Standard` now names that harness (below). Code importing the old constant
-  changes the name; a reader of `kernel-conformance.json`, or of a live
-  artifact, matches the column on its new id.
+- **A host ceiling is consulted per candidate grant, before consumption, and its audit flag
+  moves to `authority.resolved`.** 0.1.0-alpha.3 installed `hostCeiling` on
+  `CapabilityAuthorizer` and consulted it once, on the decision a grant had already produced: a
+  policy refusal had spent a `maxUses` grant by the time it was refused, and a second grant that
+  policy would have allowed was never tried. It is now consulted per matching grant and before
+  consumption. A refused call does not spend the grant, a refusal ends that grant's candidacy
+  rather than the decision, and when nothing is left the reason follows a fixed precedence: the
+  fail-closed delegation denials, then `host_policy_denied`, then `grant_exhausted`, then
+  `no_matching_grant`. Discovery consults the same port, so a catalogue is never offered on
+  authority invocation would refuse.
 
-- **`InMemoryGrantChainResolver` and `UnavailableGrantChainResolver` in
-  `@aicoo/sharedos-testkit` are renamed** `InMemoryDelegationChainResolver` and
-  `UnavailableDelegationChainResolver`, after the port they implement. The port
-  was renamed from `GrantChainResolver` to `DelegationChainResolver` in this
-  release and the fixtures kept the old name. Rename the import; nothing else
-  changes.
+  `narrow` gains a fourth argument, `policy`, the value the turn's `PolicySource` loaded (under
+  _Added_); a ceiling written against alpha.3 still compiles and runs, since the parameter is
+  trailing and admits `undefined`. A throw from `narrow` is reported to the new
+  `CapabilityAuthorizerOptions.onProviderError` as `kind: "policy"` — the same shape
+  `SharedOSKernelOptions.onProviderError` takes, declared on the authorizer because that is where
+  the ceiling is installed; pass one function to both. A malformed return — an `async narrow`, or
+  a branch that falls off the end, both yield something whose `allowed` is `undefined` — fails
+  closed as `host_policy_unavailable` rather than being read as a denial, and a refusal whose
+  `reasonCode` is anything but `host_policy_denied` has it replaced, so a ceiling cannot re-emit
+  the misattribution the separate code ends.
 
-- **Messages now have one policy-bound reason: `purpose`.** The redundant
-  `MessageEnvelope.intent` field is removed, and strict parsing rejects legacy
-  envelopes that still carry it. Outbound sends execute as their sender; an
-  inbound turn executes as its recipient and resolves that recipient's
-  execution, file, and tool authority independently. See ADR 0015.
-
-- **`grants` is removed from `AccessContext`.** Authority now enters SharedOS
-  through one required port, `GrantSource`, which `SharedOSKernel` calls once per
-  turn. A context names who is asking, on whose authority, and for what; it
-  carries no authority of its own, so nothing a caller assembles can become one.
-  Resolved authority is a `ResolvedAuthority` wrapper that is deliberately not
-  assignable to `AccessContext`, so grants cannot reach a provider, tool handler,
-  transport, or runtime by accident. A source that throws, returns unparseable
-  material, or answers outside the context's scope denies with
-  `authority_unavailable` before anything else runs.
-- **A derived grant names one parent, not a chain.** `CapabilityGrant.delegation`
-  (`{ parentGrantId, depth, chain }`) is replaced by a single optional
-  `parentGrantId`, and ancestors are re-resolved from the issuing store at every
-  decision through a `DelegationChainResolver`. An embedded chain is provenance
-  the presenter controls; re-resolution is what makes revocation mean something.
-  `CapabilityAuthorizer({ chainResolver })` is now `{ delegationResolver }`, and
-  `GrantChainResolver` is now `DelegationChainResolver` with `resolve` in place
-  of `get`.
-- **Delegation reason codes are renamed**, from `delegation_chain_unavailable` /
-  `delegation_chain_broken` to `delegation_chain_unverified` /
-  `delegation_chain_invalid`. The distinction is now load-bearing: unverified
-  means SharedOS could not establish the chain, and is grouped with
-  `authority_unavailable` and `usage_store_unavailable` in
-  `INFRASTRUCTURE_DENIAL_REASONS`, whose audit records carry `failClosed: true`.
-  Exclude them before computing any denial rate.
-- **A bounded (`maxUses`) parent is refused at both boundaries**, as
-  `bounded_parent_not_delegable`. Usage counters are per grant, so comparing a
-  child's ceiling against its parent's reads as attenuation without bounding
-  total consumption. `deriveGrant` already refused; the chain check now agrees.
-- **`tool_not_available` is gone.** The execution envelope and the kernel emit
-  one code for one refusal, `tool_unavailable`; which boundary refused is
-  `OperationRecord.source`. An owner-crossing tool requirement is now `denied`
-  with `invalid_request` rather than `failed` with `invalid_tool_requirement`.
-- **`ExecutionResult` gains `escalated`**, a third terminal state carrying an
-  `Escalation` and no `error`. Code that switched on `succeeded` / `failed` /
-  `denied` / `cancelled` and reached for `.error` no longer compiles.
-- `deriveGrant` drops two refusal reasons that could never fire
-  (`namespace_mismatch`, `issuer_is_not_the_holder`) and adds three that can:
-  `issued_before_parent`, `id_collides_with_parent`, and — on the issuing side
-  only — a refusal to pin an owner onto an unowned parent capability.
-
-- **Repository tooling, not a published contract.** `pnpm conformance:live` is
-  now `pnpm conformance:native`, over `scripts/native-conformance.mjs`, writing
-  `native-conformance.json` and reading `SHAREDOS_NATIVE_CONFIG`. "Live" named
-  when a run happened rather than what it measured, and both live scripts drive
-  a real model over a real wire; what separates this one is that each vendor CLI
-  runs on its own stdio protocol, natively, where `mcp-conformance.mjs` reaches
-  the same binaries through MCP. The column ids `codex-live` and `model-live`
-  deliberately do not move: they are keys in artifacts already on disk.
-
-  The script also takes `--config` and `--harness`, as the MCP one already did.
-  Declaring `credentialVariables` makes the pinned key required, so a harness
-  that cannot reach it reports unavailable instead of authenticating somewhere
-  else -- on the operator's own subscription, say, producing a column that
-  cannot be published beside the others.
+  **Audit record:** the `hostCeiling: true` key alpha.3 wrote on `authorization.checked` when a
+  ceiling was installed is gone from that event. Every `authority.resolved` event now carries
+  `hostCeiling: "installed" | "absent"` and `hostPolicy: "loaded" | "unavailable" | "absent"`,
+  where `absent` means no source is installed. A host comparing either event's `metadata` with
+  `toEqual` sees the change. The manifest gains a `host-policy-denied` row, passing in all six
+  columns: a grant covers the frozen path, so the refusal that would otherwise read
+  `no_matching_grant` reads `host_policy_denied`, and the same ceiling withholds every mutation
+  tool from discovery, so the row also asserts that what the ceiling refuses at invocation is
+  absent from the catalogue. Both boundaries appear in one cell, `envelope` and `kernel`.
 
 ### Changed — behaviour
 
 - **`authorization.checked` now carries the decision's own metadata.** Until now
   the event's `metadata` held only the two keys the kernel states, `consumed` and
-  `failClosed`. It now also carries whatever the decision carried: a
+  `failClosed`, and alpha.3's `hostCeiling` flag, which moves to `authority.resolved` (under
+  _Changed — breaking_). It now also carries whatever the decision carried: a
   `HostCeiling`'s own keys, and — new to audit, though it has existed on the
   decision all along — the `delegation` detail (`code` and `grantId`) behind a
   `delegation_chain_invalid` or `delegation_chain_unverified` denial. Hosts
@@ -155,11 +113,6 @@ each entry calls out what a host has to update.
   so an auditor reading one alone overstates what a turn could do and has to read
   the decisions as well.
 
-- The conformance judge is at version 3: a failed turn that the envelope ended
-  names `envelope` as its enforcement point, read from the `turn.failed`
-  event's new `source`, where version 2 named a boundary for denied turns
-  only. Statuses are graded as before; a manifest or artifact produced under
-  version 2 differs from one under version 3 in that field alone.
 - The conformance judge is at version 4: a row graded on how the turn ended
   is no longer failed when the delegate never asked for that ending. For an
   `escalate` terminal the ending is elected by the delegate, and a live column
@@ -175,6 +128,7 @@ each entry calls out what a host has to update.
   cell moves, and the case-set and world-set hashes are unchanged; artifacts
   graded under version 3 and version 4 are not cell-comparable on the
   escalation row.
+
 - **The ask is announced before the turn ends on it.** Every path that honours
   `sharedos.escalate` ends the turn without forwarding the call, so a working
   ask left no operation in the record -- and neither would one the envelope
@@ -187,46 +141,6 @@ each entry calls out what a host has to update.
   a row grade harder, never credit a pass. Distinct from the kernel's
   `escalation.requested` audit event, which records an escalation the envelope
   honoured. Additive; a host reading `runtime.event` sees one more type.
-- `turn.failed` carries `source` beside `code`: `envelope` when the envelope
-  refused the runtime's outcome or the runtime threw, `runtime` when the
-  envelope relayed a failure the runtime reported as its own. Additive; the
-  event's shape is otherwise unchanged.
-- A failure an adapter ends its turn with — `harness_*`, `model_*` — now carries
-  `retryable: false` on the driver path as it already did on the MCP path; the
-  field was simply absent before. Nothing an adapter fails on is retryable:
-  asking the harness or the model again asks the same thing.
-
-- `codexMcpConfig` now emits `default_tools_approval_mode = "approve"` beside
-  `required = true`, the setting the conformance launch has always passed as an
-  override. Codex's default `auto` mode asks a human before any tool that is not
-  read-only; a run with no human then refuses every write inside Codex with the
-  kernel never consulted. The approval is scoped to the SharedOS server, and what
-  secures a call is the kernel re-authorizing it. A host that wants Codex's own
-  prompt as well can override the key.
-- The four MCP harness specs derive their server name from
-  `SHAREDOS_MCP_SERVER_NAME` and, for Claude Code's `--allowedTools` and Codex's
-  `-c` overrides, from the connection's `name`, instead of the literal
-  `sharedos`; a spec given another `serverName` is now launched under it.
-- **A grant that expires while a turn is running is now refused inside that
-  turn**, at the next decision, rather than at the next turn. Revocation,
-  purpose withdrawal, `issuedAt`, and `notBefore` are unchanged: they are still
-  decided at the instant the turn's authority was resolved, and are still
-  observed by the next turn. The rule separating them is directional — the
-  operation's clock may only take authority away, never hand any back — so a
-  turn still carries the grant set it was admitted with and can never gain more
-  while it runs. An ancestor follows the same split. See ADR 0016.
-
-  Nothing about a turn's authority load changes: no store is re-read,
-  `cost.authorityLoads` stays at 1 per turn, and a decision an expiry refused
-  names the same authority snapshot hash as the decision before it. Hosts
-  issuing short-lived grants should expect them to stop working part-way through
-  a long turn, which is what they asked for; hosts relying on a turn outliving
-  its grants' validity windows must widen those windows.
-
-  `CapabilityAuthorizer.authorize` and `canDiscover` take the operation instant
-  as a new optional `now`, and `validateDelegationChain` takes the admission
-  instant as a new optional `admittedAt`. Both default to the previous
-  behaviour, so a host calling either directly is unaffected until it opts in.
 
 ### Added
 
@@ -351,64 +265,6 @@ each entry calls out what a host has to update.
   hooks; payloads, unchanged; and the parser detail behind
   `invalid_tool_arguments`, which quotes the value that failed.
 
-- **Host policy is a port the kernel calls, so its refusals are recorded.**
-  `CapabilityAuthorizer` accepts a `hostCeiling`: product or organization policy
-  consulted on a grant that would otherwise allow. Its refusal is
-  `host_policy_denied`, carrying the `grantId` it overrode — a bucket of its
-  own, separate from `no_matching_grant`, and not marked `failClosed`, because a
-  deliberate refusal is not an outage. Until now a host narrowed authority by
-  withholding the grant, which made the kernel record "nobody authorized this"
-  about a call a grant did authorize, so no deployment could answer how often
-  its own policy overrode a grant it issued (ADR 0020).
-
-  It may only narrow, and by construction rather than by rule. `narrow` takes
-  an `AllowedDecision` — the allow arm alone — and returns a
-  `HostCeilingVerdict`: that decision, or a `HostPolicyDenial` whose
-  `reasonCode` is fixed to `host_policy_denied`. A denial cannot be passed in
-  and a code cannot be authored, at the type level. At runtime it is never shown
-  a denial; an `allowed` result naming a grant it was not shown fails closed as
-  `host_policy_unavailable`, as does a throw, and as does a malformed return —
-  an `async narrow` or a branch that falls off the end both yield something whose
-  `allowed` is `undefined`, and reading that as a denial would file a broken port
-  as a deliberate refusal. A refusal's `reasonCode`, should a host outside
-  TypeScript return another, is replaced with `host_policy_denied` so a ceiling
-  cannot re-emit the very misattribution the separate code ends. Its `metadata` is preserved except for `consumed` and
-  `failClosed`, which the kernel states itself, and except for anything that is
-  not a JSON object, which is dropped whole.
-
-  A throw is reported to `CapabilityAuthorizerOptions.onProviderError` — the same
-  shape `SharedOSKernelOptions.onProviderError` takes, declared on the authorizer
-  because that is where the ceiling is installed and the kernel's hook cannot
-  reach it. Pass one function to both. Reports carry `kind: "policy"`, a new
-  `ProviderErrorKind` value.
-
-  Synchronous, deliberately: the signature structurally forbids a network call,
-  a database read, or a model call on the authorization path, which a timeout
-  would permit while punishing a slow machine. A host with a remote policy
-  service loads it into memory and refreshes it on its own schedule.
-
-  Consulted per matching grant and before consumption. A refused call does not
-  spend a `maxUses` grant, and a refusal ends that grant's candidacy rather than
-  the decision — two grants can cover one request and differ in ways policy
-  distinguishes. When nothing is left, the reason follows a fixed precedence:
-  the fail-closed delegation denials, then `host_policy_denied`, then
-  `grant_exhausted`, then `no_matching_grant`. Discovery consults the same port,
-  so a catalogue is never offered on authority invocation would refuse.
-
-  The manifest gains a row for it, passing in all six columns. A grant covers
-  the frozen path, so the refusal that would otherwise read `no_matching_grant`
-  reads `host_policy_denied` instead — and the same ceiling withholds every
-  mutation tool from discovery, so the row also asserts the agreement ADR 0016
-  requires: what the ceiling refuses at invocation is absent from the catalogue.
-  Both boundaries appear in one cell, `envelope` and `kernel`. The case-set and
-  world-set hashes move with it.
-
-  Every `authority.resolved` event now carries `hostCeiling: "installed"` or
-  `"absent"`. Without it an audit stream containing no policy denials cannot be
-  told apart from one produced by a deployment that has no policy port. It says a
-  ceiling exists, not that the `GrantSource` stopped filtering — a host can do
-  both, and audit cannot tell.
-
 - **The ceiling's policy can be loaded per turn, beside the grant set.**
   `SharedOSKernelOptions.policySource` installs a `PolicySource`, one
   asynchronous `load(context, signal)` the kernel calls once per turn, in flight
@@ -448,77 +304,6 @@ each entry calls out what a host has to update.
   that event's `metadata` with `toEqual` sees the new key. The `PolicySource`
   row leaves `docs/open-items.md`.
 
-- **A denial says which capability would have satisfied it, and an escalation
-  can carry that.** `AuthorizationDecision` gains an optional
-  `requiredAuthority: CapabilityRequest` on a `no_matching_grant` denial, and
-  `Escalation` gains an optional `requestedAuthority` that
-  `SharedOSKernel.recordEscalation` accepts through its options and records on
-  the `escalation.requested` audit event. A host running a consent workflow can
-  now name the capability an approval is about instead of reconstructing the
-  resource, action, owner, and purpose from a sentence a model wrote — the step
-  that mints real authority, and the one SharedOS could neither see nor test.
-  `CapabilityRequest` had existed since the first release with no port
-  (ADR 0019).
-
-  What `recordEscalation` records is minted, not copied. `requestedAuthority`
-  is read as the ask — capabilities, purpose, constraints, metadata — and
-  `id`, `namespaceId`, `requester`, `owner`, and `requestedAt` come from the
-  trusted context whatever the caller wrote, because a request the caller
-  authored would be a caller-chosen correlation for a decision the kernel made.
-  The `id` is derived from the ask, so `{ requestedAuthority:
-denial.requiredAuthority }` comes back under the identifier it went in with.
-  An ask the contract refuses throws a `TypeError`. `mintCapabilityRequest` is
-  exported from `@aicoo/sharedos-core` for a host assembling a consent request
-  of its own.
-
-  It grants nothing. No port accepts one as input, `allowed` stays `false`, and
-  a host that ignores both fields behaves exactly as before. The description is
-  built from what the caller already named — the request's resource and action,
-  and the context's requester, owner, namespace, purpose, and instant — so it
-  restates the request rather than revealing whether a path or a grant exists.
-  Its `id` is derived from those fields _other than_ the instant, rather than
-  being random, so one missing authority has one identifier however often and
-  whenever it is described.
-
-  Deliberately narrow, and the boundaries are the contract. It is absent from
-  `grant_exhausted`, from the infrastructure denials, and from a policy denial,
-  because for none of them is issuing a grant the remedy. It is absent from
-  discovery: `canDiscover` is asked about a tool's declared capability, which
-  ADR 0016 allows to be broader than any call, so a description there would ask
-  for more authority than an operation needed.
-
-  The names are `requiredAuthority` on a decision and `requestedAuthority` on an
-  escalation and its audit event: one concept in two roles, both ending in the
-  noun this repository uses for what grants confer. Not `requiredCapability` —
-  `ToolDefinition.requiredCapability` already means something else in the same
-  package, a bare `CapabilityRequirement` rather than the fuller
-  `CapabilityRequest` these carry, and it is the field a reader meets first.
-
-  `AuditEvent` gains a top-level `requestedAuthority` field, which is a contract change to
-  the audit vocabulary: hosts persist these events under closed schemas of their
-  own. It appears on `escalation.requested` and only when the escalation named a
-  capability.
-
-- **The native harness has a committed conformance column.** `Standard`
-  (`MODEL_SCRIPTED_COLUMN`, id `model-scripted`) is `ModelRuntime` —
-  `StandardRuntime` with the model driver in the seat and the
-  permission-filtered catalogue rendered into the model's tool-call shape —
-  with a transcript where the provider would be. `movesToModelTranscript`
-  writes each declared attempt as a model reply in the wire alphabet a provider
-  accepts, and the driver's real codec, argument parsing, escalation
-  recognition, and step accounting read it back; what is left out is the model.
-  It is graded under `modelLimits`, as the live model column is, so the shipped
-  loop carries a driver's limits in a committed cell rather than standing in
-  for the kernel it runs on: the inspection row and the ungranted-escalation
-  row read `not applicable`, and the step-ceiling row `pass (driver)`. The
-  manifest goes from five columns to six; every hash is unchanged, because
-  neither the case set nor the world set moved.
-- `TranscriptModelClient` in `@aicoo/sharedos-adapters`: a `ModelClient` that
-  replays a supplied `ModelTranscript` through the real `ModelDriver`, the
-  counterpart of `TranscriptTransport` for a vendor harness. A spent transcript
-  fails the turn `model_call_failed` rather than completing on the recording's
-  behalf, so a script that ends too early is a visible result and not a model
-  choosing to stop.
 - **`SharedOSKernelOptions.onProviderError`**, so a contained throw is
   diagnosable. A provider, tool handler, transport, or router that throws is
   answered with a fixed reason code -- `tool_execution_failed`,
@@ -577,6 +362,7 @@ denial.requiredAuthority }` comes back under the identifier it went in with.
   reach it. Note that `runtime_failed` is also what a throw from
   `openTurnAuthority`, `admitTurn`, or `listTools` ends a turn as, so read the
   stack rather than the code to tell a plugin's failure from a host port's.
+
 - A conformance row for a runtime plugin that throws out of its turn. The
   envelope contains the throw rather than letting it reach the host: the turn
   ends `failed` with `runtime_failed`, the `turn.failed` event names the
@@ -587,6 +373,212 @@ denial.requiredAuthority }` comes back under the identifier it went in with.
   purpose, so the row runs on the adversary column and every driven, MCP, and
   model column declares it `not applicable`. The case-set and world-set hashes
   move.
+
+- **A `repo` resource namespace, beside `files`.** `createRepoTools` and
+  `registerStandardOsTools(kernel, { files, repo })` publish `repo.status`,
+  `repo.diff`, `repo.log`, `repo.stage`, and `repo.commit` over a host-owned Git
+  provider. A `files` grant over a working tree grants nothing under `repo` and
+  the reverse, so committing is authority a host issues rather than a
+  consequence of file-write authority. See ADR 0024.
+
+## 0.1.0-alpha.3
+
+### Changed — breaking
+
+- **The conformance manifest's reference column is renamed.** `EMBEDDED_COLUMN`
+  is now `ADVERSARY_COLUMN`, with id `adversary-embedded` and label `Adversary`
+  in place of `sharedos-embedded` / `Standard`. The column is unchanged — the
+  scripted `HostileRuntime` in the seat, owning its outcome — and the rename
+  says what it is: the reference adversary, not the harness SharedOS ships.
+  `Standard` now names that harness (below). Code importing the old constant
+  changes the name; a reader of `kernel-conformance.json`, or of a live
+  artifact, matches the column on its new id.
+
+- **`InMemoryGrantChainResolver` and `UnavailableGrantChainResolver` in
+  `@aicoo/sharedos-testkit` are renamed** `InMemoryDelegationChainResolver` and
+  `UnavailableDelegationChainResolver`, after the port they implement. The port
+  was renamed from `GrantChainResolver` to `DelegationChainResolver` in this
+  release and the fixtures kept the old name. Rename the import; nothing else
+  changes.
+
+- **Messages now have one policy-bound reason: `purpose`.** The redundant
+  `MessageEnvelope.intent` field is removed, and strict parsing rejects legacy
+  envelopes that still carry it. Outbound sends execute as their sender; an
+  inbound turn executes as its recipient and resolves that recipient's
+  execution, file, and tool authority independently. See ADR 0015.
+
+- **`grants` is removed from `AccessContext`.** Authority now enters SharedOS
+  through one required port, `GrantSource`, which `SharedOSKernel` calls once per
+  turn. A context names who is asking, on whose authority, and for what; it
+  carries no authority of its own, so nothing a caller assembles can become one.
+  Resolved authority is a `ResolvedAuthority` wrapper that is deliberately not
+  assignable to `AccessContext`, so grants cannot reach a provider, tool handler,
+  transport, or runtime by accident. A source that throws, returns unparseable
+  material, or answers outside the context's scope denies with
+  `authority_unavailable` before anything else runs.
+- **A derived grant names one parent, not a chain.** `CapabilityGrant.delegation`
+  (`{ parentGrantId, depth, chain }`) is replaced by a single optional
+  `parentGrantId`, and ancestors are re-resolved from the issuing store at every
+  decision through a `DelegationChainResolver`. An embedded chain is provenance
+  the presenter controls; re-resolution is what makes revocation mean something.
+  `CapabilityAuthorizer({ chainResolver })` is now `{ delegationResolver }`, and
+  `GrantChainResolver` is now `DelegationChainResolver` with `resolve` in place
+  of `get`.
+- **Delegation reason codes are renamed**, from `delegation_chain_unavailable` /
+  `delegation_chain_broken` to `delegation_chain_unverified` /
+  `delegation_chain_invalid`. The distinction is now load-bearing: unverified
+  means SharedOS could not establish the chain, and is grouped with
+  `authority_unavailable` and `usage_store_unavailable` in
+  `INFRASTRUCTURE_DENIAL_REASONS`, whose audit records carry `failClosed: true`.
+  Exclude them before computing any denial rate.
+- **A bounded (`maxUses`) parent is refused at both boundaries**, as
+  `bounded_parent_not_delegable`. Usage counters are per grant, so comparing a
+  child's ceiling against its parent's reads as attenuation without bounding
+  total consumption. `deriveGrant` already refused; the chain check now agrees.
+- **`tool_not_available` is gone.** The execution envelope and the kernel emit
+  one code for one refusal, `tool_unavailable`; which boundary refused is
+  `OperationRecord.source`. An owner-crossing tool requirement is now `denied`
+  with `invalid_request` rather than `failed` with `invalid_tool_requirement`.
+- **`ExecutionResult` gains `escalated`**, a third terminal state carrying an
+  `Escalation` and no `error`. Code that switched on `succeeded` / `failed` /
+  `denied` / `cancelled` and reached for `.error` no longer compiles.
+- `deriveGrant` drops two refusal reasons that could never fire
+  (`namespace_mismatch`, `issuer_is_not_the_holder`) and adds three that can:
+  `issued_before_parent`, `id_collides_with_parent`, and — on the issuing side
+  only — a refusal to pin an owner onto an unowned parent capability.
+
+- **Repository tooling, not a published contract.** `pnpm conformance:live` is
+  now `pnpm conformance:native`, over `scripts/native-conformance.mjs`, writing
+  `native-conformance.json` and reading `SHAREDOS_NATIVE_CONFIG`. "Live" named
+  when a run happened rather than what it measured, and both live scripts drive
+  a real model over a real wire; what separates this one is that each vendor CLI
+  runs on its own stdio protocol, natively, where `mcp-conformance.mjs` reaches
+  the same binaries through MCP. The column ids `codex-live` and `model-live`
+  deliberately do not move: they are keys in artifacts already on disk.
+
+  The script also takes `--config` and `--harness`, as the MCP one already did.
+  Declaring `credentialVariables` makes the pinned key required, so a harness
+  that cannot reach it reports unavailable instead of authenticating somewhere
+  else -- on the operator's own subscription, say, producing a column that
+  cannot be published beside the others.
+
+### Changed — behaviour
+
+- The conformance judge is at version 3: a failed turn that the envelope ended
+  names `envelope` as its enforcement point, read from the `turn.failed`
+  event's new `source`, where version 2 named a boundary for denied turns
+  only. Statuses are graded as before; a manifest or artifact produced under
+  version 2 differs from one under version 3 in that field alone.
+- `turn.failed` carries `source` beside `code`: `envelope` when the envelope
+  refused the runtime's outcome or the runtime threw, `runtime` when the
+  envelope relayed a failure the runtime reported as its own. Additive; the
+  event's shape is otherwise unchanged.
+- A failure an adapter ends its turn with — `harness_*`, `model_*` — now carries
+  `retryable: false` on the driver path as it already did on the MCP path; the
+  field was simply absent before. Nothing an adapter fails on is retryable:
+  asking the harness or the model again asks the same thing.
+
+- `codexMcpConfig` now emits `default_tools_approval_mode = "approve"` beside
+  `required = true`, the setting the conformance launch has always passed as an
+  override. Codex's default `auto` mode asks a human before any tool that is not
+  read-only; a run with no human then refuses every write inside Codex with the
+  kernel never consulted. The approval is scoped to the SharedOS server, and what
+  secures a call is the kernel re-authorizing it. A host that wants Codex's own
+  prompt as well can override the key.
+- The four MCP harness specs derive their server name from
+  `SHAREDOS_MCP_SERVER_NAME` and, for Claude Code's `--allowedTools` and Codex's
+  `-c` overrides, from the connection's `name`, instead of the literal
+  `sharedos`; a spec given another `serverName` is now launched under it.
+- **A grant that expires while a turn is running is now refused inside that
+  turn**, at the next decision, rather than at the next turn. Revocation,
+  purpose withdrawal, `issuedAt`, and `notBefore` are unchanged: they are still
+  decided at the instant the turn's authority was resolved, and are still
+  observed by the next turn. The rule separating them is directional — the
+  operation's clock may only take authority away, never hand any back — so a
+  turn still carries the grant set it was admitted with and can never gain more
+  while it runs. An ancestor follows the same split. See ADR 0016.
+
+  Nothing about a turn's authority load changes: no store is re-read,
+  `cost.authorityLoads` stays at 1 per turn, and a decision an expiry refused
+  names the same authority snapshot hash as the decision before it. Hosts
+  issuing short-lived grants should expect them to stop working part-way through
+  a long turn, which is what they asked for; hosts relying on a turn outliving
+  its grants' validity windows must widen those windows.
+
+  `CapabilityAuthorizer.authorize` and `canDiscover` take the operation instant
+  as a new optional `now`, and `validateDelegationChain` takes the admission
+  instant as a new optional `admittedAt`. Both default to the previous
+  behaviour, so a host calling either directly is unaffected until it opts in.
+
+### Added
+
+- **The host ceiling is a port the kernel calls, not a convention hosts apply
+  upstream.** `CapabilityAuthorizer({ hostCeiling })` installs a `HostCeiling`,
+  one synchronous `narrow(decision, request, context)` consulted only after a
+  grant has matched, on an already-`allowed` decision, on both the `authorize`
+  and the `canDiscover` path -- so a tool a ceiling refuses at invocation is
+  also absent from the catalogue. Step 10 of the permission model's
+  authorization algorithm is now true of the code. It cannot widen anything: a
+  denial is never shown to it, its allow arm is pinned to the decision it was
+  handed, and an allow that does not carry the same `matchedGrantId` is a
+  malfunction that fails closed. Its refusal is `host_policy_denied`, a policy
+  denial in its own bucket -- not infrastructure, and not merged with
+  `no_matching_grant`, which says no such authority exists. A throw is
+  `host_policy_unavailable`, which joins `INFRASTRUCTURE_DENIAL_REASONS`. The
+  synchronous signature is the enforcement of "deterministic and cheap": a
+  synchronous return cannot await a network or model call. It is optional, and a
+  kernel constructed without one behaves exactly as it did, down to the audit
+  record; when one is installed the kernel records that, so a deployment that
+  denies everything through policy is legible rather than reading as one where
+  nobody was granted anything. ADR 0020's `PolicySource` is not implemented and
+  carries a row in `docs/open-items.md`. Hosts applying a ceiling today keep the
+  same logic and move the call site; withholding a grant instead still produces
+  `no_matching_grant` and still misattributes the refusal.
+- **A denial for want of a grant names the authority that would have satisfied
+  it.** `AuthorizationDecision` gains an optional `requiredCapability`, a
+  `CapabilityRequest` populated only on `no_matching_grant`, where the
+  authorizer already holds every field: the resource and action the caller
+  named, and the owner, namespace, purpose and instant from its own access
+  context. It is a description and not an offer -- it grants nothing, no port
+  accepts one back as authority, `allowed` stays `false`, and a host that
+  ignores it behaves exactly as before. It is never built from anything a
+  provider knows, so the same description is produced for a path that is absent
+  and for one the actor cannot reach; it is not an existence oracle. The other
+  denials deliberately carry none. See ADR 0019.
+- **An escalation may carry the capability it is asking for.** `Escalation`
+  gains an optional `request` and `SharedOSKernel.recordEscalation` accepts one
+  through `EscalationOptions.request`, typically the `requiredCapability` a
+  denial just described; the `escalation.requested` audit event records it, so a
+  reviewer receives a capability instead of a sentence to reconstruct one from.
+  `id`, `namespaceId`, `requester`, `owner`, and `requestedAt` are minted from
+  the trusted context and overwrite whatever the caller supplied -- a request
+  the caller authored would be a caller-chosen correlation for a decision the
+  kernel made -- and `id` is derived from those fields rather than generated, so
+  one ask describes itself the same way twice. Nothing else changes: there is no
+  third decision value, no consent port, no queue, and no resumption;
+  `Escalation.status` is still always `pending` and nothing inside SharedOS
+  advances it. `CapabilityRequest` stops being a type with no port and leaves
+  `docs/open-items.md`.
+- **The native harness has a committed conformance column.** `Standard`
+  (`MODEL_SCRIPTED_COLUMN`, id `model-scripted`) is `ModelRuntime` —
+  `StandardRuntime` with the model driver in the seat and the
+  permission-filtered catalogue rendered into the model's tool-call shape —
+  with a transcript where the provider would be. `movesToModelTranscript`
+  writes each declared attempt as a model reply in the wire alphabet a provider
+  accepts, and the driver's real codec, argument parsing, escalation
+  recognition, and step accounting read it back; what is left out is the model.
+  It is graded under `modelLimits`, as the live model column is, so the shipped
+  loop carries a driver's limits in a committed cell rather than standing in
+  for the kernel it runs on: the inspection row and the ungranted-escalation
+  row read `not applicable`, and the step-ceiling row `pass (driver)`. The
+  manifest goes from five columns to six; every hash is unchanged, because
+  neither the case set nor the world set moved.
+- `TranscriptModelClient` in `@aicoo/sharedos-adapters`: a `ModelClient` that
+  replays a supplied `ModelTranscript` through the real `ModelDriver`, the
+  counterpart of `TranscriptTransport` for a vendor harness. A spent transcript
+  fails the turn `model_call_failed` rather than completing on the recording's
+  behalf, so a script that ends too early is a visible result and not a model
+  choosing to stop.
 - A conformance row for an escalation the turn was not granted. A runtime that
   ends its turn with `escalate` while the catalogue does not offer the
   affordance is refused by the envelope: the turn fails `tool_unavailable`,
@@ -739,12 +731,6 @@ denial.requiredAuthority }` comes back under the identifier it went in with.
 - `pnpm release:promote-latest <version>` moves the `latest` dist-tag across the
   whole package set in one command, refusing to act unless every package has
   published that version.
-- **A `repo` resource namespace, beside `files`.** `createRepoTools` and
-  `registerStandardOsTools(kernel, { files, repo })` publish `repo.status`,
-  `repo.diff`, `repo.log`, `repo.stage`, and `repo.commit` over a host-owned Git
-  provider. A `files` grant over a working tree grants nothing under `repo` and
-  the reverse, so committing is authority a host issues rather than a
-  consequence of file-write authority. See ADR 0024.
 
 ### Removed
 

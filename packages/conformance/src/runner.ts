@@ -41,7 +41,7 @@ import { createConformanceWorld, type ConformanceWorld } from "./world.js";
  * record that names the wrong build is evidence attributed to code that never
  * ran.
  */
-export const SHAREDOS_VERSION = "0.1.0-alpha.3";
+export const SHAREDOS_VERSION = "0.1.0-alpha.4";
 
 /**
  * One cell of the manifest.

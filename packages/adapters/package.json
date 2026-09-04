@@ -1,6 +1,6 @@
 {
   "name": "@aicoo/sharedos-adapters",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "description": "Codex, Claude Code, DeepSeek Harness, and Pi runtime adapters for SharedOS",
   "license": "Apache-2.0",
   "keywords": [

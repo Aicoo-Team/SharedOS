@@ -12,7 +12,7 @@ export { DEEPSEEK_PROTOCOL_ID, deepseekProtocol } from "./protocol.js";
 /** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
 export const DEEPSEEK_HARNESS_ID = "deepseek" satisfies McpHarnessId;
 
-export const DEEPSEEK_ADAPTER_VERSION = "0.1.0-alpha.3";
+export const DEEPSEEK_ADAPTER_VERSION = "0.1.0-alpha.4";
 
 export const DEEPSEEK_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   id: "sharedos.deepseek",
