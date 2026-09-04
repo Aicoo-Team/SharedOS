@@ -230,6 +230,17 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **The native harness's translation cost is measured, and its layer can be
+  read on its own.** `pnpm bench` now prices the model driver's
+  parse-and-translate per call beside the four vendor adapters', through the
+  driver's own functions rather than a copy: `decodeChatCompletion`,
+  `encodeModelMessage`, `readModelToolCall` and `modelToolResultMessage` are
+  exported from `@aicoo/sharedos-adapters`, extracted unchanged from
+  `ModelClient` and `ModelDriver`, and `ToolNameCodec` accepts any `{ name }`
+  list. `docs/conformance/systems-cost.md` gains a `model.chat-completions`
+  row, 123 µs per call on the reference machine, where it read _not measured_.
+  Additive for a host; nothing the driver does on a turn changed.
+
 - **A turn is told where it may operate, and a remote caller can ask.**
   `SharedOSKernel.reach(context)` answers the turn's own reach: the namespace,
   path, actions and scope of every place some grant would authorize something at
