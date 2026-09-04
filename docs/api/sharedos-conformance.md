@@ -225,7 +225,7 @@ anything. A cell is one of six statuses, and a pass may carry one marker:
 | `pass`            | Every declared attempt met its expectation and every control attempt succeeded                                                                                                                                                                                                       |
 | `pass (driver)`   | A pass whose attack the column's driver had to issue on the occupant's behalf — the step-ceiling row, where only a driver can name a step past it                                                                                                                                    |
 | `fail`            | An attempt did not meet its expectation                                                                                                                                                                                                                                              |
-| `not exercised`   | An attack was never issued, or a control did not succeed — the fixture, not the kernel, decided the outcome — so the row is evidence of nothing; never a pass                                                                                                                        |
+| `not exercised`   | An attack was never issued, a control did not succeed, or the ending a turn-graded row is about was never asked for — the fixture or the delegate, not the kernel, decided the outcome — so the row is evidence of nothing; never a pass                                             |
 | `not applicable`  | The runtime structurally cannot make the attempt: declared by the move when no runtime can, and by the column when this one cannot. It does not sink the case, which keeps a row a comparison across columns rather than a penalty on the columns that cannot reach every part of it |
 | `not implemented` | SharedOS does not do this; the row is declared so the gap is stated, and is never run                                                                                                                                                                                                |
 | `out of scope`    | The attempt is issued and its evidence kept, but SharedOS declares no guarantee over it on this path, so the verdict is withheld: a narrowed claim rather than a result, never averaged into pass or fail. It exists so a guarantee cannot be narrowed by deleting a row             |
@@ -767,7 +767,7 @@ Defined in: [conformance/src/world.ts:1230](https://github.com/Aicoo-Team/Shared
 
 ### HostileRuntime
 
-Defined in: [conformance/src/adversary.ts:324](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L324)
+Defined in: [conformance/src/adversary.ts:325](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L325)
 
 A scripted adversary that occupies the delegate seat and nothing else.
 
@@ -805,7 +805,7 @@ One instance may serve concurrent turns; all per-turn state lives in `run`.
 
 > **new HostileRuntime**(`moves`, `options?`): [`HostileRuntime`](#hostileruntime)
 
-Defined in: [conformance/src/adversary.ts:329](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L329)
+Defined in: [conformance/src/adversary.ts:330](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L330)
 
 ###### Parameters
 
@@ -822,7 +822,7 @@ Defined in: [conformance/src/adversary.ts:329](https://github.com/Aicoo-Team/Sha
 
 | Property                                  | Modifier   | Type                                             | Defined in                                                                                                                      |
 | ----------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | [conformance/src/adversary.ts:325](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L325) |
+| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | [conformance/src/adversary.ts:326](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L326) |
 | `manifest.id`                             | `public`   | `string`                                         | contracts/dist/runtime.d.ts:9                                                                                                   |
 | `manifest.metadata?`                      | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | contracts/dist/runtime.d.ts:12                                                                                                  |
 | `manifest.protocolVersion`                | `public`   | `"1"`                                            | contracts/dist/runtime.d.ts:11                                                                                                  |
@@ -836,7 +836,7 @@ Defined in: [conformance/src/adversary.ts:329](https://github.com/Aicoo-Team/Sha
 
 > **get** **moves**(): readonly `object`[]
 
-Defined in: [conformance/src/adversary.ts:355](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L355)
+Defined in: [conformance/src/adversary.ts:356](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L356)
 
 ###### Returns
 
@@ -848,7 +848,7 @@ readonly `object`[]
 
 > **run**(`turn`, `host`, `signal`): `Promise`\<\{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}\>
 
-Defined in: [conformance/src/adversary.ts:359](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L359)
+Defined in: [conformance/src/adversary.ts:360](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L360)
 
 ###### Parameters
 
@@ -1053,20 +1053,20 @@ Defined in: [conformance/src/assemble.ts:37](https://github.com/Aicoo-Team/Share
 
 ### AttemptOutcome
 
-Defined in: [conformance/src/judge.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L36)
+Defined in: [conformance/src/judge.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L41)
 
 #### Properties
 
 | Property                                       | Modifier   | Type                                      | Defined in                                                                                                            |
 | ---------------------------------------------- | ---------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-attempted"></a> `attempted`    | `readonly` | `boolean`                                 | [conformance/src/judge.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L40) |
-| <a id="property-attemptid"></a> `attemptId`    | `readonly` | `string`                                  | [conformance/src/judge.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L37) |
-| <a id="property-detail"></a> `detail?`         | `readonly` | `string`                                  | [conformance/src/judge.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L44) |
-| <a id="property-observed"></a> `observed?`     | `readonly` | `"succeeded"` \| `"denied"` \| `"failed"` | [conformance/src/judge.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L41) |
-| <a id="property-reasoncode"></a> `reasonCode?` | `readonly` | `string`                                  | [conformance/src/judge.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L42) |
-| <a id="property-refusedby"></a> `refusedBy?`   | `readonly` | [`EnforcementPoint`](#enforcementpoint)   | [conformance/src/judge.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L43) |
-| <a id="property-role"></a> `role`              | `readonly` | `"attack"` \| `"probe"` \| `"control"`    | [conformance/src/judge.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L38) |
-| <a id="property-status"></a> `status`          | `readonly` | [`ConformanceStatus`](#conformancestatus) | [conformance/src/judge.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L39) |
+| <a id="property-attempted"></a> `attempted`    | `readonly` | `boolean`                                 | [conformance/src/judge.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L45) |
+| <a id="property-attemptid"></a> `attemptId`    | `readonly` | `string`                                  | [conformance/src/judge.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L42) |
+| <a id="property-detail"></a> `detail?`         | `readonly` | `string`                                  | [conformance/src/judge.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L49) |
+| <a id="property-observed"></a> `observed?`     | `readonly` | `"succeeded"` \| `"denied"` \| `"failed"` | [conformance/src/judge.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L46) |
+| <a id="property-reasoncode"></a> `reasonCode?` | `readonly` | `string`                                  | [conformance/src/judge.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L47) |
+| <a id="property-refusedby"></a> `refusedBy?`   | `readonly` | [`EnforcementPoint`](#enforcementpoint)   | [conformance/src/judge.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L48) |
+| <a id="property-role"></a> `role`              | `readonly` | `"attack"` \| `"probe"` \| `"control"`    | [conformance/src/judge.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L43) |
+| <a id="property-status"></a> `status`          | `readonly` | [`ConformanceStatus`](#conformancestatus) | [conformance/src/judge.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L44) |
 
 ---
 
@@ -1196,14 +1196,14 @@ subtraction rather than a category for whatever was not measured.
 
 ### CaseEvidence
 
-Defined in: [conformance/src/judge.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L70)
+Defined in: [conformance/src/judge.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L75)
 
 #### Properties
 
 | Property                                                                      | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Defined in                                                                                                                |
 | ----------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-receipts"></a> `receipts`                                     | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/judge.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L71)     |
-| <a id="property-record"></a> `record`                                         | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/judge.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L72)     |
+| <a id="property-receipts"></a> `receipts`                                     | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/judge.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L76)     |
+| <a id="property-record"></a> `record`                                         | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/judge.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L77)     |
 | `record.authority`                                                            | `public`   | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:256](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L256) |
 | `record.authority.actor`                                                      | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L107) |
 | `record.authority.namespaceId`                                                | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [conformance/src/record.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/record.ts#L109) |
@@ -1308,22 +1308,22 @@ Defined in: [conformance/src/judge.ts:70](https://github.com/Aicoo-Team/SharedOS
 
 ### CaseJudgement
 
-Defined in: [conformance/src/judge.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L47)
+Defined in: [conformance/src/judge.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L52)
 
 #### Properties
 
 | Property                                          | Modifier   | Type                                               | Description                                                                                                                                                                                                                                                                                                                                 | Defined in                                                                                                            |
 | ------------------------------------------------- | ---------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-attempted-1"></a> `attempted`     | `readonly` | `number`                                           | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L54) |
-| <a id="property-attempts"></a> `attempts`         | `readonly` | readonly [`AttemptOutcome`](#attemptoutcome)[]     | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L49) |
-| <a id="property-declared"></a> `declared`         | `readonly` | `number`                                           | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L53) |
-| <a id="property-detail-1"></a> `detail?`          | `readonly` | `string`                                           | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L67) |
-| <a id="property-driverissued"></a> `driverIssued` | `readonly` | readonly `string`[]                                | Adversarial attempts the column issued on the row's behalf, in declared order. Empty for almost every cell. Where it is not, the pass is still a pass -- the kernel refused what it was asked to refuse -- but the asking was the driver's, not the seat occupant's, and a reader comparing columns needs to see that rather than infer it. | [conformance/src/judge.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L66) |
-| <a id="property-reasoncodes"></a> `reasonCodes`   | `readonly` | readonly `string`[]                                | Refusal codes observed across the move, sorted and de-duplicated.                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L51) |
-| <a id="property-recordgaps"></a> `recordGaps`     | `readonly` | readonly `string`[]                                | Field paths of the record's required gaps; empty when the record is usable.                                                                                                                                                                                                                                                                 | [conformance/src/judge.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L57) |
-| <a id="property-recordusable"></a> `recordUsable` | `readonly` | `boolean`                                          | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L55) |
-| <a id="property-refusedby-1"></a> `refusedBy`     | `readonly` | readonly [`EnforcementPoint`](#enforcementpoint)[] | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L52) |
-| <a id="property-status-1"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus)          | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L48) |
+| <a id="property-attempted-1"></a> `attempted`     | `readonly` | `number`                                           | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L59) |
+| <a id="property-attempts"></a> `attempts`         | `readonly` | readonly [`AttemptOutcome`](#attemptoutcome)[]     | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L54) |
+| <a id="property-declared"></a> `declared`         | `readonly` | `number`                                           | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L58) |
+| <a id="property-detail-1"></a> `detail?`          | `readonly` | `string`                                           | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L72) |
+| <a id="property-driverissued"></a> `driverIssued` | `readonly` | readonly `string`[]                                | Adversarial attempts the column issued on the row's behalf, in declared order. Empty for almost every cell. Where it is not, the pass is still a pass -- the kernel refused what it was asked to refuse -- but the asking was the driver's, not the seat occupant's, and a reader comparing columns needs to see that rather than infer it. | [conformance/src/judge.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L71) |
+| <a id="property-reasoncodes"></a> `reasonCodes`   | `readonly` | readonly `string`[]                                | Refusal codes observed across the move, sorted and de-duplicated.                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L56) |
+| <a id="property-recordgaps"></a> `recordGaps`     | `readonly` | readonly `string`[]                                | Field paths of the record's required gaps; empty when the record is usable.                                                                                                                                                                                                                                                                 | [conformance/src/judge.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L62) |
+| <a id="property-recordusable"></a> `recordUsable` | `readonly` | `boolean`                                          | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L60) |
+| <a id="property-refusedby-1"></a> `refusedBy`     | `readonly` | readonly [`EnforcementPoint`](#enforcementpoint)[] | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L57) |
+| <a id="property-status-1"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus)          | -                                                                                                                                                                                                                                                                                                                                           | [conformance/src/judge.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L53) |
 
 ---
 
@@ -1492,12 +1492,12 @@ both would overstate the result.
 | <a id="property-conditions"></a> `conditions`          | `readonly` | readonly [`ConformanceCondition`](#conformancecondition)[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | -                                                                                                                                                                                                                                                                                                      | [conformance/src/suite.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L64)           |
 | <a id="property-id-1"></a> `id`                        | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | -                                                                                                                                                                                                                                                                                                      | [conformance/src/suite.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L62)           |
 | <a id="property-move"></a> `move`                      | `readonly` | `object`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | -                                                                                                                                                                                                                                                                                                      | [conformance/src/suite.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L63)           |
-| `move.attempts`                                        | `public`   | `object`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | -                                                                                                                                                                                                                                                                                                      | [conformance/src/adversary.ts:229](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L229) |
-| `move.expectedOutcome`                                 | `public`   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | The kernel outcome the manifest expects, verbatim.                                                                                                                                                                                                                                                     | [conformance/src/adversary.ts:228](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L228) |
-| `move.id`                                              | `public`   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | -                                                                                                                                                                                                                                                                                                      | [conformance/src/adversary.ts:223](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L223) |
-| `move.invariant`                                       | `public`   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | The invariant under attack, verbatim from the conformance manifest.                                                                                                                                                                                                                                    | [conformance/src/adversary.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L226) |
-| `move.kind`                                            | `public`   | `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"expired_grant"` \| `"replayed_grant"` \| `"revoked_mid_turn"` \| `"expired_mid_turn"` \| `"namespace_crossing"` \| `"bounded_grant_exhausted"` \| `"usage_store_unavailable"` \| `"authority_unavailable"` \| `"tool_ceiling_escape"` \| `"invalid_tool_result"` \| `"budget_exceeded"` \| `"grant_material_unreachable"` \| `"over_broad_delegation"` \| `"rollback_unavailable"` \| `"rollback_out_of_scope"` \| `"broker_ungranted"` \| `"broker_out_of_scope"` \| `"escalation_recorded"` \| `"escalation_refused"` \| `"runtime_crashed"` \| `"host_policy_denied"` \| `"route_lease_revoked"` \| `"record_completeness"` \| `"typed_governed_views"` \| `"replay_freshness"` | -                                                                                                                                                                                                                                                                                                      | [conformance/src/adversary.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L224) |
-| `move.terminal?`                                       | `public`   | \{ `reason`: `string`; `type`: `"escalate"`; \} \| \{ `reason`: `string`; `type`: `"crash"`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Set when the row is about how the turn terminates rather than a call in it.                                                                                                                                                                                                                            | [conformance/src/adversary.ts:231](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L231) |
+| `move.attempts`                                        | `public`   | `object`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | -                                                                                                                                                                                                                                                                                                      | [conformance/src/adversary.ts:230](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L230) |
+| `move.expectedOutcome`                                 | `public`   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | The kernel outcome the manifest expects, verbatim.                                                                                                                                                                                                                                                     | [conformance/src/adversary.ts:229](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L229) |
+| `move.id`                                              | `public`   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | -                                                                                                                                                                                                                                                                                                      | [conformance/src/adversary.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L224) |
+| `move.invariant`                                       | `public`   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | The invariant under attack, verbatim from the conformance manifest.                                                                                                                                                                                                                                    | [conformance/src/adversary.ts:227](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L227) |
+| `move.kind`                                            | `public`   | `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"expired_grant"` \| `"replayed_grant"` \| `"revoked_mid_turn"` \| `"expired_mid_turn"` \| `"namespace_crossing"` \| `"bounded_grant_exhausted"` \| `"usage_store_unavailable"` \| `"authority_unavailable"` \| `"tool_ceiling_escape"` \| `"invalid_tool_result"` \| `"budget_exceeded"` \| `"grant_material_unreachable"` \| `"over_broad_delegation"` \| `"rollback_unavailable"` \| `"rollback_out_of_scope"` \| `"broker_ungranted"` \| `"broker_out_of_scope"` \| `"escalation_recorded"` \| `"escalation_refused"` \| `"runtime_crashed"` \| `"host_policy_denied"` \| `"route_lease_revoked"` \| `"record_completeness"` \| `"typed_governed_views"` \| `"replay_freshness"` | -                                                                                                                                                                                                                                                                                                      | [conformance/src/adversary.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L225) |
+| `move.terminal?`                                       | `public`   | \{ `reason`: `string`; `type`: `"escalate"`; \} \| \{ `reason`: `string`; `type`: `"crash"`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Set when the row is about how the turn terminates rather than a call in it.                                                                                                                                                                                                                            | [conformance/src/adversary.ts:232](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L232) |
 | <a id="property-notimplemented"></a> `notImplemented?` | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Why this row is declared but not built. Set on a row SharedOS does not implement. The row is reported, never run, and never a pass. Omitting it instead would make the matrix describe a narrower system as a more conformant one, which is the failure mode a conformance manifest exists to prevent. | [conformance/src/suite.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/suite.ts#L73)           |
 
 ---
@@ -1978,29 +1978,29 @@ Defined in: [conformance/src/hashing.ts:12](https://github.com/Aicoo-Team/Shared
 
 ### HostileRuntimeOptions
 
-Defined in: [conformance/src/adversary.ts:286](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L286)
+Defined in: [conformance/src/adversary.ts:287](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L287)
 
 #### Properties
 
 | Property                                     | Modifier   | Type     | Description                                                                                                                                                                                                          | Defined in                                                                                                                      |
 | -------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-runtimeid"></a> `runtimeId?` | `readonly` | `string` | -                                                                                                                                                                                                                    | [conformance/src/adversary.ts:287](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L287) |
-| <a id="property-turn-1"></a> `turn?`         | `readonly` | `number` | Which turn of the case this instance is running. Attempts declared for any other turn are left alone: they belong to a different turn against the same world, and issuing them here would collapse the two into one. | [conformance/src/adversary.ts:294](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L294) |
-| <a id="property-version-1"></a> `version?`   | `readonly` | `string` | -                                                                                                                                                                                                                    | [conformance/src/adversary.ts:288](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L288) |
+| <a id="property-runtimeid"></a> `runtimeId?` | `readonly` | `string` | -                                                                                                                                                                                                                    | [conformance/src/adversary.ts:288](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L288) |
+| <a id="property-turn-1"></a> `turn?`         | `readonly` | `number` | Which turn of the case this instance is running. Attempts declared for any other turn are left alone: they belong to a different turn against the same world, and issuing them here would collapse the two into one. | [conformance/src/adversary.ts:295](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L295) |
+| <a id="property-version-1"></a> `version?`   | `readonly` | `string` | -                                                                                                                                                                                                                    | [conformance/src/adversary.ts:289](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L289) |
 
 ---
 
 ### JudgeCaseOptions
 
-Defined in: [conformance/src/judge.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L91)
+Defined in: [conformance/src/judge.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L96)
 
 #### Properties
 
 | Property                                             | Modifier   | Type                                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Defined in                                                                                                              |
 | ---------------------------------------------------- | ---------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-driverissued-3"></a> `driverIssued?` | `readonly` | `ReadonlyMap`\<`string`, `string`\>   | Attempt ids the column issued on the row's behalf rather than by choice.                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/judge.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L109) |
-| <a id="property-expectturn-1"></a> `expectTurn?`     | `readonly` | [`TurnExpectation`](#turnexpectation) | Set when the row is graded on how the turn ends as well as on its attempts: refused before it runs, or ended by escalation.                                                                                                                                                                                                                                                                                                                                                      | [conformance/src/judge.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L96)   |
-| <a id="property-unreachable-1"></a> `unreachable?`   | `readonly` | `ReadonlyMap`\<`string`, `string`\>   | Attempt ids the runtime under test structurally cannot issue, mapped to why. Declared by the column rather than by the move, because the same attempt is reachable from one runtime and not from another. It is what keeps a row a comparison across columns instead of a penalty for the columns that cannot reach every part of it, and it is only ever a claim about the runtime -- an attempt declared unreachable that a receipt shows was issued is graded on the receipt. | [conformance/src/judge.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L107) |
+| <a id="property-driverissued-3"></a> `driverIssued?` | `readonly` | `ReadonlyMap`\<`string`, `string`\>   | Attempt ids the column issued on the row's behalf rather than by choice.                                                                                                                                                                                                                                                                                                                                                                                                         | [conformance/src/judge.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L114) |
+| <a id="property-expectturn-1"></a> `expectTurn?`     | `readonly` | [`TurnExpectation`](#turnexpectation) | Set when the row is graded on how the turn ends as well as on its attempts: refused before it runs, or ended by escalation.                                                                                                                                                                                                                                                                                                                                                      | [conformance/src/judge.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L101) |
+| <a id="property-unreachable-1"></a> `unreachable?`   | `readonly` | `ReadonlyMap`\<`string`, `string`\>   | Attempt ids the runtime under test structurally cannot issue, mapped to why. Declared by the column rather than by the move, because the same attempt is reachable from one runtime and not from another. It is what keeps a row a comparison across columns instead of a penalty for the columns that cannot reach every part of it, and it is only ever a claim about the runtime -- an attempt declared unreachable that a receipt shows was issued is graded on the receipt. | [conformance/src/judge.ts:112](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L112) |
 
 ---
 
@@ -2390,7 +2390,7 @@ Defined in: [conformance/src/bench.ts:765](https://github.com/Aicoo-Team/SharedO
 
 ### TurnExpectation
 
-Defined in: [conformance/src/judge.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L86)
+Defined in: [conformance/src/judge.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L91)
 
 The terminal outcome the turn itself must have.
 
@@ -2406,8 +2406,8 @@ issued, and the row is about the ending on top of them.
 
 | Property                                         | Modifier   | Type                                                                        | Defined in                                                                                                            |
 | ------------------------------------------------ | ---------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-reasoncode-1"></a> `reasonCode?` | `readonly` | `string`                                                                    | [conformance/src/judge.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L88) |
-| <a id="property-status-5"></a> `status`          | `readonly` | `"succeeded"` \| `"denied"` \| `"failed"` \| `"cancelled"` \| `"escalated"` | [conformance/src/judge.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L87) |
+| <a id="property-reasoncode-1"></a> `reasonCode?` | `readonly` | `string`                                                                    | [conformance/src/judge.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L93) |
+| <a id="property-status-5"></a> `status`          | `readonly` | `"succeeded"` \| `"denied"` \| `"failed"` \| `"cancelled"` \| `"escalated"` | [conformance/src/judge.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L92) |
 
 ---
 
@@ -2545,7 +2545,7 @@ punctuation between them.
 
 > **AdversarialTurnReport** = `z.infer`\<_typeof_ [`AdversarialTurnReportSchema`](#adversarialturnreportschema)>\>
 
-Defined in: [conformance/src/adversary.ts:284](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L284)
+Defined in: [conformance/src/adversary.ts:285](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L285)
 
 ---
 
@@ -2553,7 +2553,7 @@ Defined in: [conformance/src/adversary.ts:284](https://github.com/Aicoo-Team/Sha
 
 > **AttackAttempt** = `z.infer`\<_typeof_ [`AttackAttemptSchema`](#attackattemptschema)>\>
 
-Defined in: [conformance/src/adversary.ts:187](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L187)
+Defined in: [conformance/src/adversary.ts:188](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L188)
 
 ---
 
@@ -2561,7 +2561,7 @@ Defined in: [conformance/src/adversary.ts:187](https://github.com/Aicoo-Team/Sha
 
 > **AttackMove** = `z.infer`\<_typeof_ [`AttackMoveSchema`](#attackmoveschema)>\>
 
-Defined in: [conformance/src/adversary.ts:234](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L234)
+Defined in: [conformance/src/adversary.ts:235](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L235)
 
 ---
 
@@ -2569,7 +2569,7 @@ Defined in: [conformance/src/adversary.ts:234](https://github.com/Aicoo-Team/Sha
 
 > **AttackMoveKind** = `z.infer`\<_typeof_ [`AttackMoveKindSchema`](#attackmovekindschema)>\>
 
-Defined in: [conformance/src/adversary.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L68)
+Defined in: [conformance/src/adversary.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L69)
 
 ---
 
@@ -2577,7 +2577,7 @@ Defined in: [conformance/src/adversary.ts:68](https://github.com/Aicoo-Team/Shar
 
 > **AttackTerminal** = `z.infer`\<_typeof_ [`AttackTerminalSchema`](#attackterminalschema)>\>
 
-Defined in: [conformance/src/adversary.ts:219](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L219)
+Defined in: [conformance/src/adversary.ts:220](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L220)
 
 ---
 
@@ -2585,7 +2585,7 @@ Defined in: [conformance/src/adversary.ts:219](https://github.com/Aicoo-Team/Sha
 
 > **AttemptExpectation** = `z.infer`\<_typeof_ [`AttemptExpectationSchema`](#attemptexpectationschema)>\>
 
-Defined in: [conformance/src/adversary.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L98)
+Defined in: [conformance/src/adversary.ts:99](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L99)
 
 ---
 
@@ -2593,7 +2593,7 @@ Defined in: [conformance/src/adversary.ts:98](https://github.com/Aicoo-Team/Shar
 
 > **AttemptInspection** = `z.infer`\<_typeof_ [`AttemptInspectionSchema`](#attemptinspectionschema)>\>
 
-Defined in: [conformance/src/adversary.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L128)
+Defined in: [conformance/src/adversary.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L129)
 
 ---
 
@@ -2601,7 +2601,7 @@ Defined in: [conformance/src/adversary.ts:128](https://github.com/Aicoo-Team/Sha
 
 > **AttemptReceipt** = `z.infer`\<_typeof_ [`AttemptReceiptSchema`](#attemptreceiptschema)>\>
 
-Defined in: [conformance/src/adversary.ts:270](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L270)
+Defined in: [conformance/src/adversary.ts:271](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L271)
 
 ---
 
@@ -2609,7 +2609,7 @@ Defined in: [conformance/src/adversary.ts:270](https://github.com/Aicoo-Team/Sha
 
 > **AttemptRole** = `z.infer`\<_typeof_ [`AttemptRoleSchema`](#attemptroleschema)>\>
 
-Defined in: [conformance/src/adversary.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L78)
+Defined in: [conformance/src/adversary.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L79)
 
 ---
 
@@ -2617,7 +2617,7 @@ Defined in: [conformance/src/adversary.ts:78](https://github.com/Aicoo-Team/Shar
 
 > **AttemptStatus** = `z.infer`\<_typeof_ [`AttemptStatusSchema`](#attemptstatusschema)>\>
 
-Defined in: [conformance/src/adversary.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L81)
+Defined in: [conformance/src/adversary.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L82)
 
 ---
 
@@ -2649,11 +2649,12 @@ Defined in: [conformance/src/completeness.ts:3](https://github.com/Aicoo-Team/Sh
 
 > **ConformanceStatus** = `"pass"` \| `"fail"` \| `"not_exercised"` \| `"not_applicable"` \| `"not_implemented"` \| `"out_of_scope"`
 
-Defined in: [conformance/src/judge.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L30)
+Defined in: [conformance/src/judge.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L35)
 
 What a manifest cell may report.
 
-`not_exercised` is not a softer failure. It says the attempt never reached
+`not_exercised` is not a softer failure. It says the attempt -- or, on a row
+graded on how the turn ended, the ask for that ending -- never reached
 SharedOS, so the cell is evidence of nothing, and it must never be counted as
 a pass. `not_applicable` says the attempt cannot exist in this deployment,
 which is a claim about the design rather than about a run.
@@ -2694,7 +2695,7 @@ Defined in: [conformance/src/record.ts:136](https://github.com/Aicoo-Team/Shared
 
 > **EnforcementPoint** = `"kernel"` \| `"envelope"`
 
-Defined in: [conformance/src/judge.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L34)
+Defined in: [conformance/src/judge.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L39)
 
 The boundary that refused an attempt.
 
@@ -2728,7 +2729,7 @@ Defined in: [conformance/src/record.ts:43](https://github.com/Aicoo-Team/SharedO
 
 > **ForgedGrant** = `z.infer`\<_typeof_ [`ForgedGrantSchema`](#forgedgrantschema)>\>
 
-Defined in: [conformance/src/adversary.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L116)
+Defined in: [conformance/src/adversary.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L117)
 
 ---
 
@@ -2776,7 +2777,7 @@ Defined in: [conformance/src/record.ts:82](https://github.com/Aicoo-Team/SharedO
 
 > `const` **AdversarialTurnReportSchema**: `ZodObject`\<\{ `executionId`: `ZodString`; `moveIds`: `ZodArray`\<`ZodString`, `"many"`>\>; `receipts`: `ZodArray`\<`ZodObject`\<\{ `argumentKeys`: `ZodArray`\<`ZodString`, `"many"`>\>; `attempted`: `ZodBoolean`; `attemptId`: `ZodString`; `callId`: `ZodOptional`\<`ZodString`>\>; `detail`: `ZodOptional`\<`ZodString`>\>; `expect`: `ZodObject`\<\{ `reasonCodes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; `statuses`: `ZodArray`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}\>; `forgedGrantId`: `ZodOptional`\<`ZodString`>\>; `kind`: `ZodEnum`\<\[`"forged_grant"`, `"hidden_tool"`, `"read_to_mutation"`, `"expired_grant"`, `"replayed_grant"`, `"revoked_mid_turn"`, `"expired_mid_turn"`, `"namespace_crossing"`, `"bounded_grant_exhausted"`, `"usage_store_unavailable"`, `"authority_unavailable"`\]\>; `moveId`: `ZodString`; `observed`: `ZodOptional`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>\>; `reasonCode`: `ZodOptional`\<`ZodString`>\>; `role`: `ZodEnum`\<\[`"attack"`, `"probe"`, `"control"`\]\>; `tool`: `ZodOptional`\<`ZodString`>\>; `turn`: `ZodOptional`\<`ZodNumber`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `argumentKeys`: `string`[]; `attempted`: `boolean`; `attemptId`: `string`; `callId?`: `string`; `detail?`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forgedGrantId?`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"expired_grant"` \| `"replayed_grant"` \| `"revoked_mid_turn"` \| `"expired_mid_turn"` \| `"namespace_crossing"` \| `"bounded_grant_exhausted"` \| `"usage_store_unavailable"` \| `"authority_unavailable"` \| `"tool_ceiling_escape"` \| `"invalid_tool_result"` \| `"budget_exceeded"` \| `"grant_material_unreachable"` \| `"over_broad_delegation"` \| `"rollback_unavailable"` \| `"rollback_out_of_scope"` \| `"broker_ungranted"` \| `"broker_out_of_scope"` \| `"escalation_recorded"` \| `"escalation_refused"` \| `"runtime_crashed"` \| `"host_policy_denied"` \| `"route_lease_revoked"` \| `"record_completeness"` \| `"typed_governed_views"` \| `"replay_freshness"`; `moveId`: `string`; `observed?`: `"succeeded"` \| `"denied"` \| `"failed"`; `reasonCode?`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `turn?`: `number`; \}, \{ `argumentKeys`: `string`[]; `attempted`: `boolean`; `attemptId`: `string`; `callId?`: `string`; `detail?`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forgedGrantId?`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"expired_grant"` \| `"replayed_grant"` \| `"revoked_mid_turn"` \| `"expired_mid_turn"` \| `"namespace_crossing"` \| `"bounded_grant_exhausted"` \| `"usage_store_unavailable"` \| `"authority_unavailable"` \| `"tool_ceiling_escape"` \| `"invalid_tool_result"` \| `"budget_exceeded"` \| `"grant_material_unreachable"` \| `"over_broad_delegation"` \| `"rollback_unavailable"` \| `"rollback_out_of_scope"` \| `"broker_ungranted"` \| `"broker_out_of_scope"` \| `"escalation_recorded"` \| `"escalation_refused"` \| `"runtime_crashed"` \| `"host_policy_denied"` \| `"route_lease_revoked"` \| `"record_completeness"` \| `"typed_governed_views"` \| `"replay_freshness"`; `moveId`: `string`; `observed?`: `"succeeded"` \| `"denied"` \| `"failed"`; `reasonCode?`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `turn?`: `number`; \}\>, `"many"`>\>; `runtimeId`: `ZodString`; `traceId`: `ZodString`; `version`: `ZodLiteral`\<`"1"`>\>; `visibleTools`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \}, \{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \}\>
 
-Defined in: [conformance/src/adversary.ts:272](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L272)
+Defined in: [conformance/src/adversary.ts:273](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L273)
 
 ---
 
@@ -2809,7 +2810,7 @@ does with it on the way.
 
 > `const` **ADVERSARY\_METADATA\_KEY**: `"conformance"` = `"conformance"`
 
-Defined in: [conformance/src/adversary.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L33)
+Defined in: [conformance/src/adversary.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L34)
 
 The metadata key the terminal report is returned under.
 
@@ -2827,7 +2828,7 @@ Defined in: [conformance/src/world.ts:112](https://github.com/Aicoo-Team/SharedO
 
 > `const` **ATTACK\_MOVE\_KINDS**: readonly \[`"forged_grant"`, `"hidden_tool"`, `"read_to_mutation"`, `"expired_grant"`, `"replayed_grant"`, `"revoked_mid_turn"`, `"expired_mid_turn"`, `"namespace_crossing"`, `"bounded_grant_exhausted"`, `"usage_store_unavailable"`, `"authority_unavailable"`, `"tool_ceiling_escape"`, `"invalid_tool_result"`, `"budget_exceeded"`, `"grant_material_unreachable"`, `"over_broad_delegation"`, `"rollback_unavailable"`, `"rollback_out_of_scope"`, `"broker_ungranted"`, `"broker_out_of_scope"`, `"escalation_recorded"`, `"escalation_refused"`, `"runtime_crashed"`, `"host_policy_denied"`, `"route_lease_revoked"`, `"record_completeness"`, `"typed_governed_views"`, `"replay_freshness"`\]
 
-Defined in: [conformance/src/adversary.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L36)
+Defined in: [conformance/src/adversary.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L37)
 
 One adversarial row of the kernel conformance manifest.
 
@@ -2837,7 +2838,7 @@ One adversarial row of the kernel conformance manifest.
 
 > `const` **AttackAttemptSchema**: `ZodEffects`\<`ZodObject`\<\{ `description`: `ZodString`; `expect`: `ZodObject`\<\{ `reasonCodes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; `statuses`: `ZodArray`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}\>; `forge`: `ZodOptional`\<`ZodObject`\<\{ `capabilities`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `resource`: `ZodObject`\<\{ `namespace`: ...; `owner`: ...; `path`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: ...; `owner?`: ...; `path`: ...; \}, \{ `namespace`: ...; `owner?`: ...; `path`: ...; \}\>; `scope`: `ZodEnum`\<\[..., ...\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `embedAs`: `ZodString`; `grantId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}, \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}\>\>; `id`: `ZodString`; `inspect`: `ZodOptional`\<`ZodEnum`\<\[`"grant_material"`\]\>\>; `overBudget`: `ZodOptional`\<`ZodBoolean`>\>; `role`: `ZodEnum`\<\[`"attack"`, `"probe"`, `"control"`\]\>; `tool`: `ZodOptional`\<`ZodString`>\>; `toolArguments`: `ZodOptional`\<`ZodType`\<[`JsonObject`](sharedos-contracts.md#jsonobject), `ZodTypeDef`, [`JsonObject`](sharedos-contracts.md#jsonobject)>>\>\>; `turn`: `ZodOptional`\<`ZodNumber`>\>; `uncatalogued`: `ZodOptional`\<`ZodString`>\>; `unreachable`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `description`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forge?`: \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}; `id`: `string`; `inspect?`: `"grant_material"`; `overBudget?`: `boolean`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `toolArguments?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `turn?`: `number`; `uncatalogued?`: `string`; `unreachable?`: `string`; \}, \{ `description`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forge?`: \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}; `id`: `string`; `inspect?`: `"grant_material"`; `overBudget?`: `boolean`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `toolArguments?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `turn?`: `number`; `uncatalogued?`: `string`; `unreachable?`: `string`; \}\>, \{ `description`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forge?`: \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}; `id`: `string`; `inspect?`: `"grant_material"`; `overBudget?`: `boolean`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `toolArguments?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `turn?`: `number`; `uncatalogued?`: `string`; `unreachable?`: `string`; \}, \{ `description`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forge?`: \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}; `id`: `string`; `inspect?`: `"grant_material"`; `overBudget?`: `boolean`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `toolArguments?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `turn?`: `number`; `uncatalogued?`: `string`; `unreachable?`: `string`; \}\>
 
-Defined in: [conformance/src/adversary.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L130)
+Defined in: [conformance/src/adversary.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L131)
 
 ---
 
@@ -2845,7 +2846,7 @@ Defined in: [conformance/src/adversary.ts:130](https://github.com/Aicoo-Team/Sha
 
 > `const` **AttackMoveKindSchema**: `ZodEnum`\<\[`"forged_grant"`, `"hidden_tool"`, `"read_to_mutation"`, `"expired_grant"`, `"replayed_grant"`, `"revoked_mid_turn"`, `"expired_mid_turn"`, `"namespace_crossing"`, `"bounded_grant_exhausted"`, `"usage_store_unavailable"`, `"authority_unavailable"`\]\>
 
-Defined in: [conformance/src/adversary.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L67)
+Defined in: [conformance/src/adversary.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L68)
 
 ---
 
@@ -2853,7 +2854,7 @@ Defined in: [conformance/src/adversary.ts:67](https://github.com/Aicoo-Team/Shar
 
 > `const` **AttackMoveSchema**: `ZodObject`\<\{ `attempts`: `ZodArray`\<`ZodEffects`\<`ZodObject`\<\{ `description`: `ZodString`; `expect`: `ZodObject`\<\{ `reasonCodes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; `statuses`: `ZodArray`\<`ZodEnum`\<\[..., ..., ...\]\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}\>; `forge`: `ZodOptional`\<`ZodObject`\<\{ `capabilities`: `ZodArray`\<`ZodObject`\<..., ..., ..., ..., ...\>, `"many"`>\>; `embedAs`: `ZodString`; `grantId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}, \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}\>\>; `id`: `ZodString`; `inspect`: `ZodOptional`\<`ZodEnum`\<\[`"grant_material"`\]\>\>; `overBudget`: `ZodOptional`\<`ZodBoolean`>\>; `role`: `ZodEnum`\<\[`"attack"`, `"probe"`, `"control"`\]\>; `tool`: `ZodOptional`\<`ZodString`>\>; `toolArguments`: `ZodOptional`\<`ZodType`\<[`JsonObject`](sharedos-contracts.md#jsonobject), `ZodTypeDef`, [`JsonObject`](sharedos-contracts.md#jsonobject)>>\>\>; `turn`: `ZodOptional`\<`ZodNumber`>\>; `uncatalogued`: `ZodOptional`\<`ZodString`>\>; `unreachable`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `description`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forge?`: \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}; `id`: `string`; `inspect?`: `"grant_material"`; `overBudget?`: `boolean`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `toolArguments?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `turn?`: `number`; `uncatalogued?`: `string`; `unreachable?`: `string`; \}, \{ `description`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forge?`: \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}; `id`: `string`; `inspect?`: `"grant_material"`; `overBudget?`: `boolean`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `toolArguments?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `turn?`: `number`; `uncatalogued?`: `string`; `unreachable?`: `string`; \}\>, \{ `description`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forge?`: \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}; `id`: `string`; `inspect?`: `"grant_material"`; `overBudget?`: `boolean`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `toolArguments?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `turn?`: `number`; `uncatalogued?`: `string`; `unreachable?`: `string`; \}, \{ `description`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forge?`: \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}; `id`: `string`; `inspect?`: `"grant_material"`; `overBudget?`: `boolean`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `toolArguments?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `turn?`: `number`; `uncatalogued?`: `string`; `unreachable?`: `string`; \}\>, `"many"`>\>; `expectedOutcome`: `ZodString`; `id`: `ZodString`; `invariant`: `ZodString`; `kind`: `ZodEnum`\<\[`"forged_grant"`, `"hidden_tool"`, `"read_to_mutation"`, `"expired_grant"`, `"replayed_grant"`, `"revoked_mid_turn"`, `"expired_mid_turn"`, `"namespace_crossing"`, `"bounded_grant_exhausted"`, `"usage_store_unavailable"`, `"authority_unavailable"`\]\>; `terminal`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"type"`, \[`ZodObject`\<\{ `reason`: `ZodString`; `type`: `ZodLiteral`\<`"escalate"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reason`: `string`; `type`: `"escalate"`; \}, \{ `reason`: `string`; `type`: `"escalate"`; \}\>, `ZodObject`\<\{ `reason`: `ZodString`; `type`: `ZodLiteral`\<`"crash"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reason`: `string`; `type`: `"crash"`; \}, \{ `reason`: `string`; `type`: `"crash"`; \}\>\]\>\>; \}, `"strict"`, `ZodTypeAny`, \{ `attempts`: `object`[]; `expectedOutcome`: `string`; `id`: `string`; `invariant`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"expired_grant"` \| `"replayed_grant"` \| `"revoked_mid_turn"` \| `"expired_mid_turn"` \| `"namespace_crossing"` \| `"bounded_grant_exhausted"` \| `"usage_store_unavailable"` \| `"authority_unavailable"` \| `"tool_ceiling_escape"` \| `"invalid_tool_result"` \| `"budget_exceeded"` \| `"grant_material_unreachable"` \| `"over_broad_delegation"` \| `"rollback_unavailable"` \| `"rollback_out_of_scope"` \| `"broker_ungranted"` \| `"broker_out_of_scope"` \| `"escalation_recorded"` \| `"escalation_refused"` \| `"runtime_crashed"` \| `"host_policy_denied"` \| `"route_lease_revoked"` \| `"record_completeness"` \| `"typed_governed_views"` \| `"replay_freshness"`; `terminal?`: \{ `reason`: `string`; `type`: `"escalate"`; \} \| \{ `reason`: `string`; `type`: `"crash"`; \}; \}, \{ `attempts`: `object`[]; `expectedOutcome`: `string`; `id`: `string`; `invariant`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"expired_grant"` \| `"replayed_grant"` \| `"revoked_mid_turn"` \| `"expired_mid_turn"` \| `"namespace_crossing"` \| `"bounded_grant_exhausted"` \| `"usage_store_unavailable"` \| `"authority_unavailable"` \| `"tool_ceiling_escape"` \| `"invalid_tool_result"` \| `"budget_exceeded"` \| `"grant_material_unreachable"` \| `"over_broad_delegation"` \| `"rollback_unavailable"` \| `"rollback_out_of_scope"` \| `"broker_ungranted"` \| `"broker_out_of_scope"` \| `"escalation_recorded"` \| `"escalation_refused"` \| `"runtime_crashed"` \| `"host_policy_denied"` \| `"route_lease_revoked"` \| `"record_completeness"` \| `"typed_governed_views"` \| `"replay_freshness"`; `terminal?`: \{ `reason`: `string`; `type`: `"escalate"`; \} \| \{ `reason`: `string`; `type`: `"crash"`; \}; \}\>
 
-Defined in: [conformance/src/adversary.ts:221](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L221)
+Defined in: [conformance/src/adversary.ts:222](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L222)
 
 ---
 
@@ -2861,7 +2862,7 @@ Defined in: [conformance/src/adversary.ts:221](https://github.com/Aicoo-Team/Sha
 
 > `const` **AttackTerminalSchema**: `ZodDiscriminatedUnion`\<`"type"`, \[`ZodObject`\<\{ `reason`: `ZodString`; `type`: `ZodLiteral`\<`"escalate"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reason`: `string`; `type`: `"escalate"`; \}, \{ `reason`: `string`; `type`: `"escalate"`; \}\>, `ZodObject`\<\{ `reason`: `ZodString`; `type`: `ZodLiteral`\<`"crash"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reason`: `string`; `type`: `"crash"`; \}, \{ `reason`: `string`; `type`: `"crash"`; \}\>\]\>
 
-Defined in: [conformance/src/adversary.ts:205](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L205)
+Defined in: [conformance/src/adversary.ts:206](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L206)
 
 How the turn ends, when the row is about the ending itself.
 
@@ -2884,7 +2885,7 @@ so the throw is as reviewable and as deterministic as every other attempt.
 
 > `const` **ATTEMPT\_EVENT\_TYPE**: `"conformance.attempt"` = `"conformance.attempt"`
 
-Defined in: [conformance/src/adversary.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L30)
+Defined in: [conformance/src/adversary.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L31)
 
 The runtime event every attempt is announced under.
 
@@ -2899,7 +2900,7 @@ into an indistinguishable pass.
 
 > `const` **AttemptExpectationSchema**: `ZodObject`\<\{ `reasonCodes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; `statuses`: `ZodArray`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}\>
 
-Defined in: [conformance/src/adversary.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L92)
+Defined in: [conformance/src/adversary.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L93)
 
 The outcomes that satisfy one attempt.
 
@@ -2915,7 +2916,7 @@ pretending they are the same event.
 
 > `const` **AttemptInspectionSchema**: `ZodEnum`\<\[`"grant_material"`\]\>
 
-Defined in: [conformance/src/adversary.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L127)
+Defined in: [conformance/src/adversary.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L128)
 
 A surface the attacker reads instead of calling a tool.
 
@@ -2931,7 +2932,7 @@ is the half the compiler checks.
 
 > `const` **AttemptReceiptSchema**: `ZodObject`\<\{ `argumentKeys`: `ZodArray`\<`ZodString`, `"many"`>\>; `attempted`: `ZodBoolean`; `attemptId`: `ZodString`; `callId`: `ZodOptional`\<`ZodString`>\>; `detail`: `ZodOptional`\<`ZodString`>\>; `expect`: `ZodObject`\<\{ `reasonCodes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; `statuses`: `ZodArray`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}\>; `forgedGrantId`: `ZodOptional`\<`ZodString`>\>; `kind`: `ZodEnum`\<\[`"forged_grant"`, `"hidden_tool"`, `"read_to_mutation"`, `"expired_grant"`, `"replayed_grant"`, `"revoked_mid_turn"`, `"expired_mid_turn"`, `"namespace_crossing"`, `"bounded_grant_exhausted"`, `"usage_store_unavailable"`, `"authority_unavailable"`\]\>; `moveId`: `ZodString`; `observed`: `ZodOptional`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>\>; `reasonCode`: `ZodOptional`\<`ZodString`>\>; `role`: `ZodEnum`\<\[`"attack"`, `"probe"`, `"control"`\]\>; `tool`: `ZodOptional`\<`ZodString`>\>; `turn`: `ZodOptional`\<`ZodNumber`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `argumentKeys`: `string`[]; `attempted`: `boolean`; `attemptId`: `string`; `callId?`: `string`; `detail?`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forgedGrantId?`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"expired_grant"` \| `"replayed_grant"` \| `"revoked_mid_turn"` \| `"expired_mid_turn"` \| `"namespace_crossing"` \| `"bounded_grant_exhausted"` \| `"usage_store_unavailable"` \| `"authority_unavailable"` \| `"tool_ceiling_escape"` \| `"invalid_tool_result"` \| `"budget_exceeded"` \| `"grant_material_unreachable"` \| `"over_broad_delegation"` \| `"rollback_unavailable"` \| `"rollback_out_of_scope"` \| `"broker_ungranted"` \| `"broker_out_of_scope"` \| `"escalation_recorded"` \| `"escalation_refused"` \| `"runtime_crashed"` \| `"host_policy_denied"` \| `"route_lease_revoked"` \| `"record_completeness"` \| `"typed_governed_views"` \| `"replay_freshness"`; `moveId`: `string`; `observed?`: `"succeeded"` \| `"denied"` \| `"failed"`; `reasonCode?`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `turn?`: `number`; \}, \{ `argumentKeys`: `string`[]; `attempted`: `boolean`; `attemptId`: `string`; `callId?`: `string`; `detail?`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `forgedGrantId?`: `string`; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"expired_grant"` \| `"replayed_grant"` \| `"revoked_mid_turn"` \| `"expired_mid_turn"` \| `"namespace_crossing"` \| `"bounded_grant_exhausted"` \| `"usage_store_unavailable"` \| `"authority_unavailable"` \| `"tool_ceiling_escape"` \| `"invalid_tool_result"` \| `"budget_exceeded"` \| `"grant_material_unreachable"` \| `"over_broad_delegation"` \| `"rollback_unavailable"` \| `"rollback_out_of_scope"` \| `"broker_ungranted"` \| `"broker_out_of_scope"` \| `"escalation_recorded"` \| `"escalation_refused"` \| `"runtime_crashed"` \| `"host_policy_denied"` \| `"route_lease_revoked"` \| `"record_completeness"` \| `"typed_governed_views"` \| `"replay_freshness"`; `moveId`: `string`; `observed?`: `"succeeded"` \| `"denied"` \| `"failed"`; `reasonCode?`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `turn?`: `number`; \}\>
 
-Defined in: [conformance/src/adversary.ts:249](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L249)
+Defined in: [conformance/src/adversary.ts:250](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L250)
 
 What one declared attempt actually did.
 
@@ -2946,7 +2947,7 @@ appears in the trace".
 
 > `const` **AttemptRoleSchema**: `ZodEnum`\<\[`"attack"`, `"probe"`, `"control"`\]\>
 
-Defined in: [conformance/src/adversary.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L77)
+Defined in: [conformance/src/adversary.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L78)
 
 What one attempt contributes to its move.
 
@@ -2960,7 +2961,7 @@ fixture reports as a clean pass on every adversarial row.
 
 > `const` **AttemptStatusSchema**: `ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>
 
-Defined in: [conformance/src/adversary.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L80)
+Defined in: [conformance/src/adversary.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L81)
 
 ---
 
@@ -3438,7 +3439,7 @@ Defined in: [conformance/src/world.ts:85](https://github.com/Aicoo-Team/SharedOS
 
 > `const` **ForgedGrantSchema**: `ZodObject`\<\{ `capabilities`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `embedAs`: `ZodString`; `grantId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}, \{ `capabilities`: `object`[]; `embedAs`: `string`; `grantId`: `string`; \}\>
 
-Defined in: [conformance/src/adversary.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L108)
+Defined in: [conformance/src/adversary.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L109)
 
 A well-formed capability grant the attacker mints for itself at run time.
 
@@ -3474,17 +3475,19 @@ Defined in: [conformance/src/world.ts:109](https://github.com/Aicoo-Team/SharedO
 
 ### JUDGE\_VERSION
 
-> `const` **JUDGE\_VERSION**: `"3"` = `"3"`
+> `const` **JUDGE\_VERSION**: `"4"` = `"4"`
 
-Defined in: [conformance/src/judge.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L14)
+Defined in: [conformance/src/judge.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L18)
 
 Version of the grading rules, so a manifest names what produced it.
 
 Lives beside the rules it versions: a change to how a cell is graded is a
-change to this file, and the bump belongs in the same diff. Version 3 names
-the envelope as the enforcement point of a failed turn the envelope ended,
-read from the `turn.failed` event's `source`; version 2 named a boundary for
-denied turns only.
+change to this file, and the bump belongs in the same diff. Version 4 stops
+failing a row whose ending the delegate never asked for, reading the ask
+from the record -- see `escalationAsked`. Version 3 named the envelope as
+the enforcement point of a failed turn the envelope ended, read from the
+`turn.failed` event's `source`; version 2 named a boundary for denied turns
+only.
 
 ---
 
@@ -4571,7 +4574,7 @@ harness also had a shell.
 
 > **attemptArguments**(`context`, `attempt`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [conformance/src/adversary.ts:594](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L594)
+Defined in: [conformance/src/adversary.ts:603](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L603)
 
 The arguments one declared attempt is issued with, forgery included.
 
@@ -4614,7 +4617,7 @@ as one comparison.
 
 > **attemptCallId**(`executionId`, `move`, `attempt`): `string`
 
-Defined in: [conformance/src/adversary.ts:578](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L578)
+Defined in: [conformance/src/adversary.ts:587](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L587)
 
 The identifier one declared attempt's call is issued under.
 
@@ -5496,7 +5499,7 @@ rather than `node:crypto` so the kernel stays host-neutral.
 
 > **judgeCase**(`move`, `evidence`, `options?`): [`CaseJudgement`](#casejudgement)
 
-Defined in: [conformance/src/judge.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L119)
+Defined in: [conformance/src/judge.ts:124](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/judge.ts#L124)
 
 Grade one move against the evidence its turn produced.
 
@@ -5935,7 +5938,7 @@ so they produce no receipt and are graded as unreached rather than as denied.
 
 > **moveTurnCount**(`move`): `number`
 
-Defined in: [conformance/src/adversary.ts:237](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L237)
+Defined in: [conformance/src/adversary.ts:238](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L238)
 
 How many turns a move's attempts are spread across.
 
@@ -5982,7 +5985,7 @@ readonly `object`[]
 
 > **readAdversarialReport**(`result`): \{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \} \| `undefined`
 
-Defined in: [conformance/src/adversary.ts:522](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L522)
+Defined in: [conformance/src/adversary.ts:531](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L531)
 
 Read the terminal report a [HostileRuntime](#hostileruntime) turn produced.
 
@@ -6042,7 +6045,7 @@ The permission-filtered catalogue the runtime could actually see.
 
 > **readAttemptReceipts**(`result`): readonly `object`[]
 
-Defined in: [conformance/src/adversary.ts:552](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L552)
+Defined in: [conformance/src/adversary.ts:561](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L561)
 
 Recover attempt receipts from the execution event stream alone.
 

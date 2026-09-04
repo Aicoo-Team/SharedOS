@@ -14,7 +14,7 @@ import {
 } from "@aicoo/sharedos-contracts";
 
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
-import { escalationReason } from "./escalation.js";
+import { escalationAskedEvent, escalationReason } from "./escalation.js";
 import {
   reportTurnError,
   type RuntimeHost,
@@ -177,6 +177,15 @@ export class StandardRuntime implements RuntimePlugin {
           return decision;
         }
         if (decision.type === "escalate") {
+          // Announced before it is honoured, so the record carries the ask
+          // whatever the envelope then makes of the outcome. For the record
+          // only: a host that will not take the event does not change what the
+          // driver decided.
+          try {
+            host.emit(escalationAskedEvent(decision.reason));
+          } catch {
+            // The ask still ends the turn; only its trace is lost.
+          }
           // Passed straight through, as `complete` and `fail` are. An escalated
           // turn is a terminal outcome the envelope records and audits; it is
           // not a failure, and reporting it as one would lose the distinction

@@ -6,6 +6,7 @@ import { createInterface } from "node:readline";
 
 import type {
   JsonObject,
+  RuntimeEvent,
   RuntimeManifest,
   RuntimeTurnOutcome,
   ToolCall,
@@ -25,6 +26,7 @@ import {
 } from "@aicoo/sharedos-mcp";
 import { createStreamableHttpMcpServer } from "@aicoo/sharedos-mcp/node";
 import {
+  escalationAskedEvent,
   escalationOffered,
   escalationRequest,
   type RuntimeHost,
@@ -193,6 +195,7 @@ export function createMcpHarnessRuntime(
       const escalation = new EscalationLatch(
         request,
         host,
+        (event) => host.emit(event),
         options.clock ?? (() => new Date().toISOString()),
       );
       const bridge: SharedOSToolBridge = openToolBridge({
@@ -278,18 +281,28 @@ export function createMcpHarnessRuntime(
  *
  * Nothing here reaches the kernel. An escalation is not an operation to
  * authorize -- it is the turn saying it is over -- so it leaves no operation in
- * the record, which is the same absence a driver's escalation leaves.
+ * the record, which is the same absence a driver's escalation leaves. What it
+ * does leave is the announcement: the ask is emitted as a runtime event the
+ * moment it is recognised, so a record can tell a turn that asked from one
+ * that never did even when the ending is not the one the ask should have had.
  */
 class EscalationLatch implements BridgeToolInvoker {
   readonly #host: BridgeToolInvoker;
+  readonly #announce: (event: RuntimeEvent) => void;
   readonly #clock: () => string;
   /** Whether this turn was granted the affordance at all. */
   readonly #offered: boolean;
   #reason: string | undefined;
   #afterwards = 0;
 
-  constructor(request: RuntimeTurnRequest, host: BridgeToolInvoker, clock: () => string) {
+  constructor(
+    request: RuntimeTurnRequest,
+    host: BridgeToolInvoker,
+    announce: (event: RuntimeEvent) => void,
+    clock: () => string,
+  ) {
     this.#host = host;
+    this.#announce = announce;
     this.#clock = clock;
     // Read from the turn's own catalogue, because skipping the envelope skips
     // its effective-catalogue check with it. A call naming the affordance
@@ -309,6 +322,14 @@ class EscalationLatch implements BridgeToolInvoker {
       return this.#host.invokeTool(call, options);
     }
     this.#reason = reason;
+    // For the record, not for the turn: the ask is honoured whether or not the
+    // host would take the event, and a throw here would answer the harness
+    // with a transport fault for a call SharedOS accepted.
+    try {
+      this.#announce(escalationAskedEvent(reason));
+    } catch {
+      // Only the trace is lost.
+    }
     return this.#accept(call, reason);
   }
 
