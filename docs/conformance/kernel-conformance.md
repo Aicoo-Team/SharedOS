@@ -25,7 +25,7 @@ live session. Live-run columns are a separate claim and are not made here.
 
 - Case set: `c47bb8d6d672600f2c1876855506ec54cd35bf835ca2d7a602fbafad1c865ed1`
 - World set: `67a081ea4f61d8eaa70bad83aa490f83de0ec2fb983baf78c45853444d5eb31a`
-- Grading rules: version `3`
+- Grading rules: version `4`
 - Columns: `Adversary`, `Standard`, `Codex`, `Claude Code`, `DeepSeek`, `Pi`
 
 The case-set hash covers the declarations only: ids, tools, arguments,
@@ -41,7 +41,8 @@ match. Tool prose is inside this one: a description and an input schema are
 served to the model, so rewording them is a different world.
 
 A cell is `pass` only when every declared attempt met its expected outcome and
-every control attempt succeeded. `not exercised` means the attempt never reached
+every control attempt succeeded. `not exercised` means the attempt -- or, on a
+row graded on how the turn ended, the ask for that ending -- never reached
 SharedOS, and is never a pass. `not applicable` means a runtime structurally
 cannot make the attempt. `not implemented` means SharedOS does not do this:
 the row is declared so the gap is stated rather than omitted, and it is never
