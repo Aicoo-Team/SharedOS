@@ -24,6 +24,7 @@ import {
   ToolResultSchema,
   type AccessContext,
   type JsonValue,
+  ReachResultSchema,
 } from "./index.js";
 
 const actor = { kind: "agent" as const, agentId: "agent-bob" };
@@ -65,6 +66,23 @@ const context = {
 };
 
 describe("JSON-safe protocol contracts", () => {
+  it("carries a reach across the wire as the kernel answered it", () => {
+    const computed = {
+      status: "computed",
+      reach: [{ namespace: "files", path: ["Work"], actions: ["read"], scope: "descendants" }],
+    };
+    const unavailable = { status: "unavailable", reasonCode: "usage_store_unavailable" };
+
+    expect(ReachResultSchema.parse(computed)).toEqual(computed);
+    expect(ReachResultSchema.parse(unavailable)).toEqual(unavailable);
+    // An unavailable reach names one of the infrastructure codes and nothing else.
+    expect(
+      ReachResultSchema.safeParse({ status: "unavailable", reasonCode: "no_matching_grant" })
+        .success,
+    ).toBe(false);
+    expect(ReachResultSchema.safeParse({ ...computed, grantId: "grant-1" }).success).toBe(false);
+  });
+
   it("accepts nested JSON and rejects values JSON cannot preserve", () => {
     const value = { nested: ["hello", 42, true, null] };
 

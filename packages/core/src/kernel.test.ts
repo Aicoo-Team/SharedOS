@@ -2667,3 +2667,106 @@ describe("SharedOSKernel audit routing", () => {
     });
   });
 });
+
+describe("SharedOSKernel.reach", () => {
+  const CALENDAR_RESOURCE: ResourceRef = { namespace: "calendar", path: ["primary"] };
+
+  async function computedReach(kernel: SharedOSKernel, access = context()) {
+    const result = await kernel.reach(access);
+    if (result.status !== "computed") {
+      throw new Error(`reach was ${result.reasonCode}`);
+    }
+    return result.reach;
+  }
+
+  it("names only places the kernel would authorize, and nothing about who allowed them", async () => {
+    const kernel = kernelWith([
+      grant("grant-files", FILE_RESOURCE, ["read", "search"]),
+      grant("grant-calendar", CALENDAR_RESOURCE, ["read"]),
+    ]);
+
+    const reach = await computedReach(kernel);
+    expect(reach.length).toBeGreaterThan(0);
+
+    // The property that keeps the projection honest: every place it names, with
+    // every action it names, is one the kernel actually allows right now.
+    for (const entry of reach) {
+      expect(Object.keys(entry).sort()).toEqual(["actions", "namespace", "path", "scope"]);
+      for (const action of entry.actions) {
+        const decision = await kernel.authorize(context(), {
+          resource: { namespace: entry.namespace, path: entry.path, owner: OWNER },
+          action,
+        });
+        expect(decision.allowed, `${entry.namespace}/${entry.path.join("/")}·${action}`).toBe(true);
+      }
+    }
+    expect(JSON.stringify(reach)).not.toContain("grant-");
+    expect(JSON.stringify(reach)).not.toContain("user-alice");
+  });
+
+  it("is grant reach: a namespace whose tools are switched off still appears", async () => {
+    const kernel = kernelWith([
+      grant("grant-files", FILE_RESOURCE, ["search"]),
+      grant("grant-calendar", CALENDAR_RESOURCE, ["read"]),
+    ]);
+
+    // The resource plane is not gated by tool namespaces, so the actor still
+    // reaches the calendar through `invokeResource`. A caller acting only
+    // through tools narrows to its catalogue with `reachThroughTools`.
+    const reach = await computedReach(kernel, context(["files"]));
+    expect(reach.map(({ namespace }) => namespace)).toEqual(["calendar", "files"]);
+  });
+
+  it("is unavailable rather than narrower when a bounded budget cannot be read", async () => {
+    // The default authorizer installs no usage store.
+    const kernel = kernelWith([
+      grant("grant-files", FILE_RESOURCE, ["search"]),
+      grant("grant-bounded", CALENDAR_RESOURCE, ["read"], { maxUses: 2 }),
+    ]);
+
+    await expect(kernel.reach(context())).resolves.toEqual({
+      status: "unavailable",
+      reasonCode: "usage_store_unavailable",
+    });
+  });
+
+  it("is unavailable rather than empty when the authority cannot be loaded", async () => {
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        load: async () => {
+          throw new Error("grant store is unreachable");
+        },
+      },
+    });
+
+    await expect(kernel.reach(context())).resolves.toEqual({
+      status: "unavailable",
+      reasonCode: "authority_unavailable",
+    });
+  });
+
+  it("reads the authority the turn holds, so a grant revoked mid-turn is reach until the next turn", async () => {
+    const source = new TestGrantSource([grant("grant-files", FILE_RESOURCE, ["search"])]);
+    const kernel = new SharedOSKernel({ grantSource: source });
+
+    const turn = await kernel.openTurnAuthority(context());
+    source.serve([]);
+    const held = await computedReach(kernel);
+    turn.close();
+    const next = await computedReach(kernel);
+
+    expect(held).toHaveLength(1);
+    expect(next).toEqual([]);
+  });
+
+  it("consumes nothing", async () => {
+    const usageStore = new InMemoryGrantUsageStore();
+    const kernel = kernelWith([grant("grant-bounded", FILE_RESOURCE, ["search"], { maxUses: 1 })], {
+      authorizer: new CapabilityAuthorizer({ usageStore }),
+    });
+
+    expect(await computedReach(kernel)).toHaveLength(1);
+    expect(await computedReach(kernel)).toHaveLength(1);
+    expect(await usageStore.getUsage("world-alpha", "grant-bounded")).toBe(0);
+  });
+});

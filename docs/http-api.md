@@ -55,6 +55,7 @@ safe to expose:
 | GET    | `/health`              | —                         | `SharedOSHealth`        |
 | POST   | `/v1/authorize`        | `CapabilityRequirement`   | `AuthorizationDecision` |
 | GET    | `/v1/tools`            | —                         | `ToolDefinition[]`      |
+| GET    | `/v1/reach`            | —                         | `ReachResult`           |
 | GET    | `/v1/tools/namespaces` | —                         | `ToolNamespaceCatalog`  |
 | PUT    | `/v1/tools/namespaces` | `ToolNamespaceUpdate`     | `ToolNamespaceCatalog`  |
 | POST   | `/v1/tools/invoke`     | `ToolCall`                | `ToolResult`            |
@@ -123,6 +124,50 @@ with `publishToolCatalog` first — `name`, `description`, `inputSchema`,
 which is the same `PublishedToolDefinition` the MCP boundary serves and what
 `ModelDriver` sends to a provider. See
 [what crosses the boundary](mcp-toolshare.md#what-crosses-the-boundary).
+
+### `GET /v1/reach`
+
+Where the resolved context may operate, with the authority stripped out: the
+namespace, path, actions and scope of every place some grant would authorize
+something right now, and nothing about which grant, who issued it, when it
+expires or how many uses remain. A caller driving its own loop over this API
+has no turn to be told this in, so this is how it learns where to look instead
+of guessing paths and collecting denials.
+
+```json
+{
+  "status": "computed",
+  "reach": [
+    {
+      "namespace": "files",
+      "path": ["Work", "atlas"],
+      "actions": ["read", "search"],
+      "scope": "descendants"
+    }
+  ]
+}
+```
+
+Descriptive, never permissive: every call is still authorized on its own, so an
+entry here is not a permission. It is grant reach for the whole context — the
+host ceiling is not consulted, and it is not narrowed to the tool catalogue,
+because [`/v1/resources/invoke`](#post-v1resourcesinvoke) is not gated by tool
+namespaces. A client driving a model from `/v1/tools` keeps the entries whose
+namespace one of those tools operates on (`requiredCapability.resource.namespace`),
+which is what the execution envelope does for a turn.
+
+A reach that cannot be established is an answer, not an error:
+
+```json
+{ "status": "unavailable", "reasonCode": "usage_store_unavailable" }
+```
+
+`reasonCode` is `authority_unavailable` or `usage_store_unavailable`, the same
+codes a decision fails closed with. Nothing is narrowed silently: a bounded
+grant whose budget cannot be read withholds the whole answer rather than
+quietly omitting the grant, because a reach missing a live grant looks exactly
+like one that is true. A spent budget simply does not appear. Nothing is
+consumed by asking. See ADR 0021.
 
 ### `GET /v1/tools/namespaces` · `PUT /v1/tools/namespaces`
 
@@ -351,6 +396,7 @@ const sharedos = new SharedOSClient({
 | `health()`                     | `GET /health`               |
 | `authorize(requirement)`       | `POST /v1/authorize`        |
 | `listTools()`                  | `GET /v1/tools`             |
+| `reach()`                      | `GET /v1/reach`             |
 | `listToolNamespaces()`         | `GET /v1/tools/namespaces`  |
 | `updateToolNamespaces(update)` | `PUT /v1/tools/namespaces`  |
 | `invokeTool(call)`             | `POST /v1/tools/invoke`     |

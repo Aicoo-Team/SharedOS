@@ -203,6 +203,30 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **A turn is told where it may operate, and a remote caller can ask.**
+  `SharedOSKernel.reach(context)` answers the turn's own reach: the namespace,
+  path, actions and scope of every place some grant would authorize something at
+  this instant, with no grant id, issuer, expiry or budget -- the derivation
+  `readAgentCard` performs for a subject, pointed at the caller. The execution
+  envelope reads it once per turn and hands it to the runtime as
+  `RuntimeVisibleContext.reach`, narrowed by `reachThroughTools` to the
+  namespaces the turn's catalogue operates on, so a driver can tell a model where
+  to look without the host reading raw grants to write a prompt. `ReachResult`
+  moves to `@aicoo/sharedos-contracts` as a schema and gains
+  `authority_unavailable` beside `usage_store_unavailable`; a reach that cannot
+  be established is handed to the runtime as `unavailable` rather than as an
+  empty list, and the turn still runs -- a call that depends on the unreadable
+  budget fails closed on its own, as before. `GET /v1/reach` and
+  `SharedOSClient.reach()` serve the same answer to a caller driving its own
+  loop over the API. **Host note:** `TurnKernel` now requires `reach`; a host
+  passing `SharedOSKernel` is unaffected, a narrow test double adds one member.
+  The narrowing is keyed on the resource namespace a tool requires a capability
+  over, not on `enabledToolNamespaces`, because tool namespaces and resource
+  namespaces are different vocabularies (`messages` operates on
+  `sharedos.messaging`) and the resource plane is not gated by tool namespaces;
+  the kernel's answer and the HTTP route are therefore grant reach, unfiltered.
+  ADR 0021 records the decisions; PRs #12 and #13 are superseded.
+
 - **A conformance row for the route lease.** `route-lease-revoked` sends twice
   on one turn's authority with the host's route lease revoked between the
   dispatches, so a send the kernel authorized is refused at delivery and
@@ -240,7 +264,8 @@ each entry calls out what a host has to update.
   a path product policy refuses, and the refusal names the ceiling. A bounded
   grant whose usage store is missing or throws refuses the card
   `usage_store_unavailable` rather than narrowing it (`CapabilityAuthorizer.reach`
-  answers a `ReachResult`); a spent budget still omits the grant. **Host note:** a `GrantSource` is now called with a context whose actor is
+  answers a `ReachResult`, a contract type in `@aicoo/sharedos-contracts`); a
+  spent budget still omits the grant. **Host note:** a `GrantSource` is now called with a context whose actor is
   not the caller, so one that reads an ambient session user instead of
   `context.actor` answers with the wrong principal's grants; SharedOS refuses
   such a card as `grant_scope_mismatch` rather than serving it, but a source

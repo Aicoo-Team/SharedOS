@@ -12,6 +12,7 @@ import {
   type ExecutionResult,
   type MessageDeliveryResult,
   type MessageEnvelope,
+  type ReachResult,
   type RemoteExecutionRequest,
   type ResourceOperation,
   type ResourceResult,
@@ -38,6 +39,7 @@ export interface SharedOSApi {
     context: AccessContext,
     options?: SharedOSApiCallOptions,
   ): Promise<readonly ToolDefinition[]>;
+  reach(context: AccessContext, options?: SharedOSApiCallOptions): Promise<ReachResult>;
   listToolNamespaces(
     context: AccessContext,
     options?: SharedOSApiCallOptions,
@@ -80,6 +82,7 @@ export function createKernelSharedOSApi(options: KernelSharedOSApiOptions): Shar
     authorize: (context, requirement, callOptions) =>
       options.kernel.authorize(context, requirement, callOptions),
     listTools: (context, callOptions) => options.kernel.listTools(context, callOptions),
+    reach: (context, callOptions) => options.kernel.reach(context, callOptions),
     listToolNamespaces: (context, callOptions) =>
       options.kernel.listToolNamespaces(context, callOptions),
     updateToolNamespaces: (context, update, callOptions) =>
@@ -180,6 +183,11 @@ async function routeRequest(
   if (pathname === "/v1/tools") {
     requireMethod(request, "GET");
     return json(await options.api.listTools(context, callOptions), 200, requestId);
+  }
+
+  if (pathname === "/v1/reach") {
+    requireMethod(request, "GET");
+    return json(await options.api.reach(context, callOptions), 200, requestId);
   }
 
   if (pathname === "/v1/tools/namespaces") {

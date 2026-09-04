@@ -26,14 +26,15 @@ The directory can therefore advertise access the kernel would refuse, and cannot
 advertise access that arrived any other way. It is not wrong so much as
 answering a different question than the one its reader is asking.
 
-The computation is not the missing piece. PR #13 built it for the turn's own
-scope: `RuntimeVisibleContext.reach` and `kernel.reach(context)` derive
+The computation is not the hard part. `CapabilityAuthorizer.reach` derives
 namespace, path, actions and scope from the grants that would authorize
-something at that instant — no grant id, no issuer, no expiry — and a bounded
-grant whose budget is spent does not appear at all. What a card needs is that
-computation pointed at somebody else. The moment it points at somebody else it
-stops being self-description and becomes disclosure, and that is the part that
-needs deciding rather than implementing.
+something at an instant — no grant id, no issuer, no expiry — and a bounded
+grant whose budget is spent does not appear at all. Read for the turn's own
+scope it is `SharedOSKernel.reach(context)` and `RuntimeVisibleContext.reach`,
+which tell a runtime where to look without the host reading raw grants to write
+a prompt. What a card needs is that computation pointed at somebody else. The
+moment it points at somebody else it stops being self-description and becomes
+disclosure, and that is the part that needs deciding rather than implementing.
 
 ## Decision
 
@@ -43,7 +44,7 @@ computed reach, and nothing a product would want to put next to them.
 ### Reach is computed, never stored
 
 A card's reach is derived when the card is read, from the grants in force at
-that instant, by the same derivation `kernel.reach` already performs for the
+that instant, by the same derivation `SharedOSKernel.reach` performs for the
 turn's own scope. It is not a column, not a cached projection, and not written
 anywhere.
 
@@ -58,7 +59,7 @@ one description of authority in the system that nothing invalidates. The
 refresh job that would fix it is the tell: if a value needs a job to stay true,
 it was a query.
 
-Computing it is affordable for the same reason `kernel.reach` is: it reads
+Computing it is affordable for the same reason the turn's own reach is: it reads
 already-resolved authority and consults no provider.
 
 The reach of a **subject** requires the subject's authority, and authority is
@@ -106,6 +107,27 @@ the decide path already fails closed with. A card that omits a live grant
 because a dependency is down looks exactly like a card that is true, and the
 reader has no way to tell; a refusal it can act on is worth more than a card it
 cannot trust. The `identity` view reads no budget and is unaffected.
+
+The turn's own reach follows the same rule with a different consequence.
+`SharedOSKernel.reach` answers `unavailable` under the codes the decide path
+fails closed with — `usage_store_unavailable`, or `authority_unavailable` when
+the authority itself could not be loaded again after admission — and the
+execution envelope hands the runtime that answer as `RuntimeVisibleContext.reach`
+rather than an empty list — an empty list is a true answer for a turn that
+reaches nothing, and a false one here. The turn is not refused: every call is
+decided on its own, and a call that depends on what could not be read fails
+closed under the same code, which is also what keeps the conformance row for a
+usage-store outage a statement about the call rather than about admission.
+
+The turn's reach is grant reach narrowed to what its catalogue can act on.
+`reachThroughTools` keeps the entries whose namespace some offered tool
+operates on, keyed on the _resource_ namespace a tool requires a capability
+over rather than on `enabledToolNamespaces`: those are different vocabularies —
+the message tool lives in `messages` and operates on `sharedos.messaging` — and
+the resource plane is not gated by tool namespaces at all, so the kernel's own
+answer, and the HTTP route that serves it, stay unfiltered. A card is not
+narrowed this way, for the reason above: it describes what the subject was
+authorized, not what one caller's catalogue offers.
 
 ### Reading a card is an authorized operation
 

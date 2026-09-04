@@ -175,3 +175,37 @@ export const ResourceReachSchema = z
   .strict();
 
 export type ResourceReach = z.infer<typeof ResourceReachSchema>;
+
+/** As many entries as one reach may carry, on a card or on the wire. */
+export const ReachListSchema = z.array(ResourceReachSchema).max(16_384);
+
+/**
+ * Why a reach could not be established.
+ *
+ * Both are infrastructure codes the decide path already fails closed with: the
+ * authority behind the reach could not be loaded, or a bounded grant's budget
+ * could not be read. Neither narrows the answer. A reach that silently omitted
+ * a live grant because a dependency is down would look exactly like one that is
+ * true, so the whole answer is withheld under a code the reader can act on
+ * (ADR 0021).
+ */
+export const ReachUnavailableReasonSchema = z.enum([
+  "authority_unavailable",
+  "usage_store_unavailable",
+]);
+export type ReachUnavailableReason = z.infer<typeof ReachUnavailableReasonSchema>;
+
+/**
+ * What asking for a reach answers.
+ *
+ * `computed` carries the reachable surface, possibly empty: a context that can
+ * authorize nothing reaches nothing, and that is a true answer. `unavailable`
+ * means no answer could be established, and says why in the vocabulary a denial
+ * uses. The shape crosses the HTTP boundary unchanged, so a remote caller reads
+ * the same result an embedded host does.
+ */
+export const ReachResultSchema = z.discriminatedUnion("status", [
+  z.object({ status: z.literal("computed"), reach: ReachListSchema }).strict(),
+  z.object({ status: z.literal("unavailable"), reasonCode: ReachUnavailableReasonSchema }).strict(),
+]);
+export type ReachResult = z.infer<typeof ReachResultSchema>;

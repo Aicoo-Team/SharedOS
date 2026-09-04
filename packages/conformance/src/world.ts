@@ -664,6 +664,7 @@ export function conformanceRuntimeContext(turn = 1): RuntimeVisibleContext {
     purpose: CONFORMANCE_PURPOSE,
     traceId: conformanceTraceId(turn),
     now: CONFORMANCE_NOW,
+    reach: { status: "computed", reach: [] },
   };
 }
 
