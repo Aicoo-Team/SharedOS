@@ -1,22 +1,33 @@
-import type { JsonObject, RuntimeManifest, RuntimeTurnOutcome } from "@aicoo/sharedos-contracts";
+import type {
+  JsonObject,
+  RuntimeManifest,
+  RuntimeTurnOutcome,
+  ToolResult,
+} from "@aicoo/sharedos-contracts";
 import { SPAN, portableToolName, type Span, type SpanSink } from "@aicoo/sharedos-core";
 import { McpToolServer, openToolBridge } from "@aicoo/sharedos-mcp";
 import {
   SharedOSExecutor,
+  escalationOffered,
   type RuntimeHost,
   type RuntimePlugin,
   type RuntimeTurnRequest,
 } from "@aicoo/sharedos-runtime";
 
 import {
+  ToolNameCodec,
   claudeCodeFrameWriter,
   claudeCodeProtocol,
   codexFrameWriter,
   codexProtocol,
+  decodeChatCompletion,
   deepseekFrameWriter,
   deepseekProtocol,
+  encodeModelMessage,
+  modelToolResultMessage,
   piFrameWriter,
   piProtocol,
+  readModelToolCall,
   type HarnessFrameWriter,
   type HarnessProtocol,
 } from "@aicoo/sharedos-adapters";
@@ -33,7 +44,9 @@ import {
   CODEX_SCRIPTED_COLUMN,
   DEEPSEEK_SCRIPTED_COLUMN,
   ADVERSARY_COLUMN,
+  MODEL_SCRIPTED_COLUMN,
   PI_SCRIPTED_COLUMN,
+  type RuntimeColumn,
 } from "./columns.js";
 import { hashExperimentInputs } from "./hashing.js";
 import type { ExecutionRecord } from "./record.js";
@@ -451,6 +464,8 @@ export interface PathRun {
   readonly wireBytesPerCall: readonly number[];
   readonly catalogueWireBytes: number;
   readonly catalogueWidth: number;
+  /** The canonical names the catalogue published, in the order they were served. */
+  readonly catalogueTools: readonly string[];
 }
 
 /**
@@ -491,6 +506,7 @@ export async function runInProcessPath(
     wireBytesPerCall: [],
     catalogueWireBytes: 0,
     catalogueWidth: world.tools.length,
+    catalogueTools: world.tools.map(({ name }) => name),
   };
 }
 
@@ -498,6 +514,7 @@ interface ToolshareFrames {
   readonly wireBytesPerCall: number[];
   catalogueWireBytes: number;
   catalogueWidth: number;
+  catalogueTools: string[];
 }
 
 /**
@@ -577,6 +594,7 @@ class ToolshareBenchRuntime implements RuntimePlugin {
       const published = publishedNames(listed);
       this.#frames.catalogueWireBytes = bytes(listed);
       this.#frames.catalogueWidth = published.size;
+      this.#frames.catalogueTools = [...published.keys()];
 
       const context = conformanceRuntimeContext(1);
       for (const attempt of this.#attempts) {
@@ -641,6 +659,7 @@ export async function runToolsharePath(
     wireBytesPerCall: [],
     catalogueWireBytes: 0,
     catalogueWidth: 0,
+    catalogueTools: [],
   };
 
   for (let turn = 1; turn <= options.warmupTurns + options.measuredTurns; turn += 1) {
@@ -667,6 +686,7 @@ export async function runToolsharePath(
     wireBytesPerCall: frames.wireBytesPerCall,
     catalogueWireBytes: frames.catalogueWireBytes,
     catalogueWidth: frames.catalogueWidth,
+    catalogueTools: frames.catalogueTools,
   };
 }
 
@@ -765,8 +785,15 @@ export async function runRecordWritePath(
 export interface TranslationSubject {
   readonly columnId: string;
   readonly label: string;
-  readonly protocol: HarnessProtocol;
-  readonly writer: HarnessFrameWriter;
+  readonly protocolId: string;
+  /** The frame that carries one call, in the subject's own wire shape. */
+  toolCall(callId: string, tool: string, arguments_: JsonObject): JsonObject;
+  /**
+   * One call's round trip: read the frame that carries it, encode the result
+   * that answers it. Nothing the subject computes here is kept -- the figure
+   * is the translation, not what it translated into.
+   */
+  roundTrip(frame: JsonObject, result: ToolResult): void;
 }
 
 /**
@@ -790,7 +817,7 @@ export async function runTranslationPath(
 
   for (const subject of subjects) {
     const frames = attempts.map((attempt, index) => ({
-      frame: subject.writer.toolCall(
+      frame: subject.toolCall(
         `bench-call-${index}`,
         attempt.tool as string,
         attemptArguments(context, attempt) as JsonObject,
@@ -807,8 +834,7 @@ export async function runTranslationPath(
     const once = (): number => {
       const started = performance.now();
       for (const { frame, result } of frames) {
-        subject.protocol.interpret(frame);
-        subject.protocol.encodeToolResult(result);
+        subject.roundTrip(frame, result);
       }
       return (performance.now() - started) / frames.length;
     };
@@ -824,7 +850,7 @@ export async function runTranslationPath(
     measures.push({
       columnId: subject.columnId,
       label: subject.label,
-      protocolId: subject.protocol.id,
+      protocolId: subject.protocolId,
       latency: summarize(durations),
       catalogueWidth,
     });
@@ -834,36 +860,105 @@ export async function runTranslationPath(
 }
 
 /**
+ * A vendor adapter as a translation subject: its real reader and the frame
+ * writer that drives it, the same pair the scripted column is exercised with.
+ */
+export function harnessTranslationSubject(
+  column: Pick<RuntimeColumn, "id" | "label">,
+  protocol: HarnessProtocol,
+  writer: HarnessFrameWriter,
+): TranslationSubject {
+  return {
+    columnId: column.id,
+    label: column.label,
+    protocolId: protocol.id,
+    toolCall: (callId, tool, arguments_) => writer.toolCall(callId, tool, arguments_),
+    roundTrip: (frame, result) => {
+      protocol.interpret(frame);
+      protocol.encodeToolResult(result);
+    },
+  };
+}
+
+/** The protocol id the native harness's translation is reported under. */
+export const MODEL_TRANSLATION_PROTOCOL_ID = "model.chat-completions";
+
+/**
+ * The native harness as a translation subject.
+ *
+ * `ModelDriver` has a translation layer like any vendor adapter, and it is
+ * measured here on the same terms. The frame that carries a call is one
+ * chat-completions response body, in the shape the provider's wire carries it;
+ * reading it is the client's decode plus the driver's own per-call read -- the
+ * model's alphabet back to the catalogue's, the argument blob parsed, the
+ * escalate affordance recognised by name when the turn was offered it. The
+ * result is encoded as the tool message the model reads back, in the wire
+ * shape the client sends. The codec is built once from the catalogue, as the
+ * driver builds it once per turn: a per-turn cost stays outside a per-call
+ * figure, exactly as `describeTools` does for the vendor subjects.
+ *
+ * What it measures is the driver's code, not a copy of it: the session calls
+ * `readModelToolCall` and `modelToolResultMessage` on the same path.
+ */
+export function modelTranslationSubject(catalogue: readonly string[]): TranslationSubject {
+  const tools = catalogue.map((name) => ({ name }));
+  const codec = new ToolNameCodec(tools);
+  const offered = escalationOffered(tools);
+  const context = conformanceRuntimeContext(1);
+  const wire = { traceId: context.traceId, now: context.now };
+  return {
+    columnId: MODEL_SCRIPTED_COLUMN.id,
+    label: MODEL_SCRIPTED_COLUMN.label,
+    protocolId: MODEL_TRANSLATION_PROTOCOL_ID,
+    toolCall: (callId, tool, arguments_) => ({
+      id: "chatcmpl-bench",
+      object: "chat.completion",
+      model: "bench",
+      choices: [
+        {
+          index: 0,
+          finish_reason: "tool_calls",
+          message: {
+            role: "assistant",
+            content: null,
+            tool_calls: [
+              {
+                id: callId,
+                type: "function",
+                // A provider carries arguments as a JSON-encoded string, so a
+                // frame carrying an object would be one the real client rejects.
+                function: { name: codec.toWire(tool), arguments: JSON.stringify(arguments_) },
+              },
+            ],
+          },
+        },
+      ],
+      usage: { prompt_tokens: 0, completion_tokens: 0 },
+    }),
+    roundTrip: (frame, result) => {
+      const reply = decodeChatCompletion(frame);
+      for (const call of reply?.toolCalls ?? []) {
+        readModelToolCall(call, codec, offered, wire);
+      }
+      encodeModelMessage(modelToolResultMessage(result));
+    },
+  };
+}
+
+/**
  * The four scripted adapters, paired with the frames that drive them.
  *
  * Ids and labels are the scripted columns' own, so a column is named the same
- * way here as in the conformance manifest.
+ * way here as in the conformance manifest. The native harness is not in this
+ * list because its subject needs the catalogue's names; see
+ * {@link modelTranslationSubject}, and {@link runSystemsCostBench} for where
+ * the two are joined.
  */
 export const TRANSLATION_SUBJECTS: readonly TranslationSubject[] = Object.freeze([
-  {
-    columnId: CODEX_SCRIPTED_COLUMN.id,
-    label: CODEX_SCRIPTED_COLUMN.label,
-    protocol: codexProtocol,
-    writer: codexFrameWriter,
-  },
-  {
-    columnId: CLAUDE_CODE_SCRIPTED_COLUMN.id,
-    label: CLAUDE_CODE_SCRIPTED_COLUMN.label,
-    protocol: claudeCodeProtocol,
-    writer: claudeCodeFrameWriter,
-  },
-  {
-    columnId: DEEPSEEK_SCRIPTED_COLUMN.id,
-    label: DEEPSEEK_SCRIPTED_COLUMN.label,
-    protocol: deepseekProtocol,
-    writer: deepseekFrameWriter,
-  },
-  {
-    columnId: PI_SCRIPTED_COLUMN.id,
-    label: PI_SCRIPTED_COLUMN.label,
-    protocol: piProtocol,
-    writer: piFrameWriter,
-  },
+  harnessTranslationSubject(CODEX_SCRIPTED_COLUMN, codexProtocol, codexFrameWriter),
+  harnessTranslationSubject(CLAUDE_CODE_SCRIPTED_COLUMN, claudeCodeProtocol, claudeCodeFrameWriter),
+  harnessTranslationSubject(DEEPSEEK_SCRIPTED_COLUMN, deepseekProtocol, deepseekFrameWriter),
+  harnessTranslationSubject(PI_SCRIPTED_COLUMN, piProtocol, piFrameWriter),
 ]);
 
 /** {@link BenchOptions} with every default already applied. */
@@ -897,7 +992,7 @@ export async function runSystemsCostBench(options: BenchOptions = {}): Promise<S
   const toolshare = await runToolsharePath(moves, settings);
   const recordWrite = await runRecordWritePath(moves, settings);
   const translation = await runTranslationPath(
-    TRANSLATION_SUBJECTS,
+    [modelTranslationSubject(toolshare.catalogueTools), ...TRANSLATION_SUBJECTS],
     moves,
     settings,
     toolshare.catalogueWidth,
@@ -1219,6 +1314,13 @@ export function renderSystemsCostReport(report: SystemsCostReport): string {
   lines.push("round trip through the vendor's shapes: interpret the frame that carries the");
   lines.push("call, and encode the result that answers it. `describeTools` runs once per");
   lines.push("turn rather than once per call and is outside these figures.", "");
+  lines.push(
+    `${MODEL_SCRIPTED_COLUMN.label} is the native harness's own layer, on the same terms: one`,
+  );
+  lines.push("chat-completions reply decoded, each call's name and arguments read back into");
+  lines.push("the catalogue's, and the result encoded as the tool message the model reads.");
+  lines.push("The tool-name codec is built once per turn, as the driver builds it, and is");
+  lines.push("outside the figure for the same reason `describeTools` is.", "");
   lines.push("| Column | Parse + translate per call | Catalogue width | n |");
   lines.push("| --- | --- | --- | --- |");
   lines.push(`| ${ADVERSARY_COLUMN.label} | — | ${report.structural.catalogueWidth} | — |`);
