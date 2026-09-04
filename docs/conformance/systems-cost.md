@@ -16,7 +16,7 @@ an interpolation between two that did. Throughput is `1000 / mean`, not
 `1000 / p50`, because a median discards the tail that makes a stream of
 operations slower than its typical member.
 
-Taking one measurement costs 0.18 µs at the median over 4096 samples. It is
+Taking one measurement costs 0.17 µs at the median over 4096 samples. It is
 printed rather than subtracted: subtracting it would produce a number that is
 neither the operation nor the measurement of it.
 
@@ -28,19 +28,19 @@ measurement.
 
 | Component | Path | p50 | p95 | Tokens | Evidence bytes | Wire bytes | Ops/sec | n |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Capability authorization | in-process | 285 µs | 738 µs | 0 | 1038 B | — | 2930 | 4200 |
-| Capability authorization | mcp-toolshare | 281 µs | 723 µs | 0 | 1000 B | — | 3016 | 4200 |
-| Execution-record write | in-process | 16.8 ms | 18.8 ms | 0 | 52901 B | — | 59 | 200 |
-| End-to-end SharedOS overhead | in-process | 8.29 ms | 13.5 ms | 0 | 1068 B | — | 128 | 4800 |
-| End-to-end SharedOS overhead | mcp-toolshare | 8.19 ms | 13.3 ms | 0 | 918 B | 489 B | 129 | 4800 |
+| Capability authorization | in-process | 296 µs | 911 µs | 0 | 1097 B | — | 2324 | 4200 |
+| Capability authorization | mcp-toolshare | 301 µs | 1.04 ms | 0 | 1059 B | — | 2203 | 4200 |
+| Execution-record write | in-process | 18.9 ms | 23.9 ms | 0 | 52901 B | — | 52 | 200 |
+| End-to-end SharedOS overhead | in-process | 8.73 ms | 13.8 ms | 0 | 1068 B | — | 123 | 4800 |
+| End-to-end SharedOS overhead | mcp-toolshare | 8.97 ms | 14.8 ms | 0 | 918 B | 489 B | 118 | 4800 |
 
 Every `0` in the token column is structural: it is asserted from the absence
 of a model call inside the span, not measured by counting one.
 
 ### What each row measured
 
-- **Capability authorization — in-process.** One operation is one authorization decision: the turn-boundary load, and each in-turn check. pooled over 200 turn-boundary loads (p50 0.776 ms) and 4000 in-turn checks (p50 0.283 ms).
-- **Capability authorization — mcp-toolshare.** One operation is one authorization decision: the turn-boundary load, and each in-turn check. pooled over 200 turn-boundary loads (p50 0.756 ms) and 4000 in-turn checks (p50 0.278 ms).
+- **Capability authorization — in-process.** One operation is one authorization decision: the turn-boundary load, and each in-turn check. pooled over 200 turn-boundary loads (p50 0.783 ms) and 4000 in-turn checks (p50 0.293 ms).
+- **Capability authorization — mcp-toolshare.** One operation is one authorization decision: the turn-boundary load, and each in-turn check. pooled over 200 turn-boundary loads (p50 0.796 ms) and 4000 in-turn checks (p50 0.296 ms).
 - **Execution-record write — in-process.** One operation is one record assembled, validated, and serialized. one turn's evidence, re-assembled; the same code on both paths, so it is measured once.
 - **End-to-end SharedOS overhead — in-process.** One operation is one mediated tool call. the envelope's mediation of one call, provider subtracted by call id.
 - **End-to-end SharedOS overhead — mcp-toolshare.** One operation is one mediated tool call. one `tools/call` frame in to its response out, provider subtracted by call id; the transport and the process boundary lie outside this span by its own definition, and so does the vendor CLI's own tool router.
@@ -61,23 +61,23 @@ catalogue -- and that is the column headed *Per call*.
 
 | Segment | p50 | Share of the call | Per call |
 | --- | --- | --- | --- |
-| Resolve the effective catalogue | 7.27 ms | 80% | 0.833 |
-| Discovery filter | 300 µs | 3% | 0.833 |
-| Authorization decision, audit included | 283 µs | 3% | 0.833 |
-| Provider (not enforcement) | 94.3 µs | 2% | 0.625 |
-| Remainder | 470 µs | 11% | 1 |
-| **Whole call** | 8.36 ms | 100% | 1 |
+| Resolve the effective catalogue | 7.56 ms | 79% | 0.833 |
+| Discovery filter | 305 µs | 3% | 0.833 |
+| Authorization decision, audit included | 293 µs | 4% | 0.833 |
+| Provider (not enforcement) | 90.7 µs | 2% | 0.625 |
+| Remainder | 482 µs | 11% | 1 |
+| **Whole call** | 8.8 ms | 100% | 1 |
 
 ### mcp-toolshare
 
 | Segment | p50 | Share of the call | Per call |
 | --- | --- | --- | --- |
-| Resolve the effective catalogue | 7.14 ms | 79% | 0.833 |
-| Discovery filter | 296 µs | 3% | 0.833 |
-| Authorization decision, audit included | 278 µs | 3% | 0.833 |
-| Provider (not enforcement) | 93.6 µs | 2% | 0.625 |
-| Remainder | 517 µs | 12% | 1 |
-| **Whole call** | 8.27 ms | 100% | 1 |
+| Resolve the effective catalogue | 7.71 ms | 79% | 0.833 |
+| Discovery filter | 311 µs | 3% | 0.833 |
+| Authorization decision, audit included | 296 µs | 4% | 0.833 |
+| Provider (not enforcement) | 102 µs | 2% | 0.625 |
+| Remainder | 553 µs | 12% | 1 |
+| **Whole call** | 9.04 ms | 100% | 1 |
 
 ## Harness translation cost
 
@@ -86,12 +86,19 @@ round trip through the vendor's shapes: interpret the frame that carries the
 call, and encode the result that answers it. `describeTools` runs once per
 turn rather than once per call and is outside these figures.
 
+Standard is the native harness's own layer, on the same terms: one
+chat-completions reply decoded, each call's name and arguments read back into
+the catalogue's, and the result encoded as the tool message the model reads.
+The tool-name codec is built once per turn, as the driver builds it, and is
+outside the figure for the same reason `describeTools` is.
+
 | Column | Parse + translate per call | Catalogue width | n |
 | --- | --- | --- | --- |
 | Adversary | — | 17 | — |
-| Codex | 5.11 µs | 17 | 200 |
-| Claude Code | 12.7 µs | 17 | 200 |
-| DeepSeek | 9.75 µs | 17 | 200 |
+| Standard | 123 µs | 17 | 200 |
+| Codex | 112 µs | 17 | 200 |
+| Claude Code | 14.8 µs | 17 | 200 |
+| DeepSeek | 124 µs | 17 | 200 |
 | Pi | 12.3 µs | 17 | 200 |
 
 Adversary's `—` is the absence of a translation layer, not a pending measurement.
@@ -108,6 +115,6 @@ extension rather than a measurement this bench can take.
 | Record bytes per turn | 54358 B mean |
 | Authority loads per turn | 1 |
 | Decisions per turn | 20 |
-| Audit events per turn | 43 |
+| Audit events per turn | 48 |
 | Mediated tool calls per turn | 24 |
 | Catalogue served per turn | 9103 B over the wire, 17 tools |
