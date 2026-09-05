@@ -45,6 +45,23 @@ each entry calls out what a host has to update.
   reference machine, from 128, 118 and 130. The kernel's own `JsonObjectSchema`
   pass over every call's arguments is unchanged.
 
+- **The kernel reads a tool parser's return value without the recursive schema.**
+  Every registered tool's `parseArguments` runs before authorization, and what it
+  returns is the call the kernel carries forward — into `resolveRequirement`, the
+  decision, `invoke` and the audit record. The kernel held that value to
+  `JsonObjectSchema` so a parser that handed back a Date, a Map, an `undefined`
+  field or a non-finite number was refused as `invalid_tool_arguments` and the
+  call stayed a plain JSON object. It still is, by a walk that gives the schema's
+  verdict rule for rule — finite numbers only; `undefined`, bigints, symbols and
+  functions refused wherever they sit; Dates, Maps, Sets and thenables refused
+  where an object was expected; every other object read as a record of the keys
+  `for...in` reaches, into a fresh plain object with a `"__proto__"` key dropped at
+  every depth — and a test holds the two to each other over forty-nine shapes. The
+  refusal code, its place before authorization and the `structuredClone` that
+  follows are unchanged; the schema's own copy of every container, made before
+  the clone made another, is what goes. On the reference machine the check and
+  the clone together read 6.4 µs per call, from 155.
+
 ## 0.1.0-alpha.4
 
 ### Changed — breaking
