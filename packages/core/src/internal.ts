@@ -1,4 +1,4 @@
-import type { Address, CapabilityGrant } from "@aicoo/sharedos-contracts";
+import type { Address, CapabilityGrant, JsonObject, JsonValue } from "@aicoo/sharedos-contracts";
 
 /** Structural JSON equality for protocol values with unordered object keys. */
 export function canonicalJson(value: unknown): string {
@@ -14,6 +14,88 @@ export function canonicalJson(value: unknown): string {
   }
 
   return JSON.stringify(value) ?? "undefined";
+}
+
+/**
+ * A tool parser's return value, as `JsonObjectSchema` would have returned it.
+ *
+ * The verdict is the schema's, rule for rule, and so is the value. A number
+ * is kept only when finite; `undefined`, a bigint, a symbol and a function
+ * are refused wherever they sit; a Date, a Map, a Set and a thenable are
+ * refused where an object was expected, and every other object is read as a
+ * record -- the keys `for...in` reaches, inherited ones included, into a
+ * fresh plain object with a `"__proto__"` key dropped at every depth, its
+ * value still checked. An array is rebuilt element by element, so a hole is
+ * refused as the `undefined` it reads as. Containers are always copied, as
+ * the schema always copied them, so what comes back is plain whatever the
+ * parser handed over.
+ *
+ * The schema reached the same answer by trying every branch of the value
+ * union at every node, which cost some twenty-five times the clone that
+ * follows.
+ */
+export function readJsonObject(value: unknown): JsonObject | undefined {
+  if (!isRecordLike(value)) {
+    return undefined;
+  }
+  const read = readJsonValue(value);
+  return read === REFUSED ? undefined : (read as JsonObject);
+}
+
+const REFUSED: unique symbol = Symbol("refused");
+
+/** The objects the schema reads as records: what is left once its own types are named. */
+function isRecordLike(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const candidate = value as { then?: unknown; catch?: unknown };
+  if (typeof candidate.then === "function" && typeof candidate.catch === "function") {
+    return false;
+  }
+  return !(value instanceof Map || value instanceof Set || value instanceof Date);
+}
+
+function readJsonValue(value: unknown): JsonValue | typeof REFUSED {
+  switch (typeof value) {
+    case "string":
+    case "boolean":
+      return value;
+    case "number":
+      return Number.isFinite(value) ? value : REFUSED;
+    case "object":
+      break;
+    default:
+      return REFUSED;
+  }
+  if (value === null) {
+    return null;
+  }
+  if (Array.isArray(value)) {
+    const copy: JsonValue[] = [];
+    for (let index = 0; index < value.length; index += 1) {
+      const item = readJsonValue(value[index]);
+      if (item === REFUSED) {
+        return REFUSED;
+      }
+      copy.push(item);
+    }
+    return copy;
+  }
+  if (!isRecordLike(value)) {
+    return REFUSED;
+  }
+  const copy: JsonObject = {};
+  for (const key in value) {
+    const item = readJsonValue(value[key]);
+    if (item === REFUSED) {
+      return REFUSED;
+    }
+    if (key !== "__proto__") {
+      copy[key] = item;
+    }
+  }
+  return copy;
 }
 
 /** Freeze a protocol value and everything reachable from it. */

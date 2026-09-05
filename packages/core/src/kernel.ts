@@ -23,7 +23,6 @@ import {
   AddressSchema,
   EnabledToolNamespacesSchema,
   EscalationSchema,
-  JsonObjectSchema,
   MessageDeliveryResultSchema,
   MessageEnvelopeSchema,
   ResourceResultSchema,
@@ -89,7 +88,7 @@ import { SPAN, measure, type SpanSink } from "./spans.js";
 import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
 import { DuplicateRegistrationError, MissingRegistrationError } from "./errors.js";
-import { deepFreeze, throwIfAborted } from "./internal.js";
+import { deepFreeze, readJsonObject, throwIfAborted } from "./internal.js";
 
 export interface SharedOSKernelOptions {
   /**
@@ -1073,16 +1072,11 @@ export class SharedOSKernel {
 
     let parsedCall: ToolCall;
     try {
-      const parsedArguments = JsonObjectSchema.safeParse(handler.parseArguments(call.arguments));
-      if (!parsedArguments.success) {
+      const parsedArguments = readJsonObject(handler.parseArguments(call.arguments));
+      if (parsedArguments === undefined) {
         throw new TypeError("tool argument parser returned a non-JSON object");
       }
-      parsedCall = deepFreeze(
-        structuredClone({
-          ...call,
-          arguments: parsedArguments.data,
-        }),
-      );
+      parsedCall = deepFreeze(structuredClone({ ...call, arguments: parsedArguments }));
     } catch (error) {
       this.#reportProviderError(error, context, {
         kind: "tool",
