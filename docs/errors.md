@@ -495,10 +495,17 @@ is a decision SharedOS made, an escalation is one it declined to make. Counting
 them together inflates every denial rate by the cases where the system correctly
 asked for help.
 
-Every event carries `version`, `type`, `outcome`, `at`, `traceId`,
+Every event carries `version`, `id`, `type`, `outcome`, `at`, `traceId`,
 `namespaceId`, `actor`, `authority`, `owner`, `purpose`, and where applicable
 `resource`, `action`, `grantId`, `authorityHash`, `operationId`, `tool`,
 `messageId`, `receiver`, `reason`, `requestedAuthority`, and `metadata`.
+
+`id` is the record's own identity, minted when the event is made and never
+derived from its content. `at` is the turn's instant, so every record of one
+turn shares it, and a bare `authorize` names no `operationId`; the same question
+asked twice in one turn is therefore two records that agree on every field but
+`id`. A store that deduplicates keys on `id`. Keyed on a hash of the content, it
+keeps one of the two and loses the other.
 
 `turn.ended` is the execution envelope's one event, written at the terminal
 through the kernel, which owns audit. It carries the turn's `executionId` as

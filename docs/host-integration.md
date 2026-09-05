@@ -314,6 +314,9 @@ const kernel = new SharedOSKernel({
     usageStore: durableGrantUsageStore,
     grantVerifier: durableGrantVerifier,
   }),
+  // Every record carries its own `id`. A sink that deduplicates -- a retried
+  // batch, a replayed outbox -- keys on it, never on a hash of the content:
+  // one turn can ask the same question twice, and both answers are records.
   audit: durableAuditSink,
   toolNamespaceSettings,
   toolProviders: [userMcpToolProvider],

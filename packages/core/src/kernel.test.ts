@@ -2770,3 +2770,39 @@ describe("SharedOSKernel.reach", () => {
     expect(await usageStore.getUsage("world-alpha", "grant-bounded")).toBe(0);
   });
 });
+
+describe("SharedOSKernel audit identity", () => {
+  it("records the same question asked twice in one turn as two records", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (event) => void events.push(event) },
+    });
+    const requirement = { resource: FILE_RESOURCE, action: "search" };
+
+    await kernel.authorize(context(), requirement);
+    await kernel.authorize(context(), requirement);
+
+    const checks = events.filter(({ type }) => type === "authorization.checked");
+    expect(checks).toHaveLength(2);
+    // A bare authorize names no operation and the turn has one instant, so the
+    // two records agree on every field but the one that is theirs alone.
+    const [first, second] = checks.map(({ id, ...content }) => ({ id, content }));
+    expect(first?.content).toEqual(second?.content);
+    expect(first?.id).not.toBe(second?.id);
+    expect(new Set(events.map(({ id }) => id)).size).toBe(events.length);
+  });
+
+  it("mints ids through the factory the host installed", async () => {
+    const events: AuditEvent[] = [];
+    let sequence = 0;
+    const kernel = kernelWith([], {
+      audit: { record: async (event) => void events.push(event) },
+      createAuditId: () => `audit-${(sequence += 1)}`,
+    });
+
+    await kernel.recordTurnEnd(context(), { executionId: "exec-1", status: "succeeded" });
+    await kernel.recordEscalation(context(), "needs a wider grant");
+
+    expect(events.map(({ id }) => id)).toEqual(["audit-1", "audit-2"]);
+  });
+});

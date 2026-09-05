@@ -37,7 +37,13 @@ import {
   composeAgentCard,
   subjectCardContext,
 } from "./agent-card.js";
-import { type AuditEvent, type AuditSink, NoopAuditSink, auditEvent } from "./audit.js";
+import {
+  type AuditEvent,
+  type AuditEventInput,
+  type AuditSink,
+  NoopAuditSink,
+  auditEvent,
+} from "./audit.js";
 import {
   type AuthorityResolution,
   type AuthorityUnavailableCode,
@@ -112,6 +118,15 @@ export interface SharedOSKernelOptions {
   readonly messageRequestRouter?: MessageRequestRouter;
   readonly messageCapabilityResolver?: MessageCapabilityResolver;
   readonly createMessageId?: (context: AccessContext, call: ToolCall) => string;
+  /**
+   * How each audit record gets its identity. A random UUID by default.
+   *
+   * Override for a deterministic host -- a replayed fixture, a conformance
+   * run -- and nowhere else, and never with a factory that can repeat: two
+   * records with one id are one record to every sink that deduplicates, which
+   * is exactly the loss `AuditEvent.id` exists to prevent.
+   */
+  readonly createAuditId?: () => string;
   readonly audit?: AuditSink;
   /** Notification for audit failures that occur after a side effect. */
   readonly onAuditError?: (error: unknown, event: AuditEvent) => void | Promise<void>;
@@ -256,6 +271,7 @@ export class SharedOSKernel {
   readonly #messageRequestRouter: MessageRequestRouter | undefined;
   readonly #messageCapabilityResolver: MessageCapabilityResolver;
   readonly #createMessageId: (context: AccessContext, call: ToolCall) => string;
+  readonly #createAuditId: () => string;
   readonly #audit: AuditSink;
   readonly #onAuditError: ((error: unknown, event: AuditEvent) => void | Promise<void>) | undefined;
   readonly #onProviderError: ProviderErrorReporter | undefined;
@@ -280,6 +296,7 @@ export class SharedOSKernel {
     this.#messageCapabilityResolver =
       options.messageCapabilityResolver ?? new RecipientScopedMessageCapabilityResolver();
     this.#createMessageId = options.createMessageId ?? (() => crypto.randomUUID());
+    this.#createAuditId = options.createAuditId ?? (() => crypto.randomUUID());
     this.#audit = options.audit ?? new NoopAuditSink();
     this.#onAuditError = options.onAuditError;
     this.#onProviderError = options.onProviderError;
@@ -436,7 +453,7 @@ export class SharedOSKernel {
     }
 
     await this.#audit.record(
-      auditEvent(context, {
+      this.#auditEvent(context, {
         type: "escalation.requested",
         outcome: "escalated",
         reason: "escalation_requested",
@@ -488,7 +505,7 @@ export class SharedOSKernel {
     throwIfAborted(options.signal);
     context = structuredClone(context);
     await this.#recordOutcome(
-      auditEvent(context, {
+      this.#auditEvent(context, {
         type: "turn.ended",
         outcome: turn.status === "cancelled" ? "failed" : turn.status,
         operationId: turn.executionId,
@@ -524,7 +541,7 @@ export class SharedOSKernel {
     throwIfAborted(options.signal);
     context = structuredClone(context);
     await this.#recordOutcome(
-      auditEvent(context, {
+      this.#auditEvent(context, {
         type: "tool.invoked",
         outcome: "denied",
         operationId: call.callId,
@@ -719,7 +736,7 @@ export class SharedOSKernel {
     const authority = await this.#resolveAuthority(context, options.signal);
     if (authority.status !== "resolved") {
       await this.#audit.record(
-        auditEvent(context, {
+        this.#auditEvent(context, {
           type: "tool.catalog.listed",
           outcome: "denied",
           reason: "authority_unavailable",
@@ -766,7 +783,7 @@ export class SharedOSKernel {
 
     const { hostPolicy } = authority.authority;
     await this.#audit.record(
-      auditEvent(context, {
+      this.#auditEvent(context, {
         type: "tool.catalog.listed",
         outcome: "succeeded",
         authorityHash: authority.authority.snapshot.hash,
@@ -832,7 +849,7 @@ export class SharedOSKernel {
     const catalog = tools.namespaceCatalog(context.enabledToolNamespaces);
 
     await this.#audit.record(
-      auditEvent(context, {
+      this.#auditEvent(context, {
         type: "tool.namespace.catalog.listed",
         outcome: "succeeded",
         metadata: {
@@ -879,7 +896,7 @@ export class SharedOSKernel {
     const catalog = tools.namespaceCatalog(updatedContext.enabledToolNamespaces);
 
     await this.#recordOutcome(
-      auditEvent(updatedContext, {
+      this.#auditEvent(updatedContext, {
         type: "tool.namespace.selection.updated",
         outcome: "succeeded",
         metadata: {
@@ -1653,7 +1670,7 @@ export class SharedOSKernel {
         ? { status: "resolved", authority: { ...resolved.authority, hostPolicy } }
         : resolved;
     await this.#audit.record(
-      auditEvent(
+      this.#auditEvent(
         context,
         resolution.status === "resolved"
           ? {
@@ -1770,6 +1787,11 @@ export class SharedOSKernel {
     return decision;
   }
 
+  /** Every record the kernel emits is stamped here, so every one carries an id. */
+  #auditEvent(context: AccessContext, event: AuditEventInput): AuditEvent {
+    return auditEvent(context, event, this.#createAuditId);
+  }
+
   async #recordAuthorizationDecision(
     context: AccessContext,
     request: AuthorizationRequest,
@@ -1780,7 +1802,7 @@ export class SharedOSKernel {
     explanation?: AuthorizationExplanation,
   ): Promise<void> {
     await this.#audit.record(
-      auditEvent(context, {
+      this.#auditEvent(context, {
         type: "authorization.checked",
         outcome: decision.allowed ? "allowed" : "denied",
         resource: request.resource,
@@ -1816,7 +1838,7 @@ export class SharedOSKernel {
   ): Promise<void> {
     const { grantId, requirement, cause } = detail;
     await this.#recordOutcome(
-      auditEvent(context, {
+      this.#auditEvent(context, {
         type: "tool.invoked",
         outcome: result.status,
         operationId: call.id,
@@ -1854,7 +1876,7 @@ export class SharedOSKernel {
     grantId?: string,
   ): Promise<void> {
     await this.#recordOutcome(
-      auditEvent(context, {
+      this.#auditEvent(context, {
         type: "resource.invoked",
         outcome: result.status,
         operationId: request.operationId,
@@ -1875,7 +1897,7 @@ export class SharedOSKernel {
     operationId?: string,
   ): Promise<void> {
     await this.#recordOutcome(
-      auditEvent(context, {
+      this.#auditEvent(context, {
         type: "message.sent",
         outcome:
           result.status === "accepted" || result.status === "delivered"
