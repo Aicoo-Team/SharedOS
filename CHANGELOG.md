@@ -6,6 +6,28 @@ version and are published together under npm's `next` dist-tag.
 SharedOS is a `0.x` prerelease: contracts may change between prereleases, and
 each entry calls out what a host has to update.
 
+## Unreleased
+
+### Added
+
+- **Every `AuditEvent` carries an `id`.** A record's identity was its content: the
+  kernel stamps `at` from the turn's `AccessContext.now`, a bare `authorize` carries
+  no `operationId`, and nothing else on the record distinguishes one emission from
+  the next, so the same question asked twice in one turn produced two byte-identical
+  records. A sink that deduplicated on a content hash -- the natural idempotency key
+  when the record offers no other -- kept one and dropped the rest; an end-to-end run
+  over 1,444 host decision records lost more than a quarter of them that way. The
+  id is minted when the event is made, a random UUID by default, and
+  `SharedOSKernelOptions.createAuditId` supplies a deterministic one for a replayed
+  fixture. `auditEvent` and `autoDecisionAuditEvent` take the same factory as a
+  trailing argument.
+
+  **A sink that deduplicates keys on `id`.** A content hash is still the right
+  fallback for a record written before this field existed, and only for one.
+  `at` is unchanged and still the turn's instant: two records with one `at` are
+  one turn's work, not one record, and their order within the turn is the order
+  the sink received them.
+
 ## 0.1.0-alpha.4
 
 ### Changed — breaking
