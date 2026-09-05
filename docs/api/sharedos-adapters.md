@@ -2240,6 +2240,12 @@ Argument blobs are model or harness output, so they are parsed rather than
 trusted: an empty blob is an empty object, anything that is not a JSON
 object is refused as `undefined`.
 
+What `JSON.parse` returns is read by a walk of its own rather than by
+`JsonObjectSchema`. The verdict and the value are the schema's; the schema
+reached them by trying every branch of the value union at every node, which
+cost sixty-odd times the parse and was most of what a string-carrying
+adapter spent per call.
+
 #### Parameters
 
 | Parameter | Type     |

@@ -1,3 +1,4 @@
+import { JsonObjectSchema } from "@aicoo/sharedos-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -307,5 +308,66 @@ describe("tool argument parsing", () => {
     expect(parseToolArguments("[1, 2]")).toBeUndefined();
     expect(parseToolArguments('"a string"')).toBeUndefined();
     expect(parseToolArguments("null")).toBeUndefined();
+  });
+
+  it("refuses a number literal that overflowed to an infinity, at any depth", () => {
+    expect(parseToolArguments('{"n":1e999}')).toBeUndefined();
+    expect(parseToolArguments('{"n":-1e999}')).toBeUndefined();
+    expect(parseToolArguments('{"a":{"b":[1,{"c":1e999}]}}')).toBeUndefined();
+    expect(parseToolArguments('{"n":1.5e308,"z":-0}')).toEqual({ n: 1.5e308, z: -0 });
+  });
+
+  it("drops a __proto__ key at every depth, as the schema does, and keeps the rest in order", () => {
+    const top = parseToolArguments('{"__proto__":{"polluted":true},"path":"x","n":1}');
+    expect(top).toEqual({ path: "x", n: 1 });
+    expect(Object.getOwnPropertyNames(top)).toEqual(["path", "n"]);
+    expect(Object.getPrototypeOf(top)).toBe(Object.prototype);
+
+    const nested = parseToolArguments(
+      '{"a":{"b":1,"__proto__":2,"c":3},"d":[{"__proto__":4,"e":5}]}',
+    );
+    expect(nested).toEqual({ a: { b: 1, c: 3 }, d: [{ e: 5 }] });
+    expect(Object.getOwnPropertyNames((nested as { a: object }).a)).toEqual(["b", "c"]);
+    expect(Object.getOwnPropertyNames((nested as { d: object[] }).d[0])).toEqual(["e"]);
+  });
+
+  it("gives the verdict and the value JsonObjectSchema gives, blob for blob", () => {
+    const blobs = [
+      '{"path":["Workspace"]}',
+      "1",
+      "true",
+      "[]",
+      "{}",
+      '{"":""}',
+      '{"a":null,"b":[],"c":{}}',
+      '{"a":1,"a":2}',
+      '{"1":"x","b":"y","0":"z"}',
+      '{"constructor":1,"toString":2,"hasOwnProperty":3}',
+      '{"n":1e999}',
+      '{"a":[[[{"n":-1e999}]]]}',
+      '{"__proto__":1}',
+      '{"__proto__":1e999}',
+      '{"a":{"__proto__":{"__proto__":1},"b":[{"__proto__":2}]}}',
+      `{"deep":${"[".repeat(64)}1${"]".repeat(64)}}`,
+      `{"path":["Workspace","src","index.ts"],"content":"${"x".repeat(4096)}"}`,
+    ];
+    const ownNames = (value: unknown): unknown =>
+      value !== null && typeof value === "object"
+        ? Object.fromEntries(
+            Object.getOwnPropertyNames(value).map((key) => [
+              key,
+              ownNames((value as Record<string, unknown>)[key]),
+            ]),
+          )
+        : value;
+    for (const blob of blobs) {
+      const expected = JsonObjectSchema.safeParse(JSON.parse(blob));
+      const actual = parseToolArguments(blob);
+      expect(actual === undefined, blob).toBe(!expected.success);
+      if (expected.success) {
+        expect(actual, blob).toEqual(expected.data);
+        expect(ownNames(actual), blob).toEqual(ownNames(expected.data));
+      }
+    }
   });
 });
