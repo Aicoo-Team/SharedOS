@@ -816,6 +816,65 @@ describe("SharedOSKernel tools", () => {
     expect(invoke).not.toHaveBeenCalled();
   });
 
+  it("refuses a parser that returns anything but a JSON object, before authorization", async () => {
+    const seen: unknown[] = [];
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (event) => void seen.push(event.type) },
+    });
+    const returns: unknown[] = [
+      { query: "architecture", at: new Date(0) },
+      { query: undefined },
+      { query: Number.POSITIVE_INFINITY },
+      new Map(),
+      "architecture",
+    ];
+    let index = 0;
+    const invoke = vi.fn(successfulTool().invoke);
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: () => returns[index],
+      invoke,
+    });
+
+    for (index = 0; index < returns.length; index += 1) {
+      await expect(kernel.invokeTool(context(), toolCall())).resolves.toMatchObject({
+        status: "failed",
+        error: { code: "invalid_tool_arguments" },
+      });
+    }
+    expect(invoke).not.toHaveBeenCalled();
+    expect(seen).not.toContain("authorization.checked");
+  });
+
+  it("hands the tool the parser's normalization as a plain JSON object", async () => {
+    const invoke = vi.fn(successfulTool().invoke);
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])]);
+    const normalized = Object.create({ inherited: "kept" }) as Record<string, unknown>;
+    normalized["query"] = "architecture";
+    Object.defineProperty(normalized, "hidden", { value: "dropped", enumerable: false });
+    kernel.registerTool({
+      definition: FILE_TOOL,
+      parseArguments: () => ({
+        ...JSON.parse('{"__proto__":{"x":1}}'),
+        ...normalized,
+        nested: normalized,
+      }),
+      invoke,
+    });
+
+    await expect(kernel.invokeTool(context(), toolCall())).resolves.toMatchObject({
+      status: "succeeded",
+    });
+    const call = invoke.mock.calls[0]?.[1];
+    expect(call?.arguments).toEqual({
+      query: "architecture",
+      nested: { query: "architecture", inherited: "kept" },
+    });
+    expect(Object.getOwnPropertyNames(call?.arguments)).toEqual(["query", "nested"]);
+    expect(Object.getPrototypeOf(call?.arguments)).toBe(Object.prototype);
+    expect(Object.isFrozen(call?.arguments["nested"])).toBe(true);
+  });
+
   it("does not reveal whether an undiscoverable tool is registered", async () => {
     const events: AuditEvent[] = [];
     const kernel = kernelWith([], {
