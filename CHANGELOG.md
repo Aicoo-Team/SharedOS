@@ -28,6 +28,23 @@ each entry calls out what a host has to update.
   one turn's work, not one record, and their order within the turn is the order
   the sink received them.
 
+### Changed
+
+- **A string-carrying adapter reads tool arguments without the recursive schema.**
+  Codex, DeepSeek and the native harness's driver each carry a call's arguments as
+  a JSON-encoded string, and `parseToolArguments` parsed it and then ran the result
+  through `JsonObjectSchema`, which tries every branch of the value union at every
+  node. That pass was most of what those three spent per call: 118–130 µs against
+  the 13 µs of Pi and Claude Code, whose frames carry the object already parsed.
+  The parsed value is now read by a walk that checks only where the parser's output
+  and the schema's verdict part — a number literal that overflowed to an infinity
+  is refused, a `"__proto__"` key is dropped at every depth — and hands the value
+  back as it was otherwise. The verdict and the value are the schema's, blob for
+  blob, and a test holds them to it. In `docs/conformance/systems-cost.md` the
+  translate rows read Standard 11.7 µs, Codex 4.97 µs and DeepSeek 15 µs on the
+  reference machine, from 128, 118 and 130. The kernel's own `JsonObjectSchema`
+  pass over every call's arguments is unchanged.
+
 ## 0.1.0-alpha.4
 
 ### Changed — breaking

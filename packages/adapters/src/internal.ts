@@ -1,10 +1,4 @@
-import {
-  JsonObjectSchema,
-  type JsonObject,
-  type JsonValue,
-  type ProtocolError,
-  type ToolResult,
-} from "@aicoo/sharedos-contracts";
+import type { JsonObject, JsonValue, ProtocolError, ToolResult } from "@aicoo/sharedos-contracts";
 
 /** The prompt a turn's message becomes when a driver is given no `prompt` override. */
 export function defaultPrompt(request: {
@@ -41,6 +35,12 @@ export function failed(
  * Argument blobs are model or harness output, so they are parsed rather than
  * trusted: an empty blob is an empty object, anything that is not a JSON
  * object is refused as `undefined`.
+ *
+ * What `JSON.parse` returns is read by a walk of its own rather than by
+ * `JsonObjectSchema`. The verdict and the value are the schema's; the schema
+ * reached them by trying every branch of the value union at every node, which
+ * cost sixty-odd times the parse and was most of what a string-carrying
+ * adapter spent per call.
  */
 export function parseToolArguments(raw: string): JsonObject | undefined {
   if (raw.trim() === "") {
@@ -52,8 +52,93 @@ export function parseToolArguments(raw: string): JsonObject | undefined {
   } catch {
     return undefined;
   }
-  const parsed = JsonObjectSchema.safeParse(value);
-  return parsed.success ? parsed.data : undefined;
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const read = readParsedJson(value);
+  return read === REFUSED ? undefined : (read as JsonObject);
+}
+
+const REFUSED: unique symbol = Symbol("refused");
+
+/**
+ * What `JSON.parse` returned, as `JsonObjectSchema` would have returned it.
+ *
+ * The parser's grammar already guarantees strings, booleans, `null`, arrays
+ * and plain objects, so the walk checks the two places where its output and
+ * the schema's verdict part. A number literal too large for a double comes
+ * back as an infinity, which the schema refuses because it cannot round-trip.
+ * A `"__proto__"` key comes back as an own property, which the schema drops
+ * at every depth rather than refuses, and so does this. Anything the parser
+ * cannot produce is refused rather than presumed about.
+ *
+ * The value comes back as it was when nothing had to be dropped; a copy is
+ * made only of the containers on the path to a dropped key.
+ */
+function readParsedJson(value: unknown): JsonValue | typeof REFUSED {
+  switch (typeof value) {
+    case "string":
+    case "boolean":
+      return value;
+    case "number":
+      return Number.isFinite(value) ? value : REFUSED;
+    case "object":
+      break;
+    default:
+      return REFUSED;
+  }
+  if (value === null) {
+    return null;
+  }
+  if (Array.isArray(value)) {
+    let copy: JsonValue[] | undefined;
+    for (let index = 0; index < value.length; index += 1) {
+      const item = readParsedJson(value[index]);
+      if (item === REFUSED) {
+        return REFUSED;
+      }
+      if (copy !== undefined) {
+        copy.push(item);
+      } else if (item !== value[index]) {
+        copy = value.slice(0, index) as JsonValue[];
+        copy.push(item);
+      }
+    }
+    return copy ?? (value as JsonValue[]);
+  }
+  const record = value as Record<string, unknown>;
+  const keys = Object.keys(record);
+  let copy: JsonObject | undefined;
+  for (let index = 0; index < keys.length; index += 1) {
+    const key = keys[index] as string;
+    const item = readParsedJson(record[key]);
+    if (item === REFUSED) {
+      return REFUSED;
+    }
+    if (key === "__proto__") {
+      copy ??= copyKeys(record, keys, index);
+    } else if (copy !== undefined) {
+      copy[key] = item;
+    } else if (item !== record[key]) {
+      copy = copyKeys(record, keys, index);
+      copy[key] = item;
+    }
+  }
+  return copy ?? (record as JsonObject);
+}
+
+/** The first `count` keys of a record the walk has already accepted as they are. */
+function copyKeys(
+  record: Record<string, unknown>,
+  keys: readonly string[],
+  count: number,
+): JsonObject {
+  const copy: JsonObject = {};
+  for (let index = 0; index < count; index += 1) {
+    const key = keys[index] as string;
+    copy[key] = record[key] as JsonValue;
+  }
+  return copy;
 }
 
 /**
