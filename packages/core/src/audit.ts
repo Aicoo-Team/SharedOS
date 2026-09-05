@@ -52,6 +52,19 @@ export type AuditSource = "kernel" | "envelope";
 
 export interface AuditEvent {
   readonly version: "1";
+  /**
+   * The identity of this record, unique among every record a kernel emits.
+   *
+   * Minted when the event is made and never derived from its content. Two
+   * records may agree on every other field: `at` is the turn's instant rather
+   * than the emission's, and a bare `authorize` carries no `operationId`, so
+   * the same question asked twice in one turn is two records that read the
+   * same. A durable sink that needs an idempotency key -- for a retried batch,
+   * a replayed outbox -- keys on this and on nothing else. Keying on a hash of
+   * the content drops every repeat as a duplicate, and a repeat is not a
+   * duplicate: an agent that asked twice is an agent that asked twice.
+   */
+  readonly id: string;
   readonly type: AuditEventType;
   readonly outcome: AuditOutcome;
   readonly at: string;
@@ -112,15 +125,29 @@ export class CompositeAuditSink implements AuditSink {
   }
 }
 
+/** What an emitter states about one event; the kernel supplies the rest. */
+export type AuditEventInput = Omit<
+  AuditEvent,
+  "version" | "id" | "at" | "traceId" | "namespaceId" | "actor" | "authority" | "owner" | "purpose"
+>;
+
+/**
+ * One audit record, stamped from the trusted context.
+ *
+ * `createId` mints the record's identity. The default is a random UUID from
+ * Web Crypto, so the kernel stays host-neutral; a host that needs a
+ * deterministic trail -- a replayed fixture, a conformance run -- supplies its
+ * own, and supplies one that never repeats, because two records with one id
+ * are one record to every sink that deduplicates.
+ */
 export function auditEvent(
   context: AccessContext,
-  event: Omit<
-    AuditEvent,
-    "version" | "at" | "traceId" | "namespaceId" | "actor" | "authority" | "owner" | "purpose"
-  >,
+  event: AuditEventInput,
+  createId: () => string = randomAuditEventId,
 ): AuditEvent {
   return immutableAuditEvent({
     version: "1",
+    id: createId(),
     at: context.now,
     traceId: context.traceId,
     namespaceId: context.namespaceId,
@@ -130,6 +157,10 @@ export function auditEvent(
     purpose: context.purpose,
     ...event,
   });
+}
+
+function randomAuditEventId(): string {
+  return crypto.randomUUID();
 }
 
 function immutableAuditEvent(event: AuditEvent): AuditEvent {

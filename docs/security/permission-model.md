@@ -483,7 +483,10 @@ Every decision should be reconstructable from tamper-evident records containing:
 - actor, authority/issuer, owner, and matched grant ID when allowed;
 - namespace/world, resource, action, and purpose;
 - execution, operation, message, tool call, and trace identifiers as applicable;
-- time and sequence;
+- time and sequence, and an identity of the record's own (`AuditEvent.id`)
+  that no other record shares, minted rather than derived from content: the
+  same decision made twice in one turn is two records, and a store that
+  deduplicates keys on the id, never on a hash of the fields;
 - provider result category and affected resources, without leaking secrets.
 
 Denials are first-class events. Audit storage belongs to the host, while event
