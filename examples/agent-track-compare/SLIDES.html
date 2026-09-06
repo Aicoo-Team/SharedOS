@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Track Record — Slide Deck</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #e0e0e0; font-family: 'SF Mono', 'Fira Code', monospace; overflow: hidden; }
+  .slide { display: none; width: 100vw; height: 100vh; padding: 50px; flex-direction: column; justify-content: center; }
+  .slide.active { display: flex; }
+  h1 { font-size: 2.8rem; color: #fff; margin-bottom: 10px; font-weight: 600; }
+  h2 { font-size: 1.6rem; color: #fff; margin-bottom: 16px; font-weight: 600; }
+  .subtitle { color: #888; font-size: 1rem; margin-bottom: 30px; }
+  .tag { display: inline-block; background: #1a1a2e; color: #60a5fa; padding: 3px 10px; border-radius: 5px; font-size: 0.75rem; margin-right: 6px; }
+  .nav { position: fixed; bottom: 24px; right: 30px; display: flex; gap: 10px; z-index: 100; }
+  .nav button { background: #222; border: 1px solid #444; color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.8rem; }
+  .nav button:hover { background: #333; }
+  .slide-num { position: fixed; bottom: 28px; left: 30px; color: #444; font-size: 0.75rem; z-index: 100; }
+  .footer { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); color: #333; font-size: 0.65rem; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .card { background: #111; border: 1px solid #222; border-radius: 10px; padding: 20px; }
+  .card-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: #555; margin-bottom: 12px; }
+  .metric { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1a1a1a; font-size: 0.85rem; }
+  .metric:last-child { border-bottom: none; }
+  .metric-label { color: #888; }
+  .metric-value { color: #fff; font-weight: 600; }
+  .metric-value.green { color: #4ade80; }
+  .metric-value.red { color: #f87171; }
+  .metric-value.yellow { color: #fbbf24; }
+  .tool-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.8rem; }
+  .tool-name { color: #60a5fa; }
+  .tool-rate { color: #4ade80; }
+  .tool-rate.bad { color: #f87171; }
+  .punchline { background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid #333; border-radius: 10px; padding: 30px; text-align: center; margin-top: 24px; }
+  .punchline .question { font-size: 1.1rem; color: #ccc; }
+  .punchline .answer { color: #4ade80; font-size: 1.5rem; font-weight: 700; margin-top: 8px; }
+  .arch { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+  .arch-box { background: #111; border: 1px solid #333; border-radius: 8px; padding: 12px 20px; text-align: center; min-width: 140px; }
+  .arch-box .label { font-size: 0.6rem; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+  .arch-box .name { font-size: 0.9rem; color: #fff; margin-top: 3px; font-weight: 600; }
+  .arch-box .detail { font-size: 0.6rem; color: #888; margin-top: 3px; }
+  .arch-box.highlight { border-color: #4ade80; background: #0d1f1a; }
+  .arch-box.highlight .name { color: #4ade80; }
+  .arch-arrow { color: #444; font-size: 1.3rem; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+  .step { background: #111; border: 1px solid #222; border-radius: 8px; padding: 16px; text-align: center; }
+  .step .num { font-size: 1.8rem; color: #4ade80; font-weight: 700; }
+  .step .title { font-size: 0.85rem; color: #fff; margin: 6px 0 3px 0; font-weight: 600; }
+  .step .desc { font-size: 0.65rem; color: #777; }
+  .code-block { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 20px; font-size: 0.9rem; line-height: 1.5; }
+  .code-block .comment { color: #6a737d; }
+  .code-block .keyword { color: #ff7b72; }
+  .code-block .func { color: #d2a8ff; }
+  .code-block .string { color: #a5d6ff; }
+
+  /* Example slides */
+  .ex-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .ex-card { background: #111; border: 1px solid #222; border-radius: 8px; padding: 14px; }
+  .ex-num { font-size: 0.55rem; color: #4ade80; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .ex-title { font-size: 0.85rem; color: #fff; margin-bottom: 4px; font-weight: 600; }
+  .ex-desc { font-size: 0.7rem; color: #888; margin-bottom: 6px; line-height: 1.3; }
+  .ex-code { background: #0d1117; border-radius: 4px; padding: 6px 8px; font-size: 0.6rem; color: #a5d6ff; line-height: 1.4; }
+  .ex-output { background: #0d1117; border-radius: 4px; padding: 6px 8px; font-size: 0.6rem; color: #4ade80; line-height: 1.4; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Title -->
+<div class="slide active" id="s1">
+  <h1>Agent Track Record</h1>
+  <p class="subtitle">
+    <span class="tag">@aicoo/sharedos-agent-track</span>
+    <span class="tag">14 source files</span>
+    <span class="tag">30 tests</span>
+  </p>
+  <p style="color: #aaa; font-size: 1.2rem; margin-top: 16px;">Agent reputation from kernel facts, not self-reports.</p>
+  <p style="color: #555; font-size: 0.85rem; margin-top: 30px;">Press → to continue</p>
+</div>
+
+<!-- SLIDE 2: How It Works -->
+<div class="slide" id="s2">
+  <h2>How It Works</h2>
+  <div class="arch">
+    <div class="arch-box"><div class="label">Input</div><div class="name">Kernel Audit Events</div><div class="detail">9 event types</div></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box"><div class="label">Collect</div><div class="name">TrackRecordCollector</div><div class="detail">wraps AuditSink</div></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box"><div class="label">Store</div><div class="name">TrackRecordStore</div><div class="detail">Map&lt;agentId, events&gt;</div></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box highlight"><div class="label">Analyze</div><div class="name">analyzeTrackRecord()</div><div class="detail">pure function</div></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box"><div class="label">Output</div><div class="name">AgentTrackRecord</div><div class="detail">summary + precedents</div></div>
+  </div>
+  <p style="color: #666; text-align: center; font-size: 0.8rem;">No self-reported data. Every metric derived from events the kernel wrote.</p>
+  <div class="steps">
+    <div class="step"><div class="num">1</div><div class="title">Record</div><div class="desc">Kernel writes every auth decision to AuditSink</div></div>
+    <div class="step"><div class="num">2</div><div class="title">Index</div><div class="desc">Collector indexes events by agent ID</div></div>
+    <div class="step"><div class="num">3</div><div class="title">Compute</div><div class="desc">Analyzer derives auth rate, edge-probe score</div></div>
+    <div class="step"><div class="num">4</div><div class="title">Decide</div><div class="desc">Answer is on screen</div></div>
+  </div>
+</div>
+
+<!-- SLIDE 3: Demo -->
+<div class="slide" id="s3">
+  <h2>Two agents. Same repo.</h2>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-label">careful-agent — stays within grants</div>
+      <div class="metric"><span class="metric-label">Authorization rate</span><span class="metric-value green">100.0%</span></div>
+      <div class="metric"><span class="metric-label">Edge-probe score</span><span class="metric-value green">0.00</span></div>
+      <div class="metric"><span class="metric-label">Total denials</span><span class="metric-value green">0</span></div>
+    </div>
+    <div class="card">
+      <div class="card-label">probe-agent — tests the fence</div>
+      <div class="metric"><span class="metric-label">Authorization rate</span><span class="metric-value red">33.3%</span></div>
+      <div class="metric"><span class="metric-label">Edge-probe score</span><span class="metric-value yellow">0.33</span></div>
+      <div class="metric"><span class="metric-label">Total denials</span><span class="metric-value red">4</span></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top: 16px;">
+    <div class="card-label">Tool breakdown — probe-agent</div>
+    <div class="tool-row"><span class="tool-name">files.search</span><span class="tool-rate">100% allowed</span></div>
+    <div class="tool-row"><span class="tool-name">files.delete</span><span class="tool-rate bad">0% allowed — 4 denied</span></div>
+    <div class="tool-row"><span class="tool-name">files.write</span><span class="tool-rate bad">0% allowed — 2 denied</span></div>
+  </div>
+  <div class="punchline">
+    <div class="question">Do you want to give <strong>probe-agent</strong> write access?</div>
+    <div class="answer">→ The answer is already on screen.</div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Examples Part 1 -->
+<div class="slide" id="s4">
+  <h2>Examples 1–4: Core Features</h2>
+  <div class="ex-grid">
+    <div class="ex-card">
+      <div class="ex-num">01 — Time Windows</div>
+      <div class="ex-title">Rolling window aggregation</div>
+      <div class="ex-desc">Compute metrics over 1h / 24h / 7d / 30d windows to see trends instead of point-in-time snapshots.</div>
+      <div class="ex-code">computeWindowedTrackRecord(store, "agent-id", now)</div>
+      <div class="ex-output">1h: auth 95.0% | 24h: auth 87.3% | 7d: auth 82.1%</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">02 — Multi-Agent Comparison</div>
+      <div class="ex-title">Pairwise diffs + rankings</div>
+      <div class="ex-desc">Compare multiple agents with structured diffs. Get rankings by auth rate, edge-probe score, escalation rate.</div>
+      <div class="ex-code">compareTrackRecords(store, ["agent-a", "agent-b"])</div>
+      <div class="ex-output">Auth rate delta: 50% | Edge probe: 0.00 vs 0.72</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">03 — Threshold Alerts</div>
+      <div class="ex-title">Configurable severity levels</div>
+      <div class="ex-desc">Set thresholds for edge-probe score, auth rate, denial count. Get info/warning/critical alerts.</div>
+      <div class="ex-code">checkAlerts(record, { minEdgeProbeScore: 0.5 })</div>
+      <div class="ex-output">[~] Edge-probe score 0.57 exceeds threshold 0.50</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">04 — Tool Breakdown</div>
+      <div class="ex-title">Per-tool authorization stats</div>
+      <div class="ex-desc">See exactly which tools an agent is targeting. Per-tool auth rates, denial counts, retry detection.</div>
+      <div class="ex-code">computeToolBreakdown(store, "agent-id")</div>
+      <div class="ex-output">files.delete: 0% allowed, 3 denied (retried)</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: Examples Part 2 -->
+<div class="slide" id="s5">
+  <h2>Examples 5–8: Integration</h2>
+  <div class="ex-grid">
+    <div class="ex-card">
+      <div class="ex-num">05 — Storage + Reputation</div>
+      <div class="ex-title">Persistent adapter + signed snapshots</div>
+      <div class="ex-desc">Adapter interface for SQLite/Postgres. Signed snapshots for cross-host reputation transfer with SHA-256 verification.</div>
+      <div class="ex-code">createSignedSnapshot(store, "agent-id", key, "host-1")</div>
+      <div class="ex-output">Valid: true | Tampered: false | Imported: true</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">06 — Streaming Analysis</div>
+      <div class="ex-title">Incremental updates, no recomputation</div>
+      <div class="ex-desc">Process events as they arrive. Get instant snapshots without scanning the full event history.</div>
+      <div class="ex-code">tracker.pushEvent(event); tracker.snapshot("agent-id")</div>
+      <div class="ex-output">good-agent: auth 100% probe 0.00 | risky: auth 20% probe 0.40</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">07 — Export Formats</div>
+      <div class="ex-title">CSV + Prometheus</div>
+      <div class="ex-desc">Export to CSV for spreadsheets or Prometheus exposition format for monitoring dashboards.</div>
+      <div class="ex-code">exportCSV(record) | exportPrometheus(record)</div>
+      <div class="ex-output">sharedos_agent_track_auth_rate{agent_id="a"} 0.67</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">08 — Precedent Bridge</div>
+      <div class="ex-title">Bridge to sharedos-precedent</div>
+      <div class="ex-desc">Feed track records into auto-decision admission. Enrich proposals with agent history context.</div>
+      <div class="ex-code">enrichWithContext(store, "agent-id", "files.delete", "delete")</div>
+      <div class="ex-output">Past denials: 3 | Retried: false | Edge probe: 0.30</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: Examples Part 3 -->
+<div class="slide" id="s6">
+  <h2>Examples 9–11: Advanced</h2>
+  <div class="ex-grid">
+    <div class="ex-card">
+      <div class="ex-num">09 — Anomaly Detection</div>
+      <div class="ex-title">Statistical deviation detection</div>
+      <div class="ex-desc">Detect denial spikes, new tool patterns, escalation surges, and unusual timing using rolling baselines.</div>
+      <div class="ex-code">detectAnomalies(store, "agent-id", { sensitivity: 2.0 })</div>
+      <div class="ex-output">[!!!] spike_denials: rate spiked from 8.6% to 100%</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">10 — Edge-Probe Score</div>
+      <div class="ex-title">Boundary-testing detection</div>
+      <div class="ex-desc">Weighted formula: 50% denial ratio, 30% retry-after-denial, 20% escalation rate. Tunable per threat model.</div>
+      <div class="ex-code">record.summary.edgeProbeScore</div>
+      <div class="ex-output">0.00 (well-behaved) → 1.0 (constant probing)</div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-num">11 — Gate Classification</div>
+      <div class="ex-title">Which gate refused?</div>
+      <div class="ex-desc">Classify denials into 4 gates: registration, capability grant, infrastructure, product ceiling.</div>
+      <div class="ex-code">record.summary.denialBreakdown</div>
+      <div class="ex-output">registration: 0 | capGrant: 8 | infra: 0 | ceiling: 0</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: Code -->
+<div class="slide" id="s7">
+  <h2>Integration — 5 lines</h2>
+  <div class="code-block">
+    <span class="keyword">const</span> collector = <span class="keyword">new</span> <span class="func">TrackRecordCollector</span>(auditSink);<br>
+    kernel.<span class="func">registerTool</span>(<span class="func">agentTrackRecordTool</span>(collector));<br>
+    <br>
+    <span class="comment">// ... tool calls happen ...</span><br>
+    <br>
+    <span class="keyword">const</span> record = <span class="func">analyzeTrackRecord</span>(collector.<span class="func">getStore</span>(), agentId);<br>
+    <span class="comment">// record.summary.authorizationRate → 1.0</span><br>
+    <span class="comment">// record.summary.edgeProbeScore → 0.81</span><br>
+    <span class="comment">// record.precedents → [{ tool, outcome, reason }]</span>
+  </div>
+  <p style="color: #888; margin-top: 24px; font-size: 1rem;">Wraps existing AuditSink. Zero overhead. Works with any SharedOS kernel.</p>
+</div>
+
+<!-- SLIDE 8: Q&A -->
+<div class="slide" id="s8">
+  <h2>Q&A</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+    <div class="card" style="padding: 14px;">
+      <div style="color: #60a5fa; font-size: 0.75rem; font-weight: 600; margin-bottom: 6px;">How does it get the data?</div>
+      <div style="color: #aaa; font-size: 0.7rem; line-height: 1.4;">From kernel audit events. The TrackRecordCollector wraps the AuditSink. Every authorization decision, every tool invocation is recorded by the kernel. We just index it.</div>
+    </div>
+    <div class="card" style="padding: 14px;">
+      <div style="color: #60a5fa; font-size: 0.75rem; font-weight: 600; margin-bottom: 6px;">What if an agent lies about its history?</div>
+      <div style="color: #aaa; font-size: 0.7rem; line-height: 1.4;">It can't. Every field is derived from events the kernel wrote. The agent never reports its own behavior.</div>
+    </div>
+    <div class="card" style="padding: 14px;">
+      <div style="color: #60a5fa; font-size: 0.75rem; font-weight: 600; margin-bottom: 6px;">Does it add latency?</div>
+      <div style="color: #aaa; font-size: 0.7rem; line-height: 1.4;">Near-zero. The collector is a passthrough sink — clones the event and adds it to a Map. Analysis is a pure function over that Map.</div>
+    </div>
+    <div class="card" style="padding: 14px;">
+      <div style="color: #60a5fa; font-size: 0.75rem; font-weight: 600; margin-bottom: 6px;">How do you handle large volumes?</div>
+      <div style="color: #aaa; font-size: 0.7rem; line-height: 1.4;">StreamingTracker does incremental updates (no recomputation), or the persistent adapter lets you plug in SQLite/Postgres.</div>
+    </div>
+    <div class="card" style="padding: 14px;">
+      <div style="color: #60a5fa; font-size: 0.75rem; font-weight: 600; margin-bottom: 6px;">Can I customize the edge-probe formula?</div>
+      <div style="color: #aaa; font-size: 0.7rem; line-height: 1.4;">Yes. Weights are tunable: 50% denial ratio, 30% retry-after-denial, 20% escalation rate. Adjust for your threat model.</div>
+    </div>
+    <div class="card" style="padding: 14px;">
+      <div style="color: #60a5fa; font-size: 0.75rem; font-weight: 600; margin-bottom: 6px;">Why is probe-agent's score only 0.33?</div>
+      <div style="color: #aaa; font-size: 0.7rem; line-height: 1.4;">Only 8 tool calls. With more attempts and retries, the score climbs toward 1.0. The signal is denial ratio + retry pattern + escalation rate.</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide-num"><span id="current">1</span> / <span id="total">8</span></div>
+<div class="nav"><button onclick="prev()">← Prev</button><button onclick="next()">Next →</button></div>
+<div class="footer">Agent Track Record — SharedOS</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  function show(n) { slides[current].classList.remove('active'); current = (n + slides.length) % slides.length; slides[current].classList.add('active'); document.getElementById('current').textContent = current + 1; }
+  function next() { show(current + 1); }
+  function prev() { show(current - 1); }
+  document.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); } if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); } });
+  document.getElementById('total').textContent = slides.length;
+</script>
+</body>
+</html>

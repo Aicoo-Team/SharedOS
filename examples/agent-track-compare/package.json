@@ -1,0 +1,21 @@
+{
+  "name": "@aicoo/sharedos-example-agent-track-compare",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node dist/index.js",
+    "start:all": "node dist/run-all.js",
+    "start:demo": "node dist/demo.js",
+    "start:live": "node dist/live-test.js",
+    "start:features": "node dist/features/01-time-windows.js && node dist/features/02-comparison.js && node dist/features/03-alerts.js && node dist/features/04-tool-breakdown.js && node dist/features/05-storage-reputation.js && node dist/features/06-streaming.js && node dist/features/07-exports.js && node dist/features/08-precedent.js && node dist/features/09-anomaly.js"
+  },
+  "dependencies": {
+    "@aicoo/sharedos-agent-track": "workspace:*",
+    "@aicoo/sharedos-contracts": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*",
+    "@aicoo/sharedos-os": "workspace:*",
+    "@aicoo/sharedos-runtime": "workspace:*",
+    "@aicoo/sharedos-testkit": "workspace:*"
+  }
+}

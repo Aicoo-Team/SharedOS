@@ -1,0 +1,672 @@
+{
+  "version": "1",
+  "events": {
+    "careful-agent": [
+      {
+        "version": "1",
+        "type": "authority.resolved",
+        "outcome": "succeeded",
+        "at": "2025-01-01T00:00:00Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "careful-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "allowed",
+        "at": "2025-01-01T00:00:01Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "careful-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.search",
+        "action": "search"
+      },
+      {
+        "version": "1",
+        "type": "tool.invoked",
+        "outcome": "succeeded",
+        "at": "2025-01-01T00:00:02Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "careful-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.search"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "allowed",
+        "at": "2025-01-01T00:00:03Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "careful-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.read",
+        "action": "read"
+      },
+      {
+        "version": "1",
+        "type": "tool.invoked",
+        "outcome": "succeeded",
+        "at": "2025-01-01T00:00:04Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "careful-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.read"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "allowed",
+        "at": "2025-01-01T00:00:05Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "careful-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.search",
+        "action": "search"
+      },
+      {
+        "version": "1",
+        "type": "tool.invoked",
+        "outcome": "succeeded",
+        "at": "2025-01-01T00:00:06Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "careful-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.search"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "allowed",
+        "at": "2025-01-01T01:00:00Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "careful-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.read",
+        "action": "read"
+      },
+      {
+        "version": "1",
+        "type": "tool.invoked",
+        "outcome": "succeeded",
+        "at": "2025-01-01T01:00:01Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "careful-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.read"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "allowed",
+        "at": "2025-01-01T01:00:02Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "careful-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.search",
+        "action": "search"
+      },
+      {
+        "version": "1",
+        "type": "tool.invoked",
+        "outcome": "succeeded",
+        "at": "2025-01-01T01:00:03Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "careful-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.search"
+      }
+    ],
+    "probe-agent": [
+      {
+        "version": "1",
+        "type": "authority.resolved",
+        "outcome": "succeeded",
+        "at": "2025-01-01T00:00:00Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "allowed",
+        "at": "2025-01-01T00:00:01Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.search",
+        "action": "search"
+      },
+      {
+        "version": "1",
+        "type": "tool.invoked",
+        "outcome": "succeeded",
+        "at": "2025-01-01T00:00:02Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.search"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "denied",
+        "at": "2025-01-01T00:00:03Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.delete",
+        "action": "delete",
+        "reason": "no_matching_grant"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "denied",
+        "at": "2025-01-01T00:00:04Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.delete",
+        "action": "delete",
+        "reason": "no_matching_grant"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "denied",
+        "at": "2025-01-01T00:00:05Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.write",
+        "action": "write",
+        "reason": "no_matching_grant"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "denied",
+        "at": "2025-01-01T00:00:06Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.delete",
+        "action": "delete",
+        "reason": "no_matching_grant"
+      },
+      {
+        "version": "1",
+        "type": "escalation.requested",
+        "outcome": "escalated",
+        "at": "2025-01-01T00:00:07Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "reason": "Need delete access"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "allowed",
+        "at": "2025-01-01T01:00:00Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.search",
+        "action": "search"
+      },
+      {
+        "version": "1",
+        "type": "tool.invoked",
+        "outcome": "succeeded",
+        "at": "2025-01-01T01:00:01Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.search"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "denied",
+        "at": "2025-01-01T01:00:02Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.write",
+        "action": "write",
+        "reason": "no_matching_grant"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "denied",
+        "at": "2025-01-01T01:00:03Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.delete",
+        "action": "delete",
+        "reason": "no_matching_grant"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "denied",
+        "at": "2025-01-01T01:00:04Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.write",
+        "action": "write",
+        "reason": "no_matching_grant"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "denied",
+        "at": "2025-01-01T01:00:05Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "files.delete",
+        "action": "delete",
+        "reason": "no_matching_grant"
+      },
+      {
+        "version": "1",
+        "type": "authorization.checked",
+        "outcome": "denied",
+        "at": "2025-01-01T01:00:06Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "tool": "admin.users",
+        "action": "list",
+        "reason": "tool_unavailable"
+      },
+      {
+        "version": "1",
+        "type": "escalation.requested",
+        "outcome": "escalated",
+        "at": "2025-01-01T01:00:07Z",
+        "traceId": "trace-1",
+        "namespaceId": "ns-repo",
+        "actor": {
+          "kind": "agent",
+          "agentId": "probe-agent"
+        },
+        "authority": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "owner": {
+          "kind": "human",
+          "userId": "repo-owner"
+        },
+        "purpose": "code-review",
+        "reason": "Need admin access"
+      }
+    ]
+  },
+  "turns": {
+    "careful-agent": [
+      {
+        "turnId": "careful-turn-1",
+        "agentId": "careful-agent",
+        "startedAt": "2025-01-01T00:00:00Z",
+        "completedAt": "2025-01-01T00:00:03Z",
+        "outcome": "complete",
+        "toolCalls": 2,
+        "denials": 0,
+        "escalations": 0
+      },
+      {
+        "turnId": "careful-turn-2",
+        "agentId": "careful-agent",
+        "startedAt": "2025-01-01T01:00:00Z",
+        "completedAt": "2025-01-01T01:00:03Z",
+        "outcome": "complete",
+        "toolCalls": 2,
+        "denials": 0,
+        "escalations": 0
+      }
+    ],
+    "probe-agent": [
+      {
+        "turnId": "probe-turn-1",
+        "agentId": "probe-agent",
+        "startedAt": "2025-01-01T00:00:00Z",
+        "completedAt": "2025-01-01T00:00:04Z",
+        "outcome": "escalate",
+        "toolCalls": 2,
+        "denials": 2,
+        "escalations": 1
+      },
+      {
+        "turnId": "probe-turn-2",
+        "agentId": "probe-agent",
+        "startedAt": "2025-01-01T01:00:00Z",
+        "completedAt": "2025-01-01T01:00:04Z",
+        "outcome": "escalate",
+        "toolCalls": 2,
+        "denials": 2,
+        "escalations": 1
+      }
+    ]
+  }
+}
