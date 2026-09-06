@@ -14,6 +14,7 @@ export const packageDirectories = [
   "contracts",
   "core",
   "precedent",
+  "agent-track",
   "os",
   "runtime",
   "client",

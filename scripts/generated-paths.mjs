@@ -10,5 +10,6 @@ export function generatedOutputDirectories(repositoryRoot) {
     join(repositoryRoot, "examples", "quickstart", "dist"),
     join(repositoryRoot, "examples", "fleet-delegation", "dist"),
     join(repositoryRoot, "examples", "reference-host", "dist"),
+    join(repositoryRoot, "examples", "agent-track-compare", "dist"),
   ];
 }

@@ -1,0 +1,52 @@
+{
+  "name": "@aicoo/sharedos-agent-track",
+  "version": "0.1.0-alpha.4",
+  "description": "Agent track record derived entirely from kernel-recorded audit events",
+  "license": "Apache-2.0",
+  "keywords": [
+    "agents",
+    "audit",
+    "authorization",
+    "reputation",
+    "track-record"
+  ],
+  "homepage": "https://www.aicoo.io",
+  "bugs": {
+    "email": "founders@aicoo.io"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aicoo-Team/SharedOS.git",
+    "directory": "packages/agent-track"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "tag": "next",
+    "registry": "https://registry.npmjs.org"
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "src/**/*.ts",
+    "!dist/**/*.test.*",
+    "!src/**/*.test.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@aicoo/sharedos-contracts": "workspace:*",
+    "@aicoo/sharedos-core": "workspace:*",
+    "@aicoo/sharedos-precedent": "workspace:*"
+  }
+}
