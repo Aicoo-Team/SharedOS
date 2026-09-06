@@ -32,15 +32,9 @@ importers:
 
   examples/denial-debugger:
     dependencies:
-      '@aicoo/sharedos-contracts':
+      '@aicoo/sharedos':
         specifier: workspace:*
-        version: link:../../packages/contracts
-      '@aicoo/sharedos-core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@aicoo/sharedos-debugger':
-        specifier: workspace:*
-        version: link:../../packages/debugger
+        version: link:../../packages/sdk
       '@aicoo/sharedos-testkit':
         specifier: workspace:*
         version: link:../../packages/testkit
