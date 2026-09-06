@@ -6,3 +6,6 @@ export * from "@aicoo/sharedos-runtime";
 
 export { SharedOSClient, SharedOSClientError } from "@aicoo/sharedos-client";
 export type { SharedOSCallOptions, SharedOSClientOptions } from "@aicoo/sharedos-client";
+
+export { diagnoseDenial, diagnoseBatch } from "@aicoo/sharedos-debugger";
+export type { DenialDiagnosis, DenialGate } from "@aicoo/sharedos-debugger";

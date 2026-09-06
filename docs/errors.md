@@ -571,6 +571,37 @@ Wire `onAuditError` to alerting. A dropped audit write must not pass silently �
 it is the only record that separates "was allowed to" from "did it and nobody
 stopped it".
 
+## Quick diagnosis lookup table
+
+Use this table when you see a denial and need to know which gate to fix.
+The `diagnoseDenial()` function from `@aicoo/sharedos-testkit` automates this
+lookup.
+
+| Error code                    | Gate             | Diagnosis                                            | Fix                                                                     |
+| ----------------------------- | ---------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| `tool_unavailable`            | Registration     | Tool not registered, namespace disabled, or no grant | Check `metadata.cause`: register tool, enable namespace, or issue grant |
+| `no_matching_grant`           | Capability Grant | No grant covers this resource + action               | Walk the 9-item checklist; issue a new grant                            |
+| `grant_exhausted`             | Capability Grant | Grant's maxUses reached                              | Wire GrantUsageStore or issue a new grant                               |
+| `trace_mismatch`              | Capability Grant | Trace identity doesn't match grant subject           | Ensure actor matches grant subject                                      |
+| `host_policy_denied`          | Product Ceiling  | Host ceiling override blocked the call               | Check which grant was overridden and why                                |
+| `usage_store_unavailable`     | Infrastructure   | Grant has maxUses but no usageStore is wired         | Wire a GrantUsageStore                                                  |
+| `authority_unavailable`       | Infrastructure   | GrantSource threw or timed out                       | Check GrantSource implementation                                        |
+| `delegation_chain_unverified` | Infrastructure   | DelegationResolver could not verify the chain        | Wire a DelegationResolver                                               |
+| `host_policy_unavailable`     | Infrastructure   | HostCeiling threw or timed out                       | Check HostCeiling implementation                                        |
+| `delegation_chain_invalid`    | Delegation       | Delegation chain resolved but broke at a link        | Check which link failed and fix the parent grant                        |
+
+### Four gates, four fixes
+
+SharedOS denials fall through four gates in order:
+
+1. **Registration** — Is the tool registered and its namespace enabled?
+2. **Capability Grant** — Does a grant cover this actor, resource, action, and purpose?
+3. **Product Ceiling** — Does a host ceiling override block the call?
+4. **Infrastructure** — Did a wiring dependency fail (usageStore, GrantSource, etc.)?
+
+Fix the first gate that denies. A registration fix won't help if the real
+problem is a missing grant.
+
 ## Contract limits
 
 Rejected by the schemas, so they hold identically on both boundaries.

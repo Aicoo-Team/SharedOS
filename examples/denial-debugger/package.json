@@ -1,0 +1,16 @@
+{
+  "name": "@aicoo/sharedos-example-denial-debugger",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@aicoo/sharedos": "workspace:*",
+    "@aicoo/sharedos-testkit": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2"
+  }
+}

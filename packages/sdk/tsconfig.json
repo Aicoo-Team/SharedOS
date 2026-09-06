@@ -10,6 +10,7 @@
     { "path": "../client" },
     { "path": "../contracts" },
     { "path": "../core" },
+    { "path": "../debugger" },
     { "path": "../http" },
     { "path": "../os" },
     { "path": "../runtime" }

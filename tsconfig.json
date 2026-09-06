@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/contracts" },
     { "path": "./packages/core" },
+    { "path": "./packages/debugger" },
     { "path": "./packages/precedent" },
     { "path": "./packages/os" },
     { "path": "./packages/runtime" },
@@ -15,6 +16,7 @@
     { "path": "./packages/adapters" },
     { "path": "./examples/quickstart" },
     { "path": "./examples/fleet-delegation" },
-    { "path": "./examples/reference-host" }
+    { "path": "./examples/reference-host" },
+    { "path": "./examples/denial-debugger" }
   ]
 }

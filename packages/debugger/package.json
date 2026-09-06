@@ -1,18 +1,24 @@
 {
-  "name": "@aicoo/sharedos",
+  "name": "@aicoo/sharedos-debugger",
   "version": "0.1.0-alpha.4",
-  "description": "Permission-controlled state and delegation SDK with pluggable agent runtimes",
+  "description": "Diagnose SharedOS authorization denials with actionable next steps",
   "license": "Apache-2.0",
   "keywords": [
     "agents",
     "authorization",
     "capabilities",
-    "delegation",
+    "debugging",
+    "diagnostics",
     "runtime"
   ],
   "homepage": "https://www.aicoo.io",
   "bugs": {
     "email": "founders@aicoo.io"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aicoo-Team/SharedOS.git",
+    "directory": "packages/debugger"
   },
   "type": "module",
   "sideEffects": false,
@@ -20,11 +26,6 @@
     "access": "public",
     "tag": "next",
     "registry": "https://registry.npmjs.org"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Aicoo-Team/SharedOS.git",
-    "directory": "packages/sdk"
   },
   "engines": {
     "node": ">=20.11"
@@ -36,7 +37,9 @@
     "dist/**/*.d.ts.map",
     "src/**/*.ts",
     "!dist/**/*.test.*",
-    "!src/**/*.test.ts"
+    "!src/**/*.test.ts",
+    "README.md",
+    "REFERENCE.md"
   ],
   "exports": {
     ".": {
@@ -45,12 +48,7 @@
     }
   },
   "dependencies": {
-    "@aicoo/sharedos-client": "workspace:*",
     "@aicoo/sharedos-contracts": "workspace:*",
-    "@aicoo/sharedos-core": "workspace:*",
-    "@aicoo/sharedos-debugger": "workspace:*",
-    "@aicoo/sharedos-http": "workspace:*",
-    "@aicoo/sharedos-os": "workspace:*",
-    "@aicoo/sharedos-runtime": "workspace:*"
+    "@aicoo/sharedos-core": "workspace:*"
   }
 }
