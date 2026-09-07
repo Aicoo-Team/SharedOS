@@ -30,6 +30,15 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)
 
+  examples/authorization-debugger:
+    dependencies:
+      '@aicoo/sharedos':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@aicoo/sharedos-adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
+
   examples/fleet-delegation:
     dependencies:
       '@aicoo/sharedos-contracts':

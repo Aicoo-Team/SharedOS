@@ -186,7 +186,10 @@ disambiguation hold for all of them rather than for the one that happens to
 consult the authorizer.
 
 If you are debugging a `tool_unavailable` and have no audit sink wired, wire one
-first.
+first. The
+[`authorization-debugger` example](../examples/authorization-debugger/README.md)
+runs registration, namespace, capability, and host-ceiling refusals side by
+side and derives its operator-facing diagnosis from these audit fields.
 
 **Both boundaries use this one code.** The execution envelope refuses a tool
 outside the turn's permission-filtered catalogue with `tool_unavailable`, the

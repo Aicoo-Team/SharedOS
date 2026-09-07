@@ -25,6 +25,7 @@
     "test": "vitest run",
     "test:release": "node --test scripts/*.test.mjs",
     "example:quickstart": "pnpm build && pnpm --filter @aicoo/sharedos-example-quickstart start",
+    "example:authorization-debugger": "pnpm build && pnpm --filter @aicoo/sharedos-example-authorization-debugger start",
     "example:reference-host": "pnpm build && pnpm --filter @aicoo/sharedos-example-reference-host start",
     "example:network-studio": "pnpm --filter @aicoo/sharedos-example-network-studio start",
     "pack:preview": "node scripts/pack-preview.mjs",

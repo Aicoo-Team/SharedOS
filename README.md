@@ -241,6 +241,17 @@ One robot passes part of its mandate to another, cannot pass on more than it
 holds, and loses it the moment the operator revokes upstream. See
 [`examples/fleet-delegation`](examples/fleet-delegation/src/index.ts).
 
+To diagnose four refusals that look identical to an agent but differ in trusted
+audit, then watch a live revocation remove the tool from discovery:
+
+```bash
+pnpm example:authorization-debugger
+```
+
+The [authorization debugger](examples/authorization-debugger/README.md) names
+the registration, namespace, capability, and host-ceiling gates without
+leaking those distinctions through the caller-facing refusal.
+
 To explore the two proposed agent-network product modes as an interactive UI,
 run the local Network Studio prototype:
 

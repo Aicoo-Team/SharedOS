@@ -1,0 +1,13 @@
+{
+  "name": "@aicoo/sharedos-example-authorization-debugger",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.mjs"
+  },
+  "dependencies": {
+    "@aicoo/sharedos": "workspace:*",
+    "@aicoo/sharedos-adapters": "workspace:*"
+  }
+}
