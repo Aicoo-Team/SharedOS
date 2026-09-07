@@ -41,6 +41,18 @@ importers:
 
   examples/network-studio: {}
 
+  examples/permission-shaped-search:
+    dependencies:
+      '@aicoo/sharedos-contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@aicoo/sharedos-core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@aicoo/sharedos-os':
+        specifier: workspace:*
+        version: link:../../packages/os
+
   examples/quickstart:
     dependencies:
       '@aicoo/sharedos-contracts':

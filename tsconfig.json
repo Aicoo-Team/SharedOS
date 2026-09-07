@@ -16,6 +16,7 @@
     { "path": "./examples/quickstart" },
     { "path": "./examples/fleet-delegation" },
     { "path": "./examples/recipient-fanout" },
+    { "path": "./examples/permission-shaped-search" },
     { "path": "./examples/reference-host" }
   ]
 }

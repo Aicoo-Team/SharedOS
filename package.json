@@ -36,6 +36,7 @@
     "test:watch": "vitest",
     "example:fleet-delegation": "pnpm build && pnpm --filter @aicoo/sharedos-example-fleet-delegation start",
     "example:recipient-fanout": "pnpm build && pnpm --filter @aicoo/sharedos-example-recipient-fanout start",
+    "example:permission-shaped-search": "pnpm build && pnpm --filter @aicoo/sharedos-example-permission-shaped-search start",
     "check": "pnpm format:check && pnpm typecheck && pnpm test && pnpm test:release && pnpm docs:api:check && pnpm conformance:check"
   },
   "devDependencies": {

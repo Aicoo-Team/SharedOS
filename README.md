@@ -252,6 +252,17 @@ Each recipient gets its own single-use ticket, so a spent ticket, a wrong
 recipient, and a revoked recipient are three different refusals. See
 [`examples/recipient-fanout`](examples/recipient-fanout/README.md).
 
+To see one search produce permission-shaped answers for three agents:
+
+```bash
+pnpm example:permission-shaped-search
+```
+
+The example runs the same `files.search` query across one, two, and three
+reachable roots, proves a denied call never reaches the provider, then issues a
+grant and widens the next turn. See
+[`examples/permission-shaped-search`](examples/permission-shaped-search/README.md).
+
 To explore the two proposed agent-network product modes as an interactive UI,
 run the local Network Studio prototype:
 
