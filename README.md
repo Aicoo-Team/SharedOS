@@ -241,6 +241,17 @@ One robot passes part of its mandate to another, cannot pass on more than it
 holds, and loses it the moment the operator revokes upstream. See
 [`examples/fleet-delegation`](examples/fleet-delegation/src/index.ts).
 
+To see why asking three colleagues one question is three authorizations rather
+than one:
+
+```bash
+pnpm example:recipient-fanout
+```
+
+Each recipient gets its own single-use ticket, so a spent ticket, a wrong
+recipient, and a revoked recipient are three different refusals. See
+[`examples/recipient-fanout`](examples/recipient-fanout/README.md).
+
 To explore the two proposed agent-network product modes as an interactive UI,
 run the local Network Studio prototype:
 

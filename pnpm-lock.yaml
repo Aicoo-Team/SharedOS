@@ -59,6 +59,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testkit
 
+  examples/recipient-fanout:
+    dependencies:
+      '@aicoo/sharedos-contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@aicoo/sharedos-core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/reference-host:
     dependencies:
       '@aicoo/sharedos-contracts':

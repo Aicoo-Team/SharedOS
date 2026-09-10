@@ -15,6 +15,7 @@
     { "path": "./packages/adapters" },
     { "path": "./examples/quickstart" },
     { "path": "./examples/fleet-delegation" },
+    { "path": "./examples/recipient-fanout" },
     { "path": "./examples/reference-host" }
   ]
 }
