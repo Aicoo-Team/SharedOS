@@ -7,7 +7,12 @@ import type {
   ResourceOperation,
   ResourceResult,
 } from "@aicoo/sharedos-contracts";
-import { SharedOSKernel, type GrantSource, type ResourceProvider } from "@aicoo/sharedos-core";
+import {
+  SharedOSKernel,
+  addressesEqual,
+  type GrantSource,
+  type ResourceProvider,
+} from "@aicoo/sharedos-core";
 
 import { registerStandardOsTools } from "./index.js";
 
@@ -32,10 +37,6 @@ const documents: Record<string, { area: string; text: string }[]> = {
   "Team/Product": [{ area: "Product", text: "Migration retries may add three days." }],
   "Team/Finance": [{ area: "Finance", text: "The vendor exception expires Friday." }],
 };
-
-function addressesEqual(left: Address, right: Address): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
-}
 
 function grant(id: string, subject: Address, path: readonly string[]): CapabilityGrant {
   return {
@@ -110,34 +111,41 @@ describe("permission-shaped search", () => {
     const kernel = new SharedOSKernel({ grantSource: source });
     registerStandardOsTools(kernel, { files });
 
+    // One authority lease per turn, which is the shape `SharedOSExecutor` runs
+    // every turn in; reach and the calls it produced then decide against one
+    // authority state rather than re-reading the store between them.
     async function search(agent: (typeof agents)[number], turn: string) {
       const access = context(agent, turn);
-      const reach = await kernel.reach(access);
-      expect(reach.status).toBe("computed");
-      if (reach.status !== "computed") throw new Error(`reach unavailable: ${reach.reasonCode}`);
+      const scope = await kernel.openTurnAuthority(access);
+      try {
+        const reach = await kernel.reach(access);
+        expect(reach.status).toBe("computed");
+        if (reach.status !== "computed") throw new Error(`reach unavailable: ${reach.reasonCode}`);
 
-      const roots = reach.reach.filter(
-        (entry) => entry.namespace === "files" && entry.actions.includes("search"),
-      );
-      const results = await Promise.all(
-        roots.map((root, index) =>
-          kernel.invokeTool(access, {
-            id: `${turn}-${agent.id}-${index}`,
-            tool: "files.search",
-            arguments: { path: root.path, query: "What could delay the Meridian launch?" },
-            traceId: access.traceId,
-            requestedAt: NOW,
-          }),
-        ),
-      );
-      const hits = results.flatMap((result) =>
-        result.status === "succeeded" ? ((result.output as { hits: unknown[] }).hits ?? []) : [],
-      );
-      return { roots, hits };
+        const roots = reach.reach.filter(
+          (entry) => entry.namespace === "files" && entry.actions.includes("search"),
+        );
+        const results = await Promise.all(
+          roots.map((root, index) =>
+            kernel.invokeTool(access, {
+              id: `${turn}-${agent.id}-${index}`,
+              tool: "files.search",
+              arguments: { path: root.path, query: "What could delay the Meridian launch?" },
+              traceId: access.traceId,
+              requestedAt: NOW,
+            }),
+          ),
+        );
+        const hits = results.flatMap((result) =>
+          result.status === "succeeded" ? ((result.output as { hits: unknown[] }).hits ?? []) : [],
+        );
+        return { roots, hits };
+      } finally {
+        scope.close();
+      }
     }
 
     const before = await Promise.all(agents.map((agent) => search(agent, "before")));
-    expect(before.map(({ hits }) => hits)).toHaveLength(3);
     expect(before.map(({ hits }) => hits.length)).toEqual([1, 2, 3]);
     expect(before.map(({ roots }) => roots.map(({ path }) => path.at(-1)).sort())).toEqual([
       ["Company"],
