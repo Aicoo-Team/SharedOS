@@ -6,6 +6,7 @@ import type { JsonValue, ToolCall } from "@aicoo/sharedos-contracts";
 
 import {
   HostileRuntime,
+  attemptCallId,
   moveTurnCount,
   type AttackAttempt,
   type AttackMove,
@@ -983,6 +984,116 @@ describe("grading", () => {
     expect(judgement.status).toBe("not_exercised");
     expect(judgement.attempts.every(({ status }) => status === "not_exercised")).toBe(true);
     expect(judgement.attempted).toBe(0);
+  });
+
+  /**
+   * A `messages.request` the transport refused leaves two operations under
+   * one call id: the `message.sent` with the transport's code, then the tool
+   * call with `message_request_not_accepted`. The scripted reader took the
+   * first and every other reader the second, so the route-lease row printed
+   * one code in the scripted columns and another in `Adv` and live -- and the
+   * split read as scripted-against-live when it was audit order.
+   */
+  it("grades a refused dispatch on what the caller was told, and carries the transport's code as its cause", () => {
+    const move = canonicalMove("route_lease_revoked");
+    const executionId = "turn-1";
+    const at = "2026-08-18T09:00:00.000Z";
+    const callId = (attemptId: string) =>
+      attemptCallId(
+        executionId,
+        move,
+        move.attempts.find(({ id }) => id === attemptId)!,
+      );
+    const refused = [
+      {
+        at,
+        kind: "message" as const,
+        source: "kernel" as const,
+        outcome: "denied" as const,
+        operationId: callId("dispatch-after-the-revocation"),
+        reasonCode: "route_lease_revoked",
+        failClosed: false,
+      },
+      {
+        at,
+        kind: "tool" as const,
+        source: "kernel" as const,
+        outcome: "failed" as const,
+        operationId: callId("dispatch-after-the-revocation"),
+        tool: "messages.request",
+        reasonCode: "message_request_not_accepted",
+        failClosed: false,
+      },
+    ];
+    const succeeded = (attemptId: string, tool: string) => ({
+      at,
+      kind: "tool" as const,
+      source: "kernel" as const,
+      outcome: "succeeded" as const,
+      operationId: callId(attemptId),
+      tool,
+      failClosed: false,
+    });
+    const recordWith = (operations: readonly (typeof refused)[number][]) => {
+      const base = emptyRecord();
+      return {
+        ...base,
+        execution: {
+          ...base.execution,
+          operations: [
+            succeeded("send-while-the-route-is-live", "messages.request"),
+            ...operations,
+            succeeded("read-after-the-refused-dispatch", "files.read"),
+          ],
+        },
+      };
+    };
+
+    for (const operations of [refused, [...refused].reverse()]) {
+      const record = recordWith(operations);
+      const receipts = receiptsFromRecord(move, { executionId, turn: 1, record });
+      const judgement = judgeCase(move, { receipts, record });
+      const attack = judgement.attempts.find(({ role }) => role === "attack");
+
+      // Whichever operation audit wrote first, the receipt is the tool call.
+      expect(receipts.find(({ role }) => role === "attack")).toMatchObject({
+        observed: "failed",
+        reasonCode: "message_request_not_accepted",
+      });
+      expect(judgement.status).toBe("pass");
+      expect(attack).toMatchObject({
+        status: "pass",
+        reasonCode: "message_request_not_accepted",
+        cause: "route_lease_revoked",
+        refusedBy: "kernel",
+      });
+      expect(judgement.reasonCodes).toEqual(["message_request_not_accepted"]);
+      expect(judgement.causes).toEqual(["route_lease_revoked"]);
+    }
+  });
+
+  it("does not let the transport's code satisfy the row on its own", () => {
+    // A receipt carrying the transport's code is a reader that took the wrong
+    // operation; the expectation names what SharedOS says and nothing else.
+    const move = canonicalMove("route_lease_revoked");
+    const attack = move.attempts.find(({ role }) => role === "attack")!;
+    const receipt: AttemptReceipt = {
+      moveId: move.id,
+      kind: move.kind,
+      attemptId: attack.id,
+      role: attack.role,
+      tool: attack.tool!,
+      expect: attack.expect,
+      argumentKeys: [],
+      attempted: true,
+      callId: "call-1",
+      observed: "denied",
+      reasonCode: "route_lease_revoked",
+    };
+
+    const judgement = judgeCase(move, { receipts: [receipt], record: emptyRecord() });
+
+    expect(judgement.attempts.find(({ role }) => role === "attack")?.status).toBe("fail");
   });
 });
 

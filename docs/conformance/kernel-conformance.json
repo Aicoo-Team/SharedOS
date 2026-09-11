@@ -1,7 +1,7 @@
 {
   "version": "1",
   "judgeVersion": "4",
-  "caseSetHash": "1515d09cc4e6a4b5c4964a86ef839caa7b790b85b5e9279298b0169b6ead1b8b",
+  "caseSetHash": "85fc0fb5ff2860773a217e082311c7852152f94c4907a6493d5c5f1f01b47840",
   "worldSetHash": "7da4ac781f42a2609c83c03a20a6adaa2d9280d2096f37ec37d2cec88fbc07ba",
   "columns": [
     {
@@ -48,6 +48,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -65,6 +66,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -82,6 +84,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -99,6 +102,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -116,6 +120,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -133,6 +138,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -160,6 +166,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -177,6 +184,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -194,6 +202,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -211,6 +220,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -228,6 +238,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -245,6 +256,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -274,6 +286,7 @@
             "host_policy_denied",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -293,6 +306,7 @@
             "host_policy_denied",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -312,6 +326,7 @@
             "host_policy_denied",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -331,6 +346,7 @@
             "host_policy_denied",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -350,6 +366,7 @@
             "host_policy_denied",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -369,6 +386,7 @@
             "host_policy_denied",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -396,6 +414,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -413,6 +432,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -430,6 +450,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -447,6 +468,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -464,6 +486,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -481,6 +504,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -508,6 +532,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -525,6 +550,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -542,6 +568,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -559,6 +586,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -576,6 +604,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -593,6 +622,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -620,6 +650,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -637,6 +668,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -654,6 +686,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -671,6 +704,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -688,6 +722,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -705,6 +740,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -732,6 +768,7 @@
           "reasonCodes": [
             "delegation_chain_invalid"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -749,6 +786,7 @@
           "reasonCodes": [
             "delegation_chain_invalid"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -766,6 +804,7 @@
           "reasonCodes": [
             "delegation_chain_invalid"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -783,6 +822,7 @@
           "reasonCodes": [
             "delegation_chain_invalid"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -800,6 +840,7 @@
           "reasonCodes": [
             "delegation_chain_invalid"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -817,6 +858,7 @@
           "reasonCodes": [
             "delegation_chain_invalid"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -844,6 +886,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -861,6 +904,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -878,6 +922,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -895,6 +940,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -912,6 +958,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -929,6 +976,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -956,6 +1004,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -973,6 +1022,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -990,6 +1040,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1007,6 +1058,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1024,6 +1076,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1041,6 +1094,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1068,6 +1122,7 @@
           "reasonCodes": [
             "invalid_request"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 2,
           "driverIssued": [],
@@ -1085,6 +1140,7 @@
           "reasonCodes": [
             "invalid_request"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 2,
           "driverIssued": [],
@@ -1102,6 +1158,7 @@
           "reasonCodes": [
             "invalid_request"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 2,
           "driverIssued": [],
@@ -1119,6 +1176,7 @@
           "reasonCodes": [
             "invalid_request"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 2,
           "driverIssued": [],
@@ -1136,6 +1194,7 @@
           "reasonCodes": [
             "invalid_request"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 2,
           "driverIssued": [],
@@ -1153,6 +1212,7 @@
           "reasonCodes": [
             "invalid_request"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 2,
           "driverIssued": [],
@@ -1180,6 +1240,7 @@
           "reasonCodes": [
             "grant_exhausted"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1197,6 +1258,7 @@
           "reasonCodes": [
             "grant_exhausted"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1214,6 +1276,7 @@
           "reasonCodes": [
             "grant_exhausted"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1231,6 +1294,7 @@
           "reasonCodes": [
             "grant_exhausted"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1248,6 +1312,7 @@
           "reasonCodes": [
             "grant_exhausted"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1265,6 +1330,7 @@
           "reasonCodes": [
             "grant_exhausted"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1292,6 +1358,7 @@
           "reasonCodes": [
             "usage_store_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1309,6 +1376,7 @@
           "reasonCodes": [
             "usage_store_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1326,6 +1394,7 @@
           "reasonCodes": [
             "usage_store_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1343,6 +1412,7 @@
           "reasonCodes": [
             "usage_store_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1360,6 +1430,7 @@
           "reasonCodes": [
             "usage_store_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1377,6 +1448,7 @@
           "reasonCodes": [
             "usage_store_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -1404,6 +1476,7 @@
           "reasonCodes": [
             "authority_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 0,
           "driverIssued": [],
@@ -1422,6 +1495,7 @@
           "reasonCodes": [
             "authority_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 0,
           "driverIssued": [],
@@ -1440,6 +1514,7 @@
           "reasonCodes": [
             "authority_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 0,
           "driverIssued": [],
@@ -1458,6 +1533,7 @@
           "reasonCodes": [
             "authority_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 0,
           "driverIssued": [],
@@ -1476,6 +1552,7 @@
           "reasonCodes": [
             "authority_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 0,
           "driverIssued": [],
@@ -1494,6 +1571,7 @@
           "reasonCodes": [
             "authority_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 0,
           "driverIssued": [],
@@ -1522,6 +1600,7 @@
           "reasonCodes": [
             "invalid_tool_requirement"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1539,6 +1618,7 @@
           "reasonCodes": [
             "invalid_tool_requirement"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1556,6 +1636,7 @@
           "reasonCodes": [
             "invalid_tool_requirement"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1573,6 +1654,7 @@
           "reasonCodes": [
             "invalid_tool_requirement"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1590,6 +1672,7 @@
           "reasonCodes": [
             "invalid_tool_requirement"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1607,6 +1690,7 @@
           "reasonCodes": [
             "invalid_tool_requirement"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1634,6 +1718,7 @@
           "reasonCodes": [
             "invalid_tool_result"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1651,6 +1736,7 @@
           "reasonCodes": [
             "invalid_tool_result"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1668,6 +1754,7 @@
           "reasonCodes": [
             "invalid_tool_result"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1685,6 +1772,7 @@
           "reasonCodes": [
             "invalid_tool_result"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1702,6 +1790,7 @@
           "reasonCodes": [
             "invalid_tool_result"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1719,6 +1808,7 @@
           "reasonCodes": [
             "invalid_tool_result"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1746,6 +1836,7 @@
           "reasonCodes": [
             "tool_call_limit_exceeded"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1763,6 +1854,7 @@
           "reasonCodes": [
             "tool_call_limit_exceeded"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1780,6 +1872,7 @@
           "reasonCodes": [
             "tool_call_limit_exceeded"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1797,6 +1890,7 @@
           "reasonCodes": [
             "tool_call_limit_exceeded"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1814,6 +1908,7 @@
           "reasonCodes": [
             "tool_call_limit_exceeded"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1831,6 +1926,7 @@
           "reasonCodes": [
             "tool_call_limit_exceeded"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1858,6 +1954,7 @@
           "reasonCodes": [
             "step_limit_exceeded"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1875,6 +1972,7 @@
           "reasonCodes": [
             "step_limit_exceeded"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [
@@ -1894,6 +1992,7 @@
           "reasonCodes": [
             "step_limit_exceeded"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [
@@ -1913,6 +2012,7 @@
           "reasonCodes": [
             "step_limit_exceeded"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [
@@ -1932,6 +2032,7 @@
           "reasonCodes": [
             "step_limit_exceeded"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [
@@ -1951,6 +2052,7 @@
           "reasonCodes": [
             "step_limit_exceeded"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [
@@ -1978,6 +2080,7 @@
           "reasonCodes": [
             "no_grant_material_reachable"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -1991,6 +2094,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 2,
           "attempted": 1,
           "driverIssued": [],
@@ -2005,6 +2109,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 2,
           "attempted": 1,
           "driverIssued": [],
@@ -2019,6 +2124,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 2,
           "attempted": 1,
           "driverIssued": [],
@@ -2033,6 +2139,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 2,
           "attempted": 1,
           "driverIssued": [],
@@ -2047,6 +2154,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 2,
           "attempted": 1,
           "driverIssued": [],
@@ -2075,6 +2183,7 @@
           "reasonCodes": [
             "delegation_chain_invalid"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2092,6 +2201,7 @@
           "reasonCodes": [
             "delegation_chain_invalid"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2109,6 +2219,7 @@
           "reasonCodes": [
             "delegation_chain_invalid"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2126,6 +2237,7 @@
           "reasonCodes": [
             "delegation_chain_invalid"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2143,6 +2255,7 @@
           "reasonCodes": [
             "delegation_chain_invalid"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2160,6 +2273,7 @@
           "reasonCodes": [
             "delegation_chain_invalid"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2187,6 +2301,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -2204,6 +2319,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -2221,6 +2337,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -2238,6 +2355,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -2255,6 +2373,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -2272,6 +2391,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -2299,6 +2419,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -2316,6 +2437,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -2333,6 +2455,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -2350,6 +2473,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -2367,6 +2491,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -2384,6 +2509,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 4,
           "attempted": 4,
           "driverIssued": [],
@@ -2411,6 +2537,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2428,6 +2555,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2445,6 +2573,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2462,6 +2591,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2479,6 +2609,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2496,6 +2627,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2523,6 +2655,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2540,6 +2673,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2557,6 +2691,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2574,6 +2709,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2591,6 +2727,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2608,6 +2745,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2635,6 +2773,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2652,6 +2791,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2669,6 +2809,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2686,6 +2827,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2703,6 +2845,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2720,6 +2863,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2747,6 +2891,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2764,6 +2909,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2781,6 +2927,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2798,6 +2945,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2815,6 +2963,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2832,6 +2981,7 @@
           "reasonCodes": [
             "no_matching_grant"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -2860,6 +3010,7 @@
             "escalation_requested",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -2879,6 +3030,7 @@
             "escalation_requested",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -2898,6 +3050,7 @@
             "escalation_requested",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -2917,6 +3070,7 @@
             "escalation_requested",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -2936,6 +3090,7 @@
             "escalation_requested",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -2955,6 +3110,7 @@
             "escalation_requested",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 2,
           "attempted": 2,
           "driverIssued": [],
@@ -2983,6 +3139,7 @@
           "reasonCodes": [
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 1,
           "attempted": 1,
           "driverIssued": [],
@@ -2997,6 +3154,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 1,
@@ -3011,6 +3169,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 1,
@@ -3025,6 +3184,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 1,
@@ -3039,6 +3199,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 1,
@@ -3053,6 +3214,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 1,
@@ -3081,6 +3243,7 @@
           "reasonCodes": [
             "runtime_failed"
           ],
+          "causes": [],
           "declared": 1,
           "attempted": 1,
           "driverIssued": [],
@@ -3095,6 +3258,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 1,
@@ -3109,6 +3273,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 1,
@@ -3123,6 +3288,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 1,
@@ -3137,6 +3303,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 1,
@@ -3151,6 +3318,7 @@
           "status": "not_applicable",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 1,
@@ -3179,6 +3347,9 @@
           "reasonCodes": [
             "message_request_not_accepted"
           ],
+          "causes": [
+            "route_lease_revoked"
+          ],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -3194,6 +3365,9 @@
             "kernel"
           ],
           "reasonCodes": [
+            "message_request_not_accepted"
+          ],
+          "causes": [
             "route_lease_revoked"
           ],
           "declared": 3,
@@ -3211,6 +3385,9 @@
             "kernel"
           ],
           "reasonCodes": [
+            "message_request_not_accepted"
+          ],
+          "causes": [
             "route_lease_revoked"
           ],
           "declared": 3,
@@ -3228,6 +3405,9 @@
             "kernel"
           ],
           "reasonCodes": [
+            "message_request_not_accepted"
+          ],
+          "causes": [
             "route_lease_revoked"
           ],
           "declared": 3,
@@ -3245,6 +3425,9 @@
             "kernel"
           ],
           "reasonCodes": [
+            "message_request_not_accepted"
+          ],
+          "causes": [
             "route_lease_revoked"
           ],
           "declared": 3,
@@ -3262,6 +3445,9 @@
             "kernel"
           ],
           "reasonCodes": [
+            "message_request_not_accepted"
+          ],
+          "causes": [
             "route_lease_revoked"
           ],
           "declared": 3,
@@ -3293,6 +3479,7 @@
             "no_matching_grant",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -3312,6 +3499,7 @@
             "no_matching_grant",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -3331,6 +3519,7 @@
             "no_matching_grant",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -3350,6 +3539,7 @@
             "no_matching_grant",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -3369,6 +3559,7 @@
             "no_matching_grant",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -3388,6 +3579,7 @@
             "no_matching_grant",
             "tool_unavailable"
           ],
+          "causes": [],
           "declared": 3,
           "attempted": 3,
           "driverIssued": [],
@@ -3411,6 +3603,7 @@
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 0,
@@ -3425,6 +3618,7 @@
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 0,
@@ -3439,6 +3633,7 @@
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 0,
@@ -3453,6 +3648,7 @@
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 0,
@@ -3467,6 +3663,7 @@
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 0,
@@ -3481,6 +3678,7 @@
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 0,
@@ -3505,6 +3703,7 @@
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 0,
@@ -3519,6 +3718,7 @@
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 0,
@@ -3533,6 +3733,7 @@
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 0,
@@ -3547,6 +3748,7 @@
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 0,
@@ -3561,6 +3763,7 @@
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 0,
@@ -3575,6 +3778,7 @@
           "status": "not_implemented",
           "refusedBy": [],
           "reasonCodes": [],
+          "causes": [],
           "declared": 1,
           "attempted": 0,
           "notApplicable": 0,
