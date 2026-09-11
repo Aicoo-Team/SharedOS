@@ -15,6 +15,7 @@ import {
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAME,
   ESCALATION_TOOL_NAMESPACE,
+  PROMPT_HANDED_EVENT,
   TurnExecutor,
   escalationReason,
   escalationRequest,
@@ -820,5 +821,99 @@ describe("recognising an escalation in a call", () => {
     expect(escalationReason("x".repeat(ESCALATION_REASON_MAX_LENGTH + 1))).toBeUndefined();
     expect(escalationReason("   ")).toBeUndefined();
     expect(escalationReason(7)).toBeUndefined();
+  });
+});
+
+/** The hashes the turn announced as what the seat was told, in event order. */
+function handedHashes(events: readonly { type: string; data: unknown }[]): unknown[] {
+  return events
+    .filter(
+      ({ type, data }) =>
+        type === "runtime.event" && runtimeEventType(data) === PROMPT_HANDED_EVENT,
+    )
+    .map(({ data }) => (data as { data: { promptHash: unknown } }).data.promptHash);
+}
+
+function runtimeEventType(data: unknown): unknown {
+  return data !== null && typeof data === "object" ? (data as { type?: unknown }).type : undefined;
+}
+
+/**
+ * A driver that hands the seat text states its hash on the session, and the
+ * loop announces it before the first step. The point of the event is the turn
+ * that never returns: its terminal metadata is lost with the outcome it would
+ * have ridden on, and the record would otherwise not say what it was asked.
+ */
+describe("what the seat was told, announced before the first step", () => {
+  const hash = "d".repeat(64);
+
+  it("survives a turn cancelled while the driver is still deciding", async () => {
+    const cancel = new AbortController();
+    const driver: AgentTurnDriver = {
+      open: async () => ({
+        promptHash: hash,
+        // A decision that never comes. The stall is made deterministic: the
+        // turn is cancelled from outside the moment the driver is asked for
+        // its first decision, and the loop's own race against the signal is
+        // what ends the wait.
+        next: () =>
+          new Promise(() => {
+            cancel.abort(new Error("deadline"));
+          }),
+      }),
+    };
+
+    const result = await new TurnExecutor(kernel(), driver).execute(request(), {
+      signal: cancel.signal,
+    });
+
+    expect(result.status).toBe("cancelled");
+    // The metadata path is empty on this ending; the event path is not.
+    expect(result.metadata?.["promptHash"]).toBeUndefined();
+    expect(handedHashes(result.events)).toEqual([hash]);
+  });
+
+  it("is announced once, ahead of any tool call, and matches the terminal metadata", async () => {
+    const driver: AgentTurnDriver = {
+      open: async () => ({
+        promptHash: hash,
+        next: async (input) =>
+          input.type === "start"
+            ? {
+                type: "tool_call",
+                call: {
+                  id: "call-1",
+                  tool: tool.name,
+                  arguments: { query: "status" },
+                  traceId: context.traceId,
+                  requestedAt: now,
+                },
+              }
+            : { type: "complete", output: { done: true }, metadata: { promptHash: hash } },
+      }),
+    };
+
+    const result = await new TurnExecutor(kernel(), driver).execute(request());
+
+    expect(result.status).toBe("succeeded");
+    expect(handedHashes(result.events)).toEqual([hash]);
+    const announced = result.events.findIndex(({ type }) => type === "runtime.event");
+    const requested = result.events.findIndex(({ type }) => type === "tool.requested");
+    expect(announced).toBeGreaterThan(-1);
+    expect(announced).toBeLessThan(requested);
+    expect(result.metadata?.["promptHash"]).toBe(hash);
+  });
+
+  it("is not announced by a driver that hands the seat no text", async () => {
+    const driver: AgentTurnDriver = {
+      open: async () => ({
+        next: async () => ({ type: "complete", output: { done: true } }),
+      }),
+    };
+
+    const result = await new TurnExecutor(kernel(), driver).execute(request());
+
+    expect(result.status).toBe("succeeded");
+    expect(handedHashes(result.events)).toEqual([]);
   });
 });
