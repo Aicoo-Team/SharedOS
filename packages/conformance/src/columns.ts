@@ -579,9 +579,18 @@ export function receiptsFromRecord(move: AttackMove, turn: ColumnTurn): readonly
   const operations = new Map(
     move.attempts.flatMap((attempt) => {
       const callId = attemptCallId(turn.executionId, move, attempt);
-      const operation = turn.record.execution.operations.find(
+      // Several operations can share the call's id: a `messages.request` that
+      // the transport refused leaves a `message` operation carrying the
+      // transport's code and a `tool` operation carrying what the caller was
+      // told, in that order. The attempt is the tool call, so the tool
+      // operation is its receipt; the other is its cause and is joined by the
+      // judge. Taking the first match instead made the scripted columns'
+      // reason code depend on audit order, and the route-lease row read one
+      // code here and another everywhere else.
+      const candidates = turn.record.execution.operations.filter(
         (candidate) => candidate.operationId === callId,
       );
+      const operation = candidates.find(({ kind }) => kind === "tool") ?? candidates[0];
       return operation === undefined ? [] : [[attempt.id, operation] as const];
     }),
   );

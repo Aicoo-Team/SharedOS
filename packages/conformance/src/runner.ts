@@ -55,6 +55,12 @@ export interface ConformanceCell {
   readonly status: ConformanceStatus;
   readonly refusedBy: readonly EnforcementPoint[];
   readonly reasonCodes: readonly string[];
+  /**
+   * The codes behind those refusals where the record carried one: a refusal
+   * the kernel let stand rather than made, named in the host's vocabulary.
+   * Reported, never graded.
+   */
+  readonly causes: readonly string[];
   readonly declared: number;
   readonly attempted: number;
   /** Attempts a runtime structurally cannot make, declared rather than omitted. */
@@ -354,6 +360,7 @@ function declaredCell(
     status,
     refusedBy: [],
     reasonCodes: [],
+    causes: [],
     declared: move.attempts.length,
     attempted: 0,
     notApplicable: status === "not_applicable" ? move.attempts.length : 0,
@@ -474,6 +481,7 @@ async function runCell(
       status,
       refusedBy: judgement.refusedBy,
       reasonCodes: judgement.reasonCodes,
+      causes: judgement.causes,
       declared: judgement.declared,
       attempted: judgement.attempted,
       driverIssued: judgement.driverIssued,
@@ -682,6 +690,7 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
               `${cell.turns <= 1 ? "" : ` over ${cell.turns} turns`}; ` +
               `refused by ${list(cell.refusedBy, "nothing")}; ` +
               `reason ${list(cell.reasonCodes, "none")}; ` +
+              `${cell.causes.length === 0 ? "" : `cause ${list(cell.causes, "none")}; `}` +
               `record ${cell.recordUsable ? "usable" : `unusable (${list(cell.recordGaps, "unknown")})`}` +
               `${cell.detail === undefined ? "" : `; ${cell.detail}`}`,
       );

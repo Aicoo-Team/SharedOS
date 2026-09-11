@@ -45,6 +45,17 @@ export interface AttemptOutcome {
   readonly attempted: boolean;
   readonly observed?: AttemptStatus;
   readonly reasonCode?: string;
+  /**
+   * The code behind the refusal, where the record carries one.
+   *
+   * `reasonCode` is what the caller was told. A `messages.request` the
+   * transport refused is told `message_request_not_accepted`; the transport's
+   * own code -- a dead route, a delivery failure -- is on the `message`
+   * operation that shares the call's id, and this is it. Read for the record,
+   * never graded: the expectation names what SharedOS says, and a host's
+   * vocabulary is not a claim about the kernel.
+   */
+  readonly cause?: string;
   readonly refusedBy?: EnforcementPoint;
   readonly detail?: string;
 }
@@ -54,6 +65,8 @@ export interface CaseJudgement {
   readonly attempts: readonly AttemptOutcome[];
   /** Refusal codes observed across the move, sorted and de-duplicated. */
   readonly reasonCodes: readonly string[];
+  /** The codes behind those refusals, where the record carried one; same shape. */
+  readonly causes: readonly string[];
   readonly refusedBy: readonly EnforcementPoint[];
   readonly declared: number;
   readonly attempted: number;
@@ -127,6 +140,7 @@ export function judgeCase(
   options: JudgeCaseOptions = {},
 ): CaseJudgement {
   const refusalPoints = enforcementPoints(evidence.record);
+  const causes = refusalCauses(evidence.record);
   const turn = turnOutcome(evidence.record, options.expectTurn);
   // Whether the runtime ever ran is read from the record, not declared. It
   // takes both halves for an attempt to count as structurally unreachable: the
@@ -147,6 +161,7 @@ export function judgeCase(
       attempt.unreachable !== undefined || columnReason !== undefined || turnEndedBeforeTheRuntime,
       receipt,
       refusalPoints,
+      causes,
       turnEndedBeforeTheRuntime
         ? "the turn was refused before the runtime was started"
         : columnReason,
@@ -179,6 +194,11 @@ export function judgeCase(
         [...attempts.map(({ reasonCode }) => reasonCode), turn?.reasonCode].filter(
           (code): code is string => code !== undefined,
         ),
+      ),
+    ].sort(),
+    causes: [
+      ...new Set(
+        attempts.map(({ cause }) => cause).filter((code): code is string => code !== undefined),
       ),
     ].sort(),
     refusedBy: [
@@ -467,6 +487,7 @@ function outcomeFor(
   declaredUnreachable: boolean,
   receipt: AttemptReceipt | undefined,
   refusalPoints: ReadonlyMap<string, EnforcementPoint>,
+  causes: ReadonlyMap<string, string>,
   unreachableDetail?: string,
 ): AttemptOutcome {
   if (receipt === undefined) {
@@ -499,10 +520,9 @@ function outcomeFor(
     };
   }
 
-  const refusedBy =
-    receipt.observed === "succeeded" || receipt.callId === undefined
-      ? undefined
-      : refusalPoints.get(receipt.callId);
+  const refused = receipt.observed !== "succeeded" && receipt.callId !== undefined;
+  const refusedBy = refused ? refusalPoints.get(receipt.callId as string) : undefined;
+  const cause = refused ? causes.get(receipt.callId as string) : undefined;
 
   return {
     attemptId,
@@ -511,6 +531,7 @@ function outcomeFor(
     attempted: true,
     ...(receipt.observed === undefined ? {} : { observed: receipt.observed }),
     ...(receipt.reasonCode === undefined ? {} : { reasonCode: receipt.reasonCode }),
+    ...(cause === undefined ? {} : { cause }),
     ...(refusedBy === undefined ? {} : { refusedBy }),
   };
 }
@@ -534,6 +555,41 @@ function satisfiesExpectation(receipt: AttemptReceipt): boolean {
  * either point. A cell that hides which one was exercised overstates the
  * kernel's contribution.
  */
+/**
+ * The code behind each refused call, where the record carries one.
+ *
+ * A tool call can leave more than one operation under its id. The kernel
+ * records a `message.sent` for the dispatch a `messages.request` makes, and
+ * when the transport refuses it that operation carries the transport's code
+ * while the tool operation carries `message_request_not_accepted`, the code
+ * the caller was told (the same pairing `docs/errors.md` describes for
+ * `message_delivery_failed`). The tool operation is the attempt; this joins
+ * the other operation's code to it by call id, so a cell can say both what
+ * SharedOS said and why without the two competing for one field.
+ */
+function refusalCauses(record: ExecutionRecord): ReadonlyMap<string, string> {
+  const causes = new Map<string, string>();
+  const tools = new Set(
+    record.execution.operations
+      .filter(({ kind, operationId }) => kind === "tool" && operationId !== undefined)
+      .map(({ operationId }) => operationId as string),
+  );
+  for (const operation of record.execution.operations) {
+    if (
+      operation.kind === "tool" ||
+      operation.operationId === undefined ||
+      operation.outcome === "succeeded" ||
+      operation.reasonCode === undefined ||
+      !tools.has(operation.operationId) ||
+      causes.has(operation.operationId)
+    ) {
+      continue;
+    }
+    causes.set(operation.operationId, operation.reasonCode);
+  }
+  return causes;
+}
+
 function enforcementPoints(record: ExecutionRecord): ReadonlyMap<string, EnforcementPoint> {
   const points = new Map<string, EnforcementPoint>();
   for (const operation of record.execution.operations) {
