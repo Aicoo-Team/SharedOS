@@ -258,6 +258,15 @@ class ModelSession implements AgentTurnSession {
     this.#offered = escalationOffered(request.tools);
   }
 
+  /**
+   * What the model is about to be told, hashed, stated for the loop to announce
+   * before the first request goes out. The same value rides on the terminal
+   * metadata; this copy is the one a turn cancelled mid-call still records.
+   */
+  get promptHash(): string {
+    return this.#promptHash;
+  }
+
   async next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision> {
     if (input.type === "tool_result") {
       this.#messages.push(modelToolResultMessage(input.result));

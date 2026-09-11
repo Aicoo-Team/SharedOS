@@ -7,6 +7,7 @@ import type {
 } from "@aicoo/sharedos-contracts";
 import { RuntimeManifestSchema } from "@aicoo/sharedos-contracts";
 import { type AuditEvent, isInfrastructureDenial } from "@aicoo/sharedos-core";
+import { PROMPT_HANDED_EVENT } from "@aicoo/sharedos-runtime";
 
 import {
   type AuthoritySnapshotRecord,
@@ -172,13 +173,39 @@ function publishedCatalogue(result: ExecutionResult): Partial<SystemIdentity> {
  * it -- leaves the field absent rather than carrying a hash over a prompt no
  * model was shown. Anything that is not a content hash is ignored the same way
  * a malformed catalogue hash is.
+ *
+ * The metadata is read first and the `prompt.handed` runtime event after it.
+ * A turn cancelled at its deadline returns no metadata -- the plugin threw at
+ * the abort and the envelope built the result from its own provenance -- but
+ * it was asked something, and the event the runtime emitted before it launched
+ * anything is where that survives. Without the fallback a stalled turn dropped
+ * out of its column's prompt set, and the column's moved hash read as a
+ * reworded prompt.
  */
 function handedPrompt(result: ExecutionResult): Partial<SystemIdentity> {
-  const promptHash = result.metadata?.["promptHash"];
-  if (typeof promptHash !== "string" || !/^[0-9a-f]{64}$/u.test(promptHash)) {
-    return {};
+  const candidates = [
+    result.metadata?.["promptHash"],
+    ...result.events.map((event) => promptHandedIn(event)),
+  ];
+  for (const promptHash of candidates) {
+    if (typeof promptHash === "string" && /^[0-9a-f]{64}$/u.test(promptHash)) {
+      return { promptHash };
+    }
   }
-  return { promptHash };
+  return {};
+}
+
+/** The hash a `prompt.handed` runtime event announced, if this is one. */
+function promptHandedIn(event: ExecutionEvent): unknown {
+  if (event.type !== "runtime.event") {
+    return undefined;
+  }
+  const data = event.data as { readonly type?: unknown; readonly data?: unknown } | null;
+  if (data === null || typeof data !== "object" || data.type !== PROMPT_HANDED_EVENT) {
+    return undefined;
+  }
+  const payload = data.data as { readonly promptHash?: unknown } | null;
+  return payload === null || typeof payload !== "object" ? undefined : payload.promptHash;
 }
 
 /**

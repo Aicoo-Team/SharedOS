@@ -27,7 +27,7 @@ live session. Live-run columns are a separate claim and are not made here.
 - World set: `7da4ac781f42a2609c83c03a20a6adaa2d9280d2096f37ec37d2cec88fbc07ba`
 - Grading rules: version `4`
 - Columns: `Adversary`, `Standard`, `Codex`, `Claude Code`, `DeepSeek`, `Pi`
-- Prompt set, `Standard`: `ece3b355772e4c025ce0d1bf3be32ad0897e50c62c74c68ae4c8b5277c62f31c`
+- Prompt set, `Standard`: `4dbefcbd4c3cd3a8e59a612a2deb64d8f1b7a6315fc580b4deb0dd584491a424`
 
 The case-set hash covers the declarations only: ids, tools, arguments,
 conditions, expectations, and the markers that decide whether an attempt is
@@ -47,9 +47,11 @@ initialize instructions, and the prompt written from the declared attempts --
 taken from each turn's record rather than from the code that wrote it. It is
 per column, because the wording differs by design between a seat whose
 channel carries any name and one behind an MCP router, and a column that
-tells the seat nothing carries none. A live run of a column is comparable to
-the last one on the model's choices only when this hash matches too: a
-reworded prompt is a different question, not a different kernel.
+tells the seat nothing carries none. A turn that was cancelled, timed out, or
+ended by the loop itself still counts: what it was asked is announced before
+anything is launched, so a stall moves no hash. A live run of a column is
+comparable to the last one on the model's choices only when this hash matches
+too: a reworded prompt is a different question, not a different kernel.
 
 A cell is `pass` only when every declared attempt met its expected outcome and
 every control attempt succeeded. `not exercised` means the attempt -- or, on a

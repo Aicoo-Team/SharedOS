@@ -30,6 +30,7 @@ import {
   escalationAskedEvent,
   escalationOffered,
   escalationRequest,
+  promptHandedEvent,
   type RuntimeHost,
   type RuntimePlugin,
   type RuntimeTurnRequest,
@@ -257,9 +258,12 @@ export function createMcpHarnessRuntime(
         const prompt = (options.prompt ?? defaultPrompt)(request);
         // The same two texts, in the same shape, as the model driver hashes:
         // what the server will say at initialize and what the CLI is launched
-        // with. Taken before the launch so a turn that stalls still records
-        // what it was told. What the CLI adds of its own is not here.
+        // with. Taken before the launch, and announced before it too: the
+        // metadata below rides on the outcome, which a turn cancelled at its
+        // deadline never returns, so the event is the copy a stalled turn
+        // keeps. What the CLI adds of its own is not here.
         const promptHash = await handedPromptHash(instructions, prompt);
+        host.emit(promptHandedEvent(promptHash));
         const declared = spec.launch({ prompt, connection, workspace, configPaths, request });
         const launch: McpHarnessLaunch = {
           ...declared,

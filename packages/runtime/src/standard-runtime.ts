@@ -15,6 +15,7 @@ import {
 
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
 import { escalationAskedEvent, escalationReason } from "./escalation.js";
+import { promptHandedEvent } from "./handed-prompt.js";
 import {
   reportTurnError,
   type RuntimeHost,
@@ -88,6 +89,18 @@ export type AgentVisibleContext = RuntimeVisibleContext;
 export type AgentTurnRequest = RuntimeTurnRequest;
 
 export interface AgentTurnSession {
+  /**
+   * What the session told the seat before its first decision, hashed.
+   *
+   * A driver that composes text for a model -- a system message, a prompt --
+   * states the hash here as well as on its terminal `metadata`, and the loop
+   * announces it as a `prompt.handed` runtime event before the first step. The
+   * event is what a cancelled turn keeps: a session that never returns a
+   * decision returns no metadata, and the record would otherwise not say what
+   * that turn was asked (see `PROMPT_HANDED_EVENT`). A driver that hands
+   * the seat no text leaves it absent.
+   */
+  readonly promptHash?: string;
   next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision>;
   close?(outcome: ExecutionResult["status"], signal: AbortSignal): void | Promise<void>;
 }
@@ -149,6 +162,12 @@ export class StandardRuntime implements RuntimePlugin {
 
     try {
       session = await raceWithAbort(this.#driver.open(request, signal), signal);
+      if (typeof session.promptHash === "string") {
+        // Announced before the first step, so the record says what the seat
+        // was asked even when the turn never returns: the event survives a
+        // cancellation, the terminal metadata does not.
+        host.emit(promptHandedEvent(session.promptHash));
+      }
       let nextInput: AgentTurnInput = { type: "start" };
 
       for (let step = 0; step < host.limits.maxSteps; step += 1) {
