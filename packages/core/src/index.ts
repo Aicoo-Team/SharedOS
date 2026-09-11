@@ -17,6 +17,7 @@ export {
 } from "./message-tool.js";
 export * from "./published-tool.js";
 export * from "./reach.js";
+export * from "./refusal.js";
 export * from "./resource-registry.js";
 export * from "./spans.js";
 export * from "./tool-registry.js";

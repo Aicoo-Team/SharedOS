@@ -6,6 +6,38 @@ version and are published together under npm's `next` dist-tag.
 SharedOS is a `0.x` prerelease: contracts may change between prereleases, and
 each entry calls out what a host has to update.
 
+## Unreleased
+
+### Added
+
+- **A refusal's gate is readable from its audit record, by call id.**
+  `tool_unavailable` is one code over "not registered", "namespace disabled",
+  and "not discoverable to you", and `no_matching_grant` is one code over nine
+  conditions, so a caller cannot map the permission topology from refusals
+  (ADR 0012). The host is not the caller, and the record already said which:
+  `metadata.cause`, `metadata.source`, `metadata.failClosed`, `rejectedGrants`.
+  What a host still did by hand was join a denied `ToolResult` to those records
+  and decide which check refused. `@aicoo/sharedos-core` now exports
+  `classifyRefusal(event)`, which names one of six gates — `envelope`,
+  `registration`, `request`, `infrastructure`, `ceiling`, `grant` — for a denied
+  audit event, and `explainRefusal(result, events)`, which finds the event for a
+  result by `operationId` and names it. Both return recorded facts and no prose;
+  what each gate means and what fixes it is one table in `docs/errors.md`. The
+  join is on the call id and never on recency: two turns interleaved on one sink
+  put another call's refusal last. Nothing here reaches the wire, and
+  `docs/errors.md` now says in so many words that a host which narrates the gate
+  back to the model has handed it the oracle the coarse code withholds.
+
+### Changed
+
+- **The discovery decision behind a `tool_unavailable` carries the call's id.**
+  `SharedOSKernel.invokeTool` refuses a tool no grant makes discoverable with a
+  recorded `authorization.checked` decision, and that record now carries the
+  call's `operationId`, as the `tool.invoked` refusal after it already did. The
+  two joined only on time order before. A sink or reader keyed on
+  `authorization.checked` events without an `operationId` sees one more that has
+  it.
+
 ## 0.1.0-alpha.5
 
 ### Changed — breaking

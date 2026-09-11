@@ -1085,6 +1085,10 @@ export class SharedOSKernel {
         discoverable,
         false,
         authority.authority.snapshot.hash,
+        // The decision was made for this call, and the refusal below carries
+        // the same id. Without it the two records join only on time order,
+        // and a reader with two turns on one sink joins the wrong pair.
+        call.id,
       );
       const result = deniedToolResult(
         call,
