@@ -825,7 +825,7 @@ Defined in: [packages/core/src/kernel.ts:409](https://github.com/Aicoo-Team/Shar
 
 > **invokeResource**(`context`, `request`, `options?`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:1254](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1254)
+Defined in: [packages/core/src/kernel.ts:1258](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1258)
 
 ###### Parameters
 
@@ -1301,7 +1301,7 @@ Defined in: [packages/core/src/kernel.ts:345](https://github.com/Aicoo-Team/Shar
 
 > **sendMessage**(`context`, `envelope`, `options?`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:1523](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1523)
+Defined in: [packages/core/src/kernel.ts:1527](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1527)
 
 ###### Parameters
 
@@ -2609,6 +2609,29 @@ tool; a resource names no tool.
 
 ---
 
+### RefusalExplanation
+
+Defined in: [packages/core/src/refusal.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L125)
+
+A refused tool call, joined to the records that explain it.
+
+Carries no prose. What each gate means and what fixes it is one table, in
+`docs/errors.md`, and a sentence copied out of it into a return value is a
+sentence that drifts. Everything here is a fact the kernel recorded.
+
+#### Properties
+
+| Property                                  | Modifier   | Type                                         | Description                                                                                                                                                                                                                                                                   | Defined in                                                                                                             |
+| ----------------------------------------- | ---------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-cause-2"></a> `cause`     | `readonly` | `string` \| `undefined`                      | Which situation a coarse code was, from `metadata.cause`, where it carried one.                                                                                                                                                                                               | [packages/core/src/refusal.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L132) |
+| <a id="property-code"></a> `code`         | `readonly` | `string`                                     | The code the caller was given.                                                                                                                                                                                                                                                | [packages/core/src/refusal.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L128) |
+| <a id="property-decision"></a> `decision` | `readonly` | [`AuditEvent`](#auditevent) \| `undefined`   | The `authorization.checked` record the refusal followed from, where there was a decision. Its metadata carries `rejectedGrants`, `grantsResolved`, and `missingDependency`. Absent when nothing was checked: an unregistered tool, a disabled namespace, an envelope refusal. | [packages/core/src/refusal.ts:141](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L141) |
+| <a id="property-gate"></a> `gate`         | `readonly` | [`RefusalGate`](#refusalgate) \| `undefined` | -                                                                                                                                                                                                                                                                             | [packages/core/src/refusal.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L126) |
+| <a id="property-refusal"></a> `refusal`   | `readonly` | [`AuditEvent`](#auditevent)                  | The `tool.invoked` record of the refusal.                                                                                                                                                                                                                                     | [packages/core/src/refusal.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L134) |
+| <a id="property-source"></a> `source`     | `readonly` | `string` \| `undefined`                      | Which boundary refused, from `metadata.source`.                                                                                                                                                                                                                               | [packages/core/src/refusal.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L130) |
+
+---
+
 ### RefusedCall
 
 Defined in: [packages/core/src/kernel.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L174)
@@ -2620,7 +2643,7 @@ One call an enforcement boundary refused without invoking anything.
 | Property                                        | Modifier   | Type     | Description                                                 | Defined in                                                                                                           |
 | ----------------------------------------------- | ---------- | -------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | <a id="property-callid"></a> `callId`           | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:175](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L175) |
-| <a id="property-cause-2"></a> `cause?`          | `readonly` | `string` | Which situation a coarse code was, where it covers several. | [packages/core/src/kernel.ts:179](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L179) |
+| <a id="property-cause-3"></a> `cause?`          | `readonly` | `string` | Which situation a coarse code was, where it covers several. | [packages/core/src/kernel.ts:179](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L179) |
 | <a id="property-reasoncode-5"></a> `reasonCode` | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:177](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L177) |
 | <a id="property-tool-2"></a> `tool`             | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:176](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L176) |
 
@@ -3272,6 +3295,40 @@ not a defect to diagnose.
 #### Returns
 
 `void`
+
+---
+
+### RefusalGate
+
+> **RefusalGate** = `"envelope"` \| `"registration"` \| `"request"` \| `"infrastructure"` \| `"ceiling"` \| `"grant"`
+
+Defined in: [packages/core/src/refusal.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L31)
+
+Which check refused an operation, read from its audit record.
+
+A refusal code says what the caller was told; a gate says which of the
+kernel's checks produced it. The two differ on purpose: `tool_unavailable` is
+one code over "not registered", "namespace disabled", and "not discoverable
+to you", and `no_matching_grant` is one code over nine conditions, so that a
+caller cannot map the permission topology by reading refusals (ADR 0012).
+The host is not the caller. It wired the store, issued the grant, and built
+the context, and the audit record already says which of those was wrong --
+as `metadata.cause`, `metadata.source`, and `metadata.failClosed`. The gate
+is those three fields and the code read together, and it is derived from the
+record rather than written into it because every input is already there.
+
+- `envelope`: the execution envelope refused before the kernel was asked. A
+  tool the turn's catalogue never offered, or a spent step or call budget.
+- `registration`: the kernel has no such tool for this context, or the
+  tool's namespace is switched off. No grant changes either.
+- `request`: the call or context itself was malformed, or named another
+  world. A host bug; not a permission problem.
+- `infrastructure`: SharedOS could not establish a fact and failed closed.
+  A store threw, or a port the grant needed was never wired.
+- `ceiling`: a grant authorized the operation and host policy overrode it.
+  Issuing another grant will not help.
+- `grant`: nothing the trusted source returned covers the operation, or
+  what covers it is spent or its chain is broken. The one gate a grant fixes.
 
 ---
 
@@ -3984,6 +4041,42 @@ tool, and a stale discovery cache alike.
 
 ---
 
+### classifyRefusal()
+
+> **classifyRefusal**(`event`): [`RefusalGate`](#refusalgate) \| `undefined`
+
+Defined in: [packages/core/src/refusal.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L95)
+
+Name the gate a denied audit event was refused at.
+
+Total over every code the kernel and the envelope deny with. It returns
+`undefined` for an event that is not a denial, and for a denial whose code
+this package does not know -- a host that installs its own codes classifies
+them itself -- rather than filing an unknown refusal under a gate it may not
+belong to.
+
+The order is the order the checks run in. The envelope refuses before the
+kernel sees a call, so `metadata.source` is read first, on the one record
+type where it names the refuser rather than the recorder. The kernel refuses
+an unregistered or disabled tool before consulting the authorizer, so
+`metadata.cause` is read next; a cause that is itself a reason code is the
+discovery decision `tool_unavailable` stood in for, and is classified as that
+decision would be. `failClosed` is honoured as well as the code, so a
+ceiling's or a source's outage counts as infrastructure whichever code
+carried it.
+
+#### Parameters
+
+| Parameter | Type                        |
+| --------- | --------------------------- |
+| `event`   | [`AuditEvent`](#auditevent) |
+
+#### Returns
+
+[`RefusalGate`](#refusalgate) \| `undefined`
+
+---
+
 ### composeAgentCard()
 
 > **composeAgentCard**(`view`, `subject`, `context`, `reach`): \{ `namespaceId`: `string`; `reach`: `object`[]; `readAt`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `view`: `"reach"`; \} \| \{ `namespaceId`: `string`; `readAt`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `view`: `"identity"`; \} \| \{ `namespaceId`: `string`; `namespaces`: `object`[]; `readAt`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `view`: `"namespaces"`; \}
@@ -4236,6 +4329,38 @@ can reach the kernel holds this implicitly.
 ##### scope
 
 > **scope**: `"exact"` \| `"descendants"`
+
+---
+
+### explainRefusal()
+
+> **explainRefusal**(`result`, `events`): [`RefusalExplanation`](#refusalexplanation) \| `undefined`
+
+Defined in: [packages/core/src/refusal.ts:157](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L157)
+
+Join a denied `ToolResult` to its audit records and name the gate.
+
+The join is on `operationId`, which the kernel and the envelope both stamp
+with the call's id. It is never on recency: two turns interleaved on one
+sink put another call's refusal last, and a reader that took the most recent
+`tool.invoked` would explain the wrong denial with the right code. A call id
+is the caller's, so a caller that reuses one across calls gets the latest
+record under it; the executor mints distinct ids and never does.
+
+`undefined` when no denied `tool.invoked` record carries the id -- an audit
+sink that was not wired, or one that dropped the write. Wire one first.
+
+#### Parameters
+
+| Parameter       | Type                                   |
+| --------------- | -------------------------------------- |
+| `result`        | \{ `callId`: `string`; \}              |
+| `result.callId` | `string`                               |
+| `events`        | readonly [`AuditEvent`](#auditevent)[] |
+
+#### Returns
+
+[`RefusalExplanation`](#refusalexplanation) \| `undefined`
 
 ---
 
