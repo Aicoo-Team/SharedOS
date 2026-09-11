@@ -18,7 +18,6 @@ import {
   READ_ONLY_FILE,
   READ_TOOL,
   REPLACE_TOOL,
-  ROUTE_LEASE_REVOKED_CODE,
   SEALED_TOOL,
   SEEDED_SNAPSHOT_ID,
   SEND_TOOL,
@@ -64,18 +63,27 @@ const REFUSED_AS_UNEXPOSED: AttemptExpectation = {
 const SUCCEEDS: AttemptExpectation = { statuses: ["succeeded"] };
 
 /**
- * A dispatch the transport refused, read from either of the two places it lands.
+ * A dispatch the transport refused, as the caller is told of it.
  *
- * A column that sees the tool result reports the request tool's own refusal:
- * delivery was not accepted, so there is no reply to wait for. A column whose
- * receipts are recovered from the execution record reads the `message.sent`
- * operation instead, which carries the transport's code verbatim. Both describe
- * one refusal at one boundary, and both are reachable only after authorization
- * allowed the send.
+ * `messages.request` fails with `message_request_not_accepted`: delivery was
+ * not accepted, so there is no reply to wait for. That is the code SharedOS
+ * says, in every column, and the one this row is graded on. The transport's
+ * own code -- `route_lease_revoked` from the conformance world's transport --
+ * is on the `message.sent` operation that shares the call's id; the judge
+ * reports it as the attempt's `cause` and does not grade it, because a host's
+ * vocabulary is not a claim about the kernel. Reachable only after
+ * authorization allowed the send: a send with no authority is refused before
+ * dispatch, `denied` with `no_matching_grant`, and cannot satisfy this.
+ *
+ * The expectation used to accept either code, and the columns split on which
+ * they saw: a reader that took the first operation under the call id got the
+ * transport's, every other reader got the caller's. That was an artefact of
+ * audit order, not a design, and a row whose refusal identity depends on who
+ * observed it cannot have that identity quoted.
  */
 const REFUSED_AT_DISPATCH: AttemptExpectation = {
-  statuses: ["denied", "failed"],
-  reasonCodes: [ROUTE_LEASE_REVOKED_CODE, "message_request_not_accepted"],
+  statuses: ["failed"],
+  reasonCodes: ["message_request_not_accepted"],
 };
 
 /**
