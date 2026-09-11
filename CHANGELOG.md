@@ -33,6 +33,30 @@ each entry calls out what a host has to update.
   once, `ece3b355…` to `4dbefcbd…`, because the `budget-exceeded/step-ceiling`
   turn now counts; the case-set and world-set hashes do not move.
 
+### Changed
+
+- **The route-lease row quotes one refusal code, and carries the transport's as
+  its cause.** A `messages.request` the transport refuses leaves two operations
+  under one call id: `message.sent`, denied with the transport's code, then the
+  tool call, failed with `message_request_not_accepted`. The scripted columns'
+  record reader took the first operation under the id and the live columns and
+  `Adv` read the second, so `route-lease-revoked` printed `route_lease_revoked`
+  in five columns and `message_request_not_accepted` in the rest, and the
+  expectation accepted either. The split was mistaken for a difference between
+  observing the tool result and observing the record (ADR 0025 said as much); it
+  was audit order. `receiptsFromRecord` now takes the tool operation as the
+  attempt's receipt, the expectation names `message_request_not_accepted` alone
+  — what SharedOS says, in every column — and `judgeCase` joins the other
+  operation's code to the attempt by call id as `cause`, reported and never
+  graded, because a host's vocabulary is not a claim about the kernel.
+  `AttemptOutcome.cause`, `CaseJudgement.causes` and `ConformanceCell.causes`
+  are new; the manifest prints `cause` after `reason` where a cell has one. The
+  case-set hash moves, `1515d09c…` to `85fc0fb5…`, because the expectation is
+  in it; the world-set and prompt-set hashes do not. **What a host has to
+  update:** a reader of manifest cells sees one more array field; a host's own
+  `AttemptExpectation` for a refused dispatch should name the tool's code, not
+  the transport's.
+
 ### Added
 
 - **A refusal's gate is readable from its audit record, by call id.**
