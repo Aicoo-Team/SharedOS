@@ -179,8 +179,9 @@ the audit code and the wire code remain comparable and one refusal keeps one
 name (ADR 0012).
 
 Where the refusal came from a decision, an `authorization.checked` event is also
-recorded immediately before and carries the same reason. Two of the situations
-produce no decision — nothing was checked when the tool is not registered, and
+recorded immediately before, carries the same reason, and carries the call's id
+as `operationId`, so the two records join on the id rather than on their order
+in the sink. Two of the situations produce no decision — nothing was checked when the tool is not registered, and
 nothing was checked when its namespace is off — so `cause` is what makes the
 disambiguation hold for all of them rather than for the one that happens to
 consult the authorizer.
@@ -201,6 +202,63 @@ An owner-crossing requirement is the other pair worth keeping apart:
 answered by the authorizer, so it produces an authorization decision;
 `invalid_tool_requirement` says the tool misbehaved, not that the request was
 impermissible.
+
+### Naming the gate a refusal came from
+
+Every field above is already on the record. What a host reading a denied
+`ToolResult` still had to do by hand was join it to those records and decide
+which check refused: a `tool_unavailable` whose `cause` is `not_registered` is a
+registration problem, one whose `cause` is `host_policy_denied` is a policy
+problem, and one whose `cause` is `no_matching_grant` is the only one a grant
+fixes. `@aicoo/sharedos-core` does both:
+
+```ts
+import { classifyRefusal, explainRefusal } from "@aicoo/sharedos-core";
+
+// `events` is whatever your AuditSink retained; the testkit's
+// InMemoryAuditSink keeps them on `.events`.
+const result = await kernel.invokeTool(context, call);
+if (result.status === "denied") {
+  const explained = explainRefusal(result, events);
+  explained?.gate; // "registration" | "request" | "infrastructure" | "ceiling" | "grant" | "envelope"
+  explained?.cause; // metadata.cause on the tool.invoked record
+  explained?.decision?.metadata; // rejectedGrants, grantsResolved, missingDependency
+}
+```
+
+`classifyRefusal(event)` names the gate for one denied audit event, and
+`explainRefusal(result, events)` finds the event for a result and names it. Both
+return facts the kernel recorded and no prose: what each gate means and what
+fixes it is the table below, and a sentence copied into a return value is a
+sentence that drifts.
+
+| Gate             | It was refused because                                            | Fix                                                      |
+| ---------------- | ----------------------------------------------------------------- | -------------------------------------------------------- |
+| `envelope`       | The turn's catalogue never offered the tool, or a budget is spent | The model guessed a name, or the turn is over-budget     |
+| `registration`   | No such tool for this context, or its namespace is off            | `registerTool`, or enable the namespace                  |
+| `request`        | The call or context is malformed, or names another world          | A host bug. Fix the caller                               |
+| `infrastructure` | SharedOS could not establish a fact and failed closed             | Wire the missing port, or fix the store that threw       |
+| `ceiling`        | A grant authorized it and host policy overrode it                 | Product or organization policy. A grant will not help    |
+| `grant`          | Nothing the source returned covers it, or what covers it is spent | Issue a grant. `rejectedGrants` says why each one failed |
+
+The classifier reads the record in the order the checks ran: `metadata.source`
+first, because the envelope refuses before the kernel is asked; `metadata.cause`
+next, because the kernel refuses an unregistered or disabled tool before
+consulting the authorizer; then `failClosed` and the code. It returns
+`undefined` for a code it does not know rather than filing it under a gate it
+may not belong to.
+
+**The join is on `operationId`, never on recency.** The kernel and the envelope
+both stamp it with the call's id. Two turns interleaved on one sink put another
+call's refusal last, and a reader that takes the most recent `tool.invoked`
+explains the wrong denial with the right code.
+
+**None of this goes back to the caller.** The gate, the cause, and the rejected
+grants are host-side facts the coarse code exists to withhold. A host that
+appends them to a denied `ToolResult`, or narrates them to the model "to help
+it", has handed the caller the permission-topology oracle ADR 0012 refuses to
+be. Log them, alert on them, put them in an operator console; do not put them
+on the wire.
 
 ## Tool invocation
 
