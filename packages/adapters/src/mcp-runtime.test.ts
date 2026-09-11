@@ -27,6 +27,7 @@ import {
   ESCALATION_RESOURCE_PATH,
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAMESPACE,
+  PROMPT_HANDED_EVENT,
   SharedOSExecutor,
   createEscalationTool,
   type RuntimeHost,
@@ -333,6 +334,17 @@ function fakeHarness(calls: readonly unknown[]): McpHarnessSpec {
       ],
     }),
   };
+}
+
+/** The hashes the turn announced as what the seat was told, in event order. */
+function handedHashes(events: readonly { type: string; data: unknown }[]): unknown[] {
+  return events
+    .filter(
+      ({ type, data }) =>
+        type === "runtime.event" &&
+        (data as { type?: unknown } | null)?.type === PROMPT_HANDED_EVENT,
+    )
+    .map(({ data }) => (data as { data: { promptHash: unknown } }).data.promptHash);
 }
 
 async function runTurn(
@@ -893,6 +905,47 @@ describe("what the harness is told at initialize", () => {
         prompt: "make the declared calls",
       }),
     );
+  }, 30_000);
+
+  it("announces what it told the harness before launching it, and the announcement matches", async () => {
+    const turn = await runTurn([], { prompt: () => "make the declared calls" });
+
+    expect(handedHashes(turn.events)).toEqual([turn.metadata["promptHash"]]);
+  }, 30_000);
+
+  it("keeps the announcement on a turn cancelled while the harness is stalled", async () => {
+    // The harness makes one call, then holds the next back for a minute. The
+    // turn is cancelled the moment the first call completes, which is a stall
+    // made deterministic: the CLI is mid-turn, has said nothing terminal, and
+    // is killed at the abort -- the ending a live 120 s idle timeout produces.
+    const cancel = new AbortController();
+    const executor = new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(
+        fakeHarness([
+          { name: "files.read", arguments: { path: GRANTED } },
+          { name: "files.read", arguments: { path: GRANTED }, afterMs: 60_000 },
+        ]),
+        { prompt: () => "make the declared calls" },
+      ),
+    );
+
+    const result = await executor.execute(executionRequest(), {
+      signal: cancel.signal,
+      onEvent: (event) => {
+        if (event.type === "tool.completed") {
+          cancel.abort(new Error("deadline"));
+        }
+      },
+    });
+
+    expect(result.status).toBe("cancelled");
+    // The outcome, and the metadata riding on it, never came back. The event
+    // did: it was emitted before the CLI was spawned.
+    expect(result.metadata?.["promptHash"]).toBeUndefined();
+    const [handed, ...rest] = handedHashes(result.events);
+    expect(rest).toEqual([]);
+    expect(handed).toMatch(/^[0-9a-f]{64}$/u);
   }, 30_000);
 
   it("says exactly what a host's function says, reach included only if it says so", async () => {
