@@ -490,4 +490,55 @@ describe("executor settlement profile", () => {
     });
     expect(finish).not.toHaveBeenCalled();
   });
+
+  it("settles a published result after the natural work deadline without another model decision", async () => {
+    let published = false;
+    let workSignal: AbortSignal | undefined;
+    const nextDecision = vi.fn(async () => ({ type: "tool_call" as const, call }));
+    const ingestToolResult = vi.fn(
+      async (envelope: ToolResultIngestionEnvelope, signal: AbortSignal) => {
+        expect(published).toBe(true);
+        expect(workSignal?.aborted).toBe(true);
+        expect(signal.aborted).toBe(false);
+        expect(signal).not.toBe(workSignal);
+        return ack(envelope);
+      },
+    );
+    const actualKernel = kernel({
+      invoke: async (_context, _call, signal) => {
+        published = true;
+        workSignal = signal;
+        await new Promise<void>((resolve) => {
+          if (signal.aborted) resolve();
+          else signal.addEventListener("abort", () => resolve(), { once: true });
+        });
+        return {
+          callId: call.id,
+          tool: call.tool,
+          status: "succeeded",
+          output: { published },
+          completedAt: now,
+        };
+      },
+    });
+    const result = await new TurnExecutor(
+      actualKernel,
+      {
+        open: async () => ({
+          next: vi.fn(),
+          settlement: {
+            version: "1",
+            nextDecision,
+            ingestToolResult,
+            finish: async () => undefined,
+            close: async () => undefined,
+          },
+        }),
+      },
+      { clock: () => now, settlement: { version: "1", timeoutMs: 100 } },
+    ).execute({ ...request(), tools: [tool], options: { timeoutMs: 20 } });
+    expect(result).toMatchObject({ status: "cancelled", settlement: { status: "settled" } });
+    expect(nextDecision).toHaveBeenCalledOnce();
+    expect(ingestToolResult).toHaveBeenCalledOnce();
+  });
 });
