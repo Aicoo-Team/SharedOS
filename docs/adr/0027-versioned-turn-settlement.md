@@ -53,6 +53,12 @@ envelope-refused operations explicitly report audit `unknown`.
 
 ### Driver Port
 
+Before opening resources, a driver opts in with
+`AgentTurnDriver.settlement = { version: "1", closeUnregistered }`. The cleanup
+hook accepts an opened session and the settlement signal, and releases only its
+resources. Missing or malformed driver capabilities are rejected before `open`.
+A driver whose `open` rejects must clean up any resources it has not returned.
+
 An opted-in `AgentTurnSession` supplies a `settlement` extension with version 1:
 
 - `nextDecision(workSignal)`: generation only, using previously ingested state.
@@ -69,12 +75,21 @@ reject conflicting content. The executor rejects reuse of a call identity before
 invoking the operation again. Strict schemas and exact receipt comparison reject
 foreign or conflicting ACKs.
 
+Contract schemas reject contradictory public states and mismatched envelope
+identities. Parsing alone is not a certificate of durability or a verification of
+the digest against result bytes: the runtime computes that digest and compares
+the ACK against its retained actual result. The persistence guarantee still
+requires a trusted host adapter implementing the durable-ingestion contract.
+
 StandardRuntime registers the per-turn extension through the optional
 `RuntimeHost.settlement` port before decisions. It tracks pending open and
 decision promises as well as tool operations. Finish cannot race a still-pending
 result ingestion or decision. Resource cleanup is separate: a late-opened
-session can be released without claiming its history finished. A provider that
-ignores cancellation may remain active after the budget; this is reported as
+session, malformed session or failed registration is released by the previously
+negotiated `closeUnregistered` hook without claiming its history finished. The
+open and exceptional cleanup share the aggregate settlement budget. After
+registration, cleanup belongs only to the controller, never both owners.
+A provider that ignores cancellation may remain active after the budget; this is reported as
 incomplete, not as process quiescence.
 
 ### Return Contract
@@ -100,8 +115,17 @@ a host as a safely committed world tick.
 The original `AgentTurnInput` and legacy `next`/`close` behavior remain unchanged
 when the profile is absent; legacy result JSON does not acquire a new field.
 The opt-in profile requires the observed kernel port and a versioned driver
-extension. An unsupported driver fails before generating rather than falling
-back to a fresh `next(tool_result)` after cancellation.
+capability and session extension. An unsupported driver fails before opening or
+generating rather than falling back to a fresh `next(tool_result)` after cancellation.
+
+The execution envelope retains protocol version 1, but an older strict v1 decoder
+rejects the new `settlement` key. This is a coordinated opt-in extension, not a
+claim that old consumers accept new-profile responses. Constructor configuration
+controls emission; the profile remains off for existing integrations. Before
+enabling it, the host must upgrade every relevant HTTP/client/SDK decoder or keep
+the profile on a separate local execution port. Driver support alone is not
+consumer negotiation. This change does not add HTTP capability negotiation and
+must not be enabled indiscriminately behind an existing mixed-version endpoint.
 
 Existing adapters are not silently upgraded and do not gain durable-history
 claims. A host enabling this profile must implement the non-generative journal
