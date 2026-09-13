@@ -174,13 +174,10 @@ export class StandardRuntime implements RuntimePlugin {
                 settlement.register(opened.settlement);
                 return opened;
               } catch (error) {
-                try {
-                  await settlement.trackCleanup(
-                    Promise.resolve().then(() => closeUnregistered(opened, settlement.signal)),
-                  );
-                } catch {
-                  /* Cleanup is reported separately and must not replace the opening error. */
-                }
+                // Report the known failure now; the controller drains cleanup under its budget.
+                void settlement.trackCleanup(
+                  Promise.resolve().then(() => closeUnregistered(opened, settlement.signal)),
+                );
                 throw error;
               }
             }),

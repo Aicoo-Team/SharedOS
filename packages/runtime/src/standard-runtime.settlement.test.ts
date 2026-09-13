@@ -44,6 +44,22 @@ function fixture(extension: Partial<AgentTurnSettlementSession> = {}) {
 }
 
 describe("StandardRuntime settlement mode", () => {
+  it("starts settlement promptly after a known open failure even when cleanup never returns", async () => {
+    const { settlement, host } = fixture();
+    const closeUnregistered = vi.fn(() => new Promise<void>(() => {}));
+    const runtime = new StandardRuntime({
+      open: async () => ({ next: vi.fn() }),
+      settlement: { version: "1", closeUnregistered },
+    });
+    const outcome = await runtime.run(request, host, new AbortController().signal);
+    expect(outcome.type).toBe("fail");
+    const report = await settlement.settle("failed");
+    expect(report.status).toBe("incomplete");
+    expect(report.history.cleanup).toBe("pending");
+    expect(report.pendingWorkIds).toContain("session-unregistered-cleanup");
+    expect(closeUnregistered).toHaveBeenCalledTimes(1);
+  }, 200);
+
   it("registers once before generation and never calls the legacy combined session", async () => {
     const { settlement, session, host } = fixture();
     const runtime = new StandardRuntime(driver(async () => session));
@@ -195,7 +211,7 @@ describe("StandardRuntime settlement mode", () => {
     await expect(running).rejects.toBeDefined();
     const report = await settlement.settle("cancelled");
     expect(report.status).toBe("incomplete");
-    expect(report.pendingWorkIds).toContain("session-open");
+    expect(report.pendingWorkIds).toEqual(["session-unregistered-cleanup"]);
     expect(report.history.cleanup).toBe("pending");
   });
 
