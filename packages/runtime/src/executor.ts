@@ -47,8 +47,11 @@ import {
   type AgentTurnDriver,
   type StandardRuntimeOptions,
 } from "./standard-runtime.js";
+import { TurnSettlement } from "./settlement.js";
 
 export interface SharedOSExecutorOptions {
+  /** Opt-in durable-result delivery; this budget is separate from model/tool work. */
+  settlement?: { readonly version: "1"; readonly timeoutMs: number };
   clock?: () => string;
   createId?: () => string;
   defaultMaxSteps?: number;
@@ -108,7 +111,11 @@ export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "reach" | "listTools
   Partial<
     Pick<
       SharedOSKernel,
-      "openTurnAuthority" | "recordEscalation" | "recordTurnEnd" | "recordRefusedCall"
+      | "openTurnAuthority"
+      | "recordEscalation"
+      | "recordTurnEnd"
+      | "recordRefusedCall"
+      | "observeTool"
     >
   >;
 
@@ -127,6 +134,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
   readonly #defaultTimeoutMs: number;
   readonly #spans: SpanSink | undefined;
   readonly #onTurnError: TurnErrorReporter | undefined;
+  readonly #settlementTimeoutMs: number | undefined;
 
   constructor(kernel: TurnKernel, runtime: RuntimePlugin, options: SharedOSExecutorOptions = {}) {
     if (runtime === null || typeof runtime !== "object" || typeof runtime.run !== "function") {
@@ -150,6 +158,20 @@ export class SharedOSExecutor implements TurnExecutionPort {
     this.#defaultTimeoutMs = options.defaultTimeoutMs ?? 120_000;
     this.#spans = options.spans;
     this.#onTurnError = options.onTurnError;
+    this.#settlementTimeoutMs = options.settlement?.timeoutMs;
+    if (options.settlement !== undefined) {
+      if (
+        options.settlement.version !== "1" ||
+        !Number.isInteger(options.settlement.timeoutMs) ||
+        options.settlement.timeoutMs <= 0 ||
+        options.settlement.timeoutMs > 60_000
+      ) {
+        throw new TypeError("settlement v1 timeoutMs must be between 1 and 60000");
+      }
+      if (typeof kernel.observeTool !== "function") {
+        throw new TypeError("settlement v1 requires a kernel with observeTool");
+      }
+    }
 
     if (!Number.isInteger(this.#defaultMaxSteps) || this.#defaultMaxSteps <= 0) {
       throw new TypeError("defaultMaxSteps must be a positive integer");
@@ -200,9 +222,34 @@ export class SharedOSExecutor implements TurnExecutionPort {
     }
 
     const request = parsed.data;
-    const result = await this.#runTurn(request, options);
-    await this.#recordTurnEnd(request, result);
-    return result;
+    if (this.#settlementTimeoutMs === undefined) {
+      const result = await this.#runTurn(request, options);
+      await this.#recordTurnEnd(request, result);
+      return result;
+    }
+
+    const settlement = new TurnSettlement(
+      request.executionId,
+      request.context.traceId,
+      this.#settlementTimeoutMs,
+    );
+    const events: ExecutionEvent[] = [];
+    try {
+      const result = await this.#runTurn(request, options, settlement, events);
+      settlement.start();
+      // The old terminal-audit port has no durability receipt. Join its work
+      // within the same budget, but do not promote its return to a durable ACK.
+      settlement.trackWork(this.#recordTurnEnd(request, result), "turn-end-audit");
+      const report = await settlement.settle(result.status);
+      return {
+        ...result,
+        events: structuredClone(events),
+        completedAt: this.#clock(),
+        settlement: report,
+      };
+    } finally {
+      settlement.dispose();
+    }
   }
 
   /**
@@ -268,10 +315,14 @@ export class SharedOSExecutor implements TurnExecutionPort {
   async #runTurn(
     request: ExecutionRequest,
     options: ExecuteTurnOptions = {},
+    settlement?: TurnSettlement,
+    events: ExecutionEvent[] = [],
   ): Promise<ExecutionResult> {
     const startedAt = this.#clock();
-    const events: ExecutionEvent[] = [];
     const emit = (type: string, data: JsonValue): void => {
+      if (settlement?.signal.aborted) {
+        return;
+      }
       const event: ExecutionEvent = {
         version: "1",
         eventId: this.#createId(),
@@ -305,11 +356,18 @@ export class SharedOSExecutor implements TurnExecutionPort {
       timeoutMs,
     });
     const abort = createAbortController(options.signal, timeoutMs);
+    const startSettlement = (): void => settlement?.start();
+    abort.signal.addEventListener("abort", startSettlement, { once: true });
+    if (abort.signal.aborted) {
+      startSettlement();
+    }
     let runtimeHostActive = true;
     let toolCallCount = 0;
     const steps = new Set<number>();
     let authority: TurnAuthorityScope | undefined;
     let opening: Promise<TurnAuthorityScope> | undefined;
+    const trackWork = <T>(promise: Promise<T>, label: string): Promise<T> =>
+      settlement?.trackWork(promise, label) ?? promise;
 
     try {
       if (abort.signal.aborted) {
@@ -324,11 +382,18 @@ export class SharedOSExecutor implements TurnExecutionPort {
       // through this one. The promise is kept as well as the handle, because a
       // turn cancelled while this is still in flight never receives the handle
       // and would leave the lease answering for a turn that has ended.
-      opening = this.#kernel.openTurnAuthority?.(executionContext, { signal: abort.signal });
+      const authorityOpening = this.#kernel.openTurnAuthority?.(executionContext, {
+        signal: abort.signal,
+      });
+      opening =
+        authorityOpening === undefined ? undefined : trackWork(authorityOpening, "authority-open");
       authority = await raceWithAbort(opening ?? Promise.resolve(undefined), abort.signal);
 
       const admission = await raceWithAbort(
-        this.#kernel.admitTurn(executionContext, request.agent, { signal: abort.signal }),
+        trackWork(
+          this.#kernel.admitTurn(executionContext, request.agent, { signal: abort.signal }),
+          "turn-admission",
+        ),
         abort.signal,
       );
       if (!admission.allowed) {
@@ -347,12 +412,12 @@ export class SharedOSExecutor implements TurnExecutionPort {
       // nothing, and a false one here. The turn runs either way; a call that
       // depends on the unreadable budget fails closed on its own (ADR 0021).
       const reach = await raceWithAbort(
-        this.#kernel.reach(executionContext, { signal: abort.signal }),
+        trackWork(this.#kernel.reach(executionContext, { signal: abort.signal }), "reach"),
         abort.signal,
       );
 
       const allowedTools = await raceWithAbort(
-        this.#kernel.listTools(executionContext, { signal: abort.signal }),
+        trackWork(this.#kernel.listTools(executionContext, { signal: abort.signal }), "catalogue"),
         abort.signal,
       );
       const requestedNames = new Set(request.tools.map(({ name }) => name));
@@ -394,6 +459,25 @@ export class SharedOSExecutor implements TurnExecutionPort {
         const eventData = toolEventData(parsedCall.data, step);
         emit("tool.requested", eventData);
 
+        const refused = (result: ToolResult, cause?: string): Promise<ToolResult> => {
+          emit("tool.completed", completedToolEventData(result, step));
+          if (settlement === undefined) {
+            return this.#recordRefusedCall(executionContext, result, cause).then(() => result);
+          }
+          return settlement.trackTool(parsedCall.data, () => {
+            const completion = this.#recordRefusedCall(executionContext, result, cause).then(
+              () => result,
+            );
+            return {
+              version: "1",
+              result: Promise.resolve(result),
+              // This legacy audit hook provides no success/failure receipt.
+              audit: completion.then(() => "unknown" as const),
+              completion,
+            };
+          });
+        };
+
         if (step !== undefined && !stepIsWithinBudget(step, steps, limits.maxSteps)) {
           const result = deniedToolResult(
             parsedCall.data,
@@ -401,9 +485,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
             "step_limit_exceeded",
             "The runtime reached its maximum number of steps.",
           );
-          emit("tool.completed", completedToolEventData(result, step));
-          await this.#recordRefusedCall(executionContext, result);
-          return result;
+          return refused(result);
         }
         if (step !== undefined) {
           steps.add(step);
@@ -416,18 +498,29 @@ export class SharedOSExecutor implements TurnExecutionPort {
             "tool_call_limit_exceeded",
             "The runtime reached its maximum number of tool calls.",
           );
-          emit("tool.completed", completedToolEventData(result, step));
-          await this.#recordRefusedCall(executionContext, result);
-          return result;
+          return refused(result);
         }
         toolCallCount += 1;
 
         if (!effectiveToolNames.has(parsedCall.data.tool)) {
           const result = unavailableToolResult(parsedCall.data, this.#clock());
-          emit("tool.completed", completedToolEventData(result, step));
           // The clearest attempted violation the system produces, and until now
           // it reached no audit sink at all: the kernel never saw the call.
-          await this.#recordRefusedCall(executionContext, result, "not_offered");
+          return refused(result, "not_offered");
+        }
+
+        if (settlement !== undefined) {
+          const result = await settlement.trackTool(parsedCall.data, () => {
+            // Only observation survives cancellation. Admission still uses the
+            // original work signal and the same kernel authorization path.
+            assertRuntimeHostActive(runtimeHostActive, abort.signal);
+            return this.#kernel.observeTool!(
+              contextAt(executionContext, this.#clock()),
+              parsedCall.data,
+              { signal: abort.signal },
+            );
+          });
+          emit("tool.completed", completedToolEventData(result, step));
           return result;
         }
 
@@ -448,6 +541,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
 
       const host: RuntimeHost = Object.freeze({
         limits,
+        ...(settlement === undefined ? {} : { settlement: settlement.host }),
         invokeTool: (
           call: ToolCall,
           invocationOptions: RuntimeToolInvocationOptions = {},
@@ -476,8 +570,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
         },
       });
 
+      const running = this.#runtime.run(runtimeRequest, host, abort.signal);
       const outcomeCandidate: unknown = await raceWithAbort(
-        this.#runtime.run(runtimeRequest, host, abort.signal),
+        settlement?.trackWork(running, "runtime") ?? running,
         abort.signal,
       );
       const outcome = RuntimeTurnOutcomeSchema.safeParse(outcomeCandidate);
@@ -547,11 +642,14 @@ export class SharedOSExecutor implements TurnExecutionPort {
         // dropping it because audit is unavailable would lose the one fact this
         // path exists to record.
         const escalation = (await raceWithAbort(
-          this.#kernel.recordEscalation?.(
-            contextAt(executionContext, this.#clock()),
-            outcome.data.reason,
-            { signal: abort.signal },
-          ) ?? Promise.resolve(undefined),
+          trackWork(
+            this.#kernel.recordEscalation?.(
+              contextAt(executionContext, this.#clock()),
+              outcome.data.reason,
+              { signal: abort.signal },
+            ) ?? Promise.resolve(undefined),
+            "escalation-audit",
+          ),
           abort.signal,
         )) ?? {
           reason: outcome.data.reason,
@@ -611,6 +709,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
         () => undefined,
       );
       abort.abort(new Error("turn closed"));
+      abort.signal.removeEventListener("abort", startSettlement);
       abort.dispose();
     }
   }
@@ -634,6 +733,7 @@ export class TurnExecutor implements TurnExecutionPort {
       ...(options.onTurnError === undefined ? {} : { onTurnError: options.onTurnError }),
     };
     const executorOptions: SharedOSExecutorOptions = {
+      ...(options.settlement === undefined ? {} : { settlement: options.settlement }),
       ...(options.clock === undefined ? {} : { clock: options.clock }),
       ...(options.createId === undefined ? {} : { createId: options.createId }),
       ...(options.defaultMaxSteps === undefined
