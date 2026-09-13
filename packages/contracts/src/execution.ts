@@ -8,6 +8,7 @@ import { JsonObjectSchema, JsonValueSchema } from "./json.js";
 import { MessageEnvelopeSchema } from "./message.js";
 import { ProtocolErrorSchema } from "./protocol-error.js";
 import { ToolDefinitionSchema } from "./tool.js";
+import { ExecutionSettlementSchema } from "./settlement.js";
 
 export const MAX_EXECUTION_TIMEOUT_MS = 600_000;
 export const MAX_EXECUTION_TOOL_CALLS = 10_000;
@@ -93,6 +94,7 @@ export const EscalationSchema = z
 export type Escalation = z.infer<typeof EscalationSchema>;
 
 const ExecutionResultBaseSchema = z.object({
+  settlement: ExecutionSettlementSchema.optional(),
   version: ProtocolVersionSchema,
   executionId: IdentifierSchema,
   traceId: IdentifierSchema,

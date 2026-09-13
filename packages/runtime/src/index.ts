@@ -3,3 +3,4 @@ export * from "./executor.js";
 export * from "./reach.js";
 export * from "./runtime-plugin.js";
 export * from "./standard-runtime.js";
+export * from "./settlement.js";

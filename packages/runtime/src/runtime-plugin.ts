@@ -13,6 +13,7 @@ import {
 import { reportContainedError } from "@aicoo/sharedos-core";
 
 import { deepFreeze } from "./internal.js";
+import type { RuntimeSettlementHost } from "./settlement.js";
 
 /** Which turn a {@link TurnErrorReporter} notification is about. */
 export interface TurnErrorContext {
@@ -136,6 +137,7 @@ export interface RuntimeToolInvocationOptions {
  * checked against the effective catalog and re-authorized by the kernel.
  */
 export interface RuntimeHost {
+  readonly settlement?: RuntimeSettlementHost;
   readonly limits: RuntimeLimits;
   invokeTool(call: ToolCall, options?: RuntimeToolInvocationOptions): Promise<ToolResult>;
   emit(event: RuntimeEvent): void;
