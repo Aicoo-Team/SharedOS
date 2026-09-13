@@ -31,6 +31,7 @@ export interface RuntimeSettlementHost {
   readonly signal: AbortSignal;
   register(session: AgentTurnSettlementSession): void;
   trackWork<T>(promise: Promise<T>, label?: string): Promise<T>;
+  trackCleanup(promise: Promise<void>): Promise<void>;
 }
 
 export interface SettlementToolObservation {
@@ -71,6 +72,7 @@ export class TurnSettlement {
       signal: this.signal,
       register: (session: AgentTurnSettlementSession) => this.#register(session),
       trackWork: <T>(promise: Promise<T>, label?: string) => this.trackWork(promise, label),
+      trackCleanup: (promise: Promise<void>) => this.#trackCleanup(promise),
     });
   }
 
@@ -122,6 +124,25 @@ export class TurnSettlement {
       },
     );
     return observed;
+  }
+
+  #trackCleanup(promise: Promise<void>): Promise<void> {
+    const update = (state: ExecutionSettlement["history"]["cleanup"]) => {
+      if (!this.#closed && !this.signal.aborted) this.#cleanup = state;
+    };
+    update("pending");
+    return this.trackWork(
+      Promise.resolve(promise).then(
+        () => {
+          update("completed");
+        },
+        (error: unknown) => {
+          update("failed");
+          throw error;
+        },
+      ),
+      "session-unregistered-cleanup",
+    );
   }
 
   async trackTool(call: ToolCall, factory: () => SettlementToolObservation): Promise<ToolResult> {
@@ -254,7 +275,7 @@ export class TurnSettlement {
     this.#closed = true;
     const operations = [...this.#operations.values()].map((entry) => ({ ...entry }));
     const status =
-      !this.#session && this.#pending.size === 0
+      !this.#session && this.#pending.size === 0 && this.#cleanup !== "failed"
         ? "unsupported"
         : this.#allOperationsComplete() &&
             this.#pending.size === 0 &&

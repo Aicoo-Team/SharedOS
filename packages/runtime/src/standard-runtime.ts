@@ -96,6 +96,12 @@ export interface AgentTurnSession {
 
 /** Model/provider-specific code implements this port inside the standard runtime. */
 export interface AgentTurnDriver {
+  /** Advertise before opening. A rejected open must clean its own partial resources. */
+  readonly settlement?: {
+    readonly version: "1";
+    /** Resource release only; never publish history for an unregistered session. */
+    closeUnregistered(session: AgentTurnSession, signal: AbortSignal): Promise<void>;
+  };
   open(request: AgentTurnRequest, signal: AbortSignal): Promise<AgentTurnSession>;
 }
 
@@ -150,26 +156,40 @@ export class StandardRuntime implements RuntimePlugin {
     let closeOutcome: ExecutionResult["status"] = "failed";
 
     try {
-      const opening = this.#driver.open(request, signal);
       if (host.settlement) {
         const settlement = host.settlement;
+        const capability = this.#driver.settlement;
+        if (capability?.version !== "1" || typeof capability.closeUnregistered !== "function") {
+          throw new Error("Driver settlement version 1 is unsupported");
+        }
+        if (signal.aborted) throw signal.reason;
+        const closeUnregistered = capability.closeUnregistered.bind(capability);
         session = await raceWithAbort(
           settlement.trackWork(
-            opening.then(async (opened) => {
-              if (signal.aborted) {
-                await opened.settlement?.close(settlement.signal);
-                throw signal.reason;
+            this.#driver.open(request, signal).then(async (opened) => {
+              try {
+                if (signal.aborted) throw signal.reason;
+                if (!opened?.settlement)
+                  throw new Error("Driver settlement version 1 is unsupported");
+                settlement.register(opened.settlement);
+                return opened;
+              } catch (error) {
+                try {
+                  await settlement.trackCleanup(
+                    Promise.resolve().then(() => closeUnregistered(opened, settlement.signal)),
+                  );
+                } catch {
+                  /* Cleanup is reported separately and must not replace the opening error. */
+                }
+                throw error;
               }
-              if (!opened.settlement) throw new Error("Driver settlement version 1 is unsupported");
-              settlement.register(opened.settlement);
-              return opened;
             }),
             "session-open",
           ),
           signal,
         );
       } else {
-        session = await raceWithAbort(opening, signal);
+        session = await raceWithAbort(this.#driver.open(request, signal), signal);
       }
       if (!session) throw new Error("Driver returned no session");
       let nextInput: AgentTurnInput = { type: "start" };

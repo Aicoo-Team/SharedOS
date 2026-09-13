@@ -124,6 +124,7 @@ function kernel(
 }
 
 describe("executor settlement profile", () => {
+  const driverSettlement = { version: "1" as const, closeUnregistered: async () => {} };
   it("selects the non-generative ingestion session and awaits explicit finish and cleanup", async () => {
     const next = vi.fn(async () => ({ type: "complete" as const, output: "legacy" }));
     const finish = vi.fn(async () => undefined);
@@ -131,6 +132,7 @@ describe("executor settlement profile", () => {
     const executor = new TurnExecutor(
       kernel(),
       {
+        settlement: driverSettlement,
         open: async () => ({
           next,
           settlement: {
@@ -233,6 +235,7 @@ describe("executor settlement profile", () => {
     const resultPromise = new TurnExecutor(
       actualKernel,
       {
+        settlement: driverSettlement,
         open: async () => ({
           next: vi.fn(),
           settlement: {
@@ -276,6 +279,7 @@ describe("executor settlement profile", () => {
     const resultPromise = new TurnExecutor(
       kernel(),
       {
+        settlement: driverSettlement,
         open: async () => ({
           next: vi.fn(),
           settlement: {
@@ -317,6 +321,7 @@ describe("executor settlement profile", () => {
     const resultPromise = new TurnExecutor(
       kernel(),
       {
+        settlement: driverSettlement,
         open: async () => ({
           next: vi.fn(),
           settlement: {
@@ -372,6 +377,7 @@ describe("executor settlement profile", () => {
     const resultPromise = new TurnExecutor(
       kernel({ invoke }),
       {
+        settlement: driverSettlement,
         open: async () => ({
           next: vi.fn(),
           settlement: {
@@ -414,6 +420,7 @@ describe("executor settlement profile", () => {
         },
       }),
       {
+        settlement: driverSettlement,
         open: async () => ({
           next: vi.fn(),
           settlement: {
@@ -457,6 +464,7 @@ describe("executor settlement profile", () => {
     const resultPromise = new TurnExecutor(
       actualKernel,
       {
+        settlement: driverSettlement,
         open: async () => ({
           next: vi.fn(),
           settlement: {
@@ -524,6 +532,7 @@ describe("executor settlement profile", () => {
     const result = await new TurnExecutor(
       actualKernel,
       {
+        settlement: driverSettlement,
         open: async () => ({
           next: vi.fn(),
           settlement: {
