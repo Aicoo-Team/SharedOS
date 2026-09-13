@@ -109,9 +109,10 @@ export class TurnSettlement {
     this.#cleanup = "pending";
   }
 
-  trackWork<T>(promise: Promise<T>, label = `work-${++this.#sequence}`): Promise<T> {
+  trackWork<T>(promise: Promise<T>, label?: string): Promise<T> {
     const observed = Promise.resolve(promise);
-    if (!this.#closed && !this.signal.aborted) this.#pending.set(observed, label);
+    const id = typeof label === "string" && label.length > 0 ? label : `work-${++this.#sequence}`;
+    if (!this.#closed && !this.signal.aborted) this.#pending.set(observed, id);
     void observed.then(
       () => {
         this.#pending.delete(observed);
@@ -146,6 +147,14 @@ export class TurnSettlement {
     } catch (error) {
       update({ result: "failed", ingestion: "failed", audit: "unknown" });
       throw error;
+    }
+    if (observation?.version !== "1") {
+      this.trackWork(
+        Promise.allSettled([observation?.result, observation?.audit, observation?.completion]),
+        `unsupported-observation:${parsed.id}`,
+      );
+      update({ result: "failed", ingestion: "failed", audit: "unknown" });
+      throw new TypeError("Tool observation version is unsupported");
     }
     // Completion is observed independently; result-ready never waits for audit.
     this.trackWork(
@@ -244,14 +253,15 @@ export class TurnSettlement {
     }
     this.#closed = true;
     const operations = [...this.#operations.values()].map((entry) => ({ ...entry }));
-    const status = !this.#session
-      ? "unsupported"
-      : this.#allOperationsComplete() &&
-          this.#pending.size === 0 &&
-          this.#finish === "completed" &&
-          this.#cleanup === "completed"
-        ? "settled"
-        : "incomplete";
+    const status =
+      !this.#session && this.#pending.size === 0
+        ? "unsupported"
+        : this.#allOperationsComplete() &&
+            this.#pending.size === 0 &&
+            this.#finish === "completed" &&
+            this.#cleanup === "completed"
+          ? "settled"
+          : "incomplete";
     const report: ExecutionSettlement = {
       version: "1",
       status,

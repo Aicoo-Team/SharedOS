@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ToolCall, ToolResult } from "@aicoo/sharedos-contracts";
+import { ExecutionSettlementSchema } from "@aicoo/sharedos-contracts";
 import { TurnSettlement, type AgentTurnSettlementSession } from "./settlement.js";
 
 const call: ToolCall = {
@@ -43,6 +44,41 @@ function observation(value: ToolResult = result) {
 }
 
 describe("TurnSettlement", () => {
+  it.each(["", null, 42])("normalizes an invalid pending-work label (%s)", async (label) => {
+    const turn = new TurnSettlement("execution", "trace", 10);
+    turn.host.register(session());
+    turn.trackWork(new Promise(() => {}), label as string);
+    const report = await turn.settle("cancelled");
+    expect(() => ExecutionSettlementSchema.parse(report)).not.toThrow();
+    expect(report.pendingWorkIds).toEqual(["work-1"]);
+  });
+
+  it("reports incomplete while a session open has not established capability", async () => {
+    const turn = new TurnSettlement("execution", "trace", 10);
+    turn.trackWork(new Promise(() => {}), "session-open");
+    const report = await turn.settle("cancelled");
+    expect(report.status).toBe("incomplete");
+    expect(report.pendingWorkIds).toEqual(["session-open"]);
+    expect(() => ExecutionSettlementSchema.parse(report)).not.toThrow();
+  });
+
+  it("refuses an unknown observation version and observes its rejected completion", async () => {
+    const turn = new TurnSettlement("execution", "trace", 100);
+    const driver = session();
+    turn.host.register(driver);
+    await expect(
+      turn.trackTool(call, () => ({
+        ...observation(),
+        version: "2" as "1",
+        completion: Promise.reject(undefined),
+      })),
+    ).rejects.toThrow("version");
+    const report = await turn.settle("failed");
+    expect(report.status).toBe("incomplete");
+    expect(driver.ingestToolResult).not.toHaveBeenCalled();
+    expect(driver.finish).not.toHaveBeenCalled();
+  });
+
   it("ingests actual denied results and rejects duplicate identity before invocation", async () => {
     const turn = new TurnSettlement("execution", "trace", 100);
     const driver = session();
