@@ -11,4 +11,5 @@ export * from "./message.js";
 export * from "./protocol-error.js";
 export * from "./resource.js";
 export * from "./runtime.js";
+export * from "./settlement.js";
 export * from "./tool.js";

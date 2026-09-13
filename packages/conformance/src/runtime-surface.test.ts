@@ -69,16 +69,25 @@ export type TurnRequestContextIsSanitised = Assert<
 >;
 
 /**
- * The host is exactly three members.
+ * The host has three work members and an optional non-authorizing settlement port.
  *
  * Written as an exhaustive equality rather than a set of absences, because a
  * leak arrives as a field somebody added and a list of things to check for
  * would not have that field on it.
  */
-export type HostIsExactlyLimitsCallAndEmit = Assert<
-  keyof RuntimeHost extends "limits" | "invokeTool" | "emit"
-    ? "limits" | "invokeTool" | "emit" extends keyof RuntimeHost
+export type HostIsExactlyLimitsCallEmitAndSettlement = Assert<
+  keyof RuntimeHost extends "limits" | "invokeTool" | "emit" | "settlement"
+    ? "limits" | "invokeTool" | "emit" | "settlement" extends keyof RuntimeHost
       ? true
       : false
+    : false
+>;
+
+export type SettlementHasNoAuthority = Assert<
+  Extract<
+    keyof NonNullable<RuntimeHost["settlement"]>,
+    "authority" | "grants" | "invokeTool"
+  > extends never
+    ? true
     : false
 >;

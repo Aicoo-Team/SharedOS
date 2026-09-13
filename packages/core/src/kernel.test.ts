@@ -172,6 +172,141 @@ function successfulTool(definition = FILE_TOOL): ToolHandler {
   };
 }
 
+describe("SharedOSKernel tool observation", () => {
+  it("publishes an immutable result before the outcome audit completes", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const handler = successfulTool();
+    const candidate = await handler.invoke(context(), toolCall(), new AbortController().signal);
+    const tools = new ToolRegistry();
+    tools.register({ ...handler, invoke: async () => candidate });
+    const kernel = kernelWith([grant("read", FILE_RESOURCE, ["search"])], {
+      tools,
+      audit: {
+        record: async (event) => {
+          if (event.type === "tool.invoked") await gate;
+        },
+      },
+    });
+    const observed = kernel.observeTool(context(), toolCall());
+    expect(observed.version).toBe("1");
+    const result = await observed.result;
+    expect(result.status).toBe("succeeded");
+    expect(Object.isFrozen(result)).toBe(true);
+    if (result.status === "succeeded") expect(Object.isFrozen(result.output)).toBe(true);
+    await expect(
+      observed.result.then(() => {
+        throw new Error("observer failed");
+      }),
+    ).rejects.toThrow("observer failed");
+    if (candidate.status === "succeeded") candidate.output = { changed: true };
+    expect(result).toMatchObject({ output: { hits: ["memory-1"] } });
+    const done = vi.fn();
+    void observed.completion.then(done);
+    await Promise.resolve();
+    expect(done).not.toHaveBeenCalled();
+    release();
+    await expect(observed.audit).resolves.toBe("recorded");
+    await expect(observed.completion).resolves.toEqual(result);
+  });
+
+  it("settles failed audit before a hanging diagnostic hook", async () => {
+    const tools = new ToolRegistry();
+    tools.register(successfulTool());
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const kernel = kernelWith([grant("read", FILE_RESOURCE, ["search"])], {
+      tools,
+      audit: {
+        record: async (event) => {
+          if (event.type === "tool.invoked") throw new Error("sink failed");
+        },
+      },
+      onAuditError: async () => {
+        await gate;
+        throw new Error("hook failed");
+      },
+    });
+    const observed = kernel.observeTool(context(), toolCall());
+    await expect(observed.result).resolves.toMatchObject({ status: "succeeded" });
+    await expect(observed.audit).resolves.toBe("failed");
+    release();
+    await expect(observed.completion).resolves.toMatchObject({ status: "succeeded" });
+  });
+
+  it("does not execute denied or already aborted calls", async () => {
+    const invoke = vi.fn(successfulTool().invoke);
+    const tools = new ToolRegistry();
+    tools.register({ ...successfulTool(), invoke });
+    const kernel = kernelWith([], { tools });
+    const denied = kernel.observeTool(context(), toolCall());
+    await expect(denied.result).resolves.toMatchObject({ status: "denied" });
+    await expect(denied.audit).resolves.toBe("recorded");
+    const controller = new AbortController();
+    controller.abort(new Error("cancelled"));
+    const aborted = kernel.observeTool(context(), toolCall(), { signal: controller.signal });
+    await expect(aborted.result).rejects.toThrow("cancelled");
+    await expect(aborted.audit).resolves.toBe("unknown");
+    await expect(aborted.completion).rejects.toThrow("cancelled");
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it("re-authorizes consumption after discovery succeeds", async () => {
+    const invoke = vi.fn(successfulTool().invoke);
+    const tools = new ToolRegistry();
+    tools.register({ ...successfulTool(), invoke });
+    const tryConsume = vi.fn(async () => false);
+    const kernel = kernelWith([grant("once", FILE_RESOURCE, ["search"], { maxUses: 1 })], {
+      tools,
+      authorizer: new CapabilityAuthorizer({ usageStore: { getUsage: async () => 0, tryConsume } }),
+    });
+    await expect(kernel.listTools(context())).resolves.toEqual([FILE_TOOL]);
+    const observed = kernel.observeTool(context(), toolCall());
+    await expect(observed.result).resolves.toMatchObject({
+      status: "denied",
+      error: { code: "grant_exhausted" },
+    });
+    await expect(observed.audit).resolves.toBe("recorded");
+    expect(tryConsume).toHaveBeenCalledOnce();
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed calls without a result or effect", async () => {
+    const invoke = vi.fn(successfulTool().invoke);
+    const kernel = kernelWith([grant("read", FILE_RESOURCE, ["search"])]);
+    kernel.registerTool({ ...successfulTool(), invoke });
+    const observed = kernel.observeTool(context(), toolCall({ id: "" }));
+    await expect(observed.result).rejects.toThrow();
+    await expect(observed.audit).resolves.toBe("unknown");
+    await expect(observed.completion).rejects.toThrow();
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it.each([{ callId: "wrong" }, { tool: "wrong" }, { completedAt: "invalid" }])(
+    "exposes only validated, identity-matched handler results: %j",
+    async (override) => {
+      const tools = new ToolRegistry();
+      const handler = successfulTool();
+      tools.register({
+        ...handler,
+        invoke: async (...args) => ({ ...(await handler.invoke(...args)), ...override }),
+      });
+      const kernel = kernelWith([grant("read", FILE_RESOURCE, ["search"])], { tools });
+      const observed = kernel.observeTool(context(), toolCall());
+      await expect(observed.result).resolves.toMatchObject({
+        callId: "call-1",
+        status: "failed",
+        error: { code: "invalid_tool_result" },
+      });
+      await expect(observed.audit).resolves.toBe("recorded");
+    },
+  );
+});
+
 describe("SharedOSKernel escalation", () => {
   it("records an escalation as its own outcome and grants nothing", async () => {
     const events: AuditEvent[] = [];

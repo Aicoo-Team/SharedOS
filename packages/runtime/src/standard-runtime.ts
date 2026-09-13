@@ -15,6 +15,7 @@ import {
 
 import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
 import { escalationAskedEvent, escalationReason } from "./escalation.js";
+import type { AgentTurnSettlementSession } from "./settlement.js";
 import {
   reportTurnError,
   type RuntimeHost,
@@ -88,12 +89,19 @@ export type AgentVisibleContext = RuntimeVisibleContext;
 export type AgentTurnRequest = RuntimeTurnRequest;
 
 export interface AgentTurnSession {
+  readonly settlement?: AgentTurnSettlementSession;
   next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision>;
   close?(outcome: ExecutionResult["status"], signal: AbortSignal): void | Promise<void>;
 }
 
 /** Model/provider-specific code implements this port inside the standard runtime. */
 export interface AgentTurnDriver {
+  /** Advertise before opening. A rejected open must clean its own partial resources. */
+  readonly settlement?: {
+    readonly version: "1";
+    /** Resource release only; never publish history for an unregistered session. */
+    closeUnregistered(session: AgentTurnSession, signal: AbortSignal): Promise<void>;
+  };
   open(request: AgentTurnRequest, signal: AbortSignal): Promise<AgentTurnSession>;
 }
 
@@ -148,12 +156,50 @@ export class StandardRuntime implements RuntimePlugin {
     let closeOutcome: ExecutionResult["status"] = "failed";
 
     try {
-      session = await raceWithAbort(this.#driver.open(request, signal), signal);
+      if (host.settlement) {
+        const settlement = host.settlement;
+        const capability = this.#driver.settlement;
+        if (capability?.version !== "1" || typeof capability.closeUnregistered !== "function") {
+          throw new Error("Driver settlement version 1 is unsupported");
+        }
+        if (signal.aborted) throw signal.reason;
+        const closeUnregistered = capability.closeUnregistered.bind(capability);
+        session = await raceWithAbort(
+          settlement.trackWork(
+            this.#driver.open(request, signal).then(async (opened) => {
+              try {
+                if (signal.aborted) throw signal.reason;
+                if (!opened?.settlement)
+                  throw new Error("Driver settlement version 1 is unsupported");
+                settlement.register(opened.settlement);
+                return opened;
+              } catch (error) {
+                // Report the known failure now; the controller drains cleanup under its budget.
+                void settlement.trackCleanup(
+                  Promise.resolve().then(() => closeUnregistered(opened, settlement.signal)),
+                );
+                throw error;
+              }
+            }),
+            "session-open",
+          ),
+          signal,
+        );
+      } else {
+        session = await raceWithAbort(this.#driver.open(request, signal), signal);
+      }
+      if (!session) throw new Error("Driver returned no session");
       let nextInput: AgentTurnInput = { type: "start" };
 
       for (let step = 0; step < host.limits.maxSteps; step += 1) {
+        if (host.settlement && signal.aborted) throw signal.reason;
         const decisionCandidate: unknown = await raceWithAbort(
-          session.next(nextInput, signal),
+          host.settlement
+            ? host.settlement.trackWork(
+                session.settlement!.nextDecision(signal),
+                "session-decision",
+              )
+            : session.next(nextInput, signal),
           signal,
         );
         const decision = parseAgentTurnDecision(decisionCandidate);
@@ -240,7 +286,7 @@ export class StandardRuntime implements RuntimePlugin {
         error: protocolError("driver_failed", "The agent turn driver failed.", true),
       };
     } finally {
-      await closeSession(session, closeOutcome, this.#closeTimeoutMs);
+      if (!host.settlement) await closeSession(session, closeOutcome, this.#closeTimeoutMs);
     }
   }
 }
