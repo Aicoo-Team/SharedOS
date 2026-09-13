@@ -26,6 +26,7 @@ import {
   MessageDeliveryResultSchema,
   MessageEnvelopeSchema,
   ResourceResultSchema,
+  ToolCallSchema,
   ToolNamespaceUpdateSchema,
   ToolResultSchema,
 } from "@aicoo/sharedos-contracts";
@@ -150,6 +151,18 @@ export interface SharedOSKernelOptions {
    * See {@link SpanSink}.
    */
   readonly spans?: SpanSink;
+}
+
+export interface ToolInvocationObservation {
+  readonly version: "1";
+  readonly result: Promise<ToolResult>;
+  readonly audit: Promise<"recorded" | "failed" | "unknown">;
+  readonly completion: Promise<ToolResult>;
+}
+
+interface ToolResultObserver {
+  ready(result: ToolResult): void;
+  audited(status: "recorded" | "failed"): void;
 }
 
 export interface KernelOperationOptions {
@@ -970,14 +983,58 @@ export class SharedOSKernel {
     );
   }
 
+  /** Observe a validated result independently of its post-effect audit latency. */
+  observeTool(
+    context: AccessContext,
+    call: ToolCall,
+    options: KernelOperationOptions = {},
+  ): ToolInvocationObservation {
+    let ready!: (result: ToolResult) => void;
+    let reject!: (error: unknown) => void;
+    let audited!: (status: "recorded" | "failed" | "unknown") => void;
+    const result = new Promise<ToolResult>((resolve, fail) => {
+      ready = resolve;
+      reject = fail;
+    });
+    const audit = new Promise<"recorded" | "failed" | "unknown">((resolve) => {
+      audited = resolve;
+    });
+    const completion = measure(
+      this.#spans,
+      SPAN.TOOL_INVOKE,
+      async (span) => {
+        span.set("callId", call.id);
+        span.set("tool", call.tool);
+        return this.#invokeTool(context, ToolCallSchema.parse(call), options, { ready, audited });
+      },
+      (value, span) => span.set("outcome", value.status),
+    );
+    void result.catch(() => {});
+    void completion.then(
+      () => {},
+      (error: unknown) => {
+        reject(error);
+        audited("unknown");
+      },
+    );
+    return Object.freeze({ version: "1", result, audit, completion });
+  }
+
   async #invokeTool(
     context: AccessContext,
     call: ToolCall,
     options: KernelOperationOptions = {},
+    observation?: ToolResultObserver,
   ): Promise<ToolResult> {
     throwIfAborted(options.signal);
     context = structuredClone(context);
     call = structuredClone(call);
+    const recordResult = (
+      access: AccessContext,
+      request: ToolCall,
+      value: ToolResult,
+      detail: ToolResultAuditDetail = {},
+    ) => this.#recordToolResult(access, request, value, detail, observation);
     if (call.traceId !== context.traceId) {
       const result = deniedToolResult(
         call,
@@ -985,7 +1042,7 @@ export class SharedOSKernel {
         "trace_mismatch",
         "Tool call traceId does not match its access context",
       );
-      await this.#recordToolResult(context, call, result);
+      await recordResult(context, call, result);
       return result;
     }
 
@@ -997,7 +1054,7 @@ export class SharedOSKernel {
         "authority_unavailable",
         "Authority could not be loaded from its trusted source",
       );
-      await this.#recordToolResult(context, call, result);
+      await recordResult(context, call, result);
       return result;
     }
 
@@ -1032,7 +1089,7 @@ export class SharedOSKernel {
         "tool_catalog_unavailable",
         "The tool catalog could not be resolved",
       );
-      await this.#recordToolResult(context, call, result);
+      await recordResult(context, call, result);
       return result;
     }
 
@@ -1044,7 +1101,7 @@ export class SharedOSKernel {
         "tool_unavailable",
         "The requested tool is not available in this access context",
       );
-      await this.#recordToolResult(context, call, result, { cause: "not_registered" });
+      await recordResult(context, call, result, { cause: "not_registered" });
       return result;
     }
 
@@ -1055,7 +1112,7 @@ export class SharedOSKernel {
         "tool_unavailable",
         "The requested tool is not available in this access context",
       );
-      await this.#recordToolResult(context, call, result, { cause: "namespace_disabled" });
+      await recordResult(context, call, result, { cause: "namespace_disabled" });
       return result;
     }
 
@@ -1101,7 +1158,7 @@ export class SharedOSKernel {
       // `host_policy_denied` could only ever appear on the decision event, and
       // a host counting policy refusals from the operation events would get
       // zero (ADR 0023).
-      await this.#recordToolResult(context, call, result, {
+      await recordResult(context, call, result, {
         cause: discoverable.reasonCode,
         requirement: {
           resource: handler.definition.requiredCapability.resource,
@@ -1131,7 +1188,7 @@ export class SharedOSKernel {
         "invalid_tool_arguments",
         "The requested tool arguments are invalid",
       );
-      await this.#recordToolResult(context, call, result);
+      await recordResult(context, call, result);
       return result;
     }
 
@@ -1152,7 +1209,7 @@ export class SharedOSKernel {
         "tool_requirement_resolution_failed",
         "The tool could not resolve its required capability",
       );
-      await this.#recordToolResult(context, call, result);
+      await recordResult(context, call, result);
       return result;
     }
 
@@ -1177,7 +1234,7 @@ export class SharedOSKernel {
         crossing.reasonCode,
         "The requested resource lies outside this access context's world",
       );
-      await this.#recordToolResult(context, call, result, { requirement });
+      await recordResult(context, call, result, { requirement });
       return result;
     }
 
@@ -1188,7 +1245,7 @@ export class SharedOSKernel {
         "invalid_tool_requirement",
         "The tool resolved a capability outside its declared boundary",
       );
-      await this.#recordToolResult(context, call, result);
+      await recordResult(context, call, result);
       return result;
     }
 
@@ -1206,7 +1263,7 @@ export class SharedOSKernel {
         decision.reasonCode,
         "The access context does not grant this tool capability",
       );
-      await this.#recordToolResult(context, call, result, { requirement });
+      await recordResult(context, call, result, { requirement });
       return result;
     }
 
@@ -1248,7 +1305,7 @@ export class SharedOSKernel {
       );
     }
 
-    await this.#recordToolResult(context, call, result, {
+    await recordResult(context, call, result, {
       ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
       requirement,
     });
@@ -1977,7 +2034,15 @@ export class SharedOSKernel {
     call: ToolCall,
     result: ToolResult,
     detail: ToolResultAuditDetail = {},
+    observation?: ToolResultObserver,
   ): Promise<void> {
+    if (observation !== undefined) {
+      const snapshot = ToolResultSchema.parse(structuredClone(result));
+      if (snapshot.callId !== call.id || snapshot.tool !== call.tool) {
+        throw new TypeError("Tool result identity does not match its call");
+      }
+      observation.ready(deepFreeze(snapshot));
+    }
     const { grantId, requirement, cause } = detail;
     const catalogueServed = this.#leases.get(turnAuthorityKey(context))?.catalogHash;
     await this.#recordOutcome(
@@ -2017,6 +2082,7 @@ export class SharedOSKernel {
             : {}),
         },
       }),
+      observation?.audited,
     );
   }
 
@@ -2086,16 +2152,22 @@ export class SharedOSKernel {
     });
   }
 
-  async #recordOutcome(event: AuditEvent): Promise<void> {
+  async #recordOutcome(
+    event: AuditEvent,
+    audited?: (status: "recorded" | "failed") => void,
+  ): Promise<void> {
     try {
       await this.#audit.record(event);
     } catch (error) {
+      audited?.("failed");
       try {
         await this.#onAuditError?.(error, event);
       } catch {
         // A post-effect observability hook must not turn success into a retry.
       }
+      return;
     }
+    audited?.("recorded");
   }
 }
 
