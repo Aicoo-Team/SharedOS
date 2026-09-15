@@ -7,10 +7,12 @@ import type {
 } from "@aicoo/sharedos-contracts";
 import { RuntimeManifestSchema } from "@aicoo/sharedos-contracts";
 import { type AuditEvent, isInfrastructureDenial } from "@aicoo/sharedos-core";
+import { promptHandedHash } from "@aicoo/sharedos-runtime";
 
 import {
   type AuthoritySnapshotRecord,
   type ContentHash,
+  ContentHashSchema,
   type DecisionRecord,
   type ExecutionRecord,
   type ExecutionRecordExecution,
@@ -156,7 +158,7 @@ function terminalOutcome(result: ExecutionResult): Partial<ExecutionRecordExecut
  */
 function publishedCatalogue(result: ExecutionResult): Partial<SystemIdentity> {
   const catalogHash = result.metadata?.["catalogHash"];
-  if (typeof catalogHash !== "string" || !/^[0-9a-f]{64}$/u.test(catalogHash)) {
+  if (!isContentHash(catalogHash)) {
     return {};
   }
   return { catalogHash, toolCount: exposedTools(result.events).length };
@@ -170,15 +172,31 @@ function publishedCatalogue(result: ExecutionResult): Partial<SystemIdentity> {
  * claim about what it meant to send. A runtime that hands the seat no text --
  * the embedded adversary, a driven vendor column whose frames are written for
  * it -- leaves the field absent rather than carrying a hash over a prompt no
- * model was shown. Anything that is not a content hash is ignored the same way
- * a malformed catalogue hash is.
+ * model was shown.
+ *
+ * Two places can carry it, and the rule is: the result's metadata decides
+ * where the result has the field at all, and the first `prompt.handed`
+ * announcement decides otherwise. A turn cancelled at its deadline returns no
+ * metadata -- the plugin threw at the abort and the envelope built the result
+ * from its own provenance -- but it was asked something, and the event the
+ * runtime emitted before it launched anything is where that survives. Without
+ * the fallback a stalled turn dropped out of its column's prompt set and the
+ * column's moved hash read as a reworded prompt. Whichever place is read, a
+ * value that is not a content hash is ignored the same way a malformed
+ * catalogue hash is: it does not fall through to the other place.
  */
 function handedPrompt(result: ExecutionResult): Partial<SystemIdentity> {
-  const promptHash = result.metadata?.["promptHash"];
-  if (typeof promptHash !== "string" || !/^[0-9a-f]{64}$/u.test(promptHash)) {
-    return {};
-  }
-  return { promptHash };
+  const declared = result.metadata?.["promptHash"];
+  const promptHash =
+    declared !== undefined
+      ? declared
+      : result.events.map(promptHandedHash).find((hash) => hash !== undefined);
+  return isContentHash(promptHash) ? { promptHash } : {};
+}
+
+/** The one definition of a content hash the record is validated against. */
+function isContentHash(value: unknown): value is ContentHash {
+  return ContentHashSchema.safeParse(value).success;
 }
 
 /**

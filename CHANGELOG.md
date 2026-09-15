@@ -8,6 +8,43 @@ each entry calls out what a host has to update.
 
 ## Unreleased
 
+### Fixed
+
+- **A turn that never returns still records what it was asked.** `promptHash`
+  rode on the turn's outcome metadata alone, and a turn cancelled at its deadline
+  has no outcome: the plugin threw at the abort and the envelope built the
+  `cancelled` result from its own provenance. The same held for a turn the
+  standard loop ended itself — `step_limit_exceeded` carries no driver metadata.
+  Such a turn then dropped out of its column's prompt set, and the column's
+  moved `promptSetHash` read as a reworded prompt — the one confusion the hash
+  exists to remove; the 2026-09-08 live run showed it, one stalled Claude Code
+  turn folding 28 entries against the other columns' 29. The runtimes now also
+  announce the hash through `RuntimeHost.emit` as a `prompt.handed` runtime
+  event before the model or harness is sent anything, since
+  `ExecutionResult.events` survives cancellation and metadata does not.
+  `createMcpHarnessRuntime` emits it before binding its port or spawning the
+  CLI; `StandardRuntime` emits it once `open` has resolved, before the first
+  step, for any `AgentTurnSession` that states a `promptHash`, which
+  `ModelDriver`'s session now does. The announcement is for the record only: a
+  host whose `emit` refuses it does not end the turn, and the refusal is
+  reported to `onTurnError` under the turn's identifiers, which
+  `createMcpHarnessRuntime` now takes as an option; the `escalation.asked`
+  announcement follows the same rule in both runtimes, where it used to be
+  dropped silently. A turn already cancelled reports nothing. A turn cancelled
+  before the announcement -- inside a driver's `open`, or while the MCP port is
+  still binding -- still carries none. `assembleExecutionRecord`
+  takes the metadata where the result has the field and the first announcement
+  otherwise; a malformed value in either place reads as absent, as a malformed
+  catalogue hash does, so an existing record reads as before.
+  `@aicoo/sharedos-runtime` exports `PROMPT_HANDED_EVENT`, `promptHandedEvent`,
+  `announcePromptHanded`, the reader `promptHandedHash`, and `announceForRecord`
+  with its `RecordAnnouncement`, for a plugin announcing anything of its own. **What a host has
+  to update:** nothing; a driver that hands the seat text and wants its stalled
+  turns identified states `promptHash` on its session, hashed before its `open`
+  sends anything. The committed `Standard` prompt-set hash moves
+  once, `ece3b355…` to `4dbefcbd…`, because the `budget-exceeded/step-ceiling`
+  turn now counts; the case-set and world-set hashes do not move.
+
 ### Added
 
 - **A refusal's gate is readable from its audit record, by call id.**

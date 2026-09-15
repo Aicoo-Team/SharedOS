@@ -29,6 +29,14 @@ export interface TurnErrorContext {
  * the thrown error is the only thing that does, so it is handed over whole and
  * unwrapped, because its stack is what names the origin.
  *
+ * A record-only announcement the host refused reaches it too. `prompt.handed`
+ * and `escalation.asked` are emitted for the record and decide nothing, so a
+ * throw from `emit` there is contained where it happens and the turn goes on
+ * -- the driver answers, the harness is served. The record is then short an
+ * event, and the thrown error is the only thing that says so; see
+ * {@link announceForRecord}. `StandardRuntime` and `createMcpHarnessRuntime`
+ * both take the reporter for it.
+ *
  * It reaches nothing else. A `ProtocolError.message` is read by the model, and
  * an `ExecutionEvent` becomes part of an `ExecutionRecord`, which travels
  * further than an audit sink; a thrown message may carry anything the thrower
@@ -69,6 +77,50 @@ export function reportTurnError(
   turn: TurnErrorContext,
 ): void {
   reportContainedError(reporter, error, turn);
+}
+
+/** What a record-only announcement needs, to report a refused `emit`. */
+export interface RecordAnnouncement {
+  /** Which turn is announcing; what a refused `emit` is reported under. */
+  readonly turn: TurnErrorContext;
+  /** The turn's own signal: a host closed by cancellation is not a defect. */
+  readonly signal: AbortSignal;
+  /** Where a refused `emit` is reported. `undefined` reports it nowhere. */
+  readonly onTurnError: TurnErrorReporter | undefined;
+}
+
+/**
+ * Emit one event for the record, and only for the record.
+ *
+ * Some events say what happened without deciding anything: what the seat was
+ * told, that a delegate asked for a human. A host whose `emit` refuses one --
+ * closed, or holding the event to a stricter contract -- must not turn that
+ * refusal into the turn's outcome, because the turn had not failed; it would
+ * end as `driver_failed` before the driver decided anything, or answer a
+ * harness with a transport fault for a call SharedOS accepted. So the throw is
+ * contained here and the turn goes on.
+ *
+ * Contained is not lost. The record is now short an event, and a reader
+ * holding only the record cannot tell that from a turn cancelled before the
+ * announcement, which carries none either; so the throw goes to the host's
+ * `onTurnError` sink, whole, under the turn's identifiers, and the host's log
+ * is where the two cases part. It goes nowhere once the signal is aborted: a
+ * host closed by cancellation refuses everything, and cancellation is a
+ * decision the reporter never hears about.
+ */
+export function announceForRecord(
+  host: Pick<RuntimeHost, "emit">,
+  event: RuntimeEvent,
+  announcement: RecordAnnouncement,
+): void {
+  try {
+    host.emit(event);
+  } catch (error) {
+    if (announcement.signal.aborted) {
+      return;
+    }
+    reportTurnError(announcement.onTurnError, error, announcement.turn);
+  }
 }
 
 export interface RuntimeVisibleContext {

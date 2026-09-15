@@ -17,6 +17,7 @@ import {
   type AgentTurnDriver,
   type RuntimeTurnRequest,
   createEscalationTool,
+  promptHandedHash,
 } from "@aicoo/sharedos-runtime";
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
 
@@ -976,5 +977,37 @@ describe("what the model is told about where it may operate", () => {
       await hashJson({ instructions: null, prompt: "read the workspace" }),
     );
     expect(silent.result.metadata?.["promptHash"]).not.toBe(result.metadata?.["promptHash"]);
+  });
+
+  it("announces it before the first request, so a turn cancelled mid-call still records it", async () => {
+    // A model call that never returns: the turn is cancelled from outside the
+    // moment the request is on the wire, which is where a live stall lands.
+    const cancel = new AbortController();
+    const seen: ModelCompletionRequest[] = [];
+    const hanging: ModelClient = {
+      model: "test-model",
+      provider: "test-provider",
+      complete: (completion, signal) => {
+        seen.push(structuredClone(completion) as ModelCompletionRequest);
+        cancel.abort(new Error("deadline"));
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+        });
+      },
+    };
+    const { kernel } = testKernel();
+    const result = await new SharedOSExecutor(
+      kernel,
+      new ModelRuntime(new ModelDriver({ manifest: MANIFEST, client: hanging })),
+      { clock: () => NOW },
+    ).execute(request(), { signal: cancel.signal });
+
+    expect(result.status).toBe("cancelled");
+    expect(result.metadata?.["promptHash"]).toBeUndefined();
+    const [system, user] = seen[0]?.messages ?? [];
+    const handed = result.events.map(promptHandedHash).filter((hash) => hash !== undefined);
+    expect(handed).toEqual([
+      await hashJson({ instructions: system?.content, prompt: user?.content }),
+    ]);
   });
 });
