@@ -48,10 +48,11 @@ taken from each turn's record rather than from the code that wrote it. It is
 per column, because the wording differs by design between a seat whose
 channel carries any name and one behind an MCP router, and a column that
 tells the seat nothing carries none. A turn that was cancelled, timed out, or
-ended by the loop itself still counts: what it was asked is announced before
-anything is launched, so a stall moves no hash. A live run of a column is
-comparable to the last one on the model's choices only when this hash matches
-too: a reworded prompt is a different question, not a different kernel.
+ended by the loop itself after the seat was asked still counts: what it was
+asked is announced before the model or CLI is sent anything, so a stall moves
+no hash. A live run of a column is comparable to the last one on the model's
+choices only when this hash matches too: a reworded prompt is a different
+question, not a different kernel.
 
 A cell is `pass` only when every declared attempt met its expected outcome and
 every control attempt succeeded. `not exercised` means the attempt -- or, on a

@@ -222,12 +222,26 @@ describe("execution record assembly", () => {
     expect(
       assemble({ ...cancelled, events: [...result().events, handed(hash)] }).system.promptHash,
     ).toBe(hash);
-    // The result's own metadata still wins where both are present.
+    // Where the result has the field at all, the metadata decides -- a valid
+    // one over any announcement, and a malformed one as absent rather than as
+    // a fall-through to the event, the same way a malformed catalogue hash is
+    // treated.
     expect(
       assemble({
         metadata: { ...result().metadata, promptHash: hash },
         events: [...result().events, handed(other)],
       }).system.promptHash,
+    ).toBe(hash);
+    expect(
+      assemble({
+        metadata: { ...result().metadata, promptHash: "reworded" },
+        events: [...result().events, handed(hash)],
+      }).system.promptHash,
+    ).toBeUndefined();
+    // Several announcements: the first is what the seat was first told.
+    expect(
+      assemble({ ...cancelled, events: [...result().events, handed(hash), handed(other)] }).system
+        .promptHash,
     ).toBe(hash);
     // An announcement that is not a content hash is not believed either.
     expect(
