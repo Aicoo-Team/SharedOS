@@ -215,15 +215,23 @@ makes the second refusal attributable to the route and to nothing else. A
 control read afterwards establishes that the dead route ended the dispatch and
 not the turn.
 
-The manifest's columns read that refusal from two different places, and the
-expectation declares both. A column that sees the tool result reports
-`message_request_not_accepted`: delivery was not accepted, so `messages.request`
-has no reply to wait for. A column whose receipts are recovered from the
-execution record reads the `message.sent` operation, which carries the
-transport's own code. Either way the code is one no unauthorized send can
-produce — a send with no authority is refused before dispatch, as `denied` with
-`no_matching_grant` — so the row cannot be satisfied by a refusal that happened
-earlier. That is the naming rule above paying for itself.
+The refusal leaves two operations under one call id, and the row reads them
+apart. The tool operation carries `message_request_not_accepted`: delivery was
+not accepted, so `messages.request` has no reply to wait for. That is what
+SharedOS says, it is the same in every column, and it is what the row is graded
+on. The `message.sent` operation carries the transport's own code, and the
+judge reports it as the attempt's `cause` without grading it — a host's
+vocabulary is not a claim about the kernel. Either code is one no unauthorized
+send can produce — a send with no authority is refused before dispatch, as
+`denied` with `no_matching_grant` — so the row cannot be satisfied by a refusal
+that happened earlier. That is the naming rule above paying for itself.
+
+An earlier form of this row accepted either code and let each column report
+whichever it happened to read; the scripted columns' reader took the first
+operation under the id and printed the transport's code, every other column
+printed the caller's, and the split was mistaken for a difference between
+observing the tool result and observing the record. It was audit order. The
+row now quotes one identity and carries the other as its cause.
 
 ### Both deployments run the same suite
 

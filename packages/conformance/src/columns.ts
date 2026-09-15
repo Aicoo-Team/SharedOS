@@ -41,7 +41,7 @@ import {
   type AttemptReceipt,
 } from "./adversary.js";
 import { canonicalJson } from "./hashing.js";
-import type { ExecutionRecord } from "./record.js";
+import { operationsUnder, type ExecutionRecord } from "./record.js";
 import type { ConformanceCondition } from "./suite.js";
 import { conformanceRuntimeContext } from "./world.js";
 
@@ -578,9 +578,12 @@ function issuableByHarness(attempt: AttackAttempt, turn: number): boolean {
 export function receiptsFromRecord(move: AttackMove, turn: ColumnTurn): readonly AttemptReceipt[] {
   const operations = new Map(
     move.attempts.flatMap((attempt) => {
-      const callId = attemptCallId(turn.executionId, move, attempt);
-      const operation = turn.record.execution.operations.find(
-        (candidate) => candidate.operationId === callId,
+      // The tool operation under the call's id is the receipt; a sibling the
+      // transport refused is its cause, which the judge joins. One reading of
+      // that, shared with the judge: see `operationsUnder`.
+      const { attempt: operation } = operationsUnder(
+        turn.record,
+        attemptCallId(turn.executionId, move, attempt),
       );
       return operation === undefined ? [] : [[attempt.id, operation] as const];
     }),

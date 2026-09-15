@@ -2,7 +2,7 @@ import { ESCALATION_ASKED_EVENT, ESCALATION_TOOL_NAME } from "@aicoo/sharedos-ru
 
 import type { AttackMove, AttemptReceipt, AttemptRole, AttemptStatus } from "./adversary.js";
 import { checkRecordCompleteness } from "./completeness.js";
-import type { ExecutionRecord } from "./record.js";
+import { operationsUnder, type ExecutionRecord } from "./record.js";
 
 /**
  * Version of the grading rules, so a manifest names what produced it.
@@ -45,6 +45,17 @@ export interface AttemptOutcome {
   readonly attempted: boolean;
   readonly observed?: AttemptStatus;
   readonly reasonCode?: string;
+  /**
+   * The code behind the refusal, where the record carries one.
+   *
+   * `reasonCode` is what the caller was told. A `messages.request` the
+   * transport refused is told `message_request_not_accepted`; the transport's
+   * own code -- a dead route, a delivery failure -- is on the `message`
+   * operation that shares the call's id, and this is it. Read for the record,
+   * never graded: the expectation names what SharedOS says, and a host's
+   * vocabulary is not a claim about the kernel.
+   */
+  readonly cause?: string;
   readonly refusedBy?: EnforcementPoint;
   readonly detail?: string;
 }
@@ -54,6 +65,8 @@ export interface CaseJudgement {
   readonly attempts: readonly AttemptOutcome[];
   /** Refusal codes observed across the move, sorted and de-duplicated. */
   readonly reasonCodes: readonly string[];
+  /** The codes behind those refusals, where the record carried one; same shape. */
+  readonly causes: readonly string[];
   readonly refusedBy: readonly EnforcementPoint[];
   readonly declared: number;
   readonly attempted: number;
@@ -147,6 +160,7 @@ export function judgeCase(
       attempt.unreachable !== undefined || columnReason !== undefined || turnEndedBeforeTheRuntime,
       receipt,
       refusalPoints,
+      evidence.record,
       turnEndedBeforeTheRuntime
         ? "the turn was refused before the runtime was started"
         : columnReason,
@@ -179,6 +193,11 @@ export function judgeCase(
         [...attempts.map(({ reasonCode }) => reasonCode), turn?.reasonCode].filter(
           (code): code is string => code !== undefined,
         ),
+      ),
+    ].sort(),
+    causes: [
+      ...new Set(
+        attempts.map(({ cause }) => cause).filter((code): code is string => code !== undefined),
       ),
     ].sort(),
     refusedBy: [
@@ -467,6 +486,7 @@ function outcomeFor(
   declaredUnreachable: boolean,
   receipt: AttemptReceipt | undefined,
   refusalPoints: ReadonlyMap<string, EnforcementPoint>,
+  record: ExecutionRecord,
   unreachableDetail?: string,
 ): AttemptOutcome {
   if (receipt === undefined) {
@@ -499,10 +519,12 @@ function outcomeFor(
     };
   }
 
-  const refusedBy =
-    receipt.observed === "succeeded" || receipt.callId === undefined
-      ? undefined
-      : refusalPoints.get(receipt.callId);
+  const refusedCallId = receipt.observed === "succeeded" ? undefined : receipt.callId;
+  const refusedBy = refusedCallId === undefined ? undefined : refusalPoints.get(refusedCallId);
+  // Joined by call id from the sibling operation the transport refused, read
+  // the same way the receipt was taken; see `operationsUnder`.
+  const cause =
+    refusedCallId === undefined ? undefined : operationsUnder(record, refusedCallId).cause;
 
   return {
     attemptId,
@@ -511,6 +533,7 @@ function outcomeFor(
     attempted: true,
     ...(receipt.observed === undefined ? {} : { observed: receipt.observed }),
     ...(receipt.reasonCode === undefined ? {} : { reasonCode: receipt.reasonCode }),
+    ...(cause === undefined ? {} : { cause }),
     ...(refusedBy === undefined ? {} : { refusedBy }),
   };
 }
