@@ -12,12 +12,12 @@ import {
   ESCALATION_RESOURCE_PATH,
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAMESPACE,
-  PROMPT_HANDED_EVENT,
   SharedOSExecutor,
   StandardRuntime,
   type AgentTurnDriver,
   type RuntimeTurnRequest,
   createEscalationTool,
+  promptHandedHash,
 } from "@aicoo/sharedos-runtime";
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
 
@@ -1005,13 +1005,7 @@ describe("what the model is told about where it may operate", () => {
     expect(result.status).toBe("cancelled");
     expect(result.metadata?.["promptHash"]).toBeUndefined();
     const [system, user] = seen[0]?.messages ?? [];
-    const handed = result.events
-      .filter(
-        ({ type, data }) =>
-          type === "runtime.event" &&
-          (data as { type?: unknown } | null)?.type === PROMPT_HANDED_EVENT,
-      )
-      .map(({ data }) => (data as { data: { promptHash: unknown } }).data.promptHash);
+    const handed = result.events.map(promptHandedHash).filter((hash) => hash !== undefined);
     expect(handed).toEqual([
       await hashJson({ instructions: system?.content, prompt: user?.content }),
     ]);

@@ -26,14 +26,17 @@ import {
 } from "@aicoo/sharedos-mcp";
 import { createStreamableHttpMcpServer } from "@aicoo/sharedos-mcp/node";
 import {
+  announceForRecord,
+  announcePromptHanded,
   describeReach,
   escalationAskedEvent,
   escalationOffered,
   escalationRequest,
-  promptHandedEvent,
+  type RecordAnnouncement,
   type RuntimeHost,
   type RuntimePlugin,
   type RuntimeTurnRequest,
+  type TurnErrorReporter,
 } from "@aicoo/sharedos-runtime";
 
 import type { HarnessProtocol } from "./harness.js";
@@ -183,6 +186,17 @@ export interface McpHarnessRuntimeOptions {
    * an instant a test cannot fix is an instant it cannot assert on.
    */
   readonly clock?: () => string;
+  /**
+   * Notification for the one throw this runtime contains rather than propagates.
+   *
+   * The harness's own failures end the turn through the envelope, which has a
+   * reporter of its own. What this runtime contains is a host refusing one of
+   * its record-only announcements -- `prompt.handed`, `escalation.asked` --
+   * because the turn goes on regardless: the CLI is still launched, the ask is
+   * still honoured. The record is then short an event, and this is where that
+   * shows. Same contract as the executor's; see `TurnErrorReporter`.
+   */
+  readonly onTurnError?: TurnErrorReporter;
 }
 
 const MAX_DIAGNOSTIC_CHARS = 8_192;
@@ -209,10 +223,15 @@ export function createMcpHarnessRuntime(
       host: RuntimeHost,
       signal: AbortSignal,
     ): Promise<RuntimeTurnOutcome> {
+      const announcement: RecordAnnouncement = {
+        turn: { executionId: request.executionId, traceId: request.context.traceId },
+        signal,
+        onTurnError: options.onTurnError,
+      };
       const escalation = new EscalationLatch(
         request,
         host,
-        (event) => host.emit(event),
+        (event) => announceForRecord(host, event, announcement),
         options.clock ?? (() => new Date().toISOString()),
       );
       const bridge: SharedOSToolBridge = openToolBridge({
@@ -222,6 +241,15 @@ export function createMcpHarnessRuntime(
         host: escalation,
       });
       const instructions = turnInstructions(options.instructions, request);
+      const prompt = (options.prompt ?? defaultPrompt)(request);
+      // The same two texts, in the same shape, as the model driver hashes:
+      // what the server will say at initialize and what the CLI is launched
+      // with. Taken and announced here, before the port is bound or anything
+      // is written, so a turn cancelled at any later point still records what
+      // it was told; the metadata copy below rides on the outcome, which a
+      // cancelled turn never returns. What the CLI adds of its own is not here.
+      const promptHash = await handedPromptHash(instructions, prompt);
+      announcePromptHanded(host, promptHash, announcement);
       const server = new McpToolServer({
         invoker: bridge,
         serverInfo: {
@@ -255,15 +283,6 @@ export function createMcpHarnessRuntime(
           configPaths[file.filename] = path;
         }
 
-        const prompt = (options.prompt ?? defaultPrompt)(request);
-        // The same two texts, in the same shape, as the model driver hashes:
-        // what the server will say at initialize and what the CLI is launched
-        // with. Taken before the launch, and announced before it too: the
-        // metadata below rides on the outcome, which a turn cancelled at its
-        // deadline never returns, so the event is the copy a stalled turn
-        // keeps. What the CLI adds of its own is not here.
-        const promptHash = await handedPromptHash(instructions, prompt);
-        host.emit(promptHandedEvent(promptHash));
         const declared = spec.launch({ prompt, connection, workspace, configPaths, request });
         const launch: McpHarnessLaunch = {
           ...declared,
@@ -350,13 +369,10 @@ class EscalationLatch implements BridgeToolInvoker {
     }
     this.#reason = reason;
     // For the record, not for the turn: the ask is honoured whether or not the
-    // host would take the event, and a throw here would answer the harness
-    // with a transport fault for a call SharedOS accepted.
-    try {
-      this.#announce(escalationAskedEvent(reason));
-    } catch {
-      // Only the trace is lost.
-    }
+    // host would take the event, because a throw here would answer the harness
+    // with a transport fault for a call SharedOS accepted. `announce` is
+    // `announceForRecord`, which contains and reports the refusal itself.
+    this.#announce(escalationAskedEvent(reason));
     return this.#accept(call, reason);
   }
 

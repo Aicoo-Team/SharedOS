@@ -27,9 +27,9 @@ import {
   ESCALATION_RESOURCE_PATH,
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAMESPACE,
-  PROMPT_HANDED_EVENT,
   SharedOSExecutor,
   createEscalationTool,
+  promptHandedHash,
   type RuntimeHost,
   type RuntimeTurnRequest,
 } from "@aicoo/sharedos-runtime";
@@ -336,31 +336,23 @@ function fakeHarness(calls: readonly unknown[]): McpHarnessSpec {
   };
 }
 
-/** The hashes the turn announced as what the seat was told, in event order. */
-function handedHashes(events: readonly { type: string; data: unknown }[]): unknown[] {
-  return events
-    .filter(
-      ({ type, data }) =>
-        type === "runtime.event" &&
-        (data as { type?: unknown } | null)?.type === PROMPT_HANDED_EVENT,
-    )
-    .map(({ data }) => (data as { data: { promptHash: unknown } }).data.promptHash);
-}
-
 async function runTurn(
   calls: readonly unknown[],
   options: McpHarnessRuntimeOptions = {},
+  execute: Parameters<SharedOSExecutor["execute"]>[1] = {},
 ): Promise<{
   status: string;
   output: Record<string, unknown>;
   metadata: Record<string, unknown>;
   events: readonly { type: string; data: unknown }[];
+  /** The hashes the turn announced as what the seat was told, in event order. */
+  handed: readonly string[];
 }> {
   const executor = new SharedOSExecutor(
     kernel(),
     createMcpHarnessRuntime(fakeHarness(calls), options),
   );
-  const result = await executor.execute(executionRequest());
+  const result = await executor.execute(executionRequest(), execute);
   const text =
     result.status === "succeeded" && typeof result.output === "object" && result.output !== null
       ? ((result.output as { text?: string }).text ?? "{}")
@@ -370,6 +362,9 @@ async function runTurn(
     output: JSON.parse(text) as Record<string, unknown>,
     metadata: (result.metadata ?? {}) as Record<string, unknown>,
     events: result.events.map(({ type, data }) => ({ type, data })),
+    handed: result.events
+      .map(promptHandedHash)
+      .filter((hash): hash is string => hash !== undefined),
   };
 }
 
@@ -796,6 +791,47 @@ describe("a harness runtime whose signal is aborted", () => {
   });
 });
 
+/**
+ * The announcement is for the record; the turn does not hang on it. A host
+ * that refuses it still gets its harness served, and hears about the refusal
+ * through the same sink the executor reports contained throws to.
+ */
+describe("a harness runtime whose host refuses the announcement", () => {
+  it("serves the harness anyway and reports the refusal to onTurnError", async () => {
+    const { context, ...request } = executionRequest();
+    const visible: RuntimeTurnRequest = {
+      ...request,
+      context: {
+        actor: context.actor,
+        owner: context.owner,
+        namespaceId: context.namespaceId,
+        purpose: context.purpose,
+        traceId: context.traceId,
+        now: context.now,
+        reach: { status: "computed", reach: [] },
+      },
+    };
+    const refusal = new Error("unknown runtime event");
+    const host: RuntimeHost = {
+      limits: { maxSteps: 1, maxToolCalls: 1, timeoutMs: 10_000 },
+      invokeTool: () => Promise.reject(new Error("not reached")),
+      emit: () => {
+        throw refusal;
+      },
+    };
+    const reported: { error: unknown; turn: { executionId: string; traceId: string } }[] = [];
+
+    const outcome = await createMcpHarnessRuntime(fakeHarness([]), {
+      onTurnError: (error, turn) => reported.push({ error, turn }),
+    }).run(visible, host, new AbortController().signal);
+
+    expect(outcome.type).toBe("complete");
+    expect(reported).toEqual([
+      { error: refusal, turn: { executionId: "execution-1", traceId: CONTEXT.traceId } },
+    ]);
+  }, 30_000);
+});
+
 describe("the Codex spec", () => {
   it("passes the same server settings codexMcpConfig emits, as overrides", () => {
     const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
@@ -910,42 +946,41 @@ describe("what the harness is told at initialize", () => {
   it("announces what it told the harness before launching it, and the announcement matches", async () => {
     const turn = await runTurn([], { prompt: () => "make the declared calls" });
 
-    expect(handedHashes(turn.events)).toEqual([turn.metadata["promptHash"]]);
+    expect(turn.handed).toEqual([turn.metadata["promptHash"]]);
   }, 30_000);
 
   it("keeps the announcement on a turn cancelled while the harness is stalled", async () => {
     // The harness makes one call, then holds the next back for a minute. The
     // turn is cancelled the moment the first call completes, which is a stall
     // made deterministic: the CLI is mid-turn, has said nothing terminal, and
-    // is killed at the abort -- the ending a live 120 s idle timeout produces.
+    // is killed at the abort -- the ending the executor's turn deadline
+    // produces (its 120 s default is what ended the stalled live turn this
+    // guards against; the MCP idle timer is a different thing, it only closes
+    // stdin and the turn still returns an outcome).
     const cancel = new AbortController();
-    const executor = new SharedOSExecutor(
-      kernel(),
-      createMcpHarnessRuntime(
-        fakeHarness([
-          { name: "files.read", arguments: { path: GRANTED } },
-          { name: "files.read", arguments: { path: GRANTED }, afterMs: 60_000 },
-        ]),
-        { prompt: () => "make the declared calls" },
-      ),
+
+    const turn = await runTurn(
+      [
+        { name: "files.read", arguments: { path: GRANTED } },
+        { name: "files.read", arguments: { path: GRANTED }, afterMs: 60_000 },
+      ],
+      { prompt: () => "make the declared calls" },
+      {
+        signal: cancel.signal,
+        onEvent: (event) => {
+          if (event.type === "tool.completed") {
+            cancel.abort(new Error("deadline"));
+          }
+        },
+      },
     );
 
-    const result = await executor.execute(executionRequest(), {
-      signal: cancel.signal,
-      onEvent: (event) => {
-        if (event.type === "tool.completed") {
-          cancel.abort(new Error("deadline"));
-        }
-      },
-    });
-
-    expect(result.status).toBe("cancelled");
+    expect(turn.status).toBe("cancelled");
     // The outcome, and the metadata riding on it, never came back. The event
-    // did: it was emitted before the CLI was spawned.
-    expect(result.metadata?.["promptHash"]).toBeUndefined();
-    const [handed, ...rest] = handedHashes(result.events);
-    expect(rest).toEqual([]);
-    expect(handed).toMatch(/^[0-9a-f]{64}$/u);
+    // did: it was emitted before the port was even bound.
+    expect(turn.metadata["promptHash"]).toBeUndefined();
+    expect(turn.handed).toHaveLength(1);
+    expect(turn.handed[0]).toMatch(/^[0-9a-f]{64}$/u);
   }, 30_000);
 
   it("says exactly what a host's function says, reach included only if it says so", async () => {
