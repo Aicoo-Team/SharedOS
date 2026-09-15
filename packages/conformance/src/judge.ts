@@ -520,9 +520,9 @@ function outcomeFor(
     };
   }
 
-  const refused = receipt.observed !== "succeeded" && receipt.callId !== undefined;
-  const refusedBy = refused ? refusalPoints.get(receipt.callId as string) : undefined;
-  const cause = refused ? causes.get(receipt.callId as string) : undefined;
+  const refusedCallId = receipt.observed === "succeeded" ? undefined : receipt.callId;
+  const refusedBy = refusedCallId === undefined ? undefined : refusalPoints.get(refusedCallId);
+  const cause = refusedCallId === undefined ? undefined : causes.get(refusedCallId);
 
   return {
     attemptId,
@@ -570,9 +570,9 @@ function satisfiesExpectation(receipt: AttemptReceipt): boolean {
 function refusalCauses(record: ExecutionRecord): ReadonlyMap<string, string> {
   const causes = new Map<string, string>();
   const tools = new Set(
-    record.execution.operations
-      .filter(({ kind, operationId }) => kind === "tool" && operationId !== undefined)
-      .map(({ operationId }) => operationId as string),
+    record.execution.operations.flatMap(({ kind, operationId }) =>
+      kind === "tool" && operationId !== undefined ? [operationId] : [],
+    ),
   );
   for (const operation of record.execution.operations) {
     if (

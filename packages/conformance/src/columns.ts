@@ -586,11 +586,13 @@ export function receiptsFromRecord(move: AttackMove, turn: ColumnTurn): readonly
       // operation is its receipt; the other is its cause and is joined by the
       // judge. Taking the first match instead made the scripted columns'
       // reason code depend on audit order, and the route-lease row read one
-      // code here and another everywhere else.
-      const candidates = turn.record.execution.operations.filter(
-        (candidate) => candidate.operationId === callId,
+      // code here and another everywhere else. An id with no tool operation
+      // has no receipt: a `message` operation alone is a dispatch the record
+      // shows, not an attempt the caller made, and handing it back would grade
+      // the attempt on the transport's code.
+      const operation = turn.record.execution.operations.find(
+        (candidate) => candidate.operationId === callId && candidate.kind === "tool",
       );
-      const operation = candidates.find(({ kind }) => kind === "tool") ?? candidates[0];
       return operation === undefined ? [] : [[attempt.id, operation] as const];
     }),
   );

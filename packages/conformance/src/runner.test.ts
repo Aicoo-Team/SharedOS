@@ -50,6 +50,7 @@ import {
   runConformanceSuite,
   strictFailures,
   worldSetIdentity,
+  type ConformanceCell,
   type ConformanceManifest,
 } from "./runner.js";
 import {
@@ -324,6 +325,26 @@ describe("the conformance suite", () => {
     // visible in the manifest and must not break the build.
     expect(strictFailures(manifest)).toEqual([]);
     expect(renderConformanceSummary(manifest)).toContain("not implemented");
+  });
+
+  it("renders a manifest written before cells carried causes", async () => {
+    // Nothing checks a manifest's shape on the way in, so one committed by an
+    // earlier version has no `causes` on its cells. Rendering it is still a
+    // legitimate ask and must read the field as absent, not dereference it.
+    const { manifest } = await runConformanceSuite({ columns: [ADVERSARY_COLUMN] });
+    const older = {
+      ...manifest,
+      rows: manifest.rows.map((row) => ({
+        ...row,
+        cells: row.cells.map(({ causes: _causes, ...cell }) => cell as ConformanceCell),
+      })),
+    };
+
+    const rendered = renderConformanceSummary(older);
+
+    const clause = /\bcause `[^`]*`; /gu;
+    expect(rendered).not.toMatch(clause);
+    expect(rendered).toBe(renderConformanceSummary(manifest).replace(clause, ""));
   });
 
   it("passes every implemented row and reports where each was refused", async () => {
@@ -1070,6 +1091,39 @@ describe("grading", () => {
       expect(judgement.reasonCodes).toEqual(["message_request_not_accepted"]);
       expect(judgement.causes).toEqual(["route_lease_revoked"]);
     }
+  });
+
+  it("has no receipt for a call id whose only operation is the dispatch", () => {
+    // A `message` operation alone is not the attempt: the tool call that made
+    // it is what the caller was told, and without one the record does not
+    // show the attempt at all. Handing the dispatch back as the receipt would
+    // grade the attempt on the transport's code.
+    const move = canonicalMove("route_lease_revoked");
+    const executionId = "turn-1";
+    const attack = move.attempts.find(({ role }) => role === "attack")!;
+    const base = emptyRecord();
+    const record = {
+      ...base,
+      execution: {
+        ...base.execution,
+        operations: [
+          {
+            at: "2026-08-18T09:00:00.000Z",
+            kind: "message" as const,
+            source: "kernel" as const,
+            outcome: "denied" as const,
+            operationId: attemptCallId(executionId, move, attack),
+            reasonCode: "route_lease_revoked",
+            failClosed: false,
+          },
+        ],
+      },
+    };
+
+    const receipts = receiptsFromRecord(move, { executionId, turn: 1, record });
+
+    expect(receipts.find(({ role }) => role === "attack")).toMatchObject({ attempted: false });
+    expect(receipts.find(({ role }) => role === "attack")?.reasonCode).toBeUndefined();
   });
 
   it("does not let the transport's code satisfy the row on its own", () => {

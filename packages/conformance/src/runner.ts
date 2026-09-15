@@ -691,7 +691,7 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
               `${cell.turns <= 1 ? "" : ` over ${cell.turns} turns`}; ` +
               `refused by ${list(cell.refusedBy, "nothing")}; ` +
               `reason ${list(cell.reasonCodes, "none")}; ` +
-              `${cell.causes.length === 0 ? "" : `cause ${list(cell.causes, "none")}; `}` +
+              causeClause(cell) +
               `record ${cell.recordUsable ? "usable" : `unusable (${list(cell.recordGaps, "unknown")})`}` +
               `${cell.detail === undefined ? "" : `; ${cell.detail}`}`,
       );
@@ -719,6 +719,14 @@ function cellLabel(cell: ConformanceCell): string {
   return cell.status === "pass" && cell.driverIssued.length > 0 ? `${label} (driver)` : label;
 }
 
-function list(values: readonly string[], empty: string): string {
+function list(values: readonly string[], empty = ""): string {
   return values.length === 0 ? empty : values.map((value) => `\`${value}\``).join(", ");
+}
+
+/** The cell's causes as a clause of the evidence line, or nothing when it has none. */
+function causeClause(cell: ConformanceCell): string {
+  // Read as absent rather than dereferenced: a manifest written before the
+  // field existed has none, and rendering one is still a legitimate ask.
+  const causes = cell.causes ?? [];
+  return causes.length === 0 ? "" : `cause ${list(causes)}; `;
 }
