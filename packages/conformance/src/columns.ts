@@ -41,7 +41,7 @@ import {
   type AttemptReceipt,
 } from "./adversary.js";
 import { canonicalJson } from "./hashing.js";
-import type { ExecutionRecord } from "./record.js";
+import { operationsUnder, type ExecutionRecord } from "./record.js";
 import type { ConformanceCondition } from "./suite.js";
 import { conformanceRuntimeContext } from "./world.js";
 
@@ -578,20 +578,12 @@ function issuableByHarness(attempt: AttackAttempt, turn: number): boolean {
 export function receiptsFromRecord(move: AttackMove, turn: ColumnTurn): readonly AttemptReceipt[] {
   const operations = new Map(
     move.attempts.flatMap((attempt) => {
-      const callId = attemptCallId(turn.executionId, move, attempt);
-      // Several operations can share the call's id: a `messages.request` that
-      // the transport refused leaves a `message` operation carrying the
-      // transport's code and a `tool` operation carrying what the caller was
-      // told, in that order. The attempt is the tool call, so the tool
-      // operation is its receipt; the other is its cause and is joined by the
-      // judge. Taking the first match instead made the scripted columns'
-      // reason code depend on audit order, and the route-lease row read one
-      // code here and another everywhere else. An id with no tool operation
-      // has no receipt: a `message` operation alone is a dispatch the record
-      // shows, not an attempt the caller made, and handing it back would grade
-      // the attempt on the transport's code.
-      const operation = turn.record.execution.operations.find(
-        (candidate) => candidate.operationId === callId && candidate.kind === "tool",
+      // The tool operation under the call's id is the receipt; a sibling the
+      // transport refused is its cause, which the judge joins. One reading of
+      // that, shared with the judge: see `operationsUnder`.
+      const { attempt: operation } = operationsUnder(
+        turn.record,
+        attemptCallId(turn.executionId, move, attempt),
       );
       return operation === undefined ? [] : [[attempt.id, operation] as const];
     }),
