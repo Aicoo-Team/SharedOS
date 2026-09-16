@@ -3,7 +3,6 @@ export * from "./address.js";
 export * from "./capability.js";
 export * from "./card.js";
 export * from "./common.js";
-export * from "./context-capsule.js";
 export * from "./execution.js";
 export * from "./http.js";
 export * from "./json.js";

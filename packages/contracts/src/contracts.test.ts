@@ -7,6 +7,11 @@ import {
   EscalationSchema,
   ExecutionRequestSchema,
   JsonValueSchema,
+  PROTOCOL_VERSION,
+  ProtocolVersionSchema,
+  SHAREDOS_API_ERROR_CODES,
+  SHAREDOS_ROUTES,
+  isJsonObject,
   MAX_EXECUTION_TIMEOUT_MS,
   MessageDeliveryResultSchema,
   MessageEnvelopeSchema,
@@ -544,5 +549,42 @@ describe("JSON-safe protocol contracts", () => {
 
   it("exports JsonValue as the schema's recursive value type", () => {
     expectTypeOf(JsonValueSchema.parse({ ok: true })).toEqualTypeOf<JsonValue>();
+  });
+});
+
+describe("the HTTP route table", () => {
+  it("lists every verb a path answers, so the handler and the client cannot disagree", () => {
+    const verbsByPath = new Map<string, string[]>();
+    for (const route of Object.values(SHAREDOS_ROUTES)) {
+      expect(route.path.startsWith("/")).toBe(true);
+      verbsByPath.set(route.path, [...(verbsByPath.get(route.path) ?? []), route.method]);
+    }
+
+    expect(verbsByPath.size).toBe(9);
+    expect(verbsByPath.get("/v1/tools/namespaces")).toEqual(["GET", "PUT"]);
+    for (const route of Object.values(SHAREDOS_ROUTES)) {
+      expect(route.method === "GET" ? "request" in route : route.request !== undefined).toBe(
+        route.method !== "GET",
+      );
+    }
+  });
+
+  it("stamps the health answer with the one protocol version", () => {
+    expect(ProtocolVersionSchema.parse(PROTOCOL_VERSION)).toBe("1");
+    expect(
+      SHAREDOS_ROUTES.health.response.safeParse({ status: "ok", protocolVersion: PROTOCOL_VERSION })
+        .success,
+    ).toBe(true);
+    expect(new Set(SHAREDOS_API_ERROR_CODES).size).toBe(SHAREDOS_API_ERROR_CODES.length);
+  });
+});
+
+describe("isJsonObject", () => {
+  it("accepts a record and refuses null, arrays and primitives", () => {
+    expect(isJsonObject({ ok: true })).toBe(true);
+    expect(isJsonObject({})).toBe(true);
+    for (const value of [null, [], [1], "x", 1, true, undefined]) {
+      expect(isJsonObject(value)).toBe(false);
+    }
   });
 });

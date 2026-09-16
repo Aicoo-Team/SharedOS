@@ -994,38 +994,6 @@ a label for equality, not an encoding: nothing parses it back into an
 
 ---
 
-### classifyTool()
-
-> **classifyTool**(`policy`, `publishedNames`, `tool`): `"managed"` \| `"harness_local"` \| `"external_direct"` \| `undefined`
-
-Defined in: [mcp/src/policy.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/policy.ts#L61)
-
-Which class a tool the harness called belongs to.
-
-`managed` is decided by presence in the published catalogue rather than by the
-policy's own lists, because the catalogue is the fact and the policy is the
-declaration. A name in neither is `undefined`: an unclassified tool, which is
-a gap in the declaration and is reported as one rather than being quietly
-counted as harness-local.
-
-#### Parameters
-
-| Parameter               | Type                                                                                                                        |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `policy`                | \{ `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `managedMcp`: `string`[]; `mode`: `"strict"` \| `"hybrid"`; \} |
-| `policy.externalDirect` | `string`[]                                                                                                                  |
-| `policy.harnessLocal`   | `string`[]                                                                                                                  |
-| `policy.managedMcp`     | `string`[]                                                                                                                  |
-| `policy.mode`           | `"strict"` \| `"hybrid"`                                                                                                    |
-| `publishedNames`        | readonly `string`[]                                                                                                         |
-| `tool`                  | `string`                                                                                                                    |
-
-#### Returns
-
-`"managed"` \| `"harness_local"` \| `"external_direct"` \| `undefined`
-
----
-
 ### claudeAgentSdkMcpOptions()
 
 > **claudeAgentSdkMcpOptions**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
@@ -1590,7 +1558,7 @@ One published tool in MCP's own shape.
 
 > **toolPolicyHash**(`policy`): `Promise`\<`string`>\>
 
-Defined in: [mcp/src/policy.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/policy.ts#L79)
+Defined in: [mcp/src/policy.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/policy.ts#L53)
 
 A content identifier for the declared policy, for the run's `policyHash`.
 

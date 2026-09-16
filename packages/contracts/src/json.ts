@@ -25,4 +25,14 @@ export const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
 );
 
 export const JsonObjectSchema: z.ZodType<JsonObject> = z.record(JsonValueSchema);
-export const JsonArraySchema: z.ZodType<JsonArray> = z.array(JsonValueSchema);
+
+/**
+ * Whether a value is shaped like a JSON object: a non-null object that is not
+ * an array. It checks the shape of the top level only, which is what a reader
+ * needs before indexing into a value it was handed as `unknown` or as a
+ * `JsonValue`; it does not walk the children, so it is not a substitute for
+ * {@link JsonObjectSchema} at a trust boundary.
+ */
+export function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
