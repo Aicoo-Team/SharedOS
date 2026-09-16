@@ -20,7 +20,6 @@ import {
   SharedOSKernel,
   ToolRegistry,
   catalogHash,
-  formatCatalogHash,
   portableToolName,
   publishToolCatalog,
   publishToolDefinition,
@@ -34,7 +33,6 @@ import {
   SharedOSToolBridge,
   claudeAgentSdkMcpOptions,
   claudeCodeMcpConfig,
-  classifyTool,
   codexMcpConfig,
   declareToolPolicy,
   deepseekMcpConfig,
@@ -260,11 +258,6 @@ describe("the catalogue hash", () => {
     expect(one.executionId).not.toBe(two.executionId);
     expect(one.catalogHash).toBe(two.catalogHash);
     expect(SharedOSToolCatalogSchema.safeParse(one).success).toBe(true);
-  });
-
-  it("is rendered algorithm-qualified for an experiment record", async () => {
-    const hash = await catalogHash(publishToolCatalog([SEARCH_TOOL]));
-    expect(formatCatalogHash(hash)).toBe(`sha256:${hash}`);
   });
 });
 
@@ -572,20 +565,6 @@ describe("the declared tool policy", () => {
       harnessLocal: ["apply_patch"],
       externalDirect: [],
     });
-  });
-
-  it("classifies a called tool from the catalogue, and reports a gap as a gap", () => {
-    const policy = declareToolPolicy({
-      mode: "hybrid",
-      harnessLocal: ["apply_patch"],
-      externalDirect: ["github"],
-    });
-    const published = ["files.search"];
-
-    expect(classifyTool(policy, published, "files.search")).toBe("managed");
-    expect(classifyTool(policy, published, "apply_patch")).toBe("harness_local");
-    expect(classifyTool(policy, published, "github.search")).toBe("external_direct");
-    expect(classifyTool(policy, published, "mystery")).toBeUndefined();
   });
 });
 

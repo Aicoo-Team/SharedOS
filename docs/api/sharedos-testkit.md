@@ -65,7 +65,7 @@ Defined in: [testkit/src/index.ts:32](https://github.com/Aicoo-Team/SharedOS/blo
 
 ###### Implementation of
 
-[`AuditSink`](sharedos-core.md#auditsink).[`record`](sharedos-core.md#record-2)
+[`AuditSink`](sharedos-core.md#auditsink).[`record`](sharedos-core.md#record-1)
 
 ---
 

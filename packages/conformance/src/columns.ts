@@ -27,7 +27,7 @@ import {
 import {
   escalationArguments,
   ESCALATION_TOOL_NAME,
-  type AgentTurnRequest,
+  type RuntimeTurnRequest,
   type RuntimePlugin,
   type RuntimeVisibleContext,
 } from "@aicoo/sharedos-runtime";
@@ -44,6 +44,7 @@ import { canonicalJson } from "./hashing.js";
 import { operationsUnder, type ExecutionRecord } from "./record.js";
 import type { ConformanceCondition } from "./suite.js";
 import { conformanceRuntimeContext } from "./world.js";
+import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
 
 /** What one column cannot do, so a cell reports it instead of failing on it. */
 export interface ColumnLimits {
@@ -248,7 +249,7 @@ export function scriptedColumn(options: ScriptedColumnOptions): RuntimeColumn {
           manifest: {
             id: `sharedos.conformance.${options.id}`,
             version: "1.0.0",
-            protocolVersion: "1",
+            protocolVersion: PROTOCOL_VERSION,
             metadata: { scripted: true, protocol: options.protocol.id },
           },
           protocol: options.protocol,
@@ -470,7 +471,7 @@ export const MODEL_SCRIPTED_COLUMN: RuntimeColumn = Object.freeze({
         manifest: {
           id: "sharedos.conformance.model-scripted",
           version: "1.0.0",
-          protocolVersion: "1",
+          protocolVersion: PROTOCOL_VERSION,
           metadata: { scripted: true, driver: "model-api", catalogueDelivery: "in-band" },
         },
         client: new TranscriptModelClient(movesToModelTranscript(moves, options), {
@@ -512,7 +513,7 @@ export const MODEL_SCRIPTED_COLUMN: RuntimeColumn = Object.freeze({
 function overBudgetStep(
   moves: readonly AttackMove[],
   turn: number,
-): ((index: number, request: AgentTurnRequest) => number | undefined) | undefined {
+): ((index: number, request: RuntimeTurnRequest) => number | undefined) | undefined {
   let target = -1;
   let index = 0;
   for (const move of moves) {
@@ -529,7 +530,7 @@ function overBudgetStep(
   if (target === -1) {
     return undefined;
   }
-  return (position: number, request: AgentTurnRequest): number | undefined => {
+  return (position: number, request: RuntimeTurnRequest): number | undefined => {
     if (position !== target) {
       return undefined;
     }
@@ -549,7 +550,7 @@ function overBudgetStep(
 function declaredStepOption(
   moves: readonly AttackMove[],
   turn: number,
-): { declareStep?: (index: number, request: AgentTurnRequest) => number | undefined } {
+): { declareStep?: (index: number, request: RuntimeTurnRequest) => number | undefined } {
   const declareStep = overBudgetStep(moves, turn);
   return declareStep === undefined ? {} : { declareStep };
 }
@@ -798,7 +799,7 @@ export function liveColumn(options: LiveColumnOptions): RuntimeColumn {
           manifest: {
             id: `sharedos.conformance.${options.id}`,
             version: "1.0.0",
-            protocolVersion: "1",
+            protocolVersion: PROTOCOL_VERSION,
             metadata: { live: true, protocol: options.protocol.id },
           },
           protocol: options.protocol,
@@ -954,7 +955,7 @@ export function modelColumn(options: ModelColumnOptions): RuntimeColumn {
           manifest: {
             id: `sharedos.conformance.${options.id}`,
             version: "1.0.0",
-            protocolVersion: "1",
+            protocolVersion: PROTOCOL_VERSION,
             metadata: {
               live: true,
               driver: "model-api",

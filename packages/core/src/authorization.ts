@@ -8,6 +8,7 @@ import type {
   ResourceReach,
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
+import { isJsonObject } from "@aicoo/sharedos-contracts";
 
 import type { HostPolicy, PolicyResolution, ResolvedAuthority } from "./authority.js";
 import { describeRequiredAuthority } from "./capability-request.js";
@@ -881,19 +882,6 @@ function isVerdict(value: unknown): value is AuthorizationDecision {
     value !== null &&
     typeof (value as { allowed?: unknown }).allowed === "boolean"
   );
-}
-
-/**
- * Whether a value may be carried into an audit event as metadata.
- *
- * `JsonObject` is a compile-time claim, and a ceiling is host code that may have
- * no compiler in front of it. Anything else is dropped rather than refused: the
- * refusal it annotates is still a true and useful record without it, and letting
- * a function or a `Date` reach `structuredClone` inside the audit path would
- * turn a policy denial into a thrown turn.
- */
-function isJsonObject(value: unknown): value is JsonObject {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function capabilityMatches(

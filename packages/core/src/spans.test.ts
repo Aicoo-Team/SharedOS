@@ -9,7 +9,7 @@ import type {
 
 import type { GrantSource } from "./authority.js";
 import { SharedOSKernel } from "./kernel.js";
-import { SPAN, type Span, type SpanSink, measure, measureSync } from "./spans.js";
+import { SPAN, type Span, type SpanSink, measure } from "./spans.js";
 import type { ToolHandler } from "./tool-registry.js";
 
 const NOW = "2026-08-25T09:00:00.000Z";
@@ -140,7 +140,6 @@ describe("measure", () => {
     };
 
     await expect(measure(sink, "probe", async () => "value")).resolves.toBe("value");
-    expect(measureSync(sink, "probe", () => "value")).toBe("value");
   });
 });
 

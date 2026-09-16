@@ -388,7 +388,7 @@ new SharedOSExecutor(kernel, plugin, {
 `StandardRuntime` takes the same option, because only one of the two catches any
 given throw: a driver's becomes the loop's cooperative `driver_failed` outcome,
 which the envelope never sees as an exception, and the executor catches
-everything else as `runtime_failed`. `TurnExecutor` forwards to both, so one sink
+everything else as `runtime_failed`. Install one sink in both options and it
 covers both.
 
 `createMcpHarnessRuntime` takes it as well, and so does `StandardRuntime` for the
@@ -647,17 +647,16 @@ stopped it".
 
 Rejected by the schemas, so they hold identically on both boundaries.
 
-| Limit                       | Value                | Limit                  | Value               |
-| --------------------------- | -------------------- | ---------------------- | ------------------- |
-| Turn timeout                | ≤ 600,000 ms         | Tool calls per turn    | ≤ 10,000            |
-| Steps per turn              | ≤ 1,000              | Tools per request      | ≤ 512               |
-| Path segments               | ≤ 64                 | Segment length         | ≤ 256 chars         |
-| Capabilities per grant      | ≤ 64                 | Actions per capability | ≤ 64                |
-| Purposes per grant          | ≤ 64                 | Purpose length         | ≤ 512 chars         |
-| Delegation chain            | ≤ 16                 | Namespaces per catalog | ≤ 256               |
-| Search query / grep pattern | ≤ 8,192 chars        | Search results         | ≤ 100               |
-| Grep context                | ≤ 100 lines per side | Tool description       | ≤ 8,192 chars       |
-| Capsule encoded             | ≤ 128 KB             | Capsule item content   | ≤ 96 KB, ≤ 12 items |
+| Limit                       | Value                | Limit                  | Value         |
+| --------------------------- | -------------------- | ---------------------- | ------------- |
+| Turn timeout                | ≤ 600,000 ms         | Tool calls per turn    | ≤ 10,000      |
+| Steps per turn              | ≤ 1,000              | Tools per request      | ≤ 512         |
+| Path segments               | ≤ 64                 | Segment length         | ≤ 256 chars   |
+| Capabilities per grant      | ≤ 64                 | Actions per capability | ≤ 64          |
+| Purposes per grant          | ≤ 64                 | Purpose length         | ≤ 512 chars   |
+| Delegation chain            | ≤ 16                 | Namespaces per catalog | ≤ 256         |
+| Search query / grep pattern | ≤ 8,192 chars        | Search results         | ≤ 100         |
+| Grep context                | ≤ 100 lines per side | Tool description       | ≤ 8,192 chars |
 
 Path segments additionally reject separators, traversal markers, and control
 characters. A filesystem-backed provider must **still** resolve beneath its own

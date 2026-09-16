@@ -16,18 +16,19 @@ import {
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAME,
   ESCALATION_TOOL_NAMESPACE,
+  SharedOSExecutor,
   StandardRuntime,
-  TurnExecutor,
   announceForRecord,
   escalationReason,
   escalationRequest,
   promptHandedEvent,
   promptHandedHash,
   type AgentTurnDriver,
-  type AgentTurnRequest,
   type AgentTurnSession,
   type RuntimeHost,
   type RuntimeTurnRequest,
+  type SharedOSExecutorOptions,
+  type StandardRuntimeOptions,
 } from "./index.js";
 
 const now = "2026-08-03T00:00:00.000Z";
@@ -112,7 +113,24 @@ function kernel(
   };
 }
 
-describe("TurnExecutor", () => {
+/** The standard composition: the loop with one driver seated, inside the envelope. */
+function turnExecutor(
+  turnKernel: ConstructorParameters<typeof SharedOSExecutor>[0],
+  driver: AgentTurnDriver,
+  options: SharedOSExecutorOptions & StandardRuntimeOptions = {},
+): SharedOSExecutor {
+  const { closeTimeoutMs, onTurnError, ...executorOptions } = options;
+  return new SharedOSExecutor(
+    turnKernel,
+    new StandardRuntime(driver, {
+      ...(closeTimeoutMs === undefined ? {} : { closeTimeoutMs }),
+      ...(onTurnError === undefined ? {} : { onTurnError }),
+    }),
+    { ...executorOptions, ...(onTurnError === undefined ? {} : { onTurnError }) },
+  );
+}
+
+describe("the standard composition", () => {
   it("tells the driver where it may operate, narrowed to what its catalogue can act on", async () => {
     const seen: unknown[] = [];
     const driver: AgentTurnDriver = {
@@ -143,7 +161,7 @@ describe("TurnExecutor", () => {
       ],
     }));
 
-    await new TurnExecutor(turnKernel, driver).execute(request());
+    await turnExecutor(turnKernel, driver).execute(request());
 
     expect(seen[0]).toEqual({ status: "computed", reach: [files] });
     // The point of the shape: nothing about who allowed it, for how long, or
@@ -165,7 +183,7 @@ describe("TurnExecutor", () => {
       reasonCode: "usage_store_unavailable" as const,
     }));
 
-    const result = await new TurnExecutor(turnKernel, driver).execute(request());
+    const result = await turnExecutor(turnKernel, driver).execute(request());
 
     // Not an empty list, which would read as "nothing" and be false here.
     expect(seen[0]).toEqual({ status: "unavailable", reasonCode: "usage_store_unavailable" });
@@ -189,7 +207,7 @@ describe("TurnExecutor", () => {
       })
       .mockResolvedValueOnce({ type: "complete", output: { ok: true } });
 
-    const result = await new TurnExecutor(
+    const result = await turnExecutor(
       runtimeKernel,
       {
         open: async () => ({ next }),
@@ -231,7 +249,7 @@ describe("TurnExecutor", () => {
     };
     const driver: AgentTurnDriver = { open: async () => session };
 
-    const result = await new TurnExecutor(kernel(undefined, { escalation: true }), driver, {
+    const result = await turnExecutor(kernel(undefined, { escalation: true }), driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(request({ escalation: true }));
@@ -269,7 +287,7 @@ describe("TurnExecutor", () => {
     };
     const driver: AgentTurnDriver = { open: async () => session };
 
-    const result = await new TurnExecutor(kernel(), driver, {
+    const result = await turnExecutor(kernel(), driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(request());
@@ -291,7 +309,7 @@ describe("TurnExecutor", () => {
     };
     const driver: AgentTurnDriver = { open: async () => session };
 
-    const result = await new TurnExecutor(kernel(), driver, {
+    const result = await turnExecutor(kernel(), driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(request());
@@ -313,7 +331,7 @@ describe("TurnExecutor", () => {
     };
     const driver: AgentTurnDriver = { open: async () => session };
 
-    const result = await new TurnExecutor(kernel(), driver, {
+    const result = await turnExecutor(kernel(), driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(request());
@@ -345,7 +363,7 @@ describe("TurnExecutor", () => {
       .mockResolvedValue({ type: "complete", output: { ok: true } });
     const runtimeKernel = kernel();
 
-    const result = await new TurnExecutor(
+    const result = await turnExecutor(
       runtimeKernel,
       { open: async () => ({ next }) },
       { clock: () => now, createId: () => "event-1" },
@@ -361,7 +379,7 @@ describe("TurnExecutor", () => {
   });
 
   it("uses the registry's permission-filtered tool definition", async () => {
-    let openedRequest: AgentTurnRequest | undefined;
+    let openedRequest: RuntimeTurnRequest | undefined;
     const session: AgentTurnSession = {
       next: vi.fn<AgentTurnSession["next"]>(async () => ({
         type: "complete",
@@ -375,7 +393,7 @@ describe("TurnExecutor", () => {
       }),
     };
 
-    const result = await new TurnExecutor(kernel(), driver, {
+    const result = await turnExecutor(kernel(), driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(request());
@@ -411,7 +429,7 @@ describe("TurnExecutor", () => {
     const driver: AgentTurnDriver = { open: async () => ({ next }) };
     const runtimeKernel = kernel(denied);
 
-    const result = await new TurnExecutor(runtimeKernel, driver, {
+    const result = await turnExecutor(runtimeKernel, driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(request());
@@ -431,7 +449,7 @@ describe("TurnExecutor", () => {
     const runtimeKernel = kernel();
     const driver: AgentTurnDriver = { open: vi.fn() };
 
-    const result = await new TurnExecutor(runtimeKernel, driver, {
+    const result = await turnExecutor(runtimeKernel, driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(input);
@@ -452,7 +470,7 @@ describe("TurnExecutor", () => {
     const runtimeKernel = kernel();
     const driver: AgentTurnDriver = { open: vi.fn() };
 
-    const result = await new TurnExecutor(runtimeKernel, driver, {
+    const result = await turnExecutor(runtimeKernel, driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(input);
@@ -473,7 +491,7 @@ describe("TurnExecutor", () => {
     const runtimeKernel = kernel();
     const driver: AgentTurnDriver = { open: vi.fn() };
 
-    const result = await new TurnExecutor(runtimeKernel, driver, {
+    const result = await turnExecutor(runtimeKernel, driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(input);
@@ -494,7 +512,7 @@ describe("TurnExecutor", () => {
     const runtimeKernel = kernel();
     const driver: AgentTurnDriver = { open: vi.fn() };
 
-    const result = await new TurnExecutor(runtimeKernel, driver, {
+    const result = await turnExecutor(runtimeKernel, driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(input);
@@ -517,7 +535,7 @@ describe("TurnExecutor", () => {
     }));
     const driver: AgentTurnDriver = { open: vi.fn() };
 
-    const result = await new TurnExecutor(runtimeKernel, driver, {
+    const result = await turnExecutor(runtimeKernel, driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(request());
@@ -543,7 +561,7 @@ describe("TurnExecutor", () => {
       .mockResolvedValueOnce({ type: "complete", output: { handled: true } });
     const runtimeKernel = kernel();
 
-    const result = await new TurnExecutor(
+    const result = await turnExecutor(
       runtimeKernel,
       { open: async () => ({ next }) },
       { clock: () => now, createId: () => "event-1" },
@@ -572,7 +590,7 @@ describe("TurnExecutor", () => {
       }),
     };
 
-    const result = await new TurnExecutor(kernel(), driver, {
+    const result = await turnExecutor(kernel(), driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(request());
@@ -599,7 +617,7 @@ describe("TurnExecutor", () => {
     input.options = { timeoutMs: 5 };
     const driver: AgentTurnDriver = { open: vi.fn() };
 
-    const result = await new TurnExecutor(runtimeKernel, driver, {
+    const result = await turnExecutor(runtimeKernel, driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(input);
@@ -650,7 +668,7 @@ describe("TurnExecutor", () => {
       }),
     };
 
-    const result = await new TurnExecutor(runtimeKernel, driver, {
+    const result = await turnExecutor(runtimeKernel, driver, {
       clock: () => now,
       createId: () => "event-1",
     }).execute(input);
@@ -668,7 +686,7 @@ describe("TurnExecutor", () => {
       }),
     };
 
-    const result = await new TurnExecutor(kernel(), driver, {
+    const result = await turnExecutor(kernel(), driver, {
       clock: () => now,
       createId: () => "event-1",
       closeTimeoutMs: 5,
@@ -684,7 +702,7 @@ describe("TurnExecutor", () => {
       .fn<AgentTurnSession["next"]>()
       .mockResolvedValueOnce({ type: "complete", output: { ok: true } });
 
-    const result = await new TurnExecutor(
+    const result = await turnExecutor(
       kernel(),
       { open: async () => ({ next }) },
       { clock: () => now, createId: () => "event-1", spans: sink },
@@ -707,7 +725,7 @@ describe("TurnExecutor", () => {
       },
     };
 
-    const result = await new TurnExecutor(kernel(), driver, {
+    const result = await turnExecutor(kernel(), driver, {
       clock: () => now,
       createId: () => "event-1",
       onTurnError: (error) => void seen.push(error),
@@ -762,7 +780,7 @@ describe("turn-scoped authority", () => {
         },
       },
     });
-    const executor = new TurnExecutor(kernel, completingDriver, { clock: () => now });
+    const executor = turnExecutor(kernel, completingDriver, { clock: () => now });
 
     const controller = new AbortController();
     const cancelled = executor.execute(request(), { signal: controller.signal });
@@ -859,7 +877,7 @@ describe("what the seat was told, announced before the first step", () => {
       }),
     };
 
-    const result = await new TurnExecutor(kernel(), driver).execute(request(), {
+    const result = await turnExecutor(kernel(), driver).execute(request(), {
       signal: cancel.signal,
     });
 
@@ -889,7 +907,7 @@ describe("what the seat was told, announced before the first step", () => {
       }),
     };
 
-    const result = await new TurnExecutor(kernel(), driver).execute(request());
+    const result = await turnExecutor(kernel(), driver).execute(request());
 
     expect(result.status).toBe("succeeded");
     expect(handedHashes(result.events)).toEqual([hash]);
@@ -1017,7 +1035,7 @@ describe("what the seat was told, announced before the first step", () => {
       }),
     };
 
-    const result = await new TurnExecutor(kernel(), driver).execute(request());
+    const result = await turnExecutor(kernel(), driver).execute(request());
 
     expect(result.status).toBe("succeeded");
     expect(handedHashes(result.events)).toEqual([]);

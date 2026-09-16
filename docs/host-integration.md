@@ -519,9 +519,6 @@ boundary serves and what `ModelDriver` sends. The
 [HTTP reference](http-api.md#get-v1tools) states the same rule for
 `GET /v1/tools`.
 
-`TurnExecutor(kernel, agentDriver)` remains a compatibility shorthand for this
-standard composition.
-
 To install a complete Codex, DeepSeek, or private harness, implement
 `RuntimePlugin` and register it from trusted host configuration:
 

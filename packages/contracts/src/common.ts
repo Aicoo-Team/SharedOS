@@ -1,7 +1,13 @@
 import { z } from "zod";
 
+/**
+ * The wire protocol version implemented by this package, as the one value
+ * every request, event, result, envelope and manifest stamps on itself.
+ */
+export const PROTOCOL_VERSION = "1" as const;
+
 /** The wire protocol version implemented by this package. */
-export const ProtocolVersionSchema = z.literal("1");
+export const ProtocolVersionSchema = z.literal(PROTOCOL_VERSION);
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 
 /** An opaque identifier. Callers choose its format; SharedOS only requires stability. */

@@ -6,6 +6,7 @@ import { HarnessRuntime } from "../runtime.js";
 import type { HarnessRequirements, HarnessTransport } from "../harness.js";
 import type { StandardRuntimeOptions } from "@aicoo/sharedos-runtime";
 import { CLAUDE_CODE_PROTOCOL_ID, claudeCodeProtocol } from "./protocol.js";
+import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
 
 export { CLAUDE_CODE_PROTOCOL_ID, claudeCodeProtocol } from "./protocol.js";
 
@@ -17,7 +18,7 @@ export const CLAUDE_CODE_ADAPTER_VERSION = "0.1.0-alpha.5";
 export const CLAUDE_CODE_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   id: "sharedos.claude-code",
   version: CLAUDE_CODE_ADAPTER_VERSION,
-  protocolVersion: "1",
+  protocolVersion: PROTOCOL_VERSION,
   metadata: {
     package: "@aicoo/sharedos-adapters",
     harness: CLAUDE_CODE_HARNESS_ID,

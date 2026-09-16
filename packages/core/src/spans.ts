@@ -98,28 +98,6 @@ export function measure<T>(
   return sink === undefined ? operation(IGNORED_SCOPE) : timed(sink, name, operation, describe);
 }
 
-/** {@link measure} for an operation that does not await. */
-export function measureSync<T>(
-  sink: SpanSink | undefined,
-  name: string,
-  operation: (scope: SpanScope) => T,
-): T {
-  if (sink === undefined) {
-    return operation(IGNORED_SCOPE);
-  }
-  const attributes: Record<string, string | number | boolean> = {};
-  const startedAt = performance.now();
-  try {
-    return operation({
-      set: (key, value) => {
-        attributes[key] = value;
-      },
-    });
-  } finally {
-    report(sink, name, performance.now() - startedAt, attributes);
-  }
-}
-
 async function timed<T>(
   sink: SpanSink,
   name: string,

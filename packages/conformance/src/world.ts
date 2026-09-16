@@ -1,4 +1,5 @@
 import {
+  PROTOCOL_VERSION,
   type AccessContext,
   type Address,
   type Capability,
@@ -1443,7 +1444,7 @@ class RecordingMessageRouter implements MessageRequestRouter {
     }
 
     const reply: MessageEnvelope = {
-      version: "1",
+      version: PROTOCOL_VERSION,
       id: `${request.id}-reply`,
       sender: request.receiver,
       receiver: request.sender,
@@ -1871,12 +1872,12 @@ export function createConformanceWorld(
     request: (executionId: string, turn = 1): ExecutionRequest => {
       const traceId = conformanceTraceId(turn);
       return {
-        version: "1",
+        version: PROTOCOL_VERSION,
         executionId,
         agent: CONFORMANCE_AGENT,
         context: { ...context, traceId },
         message: {
-          version: "1",
+          version: PROTOCOL_VERSION,
           id: `${executionId}-message`,
           sender: CONFORMANCE_AGENT,
           receiver: CONFORMANCE_AGENT,

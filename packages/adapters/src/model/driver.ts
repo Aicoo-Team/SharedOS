@@ -12,7 +12,7 @@ import {
   type AgentTurnDecision,
   type AgentTurnDriver,
   type AgentTurnInput,
-  type AgentTurnRequest,
+  type RuntimeTurnRequest,
   type AgentTurnSession,
 } from "@aicoo/sharedos-runtime";
 
@@ -95,7 +95,7 @@ export interface ModelDriverOptions {
   readonly manifest: RuntimeManifest;
   readonly client: ModelClient;
   /** Overrides how the turn message becomes the model's prompt. */
-  readonly prompt?: (request: AgentTurnRequest) => string;
+  readonly prompt?: (request: RuntimeTurnRequest) => string;
   /**
    * Overrides what the model is told before the prompt, as a system message.
    *
@@ -106,7 +106,7 @@ export interface ModelDriverOptions {
    * it is the same layer a harness maps MCP initialize instructions into.
    * Returning `undefined` sends no system message at all.
    */
-  readonly instructions?: (request: AgentTurnRequest) => string | undefined;
+  readonly instructions?: (request: RuntimeTurnRequest) => string | undefined;
   /**
    * Guard against a model that never forms a readable call.
    *
@@ -129,7 +129,7 @@ export interface ModelDriverOptions {
    * different claim from the model choosing it, and a column that uses it
    * should say so rather than letting the row read as a model's doing.
    */
-  readonly declareStep?: (index: number, request: AgentTurnRequest) => number | undefined;
+  readonly declareStep?: (index: number, request: RuntimeTurnRequest) => number | undefined;
 }
 
 const DEFAULT_MAX_MALFORMED_CALLS = 8;
@@ -158,8 +158,8 @@ const DEFAULT_MAX_MALFORMED_CALLS = 8;
 export class ModelDriver implements AgentTurnDriver {
   readonly manifest: RuntimeManifest;
   readonly #client: ModelClient;
-  readonly #prompt: (request: AgentTurnRequest) => string;
-  readonly #instructions: (request: AgentTurnRequest) => string | undefined;
+  readonly #prompt: (request: RuntimeTurnRequest) => string;
+  readonly #instructions: (request: RuntimeTurnRequest) => string | undefined;
   readonly #maxMalformedCalls: number;
   readonly #declareStep: ModelDriverOptions["declareStep"];
 
@@ -175,7 +175,7 @@ export class ModelDriver implements AgentTurnDriver {
     this.#declareStep = options.declareStep;
   }
 
-  async open(request: AgentTurnRequest, _signal: AbortSignal): Promise<AgentTurnSession> {
+  async open(request: RuntimeTurnRequest, _signal: AbortSignal): Promise<AgentTurnSession> {
     const codec = new ToolNameCodec(request.tools);
     const tools: ModelTool[] = request.tools.map((tool) => ({
       name: codec.toWire(tool.name),
@@ -197,7 +197,7 @@ export class ModelDriver implements AgentTurnDriver {
 
 class ModelSession implements AgentTurnSession {
   readonly #client: ModelClient;
-  readonly #request: AgentTurnRequest;
+  readonly #request: RuntimeTurnRequest;
   readonly #codec: ToolNameCodec;
   readonly #tools: readonly ModelTool[];
   readonly #messages: ModelMessage[];
@@ -231,7 +231,7 @@ class ModelSession implements AgentTurnSession {
 
   constructor(
     client: ModelClient,
-    request: AgentTurnRequest,
+    request: RuntimeTurnRequest,
     codec: ToolNameCodec,
     tools: readonly ModelTool[],
     instructions: string | undefined,
@@ -524,7 +524,7 @@ function describe(error: unknown): string {
 }
 
 /** What a model is told before its prompt when the driver is given no `instructions`. */
-function defaultInstructions(request: AgentTurnRequest): string {
+function defaultInstructions(request: RuntimeTurnRequest): string {
   return describeReach(request.context.reach);
 }
 

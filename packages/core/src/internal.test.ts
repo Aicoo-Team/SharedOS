@@ -1,7 +1,7 @@
 import { JsonObjectSchema } from "@aicoo/sharedos-contracts";
 import { describe, expect, it } from "vitest";
 
-import { readJsonObject } from "./internal.js";
+import { parseJsonObject, readJsonObject } from "./internal.js";
 
 class Plain {
   readonly own = 1;
@@ -99,5 +99,57 @@ describe("readJsonObject", () => {
     expect(read).not.toBe(value);
     expect(read?.["a"]).not.toBe(inner);
     expect(read?.["b"]).not.toBe(value.b);
+  });
+});
+
+describe("parseJsonObject", () => {
+  const texts: readonly [string, string][] = [
+    ["plain", '{"path":["Workspace"],"n":1,"ok":true,"none":null}'],
+    ["nested", '{"a":{"b":[1,{"c":[[]]}]},"d":{}}'],
+    ["negative zero and the largest double", '{"z":-0,"big":1.5e308}'],
+    ["overflowing literal", '{"n":1e999}'],
+    ["overflowing literal nested", '{"a":[{"n":-1e999}]}'],
+    ["__proto__ own key at the top", '{"__proto__":{"x":1},"y":2}'],
+    ["__proto__ own key nested", '{"a":{"__proto__":1,"b":[{"__proto__":2,"c":3}]}}'],
+    ["__proto__ own key with a refused value", '{"__proto__":1e999}'],
+    ["prototype-ish names as ordinary keys", '{"constructor":1,"toString":2}'],
+    ["integer-like keys", '{"1":"x","b":"y","0":"z"}'],
+    ["empty key", '{"":""}'],
+    ["duplicate key, last wins", '{"a":1,"a":2}'],
+    ["deep", `{"deep":${"[".repeat(64)}1${"]".repeat(64)}}`],
+    ["empty object", "{}"],
+  ];
+
+  it.each(texts)("gives the verdict and the value JsonObjectSchema gives: %s", (_label, text) => {
+    const expected = JsonObjectSchema.safeParse(JSON.parse(text));
+    const actual = parseJsonObject(text);
+    expect(actual === undefined).toBe(!expected.success);
+    if (expected.success) {
+      expect(actual).toEqual(expected.data);
+      expect(shape(actual)).toEqual(shape(expected.data));
+    }
+  });
+
+  it.each([
+    ["not JSON", "{"],
+    ["empty text", ""],
+    ["a top-level array", "[1]"],
+    ["a top-level string", '"x"'],
+    ["a top-level null", "null"],
+  ])("refuses %s", (_label, text) => {
+    expect(parseJsonObject(text)).toBeUndefined();
+  });
+
+  it("hands the parsed containers back untouched when nothing had to be dropped", () => {
+    const text = '{"a":[1,{"b":2}],"c":{"d":[]}}';
+    const read = parseJsonObject(text);
+    expect(read).toEqual(JSON.parse(text));
+    expect(Object.isFrozen(read)).toBe(false);
+  });
+
+  it("copies only the containers on the path to a dropped key", () => {
+    const read = parseJsonObject('{"kept":{"x":1},"changed":{"__proto__":{},"y":2}}');
+    expect(read).toEqual({ kept: { x: 1 }, changed: { y: 2 } });
+    expect(Object.getOwnPropertyNames(read?.["changed"])).toEqual(["y"]);
   });
 });

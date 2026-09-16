@@ -30,15 +30,6 @@ const turns = new SharedOSExecutor(kernel, runtime, {
 const result = await turns.execute(executionRequest);
 ```
 
-The original API remains available as a compatibility shorthand, retained
-pending a deprecation decision (`docs/open-items.md`):
-
-```ts
-import { TurnExecutor } from "@aicoo/sharedos-runtime";
-
-const turns = new TurnExecutor(kernel, agentDriver);
-```
-
 ## Escalation
 
 A turn may end by asking a human to decide (ADR 0011, ADR 0017). The ask is a

@@ -8,7 +8,6 @@ import type {
   JsonObject,
   MessageDeliveryResult,
   MessageEnvelope,
-  ProtocolError,
   ReachResult,
   ResourceResult,
   SharedOSToolCatalog,
@@ -88,7 +87,7 @@ import { SPAN, measure, type SpanSink } from "./spans.js";
 import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
 import { DuplicateRegistrationError, MissingRegistrationError } from "./errors.js";
-import { deepFreeze, raceAbort, readJsonObject, throwIfAborted } from "./internal.js";
+import { deepFreeze, protocolError, raceAbort, readJsonObject } from "./internal.js";
 
 export interface SharedOSKernelOptions {
   /**
@@ -374,7 +373,7 @@ export class SharedOSKernel {
     context: AccessContext,
     options: KernelOperationOptions = {},
   ): Promise<TurnAuthorityScope> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
 
     if (MID_TURN_AUTHORITY_REFRESH) {
@@ -411,7 +410,7 @@ export class SharedOSKernel {
     request: AuthorizationRequest,
     options: KernelOperationOptions = {},
   ): Promise<AuthorizationDecision> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
     request = structuredClone(request);
     const authority = await this.#resolveAuthority(context, options.signal);
@@ -427,7 +426,7 @@ export class SharedOSKernel {
     agent: Address,
     options: KernelOperationOptions = {},
   ): Promise<AuthorizationDecision> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
     agent = structuredClone(agent);
     const request: AuthorizationRequest = {
@@ -463,7 +462,7 @@ export class SharedOSKernel {
     reason: string,
     options: EscalationOptions = {},
   ): Promise<Escalation> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
     const requestedAuthority =
       options.requestedAuthority === undefined
@@ -533,7 +532,7 @@ export class SharedOSKernel {
     turn: TurnEndRecord,
     options: KernelOperationOptions = {},
   ): Promise<void> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
     await this.#recordOutcome(
       this.#auditEvent(context, {
@@ -569,7 +568,7 @@ export class SharedOSKernel {
     call: RefusedCall,
     options: KernelOperationOptions = {},
   ): Promise<void> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
     await this.#recordOutcome(
       this.#auditEvent(context, {
@@ -626,7 +625,7 @@ export class SharedOSKernel {
     subject: Address,
     options: AgentCardReadOptions = {},
   ): Promise<AgentCardRead> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
     const parsedSubject = AddressSchema.safeParse(structuredClone(subject));
     if (!parsedSubject.success) {
@@ -704,7 +703,7 @@ export class SharedOSKernel {
   ): Promise<readonly AgentCardView[]> {
     const servable: AgentCardView[] = [];
     for (const view of AGENT_CARD_VIEWS) {
-      throwIfAborted(signal);
+      signal?.throwIfAborted();
       if (view === refused) {
         continue;
       }
@@ -749,7 +748,7 @@ export class SharedOSKernel {
    * recorded by the envelope as the turn's terminal.
    */
   async reach(context: AccessContext, options: KernelOperationOptions = {}): Promise<ReachResult> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
     const authority = await this.#resolveAuthority(context, options.signal);
     if (authority.status !== "resolved") {
@@ -762,7 +761,7 @@ export class SharedOSKernel {
     context: AccessContext,
     options: KernelOperationOptions = {},
   ): Promise<readonly ToolDefinition[]> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
     const authority = await this.#resolveAuthority(context, options.signal);
     if (authority.status !== "resolved") {
@@ -791,7 +790,7 @@ export class SharedOSKernel {
     const tools = await this.#resolveToolRegistry(context, options.signal);
 
     for (const definition of tools.definitions()) {
-      throwIfAborted(options.signal);
+      options.signal?.throwIfAborted();
       if (!enabledNamespaces.has(definition.namespace)) {
         withheldCount += 1;
         continue;
@@ -877,7 +876,7 @@ export class SharedOSKernel {
     context: AccessContext,
     options: KernelOperationOptions = {},
   ): Promise<ToolNamespaceCatalog> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
     const tools = await this.#resolveToolRegistry(context, options.signal);
     const catalog = tools.namespaceCatalog(context.enabledToolNamespaces);
@@ -901,7 +900,7 @@ export class SharedOSKernel {
     update: ToolNamespaceUpdate,
     options: KernelOperationOptions = {},
   ): Promise<ToolNamespaceCatalog> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
     const parsedUpdate = ToolNamespaceUpdateSchema.safeParse(structuredClone(update));
     if (!parsedUpdate.success) {
@@ -916,7 +915,7 @@ export class SharedOSKernel {
       parsedUpdate.data,
       options.signal ?? neverAbortedSignal(),
     );
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     const parsedEnabled = EnabledToolNamespacesSchema.safeParse([...candidate]);
     if (!parsedEnabled.success) {
       throw new TypeError("tool namespace settings returned an invalid selection");
@@ -975,7 +974,7 @@ export class SharedOSKernel {
     call: ToolCall,
     options: KernelOperationOptions = {},
   ): Promise<ToolResult> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
     call = structuredClone(call);
     if (call.traceId !== context.traceId) {
@@ -1012,9 +1011,7 @@ export class SharedOSKernel {
         return this.#resolveToolRegistry(context, options.signal);
       });
     } catch (error) {
-      if (options.signal?.aborted) {
-        throw options.signal.reason ?? error;
-      }
+      options.signal?.throwIfAborted();
       // What arrives here is the wrapper `#resolveToolRegistry` threw, with the
       // provider's own error as its `cause`. The wrapper is the sentence every
       // caller of the catalogue reads; the cause is the only account of what
@@ -1212,7 +1209,7 @@ export class SharedOSKernel {
 
     let result: ToolResult;
     try {
-      throwIfAborted(options.signal);
+      options.signal?.throwIfAborted();
       const candidate = await measure(this.#spans, SPAN.TOOL_HANDLER, (span) => {
         span.set("callId", call.id);
         span.set("tool", call.tool);
@@ -1229,9 +1226,7 @@ export class SharedOSKernel {
               "The tool returned an invalid protocol result",
             );
     } catch (error) {
-      if (options.signal?.aborted) {
-        throw options.signal.reason ?? error;
-      }
+      options.signal?.throwIfAborted();
       this.#reportProviderError(error, context, {
         kind: "tool",
         reasonCode: "tool_execution_failed",
@@ -1260,7 +1255,7 @@ export class SharedOSKernel {
     request: ResourceInvocationRequest,
     options: KernelOperationOptions = {},
   ): Promise<ResourceResult> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     context = structuredClone(context);
     request = structuredClone(request);
     request = {
@@ -1310,7 +1305,7 @@ export class SharedOSKernel {
       );
     } else {
       try {
-        throwIfAborted(options.signal);
+        options.signal?.throwIfAborted();
         const candidate = await provider.invoke(
           toResourceOperation(context, request),
           options.signal ?? neverAbortedSignal(),
@@ -1326,9 +1321,7 @@ export class SharedOSKernel {
                 "The resource provider returned an invalid protocol result",
               );
       } catch (error) {
-        if (options.signal?.aborted) {
-          throw options.signal.reason ?? error;
-        }
+        options.signal?.throwIfAborted();
         this.#reportProviderError(error, context, {
           kind: "resource",
           reasonCode: "resource_execution_failed",
@@ -1488,7 +1481,7 @@ export class SharedOSKernel {
     for (const provider of [...this.#toolProviders.values()].sort((left, right) =>
       left.id.localeCompare(right.id),
     )) {
-      throwIfAborted(signal);
+      signal?.throwIfAborted();
       let handlers: readonly ToolHandler[];
       try {
         handlers = await provider.listTools(
@@ -1496,9 +1489,7 @@ export class SharedOSKernel {
           signal ?? neverAbortedSignal(),
         );
       } catch (error) {
-        if (signal?.aborted) {
-          throw signal.reason ?? error;
-        }
+        signal?.throwIfAborted();
         // Wrapped rather than re-thrown, so every caller sees one sentence for
         // "the catalogue could not be built" -- and `cause`d, so the provider's
         // own error survives to whoever ends up looking. `listTools` lets this
@@ -1529,7 +1520,7 @@ export class SharedOSKernel {
     envelope: MessageEnvelope,
     options: KernelOperationOptions = {},
   ): Promise<MessageDeliveryResult> {
-    throwIfAborted(options.signal);
+    options.signal?.throwIfAborted();
     let parsedEnvelope: ReturnType<typeof MessageEnvelopeSchema.safeParse>;
     try {
       parsedEnvelope = MessageEnvelopeSchema.safeParse(structuredClone(envelope));
@@ -1637,7 +1628,7 @@ export class SharedOSKernel {
 
     let result: MessageDeliveryResult;
     try {
-      throwIfAborted(signal);
+      signal.throwIfAborted();
       const receipt = await this.#messageTransport.deliver(
         structuredClone(trustedContext),
         structuredClone(trustedEnvelope),
@@ -1654,9 +1645,7 @@ export class SharedOSKernel {
               "The message transport returned a mismatched receipt",
             );
     } catch (error) {
-      if (signal.aborted) {
-        throw signal.reason ?? error;
-      }
+      signal.throwIfAborted();
       this.#reportProviderError(error, trustedContext, {
         kind: "message",
         reasonCode: "message_delivery_failed",
@@ -1874,9 +1863,7 @@ export class SharedOSKernel {
     try {
       loaded = await this.#policySource.load(structuredClone(context), signal);
     } catch (error) {
-      if (signal.aborted) {
-        throw signal.reason ?? error;
-      }
+      signal.throwIfAborted();
       this.#reportPolicyOutage(context, error);
       return { status: "unavailable" };
     }
@@ -2249,10 +2236,6 @@ function explanationMetadata(explanation: AuthorizationExplanation): JsonObject 
       ? {}
       : { missingDependency: explanation.missingDependency }),
   };
-}
-
-function protocolError(code: string, message: string): ProtocolError {
-  return { code, message, retryable: false };
 }
 
 /**
