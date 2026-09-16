@@ -964,7 +964,7 @@ Defined in: [conformance/src/bench.ts:201](https://github.com/Aicoo-Team/SharedO
 
 ###### Implementation of
 
-[`SpanSink`](sharedos-core.md#spansink).[`record`](sharedos-core.md#record-3)
+[`SpanSink`](sharedos-core.md#spansink).[`record`](sharedos-core.md#record-2)
 
 ##### reset()
 

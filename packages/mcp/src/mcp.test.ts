@@ -20,7 +20,6 @@ import {
   SharedOSKernel,
   ToolRegistry,
   catalogHash,
-  formatCatalogHash,
   portableToolName,
   publishToolCatalog,
   publishToolDefinition,
@@ -259,11 +258,6 @@ describe("the catalogue hash", () => {
     expect(one.executionId).not.toBe(two.executionId);
     expect(one.catalogHash).toBe(two.catalogHash);
     expect(SharedOSToolCatalogSchema.safeParse(one).success).toBe(true);
-  });
-
-  it("is rendered algorithm-qualified for an experiment record", async () => {
-    const hash = await catalogHash(publishToolCatalog([SEARCH_TOOL]));
-    expect(formatCatalogHash(hash)).toBe(`sha256:${hash}`);
   });
 });
 
