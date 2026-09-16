@@ -1,35 +1,25 @@
-import type {
-  AuthorizationDecision,
-  CapabilityRequirement,
-  ExecutionResult,
-  MessageDeliveryResult,
-  MessageEnvelope,
-  ReachResult,
-  ResourceResult,
-  ToolCall,
-  ToolDefinition,
-  ToolNamespaceCatalog,
-  ToolNamespaceUpdate,
-  ToolResult,
-} from "@aicoo/sharedos-contracts";
 import {
-  AuthorizationDecisionSchema,
-  ExecutionResultSchema,
-  MessageDeliveryResultSchema,
-  ReachResultSchema,
-  RemoteExecutionRequestSchema,
-  RemoteResourceOperationSchema,
-  ResourceResultSchema,
-  SharedOSApiErrorResponseSchema,
-  SharedOSHealthSchema,
-  ToolDefinitionSchema,
-  ToolNamespaceCatalogSchema,
-  ToolNamespaceUpdateSchema,
-  ToolResultSchema,
+  SHAREDOS_ROUTES,
+  type AuthorizationDecision,
+  type CapabilityRequirement,
+  type ExecutionResult,
+  type MessageDeliveryResult,
+  type MessageEnvelope,
+  type ReachResult,
   type RemoteExecutionRequest,
   type RemoteResourceOperation,
+  type ResourceResult,
+  type SharedOSApiErrorCode,
   type SharedOSHealth,
+  type SharedOSRoute,
+  type ToolCall,
+  type ToolDefinition,
+  type ToolNamespaceCatalog,
+  type ToolNamespaceUpdate,
+  type ToolResult,
+  type WireSchema,
 } from "@aicoo/sharedos-contracts";
+import { SharedOSApiErrorResponseSchema } from "@aicoo/sharedos-contracts";
 
 export interface SharedOSClientOptions {
   baseUrl: string;
@@ -46,12 +36,32 @@ export interface SharedOSCallOptions {
 
 export type { RemoteExecutionRequest, RemoteResourceOperation, SharedOSHealth };
 
+/**
+ * The codes a client failure carries: the server's own, the two the client
+ * raises for an answer it could not read, or one an older client has no
+ * name for yet, which is why the type admits any string.
+ *
+ * The `(string & {})` widening is a design decision, not a typing shortcut.
+ * It costs autocomplete on `code` and buys forward compatibility: a client
+ * built against this release still reads a code a later server adds, and a
+ * host's own codes arrive unrenamed. Narrowing it back to the union changes
+ * what callers may rely on, so it needs an explicit sign-off of its own
+ * rather than a procedural clean-up.
+ */
+export type SharedOSClientErrorCode =
+  SharedOSApiErrorCode | "invalid_response" | "request_failed" | (string & {});
+
 export class SharedOSClientError extends Error {
   readonly status: number;
-  readonly code: string;
+  readonly code: SharedOSClientErrorCode;
   readonly requestId: string | undefined;
 
-  constructor(args: { message: string; status: number; code: string; requestId?: string }) {
+  constructor(args: {
+    message: string;
+    status: number;
+    code: SharedOSClientErrorCode;
+    requestId?: string;
+  }) {
     super(args.message);
     this.name = "SharedOSClientError";
     this.status = args.status;
@@ -74,18 +84,18 @@ export class SharedOSClient {
   }
 
   health(options?: SharedOSCallOptions): Promise<SharedOSHealth> {
-    return this.#request("/health", { method: "GET" }, SharedOSHealthSchema, options);
+    return this.#call(SHAREDOS_ROUTES.health, undefined, options);
   }
 
   authorize(
     request: CapabilityRequirement,
     options?: SharedOSCallOptions,
   ): Promise<AuthorizationDecision> {
-    return this.#post("/v1/authorize", request, AuthorizationDecisionSchema, options);
+    return this.#call(SHAREDOS_ROUTES.authorize, request, options);
   }
 
   listTools(options?: SharedOSCallOptions): Promise<readonly ToolDefinition[]> {
-    return this.#request("/v1/tools", { method: "GET" }, ToolDefinitionSchema.array(), options);
+    return this.#call(SHAREDOS_ROUTES.listTools, undefined, options);
   }
 
   /**
@@ -100,43 +110,35 @@ export class SharedOSClient {
    * rather than an error: nothing could be established, and the code says why.
    */
   reach(options?: SharedOSCallOptions): Promise<ReachResult> {
-    return this.#request("/v1/reach", { method: "GET" }, ReachResultSchema, options);
+    return this.#call(SHAREDOS_ROUTES.reach, undefined, options);
   }
 
   listToolNamespaces(options?: SharedOSCallOptions): Promise<ToolNamespaceCatalog> {
-    return this.#request(
-      "/v1/tools/namespaces",
-      { method: "GET" },
-      ToolNamespaceCatalogSchema,
-      options,
-    );
+    return this.#call(SHAREDOS_ROUTES.listToolNamespaces, undefined, options);
   }
 
   updateToolNamespaces(
     update: ToolNamespaceUpdate,
     options?: SharedOSCallOptions,
   ): Promise<ToolNamespaceCatalog> {
-    return this.#post(
-      "/v1/tools/namespaces",
-      ToolNamespaceUpdateSchema.parse(update),
-      ToolNamespaceCatalogSchema,
+    return this.#call(
+      SHAREDOS_ROUTES.updateToolNamespaces,
+      SHAREDOS_ROUTES.updateToolNamespaces.request.parse(update),
       options,
-      "PUT",
     );
   }
 
   invokeTool(call: ToolCall, options?: SharedOSCallOptions): Promise<ToolResult> {
-    return this.#post("/v1/tools/invoke", call, ToolResultSchema, options);
+    return this.#call(SHAREDOS_ROUTES.invokeTool, call, options);
   }
 
   invokeResource(
     operation: RemoteResourceOperation,
     options?: SharedOSCallOptions,
   ): Promise<ResourceResult> {
-    return this.#post(
-      "/v1/resources/invoke",
-      RemoteResourceOperationSchema.parse(operation),
-      ResourceResultSchema,
+    return this.#call(
+      SHAREDOS_ROUTES.invokeResource,
+      SHAREDOS_ROUTES.invokeResource.request.parse(operation),
       options,
     );
   }
@@ -145,35 +147,32 @@ export class SharedOSClient {
     envelope: MessageEnvelope,
     options?: SharedOSCallOptions,
   ): Promise<MessageDeliveryResult> {
-    return this.#post("/v1/messages", envelope, MessageDeliveryResultSchema, options);
+    return this.#call(SHAREDOS_ROUTES.sendMessage, envelope, options);
   }
 
   executeTurn(
     request: RemoteExecutionRequest,
     options?: SharedOSCallOptions,
   ): Promise<ExecutionResult> {
-    return this.#post(
-      "/v1/turns",
-      RemoteExecutionRequestSchema.parse(request),
-      ExecutionResultSchema,
+    return this.#call(
+      SHAREDOS_ROUTES.executeTurn,
+      SHAREDOS_ROUTES.executeTurn.request.parse(request),
       options,
     );
   }
 
-  #post<T>(
-    path: string,
-    body: unknown,
-    schema: RuntimeSchema<T>,
+  /** One route from the table: its verb, its path, and its answer read through its schema. */
+  #call<Request, Response>(
+    route: SharedOSRoute<Request, Response>,
+    body: Request | undefined,
     options?: SharedOSCallOptions,
-    method: "POST" | "PUT" = "POST",
-  ): Promise<T> {
+  ): Promise<Response> {
     return this.#request(
-      path,
-      {
-        method,
-        body: JSON.stringify(body),
-      },
-      schema,
+      route.path,
+      body === undefined
+        ? { method: route.method }
+        : { method: route.method, body: JSON.stringify(body) },
+      route.response,
       options,
     );
   }
@@ -181,7 +180,7 @@ export class SharedOSClient {
   async #request<T>(
     path: string,
     init: RequestInit,
-    schema: RuntimeSchema<T>,
+    schema: WireSchema<T>,
     options?: SharedOSCallOptions,
   ): Promise<T> {
     const headers = new Headers(await resolveValue(this.#headers));
@@ -229,10 +228,6 @@ export class SharedOSClient {
 
     return parsed.data;
   }
-}
-
-interface RuntimeSchema<T> {
-  safeParse(value: unknown): { success: true; data: T } | { success: false };
 }
 
 async function resolveValue<T>(

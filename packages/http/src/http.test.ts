@@ -162,6 +162,25 @@ describe("createSharedOSHandler", () => {
     expect(wrongVerb.status).toBe(405);
   });
 
+  it("answers an unknown path and a wrong verb from the route table", async () => {
+    const handler = createSharedOSHandler({
+      api: createApi(),
+      resolveContext: async () => context,
+    });
+
+    const unknown = await handler(new Request("https://sharedos.test/v1/nothing"));
+    expect(unknown.status).toBe(404);
+    await expect(unknown.json()).resolves.toMatchObject({ error: { code: "not_found" } });
+
+    const wrongVerb = await handler(
+      new Request("https://sharedos.test/v1/tools/namespaces", { method: "POST" }),
+    );
+    expect(wrongVerb.status).toBe(405);
+    await expect(wrongVerb.json()).resolves.toMatchObject({
+      error: { code: "method_not_allowed", message: "Use GET or PUT for this endpoint." },
+    });
+  });
+
   it("does not resolve auth context for health checks", async () => {
     const resolveContext = vi.fn(async () => context);
     const handler = createSharedOSHandler({ api: createApi(), resolveContext });
