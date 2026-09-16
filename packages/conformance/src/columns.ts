@@ -44,6 +44,7 @@ import { canonicalJson } from "./hashing.js";
 import { operationsUnder, type ExecutionRecord } from "./record.js";
 import type { ConformanceCondition } from "./suite.js";
 import { conformanceRuntimeContext } from "./world.js";
+import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
 
 /** What one column cannot do, so a cell reports it instead of failing on it. */
 export interface ColumnLimits {
@@ -248,7 +249,7 @@ export function scriptedColumn(options: ScriptedColumnOptions): RuntimeColumn {
           manifest: {
             id: `sharedos.conformance.${options.id}`,
             version: "1.0.0",
-            protocolVersion: "1",
+            protocolVersion: PROTOCOL_VERSION,
             metadata: { scripted: true, protocol: options.protocol.id },
           },
           protocol: options.protocol,
@@ -470,7 +471,7 @@ export const MODEL_SCRIPTED_COLUMN: RuntimeColumn = Object.freeze({
         manifest: {
           id: "sharedos.conformance.model-scripted",
           version: "1.0.0",
-          protocolVersion: "1",
+          protocolVersion: PROTOCOL_VERSION,
           metadata: { scripted: true, driver: "model-api", catalogueDelivery: "in-band" },
         },
         client: new TranscriptModelClient(movesToModelTranscript(moves, options), {
@@ -798,7 +799,7 @@ export function liveColumn(options: LiveColumnOptions): RuntimeColumn {
           manifest: {
             id: `sharedos.conformance.${options.id}`,
             version: "1.0.0",
-            protocolVersion: "1",
+            protocolVersion: PROTOCOL_VERSION,
             metadata: { live: true, protocol: options.protocol.id },
           },
           protocol: options.protocol,
@@ -954,7 +955,7 @@ export function modelColumn(options: ModelColumnOptions): RuntimeColumn {
           manifest: {
             id: `sharedos.conformance.${options.id}`,
             version: "1.0.0",
-            protocolVersion: "1",
+            protocolVersion: PROTOCOL_VERSION,
             metadata: {
               live: true,
               driver: "model-api",

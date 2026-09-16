@@ -58,6 +58,7 @@ import {
   createConformanceWorld,
   type ConformanceWorld,
 } from "./world.js";
+import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
 
 /**
  * The version of the measurement rules, so a report names what produced it.
@@ -423,7 +424,7 @@ async function runTurn(
       evaluatorHash: hashes.evaluatorHash,
     },
     system: {
-      protocolVersion: "1",
+      protocolVersion: PROTOCOL_VERSION,
       sharedOsVersion: SHAREDOS_VERSION,
       adapterId: runtime.manifest.id,
       policyHash: hashes.policyHash,
@@ -534,7 +535,7 @@ class ToolshareBenchRuntime implements RuntimePlugin {
   readonly manifest: RuntimeManifest = {
     id: "sharedos.bench.toolshare",
     version: "1.0.0",
-    protocolVersion: "1",
+    protocolVersion: PROTOCOL_VERSION,
     metadata: { bench: true, path: "mcp-toolshare" },
   };
 
@@ -757,7 +758,7 @@ export async function runRecordWritePath(
         evaluatorHash: hashes.evaluatorHash,
       },
       system: {
-        protocolVersion: "1",
+        protocolVersion: PROTOCOL_VERSION,
         sharedOsVersion: SHAREDOS_VERSION,
         adapterId: "sharedos.conformance.hostile",
         policyHash: hashes.policyHash,

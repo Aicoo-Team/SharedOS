@@ -6,6 +6,7 @@ import { HarnessRuntime } from "../runtime.js";
 import type { HarnessRequirements, HarnessTransport } from "../harness.js";
 import type { StandardRuntimeOptions } from "@aicoo/sharedos-runtime";
 import { DEEPSEEK_PROTOCOL_ID, deepseekProtocol } from "./protocol.js";
+import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
 
 export { DEEPSEEK_PROTOCOL_ID, deepseekProtocol } from "./protocol.js";
 
@@ -17,7 +18,7 @@ export const DEEPSEEK_ADAPTER_VERSION = "0.1.0-alpha.5";
 export const DEEPSEEK_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   id: "sharedos.deepseek",
   version: DEEPSEEK_ADAPTER_VERSION,
-  protocolVersion: "1",
+  protocolVersion: PROTOCOL_VERSION,
   metadata: {
     package: "@aicoo/sharedos-adapters",
     harness: DEEPSEEK_HARNESS_ID,

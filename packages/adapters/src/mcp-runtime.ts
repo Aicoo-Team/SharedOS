@@ -49,6 +49,7 @@ import { deepseekProtocol } from "./deepseek/protocol.js";
 import { PI_HARNESS_ID } from "./pi/index.js";
 import { piProtocol } from "./pi/protocol.js";
 import { defaultPrompt, failed, handedPromptHash } from "./internal.js";
+import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
 
 /**
  * A vendor harness run natively, against the SharedOS catalogue over MCP.
@@ -681,7 +682,7 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
   manifest: Object.freeze({
     id: "sharedos.claude-code.mcp",
     version: MCP_ADAPTER_VERSION,
-    protocolVersion: "1",
+    protocolVersion: PROTOCOL_VERSION,
     metadata: {
       package: "@aicoo/sharedos-adapters",
       harness: CLAUDE_CODE_HARNESS_ID,
@@ -728,7 +729,7 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   manifest: Object.freeze({
     id: "sharedos.codex.mcp",
     version: MCP_ADAPTER_VERSION,
-    protocolVersion: "1",
+    protocolVersion: PROTOCOL_VERSION,
     metadata: {
       package: "@aicoo/sharedos-adapters",
       harness: CODEX_HARNESS_ID,
@@ -782,7 +783,7 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
   manifest: Object.freeze({
     id: "sharedos.deepseek.mcp",
     version: MCP_ADAPTER_VERSION,
-    protocolVersion: "1",
+    protocolVersion: PROTOCOL_VERSION,
     metadata: {
       package: "@aicoo/sharedos-adapters",
       harness: DEEPSEEK_HARNESS_ID,
@@ -835,7 +836,7 @@ export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   manifest: Object.freeze({
     id: "sharedos.pi.mcp",
     version: MCP_ADAPTER_VERSION,
-    protocolVersion: "1",
+    protocolVersion: PROTOCOL_VERSION,
     metadata: {
       package: "@aicoo/sharedos-adapters",
       harness: PI_HARNESS_ID,

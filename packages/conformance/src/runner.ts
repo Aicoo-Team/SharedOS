@@ -33,6 +33,7 @@ import {
   type ConformanceCondition,
 } from "./suite.js";
 import { createConformanceWorld, type ConformanceWorld } from "./world.js";
+import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
 
 /**
  * The SharedOS build an execution record was produced by.
@@ -437,7 +438,7 @@ async function runCell(
         evaluatorHash: hashes.evaluatorHash,
       },
       system: {
-        protocolVersion: "1",
+        protocolVersion: PROTOCOL_VERSION,
         sharedOsVersion: SHAREDOS_VERSION,
         adapterId: column.id,
         policyHash: hashes.policyHash,

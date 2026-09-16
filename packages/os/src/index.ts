@@ -14,6 +14,7 @@ import {
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
 import type { ResourceProvider, SharedOSKernel, ToolHandler } from "@aicoo/sharedos-core";
+import { compactObject } from "@aicoo/sharedos-core/internal";
 
 /** The canonical SharedOS resource plane. Memory is a role of files, not a second store. */
 export const FILES_NAMESPACE = "files";
@@ -704,12 +705,6 @@ function pathJsonSchema(minItems = 0): JsonObject {
 
 function pathspecJsonSchema(): JsonObject {
   return { type: "array", items: pathJsonSchema(1), minItems: 1, maxItems: 64 };
-}
-
-function compactObject(values: Record<string, JsonValue | undefined>): JsonObject {
-  return Object.fromEntries(
-    Object.entries(values).filter((entry): entry is [string, JsonValue] => entry[1] !== undefined),
-  );
 }
 
 function requireProviderNamespace(provider: ResourceProvider, expected: string): void {

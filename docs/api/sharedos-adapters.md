@@ -1543,7 +1543,7 @@ Defined in: [packages/adapters/src/model/transcript.ts:15](https://github.com/Ai
 
 > **ClaudeCodeDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [packages/adapters/src/claude-code/index.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L38)
+Defined in: [packages/adapters/src/claude-code/index.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L39)
 
 #### Type Declaration
 
@@ -1561,7 +1561,7 @@ Defined in: [packages/adapters/src/claude-code/index.ts:38](https://github.com/A
 
 > **CodexDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [packages/adapters/src/codex/index.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L38)
+Defined in: [packages/adapters/src/codex/index.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L39)
 
 #### Type Declaration
 
@@ -1579,7 +1579,7 @@ Defined in: [packages/adapters/src/codex/index.ts:38](https://github.com/Aicoo-T
 
 > **DeepseekDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [packages/adapters/src/deepseek/index.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L45)
+Defined in: [packages/adapters/src/deepseek/index.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L46)
 
 #### Type Declaration
 
@@ -1673,7 +1673,7 @@ The refusal the model is shown for a call made with unreadable arguments.
 
 > **PiDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [packages/adapters/src/pi/index.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L49)
+Defined in: [packages/adapters/src/pi/index.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L50)
 
 #### Type Declaration
 
@@ -1691,7 +1691,7 @@ Defined in: [packages/adapters/src/pi/index.ts:49](https://github.com/Aicoo-Team
 
 > `const` **CLAUDE\_CODE\_ADAPTER\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
 
-Defined in: [packages/adapters/src/claude-code/index.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L15)
+Defined in: [packages/adapters/src/claude-code/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L16)
 
 ---
 
@@ -1699,7 +1699,7 @@ Defined in: [packages/adapters/src/claude-code/index.ts:15](https://github.com/A
 
 > `const` **CLAUDE\_CODE\_HARNESS\_ID**: `"claude-code"`
 
-Defined in: [packages/adapters/src/claude-code/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L13)
+Defined in: [packages/adapters/src/claude-code/index.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L14)
 
 The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts.
 
@@ -1724,7 +1724,7 @@ part and are what this module translates. The `{type:"assistant"|"user"|
 
 > `const` **CLAUDE\_CODE\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: [packages/adapters/src/claude-code/index.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L30)
+Defined in: [packages/adapters/src/claude-code/index.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L31)
 
 What a live Claude Code session needs before it can run.
 
@@ -1734,7 +1734,7 @@ What a live Claude Code session needs before it can run.
 
 > `const` **CLAUDE\_CODE\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/adapters/src/claude-code/index.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L17)
+Defined in: [packages/adapters/src/claude-code/index.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L18)
 
 ---
 
@@ -1760,7 +1760,7 @@ Defined in: [packages/adapters/src/claude-code/protocol.ts:48](https://github.co
 
 > `const` **CODEX\_ADAPTER\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
 
-Defined in: [packages/adapters/src/codex/index.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L15)
+Defined in: [packages/adapters/src/codex/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L16)
 
 ---
 
@@ -1768,7 +1768,7 @@ Defined in: [packages/adapters/src/codex/index.ts:15](https://github.com/Aicoo-T
 
 > `const` **CODEX\_HARNESS\_ID**: `"codex"`
 
-Defined in: [packages/adapters/src/codex/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L13)
+Defined in: [packages/adapters/src/codex/index.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L14)
 
 The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts.
 
@@ -1794,7 +1794,7 @@ Responses call -- is the transport's problem, not the protocol's.
 
 > `const` **CODEX\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: [packages/adapters/src/codex/index.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L30)
+Defined in: [packages/adapters/src/codex/index.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L31)
 
 What a live Codex session needs before it can run.
 
@@ -1804,7 +1804,7 @@ What a live Codex session needs before it can run.
 
 > `const` **CODEX\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/adapters/src/codex/index.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L17)
+Defined in: [packages/adapters/src/codex/index.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L18)
 
 ---
 
@@ -1830,7 +1830,7 @@ Defined in: [packages/adapters/src/codex/protocol.ts:66](https://github.com/Aico
 
 > `const` **DEEPSEEK\_ADAPTER\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
 
-Defined in: [packages/adapters/src/deepseek/index.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L15)
+Defined in: [packages/adapters/src/deepseek/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L16)
 
 ---
 
@@ -1838,7 +1838,7 @@ Defined in: [packages/adapters/src/deepseek/index.ts:15](https://github.com/Aico
 
 > `const` **DEEPSEEK\_HARNESS\_ID**: `"deepseek"`
 
-Defined in: [packages/adapters/src/deepseek/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L13)
+Defined in: [packages/adapters/src/deepseek/index.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L14)
 
 The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts.
 
@@ -1874,7 +1874,7 @@ that out-of-band channel carries, and no frame is emitted for it.
 
 > `const` **DEEPSEEK\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: [packages/adapters/src/deepseek/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L37)
+Defined in: [packages/adapters/src/deepseek/index.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L38)
 
 What a live DeepSeek Harness session needs before it can run.
 
@@ -1884,7 +1884,7 @@ What a live DeepSeek Harness session needs before it can run.
 
 > `const` **DEEPSEEK\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/adapters/src/deepseek/index.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L17)
+Defined in: [packages/adapters/src/deepseek/index.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L18)
 
 ---
 
@@ -1914,7 +1914,7 @@ Defined in: [packages/adapters/src/deepseek/protocol.ts:107](https://github.com/
 
 > `const` **PI\_ADAPTER\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
 
-Defined in: [packages/adapters/src/pi/index.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L15)
+Defined in: [packages/adapters/src/pi/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L16)
 
 ---
 
@@ -1922,7 +1922,7 @@ Defined in: [packages/adapters/src/pi/index.ts:15](https://github.com/Aicoo-Team
 
 > `const` **PI\_HARNESS\_ID**: `"pi"`
 
-Defined in: [packages/adapters/src/pi/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L13)
+Defined in: [packages/adapters/src/pi/index.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L14)
 
 The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts.
 
@@ -1962,7 +1962,7 @@ harness rather than of this adapter:
 
 > `const` **PI\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: [packages/adapters/src/pi/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L37)
+Defined in: [packages/adapters/src/pi/index.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L38)
 
 What a live Pi session needs before it can run.
 
@@ -1972,7 +1972,7 @@ What a live Pi session needs before it can run.
 
 > `const` **PI\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/adapters/src/pi/index.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L17)
+Defined in: [packages/adapters/src/pi/index.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L18)
 
 ---
 
@@ -1998,7 +1998,7 @@ Defined in: [packages/adapters/src/pi/protocol.ts:86](https://github.com/Aicoo-T
 
 > **createClaudeCodeDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [packages/adapters/src/claude-code/index.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L50)
+Defined in: [packages/adapters/src/claude-code/index.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L51)
 
 Claude Code as a SharedOS agent turn driver.
 
@@ -2022,7 +2022,7 @@ and adds no second permission path.
 
 > **createClaudeCodeRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: [packages/adapters/src/claude-code/index.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L65)
+Defined in: [packages/adapters/src/claude-code/index.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L66)
 
 Claude Code as an installable runtime, reporting its own manifest.
 
@@ -2047,7 +2047,7 @@ this form files a turn's evidence under the harness that produced it.
 
 > **createCodexDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [packages/adapters/src/codex/index.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L50)
+Defined in: [packages/adapters/src/codex/index.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L51)
 
 Codex as a SharedOS agent turn driver.
 
@@ -2071,7 +2071,7 @@ audit all come from the SharedOS execution envelope unchanged.
 
 > **createCodexRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: [packages/adapters/src/codex/index.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L65)
+Defined in: [packages/adapters/src/codex/index.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L66)
 
 Codex as an installable runtime, reporting its own manifest.
 
@@ -2096,7 +2096,7 @@ this form files a turn's evidence under the harness that produced it.
 
 > **createDeepseekDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [packages/adapters/src/deepseek/index.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L57)
+Defined in: [packages/adapters/src/deepseek/index.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L58)
 
 DeepSeek Harness as a SharedOS agent turn driver.
 
@@ -2120,7 +2120,7 @@ changes no kernel code and adds no second permission path.
 
 > **createDeepseekRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: [packages/adapters/src/deepseek/index.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L72)
+Defined in: [packages/adapters/src/deepseek/index.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L73)
 
 DeepSeek Harness as an installable runtime, reporting its own manifest.
 
@@ -2145,7 +2145,7 @@ this form files a turn's evidence under the harness that produced it.
 
 > **createPiDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [packages/adapters/src/pi/index.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L61)
+Defined in: [packages/adapters/src/pi/index.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L62)
 
 Pi as a SharedOS agent turn driver.
 
@@ -2169,7 +2169,7 @@ changes no kernel code and adds no second permission path.
 
 > **createPiRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: [packages/adapters/src/pi/index.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L76)
+Defined in: [packages/adapters/src/pi/index.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L77)
 
 Pi as an installable runtime, reporting its own manifest.
 
@@ -2260,17 +2260,12 @@ The message that answers one call, in the shape the model reads it back.
 
 > **parseToolArguments**(`raw`): [`JsonObject`](sharedos-contracts.md#jsonobject) \| `undefined`
 
-Defined in: [packages/adapters/src/internal.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/internal.ts#L68)
+Defined in: [packages/adapters/src/internal.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/internal.ts#L64)
 
 Argument blobs are model or harness output, so they are parsed rather than
 trusted: an empty blob is an empty object, anything that is not a JSON
-object is refused as `undefined`.
-
-What `JSON.parse` returns is read by a walk of its own rather than by
-`JsonObjectSchema`. The verdict and the value are the schema's; the schema
-reached them by trying every branch of the value union at every node, which
-cost sixty-odd times the parse and was most of what a string-carrying
-adapter spent per call.
+object is refused as `undefined`. The walk is core's `parseJsonObject`,
+which gives `JsonObjectSchema`'s verdict without the schema's cost.
 
 #### Parameters
 

@@ -103,7 +103,7 @@ SharedOS is currently an `0.x` prerelease.
 
 ### McpToolServer
 
-Defined in: [mcp/src/server.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L114)
+Defined in: [mcp/src/server.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L116)
 
 SharedOS's catalogue and authorization broker, spoken as MCP.
 
@@ -125,7 +125,7 @@ see [toCallToolResult](#tocalltoolresult).
 
 > **new McpToolServer**(`options`): [`McpToolServer`](#mcptoolserver)
 
-Defined in: [mcp/src/server.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L123)
+Defined in: [mcp/src/server.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L125)
 
 ###### Parameters
 
@@ -145,7 +145,7 @@ Defined in: [mcp/src/server.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/
 
 > **get** **initialized**(): `boolean`
 
-Defined in: [mcp/src/server.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L136)
+Defined in: [mcp/src/server.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L138)
 
 ###### Returns
 
@@ -157,7 +157,7 @@ Defined in: [mcp/src/server.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/
 
 > **get** **protocolVersion**(): `string` \| `undefined`
 
-Defined in: [mcp/src/server.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L132)
+Defined in: [mcp/src/server.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L134)
 
 The revision agreed with this client, once `initialize` has been answered.
 
@@ -171,7 +171,7 @@ The revision agreed with this client, once `initialize` has been answered.
 
 > **handle**(`message`, `signal`): `Promise`\<[`JsonRpcResponse`](#jsonrpcresponse) \| `undefined`>\>
 
-Defined in: [mcp/src/server.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L147)
+Defined in: [mcp/src/server.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L149)
 
 Handle one JSON-RPC message.
 
@@ -590,20 +590,20 @@ Defined in: [mcp/src/bridge.ts:167](https://github.com/Aicoo-Team/SharedOS/blob/
 
 ### McpServerInfo
 
-Defined in: [mcp/src/server.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L58)
+Defined in: [mcp/src/server.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L60)
 
 #### Properties
 
 | Property                                | Modifier   | Type     | Defined in                                                                                              |
 | --------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------- |
-| <a id="property-name-1"></a> `name`     | `readonly` | `string` | [mcp/src/server.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L59) |
-| <a id="property-version"></a> `version` | `readonly` | `string` | [mcp/src/server.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L60) |
+| <a id="property-name-1"></a> `name`     | `readonly` | `string` | [mcp/src/server.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L61) |
+| <a id="property-version"></a> `version` | `readonly` | `string` | [mcp/src/server.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L62) |
 
 ---
 
 ### McpToolInvocation
 
-Defined in: [mcp/src/server.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L34)
+Defined in: [mcp/src/server.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L36)
 
 One `tools/call`, after the exposed name has been mapped back to canonical.
 
@@ -611,16 +611,16 @@ One `tools/call`, after the exposed name has been mapped back to canonical.
 
 | Property                                    | Modifier   | Type                                             | Description                                                               | Defined in                                                                                              |
 | ------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| <a id="property-alias"></a> `alias?`        | `readonly` | `string`                                         | The name the harness actually sent, when it was not the canonical one.    | [mcp/src/server.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L40) |
-| <a id="property-arguments"></a> `arguments` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                         | [mcp/src/server.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L38) |
-| <a id="property-callid"></a> `callId`       | `readonly` | `string`                                         | -                                                                         | [mcp/src/server.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L35) |
-| <a id="property-tool"></a> `tool`           | `readonly` | `string`                                         | The canonical SharedOS tool name, or the raw one when it matched nothing. | [mcp/src/server.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L37) |
+| <a id="property-alias"></a> `alias?`        | `readonly` | `string`                                         | The name the harness actually sent, when it was not the canonical one.    | [mcp/src/server.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L42) |
+| <a id="property-arguments"></a> `arguments` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                         | [mcp/src/server.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L40) |
+| <a id="property-callid"></a> `callId`       | `readonly` | `string`                                         | -                                                                         | [mcp/src/server.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L37) |
+| <a id="property-tool"></a> `tool`           | `readonly` | `string`                                         | The canonical SharedOS tool name, or the raw one when it matched nothing. | [mcp/src/server.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L39) |
 
 ---
 
 ### McpToolInvoker
 
-Defined in: [mcp/src/server.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L51)
+Defined in: [mcp/src/server.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L53)
 
 What the MCP surface is allowed to do, and the only thing it is allowed to do.
 
@@ -635,7 +635,7 @@ on the other side of it.
 
 > **catalog**(`signal`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
-Defined in: [mcp/src/server.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L53)
+Defined in: [mcp/src/server.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L55)
 
 The permission-filtered catalogue for this session.
 
@@ -653,7 +653,7 @@ The permission-filtered catalogue for this session.
 
 > **invoke**(`invocation`, `signal`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [mcp/src/server.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L55)
+Defined in: [mcp/src/server.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L57)
 
 One call, re-authorized against the arguments actually presented.
 
@@ -672,17 +672,17 @@ One call, re-authorized against the arguments actually presented.
 
 ### McpToolServerOptions
 
-Defined in: [mcp/src/server.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L63)
+Defined in: [mcp/src/server.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L65)
 
 #### Properties
 
 | Property                                           | Modifier   | Type                                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Defined in                                                                                              |
 | -------------------------------------------------- | ---------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| <a id="property-createid"></a> `createId?`         | `readonly` | () => `string`                          | Mints the SharedOS call id for one `tools/call`.                                                                                                                                                                                                                                                                                                                                                                                                                | [mcp/src/server.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L69) |
-| <a id="property-instructions"></a> `instructions?` | `readonly` | `string`                                | Guidance handed to the client at initialize time.                                                                                                                                                                                                                                                                                                                                                                                                               | [mcp/src/server.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L67) |
-| <a id="property-invoker"></a> `invoker`            | `readonly` | [`McpToolInvoker`](#mcptoolinvoker)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [mcp/src/server.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L64) |
-| <a id="property-serverinfo"></a> `serverInfo?`     | `readonly` | [`McpServerInfo`](#mcpserverinfo)       | -                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [mcp/src/server.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L65) |
-| <a id="property-spans"></a> `spans?`               | `readonly` | [`SpanSink`](sharedos-core.md#spansink) | Where the cost of answering one frame is reported. This is the span that bounds enforcement over the toolshare path: it opens when a frame arrives here and closes when the response leaves, so the model's own thinking time is outside it by construction rather than by subtraction. What is also outside it, and cannot be brought in, is the vendor CLI's own tool router -- that code runs before a frame reaches this server and SharedOS never sees it. | [mcp/src/server.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L80) |
+| <a id="property-createid"></a> `createId?`         | `readonly` | () => `string`                          | Mints the SharedOS call id for one `tools/call`.                                                                                                                                                                                                                                                                                                                                                                                                                | [mcp/src/server.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L71) |
+| <a id="property-instructions"></a> `instructions?` | `readonly` | `string`                                | Guidance handed to the client at initialize time.                                                                                                                                                                                                                                                                                                                                                                                                               | [mcp/src/server.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L69) |
+| <a id="property-invoker"></a> `invoker`            | `readonly` | [`McpToolInvoker`](#mcptoolinvoker)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [mcp/src/server.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L66) |
+| <a id="property-serverinfo"></a> `serverInfo?`     | `readonly` | [`McpServerInfo`](#mcpserverinfo)       | -                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [mcp/src/server.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L67) |
+| <a id="property-spans"></a> `spans?`               | `readonly` | [`SpanSink`](sharedos-core.md#spansink) | Where the cost of answering one frame is reported. This is the span that bounds enforcement over the toolshare path: it opens when a frame arrives here and closes when the response leaves, so the model's own thinking time is outside it by construction rather than by subtraction. What is also outside it, and cannot be brought in, is the vendor CLI's own tool router -- that code runs before a frame reaches this server and SharedOS never sees it. | [mcp/src/server.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L82) |
 
 ---
 
@@ -941,7 +941,7 @@ The harnesses this package emits a connection for, by id.
 
 > `const` **MCP\_SERVER\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
 
-Defined in: [mcp/src/server.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L92)
+Defined in: [mcp/src/server.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L94)
 
 The version a server built without `serverInfo` reports in `initialize`.
 
@@ -955,7 +955,7 @@ constant that reaches a record or a wire.
 
 > `const` **SHAREDOS\_MCP\_SERVER\_NAME**: `"sharedos"` = `"sharedos"`
 
-Defined in: [mcp/src/server.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L83)
+Defined in: [mcp/src/server.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L85)
 
 ---
 
@@ -1449,7 +1449,7 @@ some later moment the turn may already have closed.
 
 > **resolveCanonicalName**(`tools`, `exposed`): `string`
 
-Defined in: [mcp/src/server.ts:315](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L315)
+Defined in: [mcp/src/server.ts:309](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L309)
 
 Map an exposed name back to the canonical SharedOS tool ID.
 
@@ -1482,7 +1482,7 @@ the permission-filtered catalogue, so it can never widen authority.
 
 > **toCallToolResult**(`result`, `published?`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/server.ts:342](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L342)
+Defined in: [mcp/src/server.ts:336](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L336)
 
 A SharedOS `ToolResult` as an MCP `CallToolResult`.
 
@@ -1526,7 +1526,7 @@ would make a denial rate uncountable from the evidence.
 
 > **toMcpTool**(`tool`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/server.ts:274](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L274)
+Defined in: [mcp/src/server.ts:276](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L276)
 
 One published tool in MCP's own shape.
 

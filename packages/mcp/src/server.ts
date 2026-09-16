@@ -6,6 +6,7 @@ import type {
   SharedOSToolCatalog,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
+import { isJsonObject } from "@aicoo/sharedos-contracts";
 import {
   SPAN,
   measure,
@@ -13,6 +14,7 @@ import {
   type SpanScope,
   type SpanSink,
 } from "@aicoo/sharedos-core";
+import { compactObject } from "@aicoo/sharedos-core/internal";
 
 import {
   CallToolParamsSchema,
@@ -277,24 +279,16 @@ export function toMcpTool(tool: PublishedToolDefinition): JsonObject {
     description: tool.description,
     inputSchema: tool.inputSchema,
     ...(tool.outputSchema === undefined ? {} : { outputSchema: tool.outputSchema }),
-    ...(tool.annotations === undefined ? {} : { annotations: compact(tool.annotations) }),
+    ...(tool.annotations === undefined ? {} : { annotations: compactObject(tool.annotations) }),
     ...(tool.metadata === undefined ? {} : { _meta: sharedOsMeta(tool.metadata) }),
   };
 }
 
 function sharedOsMeta(metadata: PublishedToolMetadata): JsonObject {
-  return compact({
+  return compactObject({
     "sharedos/namespace": metadata.namespace,
     "sharedos/source": metadata.source,
   });
-}
-
-/** Drop absent keys, so an optional field never reaches the wire as `undefined`. */
-function compact(value: Readonly<Record<string, JsonValue | undefined>>): JsonObject {
-  const entries = Object.entries(value).filter(
-    (entry): entry is [string, JsonValue] => entry[1] !== undefined,
-  );
-  return Object.fromEntries(entries);
 }
 
 /**
@@ -370,10 +364,6 @@ export function toCallToolResult(
 
 function renderText(output: JsonValue): string {
   return typeof output === "string" ? output : JSON.stringify(output);
-}
-
-function isJsonObject(value: JsonValue): value is JsonObject {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function idOf(message: unknown): string | number | null {
