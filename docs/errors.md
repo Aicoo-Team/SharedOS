@@ -388,7 +388,7 @@ new SharedOSExecutor(kernel, plugin, {
 `StandardRuntime` takes the same option, because only one of the two catches any
 given throw: a driver's becomes the loop's cooperative `driver_failed` outcome,
 which the envelope never sees as an exception, and the executor catches
-everything else as `runtime_failed`. `TurnExecutor` forwards to both, so one sink
+everything else as `runtime_failed`. Install one sink in both options and it
 covers both.
 
 `createMcpHarnessRuntime` takes it as well, and so does `StandardRuntime` for the

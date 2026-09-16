@@ -5,7 +5,7 @@ import {
   type AgentTurnDecision,
   type AgentTurnDriver,
   type AgentTurnInput,
-  type AgentTurnRequest,
+  type RuntimeTurnRequest,
   type AgentTurnSession,
 } from "@aicoo/sharedos-runtime";
 
@@ -23,7 +23,7 @@ export interface HarnessDriverOptions {
   readonly protocol: HarnessProtocol;
   readonly transport: HarnessTransport;
   /** Overrides how the turn message becomes the harness prompt. */
-  readonly prompt?: (request: AgentTurnRequest) => string;
+  readonly prompt?: (request: RuntimeTurnRequest) => string;
   /** Guard against a harness that streams unrelated frames without end. */
   readonly maxIgnoredFrames?: number;
   /**
@@ -35,7 +35,7 @@ export interface HarnessDriverOptions {
    * call at or past the ceiling can only be made by a driver that names the
    * step itself, which makes the driver the attacker for that call.
    */
-  readonly declareStep?: (index: number, request: AgentTurnRequest) => number | undefined;
+  readonly declareStep?: (index: number, request: RuntimeTurnRequest) => number | undefined;
 }
 
 const DEFAULT_MAX_IGNORED_FRAMES = 512;
@@ -58,7 +58,7 @@ export class HarnessDriver implements AgentTurnDriver {
   readonly manifest: RuntimeManifest;
   readonly #protocol: HarnessProtocol;
   readonly #transport: HarnessTransport;
-  readonly #prompt: (request: AgentTurnRequest) => string;
+  readonly #prompt: (request: RuntimeTurnRequest) => string;
   readonly #maxIgnoredFrames: number;
   readonly #declareStep: HarnessDriverOptions["declareStep"];
 
@@ -74,7 +74,7 @@ export class HarnessDriver implements AgentTurnDriver {
     }
   }
 
-  async open(request: AgentTurnRequest, signal: AbortSignal): Promise<AgentTurnSession> {
+  async open(request: RuntimeTurnRequest, signal: AbortSignal): Promise<AgentTurnSession> {
     const turn: HarnessTurnRequest = {
       executionId: request.executionId,
       prompt: this.#prompt(request),
@@ -92,7 +92,7 @@ export class HarnessDriver implements AgentTurnDriver {
 class HarnessSession implements AgentTurnSession {
   readonly #channel: HarnessChannel;
   readonly #protocol: HarnessProtocol;
-  readonly #request: AgentTurnRequest;
+  readonly #request: RuntimeTurnRequest;
   readonly #maxIgnoredFrames: number;
   /**
    * Steps a single frame produced but the turn has not consumed yet.
@@ -113,7 +113,7 @@ class HarnessSession implements AgentTurnSession {
   constructor(
     channel: HarnessChannel,
     protocol: HarnessProtocol,
-    request: AgentTurnRequest,
+    request: RuntimeTurnRequest,
     maxIgnoredFrames: number,
     options: Pick<HarnessDriverOptions, "declareStep"> = {},
   ) {

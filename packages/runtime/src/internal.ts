@@ -1,20 +1,8 @@
-import type { ProtocolError } from "@aicoo/sharedos-contracts";
-
-export function protocolError(code: string, message: string, retryable = false): ProtocolError {
-  return { code, message, retryable };
-}
-
-export function deepFreeze<T>(value: T): T {
-  if (value === null || typeof value !== "object" || Object.isFrozen(value)) {
-    return value;
-  }
-
-  for (const child of Object.values(value)) {
-    deepFreeze(child);
-  }
-  return Object.freeze(value);
-}
-
+/**
+ * One signal for a turn: the host's, if it gave one, with the turn's own
+ * deadline and the executor's own abort folded in, and a `dispose` that
+ * releases both once the turn is over.
+ */
 export function createAbortController(
   parent: AbortSignal | undefined,
   timeoutMs: number | undefined,
@@ -41,25 +29,4 @@ export function createAbortController(
       parent?.removeEventListener("abort", abortFromParent);
     },
   };
-}
-
-export function raceWithAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
-  if (signal.aborted) {
-    return Promise.reject(signal.reason ?? new Error("operation aborted"));
-  }
-
-  return new Promise<T>((resolve, reject) => {
-    const abort = (): void => reject(signal.reason ?? new Error("operation aborted"));
-    signal.addEventListener("abort", abort, { once: true });
-    promise.then(
-      (value) => {
-        signal.removeEventListener("abort", abort);
-        resolve(value);
-      },
-      (error: unknown) => {
-        signal.removeEventListener("abort", abort);
-        reject(error);
-      },
-    );
-  });
 }

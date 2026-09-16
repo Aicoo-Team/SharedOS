@@ -27,7 +27,7 @@ import {
 import {
   escalationArguments,
   ESCALATION_TOOL_NAME,
-  type AgentTurnRequest,
+  type RuntimeTurnRequest,
   type RuntimePlugin,
   type RuntimeVisibleContext,
 } from "@aicoo/sharedos-runtime";
@@ -512,7 +512,7 @@ export const MODEL_SCRIPTED_COLUMN: RuntimeColumn = Object.freeze({
 function overBudgetStep(
   moves: readonly AttackMove[],
   turn: number,
-): ((index: number, request: AgentTurnRequest) => number | undefined) | undefined {
+): ((index: number, request: RuntimeTurnRequest) => number | undefined) | undefined {
   let target = -1;
   let index = 0;
   for (const move of moves) {
@@ -529,7 +529,7 @@ function overBudgetStep(
   if (target === -1) {
     return undefined;
   }
-  return (position: number, request: AgentTurnRequest): number | undefined => {
+  return (position: number, request: RuntimeTurnRequest): number | undefined => {
     if (position !== target) {
       return undefined;
     }
@@ -549,7 +549,7 @@ function overBudgetStep(
 function declaredStepOption(
   moves: readonly AttackMove[],
   turn: number,
-): { declareStep?: (index: number, request: AgentTurnRequest) => number | undefined } {
+): { declareStep?: (index: number, request: RuntimeTurnRequest) => number | undefined } {
   const declareStep = overBudgetStep(moves, turn);
   return declareStep === undefined ? {} : { declareStep };
 }

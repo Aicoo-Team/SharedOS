@@ -78,7 +78,7 @@ The canonical tool ID identifies the operation implementation, not the authority
 Publishing a capability requirement would therefore be both a leak and a lie.
 
 The same projection applies wherever a model is shown a catalogue, not only over
-MCP. `GET /v1/tools` and `AgentTurnRequest.tools` carry full `ToolDefinition`s
+MCP. `GET /v1/tools` and `RuntimeTurnRequest.tools` carry full `ToolDefinition`s
 for the host's benefit; a client or driver that feeds a model from either
 applies `publishToolCatalog` first, as `ModelDriver` does. See the
 [HTTP reference](http-api.md#get-v1tools).

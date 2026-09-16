@@ -1,6 +1,7 @@
 import {
   JsonObjectSchema,
   JsonValueSchema,
+  PROTOCOL_VERSION,
   ProtocolErrorSchema,
   ToolCallSchema,
   type ExecutionResult,
@@ -13,7 +14,9 @@ import {
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
 
-import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
+import { deepFreeze, protocolError, raceAbort } from "@aicoo/sharedos-core/internal";
+
+import { createAbortController } from "./internal.js";
 import { escalationAskedEvent, escalationReason } from "./escalation.js";
 import { announcePromptHanded } from "./handed-prompt.js";
 import {
@@ -23,7 +26,6 @@ import {
   type RuntimeHost,
   type RuntimePlugin,
   type RuntimeTurnRequest,
-  type RuntimeVisibleContext,
   type TurnErrorReporter,
 } from "./runtime-plugin.js";
 
@@ -84,12 +86,6 @@ export type AgentTurnDecision =
    */
   | { readonly type: "escalate"; readonly reason: string; readonly metadata?: JsonObject };
 
-/** Backwards-compatible name for the context visible to a standard driver. */
-export type AgentVisibleContext = RuntimeVisibleContext;
-
-/** Backwards-compatible name for the request visible to a standard driver. */
-export type AgentTurnRequest = RuntimeTurnRequest;
-
 export interface AgentTurnSession {
   /**
    * What the session will tell the seat before its first decision, hashed.
@@ -112,7 +108,7 @@ export interface AgentTurnSession {
 
 /** Model/provider-specific code implements this port inside the standard runtime. */
 export interface AgentTurnDriver {
-  open(request: AgentTurnRequest, signal: AbortSignal): Promise<AgentTurnSession>;
+  open(request: RuntimeTurnRequest, signal: AbortSignal): Promise<AgentTurnSession>;
 }
 
 export interface StandardRuntimeOptions {
@@ -135,7 +131,7 @@ export const STANDARD_RUNTIME_VERSION = "0.1.0-alpha.5";
 export const STANDARD_RUNTIME_MANIFEST: RuntimeManifest = deepFreeze({
   id: "sharedos.standard",
   version: STANDARD_RUNTIME_VERSION,
-  protocolVersion: "1",
+  protocolVersion: PROTOCOL_VERSION,
   metadata: {
     package: "@aicoo/sharedos-runtime",
     executionModel: "bounded-driver-loop",
@@ -172,7 +168,7 @@ export class StandardRuntime implements RuntimePlugin {
     };
 
     try {
-      session = await raceWithAbort(this.#driver.open(request, signal), signal);
+      session = await raceAbort(this.#driver.open(request, signal), signal);
       if (typeof session.promptHash === "string") {
         // After `open`, before the first step; see `PROMPT_HANDED_EVENT` for
         // why the event and not the metadata.
@@ -181,10 +177,7 @@ export class StandardRuntime implements RuntimePlugin {
       let nextInput: AgentTurnInput = { type: "start" };
 
       for (let step = 0; step < host.limits.maxSteps; step += 1) {
-        const decisionCandidate: unknown = await raceWithAbort(
-          session.next(nextInput, signal),
-          signal,
-        );
+        const decisionCandidate: unknown = await raceAbort(session.next(nextInput, signal), signal);
         const decision = parseAgentTurnDecision(decisionCandidate);
         if (decision === undefined) {
           closeOutcome = "failed";
@@ -366,7 +359,7 @@ async function closeSession(
 
   const abort = createAbortController(undefined, timeoutMs);
   try {
-    await raceWithAbort(Promise.resolve(session.close(outcome, abort.signal)), abort.signal);
+    await raceAbort(Promise.resolve(session.close(outcome, abort.signal)), abort.signal);
   } catch {
     // Closing a provider session must neither hang nor replace the protocol result.
   } finally {

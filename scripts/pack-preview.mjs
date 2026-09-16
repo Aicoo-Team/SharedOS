@@ -118,13 +118,13 @@ function verifyFreshConsumer(archives) {
     writeFileSync(
       join(consumerDirectory, "smoke.mjs"),
       [
-        'import { AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, StandardRuntime, TurnExecutor } from "@aicoo/sharedos";',
+        'import { AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, StandardRuntime } from "@aicoo/sharedos";',
         'import { createTestContext } from "@aicoo/sharedos-testkit";',
         'import { assembleExecutionRecord, runConformanceSuite } from "@aicoo/sharedos-conformance";',
         'import { createCodexRuntime, TranscriptTransport } from "@aicoo/sharedos-adapters";',
         'import { probeCodex } from "@aicoo/sharedos-adapters/node";',
         "",
-        "const values = [AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, StandardRuntime, TurnExecutor, createTestContext, assembleExecutionRecord, runConformanceSuite, createCodexRuntime, TranscriptTransport, probeCodex];",
+        "const values = [AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, StandardRuntime, createTestContext, assembleExecutionRecord, runConformanceSuite, createCodexRuntime, TranscriptTransport, probeCodex];",
         'if (values.some((value) => value === undefined)) throw new Error("SharedOS export missing");',
         'console.log("SharedOS fresh-consumer runtime import passed.");',
         "",

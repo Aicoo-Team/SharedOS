@@ -13,7 +13,7 @@ import type {
   AgentTurnDecision,
   AgentTurnDriver,
   AgentTurnInput,
-  AgentTurnRequest,
+  RuntimeTurnRequest,
   AgentTurnSession,
 } from "@aicoo/sharedos-runtime";
 
@@ -29,7 +29,7 @@ export class AnthropicTurnDriver implements AgentTurnDriver {
     private readonly model = "claude-sonnet-5",
   ) {}
 
-  async open(request: AgentTurnRequest): Promise<AgentTurnSession> {
+  async open(request: RuntimeTurnRequest): Promise<AgentTurnSession> {
     const tools = request.tools.map(toAnthropicTool);
     const messages: Array<Record<string, unknown>> = [
       { role: "user", content: JSON.stringify(request.message.payload) },
@@ -121,7 +121,7 @@ export class AnthropicTurnDriver implements AgentTurnDriver {
 export class ScriptedTurnDriver implements AgentTurnDriver {
   constructor(private readonly plan: ReadonlyArray<{ tool: string; arguments: JsonObject }>) {}
 
-  async open(request: AgentTurnRequest): Promise<AgentTurnSession> {
+  async open(request: RuntimeTurnRequest): Promise<AgentTurnSession> {
     const visible = new Set(request.tools.map((tool) => tool.name));
     const observations: unknown[] = [];
     let index = 0;
