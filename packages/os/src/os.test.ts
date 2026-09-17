@@ -416,6 +416,59 @@ describe("standard OS file tools", () => {
   });
 });
 
+describe("a resource tool's parse, between the requirement and the invocation", () => {
+  it("reads one call's arguments for that call only, and parses for a host that invokes on its own", async () => {
+    const operations: ResourceOperation[] = [];
+    const invoke = vi.fn(async (operation: ResourceOperation): Promise<ResourceResult> => {
+      operations.push(operation);
+      return {
+        operationId: operation.operationId,
+        status: "succeeded",
+        output: {},
+        completedAt: now,
+      };
+    });
+    const read = createFileTools(provider(invoke)).find(
+      ({ definition }) => definition.name === "files.read",
+    );
+    if (read === undefined) throw new Error("files.read is not registered");
+    const call = (id: string, path: string[]) =>
+      Object.freeze({
+        id,
+        tool: "files.read",
+        arguments: { path },
+        traceId: "trace-1",
+        requestedAt: now,
+      });
+    const first = call("call-1", ["Memory", "Self", "MEMORY.md"]);
+    const second = call("call-1", ["Workspace", "notes.md"]);
+
+    // Two calls sharing an id, as a caller is free to send. What the
+    // requirement parsed is kept against the call object, so the second call
+    // cannot be invoked with the first call's path.
+    expect(read.resolveRequirement?.(contextFor(), first).resource.path).toEqual(
+      first.arguments.path,
+    );
+    expect(read.resolveRequirement?.(contextFor(), second).resource.path).toEqual(
+      second.arguments.path,
+    );
+    await read.invoke(contextFor(), second, new AbortController().signal);
+    await read.invoke(contextFor(), first, new AbortController().signal);
+    // No requirement was resolved for this one; it is parsed where it is used.
+    await read.invoke(
+      contextFor(),
+      call("call-3", ["Workspace", "todo.md"]),
+      new AbortController().signal,
+    );
+
+    expect(operations.map(({ resource }) => resource.path)).toEqual([
+      ["Workspace", "notes.md"],
+      ["Memory", "Self", "MEMORY.md"],
+      ["Workspace", "todo.md"],
+    ]);
+  });
+});
+
 describe("standard OS repository tools", () => {
   const REPOSITORY = ["Projects", "sharedos"];
   const BOTH_PLANES = [FILES_NAMESPACE, REPO_NAMESPACE];
