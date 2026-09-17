@@ -129,7 +129,16 @@ export interface SharedOSKernelOptions {
    */
   readonly createAuditId?: () => string;
   readonly audit?: AuditSink;
-  /** Notification for audit failures that occur after a side effect. */
+  /**
+   * Notification for an audit write that failed after the effect it records.
+   *
+   * An operation's outcome, a turn's ending and an escalation are written once
+   * the answer is final; a sink that throws there is handed here and the caller
+   * receives the result it would have received. The writes made *before* an
+   * effect -- an authority load, a decision, a catalogue listing -- are not
+   * reported here: a sink that throws on one of those rejects the operation,
+   * and nothing runs.
+   */
   readonly onAuditError?: (error: unknown, event: AuditEvent) => void | Promise<void>;
   /**
    * Notification for a throw the kernel contained rather than propagated.
@@ -485,7 +494,12 @@ export class SharedOSKernel {
       throw new TypeError("escalation does not match the SharedOS v1 contract");
     }
 
-    await this.#audit.record(
+    // The outcome path, not the decision path. This is the turn's terminal
+    // record: the runtime has already elected to escalate and nothing is
+    // waiting on the write, so a sink that throws here is reported to
+    // `onAuditError` and the turn still ends `escalated`. Propagating it would
+    // end the turn `runtime_failed` and blame a plugin that did nothing wrong.
+    await this.#recordOutcome(
       this.#auditEvent(context, {
         type: "escalation.requested",
         outcome: "escalated",
@@ -768,7 +782,7 @@ export class SharedOSKernel {
     context = structuredClone(context);
     const authority = await this.#resolveAuthority(context, options.signal);
     if (authority.status !== "resolved") {
-      await this.#audit.record(
+      await this.#recordDecision(
         this.#auditEvent(context, {
           type: "tool.catalog.listed",
           outcome: "denied",
@@ -815,7 +829,7 @@ export class SharedOSKernel {
     }
 
     const { hostPolicy } = authority.authority;
-    await this.#audit.record(
+    await this.#recordDecision(
       this.#auditEvent(context, {
         type: "tool.catalog.listed",
         outcome: "succeeded",
@@ -884,7 +898,7 @@ export class SharedOSKernel {
     const tools = await this.#resolveToolRegistry(context, options.signal);
     const catalog = tools.namespaceCatalog(context.enabledToolNamespaces);
 
-    await this.#audit.record(
+    await this.#recordDecision(
       this.#auditEvent(context, {
         type: "tool.namespace.catalog.listed",
         outcome: "succeeded",
@@ -1802,7 +1816,7 @@ export class SharedOSKernel {
       resolved.status === "resolved" && hostPolicy !== undefined
         ? { status: "resolved", authority: { ...resolved.authority, hostPolicy } }
         : resolved;
-    await this.#audit.record(
+    await this.#recordDecision(
       this.#auditEvent(
         context,
         resolution.status === "resolved"
@@ -1924,7 +1938,7 @@ export class SharedOSKernel {
     operationId?: string,
     explanation?: AuthorizationExplanation,
   ): Promise<void> {
-    await this.#audit.record(
+    await this.#recordDecision(
       this.#auditEvent(context, {
         type: "authorization.checked",
         outcome: decision.allowed ? "allowed" : "denied",
@@ -2099,6 +2113,30 @@ export class SharedOSKernel {
     reportProviderError(this.#onProviderError, error, context, operation);
   }
 
+  /**
+   * Write a record that comes before an effect, and let a failure refuse it.
+   *
+   * An authority load, an authorization decision and a catalogue listing are
+   * each written before anything acts on them. A sink that throws here rejects
+   * the operation: nothing has run, and a decision that was never recorded is
+   * not one SharedOS will act on. `onAuditError` is not called, because the
+   * caller is handed the failure itself.
+   *
+   * This and `#recordOutcome` are the only two callers of
+   * the sink, so which rule a write follows is visible at its call site.
+   */
+  async #recordDecision(event: AuditEvent): Promise<void> {
+    await this.#audit.record(event);
+  }
+
+  /**
+   * Write a record that comes after an effect, and never let a failure change it.
+   *
+   * An operation's outcome, a turn's ending, an escalation. The effect has
+   * committed or the answer is final, so a sink that throws is handed to
+   * `onAuditError` and the caller receives the result it would have received:
+   * returning a failure here would invite a retry of something already done.
+   */
   async #recordOutcome(event: AuditEvent): Promise<void> {
     try {
       await this.#audit.record(event);

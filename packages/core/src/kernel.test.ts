@@ -2166,6 +2166,167 @@ describe("SharedOSKernel messaging and audit", () => {
   });
 });
 
+describe("what a failing audit sink does, by when the record is written", () => {
+  /** A sink that throws on one event type and keeps everything else. */
+  function failingOn(type: AuditEvent["type"]) {
+    const kept: AuditEvent[] = [];
+    const onAuditError = vi.fn<NonNullable<SharedOSKernelOptions["onAuditError"]>>();
+    const audit: AuditSink = {
+      async record(event) {
+        if (event.type === type) {
+          throw new Error(`audit store unavailable for ${type}`);
+        }
+        kept.push(event);
+      },
+    };
+    return { audit, onAuditError, kept };
+  }
+
+  const MESSAGE: MessageEnvelope = {
+    version: "1",
+    id: "message-1",
+    sender: ACTOR,
+    receiver: RECEIVER,
+    purpose: "prepare-update",
+    payload: { request: "Summarize" },
+    traceId: "trace-1",
+    createdAt: NOW,
+  };
+  const MESSAGE_RESOURCE: ResourceRef = {
+    namespace: "sharedos.messaging",
+    path: addressPath(RECEIVER),
+    owner: OWNER,
+  };
+  const RESOURCE_REQUEST: ResourceInvocationRequest = {
+    operationId: "operation-1",
+    resource: FILE_RESOURCE,
+    action: "search",
+  };
+
+  // Written before anything acts on them. Nothing has run, and a decision that
+  // was never recorded is not one the kernel acts on, so the failure is the
+  // caller's to see. `onAuditError` is for the other half.
+  it.each([
+    ["authority.resolved", (kernel: SharedOSKernel) => kernel.invokeTool(context(), toolCall())],
+    ["authorization.checked", (kernel: SharedOSKernel) => kernel.invokeTool(context(), toolCall())],
+    ["tool.catalog.listed", (kernel: SharedOSKernel) => kernel.listTools(context())],
+    [
+      "tool.namespace.catalog.listed",
+      (kernel: SharedOSKernel) => kernel.listToolNamespaces(context()),
+    ],
+  ] as const)("refuses the operation when %s cannot be written", async (type, operate) => {
+    const { audit, onAuditError } = failingOn(type);
+    const invoke = vi.fn(successfulTool().invoke);
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+      audit,
+      onAuditError,
+    });
+    kernel.registerTool({ ...successfulTool(), invoke });
+
+    await expect(operate(kernel)).rejects.toThrow(`audit store unavailable for ${type}`);
+
+    expect(invoke).not.toHaveBeenCalled();
+    expect(onAuditError).not.toHaveBeenCalled();
+  });
+
+  // Written after the effect, or after an answer that is already final.
+  it.each([
+    [
+      "resource.invoked",
+      async (kernel: SharedOSKernel) =>
+        expect(await kernel.invokeResource(context(), RESOURCE_REQUEST)).toMatchObject({
+          status: "succeeded",
+        }),
+    ],
+    [
+      "message.sent",
+      async (kernel: SharedOSKernel) =>
+        expect(await kernel.sendMessage(context(), MESSAGE)).toMatchObject({
+          status: "accepted",
+        }),
+    ],
+    [
+      "turn.ended",
+      (kernel: SharedOSKernel) =>
+        kernel.recordTurnEnd(context(), { executionId: "execution-1", status: "succeeded" }),
+    ],
+    [
+      "tool.invoked",
+      (kernel: SharedOSKernel) =>
+        kernel.recordRefusedCall(context(), {
+          callId: "call-guessed",
+          tool: "files.delete",
+          reasonCode: "tool_unavailable",
+          cause: "not_offered",
+        }),
+    ],
+    [
+      "tool.namespace.selection.updated",
+      async (kernel: SharedOSKernel) =>
+        expect(
+          (await kernel.updateToolNamespaces(context(["files"]), { enable: ["calendar"] })).summary,
+        ).toMatchObject({ enabled: 1 }),
+    ],
+  ] as const)(
+    "keeps the answer and reports it when %s cannot be written",
+    async (type, operate) => {
+      const { audit, onAuditError } = failingOn(type);
+      const kernel = kernelWith(
+        [
+          grant("grant-search", FILE_RESOURCE, ["search"]),
+          grant("grant-send", MESSAGE_RESOURCE, ["send"]),
+        ],
+        {
+          audit,
+          onAuditError,
+          messageTransport: {
+            deliver: async (_access, envelope) => ({
+              messageId: envelope.id,
+              status: "accepted",
+              timestamp: NOW,
+            }),
+          },
+          toolNamespaceSettings: {
+            applyUpdate: async (access, update) =>
+              applyToolNamespaceUpdate(access.enabledToolNamespaces, update),
+          },
+        },
+      );
+      kernel.registerTool(successfulTool());
+      kernel.registerResourceProvider({
+        namespace: "files",
+        invoke: async (operation) => ({
+          operationId: operation.operationId,
+          status: "succeeded",
+          output: {},
+          completedAt: NOW,
+        }),
+      });
+
+      await operate(kernel);
+
+      expect(onAuditError).toHaveBeenCalledOnce();
+      expect(onAuditError.mock.calls[0]?.[1]).toMatchObject({ type });
+    },
+  );
+
+  it("still ends the turn escalated when the escalation cannot be written", async () => {
+    // The record is the turn's terminal, not a gate: the runtime has already
+    // elected to escalate and nothing waits on the write. Rejecting here ended
+    // the turn `runtime_failed` and blamed a plugin that had done nothing wrong.
+    const { audit, onAuditError } = failingOn("escalation.requested");
+    const kernel = kernelWith([], { audit, onAuditError });
+
+    await expect(kernel.recordEscalation(context(), "Needs a human")).resolves.toMatchObject({
+      reason: "Needs a human",
+      status: "pending",
+    });
+
+    expect(onAuditError).toHaveBeenCalledOnce();
+    expect(onAuditError.mock.calls[0]?.[1]).toMatchObject({ type: "escalation.requested" });
+  });
+});
+
 describe("SharedOSKernel provider diagnostics", () => {
   const SEARCH_GRANT = grant("grant-search", FILE_RESOURCE, ["search"]);
 
