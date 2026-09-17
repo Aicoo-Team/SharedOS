@@ -32,7 +32,12 @@ import {
   type SpanSink,
 } from "@aicoo/sharedos-core";
 import type { SharedOSKernel, TurnAuthorityScope } from "@aicoo/sharedos-core";
-import { deepFreeze, protocolError, raceAbort } from "@aicoo/sharedos-core/internal";
+import {
+  deepFreeze,
+  protocolError,
+  raceAbort,
+  refusedToolResult,
+} from "@aicoo/sharedos-core/internal";
 
 import { escalationOffered } from "./escalation.js";
 import { createAbortController } from "./internal.js";
@@ -413,8 +418,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
         emit("tool.requested", eventData);
 
         if (step !== undefined && !stepIsWithinBudget(step, steps, limits.maxSteps)) {
-          const result = deniedToolResult(
+          const result = refusedToolResult(
             parsedCall.data,
+            "denied",
             this.#clock(),
             "step_limit_exceeded",
             "The runtime reached its maximum number of steps.",
@@ -428,8 +434,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
         }
 
         if (toolCallCount >= limits.maxToolCalls) {
-          const result = deniedToolResult(
+          const result = refusedToolResult(
             parsedCall.data,
+            "denied",
             this.#clock(),
             "tool_call_limit_exceeded",
             "The runtime reached its maximum number of tool calls.",
@@ -852,27 +859,13 @@ function cancelledResult(
  * `OperationRecord.source`, which is where that distinction belongs.
  */
 function unavailableToolResult(call: ToolCall, completedAt: string): ToolResult {
-  return deniedToolResult(
+  return refusedToolResult(
     call,
+    "denied",
     completedAt,
     "tool_unavailable",
     "The tool is not available in this permission-filtered turn.",
   );
-}
-
-function deniedToolResult(
-  call: ToolCall,
-  completedAt: string,
-  code: string,
-  message: string,
-): ToolResult {
-  return {
-    callId: call.id,
-    tool: call.tool,
-    status: "denied",
-    completedAt,
-    error: protocolError(code, message),
-  };
 }
 
 /**

@@ -87,7 +87,13 @@ import { SPAN, measure, type SpanSink } from "./spans.js";
 import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
 import { DuplicateRegistrationError, MissingRegistrationError } from "./errors.js";
-import { deepFreeze, protocolError, raceAbort, readJsonObject } from "./internal.js";
+import {
+  deepFreeze,
+  protocolError,
+  raceAbort,
+  readJsonObject,
+  refusedToolResult,
+} from "./internal.js";
 
 export interface SharedOSKernelOptions {
   /**
@@ -978,8 +984,9 @@ export class SharedOSKernel {
     context = structuredClone(context);
     call = structuredClone(call);
     if (call.traceId !== context.traceId) {
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         "trace_mismatch",
         "Tool call traceId does not match its access context",
@@ -990,8 +997,9 @@ export class SharedOSKernel {
 
     const authority = await this.#resolveAuthority(context, options.signal);
     if (authority.status !== "resolved") {
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         "authority_unavailable",
         "Authority could not be loaded from its trusted source",
@@ -1023,8 +1031,9 @@ export class SharedOSKernel {
         operationId: call.id,
         tool: call.tool,
       });
-      const result = failedToolResult(
+      const result = refusedToolResult(
         call,
+        "failed",
         context.now,
         "tool_catalog_unavailable",
         "The tool catalog could not be resolved",
@@ -1035,8 +1044,9 @@ export class SharedOSKernel {
 
     const handler = tools.get(call.tool);
     if (handler === undefined) {
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         "tool_unavailable",
         "The requested tool is not available in this access context",
@@ -1046,8 +1056,9 @@ export class SharedOSKernel {
     }
 
     if (!context.enabledToolNamespaces.includes(handler.definition.namespace)) {
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         "tool_unavailable",
         "The requested tool is not available in this access context",
@@ -1087,8 +1098,9 @@ export class SharedOSKernel {
         // and a reader with two turns on one sink joins the wrong pair.
         call.id,
       );
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         "tool_unavailable",
         "The requested tool is not available in this access context",
@@ -1122,8 +1134,9 @@ export class SharedOSKernel {
         operationId: call.id,
         tool: call.tool,
       });
-      const result = failedToolResult(
+      const result = refusedToolResult(
         call,
+        "failed",
         context.now,
         "invalid_tool_arguments",
         "The requested tool arguments are invalid",
@@ -1143,8 +1156,9 @@ export class SharedOSKernel {
         operationId: call.id,
         tool: call.tool,
       });
-      const result = failedToolResult(
+      const result = refusedToolResult(
         call,
+        "failed",
         context.now,
         "tool_requirement_resolution_failed",
         "The tool could not resolve its required capability",
@@ -1168,8 +1182,9 @@ export class SharedOSKernel {
         false,
         call.id,
       );
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         crossing.reasonCode,
         "The requested resource lies outside this access context's world",
@@ -1179,8 +1194,9 @@ export class SharedOSKernel {
     }
 
     if (!requirementIsWithinDefinition(handler.definition, requirement, context)) {
-      const result = failedToolResult(
+      const result = refusedToolResult(
         call,
+        "failed",
         context.now,
         "invalid_tool_requirement",
         "The tool resolved a capability outside its declared boundary",
@@ -1197,8 +1213,9 @@ export class SharedOSKernel {
       call.id,
     );
     if (!decision.allowed) {
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         decision.reasonCode,
         "The access context does not grant this tool capability",
@@ -1219,8 +1236,9 @@ export class SharedOSKernel {
       result =
         parsed.success && parsed.data.callId === call.id && parsed.data.tool === call.tool
           ? parsed.data
-          : failedToolResult(
+          : refusedToolResult(
               call,
+              "failed",
               context.now,
               "invalid_tool_result",
               "The tool returned an invalid protocol result",
@@ -1235,8 +1253,9 @@ export class SharedOSKernel {
         resource: requirement.resource,
         action: requirement.action,
       });
-      result = failedToolResult(
+      result = refusedToolResult(
         call,
+        "failed",
         context.now,
         "tool_execution_failed",
         "The tool failed while executing",
@@ -1267,8 +1286,9 @@ export class SharedOSKernel {
     };
     const authority = await this.#resolveAuthority(context, options.signal);
     if (authority.status !== "resolved") {
-      const result = deniedResourceResult(
+      const result = refusedResourceResult(
         request,
+        "denied",
         context.now,
         "authority_unavailable",
         "Authority could not be loaded from its trusted source",
@@ -1284,8 +1304,9 @@ export class SharedOSKernel {
       true,
     );
     if (!decision.allowed) {
-      const result = deniedResourceResult(
+      const result = refusedResourceResult(
         request,
+        "denied",
         context.now,
         decision.reasonCode,
         "The access context does not grant this resource capability",
@@ -1297,8 +1318,9 @@ export class SharedOSKernel {
     const provider = this.#resources.get(request.resource.namespace);
     let result: ResourceResult;
     if (provider === undefined) {
-      result = failedResourceResult(
+      result = refusedResourceResult(
         request,
+        "failed",
         context.now,
         "resource_provider_not_found",
         "No provider is registered for the requested resource namespace",
@@ -1314,8 +1336,9 @@ export class SharedOSKernel {
         result =
           parsed.success && parsed.data.operationId === request.operationId
             ? parsed.data
-            : failedResourceResult(
+            : refusedResourceResult(
                 request,
+                "failed",
                 context.now,
                 "invalid_resource_result",
                 "The resource provider returned an invalid protocol result",
@@ -1329,8 +1352,9 @@ export class SharedOSKernel {
           resource: request.resource,
           action: request.action,
         });
-        result = failedResourceResult(
+        result = refusedResourceResult(
           request,
+          "failed",
           context.now,
           "resource_execution_failed",
           "The resource provider failed while executing",
@@ -1537,8 +1561,9 @@ export class SharedOSKernel {
       context.purpose !== envelope.purpose ||
       context.traceId !== envelope.traceId
     ) {
-      const result = deniedMessageResult(
+      const result = refusedMessageResult(
         envelope,
+        "denied",
         context.now,
         "message_context_mismatch",
         "Message sender, purpose, or trace does not match its access context",
@@ -1558,8 +1583,9 @@ export class SharedOSKernel {
         kind: "message",
         reasonCode: "message_requirement_resolution_failed",
       });
-      const result = failedMessageResult(
+      const result = refusedMessageResult(
         envelope,
+        "failed",
         context.now,
         "message_requirement_resolution_failed",
         "The message capability requirement could not be resolved",
@@ -1569,8 +1595,9 @@ export class SharedOSKernel {
     }
     const authority = await this.#resolveAuthority(context, options.signal);
     if (authority.status !== "resolved") {
-      const result = deniedMessageResult(
+      const result = refusedMessageResult(
         envelope,
+        "denied",
         context.now,
         "authority_unavailable",
         "Authority could not be loaded from its trusted source",
@@ -1581,8 +1608,9 @@ export class SharedOSKernel {
 
     const decision = await this.#authorize(context, authority.authority, requirement, true);
     if (!decision.allowed) {
-      const result = deniedMessageResult(
+      const result = refusedMessageResult(
         envelope,
+        "denied",
         context.now,
         decision.reasonCode,
         "The access context does not grant permission to send this message",
@@ -1610,8 +1638,9 @@ export class SharedOSKernel {
     const trustedContext = deepFreeze(structuredClone(context));
     const trustedEnvelope = deepFreeze(structuredClone(envelope));
     if (this.#messageTransport === undefined) {
-      const result = failedMessageResult(
+      const result = refusedMessageResult(
         trustedEnvelope,
+        "failed",
         trustedContext.now,
         "message_transport_not_configured",
         "No message transport is configured",
@@ -1638,8 +1667,9 @@ export class SharedOSKernel {
       result =
         parsed.success && parsed.data.messageId === trustedEnvelope.id
           ? parsed.data
-          : failedMessageResult(
+          : refusedMessageResult(
               trustedEnvelope,
+              "failed",
               trustedContext.now,
               "invalid_message_receipt",
               "The message transport returned a mismatched receipt",
@@ -1651,8 +1681,9 @@ export class SharedOSKernel {
         reasonCode: "message_delivery_failed",
         ...(operationId === undefined ? {} : { operationId }),
       });
-      result = failedMessageResult(
+      result = refusedMessageResult(
         trustedEnvelope,
+        "failed",
         trustedContext.now,
         "message_delivery_failed",
         "The message transport failed while delivering the message",
@@ -2125,87 +2156,38 @@ function scopeFor(resolution: AuthorityResolution, release: () => void): TurnAut
   };
 }
 
-function deniedToolResult(
-  call: ToolCall,
-  completedAt: string,
-  code: string,
-  message: string,
-): ToolResult {
-  return {
-    callId: call.id,
-    tool: call.tool,
-    status: "denied",
-    completedAt,
-    error: protocolError(code, message),
-  };
-}
-
-function failedToolResult(
-  call: ToolCall,
-  completedAt: string,
-  code: string,
-  message: string,
-): ToolResult {
-  return {
-    callId: call.id,
-    tool: call.tool,
-    status: "failed",
-    completedAt,
-    error: protocolError(code, message),
-  };
-}
-
-function deniedResourceResult(
+/**
+ * A resource operation answered without its provider's result.
+ *
+ * `refusedToolResult` in `internal.ts` is the tool-shaped one; these two differ
+ * from it only in the id they carry and, for a message, in what the instant is
+ * called.
+ */
+function refusedResourceResult(
   request: ResourceInvocationRequest,
+  status: "denied" | "failed",
   completedAt: string,
   code: string,
   message: string,
 ): ResourceResult {
   return {
     operationId: request.operationId,
-    status: "denied",
+    status,
     completedAt,
     error: protocolError(code, message),
   };
 }
 
-function failedResourceResult(
-  request: ResourceInvocationRequest,
-  completedAt: string,
-  code: string,
-  message: string,
-): ResourceResult {
-  return {
-    operationId: request.operationId,
-    status: "failed",
-    completedAt,
-    error: protocolError(code, message),
-  };
-}
-
-function deniedMessageResult(
+function refusedMessageResult(
   envelope: MessageEnvelope,
+  status: "denied" | "failed",
   completedAt: string,
   code: string,
   message: string,
 ): MessageDeliveryResult {
   return {
     messageId: envelope.id,
-    status: "denied",
-    timestamp: completedAt,
-    error: protocolError(code, message),
-  };
-}
-
-function failedMessageResult(
-  envelope: MessageEnvelope,
-  completedAt: string,
-  code: string,
-  message: string,
-): MessageDeliveryResult {
-  return {
-    messageId: envelope.id,
-    status: "failed",
+    status,
     timestamp: completedAt,
     error: protocolError(code, message),
   };

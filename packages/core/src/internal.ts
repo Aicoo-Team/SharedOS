@@ -4,6 +4,8 @@ import type {
   JsonObject,
   JsonValue,
   ProtocolError,
+  ToolCall,
+  ToolResult,
 } from "@aicoo/sharedos-contracts";
 
 /** Structural JSON equality for protocol values with unordered object keys. */
@@ -189,6 +191,30 @@ export function deepFreeze<T>(value: T): T {
 /** A protocol error in the one shape every refusal and failure carries. */
 export function protocolError(code: string, message: string, retryable = false): ProtocolError {
   return { code, message, retryable };
+}
+
+/**
+ * A tool call answered without its handler's result: refused, or failed closed.
+ *
+ * One factory for the kernel, the message tool and the execution envelope, so
+ * the three boundaries that answer in a handler's place answer in one shape.
+ * The status is an argument rather than a function each: `denied` and `failed`
+ * differ in nothing else.
+ */
+export function refusedToolResult(
+  call: Pick<ToolCall, "id" | "tool">,
+  status: "denied" | "failed",
+  completedAt: string,
+  code: string,
+  message: string,
+): ToolResult {
+  return {
+    callId: call.id,
+    tool: call.tool,
+    status,
+    completedAt,
+    error: protocolError(code, message),
+  };
 }
 
 /** Drop absent keys, so an optional field never reaches the wire as `undefined`. */
