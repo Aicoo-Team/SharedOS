@@ -52,6 +52,33 @@ export function escalationAskedEvent(reason: string): RuntimeEvent {
 }
 
 /**
+ * The key a delegate states the ask under, through `RuntimeHost.annotate`.
+ *
+ * Every path that honours the affordance ends the turn without forwarding the
+ * call -- a driver in the standard loop returns an `escalate` decision, the MCP
+ * latch settles the harness's outcome -- so a working ask leaves no operation
+ * in the record. Neither would an ask the envelope then failed to honour, and
+ * the two would be indistinguishable from a delegate that never asked: a
+ * conformance row graded on the ending could not tell "SharedOS was never
+ * asked" from "SharedOS was asked and did the wrong thing". So the ask is
+ * stated the moment it is recognised, before anything acts on it, and the
+ * envelope writes it on the turn's result whatever the turn then does.
+ *
+ * It is the delegate's own claim, which is the safe direction of trust. A
+ * reader can only grade a turn *harder* on it -- an ask stated and not
+ * honoured is a failure -- and never credit one, because a pass still needs
+ * the turn to have ended `escalated`. Distinct from the `escalation.requested`
+ * audit event, which the kernel writes when the envelope records an escalation
+ * it honoured.
+ */
+export const ESCALATION_ASKED_ANNOTATION = "escalationAsked";
+
+/** The ask, in the one shape every delegate states it. */
+export function escalationAskedAnnotation(reason: string): JsonObject {
+  return { tool: ESCALATION_TOOL_NAME, reason };
+}
+
+/**
  * The affordance a driver offers so escalation can be chosen rather than inferred.
  *
  * A turn that ends by asking a human to decide is a claim about SharedOS -- the

@@ -6,7 +6,6 @@ import { createInterface } from "node:readline";
 
 import type {
   JsonObject,
-  RuntimeEvent,
   RuntimeManifest,
   RuntimeTurnOutcome,
   ToolCall,
@@ -26,17 +25,15 @@ import {
 } from "@aicoo/sharedos-mcp";
 import { createStreamableHttpMcpServer } from "@aicoo/sharedos-mcp/node";
 import {
-  announceForRecord,
-  announcePromptHanded,
+  ESCALATION_ASKED_ANNOTATION,
+  PROMPT_HASH_ANNOTATION,
   describeReach,
-  escalationAskedEvent,
+  escalationAskedAnnotation,
   escalationOffered,
   escalationRequest,
-  type RecordAnnouncement,
   type RuntimeHost,
   type RuntimePlugin,
   type RuntimeTurnRequest,
-  type TurnErrorReporter,
 } from "@aicoo/sharedos-runtime";
 
 import type { HarnessProtocol } from "./harness.js";
@@ -187,17 +184,6 @@ export interface McpHarnessRuntimeOptions {
    * an instant a test cannot fix is an instant it cannot assert on.
    */
   readonly clock?: () => string;
-  /**
-   * Notification for the one throw this runtime contains rather than propagates.
-   *
-   * The harness's own failures end the turn through the envelope, which has a
-   * reporter of its own. What this runtime contains is a host refusing one of
-   * its record-only announcements -- `prompt.handed`, `escalation.asked` --
-   * because the turn goes on regardless: the CLI is still launched, the ask is
-   * still honoured. The record is then short an event, and this is where that
-   * shows. Same contract as the executor's; see `TurnErrorReporter`.
-   */
-  readonly onTurnError?: TurnErrorReporter;
 }
 
 const MAX_DIAGNOSTIC_CHARS = 8_192;
@@ -224,15 +210,10 @@ export function createMcpHarnessRuntime(
       host: RuntimeHost,
       signal: AbortSignal,
     ): Promise<RuntimeTurnOutcome> {
-      const announcement: RecordAnnouncement = {
-        turn: { executionId: request.executionId, traceId: request.context.traceId },
-        signal,
-        onTurnError: options.onTurnError,
-      };
       const escalation = new EscalationLatch(
         request,
         host,
-        (event) => announceForRecord(host, event, announcement),
+        (key, value) => host.annotate(key, value),
         options.clock ?? (() => new Date().toISOString()),
       );
       const bridge: SharedOSToolBridge = openToolBridge({
@@ -245,12 +226,12 @@ export function createMcpHarnessRuntime(
       const prompt = (options.prompt ?? defaultPrompt)(request);
       // The same two texts, in the same shape, as the model driver hashes:
       // what the server will say at initialize and what the CLI is launched
-      // with. Taken and announced here, before the port is bound or anything
-      // is written, so a turn cancelled at any later point still records what
-      // it was told; the metadata copy below rides on the outcome, which a
-      // cancelled turn never returns. What the CLI adds of its own is not here.
-      const promptHash = await handedPromptHash(instructions, prompt);
-      announcePromptHanded(host, promptHash, announcement);
+      // with. Taken and stated here, before the port is bound or anything is
+      // written, so a turn cancelled at any later point still records what it
+      // was told: the envelope holds an annotation for every ending, where the
+      // outcome's own metadata rides on an outcome a cancelled turn never
+      // returns. What the CLI adds of its own is not here.
+      host.annotate(PROMPT_HASH_ANNOTATION, await handedPromptHash(instructions, prompt));
       const server = new McpToolServer({
         invoker: bridge,
         serverInfo: {
@@ -295,7 +276,6 @@ export function createMcpHarnessRuntime(
         return escalation.settle(outcome, {
           ...outcome.metadata,
           ...harnessMetadata(spec, connection, bridge, catalogHash, options.model),
-          promptHash,
         });
       } finally {
         // Step 7 of the lifecycle. Order matters: the bridge is shut before the
@@ -329,13 +309,13 @@ export function createMcpHarnessRuntime(
  * Nothing here reaches the kernel. An escalation is not an operation to
  * authorize -- it is the turn saying it is over -- so it leaves no operation in
  * the record, which is the same absence a driver's escalation leaves. What it
- * does leave is the announcement: the ask is emitted as a runtime event the
- * moment it is recognised, so a record can tell a turn that asked from one
- * that never did even when the ending is not the one the ask should have had.
+ * does leave is the annotation: the ask is stated to the envelope the moment
+ * it is recognised, so a record can tell a turn that asked from one that never
+ * did even when the ending is not the one the ask should have had.
  */
 class EscalationLatch implements BridgeToolInvoker {
   readonly #host: BridgeToolInvoker;
-  readonly #announce: (event: RuntimeEvent) => void;
+  readonly #annotate: RuntimeHost["annotate"];
   readonly #clock: () => string;
   /** Whether this turn was granted the affordance at all. */
   readonly #offered: boolean;
@@ -345,11 +325,11 @@ class EscalationLatch implements BridgeToolInvoker {
   constructor(
     request: RuntimeTurnRequest,
     host: BridgeToolInvoker,
-    announce: (event: RuntimeEvent) => void,
+    annotate: RuntimeHost["annotate"],
     clock: () => string,
   ) {
     this.#host = host;
-    this.#announce = announce;
+    this.#annotate = annotate;
     this.#clock = clock;
     // Read from the turn's own catalogue, because skipping the envelope skips
     // its effective-catalogue check with it. A call naming the affordance
@@ -369,11 +349,10 @@ class EscalationLatch implements BridgeToolInvoker {
       return this.#host.invokeTool(call, options);
     }
     this.#reason = reason;
-    // For the record, not for the turn: the ask is honoured whether or not the
-    // host would take the event, because a throw here would answer the harness
-    // with a transport fault for a call SharedOS accepted. `announce` is
-    // `announceForRecord`, which contains and reports the refusal itself.
-    this.#announce(escalationAskedEvent(reason));
+    // For the record, not for the turn. `annotate` never refuses on the state
+    // of the host, so this cannot answer the harness with a transport fault
+    // for a call SharedOS accepted.
+    this.#annotate(ESCALATION_ASKED_ANNOTATION, escalationAskedAnnotation(reason));
     return this.#accept(call, reason);
   }
 

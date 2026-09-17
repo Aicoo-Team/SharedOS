@@ -13,7 +13,8 @@ import {
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
-  escalationAskedEvent,
+  ESCALATION_ASKED_ANNOTATION,
+  escalationAskedAnnotation,
   type RuntimeHost,
   type RuntimePlugin,
   type RuntimeTurnRequest,
@@ -417,14 +418,10 @@ export class HostileRuntime implements RuntimePlugin {
     // the turn had done before it asked.
     const terminal = this.#moves.find(({ terminal: value }) => value !== undefined)?.terminal;
     if (terminal?.type === "escalate") {
-      // Announced as every honouring path announces it, so the reference
-      // column's record has the same trace a live one does and the judge reads
-      // one rule for both.
-      try {
-        host.emit(escalationAskedEvent(terminal.reason));
-      } catch {
-        // The host has closed; the ask still ends the turn.
-      }
+      // Stated as every honouring path states it, so the reference column's
+      // record has the same trace a live one does and the judge reads one rule
+      // for both.
+      host.annotate(ESCALATION_ASKED_ANNOTATION, escalationAskedAnnotation(terminal.reason));
       return { type: "escalate", reason: terminal.reason, metadata };
     }
 

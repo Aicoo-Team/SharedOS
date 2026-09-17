@@ -124,6 +124,13 @@ export function announceForRecord(
   }
 }
 
+/**
+ * The key a runtime states what it told the seat under: the content hash of the
+ * instructions and prompt, stated through {@link RuntimeHost.annotate} before
+ * the model or harness is sent anything.
+ */
+export const PROMPT_HASH_ANNOTATION = "promptHash";
+
 export interface RuntimeVisibleContext {
   readonly actor: AccessContext["actor"];
   readonly owner: AccessContext["owner"];
