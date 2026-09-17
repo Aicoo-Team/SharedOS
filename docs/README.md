@@ -152,6 +152,7 @@ is the boundary between them and the agents that act on them.
 - [ADR 0024: Git is its own resource namespace](adr/0024-git-is-its-own-resource-namespace.md)
 - [ADR 0025: A route lease is not an authority lease](adr/0025-route-lease-is-not-authority.md)
 - [ADR 0026: The effective catalogue is resolved once per turn](adr/0026-catalogue-resolved-once-per-turn.md)
+- [ADR 0027: The envelope holds what a runtime states for the record](adr/0027-the-envelope-holds-what-a-runtime-states-for-the-record.md)
 
 ## Project governance
 

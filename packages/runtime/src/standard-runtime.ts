@@ -17,12 +17,14 @@ import {
 import { deepFreeze, protocolError, raceAbort } from "@aicoo/sharedos-core/internal";
 
 import { createAbortController } from "./internal.js";
-import { escalationAskedEvent, escalationReason } from "./escalation.js";
-import { announcePromptHanded } from "./handed-prompt.js";
 import {
-  announceForRecord,
+  ESCALATION_ASKED_ANNOTATION,
+  escalationAskedAnnotation,
+  escalationReason,
+} from "./escalation.js";
+import {
+  PROMPT_HASH_ANNOTATION,
   reportTurnError,
-  type RecordAnnouncement,
   type RuntimeHost,
   type RuntimePlugin,
   type RuntimeTurnRequest,
@@ -91,15 +93,15 @@ export interface AgentTurnSession {
    * What the session will tell the seat before its first decision, hashed.
    *
    * A driver that composes text for a model -- a system message, a prompt --
-   * states the hash here as well as on its terminal `metadata`. The loop
-   * announces it as a `prompt.handed` runtime event once `open` has resolved
-   * and before the first step, which is what a cancelled turn keeps: a session
-   * that never returns a decision returns no metadata, and the record would
-   * otherwise not say what that turn was asked (see `PROMPT_HANDED_EVENT`).
-   * The announcement cannot come earlier than `open` returns, so a driver whose
-   * `open` itself sends the text should hash it before sending; a turn
-   * cancelled inside `open` is announced by nothing. A driver that hands the
-   * seat no text leaves it absent.
+   * states the hash here, once, and nowhere else. The loop hands it to
+   * `RuntimeHost.annotate` as soon as `open` has resolved and before the first
+   * step, and the envelope writes it on the turn's result however the turn then
+   * ends, which is what a cancelled turn needs: a session that never returns a
+   * decision returns no metadata of its own, and the record would otherwise not
+   * say what that turn was asked. The loop cannot state it earlier than `open`
+   * returns, so a driver whose `open` itself sends the text should hash it
+   * before sending; a turn cancelled inside `open` has no hash to record. A
+   * driver that hands the seat no text leaves it absent.
    */
   readonly promptHash?: string;
   next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision>;
@@ -118,9 +120,8 @@ export interface StandardRuntimeOptions {
    *
    * A driver that throws ends the turn `driver_failed`, which is a cooperative
    * outcome the envelope never sees as an exception -- so the executor's own
-   * hook cannot report it and this one exists. A host refusing one of the
-   * loop's record-only announcements reaches it too, and the turn goes on.
-   * Same contract either way; see {@link TurnErrorReporter}.
+   * hook cannot report it and this one exists. Same contract; see
+   * {@link TurnErrorReporter}.
    */
   onTurnError?: TurnErrorReporter;
 }
@@ -161,18 +162,12 @@ export class StandardRuntime implements RuntimePlugin {
   ): Promise<RuntimeTurnOutcome> {
     let session: AgentTurnSession | undefined;
     let closeOutcome: ExecutionResult["status"] = "failed";
-    const announcement: RecordAnnouncement = {
-      turn: { executionId: request.executionId, traceId: request.context.traceId },
-      signal,
-      onTurnError: this.#onTurnError,
-    };
-
     try {
       session = await raceAbort(this.#driver.open(request, signal), signal);
       if (typeof session.promptHash === "string") {
-        // After `open`, before the first step; see `PROMPT_HANDED_EVENT` for
-        // why the event and not the metadata.
-        announcePromptHanded(host, session.promptHash, announcement);
+        // After `open`, before the first step, so a turn that stalls in its
+        // first request still records what it was asked.
+        host.annotate(PROMPT_HASH_ANNOTATION, session.promptHash);
       }
       let nextInput: AgentTurnInput = { type: "start" };
 
@@ -199,11 +194,9 @@ export class StandardRuntime implements RuntimePlugin {
           return decision;
         }
         if (decision.type === "escalate") {
-          // Announced before it is honoured, so the record carries the ask
-          // whatever the envelope then makes of the outcome. For the record
-          // only: a host that will not take the event does not change what the
-          // driver decided, and is reported rather than obeyed.
-          announceForRecord(host, escalationAskedEvent(decision.reason), announcement);
+          // Stated before it is honoured, so the record carries the ask
+          // whatever the envelope then makes of the outcome.
+          host.annotate(ESCALATION_ASKED_ANNOTATION, escalationAskedAnnotation(decision.reason));
           // Passed straight through, as `complete` and `fail` are. An escalated
           // turn is a terminal outcome the envelope records and audits; it is
           // not a failure, and reporting it as one would lose the distinction

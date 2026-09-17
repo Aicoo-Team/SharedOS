@@ -69,16 +69,23 @@ export type TurnRequestContextIsSanitised = Assert<
 >;
 
 /**
- * The host is exactly three members.
+ * The host is exactly four members.
  *
  * Written as an exhaustive equality rather than a set of absences, because a
  * leak arrives as a field somebody added and a list of things to check for
- * would not have that field on it.
+ * would not have that field on it. `annotate` is on the list because it only
+ * takes: it returns nothing, so it is no more a way to read authority than
+ * `emit` is.
  */
-export type HostIsExactlyLimitsCallAndEmit = Assert<
-  keyof RuntimeHost extends "limits" | "invokeTool" | "emit"
-    ? "limits" | "invokeTool" | "emit" extends keyof RuntimeHost
+export type HostIsExactlyLimitsCallEmitAndAnnotate = Assert<
+  keyof RuntimeHost extends "limits" | "invokeTool" | "emit" | "annotate"
+    ? "limits" | "invokeTool" | "emit" | "annotate" extends keyof RuntimeHost
       ? true
       : false
     : false
+>;
+
+/** Nothing comes back from a statement for the record. */
+export type AnnotateReturnsNothing = Assert<
+  ReturnType<RuntimeHost["annotate"]> extends void ? true : false
 >;

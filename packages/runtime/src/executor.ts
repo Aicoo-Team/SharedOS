@@ -1,5 +1,6 @@
 import {
   ExecutionRequestSchema,
+  JsonValueSchema,
   MAX_EXECUTION_TOOL_CALLS,
   PROTOCOL_VERSION,
   MAX_EXECUTION_TIMEOUT_MS,
@@ -284,12 +285,26 @@ export class SharedOSExecutor implements TurnExecutionPort {
         // An observational stream sink cannot replace the execution outcome.
       }
     };
-    const metadata = runtimeResultMetadata(this.#manifest);
+    // What the plugin stated for the record, through `RuntimeHost.annotate`.
+    // Held here rather than by the plugin so that every way out of the turn
+    // carries it, including the ones that have no outcome to carry anything:
+    // a cancelled turn, a plugin that threw, an outcome that did not parse.
+    const annotations = new Map<string, JsonValue>();
+    const resultMetadata = (outcome?: Pick<RuntimeTurnOutcome, "metadata">): JsonObject =>
+      runtimeResultMetadata(this.#manifest, outcome, annotations);
 
     const contextError = validateTurnContext(request);
     if (contextError !== undefined) {
       emit("turn.denied", { code: contextError.code });
-      return resultFor(request, events, startedAt, this.#clock(), "denied", contextError, metadata);
+      return resultFor(
+        request,
+        events,
+        startedAt,
+        this.#clock(),
+        "denied",
+        contextError,
+        resultMetadata(),
+      );
     }
 
     const timeoutMs = request.options?.timeoutMs ?? this.#defaultTimeoutMs;
@@ -308,7 +323,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
 
     try {
       if (abort.signal.aborted) {
-        return cancelledResult(request, events, startedAt, this.#clock(), metadata);
+        return cancelledResult(request, events, startedAt, this.#clock(), resultMetadata());
       }
 
       const executionContext = structuredClone(contextAt(request.context, this.#clock()));
@@ -332,7 +347,15 @@ export class SharedOSExecutor implements TurnExecutionPort {
           "The access context does not grant permission to invoke this agent.",
         );
         emit("turn.denied", { code: error.code });
-        return resultFor(request, events, startedAt, this.#clock(), "denied", error, metadata);
+        return resultFor(
+          request,
+          events,
+          startedAt,
+          this.#clock(),
+          "denied",
+          error,
+          resultMetadata(),
+        );
       }
 
       // Where the turn may operate, read from the same authority every decision
@@ -469,6 +492,35 @@ export class SharedOSExecutor implements TurnExecutionPort {
             data: parsedEvent.data.data,
           });
         },
+        annotate: (key: string, value: JsonValue): void => {
+          // `__proto__` with the rest: `JsonObjectSchema` drops that key from
+          // every object it reads, so taking it here would put a shape on the
+          // result that no validated path can produce.
+          if (
+            typeof key !== "string" ||
+            key.length === 0 ||
+            key === RUNTIME_METADATA_KEY ||
+            key === "__proto__"
+          ) {
+            throw new TypeError(
+              "Runtime annotation key must be a non-empty string other than 'runtime' or '__proto__'",
+            );
+          }
+          const parsedValue = JsonValueSchema.safeParse(cloneOrUndefined(value));
+          if (!parsedValue.success) {
+            throw new TypeError("Runtime annotation value must be a JSON value");
+          }
+          // No `assertRuntimeHostActive`, deliberately. A turn that is aborted
+          // but not yet closed is the turn that most needs what it was told on
+          // its result, so the write is taken. Once the turn has closed the
+          // result is built and nothing can reach it, so the write is dropped
+          // rather than refused: a statement for the record must never become
+          // a fault in whatever was making it.
+          if (!runtimeHostActive) {
+            return;
+          }
+          annotations.set(key, deepFreeze(parsedValue.data));
+        },
       });
 
       const outcomeCandidate: unknown = await raceAbort(
@@ -482,7 +534,15 @@ export class SharedOSExecutor implements TurnExecutionPort {
           "The runtime plugin returned an invalid terminal outcome.",
         );
         emit("turn.failed", { code: error.code, source: "envelope" });
-        return resultFor(request, events, startedAt, this.#clock(), "failed", error, metadata);
+        return resultFor(
+          request,
+          events,
+          startedAt,
+          this.#clock(),
+          "failed",
+          error,
+          resultMetadata(),
+        );
       }
 
       if (outcome.data.type === "complete") {
@@ -496,7 +556,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
           events,
           startedAt,
           completedAt: this.#clock(),
-          metadata: runtimeResultMetadata(this.#manifest, outcome.data),
+          metadata: resultMetadata(outcome.data),
         };
       }
 
@@ -530,7 +590,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
             this.#clock(),
             "failed",
             error,
-            runtimeResultMetadata(this.#manifest, outcome.data),
+            resultMetadata(outcome.data),
           );
         }
 
@@ -564,7 +624,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
           events,
           startedAt,
           completedAt: this.#clock(),
-          metadata: runtimeResultMetadata(this.#manifest, outcome.data),
+          metadata: resultMetadata(outcome.data),
         };
       }
 
@@ -576,12 +636,12 @@ export class SharedOSExecutor implements TurnExecutionPort {
         this.#clock(),
         "failed",
         outcome.data.error,
-        runtimeResultMetadata(this.#manifest, outcome.data),
+        resultMetadata(outcome.data),
       );
     } catch (thrown) {
       if (abort.signal.aborted) {
         emit("turn.cancelled", {});
-        return cancelledResult(request, events, startedAt, this.#clock(), metadata);
+        return cancelledResult(request, events, startedAt, this.#clock(), resultMetadata());
       }
 
       const error = protocolError("runtime_failed", "The runtime plugin failed.", true);
@@ -593,7 +653,15 @@ export class SharedOSExecutor implements TurnExecutionPort {
         executionId: request.executionId,
         traceId: request.context.traceId,
       });
-      return resultFor(request, events, startedAt, this.#clock(), "failed", error, metadata);
+      return resultFor(
+        request,
+        events,
+        startedAt,
+        this.#clock(),
+        "failed",
+        error,
+        resultMetadata(),
+      );
     } finally {
       runtimeHostActive = false;
       // Released on every path out, including cancellation: an unclosed lease
@@ -855,15 +923,39 @@ function runtimeProvenance(manifest: RuntimeManifest): JsonObject {
   };
 }
 
+/** The metadata key the envelope writes its own provenance under. */
+const RUNTIME_METADATA_KEY = "runtime";
+
+/**
+ * The turn's result metadata, in the one order it is ever built.
+ *
+ * The outcome's own metadata first, then what the plugin annotated, then the
+ * envelope's provenance. Later wins: an annotation is the statement the
+ * envelope holds for every ending, so it outranks a copy the plugin also put
+ * on one particular outcome, and `runtime` is the envelope's alone -- which is
+ * why `RuntimeHost.annotate` refuses that key rather than silently losing it
+ * here.
+ */
 function runtimeResultMetadata(
   manifest: RuntimeManifest,
   outcome?: Pick<RuntimeTurnOutcome, "metadata">,
+  annotations?: ReadonlyMap<string, JsonValue>,
 ): JsonObject {
   return {
     ...(outcome?.metadata ?? {}),
-    runtime: {
+    ...(annotations === undefined ? {} : Object.fromEntries(annotations)),
+    [RUNTIME_METADATA_KEY]: {
       ...runtimeProvenance(manifest),
       ...(manifest.metadata === undefined ? {} : { metadata: manifest.metadata }),
     },
   };
+}
+
+/** A structured clone, or `undefined` for a value that cannot be cloned at all. */
+function cloneOrUndefined(value: unknown): unknown {
+  try {
+    return structuredClone(value);
+  } catch {
+    return undefined;
+  }
 }

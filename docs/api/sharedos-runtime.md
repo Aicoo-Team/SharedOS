@@ -117,6 +117,9 @@ authority, or namespace-management state. Its `RuntimeHost` contains only:
 - `invokeTool`, which checks the visible catalog and then re-authorizes through
   the kernel;
 - `emit`, which records plugin observations as wrapped `runtime.event` events.
+- `annotate`, which states one fact about the turn for its record. The envelope
+  writes it into the result's metadata on every ending, a cancelled turn
+  included, and it never refuses on the state of the host (ADR 0027).
 
 The broker closes when `run` returns. A plugin cannot use a retained host handle
 for later tool calls or emit authoritative `turn.*` and `tool.*` events.
@@ -149,7 +152,7 @@ SharedOS is currently an `0.x` prerelease.
 
 ### RuntimeNotFoundError
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:210](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L210)
+Defined in: [packages/runtime/src/runtime-plugin.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L196)
 
 #### Extends
 
@@ -161,7 +164,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:210](https://github.com/Aico
 
 > **new RuntimeNotFoundError**(`runtimeId`): [`RuntimeNotFoundError`](#runtimenotfounderror)
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L211)
+Defined in: [packages/runtime/src/runtime-plugin.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L197)
 
 ###### Parameters
 
@@ -283,7 +286,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### RuntimeRegistry
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:221](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L221)
+Defined in: [packages/runtime/src/runtime-plugin.ts:207](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L207)
 
 An instance-scoped registry populated by trusted host configuration. Runtime
 selection is intentionally absent from model-visible execution requests.
@@ -294,7 +297,7 @@ selection is intentionally absent from model-visible execution requests.
 
 > **new RuntimeRegistry**(`runtimes?`): [`RuntimeRegistry`](#runtimeregistry)
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L224)
+Defined in: [packages/runtime/src/runtime-plugin.ts:210](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L210)
 
 ###### Parameters
 
@@ -312,7 +315,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:224](https://github.com/Aico
 
 > **has**(`runtimeId`): `boolean`
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:251](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L251)
+Defined in: [packages/runtime/src/runtime-plugin.ts:237](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L237)
 
 ###### Parameters
 
@@ -328,7 +331,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:251](https://github.com/Aico
 
 > **list**(): readonly `object`[]
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:263](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L263)
+Defined in: [packages/runtime/src/runtime-plugin.ts:249](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L249)
 
 ###### Returns
 
@@ -338,7 +341,7 @@ readonly `object`[]
 
 > **register**(`runtime`): `void`
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:230](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L230)
+Defined in: [packages/runtime/src/runtime-plugin.ts:216](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L216)
 
 ###### Parameters
 
@@ -354,7 +357,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:230](https://github.com/Aico
 
 > **resolve**(`runtimeId`): [`RuntimePlugin`](#runtimeplugin)
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:255](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L255)
+Defined in: [packages/runtime/src/runtime-plugin.ts:241](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L241)
 
 ###### Parameters
 
@@ -370,7 +373,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:255](https://github.com/Aico
 
 ### SharedOSExecutor
 
-Defined in: [packages/runtime/src/executor.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L114)
+Defined in: [packages/runtime/src/executor.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L115)
 
 The non-replaceable security envelope around one replaceable RuntimePlugin.
 Scheduling, retries, and network-level stopping remain host responsibilities.
@@ -385,7 +388,7 @@ Scheduling, retries, and network-level stopping remain host responsibilities.
 
 > **new SharedOSExecutor**(`kernel`, `runtime`, `options?`): [`SharedOSExecutor`](#sharedosexecutor)
 
-Defined in: [packages/runtime/src/executor.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L126)
+Defined in: [packages/runtime/src/executor.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L127)
 
 ###### Parameters
 
@@ -407,7 +410,7 @@ Defined in: [packages/runtime/src/executor.ts:126](https://github.com/Aicoo-Team
 
 > **get** **runtimeManifest**(): `object`
 
-Defined in: [packages/runtime/src/executor.ts:169](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L169)
+Defined in: [packages/runtime/src/executor.ts:170](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L170)
 
 ###### Returns
 
@@ -435,7 +438,7 @@ Defined in: [packages/runtime/src/executor.ts:169](https://github.com/Aicoo-Team
 
 > **execute**(`input`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/runtime/src/executor.ts:173](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L173)
+Defined in: [packages/runtime/src/executor.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L174)
 
 ###### Parameters
 
@@ -491,7 +494,7 @@ Defined in: [packages/runtime/src/executor.ts:173](https://github.com/Aicoo-Team
 
 ### StandardRuntime
 
-Defined in: [packages/runtime/src/standard-runtime.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L142)
+Defined in: [packages/runtime/src/standard-runtime.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L143)
 
 The reference SharedOS loop. Hosts may replace it with another RuntimePlugin.
 
@@ -505,7 +508,7 @@ The reference SharedOS loop. Hosts may replace it with another RuntimePlugin.
 
 > **new StandardRuntime**(`driver`, `options?`): [`StandardRuntime`](#standardruntime)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L148)
+Defined in: [packages/runtime/src/standard-runtime.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L149)
 
 ###### Parameters
 
@@ -522,7 +525,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:148](https://github.com/Ai
 
 | Property                                  | Modifier   | Type                                             | Default value               | Defined in                                                                                                                                     |
 | ----------------------------------------- | ---------- | ------------------------------------------------ | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | `STANDARD_RUNTIME_MANIFEST` | [packages/runtime/src/standard-runtime.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L143) |
+| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | `STANDARD_RUNTIME_MANIFEST` | [packages/runtime/src/standard-runtime.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L144) |
 | `manifest.id`                             | `public`   | `string`                                         | `undefined`                 | packages/contracts/dist/runtime.d.ts:9                                                                                                         |
 | `manifest.metadata?`                      | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | `undefined`                 | packages/contracts/dist/runtime.d.ts:12                                                                                                        |
 | `manifest.protocolVersion`                | `public`   | `"1"`                                            | `undefined`                 | packages/contracts/dist/runtime.d.ts:11                                                                                                        |
@@ -534,7 +537,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:148](https://github.com/Ai
 
 > **run**(`request`, `host`, `signal`): `Promise`\<\{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:157](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L157)
+Defined in: [packages/runtime/src/standard-runtime.ts:158](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L158)
 
 ###### Parameters
 
@@ -556,7 +559,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:157](https://github.com/Ai
 
 ### AgentTurnDriver
 
-Defined in: [packages/runtime/src/standard-runtime.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L110)
+Defined in: [packages/runtime/src/standard-runtime.ts:112](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L112)
 
 Model/provider-specific code implements this port inside the standard runtime.
 
@@ -566,7 +569,7 @@ Model/provider-specific code implements this port inside the standard runtime.
 
 > **open**(`request`, `signal`): `Promise`\<[`AgentTurnSession`](#agentturnsession)>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L111)
+Defined in: [packages/runtime/src/standard-runtime.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L113)
 
 ###### Parameters
 
@@ -583,13 +586,13 @@ Defined in: [packages/runtime/src/standard-runtime.ts:111](https://github.com/Ai
 
 ### AgentTurnSession
 
-Defined in: [packages/runtime/src/standard-runtime.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L89)
+Defined in: [packages/runtime/src/standard-runtime.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L91)
 
 #### Properties
 
-| Property                                       | Modifier   | Type     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Defined in                                                                                                                                     |
-| ---------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-prompthash"></a> `promptHash?` | `readonly` | `string` | What the session will tell the seat before its first decision, hashed. A driver that composes text for a model -- a system message, a prompt -- states the hash here as well as on its terminal `metadata`. The loop announces it as a `prompt.handed` runtime event once `open` has resolved and before the first step, which is what a cancelled turn keeps: a session that never returns a decision returns no metadata, and the record would otherwise not say what that turn was asked (see `PROMPT_HANDED_EVENT`). The announcement cannot come earlier than `open` returns, so a driver whose `open` itself sends the text should hash it before sending; a turn cancelled inside `open` is announced by nothing. A driver that hands the seat no text leaves it absent. | [packages/runtime/src/standard-runtime.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L104) |
+| Property                                       | Modifier   | Type     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Defined in                                                                                                                                     |
+| ---------------------------------------------- | ---------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-prompthash"></a> `promptHash?` | `readonly` | `string` | What the session will tell the seat before its first decision, hashed. A driver that composes text for a model -- a system message, a prompt -- states the hash here, once, and nowhere else. The loop hands it to `RuntimeHost.annotate` as soon as `open` has resolved and before the first step, and the envelope writes it on the turn's result however the turn then ends, which is what a cancelled turn needs: a session that never returns a decision returns no metadata of its own, and the record would otherwise not say what that turn was asked. The loop cannot state it earlier than `open` returns, so a driver whose `open` itself sends the text should hash it before sending; a turn cancelled inside `open` has no hash to record. A driver that hands the seat no text leaves it absent. | [packages/runtime/src/standard-runtime.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L106) |
 
 #### Methods
 
@@ -597,7 +600,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:89](https://github.com/Aic
 
 > `optional` **close**(`outcome`, `signal`): `void` \| `Promise`\<`void`>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L106)
+Defined in: [packages/runtime/src/standard-runtime.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L108)
 
 ###### Parameters
 
@@ -614,7 +617,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:106](https://github.com/Ai
 
 > **next**(`input`, `signal`): `Promise`\<[`AgentTurnDecision`](#agentturndecision)>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:105](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L105)
+Defined in: [packages/runtime/src/standard-runtime.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L107)
 
 ###### Parameters
 
@@ -643,36 +646,20 @@ Defined in: [packages/runtime/src/reach.ts:3](https://github.com/Aicoo-Team/Shar
 
 ### ExecuteTurnOptions
 
-Defined in: [packages/runtime/src/executor.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L78)
+Defined in: [packages/runtime/src/executor.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L79)
 
 #### Properties
 
 | Property                                 | Type                | Description                                                             | Defined in                                                                                                                   |
 | ---------------------------------------- | ------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-onevent"></a> `onEvent?` | (`event`) => `void` | Synchronous observation hook for streaming an immutable event snapshot. | [packages/runtime/src/executor.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L81) |
-| <a id="property-signal"></a> `signal?`   | `AbortSignal`       | -                                                                       | [packages/runtime/src/executor.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L79) |
-
----
-
-### RecordAnnouncement
-
-Defined in: [packages/runtime/src/runtime-plugin.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L83)
-
-What a record-only announcement needs, to report a refused `emit`.
-
-#### Properties
-
-| Property                                        | Modifier   | Type                                                     | Description                                                           | Defined in                                                                                                                               |
-| ----------------------------------------------- | ---------- | -------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-onturnerror"></a> `onTurnError` | `readonly` | [`TurnErrorReporter`](#turnerrorreporter) \| `undefined` | Where a refused `emit` is reported. `undefined` reports it nowhere.   | [packages/runtime/src/runtime-plugin.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L89) |
-| <a id="property-signal-1"></a> `signal`         | `readonly` | `AbortSignal`                                            | The turn's own signal: a host closed by cancellation is not a defect. | [packages/runtime/src/runtime-plugin.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L87) |
-| <a id="property-turn"></a> `turn`               | `readonly` | [`TurnErrorContext`](#turnerrorcontext)                  | Which turn is announcing; what a refused `emit` is reported under.    | [packages/runtime/src/runtime-plugin.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L85) |
+| <a id="property-onevent"></a> `onEvent?` | (`event`) => `void` | Synchronous observation hook for streaming an immutable event snapshot. | [packages/runtime/src/executor.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L82) |
+| <a id="property-signal"></a> `signal?`   | `AbortSignal`       | -                                                                       | [packages/runtime/src/executor.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L80) |
 
 ---
 
 ### RuntimeHost
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:190](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L190)
+Defined in: [packages/runtime/src/runtime-plugin.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L146)
 
 The only effectful surface supplied to a runtime plugin. Every tool call is
 checked against the effective catalog and re-authorized by the kernel.
@@ -681,15 +668,60 @@ checked against the effective catalog and re-authorized by the kernel.
 
 | Property                              | Modifier   | Type                              | Defined in                                                                                                                                 |
 | ------------------------------------- | ---------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-limits"></a> `limits` | `readonly` | [`RuntimeLimits`](#runtimelimits) | [packages/runtime/src/runtime-plugin.ts:191](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L191) |
+| <a id="property-limits"></a> `limits` | `readonly` | [`RuntimeLimits`](#runtimelimits) | [packages/runtime/src/runtime-plugin.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L147) |
 
 #### Methods
+
+##### annotate()
+
+> **annotate**(`key`, `value`): `void`
+
+Defined in: [packages/runtime/src/runtime-plugin.ts:179](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L179)
+
+State one fact about the turn, for its record.
+
+`emit` is for something that happened at a moment, and lands among the
+turn's events in order. This is for something that is true of the turn:
+what the seat was told, that a delegate asked for a human. The envelope
+holds the value and writes it into `ExecutionResult.metadata` under `key`
+on every way out of the turn -- completed, failed, escalated, and the
+ones that return no outcome at all: cancelled, a plugin that threw, an
+outcome that did not parse. A plugin's own outcome metadata cannot do that,
+because a turn stopped at its deadline never returns one.
+
+It throws a `TypeError` for a key that is empty, is `runtime`, which is the
+envelope's own, or is `__proto__`, which no JSON object SharedOS reads
+keeps; and for a value that is not JSON. All are plugin bugs.
+It throws for nothing else, and in particular never for the state of the
+host: a write made while the turn is aborted but still open is kept, and
+one made after the turn has closed is dropped. So a call site needs no
+guard, and stating a fact cannot become the turn's failure or a transport
+fault in whatever was stating it.
+
+The last write to a key wins, and an annotation outranks the same key on
+the outcome's own metadata. A value that does not exist yet cannot be
+carried: a turn cancelled before its plugin had anything to state records
+nothing, here or anywhere.
+
+Descriptive, never permissive. It is the plugin's own claim, read by
+whoever reads the record; nothing SharedOS decides depends on it.
+
+###### Parameters
+
+| Parameter | Type                                           |
+| --------- | ---------------------------------------------- |
+| `key`     | `string`                                       |
+| `value`   | [`JsonValue`](sharedos-contracts.md#jsonvalue) |
+
+###### Returns
+
+`void`
 
 ##### emit()
 
 > **emit**(`event`): `void`
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L193)
+Defined in: [packages/runtime/src/runtime-plugin.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L149)
 
 ###### Parameters
 
@@ -707,7 +739,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:193](https://github.com/Aico
 
 > **invokeTool**(`call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:192](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L192)
+Defined in: [packages/runtime/src/runtime-plugin.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L148)
 
 ###### Parameters
 
@@ -729,21 +761,21 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:192](https://github.com/Aico
 
 ### RuntimeLimits
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:168](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L168)
+Defined in: [packages/runtime/src/runtime-plugin.ts:124](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L124)
 
 #### Properties
 
 | Property                                          | Modifier   | Type     | Defined in                                                                                                                                 |
 | ------------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-maxsteps"></a> `maxSteps`         | `readonly` | `number` | [packages/runtime/src/runtime-plugin.ts:169](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L169) |
-| <a id="property-maxtoolcalls"></a> `maxToolCalls` | `readonly` | `number` | [packages/runtime/src/runtime-plugin.ts:170](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L170) |
-| <a id="property-timeoutms"></a> `timeoutMs`       | `readonly` | `number` | [packages/runtime/src/runtime-plugin.ts:171](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L171) |
+| <a id="property-maxsteps"></a> `maxSteps`         | `readonly` | `number` | [packages/runtime/src/runtime-plugin.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L125) |
+| <a id="property-maxtoolcalls"></a> `maxToolCalls` | `readonly` | `number` | [packages/runtime/src/runtime-plugin.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L126) |
+| <a id="property-timeoutms"></a> `timeoutMs`       | `readonly` | `number` | [packages/runtime/src/runtime-plugin.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L127) |
 
 ---
 
 ### RuntimePlugin
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L201)
+Defined in: [packages/runtime/src/runtime-plugin.ts:187](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L187)
 
 A replaceable one-turn harness running inside the SharedOS security envelope.
 Implementations must keep per-turn state inside `run` and support concurrent
@@ -753,7 +785,7 @@ calls when one plugin instance is shared by a RuntimeRegistry.
 
 | Property                                    | Modifier   | Type                                             | Defined in                                                                                                                                 |
 | ------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-manifest-1"></a> `manifest` | `readonly` | `object`                                         | [packages/runtime/src/runtime-plugin.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L202) |
+| <a id="property-manifest-1"></a> `manifest` | `readonly` | `object`                                         | [packages/runtime/src/runtime-plugin.ts:188](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L188) |
 | `manifest.id`                               | `public`   | `string`                                         | packages/contracts/dist/runtime.d.ts:9                                                                                                     |
 | `manifest.metadata?`                        | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | packages/contracts/dist/runtime.d.ts:12                                                                                                    |
 | `manifest.protocolVersion`                  | `public`   | `"1"`                                            | packages/contracts/dist/runtime.d.ts:11                                                                                                    |
@@ -765,7 +797,7 @@ calls when one plugin instance is shared by a RuntimeRegistry.
 
 > **run**(`request`, `host`, `signal`): `Promise`\<\{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}\>
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:203](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L203)
+Defined in: [packages/runtime/src/runtime-plugin.ts:189](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L189)
 
 ###### Parameters
 
@@ -783,68 +815,68 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:203](https://github.com/Aico
 
 ### RuntimeToolInvocationOptions
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L174)
+Defined in: [packages/runtime/src/runtime-plugin.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L130)
 
 #### Properties
 
 | Property                           | Modifier   | Type     | Description                                                                                                                                                                                                                                                                                             | Defined in                                                                                                                                 |
 | ---------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-step"></a> `step?` | `readonly` | `number` | Position within the runtime's own loop. Optional, and enforced when present: the execution envelope refuses a call declaring a step at or past `RuntimeLimits.maxSteps`, and refuses a new step once that many distinct ones have been seen. A plugin that omits it is bounded by `maxToolCalls` alone. | [packages/runtime/src/runtime-plugin.ts:183](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L183) |
+| <a id="property-step"></a> `step?` | `readonly` | `number` | Position within the runtime's own loop. Optional, and enforced when present: the execution envelope refuses a call declaring a step at or past `RuntimeLimits.maxSteps`, and refuses a new step once that many distinct ones have been seen. A plugin that omits it is bounded by `maxToolCalls` alone. | [packages/runtime/src/runtime-plugin.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L139) |
 
 ---
 
 ### RuntimeVisibleContext
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L126)
+Defined in: [packages/runtime/src/runtime-plugin.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L82)
 
 #### Properties
 
 | Property                                        | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Defined in                                                                                                                                 |
 | ----------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-actor"></a> `actor`             | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [packages/runtime/src/runtime-plugin.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L127) |
-| <a id="property-namespaceid"></a> `namespaceId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [packages/runtime/src/runtime-plugin.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L129) |
-| <a id="property-now"></a> `now`                 | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [packages/runtime/src/runtime-plugin.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L132) |
-| <a id="property-owner"></a> `owner`             | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [packages/runtime/src/runtime-plugin.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L128) |
-| <a id="property-purpose"></a> `purpose`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [packages/runtime/src/runtime-plugin.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L130) |
-| <a id="property-reach"></a> `reach`             | `readonly` | \{ `reach`: `object`[]; `status`: `"computed"`; \} \| \{ `reasonCode`: `"authority_unavailable"` \| `"usage_store_unavailable"`; `status`: `"unavailable"`; \}                                             | Where this turn may operate, with the authority stripped out. The catalogue says which tools exist; this says which resources they are worth pointing at. Without it a runtime can only guess paths and collect denials, or the host reads raw grants to describe the boundary in a prompt -- at exactly the seam designed to keep grants away from the model. `computed` is derived by `SharedOSKernel.reach` from the grants the turn's decisions are made against, then narrowed to the namespaces this turn's catalogue operates on. It carries no grant id, issuer, expiry, or budget, and a bounded grant whose budget is spent does not appear. `unavailable` means the reach could not be established, and `reasonCode` says why: `usage_store_unavailable` when a bounded budget could not be read, or `authority_unavailable` when the authority could not be loaded again after admission. Either is handed over as such rather than as an empty list that would read as "nothing", which is a true answer for some turns and not for this one. The turn still runs: every call is decided on its own, and a call that depends on what could not be read fails closed under the same code. Descriptive, never permissive: every call is authorized independently, so an entry here is not a permission and a stale one cannot open anything. | [packages/runtime/src/runtime-plugin.ts:157](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L157) |
-| <a id="property-traceid"></a> `traceId`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [packages/runtime/src/runtime-plugin.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L131) |
+| <a id="property-actor"></a> `actor`             | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [packages/runtime/src/runtime-plugin.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L83)   |
+| <a id="property-namespaceid"></a> `namespaceId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [packages/runtime/src/runtime-plugin.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L85)   |
+| <a id="property-now"></a> `now`                 | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [packages/runtime/src/runtime-plugin.ts:88](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L88)   |
+| <a id="property-owner"></a> `owner`             | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [packages/runtime/src/runtime-plugin.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L84)   |
+| <a id="property-purpose"></a> `purpose`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [packages/runtime/src/runtime-plugin.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L86)   |
+| <a id="property-reach"></a> `reach`             | `readonly` | \{ `reach`: `object`[]; `status`: `"computed"`; \} \| \{ `reasonCode`: `"authority_unavailable"` \| `"usage_store_unavailable"`; `status`: `"unavailable"`; \}                                             | Where this turn may operate, with the authority stripped out. The catalogue says which tools exist; this says which resources they are worth pointing at. Without it a runtime can only guess paths and collect denials, or the host reads raw grants to describe the boundary in a prompt -- at exactly the seam designed to keep grants away from the model. `computed` is derived by `SharedOSKernel.reach` from the grants the turn's decisions are made against, then narrowed to the namespaces this turn's catalogue operates on. It carries no grant id, issuer, expiry, or budget, and a bounded grant whose budget is spent does not appear. `unavailable` means the reach could not be established, and `reasonCode` says why: `usage_store_unavailable` when a bounded budget could not be read, or `authority_unavailable` when the authority could not be loaded again after admission. Either is handed over as such rather than as an empty list that would read as "nothing", which is a true answer for some turns and not for this one. The turn still runs: every call is decided on its own, and a call that depends on what could not be read fails closed under the same code. Descriptive, never permissive: every call is authorized independently, so an entry here is not a permission and a stale one cannot open anything. | [packages/runtime/src/runtime-plugin.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L113) |
+| <a id="property-traceid"></a> `traceId`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [packages/runtime/src/runtime-plugin.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L87)   |
 
 ---
 
 ### SharedOSExecutorOptions
 
-Defined in: [packages/runtime/src/executor.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L48)
+Defined in: [packages/runtime/src/executor.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L49)
 
 #### Properties
 
 | Property                                                         | Type                                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Defined in                                                                                                                   |
 | ---------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-clock"></a> `clock?`                             | () => `string`                            | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/runtime/src/executor.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L49) |
-| <a id="property-createid"></a> `createId?`                       | () => `string`                            | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/runtime/src/executor.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L50) |
-| <a id="property-defaultmaxsteps"></a> `defaultMaxSteps?`         | `number`                                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/runtime/src/executor.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L51) |
-| <a id="property-defaultmaxtoolcalls"></a> `defaultMaxToolCalls?` | `number`                                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/runtime/src/executor.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L52) |
-| <a id="property-defaulttimeoutms"></a> `defaultTimeoutMs?`       | `number`                                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/runtime/src/executor.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L53) |
-| <a id="property-onturnerror-1"></a> `onTurnError?`               | [`TurnErrorReporter`](#turnerrorreporter) | Notification for a throw the turn body did not convert into an outcome. The envelope contains such a throw and ends the turn `failed` with `runtime_failed`; the error itself comes here rather than being discarded. See [TurnErrorReporter](#turnerrorreporter) for what it may and may not be used for. Not only the plugin's. The turn body also calls `openTurnAuthority`, `admitTurn`, `reach`, and `listTools`, and a host port that throws arrives here too under the same terminal code. That conflation is in the wire vocabulary and is not fixed by this hook; the error's own stack is what separates them, which is the reason for handing it over rather than classifying it here. | [packages/runtime/src/executor.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L75) |
-| <a id="property-spans"></a> `spans?`                             | [`SpanSink`](sharedos-core.md#spansink)   | Where the envelope reports what it cost, when a host is measuring. A second clock, and deliberately not the one `clock` supplies: that one names instants for a record and a conformance run freezes it. See [SpanSink](sharedos-core.md#spansink).                                                                                                                                                                                                                                                                                                                                                                                                                                               | [packages/runtime/src/executor.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L61) |
+| <a id="property-clock"></a> `clock?`                             | () => `string`                            | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/runtime/src/executor.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L50) |
+| <a id="property-createid"></a> `createId?`                       | () => `string`                            | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/runtime/src/executor.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L51) |
+| <a id="property-defaultmaxsteps"></a> `defaultMaxSteps?`         | `number`                                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/runtime/src/executor.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L52) |
+| <a id="property-defaultmaxtoolcalls"></a> `defaultMaxToolCalls?` | `number`                                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/runtime/src/executor.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L53) |
+| <a id="property-defaulttimeoutms"></a> `defaultTimeoutMs?`       | `number`                                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/runtime/src/executor.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L54) |
+| <a id="property-onturnerror"></a> `onTurnError?`                 | [`TurnErrorReporter`](#turnerrorreporter) | Notification for a throw the turn body did not convert into an outcome. The envelope contains such a throw and ends the turn `failed` with `runtime_failed`; the error itself comes here rather than being discarded. See [TurnErrorReporter](#turnerrorreporter) for what it may and may not be used for. Not only the plugin's. The turn body also calls `openTurnAuthority`, `admitTurn`, `reach`, and `listTools`, and a host port that throws arrives here too under the same terminal code. That conflation is in the wire vocabulary and is not fixed by this hook; the error's own stack is what separates them, which is the reason for handing it over rather than classifying it here. | [packages/runtime/src/executor.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L76) |
+| <a id="property-spans"></a> `spans?`                             | [`SpanSink`](sharedos-core.md#spansink)   | Where the envelope reports what it cost, when a host is measuring. A second clock, and deliberately not the one `clock` supplies: that one names instants for a record and a conformance run freezes it. See [SpanSink](sharedos-core.md#spansink).                                                                                                                                                                                                                                                                                                                                                                                                                                               | [packages/runtime/src/executor.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L62) |
 
 ---
 
 ### StandardRuntimeOptions
 
-Defined in: [packages/runtime/src/standard-runtime.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L114)
+Defined in: [packages/runtime/src/standard-runtime.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L116)
 
 #### Properties
 
-| Property                                               | Type                                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                 | Defined in                                                                                                                                     |
-| ------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-closetimeoutms"></a> `closeTimeoutMs?` | `number`                                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/runtime/src/standard-runtime.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L115) |
-| <a id="property-onturnerror-2"></a> `onTurnError?`     | [`TurnErrorReporter`](#turnerrorreporter) | Notification for a throw the loop contained rather than propagated. A driver that throws ends the turn `driver_failed`, which is a cooperative outcome the envelope never sees as an exception -- so the executor's own hook cannot report it and this one exists. A host refusing one of the loop's record-only announcements reaches it too, and the turn goes on. Same contract either way; see [TurnErrorReporter](#turnerrorreporter). | [packages/runtime/src/standard-runtime.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L125) |
+| Property                                               | Type                                      | Description                                                                                                                                                                                                                                                                                                                    | Defined in                                                                                                                                     |
+| ------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-closetimeoutms"></a> `closeTimeoutMs?` | `number`                                  | -                                                                                                                                                                                                                                                                                                                              | [packages/runtime/src/standard-runtime.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L117) |
+| <a id="property-onturnerror-1"></a> `onTurnError?`     | [`TurnErrorReporter`](#turnerrorreporter) | Notification for a throw the loop contained rather than propagated. A driver that throws ends the turn `driver_failed`, which is a cooperative outcome the envelope never sees as an exception -- so the executor's own hook cannot report it and this one exists. Same contract; see [TurnErrorReporter](#turnerrorreporter). | [packages/runtime/src/standard-runtime.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L126) |
 
 ---
 
 ### TurnErrorContext
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L18)
+Defined in: [packages/runtime/src/runtime-plugin.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L19)
 
 Which turn a [TurnErrorReporter](#turnerrorreporter) notification is about.
 
@@ -852,14 +884,14 @@ Which turn a [TurnErrorReporter](#turnerrorreporter) notification is about.
 
 | Property                                        | Modifier   | Type     | Defined in                                                                                                                               |
 | ----------------------------------------------- | ---------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-executionid"></a> `executionId` | `readonly` | `string` | [packages/runtime/src/runtime-plugin.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L19) |
-| <a id="property-traceid-1"></a> `traceId`       | `readonly` | `string` | [packages/runtime/src/runtime-plugin.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L20) |
+| <a id="property-executionid"></a> `executionId` | `readonly` | `string` | [packages/runtime/src/runtime-plugin.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L20) |
+| <a id="property-traceid-1"></a> `traceId`       | `readonly` | `string` | [packages/runtime/src/runtime-plugin.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L21) |
 
 ---
 
 ### TurnExecutionPort
 
-Defined in: [packages/runtime/src/executor.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L84)
+Defined in: [packages/runtime/src/executor.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L85)
 
 #### Methods
 
@@ -867,7 +899,7 @@ Defined in: [packages/runtime/src/executor.ts:84](https://github.com/Aicoo-Team/
 
 > **execute**(`input`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/runtime/src/executor.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L85)
+Defined in: [packages/runtime/src/executor.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L86)
 
 ###### Parameters
 
@@ -921,7 +953,7 @@ Defined in: [packages/runtime/src/executor.ts:85](https://github.com/Aicoo-Team/
 
 > **AgentTurnDecision** = \{ `call`: [`ToolCall`](sharedos-contracts.md#toolcall); `step?`: `number`; `type`: `"tool_call"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: [`ProtocolError`](sharedos-contracts.md#protocolerror); `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}
 
-Defined in: [packages/runtime/src/standard-runtime.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L35)
+Defined in: [packages/runtime/src/standard-runtime.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L37)
 
 #### Union Members
 
@@ -1006,7 +1038,7 @@ that a decision was asked for and grants nothing while it is pending.
 
 > **AgentTurnInput** = \{ `type`: `"start"`; \} \| \{ `result`: [`ToolResult`](sharedos-contracts.md#toolresult); `type`: `"tool_result"`; \}
 
-Defined in: [packages/runtime/src/standard-runtime.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L32)
+Defined in: [packages/runtime/src/standard-runtime.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L34)
 
 ---
 
@@ -1014,7 +1046,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:32](https://github.com/Aic
 
 > **RuntimeTurnRequest** = `Omit`\<[`ExecutionRequest`](sharedos-contracts.md#executionrequest), `"context"`> \> & `object`
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L164)
+Defined in: [packages/runtime/src/runtime-plugin.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L120)
 
 A runtime sees task input and the effective tool catalog, but never grants,
 issuing authority, or namespace-management state.
@@ -1031,7 +1063,7 @@ issuing authority, or namespace-management state.
 
 > **TurnErrorReporter** = (`error`, `turn`) => `void`
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L56)
+Defined in: [packages/runtime/src/runtime-plugin.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L49)
 
 A host's sink for a throw the turn contained rather than propagated.
 
@@ -1040,14 +1072,6 @@ the turn `runtime_failed`, and `StandardRuntime`, whose catch ends it
 `driver_failed`. A terminal code says a turn stopped and does not say why;
 the thrown error is the only thing that does, so it is handed over whole and
 unwrapped, because its stack is what names the origin.
-
-A record-only announcement the host refused reaches it too. `prompt.handed`
-and `escalation.asked` are emitted for the record and decide nothing, so a
-throw from `emit` there is contained where it happens and the turn goes on
--- the driver answers, the harness is served. The record is then short an
-event, and the thrown error is the only thing that says so; see
-[announceForRecord](#announceforrecord). `StandardRuntime` and `createMcpHarnessRuntime`
-both take the reporter for it.
 
 It reaches nothing else. A `ProtocolError.message` is read by the model, and
 an `ExecutionEvent` becomes part of an `ExecutionRecord`, which travels
@@ -1082,7 +1106,7 @@ turn's identifiers are not the ones a mediated call has.
 
 > **TurnKernel** = `Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"admitTurn"` \| `"reach"` \| `"listTools"` \| `"invokeTool"`> \> & `Partial`\<`Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"openTurnAuthority"` \| `"recordEscalation"` \| `"recordTurnEnd"` \| `"recordRefusedCall"`>>\>\>
 
-Defined in: [packages/runtime/src/executor.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L95)
+Defined in: [packages/runtime/src/executor.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L96)
 
 The minimal deny-by-default kernel surface required by a turn executor.
 
@@ -1104,17 +1128,17 @@ Defined in: [packages/runtime/src/reach.ts:15](https://github.com/Aicoo-Team/Sha
 
 > `const` **ESCALATION\_ACTION**: `"request"` = `"request"`
 
-Defined in: [packages/runtime/src/escalation.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L13)
+Defined in: [packages/runtime/src/escalation.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L8)
 
 ---
 
-### ESCALATION\_ASKED\_EVENT
+### ESCALATION\_ASKED\_ANNOTATION
 
-> `const` **ESCALATION\_ASKED\_EVENT**: `"escalation.asked"` = `"escalation.asked"`
+> `const` **ESCALATION\_ASKED\_ANNOTATION**: `"escalationAsked"` = `"escalationAsked"`
 
-Defined in: [packages/runtime/src/escalation.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L42)
+Defined in: [packages/runtime/src/escalation.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L36)
 
-The runtime event a delegate announces the ask under.
+The key a delegate states the ask under, through `RuntimeHost.annotate`.
 
 Every path that honours the affordance ends the turn without forwarding the
 call -- a driver in the standard loop returns an `escalate` decision, the MCP
@@ -1123,12 +1147,11 @@ in the record. Neither would an ask the envelope then failed to honour, and
 the two would be indistinguishable from a delegate that never asked: a
 conformance row graded on the ending could not tell "SharedOS was never
 asked" from "SharedOS was asked and did the wrong thing". So the ask is
-announced through `RuntimeHost.emit` at the moment it is recognised, before
-anything acts on it, and lands in the record as a `runtime.event` whatever
-the turn then does.
+stated the moment it is recognised, before anything acts on it, and the
+envelope writes it on the turn's result whatever the turn then does.
 
 It is the delegate's own claim, which is the safe direction of trust. A
-reader can only grade a turn _harder_ on it -- an ask announced and not
+reader can only grade a turn _harder_ on it -- an ask stated and not
 honoured is a failure -- and never credit one, because a pass still needs
 the turn to have ended `escalated`. Distinct from the `escalation.requested`
 audit event, which the kernel writes when the envelope records an escalation
@@ -1140,7 +1163,7 @@ it honoured.
 
 > `const` **ESCALATION\_REASON\_MAX\_LENGTH**: `512` = `512`
 
-Defined in: [packages/runtime/src/escalation.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L19)
+Defined in: [packages/runtime/src/escalation.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L14)
 
 The longest reason an escalation can carry, restating the contract's bound on
 `RuntimeTurnOutcome.reason` and `Escalation.reason` rather than importing a
@@ -1152,7 +1175,7 @@ schema this package does not validate with.
 
 > `const` **ESCALATION\_RESOURCE\_PATH**: readonly `string`[]
 
-Defined in: [packages/runtime/src/escalation.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L12)
+Defined in: [packages/runtime/src/escalation.ts:7](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L7)
 
 The resource an escalation grant is written over.
 
@@ -1162,7 +1185,7 @@ The resource an escalation grant is written over.
 
 > `const` **ESCALATION\_TOOL\_DEFINITION**: [`ToolDefinition`](sharedos-contracts.md#tooldefinition)
 
-Defined in: [packages/runtime/src/escalation.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L82)
+Defined in: [packages/runtime/src/escalation.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L71)
 
 The affordance a driver offers so escalation can be chosen rather than inferred.
 
@@ -1197,7 +1220,7 @@ like any other unpublished tool.
 
 > `const` **ESCALATION\_TOOL\_NAME**: `"sharedos.escalate"` = `"sharedos.escalate"`
 
-Defined in: [packages/runtime/src/escalation.ts:10](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L10)
+Defined in: [packages/runtime/src/escalation.ts:5](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L5)
 
 ---
 
@@ -1205,35 +1228,19 @@ Defined in: [packages/runtime/src/escalation.ts:10](https://github.com/Aicoo-Tea
 
 > `const` **ESCALATION\_TOOL\_NAMESPACE**: `"sharedos"` = `"sharedos"`
 
-Defined in: [packages/runtime/src/escalation.ts:9](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L9)
+Defined in: [packages/runtime/src/escalation.ts:4](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L4)
 
 ---
 
-### PROMPT\_HANDED\_EVENT
+### PROMPT\_HASH\_ANNOTATION
 
-> `const` **PROMPT\_HANDED\_EVENT**: `"prompt.handed"` = `"prompt.handed"`
+> `const` **PROMPT\_HASH\_ANNOTATION**: `"promptHash"` = `"promptHash"`
 
-Defined in: [packages/runtime/src/handed-prompt.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/handed-prompt.ts#L26)
+Defined in: [packages/runtime/src/runtime-plugin.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L80)
 
-The runtime event a runtime announces what it told the seat under.
-
-A record carries `promptHash` on the turn's result metadata, and a result is
-the one thing a cancelled turn does not have: the plugin threw at the abort,
-so the envelope built the `cancelled` result from its own provenance and
-nothing the plugin had computed reached it. The prompt-set hash then folded
-one entry fewer for that column, and a reader could not tell that column's
-moved hash from a reworded prompt -- the exact confusion the hash exists to
-remove. So what the seat was told is also announced through
-`RuntimeHost.emit` the moment it is composed, before the model or harness is
-sent anything, and lands in the record as a `runtime.event` whatever the turn
-then does. `ExecutionResult.events` survives cancellation; metadata does not.
-
-The result metadata keeps carrying the hash too. A reader takes the metadata
-where the result has one and falls back to this event, so a record written
-before this event existed reads exactly as it did. A turn cancelled before
-the announcement -- while the loop's driver is still opening, or while the
-MCP runtime is still binding its port -- carries neither and is not in its
-column's prompt set.
+The key a runtime states what it told the seat under: the content hash of the
+instructions and prompt, stated through [RuntimeHost.annotate](#annotate) before
+the model or harness is sent anything.
 
 ---
 
@@ -1241,7 +1248,7 @@ column's prompt set.
 
 > `const` **STANDARD\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L131)
+Defined in: [packages/runtime/src/standard-runtime.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L132)
 
 ---
 
@@ -1249,86 +1256,17 @@ Defined in: [packages/runtime/src/standard-runtime.ts:131](https://github.com/Ai
 
 > `const` **STANDARD\_RUNTIME\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
 
-Defined in: [packages/runtime/src/standard-runtime.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L129)
+Defined in: [packages/runtime/src/standard-runtime.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L130)
 
 Kept equal to the synchronized package version by the release gate.
 
 ## Functions
 
-### announceForRecord()
-
-> **announceForRecord**(`host`, `event`, `announcement`): `void`
-
-Defined in: [packages/runtime/src/runtime-plugin.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L111)
-
-Emit one event for the record, and only for the record.
-
-Some events say what happened without deciding anything: what the seat was
-told, that a delegate asked for a human. A host whose `emit` refuses one --
-closed, or holding the event to a stricter contract -- must not turn that
-refusal into the turn's outcome, because the turn had not failed; it would
-end as `driver_failed` before the driver decided anything, or answer a
-harness with a transport fault for a call SharedOS accepted. So the throw is
-contained here and the turn goes on.
-
-Contained is not lost. The record is now short an event, and a reader
-holding only the record cannot tell that from a turn cancelled before the
-announcement, which carries none either; so the throw goes to the host's
-`onTurnError` sink, whole, under the turn's identifiers, and the host's log
-is where the two cases part. It goes nowhere once the signal is aborted: a
-host closed by cancellation refuses everything, and cancellation is a
-decision the reporter never hears about.
-
-#### Parameters
-
-| Parameter      | Type                                                                            |
-| -------------- | ------------------------------------------------------------------------------- |
-| `host`         | `Pick`\<[`RuntimeHost`](#runtimehost), `"emit"`\>                               |
-| `event`        | \{ `data`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `string`; \} |
-| `event.data`   | [`JsonValue`](sharedos-contracts.md#jsonvalue)                                  |
-| `event.type`   | `string`                                                                        |
-| `announcement` | [`RecordAnnouncement`](#recordannouncement)                                     |
-
-#### Returns
-
-`void`
-
----
-
-### announcePromptHanded()
-
-> **announcePromptHanded**(`host`, `promptHash`, `announcement`): `void`
-
-Defined in: [packages/runtime/src/handed-prompt.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/handed-prompt.ts#L43)
-
-Announce what the seat was told, for the record only.
-
-A host that will not take the event does not change what the turn goes on
-to do: the announcement is a trace, and a throw from `emit` here would end a
-turn that had not yet started as the driver's failure. The refusal is
-reported to the turn's `onTurnError` sink instead, unless the turn is already
-cancelled; see [announceForRecord](#announceforrecord), which the escalation announcement
-shares.
-
-#### Parameters
-
-| Parameter      | Type                                              |
-| -------------- | ------------------------------------------------- |
-| `host`         | `Pick`\<[`RuntimeHost`](#runtimehost), `"emit"`\> |
-| `promptHash`   | `string`                                          |
-| `announcement` | [`RecordAnnouncement`](#recordannouncement)       |
-
-#### Returns
-
-`void`
-
----
-
 ### createEscalationTool()
 
 > **createEscalationTool**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [packages/runtime/src/escalation.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L128)
+Defined in: [packages/runtime/src/escalation.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L117)
 
 The handler a host registers so the affordance is catalogued.
 
@@ -1407,7 +1345,7 @@ told the list decides nothing.
 
 > **escalationArguments**(`reason`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/runtime/src/escalation.ts:203](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L203)
+Defined in: [packages/runtime/src/escalation.ts:192](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L192)
 
 The arguments an escalation is requested with, for a driver writing the call.
 
@@ -1423,16 +1361,13 @@ The arguments an escalation is requested with, for a driver writing the call.
 
 ---
 
-### escalationAskedEvent()
+### escalationAskedAnnotation()
 
-> **escalationAskedEvent**(`reason`): `object`
+> **escalationAskedAnnotation**(`reason`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/runtime/src/escalation.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L50)
+Defined in: [packages/runtime/src/escalation.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L39)
 
-The announcement a delegate emits when it recognises the affordance.
-
-Emitted for the record, not for the turn: a delegate that cannot announce
-the ask still ends the turn on it, and only the trace is lost.
+The ask, in the one shape every delegate states it.
 
 #### Parameters
 
@@ -1442,15 +1377,7 @@ the ask still ends the turn on it, and only the trace is lost.
 
 #### Returns
 
-`object`
-
-##### data
-
-> **data**: [`JsonValue`](sharedos-contracts.md#jsonvalue)
-
-##### type
-
-> **type**: `string`
+[`JsonObject`](sharedos-contracts.md#jsonobject)
 
 ---
 
@@ -1458,7 +1385,7 @@ the ask still ends the turn on it, and only the trace is lost.
 
 > **escalationOffered**(`tools`): `boolean`
 
-Defined in: [packages/runtime/src/escalation.ts:237](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L237)
+Defined in: [packages/runtime/src/escalation.ts:226](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L226)
 
 Whether a turn's catalogue offers the affordance.
 
@@ -1482,7 +1409,7 @@ the executor from the catalogue the turn was actually served.
 
 > **escalationReason**(`value`): `string` \| `undefined`
 
-Defined in: [packages/runtime/src/escalation.ts:220](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L220)
+Defined in: [packages/runtime/src/escalation.ts:209](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L209)
 
 A reason string bounded exactly as `RuntimeTurnOutcome`'s is.
 
@@ -1512,7 +1439,7 @@ than quietly trimmed away.
 
 > **escalationRequest**(`tool`, `arguments_`): `string` \| `undefined`
 
-Defined in: [packages/runtime/src/escalation.ts:170](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L170)
+Defined in: [packages/runtime/src/escalation.ts:159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L159)
 
 Read an escalation out of a call a driver is about to make, if that is what it is.
 
@@ -1549,72 +1476,11 @@ a sentence saying nothing was.
 
 ---
 
-### promptHandedEvent()
-
-> **promptHandedEvent**(`promptHash`): `object`
-
-Defined in: [packages/runtime/src/handed-prompt.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/handed-prompt.ts#L29)
-
-What the seat was told, hashed, in the one shape every runtime records it.
-
-#### Parameters
-
-| Parameter    | Type     |
-| ------------ | -------- |
-| `promptHash` | `string` |
-
-#### Returns
-
-`object`
-
-##### data
-
-> **data**: [`JsonValue`](sharedos-contracts.md#jsonvalue)
-
-##### type
-
-> **type**: `string`
-
----
-
-### promptHandedHash()
-
-> **promptHandedHash**(`event`): `string` \| `undefined`
-
-Defined in: [packages/runtime/src/handed-prompt.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/handed-prompt.ts#L59)
-
-The hash a `prompt.handed` announcement carried, read back off the record.
-
-The envelope wraps every runtime event as a `runtime.event` execution event
-whose `data` holds the runtime's own `type` and `data`; this is the one place
-that layout is spelled, so a reader never decodes it by hand. Anything that
-is not that shape, or carries no string hash, reads as no announcement.
-
-#### Parameters
-
-| Parameter           | Type                                                                                                                                                                                                               |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `event`             | \{ `data`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `eventId`: `string`; `executionId`: `string`; `occurredAt`: `string`; `sequence`: `number`; `traceId`: `string`; `type`: `string`; `version`: `"1"`; \} |
-| `event.data`        | [`JsonValue`](sharedos-contracts.md#jsonvalue)                                                                                                                                                                     |
-| `event.eventId`     | `string`                                                                                                                                                                                                           |
-| `event.executionId` | `string`                                                                                                                                                                                                           |
-| `event.occurredAt`  | `string`                                                                                                                                                                                                           |
-| `event.sequence`    | `number`                                                                                                                                                                                                           |
-| `event.traceId`     | `string`                                                                                                                                                                                                           |
-| `event.type`        | `string`                                                                                                                                                                                                           |
-| `event.version`     | `"1"`                                                                                                                                                                                                              |
-
-#### Returns
-
-`string` \| `undefined`
-
----
-
 ### reportTurnError()
 
 > **reportTurnError**(`reporter`, `error`, `turn`): `void`
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L74)
+Defined in: [packages/runtime/src/runtime-plugin.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L67)
 
 Call one turn-error sink without letting it change what happened.
 

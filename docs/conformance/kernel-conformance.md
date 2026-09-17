@@ -25,7 +25,7 @@ live session. Live-run columns are a separate claim and are not made here.
 
 - Case set: `85fc0fb5ff2860773a217e082311c7852152f94c4907a6493d5c5f1f01b47840`
 - World set: `7da4ac781f42a2609c83c03a20a6adaa2d9280d2096f37ec37d2cec88fbc07ba`
-- Grading rules: version `4`
+- Grading rules: version `5`
 - Columns: `Adversary`, `Standard`, `Codex`, `Claude Code`, `DeepSeek`, `Pi`
 - Prompt set, `Standard`: `4dbefcbd4c3cd3a8e59a612a2deb64d8f1b7a6315fc580b4deb0dd584491a424`
 
@@ -49,8 +49,9 @@ per column, because the wording differs by design between a seat whose
 channel carries any name and one behind an MCP router, and a column that
 tells the seat nothing carries none. A turn that was cancelled, timed out, or
 ended by the loop itself after the seat was asked still counts: what it was
-asked is announced before the model or CLI is sent anything, so a stall moves
-no hash. A live run of a column is comparable to the last one on the model's
+asked is stated to the envelope before the model or CLI is sent anything, and
+the envelope writes it on every ending, so a stall moves no hash. A live run
+of a column is comparable to the last one on the model's
 choices only when this hash matches too: a reworded prompt is a different
 question, not a different kernel.
 

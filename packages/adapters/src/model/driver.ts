@@ -410,7 +410,6 @@ class ModelSession implements AgentTurnSession {
       modelProvider: this.#client.provider,
       requestedModel: this.#client.model,
       ...(this.#client.settings === undefined ? {} : { modelSettings: this.#client.settings }),
-      promptHash: this.#promptHash,
       malformedToolCalls: this.#malformed,
       ...(this.#finishReason === undefined ? {} : { finishReason: this.#finishReason }),
       ...(this.#inputTokens === undefined ? {} : { inputTokens: this.#inputTokens }),

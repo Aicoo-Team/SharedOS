@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import type {
   AccessContext,
-  ExecutionEvent,
   ExecutionRequest,
   ToolDefinition,
   ToolResult,
@@ -11,21 +10,16 @@ import { SPAN, SharedOSKernel, type Span, type SpanSink } from "@aicoo/sharedos-
 import type { CapabilityGrant } from "@aicoo/sharedos-contracts";
 
 import {
-  ESCALATION_ASKED_EVENT,
   ESCALATION_REASON_MAX_LENGTH,
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAME,
   ESCALATION_TOOL_NAMESPACE,
   SharedOSExecutor,
   StandardRuntime,
-  announceForRecord,
   escalationReason,
   escalationRequest,
-  promptHandedEvent,
-  promptHandedHash,
   type AgentTurnDriver,
   type AgentTurnSession,
-  type RuntimeHost,
   type RuntimeTurnRequest,
   type SharedOSExecutorOptions,
   type StandardRuntimeOptions,
@@ -262,21 +256,13 @@ describe("the standard composition", () => {
     // different events, and collapsing them would lose the distinction the row
     // exists to record.
     expect(result.status).not.toBe("failed");
-    // And the ask is in the record on its own, announced before the loop ended
-    // on it: a reader can tell a turn that asked from one that never did even
+    // And the ask is on the result on its own, stated before the loop ended on
+    // it: a reader can tell a turn that asked from one that never did even
     // when the ending is not the one the ask should have had.
-    expect(result.events).toContainEqual(
-      expect.objectContaining({
-        type: "runtime.event",
-        data: expect.objectContaining({
-          type: ESCALATION_ASKED_EVENT,
-          data: {
-            tool: ESCALATION_TOOL_NAME,
-            reason: "issuing a control-plane grant is outside this agent's authority",
-          },
-        }),
-      }),
-    );
+    expect(result.metadata?.["escalationAsked"]).toEqual({
+      tool: ESCALATION_TOOL_NAME,
+      reason: "issuing a control-plane grant is outside this agent's authority",
+    });
   });
 
   it("refuses an escalate decision whose reason is not a usable string", async () => {
@@ -848,18 +834,13 @@ describe("recognising an escalation in a call", () => {
   });
 });
 
-/** The hashes the turn announced as what the seat was told, in event order. */
-function handedHashes(events: readonly ExecutionEvent[]): string[] {
-  return events.map(promptHandedHash).filter((hash): hash is string => hash !== undefined);
-}
-
 /**
  * A driver that hands the seat text states its hash on the session, and the
- * loop announces it before the first step. The point of the event is the turn
- * that never returns: its terminal metadata is lost with the outcome it would
- * have ridden on, and the record would otherwise not say what it was asked.
+ * loop states it to the envelope before the first step. The point is the turn
+ * that never returns: the outcome its own metadata would have ridden on is
+ * lost, and the record would otherwise not say what it was asked.
  */
-describe("what the seat was told, announced before the first step", () => {
+describe("what the seat was told, stated before the first step", () => {
   const hash = "d".repeat(64);
 
   it("survives a turn cancelled while the driver is still deciding", async () => {
@@ -882,12 +863,12 @@ describe("what the seat was told, announced before the first step", () => {
     });
 
     expect(result.status).toBe("cancelled");
-    // The metadata path is empty on this ending; the event path is not.
-    expect(result.metadata?.["promptHash"]).toBeUndefined();
-    expect(handedHashes(result.events)).toEqual([hash]);
+    // No outcome came back, so nothing the driver would have put on one did.
+    // What the loop stated to the envelope is on the result all the same.
+    expect(result.metadata?.["promptHash"]).toBe(hash);
   });
 
-  it("is announced once, ahead of any tool call, and matches the terminal metadata", async () => {
+  it("is on the result of a turn that ran, stated once by the session and by nothing else", async () => {
     const driver: AgentTurnDriver = {
       open: async () => ({
         promptHash: hash,
@@ -903,132 +884,19 @@ describe("what the seat was told, announced before the first step", () => {
                   requestedAt: now,
                 },
               }
-            : { type: "complete", output: { done: true }, metadata: { promptHash: hash } },
+            : { type: "complete", output: { done: true } },
       }),
     };
 
     const result = await turnExecutor(kernel(), driver).execute(request());
 
     expect(result.status).toBe("succeeded");
-    expect(handedHashes(result.events)).toEqual([hash]);
-    const announced = result.events.findIndex(({ type }) => type === "runtime.event");
-    const requested = result.events.findIndex(({ type }) => type === "tool.requested");
-    expect(announced).toBeGreaterThan(-1);
-    expect(announced).toBeLessThan(requested);
     expect(result.metadata?.["promptHash"]).toBe(hash);
+    // A fact about the turn, not something that happened in it: no event.
+    expect(result.events.some(({ type }) => type === "runtime.event")).toBe(false);
   });
 
-  it("is for the record only: a host that will not take it does not end the turn", async () => {
-    // The loop called directly, with a host whose `emit` refuses the event.
-    // The announcement is a trace; refusing it must not turn a driver that
-    // never decided anything into `driver_failed`. Contained is not lost: the
-    // refusal reaches the host's own sink, whole and under the turn's ids, so
-    // a record short its announcement can be told from a turn cancelled
-    // before one.
-    const driver: AgentTurnDriver = {
-      open: async () => ({
-        promptHash: hash,
-        next: async () => ({ type: "complete", output: { done: true } }),
-      }),
-    };
-    const refusal = new Error("unknown runtime event");
-    const host: RuntimeHost = {
-      limits: { maxSteps: 1, maxToolCalls: 1, timeoutMs: 1_000 },
-      invokeTool: () => Promise.reject(new Error("not reached")),
-      emit: () => {
-        throw refusal;
-      },
-    };
-    const onTurnError = vi.fn();
-
-    const outcome = await new StandardRuntime(driver, { onTurnError }).run(
-      visibleRequest(),
-      host,
-      new AbortController().signal,
-    );
-
-    expect(outcome).toEqual({ type: "complete", output: { done: true } });
-    expect(onTurnError).toHaveBeenCalledTimes(1);
-    expect(onTurnError).toHaveBeenCalledWith(refusal, {
-      executionId: "execution-1",
-      traceId: "trace-1",
-    });
-  });
-
-  it("reports a refused escalation announcement the same way, and the ask still ends the turn", async () => {
-    const driver: AgentTurnDriver = {
-      open: async () => ({
-        next: async () => ({ type: "escalate", reason: "needs an owner" }),
-      }),
-    };
-    const refusal = new Error("host is closed");
-    const host: RuntimeHost = {
-      limits: { maxSteps: 1, maxToolCalls: 1, timeoutMs: 1_000 },
-      invokeTool: () => Promise.reject(new Error("not reached")),
-      emit: () => {
-        throw refusal;
-      },
-    };
-    const onTurnError = vi.fn();
-
-    const outcome = await new StandardRuntime(driver, { onTurnError }).run(
-      visibleRequest(),
-      host,
-      new AbortController().signal,
-    );
-
-    expect(outcome).toEqual({ type: "escalate", reason: "needs an owner" });
-    expect(onTurnError).toHaveBeenCalledTimes(1);
-    expect(onTurnError.mock.calls[0]?.[0]).toBe(refusal);
-  });
-
-  it("reports nothing for a host closed by cancellation", () => {
-    // A cancelled turn's host refuses everything, and cancellation is a
-    // decision the reporter never hears about; a refusal after the abort is
-    // that decision, not a defect.
-    const onTurnError = vi.fn();
-    const host: Pick<RuntimeHost, "emit"> = {
-      emit: () => {
-        throw new Error("Runtime host is closed");
-      },
-    };
-    const turn = { executionId: "execution-1", traceId: "trace-1" };
-    const controller = new AbortController();
-
-    announceForRecord(host, promptHandedEvent(hash), {
-      turn,
-      signal: controller.signal,
-      onTurnError,
-    });
-    expect(onTurnError).toHaveBeenCalledTimes(1);
-
-    controller.abort();
-    announceForRecord(host, promptHandedEvent(hash), {
-      turn,
-      signal: controller.signal,
-      onTurnError,
-    });
-    expect(onTurnError).toHaveBeenCalledTimes(1);
-  });
-
-  /** `request()` as the loop sees it when called directly, outside the envelope. */
-  function visibleRequest(): RuntimeTurnRequest {
-    const { context, ...rest } = request();
-    return {
-      ...rest,
-      context: {
-        actor: context.actor,
-        owner: context.owner,
-        namespaceId: context.namespaceId,
-        purpose: context.purpose,
-        traceId: context.traceId,
-        now: context.now,
-        reach: { status: "computed", reach: [] },
-      },
-    };
-  }
-
-  it("is not announced by a driver that hands the seat no text", async () => {
+  it("is not stated for a driver that hands the seat no text", async () => {
     const driver: AgentTurnDriver = {
       open: async () => ({
         next: async () => ({ type: "complete", output: { done: true } }),
@@ -1038,6 +906,6 @@ describe("what the seat was told, announced before the first step", () => {
     const result = await turnExecutor(kernel(), driver).execute(request());
 
     expect(result.status).toBe("succeeded");
-    expect(handedHashes(result.events)).toEqual([]);
+    expect(result.metadata?.["promptHash"]).toBeUndefined();
   });
 });

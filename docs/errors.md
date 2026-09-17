@@ -391,12 +391,10 @@ which the envelope never sees as an exception, and the executor catches
 everything else as `runtime_failed`. Install one sink in both options and it
 covers both.
 
-`createMcpHarnessRuntime` takes it as well, and so does `StandardRuntime` for the
-same case: a host refusing a record-only announcement (`prompt.handed`,
-`escalation.asked`). Neither refusal ends the turn — the driver answers, the CLI
-is served — so no code names it; the record is simply short an event, and this
-sink is where that shows. A turn already cancelled reports nothing, because a
-host closed by cancellation refuses everything and cancellation is a decision.
+`createMcpHarnessRuntime` takes no such option: a harness's failures end the turn
+through the envelope, whose reporter already covers them. Stating a fact for the
+record through `RuntimeHost.annotate` reaches neither sink, because it never
+refuses on the state of the host and so has nothing to report.
 
 Read the stack. `runtime_failed` is also what a throw from `openTurnAuthority`,
 `admitTurn`, or `listTools` ends a turn as, so the code alone does not say

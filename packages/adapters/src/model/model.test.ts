@@ -17,7 +17,6 @@ import {
   type AgentTurnDriver,
   type RuntimeTurnRequest,
   createEscalationTool,
-  promptHandedHash,
 } from "@aicoo/sharedos-runtime";
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
 
@@ -979,7 +978,7 @@ describe("what the model is told about where it may operate", () => {
     expect(silent.result.metadata?.["promptHash"]).not.toBe(result.metadata?.["promptHash"]);
   });
 
-  it("announces it before the first request, so a turn cancelled mid-call still records it", async () => {
+  it("states it before the first request, so a turn cancelled mid-call still records it", async () => {
     // A model call that never returns: the turn is cancelled from outside the
     // moment the request is on the wire, which is where a live stall lands.
     const cancel = new AbortController();
@@ -1003,11 +1002,11 @@ describe("what the model is told about where it may operate", () => {
     ).execute(request(), { signal: cancel.signal });
 
     expect(result.status).toBe("cancelled");
-    expect(result.metadata?.["promptHash"]).toBeUndefined();
+    // No outcome came back, so none of the driver's own metadata did.
+    expect(result.metadata?.["model"]).toBeUndefined();
     const [system, user] = seen[0]?.messages ?? [];
-    const handed = result.events.map(promptHandedHash).filter((hash) => hash !== undefined);
-    expect(handed).toEqual([
+    expect(result.metadata?.["promptHash"]).toBe(
       await hashJson({ instructions: system?.content, prompt: user?.content }),
-    ]);
+    );
   });
 });

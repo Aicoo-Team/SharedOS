@@ -661,6 +661,193 @@ describe("RuntimePlugin security envelope", () => {
   });
 });
 
+describe("what a plugin states for the record", () => {
+  const stated = {
+    promptHash: "a".repeat(64),
+    asked: { tool: "sharedos.escalate", reason: "why" },
+  };
+  const state = (host: RuntimeHost): void => {
+    host.annotate("promptHash", stated.promptHash);
+    host.annotate("asked", stated.asked);
+  };
+  const execute = (
+    plugin: RuntimePlugin,
+    input: ExecutionRequest = request(),
+    runtimeKernel = kernel(),
+  ) =>
+    new SharedOSExecutor(runtimeKernel, plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(input);
+
+  it("is on the result of a turn that completed, beside the envelope's provenance", async () => {
+    const result = await execute(
+      runtime(async (_input, host) => {
+        state(host);
+        return { type: "complete", output: null, metadata: { model: "m" } };
+      }),
+    );
+
+    expect(result.status).toBe("succeeded");
+    expect(result.metadata).toMatchObject({ ...stated, model: "m", runtime: { id: manifest.id } });
+  });
+
+  it("is on the result of a turn the runtime failed", async () => {
+    const result = await execute(
+      runtime(async (_input, host) => {
+        state(host);
+        return { type: "fail", error: { code: "driver_failed", message: "x", retryable: true } };
+      }),
+    );
+
+    expect(result.status).toBe("failed");
+    expect(result.metadata).toMatchObject(stated);
+  });
+
+  it("is on the result of a turn that escalated", async () => {
+    const result = await execute(
+      runtime(async (_input, host) => {
+        state(host);
+        return { type: "escalate", reason: "needs a human" };
+      }),
+      request({ escalation: true }),
+      kernel(undefined, { escalation: true }),
+    );
+
+    expect(result.status).toBe("escalated");
+    expect(result.metadata).toMatchObject(stated);
+  });
+
+  it("is on the result of a turn cancelled at its deadline, which returns no outcome", async () => {
+    const input = request();
+    input.options = { timeoutMs: 5 };
+
+    const result = await execute(
+      runtime(async (_input, host) => {
+        state(host);
+        return new Promise(() => undefined);
+      }),
+      input,
+    );
+
+    expect(result.status).toBe("cancelled");
+    expect(result.metadata).toMatchObject(stated);
+  });
+
+  it("is on the result of a turn whose plugin threw", async () => {
+    const result = await execute(
+      runtime(async (_input, host) => {
+        state(host);
+        throw new Error("plugin broke");
+      }),
+    );
+
+    expect(result.status).toBe("failed");
+    expect(result.metadata).toMatchObject(stated);
+  });
+
+  it("is on the result of a turn whose outcome did not parse", async () => {
+    const result = await execute(
+      runtime(async (_input, host) => {
+        state(host);
+        return { type: "complete", output: undefined } as never;
+      }),
+    );
+
+    expect(result.status === "failed" && result.error.code).toBe("invalid_runtime_outcome");
+    expect(result.metadata).toMatchObject(stated);
+  });
+
+  it("is taken while the turn is aborted but still open", async () => {
+    const input = request();
+    input.options = { timeoutMs: 5 };
+
+    const result = await execute(
+      runtime(async (_input, host, signal) => {
+        await new Promise<void>((resolve) => {
+          signal.addEventListener("abort", () => {
+            // `emit` refuses here; a statement for the record does not.
+            expect(() => host.emit({ type: "late", data: {} })).toThrow("Runtime host is closed");
+            host.annotate("promptHash", stated.promptHash);
+            resolve();
+          });
+        });
+        return new Promise(() => undefined);
+      }),
+      input,
+    );
+
+    expect(result.status).toBe("cancelled");
+    expect(result.metadata).toMatchObject({ promptHash: stated.promptHash });
+  });
+
+  it("outranks the same key on the outcome's own metadata, and the last write wins", async () => {
+    const result = await execute(
+      runtime(async (_input, host) => {
+        host.annotate("promptHash", "first");
+        host.annotate("promptHash", "second");
+        return { type: "complete", output: null, metadata: { promptHash: "the outcome's copy" } };
+      }),
+    );
+
+    expect(result.metadata?.["promptHash"]).toBe("second");
+  });
+
+  it("refuses the envelope's own key, an empty key, `__proto__`, and a value that is not JSON", async () => {
+    const refused: unknown[] = [];
+    const attempt = (write: () => void): void => {
+      try {
+        write();
+      } catch (error) {
+        refused.push(error);
+      }
+    };
+
+    const result = await execute(
+      runtime(async (_input, host) => {
+        attempt(() => host.annotate("runtime", { id: "forged" }));
+        attempt(() => host.annotate("", 1));
+        attempt(() => host.annotate("__proto__", { polluted: true }));
+        attempt(() => host.annotate("fn", (() => undefined) as never));
+        attempt(() => host.annotate("nan", Number.NaN));
+        attempt(() => host.annotate("date", new Date(0) as never));
+        return { type: "complete", output: null };
+      }),
+    );
+
+    expect(refused).toHaveLength(6);
+    expect(refused.every((error) => error instanceof TypeError)).toBe(true);
+    expect(Object.keys(result.metadata ?? {})).toEqual(["runtime"]);
+    expect(result.metadata?.["runtime"]).toMatchObject({ id: manifest.id });
+  });
+
+  it("holds a copy, so a value changed after it was stated is recorded as stated", async () => {
+    const result = await execute(
+      runtime(async (_input, host) => {
+        const value = { reason: "as stated" };
+        host.annotate("asked", value);
+        value.reason = "changed afterwards";
+        return { type: "complete", output: null };
+      }),
+    );
+
+    expect(result.metadata?.["asked"]).toEqual({ reason: "as stated" });
+  });
+
+  it("drops a write made after the turn has closed, without throwing", async () => {
+    let capturedHost: RuntimeHost | undefined;
+    const result = await execute(
+      runtime(async (_input, host) => {
+        capturedHost = host;
+        return { type: "complete", output: null };
+      }),
+    );
+
+    expect(() => capturedHost?.annotate("promptHash", stated.promptHash)).not.toThrow();
+    expect(result.metadata?.["promptHash"]).toBeUndefined();
+  });
+});
+
 describe("RuntimeRegistry", () => {
   it("validates, snapshots, and resolves trusted runtime registrations", () => {
     const plugin = runtime();

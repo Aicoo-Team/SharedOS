@@ -18,32 +18,25 @@ each entry calls out what a host has to update.
   Such a turn then dropped out of its column's prompt set, and the column's
   moved `promptSetHash` read as a reworded prompt — the one confusion the hash
   exists to remove; the 2026-09-08 live run showed it, one stalled Claude Code
-  turn folding 28 entries against the other columns' 29. The runtimes now also
-  announce the hash through `RuntimeHost.emit` as a `prompt.handed` runtime
-  event before the model or harness is sent anything, since
-  `ExecutionResult.events` survives cancellation and metadata does not.
-  `createMcpHarnessRuntime` emits it before binding its port or spawning the
-  CLI; `StandardRuntime` emits it once `open` has resolved, before the first
+  turn folding 28 entries against the other columns' 29. A runtime now states
+  the hash to the envelope through the new `RuntimeHost.annotate`, before the
+  model or harness is sent anything, and the envelope writes it into
+  `ExecutionResult.metadata` on every ending: completed, failed, escalated,
+  cancelled, a plugin that threw, an outcome that did not parse (ADR 0027).
+  `createMcpHarnessRuntime` states it before binding its port or spawning the
+  CLI; `StandardRuntime` states it once `open` has resolved, before the first
   step, for any `AgentTurnSession` that states a `promptHash`, which
-  `ModelDriver`'s session now does. The announcement is for the record only: a
-  host whose `emit` refuses it does not end the turn, and the refusal is
-  reported to `onTurnError` under the turn's identifiers, which
-  `createMcpHarnessRuntime` now takes as an option; the `escalation.asked`
-  announcement follows the same rule in both runtimes, where it used to be
-  dropped silently. A turn already cancelled reports nothing. A turn cancelled
-  before the announcement -- inside a driver's `open`, or while the MCP port is
-  still binding -- still carries none. `assembleExecutionRecord`
-  takes the metadata where the result has the field and the first announcement
-  otherwise; a malformed value in either place reads as absent, as a malformed
-  catalogue hash does, so an existing record reads as before.
-  `@aicoo/sharedos-runtime` exports `PROMPT_HANDED_EVENT`, `promptHandedEvent`,
-  `announcePromptHanded`, the reader `promptHandedHash`, and `announceForRecord`
-  with its `RecordAnnouncement`, for a plugin announcing anything of its own. **What a host has
-  to update:** nothing; a driver that hands the seat text and wants its stalled
-  turns identified states `promptHash` on its session, hashed before its `open`
-  sends anything. The committed `Standard` prompt-set hash moves
-  once, `ece3b355…` to `4dbefcbd…`, because the `budget-exceeded/step-ceiling`
-  turn now counts; the case-set and world-set hashes do not move.
+  `ModelDriver`'s session now does, in place of restating it on its terminal
+  metadata. A turn cancelled before there is a hash to state -- inside a
+  driver's `open`, or before the MCP runtime has composed its prompt -- still
+  carries none. `assembleExecutionRecord` reads the metadata as before; a
+  malformed value reads as absent, as a malformed catalogue hash does.
+  **What a host has to update:** nothing; a driver that hands the seat text
+  and wants its stalled turns identified states `promptHash` on its session,
+  hashed before its `open` sends anything. The committed `Standard` prompt-set
+  hash moves once, `ece3b355…` to `4dbefcbd…`, because the
+  `budget-exceeded/step-ceiling` turn now counts; the case-set and world-set
+  hashes do not move.
 
 ### Changed
 
@@ -70,6 +63,19 @@ each entry calls out what a host has to update.
   the transport's.
 
 ### Added
+
+- **`RuntimeHost.annotate(key, value)`: a fact stated for the turn's record.**
+  `emit` is for something that happened at a moment; this is for something that
+  is true of the turn. The executor holds a frozen clone of a JSON value and
+  merges it into the result's metadata after the outcome's own and before
+  `runtime`, on every way out of the turn. It throws a `TypeError` for an empty
+  key, for the reserved key `runtime`, for the key `__proto__`, and for a value
+  that is not JSON, and for nothing else: a write while the turn is aborted but open is kept, a write
+  after the turn closed is dropped, so a call site needs no guard. The last
+  write wins. `PROMPT_HASH_ANNOTATION`, `ESCALATION_ASKED_ANNOTATION` and
+  `escalationAskedAnnotation` name the two facts SharedOS's own runtimes state.
+  **What a host has to update:** only a test double that builds its own
+  `RuntimeHost` adds the member; a plugin is unaffected (ADR 0027).
 
 - **A refusal's gate is readable from its audit record, by call id.**
   `tool_unavailable` is one code over "not registered", "namespace disabled",
@@ -98,6 +104,19 @@ each entry calls out what a host has to update.
   two joined only on time order before. A sink or reader keyed on
   `authorization.checked` events without an `operationId` sees one more that has
   it.
+- **A delegate's ask is a record field, and the grading rules read it there.**
+  The standard loop, the MCP escalation latch and the conformance adversary
+  announced the ask as an `escalation.asked` runtime event, each behind its own
+  guard against a host that refuses events. They now state it through
+  `RuntimeHost.annotate` as `escalationAsked: { tool, reason }`, with no guard.
+  The judge grades an `ExecutionRecord`, which carries none of a result's
+  metadata, so the record gains an optional `execution.escalationAsked` and
+  `assembleExecutionRecord` lifts the stated ask into it, validated on shape.
+  `JUDGE_VERSION` goes 4 to 5: the rule is unchanged, its source moved. No
+  committed cell and no hash moves; a record written under version 4 carries the
+  event and not the field, so the two are not cell-comparable on the escalation
+  row.
+
 - **One route table, one version constant, one home for the primitives.**
   `@aicoo/sharedos-contracts` now exports `SHAREDOS_ROUTES`, the HTTP surface
   as one table of path, verb, request schema and response schema, which
@@ -126,6 +145,12 @@ StandardRuntime(driver))`, which `TurnExecutor` built (see Removed).
 
 ### Removed
 
+- `ESCALATION_ASKED_EVENT` and `escalationAskedEvent` from
+  `@aicoo/sharedos-runtime`, shipped in 0.1.0-alpha.4. A delegate states the ask
+  through `RuntimeHost.annotate` under `ESCALATION_ASKED_ANNOTATION`, in the
+  shape `escalationAskedAnnotation` builds; a reader takes
+  `execution.escalationAsked` from the record, or `metadata.escalationAsked`
+  from the result, instead of decoding a `runtime.event`.
 - `TurnExecutor` and `TurnExecutorOptions` from `@aicoo/sharedos-runtime`. The
   facade built exactly `new SharedOSExecutor(kernel, new
 StandardRuntime(driver))` and forwarded `onTurnError` to both; a host writes
