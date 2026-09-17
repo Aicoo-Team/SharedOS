@@ -2,6 +2,7 @@ import {
   RuntimeManifestSchema,
   type AccessContext,
   type ExecutionRequest,
+  type JsonValue,
   type ReachResult,
   type RuntimeEvent,
   type RuntimeManifest,
@@ -191,6 +192,36 @@ export interface RuntimeHost {
   readonly limits: RuntimeLimits;
   invokeTool(call: ToolCall, options?: RuntimeToolInvocationOptions): Promise<ToolResult>;
   emit(event: RuntimeEvent): void;
+  /**
+   * State one fact about the turn, for its record.
+   *
+   * `emit` is for something that happened at a moment, and lands among the
+   * turn's events in order. This is for something that is true of the turn:
+   * what the seat was told, that a delegate asked for a human. The envelope
+   * holds the value and writes it into `ExecutionResult.metadata` under `key`
+   * on every way out of the turn -- completed, failed, escalated, and the
+   * ones that return no outcome at all: cancelled, a plugin that threw, an
+   * outcome that did not parse. A plugin's own outcome metadata cannot do that,
+   * because a turn stopped at its deadline never returns one.
+   *
+   * It throws a `TypeError` for a key that is empty, is `runtime`, which is the
+   * envelope's own, or is `__proto__`, which no JSON object SharedOS reads
+   * keeps; and for a value that is not JSON. All are plugin bugs.
+   * It throws for nothing else, and in particular never for the state of the
+   * host: a write made while the turn is aborted but still open is kept, and
+   * one made after the turn has closed is dropped. So a call site needs no
+   * guard, and stating a fact cannot become the turn's failure or a transport
+   * fault in whatever was stating it.
+   *
+   * The last write to a key wins, and an annotation outranks the same key on
+   * the outcome's own metadata. A value that does not exist yet cannot be
+   * carried: a turn cancelled before its plugin had anything to state records
+   * nothing, here or anywhere.
+   *
+   * Descriptive, never permissive. It is the plugin's own claim, read by
+   * whoever reads the record; nothing SharedOS decides depends on it.
+   */
+  annotate(key: string, value: JsonValue): void;
 }
 
 /**

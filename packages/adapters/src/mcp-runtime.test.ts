@@ -782,6 +782,7 @@ describe("a harness runtime whose signal is aborted", () => {
     const host: RuntimeHost = {
       limits: { maxSteps: 1, maxToolCalls: 1, timeoutMs: 1_000 },
       invokeTool: () => Promise.reject(new Error("not reached")),
+      annotate: () => undefined,
       emit: () => undefined,
     };
 
@@ -815,6 +816,7 @@ describe("a harness runtime whose host refuses the announcement", () => {
     const host: RuntimeHost = {
       limits: { maxSteps: 1, maxToolCalls: 1, timeoutMs: 10_000 },
       invokeTool: () => Promise.reject(new Error("not reached")),
+      annotate: () => undefined,
       emit: () => {
         throw refusal;
       },

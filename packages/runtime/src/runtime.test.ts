@@ -935,6 +935,7 @@ describe("what the seat was told, announced before the first step", () => {
     const host: RuntimeHost = {
       limits: { maxSteps: 1, maxToolCalls: 1, timeoutMs: 1_000 },
       invokeTool: () => Promise.reject(new Error("not reached")),
+      annotate: () => undefined,
       emit: () => {
         throw refusal;
       },
@@ -965,6 +966,7 @@ describe("what the seat was told, announced before the first step", () => {
     const host: RuntimeHost = {
       limits: { maxSteps: 1, maxToolCalls: 1, timeoutMs: 1_000 },
       invokeTool: () => Promise.reject(new Error("not reached")),
+      annotate: () => undefined,
       emit: () => {
         throw refusal;
       },
