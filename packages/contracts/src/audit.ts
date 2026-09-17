@@ -60,6 +60,17 @@ export type AuditSource = z.infer<typeof AuditSourceSchema>;
  * untyped bag until a port's metadata began to be recorded beside the kernel's
  * own flags, at which point a port could overwrite a flag the kernel had not
  * set. Fields cannot be collided with.
+ *
+ * The kernel-stated fields, since an inferred type renders here without them:
+ * `source` (`kernel` or `envelope`, who performed or refused the operation;
+ * never on `turn.ended`), `cause` (which situation a coarse `reason` stood in
+ * for, on `tool.invoked`), `failClosed` (present and `true` when SharedOS could
+ * not establish a fact and refused rather than guess), `consumed` (whether a
+ * bounded use was spent, on `authorization.checked`), `endedBy` (`envelope` or
+ * `runtime`, who ended a failed turn), `requestedAuthority` (what an escalation
+ * asks for), and `id`, the record's identity and the only safe idempotency key.
+ * `docs/errors.md`, "Audit events", has the table and the `metadata` keys a host
+ * may rely on per event type.
  */
 export const AuditEventSchema = z
   .object({
