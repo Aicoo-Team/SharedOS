@@ -194,8 +194,9 @@ call does not spend one. Its refusal is recorded as `host_policy_denied` with
 the `grantId` it overrode — separable from `no_matching_grant` in every count,
 and not marked `failClosed`, because a deliberate refusal is not an outage. A
 host outside TypeScript that returns some other `reasonCode` has it replaced;
-`metadata` is preserved except for the `consumed` and `failClosed` keys the
-kernel states itself.
+`metadata` is preserved as written. `consumed` and `failClosed` are fields of
+the audit event, which the kernel states itself and a ceiling's metadata cannot
+reach.
 
 A ceiling whose policy lives in a database does not close over a stale copy
 and does not read the store on the authorization path. It installs a

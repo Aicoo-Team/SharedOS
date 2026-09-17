@@ -2,6 +2,10 @@
 
 - Status: Accepted
 - Date: 2026-08-31
+- Revised: 2026-09-17. `source`, `cause`, `failClosed`, `consumed` and `endedBy`
+  are `AuditEvent` fields rather than `metadata` keys, and the rule for which
+  audit write may refuse an operation is stated. Both revisions are in the
+  Decision below, which describes what ships.
 - Extends: `docs/adr/0012-one-refusal-vocabulary.md`
 
 ## Context
@@ -84,9 +88,10 @@ A call the envelope refuses before the kernel sees it is a tool call that was
 attempted and denied, which is what `tool.invoked` means. It is recorded as one,
 with the code the caller was given.
 
-### `metadata.source` on every operation event
+### `source` on every operation event
 
-`kernel` or `envelope`, mirroring `OperationRecord.source`.
+`kernel` or `envelope`, mirroring `OperationRecord.source`: the boundary that
+performed or refused the operation.
 
 This is required by the change rather than incidental to it. Today the rule "it
 is in audit, therefore the kernel refused it" holds for free, because the
@@ -95,14 +100,19 @@ rule, and a host reading audit alone would lose a distinction it has now.
 Closing one gap while opening an ambiguity is not an improvement, so the two
 land together.
 
-### `metadata.cause` on the `tool_unavailable` family
+It is on `tool.invoked`, `resource.invoked`, `message.sent` and
+`tool.catalog.listed`. It is not on `turn.ended`. Every turn ending is recorded
+by the envelope, so a `source` there would say who recorded, which is a second
+meaning and one that says nothing; who _ended_ a failed turn is `endedBy`.
+
+### `cause` on the coarse codes
 
 `reason` stays `tool_unavailable` — the same code the caller was given, which is
 what keeps ADR 0012's one vocabulary intact and keeps the audit code and the
-wire code comparable. The specific fact goes in `metadata.cause`:
-`not_registered`, `namespace_disabled`, `not_discoverable`, `not_offered` for
-the envelope's catalogue refusal, and `host_policy_denied` for the ceiling of
-ADR 0020.
+wire code comparable. The specific fact goes in `cause`: `not_registered`,
+`namespace_disabled`, the reason code the discovery check returned, `not_offered`
+for the envelope's catalogue refusal, and `host_policy_denied` for the ceiling
+of ADR 0020.
 
 That last one is not optional. `host_policy_denied` can only ever appear on an
 `authorization.checked` event, so a host counting policy refusals from the
@@ -110,8 +120,81 @@ operation events would get zero — and for two of the causes there is no decisi
 event to join to. The cause field is what makes ADR 0020's count obtainable from
 the events a host actually reads.
 
-`cause` and `source` both go in `metadata`, alongside the `failClosed` and
-`consumed` flags already there. `AuditEvent` keeps its top-level shape.
+`message_request_not_accepted` is the same kind of code and is treated the same
+way. The caller of `messages.request` is told the request was not accepted
+whatever the transport answered, because the transport's vocabulary is the
+host's. The tool's record carries what the transport answered as its `cause`,
+so a reader does not have to join it to the sibling `message.sent` by call id to
+say why. The code travels inside the kernel, never through the handler's
+result, which is returned to the caller whole.
+
+### What the kernel states is a field
+
+As first decided and shipped in 0.1.0-alpha.4, `cause` and `source` went in
+`metadata`, beside the `failClosed` and `consumed` flags already there, so that
+`AuditEvent` kept its top-level shape: hosts persist these events under closed
+schemas of their own, and a new `metadata` key breaks nobody.
+
+That put two authors in one untyped object. ADR 0020 records a decision's own
+metadata on `authorization.checked` — a host ceiling's rule, the authorizer's
+delegation detail on a broken chain — and a port's key could then stand where
+the kernel's would have been. Spread order protected `consumed`, which the
+kernel always writes. It did not protect `failClosed`, which the kernel only
+ever _sets_, on an infrastructure denial: on any other denial a port's
+`failClosed: true` would stand and move a deliberate refusal out of the policy
+counts. The kernel carried a function whose only job was to strip the two keys
+from a port's metadata first. Readers paid too. `classifyRefusal` read three
+facts through a helper that checked each was a string; the conformance
+assembler compared a string for `source` and re-derived `failClosed` from the
+reason code, a second copy of a decision the kernel had already made; and the
+three operation events were built apart, so `resource.invoked` and
+`message.sent` never carried `failClosed` and a grant store that was down read
+as one outage and two deliberate refusals.
+
+So the rule is: **what SharedOS itself states about an event is a field, and
+`metadata` holds what a host port supplied and the details particular to one
+event type.** Five facts are fields:
+
+- `source` and `cause`, above.
+- `failClosed`, present and `true` when SharedOS could not establish a fact and
+  refused rather than guess. On every event that can record an outage,
+  `resource.invoked` and `message.sent` included.
+- `consumed`, whether a bounded use was spent, on `authorization.checked`.
+- `endedBy`, `envelope` or `runtime`: who ended a failed turn, on `turn.ended`.
+
+`AuditEventSchema` is published in `@aicoo/sharedos-contracts`, strict, and the
+kernel's `AuditEvent` type is inferred from it, so the type and the schema are
+one definition; a conformance test parses every event every canonical move
+produces. One builder states the operation facts for the three operation
+events, and one `tool.invoked` builder serves the kernel's own records and the
+refusals the envelope hands it, which is also how an envelope refusal came to
+carry the turn's `catalogHash`. A port that writes a key named `failClosed` has
+written a key in its own `metadata`; the field is the kernel's, and a port has
+no way to reach it.
+
+Details particular to one event type stay in `metadata`: `grantIds` and
+`grantCount` on `authority.resolved`, the listing's identifiers below,
+`catalogHash` on `tool.invoked`, the authorizer's explanation on a denial,
+`detail` and `reviewer` on an escalation. `version` stays `"1"`, and there is no
+release in which a fact is written in both places.
+
+### A record before an effect may refuse it; a record after never changes it
+
+The kernel writes to its sink on two paths, and which one a write takes is
+decided by when it happens. An authority load, an authorization decision and a
+catalogue listing are written before anything acts on them: a sink that throws
+there rejects the operation, nothing runs, and `onAuditError` is not called
+because the caller is handed the failure. An operation's outcome, a turn's
+ending, an envelope refusal and an escalation are written once the answer is
+final: a sink that throws there is handed to `onAuditError`, and the caller
+receives the result it would have received, because returning a failure would
+invite a retry of something already done.
+
+`escalation.requested` is on the second path. It is the turn's terminal record,
+not a gate; written on the first, a sink that threw ended the turn
+`runtime_failed` and blamed a plugin that had done nothing wrong. One limit is
+known and unchanged: a bounded use is spent before `authorization.checked` is
+written, so a sink that throws there costs a use with nothing run.
 
 ### Discovery is recorded in aggregate
 
@@ -168,6 +251,22 @@ withheld tool is still recorded on `tool.invoked` with its own `cause`.
   surface, as inflated attempt counts in every column.
 - The conformance judge's version moves, and the case-set and world-set hashes
   with it, so every cell in the committed manifest is recomputed.
+- The 2026-09-17 revision is a breaking change to a shape that shipped in
+  0.1.0-alpha.4. A host that persists audit under a closed schema adds five
+  optional fields. A reader of `metadata.source`, `metadata.cause`,
+  `metadata.failClosed`, `metadata.consumed` or `metadata.endedBy` reads the
+  field of the same name, and a reader of `metadata.source` on `turn.ended` reads
+  nothing, because nothing was being said. A trail written before the change
+  shows no `failClosed` field on its old events; a host whose report spans both
+  filters on both for as long as the old events are in its window.
+- That revision does not move the conformance record. `OperationRecord.source`
+  and `failClosed` and `DecisionRecord.failClosed` hold the same values, read
+  from the event rather than compared or re-derived, and no manifest hash covers
+  audit metadata.
+- `docs/errors.md` keeps its rule that a new top-level field is a contract
+  change. The revision is that change, recorded once, and the rule it adds
+  narrows when the next is needed: a fact SharedOS states on every event of a
+  kind is a field from the start.
 
 ## Rejected alternatives
 
@@ -177,7 +276,7 @@ places to pass one sink, and the failure mode of missing the second is silent.
 **Five `turn.*` event types.** Rejected. Volume without information, and it
 double-counts admission denials against `authorization.checked`.
 
-**Put the specific cause in `reason` instead of `metadata`.** Rejected. It
+**Put the specific cause in `reason` instead of `cause`.** Rejected. It
 breaks the correspondence between the audit code and the code the caller was
 given, which is what makes the two streams comparable, and it would split one
 refusal into four codes that ADR 0012 deliberately unified.
@@ -200,3 +299,26 @@ is a required field on `ExecutionResult`, so hosts already pay for it on the
 wire, and no production consumer in this repository reads it. Directing hosts to
 a channel whose only readers are the conformance package would document the gap
 rather than close it.
+
+**Keep the kernel's facts in `metadata` and keep stripping a port's keys.** What
+first shipped, and it worked. It leaves every reader parsing an untyped object
+for facts the kernel knows the type of, leaves the next kernel-stated flag to be
+remembered in the strip or forged, and leaves `source` with two meanings.
+
+**Write both the field and the key for one release.** It keeps the strip, the
+string-checking helper and the second derivation alive for exactly the release
+meant to delete them, and a reader that has not migrated is no safer for it: the
+key it reads is the one a port can still write.
+
+**Promote every kernel-stated key.** `grantIds`, `catalogHash`, `withheldCount`
+and the rest are the kernel's too. Each belongs to one event type, so promoting
+them makes `AuditEvent` a union discriminated on `type`, a larger break with one
+in-repo reader to show for it. The line is the facts shared across event types
+or that a port's metadata can sit beside.
+
+**Bump `AuditEvent.version`.** The alpha line records breaking changes in the
+changelog and has not versioned a shape for one, and a `"2"` would have to be
+threaded through every sink a host wrote against the literal.
+
+**Route every audit write through the path that swallows a failure.** One path
+instead of two, and a tool could then run on a decision that was never recorded.
