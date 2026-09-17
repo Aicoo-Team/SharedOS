@@ -38,6 +38,7 @@ import {
 import {
   type AuditEvent,
   type AuditEventInput,
+  type AuditSource,
   type AuditSink,
   NoopAuditSink,
   auditEvent,
@@ -557,13 +558,10 @@ export class SharedOSKernel {
         outcome: turn.status === "cancelled" ? "failed" : turn.status,
         operationId: turn.executionId,
         ...(turn.reasonCode === undefined ? {} : { reason: turn.reasonCode }),
-        metadata: {
-          source: "envelope",
-          ...(turn.endedBy === undefined ? {} : { endedBy: turn.endedBy }),
-          ...(turn.reasonCode !== undefined && isInfrastructureDenial(turn.reasonCode)
-            ? { failClosed: true }
-            : {}),
-        },
+        // No `source`. It would say who recorded, which is always the envelope;
+        // who *ended* the turn is `endedBy`, and that is the fact a reader wants.
+        ...(turn.endedBy === undefined ? {} : { endedBy: turn.endedBy }),
+        ...failClosedFor(turn.reasonCode),
       }),
     );
   }
@@ -577,7 +575,7 @@ export class SharedOSKernel {
    * all, because the boundary that refused them does not own one.
    *
    * Recorded as `tool.invoked`, because that is what it is: a tool call that was
-   * attempted and denied. `metadata.source` says `envelope`, which is the fact
+   * attempted and denied. `source` says `envelope`, which is the fact
    * that stops being inferable the moment this method exists (ADR 0023).
    */
   async recordRefusedCall(
@@ -587,20 +585,14 @@ export class SharedOSKernel {
   ): Promise<void> {
     options.signal?.throwIfAborted();
     context = structuredClone(context);
-    await this.#recordOutcome(
-      this.#auditEvent(context, {
-        type: "tool.invoked",
-        outcome: "denied",
-        operationId: call.callId,
-        tool: call.tool,
-        reason: call.reasonCode,
-        metadata: {
-          source: "envelope",
-          ...(call.cause === undefined ? {} : { cause: call.cause }),
-          ...(isInfrastructureDenial(call.reasonCode) ? { failClosed: true } : {}),
-        },
-      }),
-    );
+    await this.#recordToolInvoked(context, {
+      source: "envelope",
+      callId: call.callId,
+      tool: call.tool,
+      outcome: "denied",
+      reasonCode: call.reasonCode,
+      ...(call.cause === undefined ? {} : { cause: call.cause }),
+    });
   }
 
   /**
@@ -787,13 +779,13 @@ export class SharedOSKernel {
           type: "tool.catalog.listed",
           outcome: "denied",
           reason: "authority_unavailable",
+          source: "kernel",
+          failClosed: true,
           metadata: {
             catalogHash: this.#holdCatalogHash(context, await catalogHash([])),
             enabledNamespaces: [...context.enabledToolNamespaces],
             withheldCount: 0,
-            failClosed: true,
             authority: authority.code,
-            source: "kernel",
           },
         }),
       );
@@ -834,6 +826,8 @@ export class SharedOSKernel {
         type: "tool.catalog.listed",
         outcome: "succeeded",
         authorityHash: authority.authority.snapshot.hash,
+        source: "kernel",
+        ...(withheldByOutage ? { failClosed: true } : {}),
         metadata: {
           // What the listing was computed from and what it came to, as
           // identifiers and a count rather than as names. `catalogHash` is the
@@ -857,8 +851,6 @@ export class SharedOSKernel {
           enabledNamespaces: [...context.enabledToolNamespaces],
           ...(hostPolicy?.status === "loaded" ? { hostPolicyVersion: hostPolicy.version } : {}),
           withheldCount,
-          ...(withheldByOutage ? { failClosed: true } : {}),
-          source: "kernel",
         },
       }),
     );
@@ -1835,8 +1827,8 @@ export class SharedOSKernel {
               type: "authority.resolved",
               outcome: "failed",
               reason: "authority_unavailable",
+              failClosed: true,
               metadata: {
-                failClosed: true,
                 authority: resolution.code,
                 hostCeiling: this.#hostCeilingState(),
                 hostPolicy: hostPolicyState(hostPolicy),
@@ -1948,21 +1940,18 @@ export class SharedOSKernel {
         ...(operationId === undefined ? {} : { operationId }),
         ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
         ...(!decision.allowed ? { reason: decision.reasonCode } : {}),
-        metadata: {
-          // A decision may carry metadata of its own: a host ceiling's rule,
-          // or the authorizer's delegation detail on a broken chain. The two
-          // keys the kernel states are removed from it rather than overwritten.
-          // Order alone would already win for `consumed`, but not for
-          // `failClosed`, which is only ever *set* on an infrastructure denial:
-          // a port's `failClosed: false` would stand on every other denial, and
-          // a `failClosed: true` would move a deliberate refusal out of the
-          // policy counts it belongs in. Both are stripped, so the rule is one
-          // rule rather than one that happens to hold for one of the keys.
-          ...decisionMetadata(decision.metadata),
-          consumed: consume,
-          ...(isInfrastructureDenial(decision.reasonCode) ? { failClosed: true } : {}),
+        // Fields, so nothing a port supplies can stand in for them. A decision
+        // may carry metadata of its own -- a host ceiling's rule, or the
+        // authorizer's delegation detail on a broken chain -- and while these
+        // two lived in the same bag a port's `failClosed: true` would have
+        // moved a deliberate refusal out of the policy counts it belongs in
+        // (ADR 0023).
+        consumed: consume,
+        ...(decision.allowed ? {} : failClosedFor(decision.reasonCode)),
+        ...metadataOf({
+          ...decision.metadata,
           ...(explanation === undefined ? {} : explanationMetadata(explanation)),
-        },
+        }),
       }),
     );
   }
@@ -1973,44 +1962,56 @@ export class SharedOSKernel {
     result: ToolResult,
     detail: ToolResultAuditDetail = {},
   ): Promise<void> {
-    const { grantId, requirement, cause } = detail;
+    await this.#recordToolInvoked(context, {
+      source: "kernel",
+      callId: call.id,
+      tool: call.tool,
+      outcome: result.status,
+      ...(result.status === "succeeded" ? {} : { reasonCode: result.error.code }),
+      ...detail,
+    });
+  }
+
+  /**
+   * The one `tool.invoked` record, whichever boundary answered the call.
+   *
+   * The kernel records the calls it decided and, through `recordRefusedCall`,
+   * the ones the envelope refused before asking it. They are one event type
+   * and were built twice, which is how the envelope's came to lack the
+   * catalogue the kernel's carried.
+   */
+  async #recordToolInvoked(
+    context: AccessContext,
+    invoked: ToolResultAuditDetail & {
+      readonly source: AuditSource;
+      readonly callId: string;
+      readonly tool: string;
+      readonly outcome: "succeeded" | "denied" | "failed";
+      readonly reasonCode?: string;
+    },
+  ): Promise<void> {
+    const { grantId, requirement } = invoked;
+    // Which catalogue answered it. The turn resolves one and holds it
+    // (ADR 0026), so this is the same value the turn's `tool.catalog.listed`
+    // carries, and the two join on it: a reader can say which calls a
+    // catalogue produced -- and which guessed names it never offered --
+    // without inferring it from time order. Absent on a call whose turn never
+    // listed -- a turn of one operation, or a host that invokes without
+    // discovering -- because there is no catalogue the caller was shown to
+    // name.
     const catalogueServed = this.#leases.get(turnAuthorityKey(context))?.catalogHash;
     await this.#recordOutcome(
       this.#auditEvent(context, {
         type: "tool.invoked",
-        outcome: result.status,
-        operationId: call.id,
-        tool: call.tool,
+        outcome: invoked.outcome,
+        operationId: invoked.callId,
+        tool: invoked.tool,
         ...(requirement === undefined
           ? {}
-          : {
-              resource: requirement.resource,
-              action: requirement.action,
-            }),
+          : { resource: requirement.resource, action: requirement.action }),
         ...(grantId === undefined ? {} : { grantId }),
-        ...(result.status === "succeeded" ? {} : { reason: result.error.code }),
-        metadata: {
-          // Which boundary refused. Free to infer until the envelope started
-          // recording too -- anything in audit was the kernel's -- and a fact
-          // with nowhere to live the moment that stopped being true (ADR 0023).
-          source: "kernel",
-          // Which catalogue answered it. The turn resolves one and holds it
-          // (ADR 0026), so this is the same value the turn's `tool.catalog.listed`
-          // carries, and the two join on it: a reader can say which calls a
-          // catalogue produced without inferring it from time order. Absent on a
-          // call whose turn never listed -- a turn of one operation, or a host
-          // that invokes without discovering -- because there is no catalogue
-          // the caller was shown to name.
-          ...(catalogueServed === undefined ? {} : { catalogHash: catalogueServed }),
-          // `tool_unavailable` is one code over several situations by design,
-          // so the model cannot tell them apart. An audit reader is not the
-          // model. `reason` stays the code the caller was given and this says
-          // which one it was.
-          ...(cause === undefined ? {} : { cause }),
-          ...(result.status !== "succeeded" && isInfrastructureDenial(result.error.code)
-            ? { failClosed: true }
-            : {}),
-        },
+        ...operationFacts(invoked.source, invoked.reasonCode, invoked.cause),
+        ...metadataOf(catalogueServed === undefined ? {} : { catalogHash: catalogueServed }),
       }),
     );
   }
@@ -2029,8 +2030,7 @@ export class SharedOSKernel {
         resource: request.resource,
         action: request.action,
         ...(grantId === undefined ? {} : { grantId }),
-        ...(result.status === "succeeded" ? {} : { reason: result.error.code }),
-        metadata: { source: "kernel" },
+        ...operationFacts("kernel", result.status === "succeeded" ? undefined : result.error.code),
       }),
     );
   }
@@ -2053,10 +2053,10 @@ export class SharedOSKernel {
         receiver: envelope.receiver,
         ...(operationId === undefined ? {} : { operationId }),
         ...(grantId === undefined ? {} : { grantId }),
-        ...(result.status === "denied" || result.status === "failed"
-          ? { reason: result.error.code }
-          : {}),
-        metadata: { source: "kernel" },
+        ...operationFacts(
+          "kernel",
+          result.status === "denied" || result.status === "failed" ? result.error.code : undefined,
+        ),
       }),
     );
   }
@@ -2154,19 +2154,35 @@ export class SharedOSKernel {
 const POLICY_OUTAGE = { kind: "policy", reasonCode: "host_policy_unavailable" } as const;
 
 /**
- * Metadata the decision itself carried, less the two keys the kernel states.
+ * What the kernel states about one operation event, in the fields that carry it.
  *
- * Two things produce it, and naming only the newer one would be misleading: a
- * `HostCeiling` saying which rule refused, and the authorizer's own delegation
- * detail on a broken chain. The latter is the reason this is a behaviour change
- * as well as a guard -- until now no decision metadata reached audit at all.
+ * One builder for `tool.invoked`, `resource.invoked` and `message.sent`: who
+ * answered, the code the caller was given, which situation a coarse code stood
+ * in for, and whether SharedOS failed closed. The three were written apart, and
+ * the resource and message records came to omit `failClosed` on exactly the
+ * denials a host is told to filter on.
  */
-function decisionMetadata(metadata: JsonObject | undefined): JsonObject {
-  if (metadata === undefined) {
-    return {};
-  }
-  const { consumed: _consumed, failClosed: _failClosed, ...rest } = metadata;
-  return rest;
+function operationFacts(
+  source: AuditSource,
+  reasonCode: string | undefined,
+  cause?: string,
+): Pick<AuditEventInput, "source" | "reason" | "cause" | "failClosed"> {
+  return {
+    source,
+    ...(reasonCode === undefined ? {} : { reason: reasonCode }),
+    ...(cause === undefined ? {} : { cause }),
+    ...failClosedFor(reasonCode),
+  };
+}
+
+/** `failClosed`, present only on a code that is SharedOS failing to establish a fact. */
+function failClosedFor(reasonCode: string | undefined): Pick<AuditEventInput, "failClosed"> {
+  return reasonCode !== undefined && isInfrastructureDenial(reasonCode) ? { failClosed: true } : {};
+}
+
+/** `metadata`, present only when there is something in it. */
+function metadataOf(metadata: JsonObject): Pick<AuditEventInput, "metadata"> {
+  return Object.keys(metadata).length === 0 ? {} : { metadata };
 }
 
 /**

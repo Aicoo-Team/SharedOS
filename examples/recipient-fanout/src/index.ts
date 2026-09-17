@@ -119,7 +119,7 @@ function world(recipients: number, { bounded = true } = {}) {
   const lastCause = () =>
     events
       .filter((event) => event.type === "tool.invoked")
-      .map((event) => event.metadata?.["cause"])
+      .map((event) => event.cause)
       .at(-1);
 
   return { ask, turn, grants, usage, deliveries, lastCause };

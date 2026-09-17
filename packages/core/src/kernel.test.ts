@@ -2789,7 +2789,7 @@ describe("SharedOSKernel host ceiling", () => {
   });
 
   it.each([false, true])(
-    "does not let a ceiling stamp failClosed: %s onto its own refusal",
+    "keeps the kernel's flags where a ceiling's failClosed: %s cannot reach them",
     async (forged) => {
       const events: AuditEvent[] = [];
       const forging: HostCeiling = {
@@ -2807,13 +2807,19 @@ describe("SharedOSKernel host ceiling", () => {
 
       await kernel.invokeTool(context(), toolCall());
 
-      // `true` is the dangerous direction and the reason the key is stripped
-      // rather than overwritten: the kernel only ever *sets* `failClosed` on an
-      // infrastructure denial, so a ceiling could otherwise relabel a deliberate
-      // refusal as an outage and move it out of the policy counts.
-      expect(events.find(({ type }) => type === "authorization.checked")?.metadata).toEqual({
+      // `true` is the dangerous direction: the kernel only ever *sets*
+      // `failClosed` on an infrastructure denial, so while the two shared one
+      // bag a ceiling could relabel a deliberate refusal as an outage and move
+      // it out of the policy counts. The kernel's flags are fields now, which a
+      // port has no way to write; what the ceiling said stays in `metadata`,
+      // as the ceiling's (ADR 0023).
+      const checked = events.find(({ type }) => type === "authorization.checked");
+      expect(checked?.failClosed).toBeUndefined();
+      expect(checked?.consumed).toBe(false);
+      expect(checked?.metadata).toMatchObject({
         rule: "hr-freeze",
-        consumed: false,
+        failClosed: forged,
+        consumed: true,
       });
     },
   );
@@ -2839,7 +2845,7 @@ describe("SharedOSKernel host ceiling", () => {
     expect(events.find(({ type }) => type === "authorization.checked")).toMatchObject({
       outcome: "denied",
       reason: "host_policy_unavailable",
-      metadata: { failClosed: true },
+      failClosed: true,
     });
   });
 
@@ -2862,7 +2868,8 @@ describe("SharedOSKernel host ceiling", () => {
     // is misbehaving.
     expect(events.find(({ type }) => type === "authority.resolved")).toMatchObject({
       outcome: "failed",
-      metadata: { failClosed: true, hostCeiling: "installed" },
+      failClosed: true,
+      metadata: { hostCeiling: "installed" },
     });
   });
 
@@ -3024,7 +3031,7 @@ describe("SharedOSKernel host policy", () => {
       expect(decision).toMatchObject({
         outcome: "denied",
         reason: "host_policy_unavailable",
-        metadata: { failClosed: true },
+        failClosed: true,
       });
     }
     // The catalogue was computed, and empty, and the record says why the
@@ -3034,7 +3041,8 @@ describe("SharedOSKernel host policy", () => {
     const listing = events.find(({ type }) => type === "tool.catalog.listed");
     expect(listing).toMatchObject({
       outcome: "succeeded",
-      metadata: { withheldCount: 1, failClosed: true },
+      failClosed: true,
+      metadata: { withheldCount: 1 },
     });
     expect(listing?.metadata).not.toHaveProperty("hostPolicyVersion");
   });
@@ -3093,7 +3101,8 @@ describe("SharedOSKernel host policy", () => {
     // The two loads are independent, and the record says what each did.
     expect(events.find(({ type }) => type === "authority.resolved")).toMatchObject({
       outcome: "failed",
-      metadata: { failClosed: true, hostCeiling: "absent", hostPolicy: "loaded" },
+      failClosed: true,
+      metadata: { hostCeiling: "absent", hostPolicy: "loaded" },
     });
   });
 
@@ -3163,12 +3172,92 @@ describe("SharedOSKernel audit routing", () => {
     ]);
     // One code on the wire, three situations in the trail. `errors.md` has
     // promised this disambiguation all along and delivered it for one of them.
-    expect(invoked.map(({ metadata }) => metadata?.["cause"])).toEqual([
+    expect(invoked.map(({ cause }) => cause)).toEqual([
       "not_registered",
       "namespace_disabled",
       "no_matching_grant",
     ]);
-    expect(invoked.every(({ metadata }) => metadata?.["source"] === "kernel")).toBe(true);
+    expect(invoked.every(({ source }) => source === "kernel")).toBe(true);
+  });
+
+  it("marks an outage failClosed on every operation event, not only on a tool call", async () => {
+    // `docs/errors.md` tells a host to exclude `failClosed` records before it
+    // computes a denial rate. The resource and message records were built apart
+    // from the tool one and never carried the flag, so a grant store that was
+    // down read as two deliberate refusals and one outage.
+    const events: AuditEvent[] = [];
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        load: async () => {
+          throw new Error("grant store is unreachable");
+        },
+      },
+      audit: { record: async (e) => void events.push(e) },
+    });
+
+    await kernel.invokeTool(context(), toolCall());
+    await kernel.invokeResource(context(), {
+      operationId: "operation-1",
+      resource: FILE_RESOURCE,
+      action: "search",
+    });
+    await kernel.sendMessage(context(), {
+      version: "1",
+      id: "message-1",
+      sender: ACTOR,
+      receiver: RECEIVER,
+      purpose: "prepare-update",
+      payload: {},
+      traceId: "trace-1",
+      createdAt: NOW,
+    });
+
+    const operations = events.filter(({ type }) =>
+      ["tool.invoked", "resource.invoked", "message.sent"].includes(type),
+    );
+    expect(operations.map(({ type }) => type)).toEqual([
+      "tool.invoked",
+      "resource.invoked",
+      "message.sent",
+    ]);
+    for (const operation of operations) {
+      expect(operation).toMatchObject({
+        outcome: "denied",
+        reason: "authority_unavailable",
+        source: "kernel",
+        failClosed: true,
+      });
+    }
+  });
+
+  it("names the catalogue a guessed tool was never offered from", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (e) => void events.push(e) },
+    });
+    kernel.registerTool(successfulTool());
+    const access = context(["files"]);
+
+    const scope = await kernel.openTurnAuthority(access);
+    try {
+      await kernel.listTools(access);
+      await kernel.recordRefusedCall(access, {
+        callId: "call-guessed",
+        tool: "files.delete",
+        reasonCode: "tool_unavailable",
+        cause: "not_offered",
+      });
+    } finally {
+      scope.close();
+    }
+
+    // The kernel's own `tool.invoked` has carried the turn's catalogue since
+    // ADR 0026. The envelope's was built separately and did not, so the one
+    // refusal that is *about* the catalogue could not be joined to it.
+    const listed = events.find(({ type }) => type === "tool.catalog.listed");
+    const refused = events.find(({ type }) => type === "tool.invoked");
+    expect(refused?.source).toBe("envelope");
+    expect(refused?.metadata).toEqual({ catalogHash: listed?.metadata?.["catalogHash"] });
   });
 
   it("records a listing by what it was computed from, not by the names it returned or withheld", async () => {
@@ -3194,8 +3283,8 @@ describe("SharedOSKernel audit routing", () => {
       catalogHash: await catalogHash(publishToolCatalog([FILE_TOOL])),
       enabledNamespaces: ["files"],
       withheldCount: 1,
-      source: "kernel",
     });
+    expect(listed[0]?.source).toBe("kernel");
   });
 
   it("records the catalogue under the identifier a harness is handed for it", async () => {
@@ -3239,13 +3328,13 @@ describe("SharedOSKernel audit routing", () => {
     expect(events.find(({ type }) => type === "tool.catalog.listed")).toMatchObject({
       outcome: "denied",
       reason: "authority_unavailable",
+      source: "kernel",
+      failClosed: true,
       metadata: {
         catalogHash: await catalogHash([]),
         enabledNamespaces: ["files"],
         withheldCount: 0,
-        failClosed: true,
         authority: "grant_source_failed",
-        source: "kernel",
       },
     });
   });
@@ -3267,9 +3356,13 @@ describe("SharedOSKernel audit routing", () => {
         outcome: "failed",
         reason: "runtime_failed",
         operationId: "exec-1",
-        metadata: { source: "envelope", endedBy: "envelope" },
+        endedBy: "envelope",
       }),
     ]);
+    // Who recorded is always the envelope, so the record does not say it;
+    // `source` is who refused, and is kept for the events where that varies.
+    expect(events[0]?.source).toBeUndefined();
+    expect(events[0]?.metadata).toBeUndefined();
   });
 
   it("records a cancelled turn as failed with its own reason, adding no outcome", async () => {
@@ -3307,7 +3400,8 @@ describe("SharedOSKernel audit routing", () => {
       reason: "tool_unavailable",
       operationId: "call-9",
       tool: "files.delete",
-      metadata: { source: "envelope", cause: "not_offered" },
+      source: "envelope",
+      cause: "not_offered",
     });
   });
 });
