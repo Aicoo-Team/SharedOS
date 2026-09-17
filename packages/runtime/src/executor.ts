@@ -612,7 +612,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
           this.#kernel.recordEscalation?.(
             contextAt(executionContext, this.#clock()),
             outcome.data.reason,
-            { signal: abort.signal },
+            { signal: abort.signal, executionId: request.executionId },
           ) ?? Promise.resolve(undefined),
           abort.signal,
         )) ?? {

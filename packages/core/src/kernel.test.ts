@@ -6,6 +6,7 @@ import type {
   CapabilityRequest,
   CapabilityGrant,
   JsonObject,
+  MessageDeliveryResult,
   MessageEnvelope,
   ResourceRef,
   ToolCall,
@@ -1783,6 +1784,84 @@ describe("SharedOSKernel messaging and audit", () => {
     },
   );
 
+  it.each([
+    [
+      "refuses with a code of its own",
+      async (
+        _access: AccessContext,
+        envelope: MessageEnvelope,
+      ): Promise<MessageDeliveryResult> => ({
+        messageId: envelope.id,
+        status: "denied",
+        timestamp: NOW,
+        error: { code: "route_lease_revoked", message: "The recipient's route is gone" },
+      }),
+      "route_lease_revoked",
+    ],
+    [
+      "throws",
+      async (): Promise<MessageDeliveryResult> => {
+        throw new Error("transport socket closed");
+      },
+      "message_delivery_failed",
+    ],
+  ] as const)(
+    "names what the transport answered as the tool record's cause when it %s",
+    async (_label, deliver, transportCode) => {
+      const events: AuditEvent[] = [];
+      const kernel = kernelWith([grant("grant-tina", messageResource(), ["send"])], {
+        audit: { record: async (event) => void events.push(event) },
+        messageTransport: { deliver },
+        messageRequestRouter: { resolveReply: async (_access, request) => replyTo(request) },
+      });
+
+      const result = await kernel.invokeTool(context(["messages"]), messageRequestCall());
+
+      // The caller learns the request was not accepted and nothing about why:
+      // the transport's vocabulary is the host's. The trail is not the caller.
+      expect(result).toMatchObject({
+        status: "failed",
+        error: { code: "message_request_not_accepted" },
+      });
+      expect(JSON.stringify(result)).not.toContain(transportCode);
+
+      // Until this, only the sibling `message.sent` carried the transport's
+      // code, and a reader had to join the two by call id to say why a request
+      // was refused. The tool's own record says it now, in the field every
+      // other coarse code already uses.
+      const invoked = events.find(({ type }) => type === "tool.invoked");
+      expect(invoked).toMatchObject({
+        reason: "message_request_not_accepted",
+        cause: transportCode,
+        operationId: "untrusted-model-call-1",
+      });
+      expect(events.find(({ type }) => type === "message.sent")).toMatchObject({
+        reason: transportCode,
+        operationId: "untrusted-model-call-1",
+      });
+    },
+  );
+
+  it("names no cause on a request the transport accepted", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([grant("grant-tina", messageResource(), ["send"])], {
+      audit: { record: async (event) => void events.push(event) },
+      messageTransport: {
+        deliver: async (_access, envelope) => ({
+          messageId: envelope.id,
+          status: "accepted",
+          timestamp: NOW,
+        }),
+      },
+      messageRequestRouter: { resolveReply: async (_access, request) => replyTo(request) },
+    });
+
+    await expect(
+      kernel.invokeTool(context(["messages"]), messageRequestCall()),
+    ).resolves.toMatchObject({ status: "succeeded" });
+    expect(events.find(({ type }) => type === "tool.invoked")?.cause).toBeUndefined();
+  });
+
   it("rejects malformed durable replies and sanitizes router failures", async () => {
     const deliver = vi.fn<MessageTransport["deliver"]>(async (_access, message) => ({
       messageId: message.id,
@@ -2309,6 +2388,24 @@ describe("what a failing audit sink does, by when the record is written", () => 
       expect(onAuditError.mock.calls[0]?.[1]).toMatchObject({ type });
     },
   );
+
+  it("joins an escalation to the turn it ended, when it is told which", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (e) => void events.push(e) } });
+
+    await kernel.recordEscalation(context(), "Needs a human", { executionId: "execution-1" });
+    await kernel.recordTurnEnd(context(), { executionId: "execution-1", status: "escalated" });
+    await kernel.recordEscalation(context(), "A host asking outside a turn");
+
+    // `turn.ended` has always carried the execution as its `operationId`. The
+    // escalation it ended on carried nothing, so a reviewer's queue built from
+    // audit joined the two on `traceId` and the order they arrived in.
+    expect(events.map(({ type, operationId }) => [type, operationId])).toEqual([
+      ["escalation.requested", "execution-1"],
+      ["turn.ended", "execution-1"],
+      ["escalation.requested", undefined],
+    ]);
+  });
 
   it("still ends the turn escalated when the escalation cannot be written", async () => {
     // The record is the turn's terminal, not a gate: the runtime has already

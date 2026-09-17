@@ -117,11 +117,20 @@ export const MESSAGE_REQUEST_TOOL_DEFINITION: ToolDefinition = {
   annotations: { readOnly: false, destructive: true, idempotent: false },
 };
 
+/**
+ * How this tool hands an authorized envelope to the kernel for delivery.
+ *
+ * It passes the call, not the call's id. The kernel records the dispatch under
+ * the id and, when the transport refuses it, keeps the transport's code against
+ * the call object so the tool's own record can name it as its `cause`. The
+ * object is the key for the reason it is the key below: an id is something a
+ * caller chose, and two calls in flight can share one.
+ */
 export type AuthorizedMessageDelivery = (
   context: AccessContext,
   envelope: MessageEnvelope,
   signal: AbortSignal,
-  operationId: string,
+  call: ToolCall,
 ) => Promise<MessageDeliveryResult>;
 
 /**
@@ -220,7 +229,7 @@ export function createMessageRequestTool(options: MessageRequestToolOptions): To
         context,
         structuredClone(request),
         signal,
-        call.id,
+        call,
       );
       if (delivery.status !== "accepted" && delivery.status !== "delivered") {
         return refusedToolResult(

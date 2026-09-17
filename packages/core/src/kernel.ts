@@ -207,6 +207,16 @@ interface ToolResultAuditDetail {
 
 export interface EscalationOptions extends KernelOperationOptions {
   /**
+   * The execution the escalation ended, where the caller has one.
+   *
+   * Recorded as the event's `operationId`, which is what `turn.ended` carries
+   * for the same turn, so a reviewer's queue built from audit joins an
+   * escalation to its turn on an id rather than on `traceId` and time order.
+   * The execution envelope passes it; a host escalating outside a turn has
+   * none and omits it.
+   */
+  readonly executionId?: string;
+  /**
    * The authority this escalation is asking for.
    *
    * A host escalating a denial passes the `requiredAuthority` that denial
@@ -305,6 +315,19 @@ export class SharedOSKernel {
   readonly #authority: TrustedAuthorityResolver;
   readonly #policySource: PolicySource | undefined;
   readonly #leases = new Map<string, AuthorityLease>();
+  /**
+   * What a message transport answered when it refused a `messages.request`.
+   *
+   * The caller is told `message_request_not_accepted` whatever the transport
+   * said, for the reason `tool_unavailable` is one code over several: the
+   * transport's vocabulary is the host's, and what it reveals is not the
+   * caller's to learn. The tool's audit record is not the caller, and names the
+   * transport's code as its `cause`. It travels here rather than through the
+   * handler's result, which is returned to the caller whole. Keyed on the
+   * frozen call the kernel hands the handler, so concurrent calls sharing an id
+   * cannot read each other's, and held weakly, so nothing outlives its call.
+   */
+  readonly #dispatchCauses = new WeakMap<ToolCall, string>();
   readonly #authorizer: CapabilityAuthorizer;
   readonly #resources: ResourceProviderRegistry;
   readonly #tools: ToolRegistry;
@@ -505,6 +528,7 @@ export class SharedOSKernel {
         type: "escalation.requested",
         outcome: "escalated",
         reason: "escalation_requested",
+        ...(options.executionId === undefined ? {} : { operationId: options.executionId }),
         metadata: {
           detail: parsed.data.reason,
           reviewer: parsed.data.reviewer,
@@ -1254,9 +1278,13 @@ export class SharedOSKernel {
       },
     });
 
+    const dispatchCause = this.#dispatchCauses.get(parsedCall);
     await this.#recordToolResult(context, call, result, {
       ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
       requirement,
+      ...(result.status === "succeeded" || dispatchCause === undefined
+        ? {}
+        : { cause: dispatchCause }),
     });
     return result;
   }
@@ -1476,14 +1504,19 @@ export class SharedOSKernel {
           createMessageId: this.#createMessageId,
           reportProviderError: (error, access, operation) =>
             this.#reportProviderError(error, access, operation),
-          deliverAuthorizedMessage: (access, envelope, operationSignal, operationId) =>
-            this.#deliverAuthorizedMessage(
+          deliverAuthorizedMessage: async (access, envelope, operationSignal, call) => {
+            const delivery = await this.#deliverAuthorizedMessage(
               access,
               envelope,
               operationSignal,
               undefined,
-              operationId,
-            ),
+              call.id,
+            );
+            if (delivery.status === "denied" || delivery.status === "failed") {
+              this.#dispatchCauses.set(call, delivery.error.code);
+            }
+            return delivery;
+          },
         }),
       );
     }
