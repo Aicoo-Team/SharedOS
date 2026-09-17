@@ -1,4 +1,4 @@
-import type { AuditEvent } from "./audit.js";
+import type { AuditEvent, AuditSource } from "./audit.js";
 import { isInfrastructureDenial } from "./authorization.js";
 
 /**
@@ -11,9 +11,9 @@ import { isInfrastructureDenial } from "./authorization.js";
  * caller cannot map the permission topology by reading refusals (ADR 0012).
  * The host is not the caller. It wired the store, issued the grant, and built
  * the context, and the audit record already says which of those was wrong --
- * as `metadata.cause`, `metadata.source`, and `metadata.failClosed`. The gate
- * is those three fields and the code read together, and it is derived from the
- * record rather than written into it because every input is already there.
+ * as `cause`, `source`, and `failClosed`. The gate is those three fields and
+ * the code read together, and it is derived from the record rather than
+ * written into it because every input is already there.
  *
  * - `envelope`: the execution envelope refused before the kernel was asked. A
  *   tool the turn's catalogue never offered, or a spent step or call budget.
@@ -68,11 +68,6 @@ function gateForCode(code: string): RefusalGate | undefined {
   return undefined;
 }
 
-function metadataString(event: AuditEvent, key: string): string | undefined {
-  const value = event.metadata?.[key];
-  return typeof value === "string" ? value : undefined;
-}
-
 /**
  * Name the gate a denied audit event was refused at.
  *
@@ -83,10 +78,9 @@ function metadataString(event: AuditEvent, key: string): string | undefined {
  * belong to.
  *
  * The order is the order the checks run in. The envelope refuses before the
- * kernel sees a call, so `metadata.source` is read first, on the one record
- * type where it names the refuser rather than the recorder. The kernel refuses
- * an unregistered or disabled tool before consulting the authorizer, so
- * `metadata.cause` is read next; a cause that is itself a reason code is the
+ * kernel sees a call, so `source` is read first. The kernel refuses an
+ * unregistered or disabled tool before consulting the authorizer, so `cause`
+ * is read next; a cause that is itself a reason code is the
  * discovery decision `tool_unavailable` stood in for, and is classified as that
  * decision would be. `failClosed` is honoured as well as the code, so a
  * ceiling's or a source's outage counts as infrastructure whichever code
@@ -96,17 +90,14 @@ export function classifyRefusal(event: AuditEvent): RefusalGate | undefined {
   if (event.outcome !== "denied" || event.reason === undefined) {
     return undefined;
   }
-  // `source` on an operation record says who refused. On a `turn.ended` it
-  // says who recorded -- always the envelope, whichever check ended the turn
-  // -- so it is read only where it carries the first meaning.
-  if (event.type === "tool.invoked" && metadataString(event, "source") === "envelope") {
+  if (event.source === "envelope") {
     return "envelope";
   }
-  const cause = metadataString(event, "cause");
+  const { cause } = event;
   if (cause !== undefined && REGISTRATION_CAUSES.has(cause)) {
     return "registration";
   }
-  if (event.metadata?.["failClosed"] === true) {
+  if (event.failClosed === true) {
     return "infrastructure";
   }
   if (event.reason === "tool_unavailable") {
@@ -126,9 +117,9 @@ export interface RefusalExplanation {
   readonly gate: RefusalGate | undefined;
   /** The code the caller was given. */
   readonly code: string;
-  /** Which boundary refused, from `metadata.source`. */
-  readonly source: string | undefined;
-  /** Which situation a coarse code was, from `metadata.cause`, where it carried one. */
+  /** Which boundary refused. */
+  readonly source: AuditSource | undefined;
+  /** Which situation a coarse code was, where it carried one. */
   readonly cause: string | undefined;
   /** The `tool.invoked` record of the refusal. */
   readonly refusal: AuditEvent;
@@ -169,8 +160,8 @@ export function explainRefusal(
   return {
     gate: classifyRefusal(refusal),
     code: refusal.reason,
-    source: metadataString(refusal, "source"),
-    cause: metadataString(refusal, "cause"),
+    source: refusal.source,
+    cause: refusal.cause,
     refusal,
     decision,
   };

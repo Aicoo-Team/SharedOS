@@ -1,5 +1,6 @@
 export * from "./access.js";
 export * from "./address.js";
+export * from "./audit.js";
 export * from "./capability.js";
 export * from "./card.js";
 export * from "./common.js";

@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 import {
+  AuditEventSchema,
   AccessContextSchema,
   AuthorizationDecisionSchema,
   CapabilityGrantSchema,
@@ -586,5 +587,51 @@ describe("isJsonObject", () => {
     for (const value of [null, [], [1], "x", 1, true, undefined]) {
       expect(isJsonObject(value)).toBe(false);
     }
+  });
+});
+
+describe("AuditEventSchema", () => {
+  const event = {
+    version: "1",
+    id: "audit-1",
+    type: "tool.invoked",
+    outcome: "denied",
+    at: "2026-08-03T09:00:00.000Z",
+    traceId: "trace-1",
+    namespaceId: "world-alpha",
+    actor: { kind: "agent", agentId: "agent-bob" },
+    authority: { kind: "human", userId: "user-alice" },
+    owner: { kind: "human", userId: "user-alice" },
+    purpose: "prepare-update",
+    operationId: "call-1",
+    tool: "files.search",
+    reason: "tool_unavailable",
+    source: "kernel",
+    cause: "not_registered",
+  } as const;
+
+  it("takes what the kernel states as fields and what a port supplied as metadata", () => {
+    expect(AuditEventSchema.parse(event)).toEqual(event);
+    expect(
+      AuditEventSchema.parse({
+        ...event,
+        type: "authorization.checked",
+        consumed: false,
+        failClosed: true,
+        metadata: { rule: "hr-freeze" },
+      }),
+    ).toMatchObject({ consumed: false, failClosed: true, metadata: { rule: "hr-freeze" } });
+    expect(
+      AuditEventSchema.parse({ ...event, type: "turn.ended", endedBy: "runtime" }).endedBy,
+    ).toBe("runtime");
+  });
+
+  it("refuses a field it does not name, a source that is not a boundary, and an unknown type", () => {
+    // Strict on purpose. The rule is that a kernel-stated fact is a field this
+    // schema names (ADR 0023); an unknown key is either a fact that skipped the
+    // schema or a port's key that belongs in `metadata`.
+    expect(AuditEventSchema.safeParse({ ...event, recordedBy: "envelope" }).success).toBe(false);
+    expect(AuditEventSchema.safeParse({ ...event, source: "runtime" }).success).toBe(false);
+    expect(AuditEventSchema.safeParse({ ...event, type: "tool.guessed" }).success).toBe(false);
   });
 });

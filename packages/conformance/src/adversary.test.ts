@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { ESCALATION_TOOL_NAME } from "@aicoo/sharedos-runtime";
 
-import type { ExecutionResult } from "@aicoo/sharedos-contracts";
+import { AuditEventSchema, type ExecutionResult } from "@aicoo/sharedos-contracts";
 import { SharedOSExecutor } from "@aicoo/sharedos-runtime";
 
 import {
@@ -202,6 +202,24 @@ describe("the hostile runtime", () => {
     expect(readAdversarialReport(withoutMetadata)?.receipts).toEqual(run.receipts);
   });
 
+  it("emits no audit event the published schema refuses, on any canonical move", async () => {
+    // `AuditEventSchema` is what a host validates a persisted trail against, and
+    // the kernel's type is inferred from it. This is the other half: every
+    // event every canonical move produces parses under it, strictly, so a field
+    // the kernel starts writing cannot ship without the schema knowing.
+    const kinds = [...new Set(CANONICAL_ATTACK_MOVES.map(({ kind }) => kind))];
+    let seen = 0;
+    for (const kind of kinds) {
+      const run = await runMove(kind);
+      for (const event of run.world.auditEvents) {
+        const parsed = AuditEventSchema.safeParse(event);
+        expect(parsed.success ? [] : [kind, event.type, parsed.error.issues]).toEqual([]);
+        seen += 1;
+      }
+    }
+    expect(seen).toBeGreaterThan(kinds.length);
+  });
+
   it("records an envelope refusal once, from audit, not once per source", async () => {
     const run = await runMove("hidden_tool");
 
@@ -219,12 +237,9 @@ describe("the hostile runtime", () => {
     // And the envelope now leaves its own trail: the two refused calls plus the
     // terminal, none of which reached a sink before.
     const refusals = run.world.auditEvents.filter(
-      (event) => event.type === "tool.invoked" && event.metadata?.["source"] === "envelope",
+      (event) => event.type === "tool.invoked" && event.source === "envelope",
     );
-    expect(refusals.map(({ metadata }) => metadata?.["cause"])).toEqual([
-      "not_offered",
-      "not_offered",
-    ]);
+    expect(refusals.map(({ cause }) => cause)).toEqual(["not_offered", "not_offered"]);
     expect(run.world.auditEvents.filter(({ type }) => type === "turn.ended")).toHaveLength(1);
   });
 
@@ -278,7 +293,7 @@ describe("the hostile runtime", () => {
     expect(ended[0]).toMatchObject({
       outcome: "failed",
       reason: "runtime_failed",
-      metadata: { source: "envelope", endedBy: "envelope" },
+      endedBy: "envelope",
     });
     // Still no decision was denied: the turn was stopped by a plugin that
     // stopped obeying the protocol, not by authority running out.

@@ -8,7 +8,55 @@ each entry calls out what a host has to update.
 
 ## Unreleased
 
+### Changed — breaking
+
+- **What the kernel states on an audit event is a field, not a `metadata` key.**
+  `source`, `cause`, `failClosed`, `consumed` and `endedBy` are `AuditEvent`
+  fields. ADR 0023 first put `source` and `cause` in `metadata`, beside
+  `failClosed` and `consumed`, so the event kept its top-level shape; ADR 0020
+  then recorded a decision's own metadata in the same object, where a host
+  ceiling's `failClosed: true` could stand on any denial the kernel had not
+  marked, and the kernel carried a function to strip it. `metadata` now holds
+  what a host port supplied and the details particular to one event type
+  (`grantIds`, `catalogHash`, `withheldCount`, the authorizer's account of a
+  denial, an escalation's `detail`), and nothing a port writes can reach a
+  field. ADR 0023 is revised in place.
+
+  **Migration.** Read `event.source`, `event.cause`, `event.failClosed`,
+  `event.consumed` and `event.endedBy` where you read the `metadata` key of the
+  same name. A host that persists audit under a closed schema adds five optional
+  fields; `AuditEventSchema` in `@aicoo/sharedos-contracts` is the shape, and the
+  kernel's `AuditEvent` type is inferred from it. `version` stays `"1"` and no
+  release writes both. A report spanning old and new events filters on both for
+  as long as the old ones are in its window.
+
+- **`turn.ended` carries no `source`.** It said `envelope` on every turn ending,
+  because the envelope records every turn ending: who recorded, not who refused,
+  and a second meaning for the field. Who ended a failed turn is `endedBy`.
+  `classifyRefusal` no longer needs to check the event type before reading
+  `source`.
+
+- **`RefusalExplanation.source` is typed `AuditSource | undefined`**, where it was
+  `string | undefined`, and is read from the field.
+
 ### Fixed
+
+- **An outage is marked `failClosed` on every operation event.** `docs/errors.md`
+  tells a host to exclude `failClosed` records before computing a denial rate.
+  `tool.invoked` carried the flag; `resource.invoked` and `message.sent` were
+  built separately and never did, so a grant store that was down read as one
+  outage and two deliberate refusals. One builder states the operation facts for
+  all three.
+
+- **A turn whose audit sink is down still ends `escalated`.** A sink that threw on
+  `escalation.requested` rejected `recordEscalation` inside the executor's `try`:
+  the turn ended `failed` / `runtime_failed`, the plugin was blamed, and the
+  throw went to `onTurnError`. The record is the turn's terminal, not a gate, so
+  it is written on the path that reports to `onAuditError` and leaves the ending
+  alone. The rule it follows is stated and tested for the first time: a record
+  written before an effect (an authority load, a decision, a catalogue listing)
+  rejects the operation when the sink throws, and nothing runs; a record written
+  after one never changes the answer. No behaviour moved for the first kind.
 
 - **A turn that never returns still records what it was asked.** `promptHash`
   rode on the turn's outcome metadata alone, and a turn cancelled at its deadline
@@ -64,6 +112,23 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **A refused `messages.request` names what the transport answered.** The caller is
+  told `message_request_not_accepted` whatever the transport said, and only the
+  sibling `message.sent` carried the transport's code, so a reader joined the two
+  by call id to say why. The tool's own `tool.invoked` carries it as `cause`. It
+  travels inside the kernel, never through the handler's result, which is
+  returned to the caller whole (ADR 0012).
+
+- **`EscalationOptions.executionId`.** Optional. `recordEscalation` records it as
+  the event's `operationId`, which that turn's `turn.ended` has always carried, so
+  a reviewer's queue built from audit joins an escalation to its turn on an id.
+  The execution envelope passes it.
+
+- **An envelope refusal carries the turn's `catalogHash`.** The kernel's own
+  `tool.invoked` has since ADR 0026; the envelope's was built apart and did not,
+  so a `not_offered` refusal could not be joined to the catalogue that did not
+  offer the tool.
+
 - **`RuntimeHost.annotate(key, value)`: a fact stated for the turn's record.**
   `emit` is for something that happened at a moment; this is for something that
   is true of the turn. The executor holds a frozen clone of a JSON value and
@@ -82,7 +147,7 @@ each entry calls out what a host has to update.
   and "not discoverable to you", and `no_matching_grant` is one code over nine
   conditions, so a caller cannot map the permission topology from refusals
   (ADR 0012). The host is not the caller, and the record already said which:
-  `metadata.cause`, `metadata.source`, `metadata.failClosed`, `rejectedGrants`.
+  `cause`, `source`, `failClosed`, `rejectedGrants`.
   What a host still did by hand was join a denied `ToolResult` to those records
   and decide which check refused. `@aicoo/sharedos-core` now exports
   `classifyRefusal(event)`, which names one of six gates — `envelope`,

@@ -5,6 +5,7 @@ import type {
   CapabilityConstraints,
   CapabilityRequest,
 } from "@aicoo/sharedos-contracts";
+import { AuditEventSchema } from "@aicoo/sharedos-contracts";
 import { mintCapabilityRequest } from "@aicoo/sharedos-core";
 import { beforeAll, describe, expect, it } from "vitest";
 
@@ -470,6 +471,12 @@ describe("R4: every auto-decision is marked", () => {
         [AUTO_DECIDED_METADATA_KEY]: { matcher: "jaccard-v3", citedRequestIds: ["p-similar"] },
       },
     });
+    // The one audit event a turn does not write. It is held to the published
+    // schema like the kernel's own, and what the matcher says stays in
+    // `metadata`, where a control plane's detail belongs.
+    expect(
+      AuditEventSchema.safeParse(autoDecisionAuditEvent(context(), admission.decision)).success,
+    ).toBe(true);
   });
 });
 

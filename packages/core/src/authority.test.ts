@@ -246,7 +246,7 @@ describe("SharedOSKernel authority boundary", () => {
       "authority.resolved",
       "authorization.checked",
     ]);
-    expect(events.every((event) => event.metadata?.["failClosed"] === true)).toBe(true);
+    expect(events.every((event) => event.failClosed === true)).toBe(true);
     expect(isInfrastructureDenial("authority_unavailable")).toBe(true);
   });
 

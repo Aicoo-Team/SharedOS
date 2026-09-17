@@ -165,7 +165,7 @@ is disabled, _and_ when no grant makes it discoverable. That is deliberate: the
 caller learns it cannot use the tool, not which of the three reasons applies.
 
 **The specific reason is in the audit trail**, on the `tool.invoked` event
-itself, as `metadata.cause`:
+itself, as `cause`:
 
 ```text
 tool.invoked  denied  files.read  <- tool_unavailable, cause: namespace_disabled
@@ -174,7 +174,9 @@ tool.invoked  denied  files.read  <- tool_unavailable, cause: namespace_disabled
 `cause` is one of `not_registered`, `namespace_disabled`, the reason code the
 discovery check returned (`no_matching_grant`, `host_policy_denied`, or a
 fail-closed code), or — from the execution envelope — `not_offered`, a tool name
-the turn's catalogue never held. `reason` stays the code the caller was given, so
+the turn's catalogue never held. A `messages.request` the transport refused
+carries the transport's code the same way: the caller is told
+`message_request_not_accepted`, and `cause` says what the transport answered. `reason` stays the code the caller was given, so
 the audit code and the wire code remain comparable and one refusal keeps one
 name (ADR 0012).
 
@@ -192,7 +194,7 @@ first.
 **Both boundaries use this one code.** The execution envelope refuses a tool
 outside the turn's permission-filtered catalogue with `tool_unavailable`, the
 same code the kernel uses. Which boundary refused is recorded separately, as
-`metadata.source` on the audit event and as `OperationRecord.source` in a
+`source` on the audit event and as `OperationRecord.source` in a
 conformance record: a code says what was refused, a source says who refused it.
 The earlier `tool_not_available` is gone rather than aliased — two names for one
 refusal is the defect.
@@ -221,7 +223,7 @@ const result = await kernel.invokeTool(context, call);
 if (result.status === "denied") {
   const explained = explainRefusal(result, events);
   explained?.gate; // "registration" | "request" | "infrastructure" | "ceiling" | "grant" | "envelope"
-  explained?.cause; // metadata.cause on the tool.invoked record
+  explained?.cause; // cause on the tool.invoked record
   explained?.decision?.metadata; // rejectedGrants, grantsResolved, missingDependency
 }
 ```
@@ -241,9 +243,8 @@ sentence that drifts.
 | `ceiling`        | A grant authorized it and host policy overrode it                 | Product or organization policy. A grant will not help    |
 | `grant`          | Nothing the source returned covers it, or what covers it is spent | Issue a grant. `rejectedGrants` says why each one failed |
 
-The classifier reads the record in the order the checks ran: `metadata.source`
-first, because the envelope refuses before the kernel is asked; `metadata.cause`
-next, because the kernel refuses an unregistered or disabled tool before
+The classifier reads the record in the order the checks ran: `source` first,
+because the envelope refuses before the kernel is asked; `cause` next, because the kernel refuses an unregistered or disabled tool before
 consulting the authorizer; then `failClosed` and the code. It returns
 `undefined` for a code it does not know rather than filing it under a gate it
 may not belong to.
@@ -595,27 +596,39 @@ and every `authorization.checked` and `tool.catalog.listed` event inside it
 carry the same value (ADR 0010); a consumer reconstructing a turn can pin every
 decision to that one load.
 
-`source` is on every operation and terminal event, in `metadata`: `kernel` or
-`envelope`, the boundary that produced it. It was free to infer until the
-envelope began recording — anything in audit was the kernel's, because the
-envelope wrote nothing — and it exists so closing that gap did not open an
-ambiguity in its place.
+What SharedOS itself states about an event is a field, typed by
+`AuditEventSchema` in `@aicoo/sharedos-contracts`; `metadata` holds what a host
+port supplied and the details particular to one event type (ADR 0023). Five
+facts are fields:
+
+| Field        | On                                                                        | Says                                                                                            |
+| ------------ | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `source`     | `tool.invoked`, `resource.invoked`, `message.sent`, `tool.catalog.listed` | `kernel` or `envelope`: the boundary that performed or refused it. Never who recorded           |
+| `cause`      | `tool.invoked`                                                            | Which situation a coarse `reason` stood in for                                                  |
+| `failClosed` | any event that can record an outage                                       | Present and `true` when SharedOS could not establish a fact and refused rather than guess       |
+| `consumed`   | `authorization.checked`                                                   | Whether a bounded use was spent                                                                 |
+| `endedBy`    | `turn.ended`, on a failure                                                | `envelope` or `runtime`, so a reader crediting enforcement does not credit a plugin's own error |
+
+`source` was free to infer until the envelope began recording — anything in
+audit was the kernel's, because the envelope wrote nothing — and it exists so
+closing that gap did not open an ambiguity in its place. A `turn.ended` carries
+none: every turn ending is recorded by the envelope, so it would say nothing.
 
 `metadata` keys a host may rely on: `authority.resolved` carries `grantIds` and
-`grantCount` (or `failClosed: true` and `authority`, the internal code, when it
-failed), and `hostCeiling`, `"installed"` or `"absent"`, on both;
-`authorization.checked` carries `consumed`, whether a bounded use was spent,
-`failClosed: true` on an infrastructure denial, and whatever the decision itself
-carried — a `HostCeiling`'s own keys, or `delegation` detail on a broken chain —
-less `consumed` and `failClosed`, which the kernel states itself and a port
-cannot overwrite; `tool.catalog.listed` carries `catalogHash`,
-`enabledNamespaces`, `hostPolicyVersion`, and `withheldCount` (below), and
-`failClosed: true` with `authority` when authority itself could not load and the
-catalogue is empty; `tool.invoked` carries `cause` where its code covers several
-situations; `turn.ended` carries `endedBy`, `envelope` or `runtime`, on a
-failure, so a reader crediting enforcement does not credit a plugin's
-self-reported error; `escalation.requested` carries `detail` (the reason the
-runtime gave), `reviewer`, `reviewerAssumed`, and `resolution`.
+`grantCount` (or `authority`, the internal code, when it failed), and
+`hostCeiling`, `"installed"` or `"absent"`, on both; `authorization.checked`
+carries whatever the decision itself carried — a `HostCeiling`'s own keys, or
+`delegation` detail on a broken chain — and the authorizer's account of a
+denial; `tool.catalog.listed` carries `catalogHash`, `enabledNamespaces`,
+`hostPolicyVersion`, and `withheldCount` (below), with `authority` when
+authority itself could not load and the catalogue is empty; `tool.invoked`
+carries the turn's `catalogHash`, whichever boundary answered the call, so a
+`not_offered` refusal names the catalogue that did not offer the tool;
+`escalation.requested` carries `detail` (the reason the runtime gave),
+`reviewer`, `reviewerAssumed`, and `resolution`, and the execution it ended as
+its `operationId`, which is what that turn's `turn.ended` carries. A port that
+writes a key named `failClosed` has written a key in its own `metadata`: the
+field is the kernel's, and nothing a port supplies can reach it.
 
 A listing is recorded by what it was computed from, not by the names it
 returned or withheld. `catalogHash` is the catalogue the caller was shown,
@@ -639,7 +652,12 @@ not.
 
 Wire `onAuditError` to alerting. A dropped audit write must not pass silently —
 it is the only record that separates "was allowed to" from "did it and nobody
-stopped it".
+stopped it". It fires for the records written after an effect: an operation's
+outcome, a turn's ending, an envelope refusal, an escalation. The caller still
+receives the result it would have received, because a failure there would
+invite a retry of something already done. The records written before an effect
+— an authority load, a decision, a catalogue listing — do not reach it: a sink
+that throws on one of those rejects the operation, and nothing runs.
 
 ## Contract limits
 
