@@ -5124,7 +5124,7 @@ the tool when it existed could not tell "the host never registered it" from
 
 > **canonicalJson**(`value`): `string`
 
-Defined in: core/dist/internal.d.ts:3
+Defined in: core/dist/internal.d.ts:4
 
 Structural JSON equality for protocol values with unordered object keys.
 

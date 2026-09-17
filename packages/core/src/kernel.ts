@@ -62,11 +62,7 @@ import {
   addressesEqual,
   isInfrastructureDenial,
 } from "./authorization.js";
-import {
-  reportContainedError,
-  type ProviderErrorContext,
-  type ProviderErrorReporter,
-} from "./diagnostics.js";
+import type { ProviderErrorContext, ProviderErrorReporter } from "./diagnostics.js";
 import { type CapabilityRequestPayload, mintCapabilityRequest } from "./capability-request.js";
 import {
   type MessageCapabilityResolver,
@@ -93,6 +89,7 @@ import {
   raceAbort,
   readJsonObject,
   refusedToolResult,
+  reportProviderError,
 } from "./internal.js";
 
 export interface SharedOSKernelOptions {
@@ -1224,43 +1221,32 @@ export class SharedOSKernel {
       return result;
     }
 
-    let result: ToolResult;
-    try {
-      options.signal?.throwIfAborted();
-      const candidate = await measure(this.#spans, SPAN.TOOL_HANDLER, (span) => {
-        span.set("callId", call.id);
-        span.set("tool", call.tool);
-        return handler.invoke(context, parsedCall, options.signal ?? neverAbortedSignal());
-      });
-      const parsed = ToolResultSchema.safeParse(candidate);
-      result =
-        parsed.success && parsed.data.callId === call.id && parsed.data.tool === call.tool
+    const result = await this.#invokePort<ToolResult>({
+      context,
+      signal: options.signal,
+      invoke: () =>
+        measure(this.#spans, SPAN.TOOL_HANDLER, (span) => {
+          span.set("callId", call.id);
+          span.set("tool", call.tool);
+          return handler.invoke(context, parsedCall, options.signal ?? neverAbortedSignal());
+        }),
+      accept: (candidate) => {
+        const parsed = ToolResultSchema.safeParse(candidate);
+        return parsed.success && parsed.data.callId === call.id && parsed.data.tool === call.tool
           ? parsed.data
-          : refusedToolResult(
-              call,
-              "failed",
-              context.now,
-              "invalid_tool_result",
-              "The tool returned an invalid protocol result",
-            );
-    } catch (error) {
-      options.signal?.throwIfAborted();
-      this.#reportProviderError(error, context, {
+          : undefined;
+      },
+      refuse: (code, message) => refusedToolResult(call, "failed", context.now, code, message),
+      invalid: ["invalid_tool_result", "The tool returned an invalid protocol result"],
+      failed: ["tool_execution_failed", "The tool failed while executing"],
+      operation: {
         kind: "tool",
-        reasonCode: "tool_execution_failed",
         operationId: call.id,
         tool: call.tool,
         resource: requirement.resource,
         action: requirement.action,
-      });
-      result = refusedToolResult(
-        call,
-        "failed",
-        context.now,
-        "tool_execution_failed",
-        "The tool failed while executing",
-      );
-    }
+      },
+    });
 
     await this.#recordToolResult(context, call, result, {
       ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
@@ -1326,40 +1312,34 @@ export class SharedOSKernel {
         "No provider is registered for the requested resource namespace",
       );
     } else {
-      try {
-        options.signal?.throwIfAborted();
-        const candidate = await provider.invoke(
-          toResourceOperation(context, request),
-          options.signal ?? neverAbortedSignal(),
-        );
-        const parsed = ResourceResultSchema.safeParse(candidate);
-        result =
-          parsed.success && parsed.data.operationId === request.operationId
+      result = await this.#invokePort<ResourceResult>({
+        context,
+        signal: options.signal,
+        invoke: () =>
+          provider.invoke(
+            toResourceOperation(context, request),
+            options.signal ?? neverAbortedSignal(),
+          ),
+        accept: (candidate) => {
+          const parsed = ResourceResultSchema.safeParse(candidate);
+          return parsed.success && parsed.data.operationId === request.operationId
             ? parsed.data
-            : refusedResourceResult(
-                request,
-                "failed",
-                context.now,
-                "invalid_resource_result",
-                "The resource provider returned an invalid protocol result",
-              );
-      } catch (error) {
-        options.signal?.throwIfAborted();
-        this.#reportProviderError(error, context, {
+            : undefined;
+        },
+        refuse: (code, message) =>
+          refusedResourceResult(request, "failed", context.now, code, message),
+        invalid: [
+          "invalid_resource_result",
+          "The resource provider returned an invalid protocol result",
+        ],
+        failed: ["resource_execution_failed", "The resource provider failed while executing"],
+        operation: {
           kind: "resource",
-          reasonCode: "resource_execution_failed",
           operationId: request.operationId,
           resource: request.resource,
           action: request.action,
-        });
-        result = refusedResourceResult(
-          request,
-          "failed",
-          context.now,
-          "resource_execution_failed",
-          "The resource provider failed while executing",
-        );
-      }
+        },
+      });
     }
 
     await this.#recordResourceResult(context, request, result, decision.matchedGrantId);
@@ -1655,40 +1635,31 @@ export class SharedOSKernel {
       return result;
     }
 
-    let result: MessageDeliveryResult;
-    try {
-      signal.throwIfAborted();
-      const receipt = await this.#messageTransport.deliver(
-        structuredClone(trustedContext),
-        structuredClone(trustedEnvelope),
-        signal,
-      );
-      const parsed = MessageDeliveryResultSchema.safeParse(receipt);
-      result =
-        parsed.success && parsed.data.messageId === trustedEnvelope.id
+    const transport = this.#messageTransport;
+    const result = await this.#invokePort<MessageDeliveryResult>({
+      context: trustedContext,
+      signal,
+      invoke: () =>
+        transport.deliver(
+          structuredClone(trustedContext),
+          structuredClone(trustedEnvelope),
+          signal,
+        ),
+      accept: (receipt) => {
+        const parsed = MessageDeliveryResultSchema.safeParse(receipt);
+        return parsed.success && parsed.data.messageId === trustedEnvelope.id
           ? parsed.data
-          : refusedMessageResult(
-              trustedEnvelope,
-              "failed",
-              trustedContext.now,
-              "invalid_message_receipt",
-              "The message transport returned a mismatched receipt",
-            );
-    } catch (error) {
-      signal.throwIfAborted();
-      this.#reportProviderError(error, trustedContext, {
-        kind: "message",
-        reasonCode: "message_delivery_failed",
-        ...(operationId === undefined ? {} : { operationId }),
-      });
-      result = refusedMessageResult(
-        trustedEnvelope,
-        "failed",
-        trustedContext.now,
+          : undefined;
+      },
+      refuse: (code, message) =>
+        refusedMessageResult(trustedEnvelope, "failed", trustedContext.now, code, message),
+      invalid: ["invalid_message_receipt", "The message transport returned a mismatched receipt"],
+      failed: [
         "message_delivery_failed",
         "The message transport failed while delivering the message",
-      );
-    }
+      ],
+      operation: { kind: "message", ...(operationId === undefined ? {} : { operationId }) },
+    });
 
     await this.#recordMessageResult(trustedContext, trustedEnvelope, result, grantId, operationId);
     return result;
@@ -1895,28 +1866,20 @@ export class SharedOSKernel {
       loaded = await this.#policySource.load(structuredClone(context), signal);
     } catch (error) {
       signal.throwIfAborted();
-      this.#reportPolicyOutage(context, error);
+      this.#reportProviderError(error, context, POLICY_OUTAGE);
       return { status: "unavailable" };
     }
     if (!isLoadedPolicy(loaded)) {
-      this.#reportPolicyOutage(
-        context,
+      this.#reportProviderError(
         new TypeError(
           "A policy source must resolve to { policy, version } with a non-empty version",
         ),
+        context,
+        POLICY_OUTAGE,
       );
       return { status: "unavailable" };
     }
     return { status: "loaded", policy: loaded.policy, version: loaded.version };
-  }
-
-  #reportPolicyOutage(context: AccessContext, error: unknown): void {
-    reportContainedError(this.#onProviderError, error, {
-      kind: "policy",
-      reasonCode: "host_policy_unavailable",
-      traceId: context.traceId,
-      namespaceId: context.namespaceId,
-    });
   }
 
   /**
@@ -2085,6 +2048,42 @@ export class SharedOSKernel {
   }
 
   /**
+   * Call one host port, and answer for it when it cannot be believed.
+   *
+   * The three ports that do an operation's work -- a tool handler, a resource
+   * provider, a message transport -- are called the same way: not at all once
+   * the caller has stopped, then validated against the contract and matched to
+   * the operation that asked, and contained when they throw. An abort is
+   * re-thrown ahead of the containment, so a caller that stopped the work is
+   * never reported as a port that failed. Each code is stated once here and
+   * reaches both the result and the host's diagnostic sink, which is what lets
+   * a log line join to audit on it.
+   */
+  async #invokePort<Result>(port: {
+    readonly context: AccessContext;
+    readonly signal: AbortSignal | undefined;
+    readonly invoke: () => Promise<unknown>;
+    /** The port's answer when it is well-formed and names this operation. */
+    readonly accept: (candidate: unknown) => Result | undefined;
+    readonly refuse: (code: string, message: string) => Result;
+    readonly invalid: readonly [code: string, message: string];
+    readonly failed: readonly [code: string, message: string];
+    readonly operation: Omit<ProviderErrorContext, "traceId" | "namespaceId" | "reasonCode">;
+  }): Promise<Result> {
+    try {
+      port.signal?.throwIfAborted();
+      return port.accept(await port.invoke()) ?? port.refuse(...port.invalid);
+    } catch (error) {
+      port.signal?.throwIfAborted();
+      this.#reportProviderError(error, port.context, {
+        ...port.operation,
+        reasonCode: port.failed[0],
+      });
+      return port.refuse(...port.failed);
+    }
+  }
+
+  /**
    * Hand one contained throw to the host's diagnostic sink.
    *
    * The context is assembled here rather than at each catch so every call site
@@ -2097,11 +2096,7 @@ export class SharedOSKernel {
     context: AccessContext,
     operation: Omit<ProviderErrorContext, "traceId" | "namespaceId">,
   ): void {
-    reportContainedError(this.#onProviderError, error, {
-      ...operation,
-      traceId: context.traceId,
-      namespaceId: context.namespaceId,
-    });
+    reportProviderError(this.#onProviderError, error, context, operation);
   }
 
   async #recordOutcome(event: AuditEvent): Promise<void> {
@@ -2116,6 +2111,9 @@ export class SharedOSKernel {
     }
   }
 }
+
+/** What a policy source that could not be read is reported as; it names no operation. */
+const POLICY_OUTAGE = { kind: "policy", reasonCode: "host_policy_unavailable" } as const;
 
 /**
  * Metadata the decision itself carried, less the two keys the kernel states.

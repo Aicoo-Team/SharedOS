@@ -12,7 +12,7 @@ import { isJsonObject } from "@aicoo/sharedos-contracts";
 
 import type { HostPolicy, PolicyResolution, ResolvedAuthority } from "./authority.js";
 import { describeRequiredAuthority } from "./capability-request.js";
-import { reportContainedError, type ProviderErrorReporter } from "./diagnostics.js";
+import type { ProviderErrorReporter } from "./diagnostics.js";
 import {
   type DelegationChainResolver,
   type DelegationValidation,
@@ -26,6 +26,7 @@ import {
   parseTimestamp,
   pathIsWithin,
   pathsEqual,
+  reportProviderError,
 } from "./internal.js";
 
 export { addressesEqual };
@@ -754,11 +755,9 @@ export class CapabilityAuthorizer {
         hostPolicy?.policy,
       );
     } catch (error) {
-      reportContainedError(this.#onProviderError, error, {
+      reportProviderError(this.#onProviderError, error, context, {
         kind: "policy",
         reasonCode: "host_policy_unavailable",
-        traceId: context.traceId,
-        namespaceId: context.namespaceId,
         resource: request.resource,
         action: request.action,
       });

@@ -8,6 +8,12 @@ import type {
   ToolResult,
 } from "@aicoo/sharedos-contracts";
 
+import {
+  type ProviderErrorContext,
+  type ProviderErrorReporter,
+  reportContainedError,
+} from "./diagnostics.js";
+
 /** Structural JSON equality for protocol values with unordered object keys. */
 export function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) {
@@ -191,6 +197,29 @@ export function deepFreeze<T>(value: T): T {
 /** A protocol error in the one shape every refusal and failure carries. */
 export function protocolError(code: string, message: string, retryable = false): ProtocolError {
   return { code, message, retryable };
+}
+
+/**
+ * Hand one contained throw to a host's diagnostic sink.
+ *
+ * The one place a `ProviderErrorContext` is assembled. A call site contributes
+ * what is specific to it -- what kind of port failed, the code returned in its
+ * place, whichever identifiers that path has -- and the trace and namespace
+ * come from the trusted context, which always knows them. The kernel and the
+ * authorizer both report through here, so the two hooks a host may install
+ * receive one shape built one way.
+ */
+export function reportProviderError(
+  report: ProviderErrorReporter | undefined,
+  error: unknown,
+  context: { readonly traceId: string; readonly namespaceId: string },
+  operation: Omit<ProviderErrorContext, "traceId" | "namespaceId">,
+): void {
+  reportContainedError(report, error, {
+    ...operation,
+    traceId: context.traceId,
+    namespaceId: context.namespaceId,
+  });
 }
 
 /**
