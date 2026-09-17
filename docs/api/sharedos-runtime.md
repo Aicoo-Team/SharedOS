@@ -117,6 +117,9 @@ authority, or namespace-management state. Its `RuntimeHost` contains only:
 - `invokeTool`, which checks the visible catalog and then re-authorizes through
   the kernel;
 - `emit`, which records plugin observations as wrapped `runtime.event` events.
+- `annotate`, which states one fact about the turn for its record. The envelope
+  writes it into the result's metadata on every ending, a cancelled turn
+  included, and it never refuses on the state of the host (ADR 0027).
 
 The broker closes when `run` returns. A plugin cannot use a retained host handle
 for later tool calls or emit authoritative `turn.*` and `tool.*` events.
