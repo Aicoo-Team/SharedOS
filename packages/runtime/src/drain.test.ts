@@ -440,6 +440,31 @@ describe("a turn that drains before its deadline", () => {
     expect((await result).events.filter(({ type }) => type === "tool.completed")).toHaveLength(1);
   });
 
+  it("leaves no timer running once the turn is over, however it ended", async () => {
+    // Completed well inside the limit: the soft and hard deadlines are both
+    // still armed when the turn closes.
+    const completed = world(0);
+    await executor(
+      completed.kernel,
+      new StandardRuntime(scripted([call("call-1")]).driver),
+      5_000,
+    ).execute(request());
+    expect(vi.getTimerCount()).toBe(0);
+
+    // Ended on an audit outage, which arms the stop that follows the grace.
+    const outage = world(
+      0,
+      (event) => event.type === "authorization.checked" && event.operationId === "call-1",
+    );
+    const result = await executor(
+      outage.kernel,
+      new StandardRuntime(scripted([call("call-1")]).driver),
+      5_000,
+    ).execute(request());
+    expect(result).toMatchObject({ status: "failed", error: { code: "audit_unavailable" } });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it.each([-1, 1.5, Number.NaN])("rejects a grace of %s", (drainGraceMs) => {
     const { kernel } = world(0);
     expect(() => executor(kernel, new StandardRuntime(scripted([]).driver), drainGraceMs)).toThrow(

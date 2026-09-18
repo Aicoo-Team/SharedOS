@@ -72,6 +72,7 @@ export function createTurnDeadlines(
       ? setTimeout(() => soft.abort(new Error("turn draining")), Math.max(0, timeoutMs - graceMs))
       : undefined;
   let stopAfterGrace: ReturnType<typeof setTimeout> | undefined;
+  let disposed = false;
 
   return {
     signal: hard.signal,
@@ -82,12 +83,15 @@ export function createTurnDeadlines(
       soft.abort(new Error("turn draining"));
       if (graceMs === 0) {
         hard.abort(reason);
-      } else if (!hard.signal.aborted) {
+      } else if (!hard.signal.aborted && !disposed) {
+        // Not once disposed: a call that outlives its turn can still ask, and a
+        // timer armed then has nobody left to clear it.
         stopAfterGrace ??= setTimeout(() => hard.abort(reason), graceMs);
       }
     },
     abort: hard.abort,
     dispose: (): void => {
+      disposed = true;
       clearTimeout(softTimeout);
       clearTimeout(stopAfterGrace);
       softTimeout = undefined;
