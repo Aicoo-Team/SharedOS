@@ -263,20 +263,21 @@ on the wire.
 
 ## Tool invocation
 
-| Code                                 | Status | Means                                                                                                                                       |
-| ------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tool_unavailable`                   | denied | Not registered, namespace off, or not discoverable — see above                                                                              |
-| `no_matching_grant`                  | denied | The exact argument-selected resource is not authorized                                                                                      |
-| `invalid_request`                    | denied | The resolved requirement names a world other than the caller's own                                                                          |
-| `invalid_tool_arguments`             | failed | `parseArguments` rejected the call. The thrown error goes to `onProviderError` and nowhere else (below)                                     |
-| `invalid_tool_requirement`           | failed | `resolveRequirement` returned something outside the declared ceiling                                                                        |
-| `tool_requirement_resolution_failed` | failed | `resolveRequirement` threw. The thrown error goes to `onProviderError` and nowhere else (below)                                             |
-| `tool_catalog_unavailable`           | failed | A `ContextToolProvider` threw. The catalog is never partially returned. The thrown error goes to `onProviderError` and nowhere else (below) |
-| `tool_execution_failed`              | failed | Your `invoke` threw. The thrown error goes to `onProviderError` and nowhere else (below)                                                    |
-| `invalid_tool_result`                | failed | Your handler returned something that is not a `ToolResult`                                                                                  |
-| `trace_mismatch`                     | denied | `call.traceId` does not match the context                                                                                                   |
-| `step_limit_exceeded`                | denied | The call names a step at or past the envelope's `maxSteps`. This call is refused; the turn continues                                        |
-| `tool_call_limit_exceeded`           | denied | The envelope's `maxToolCalls` is spent. This call is refused; the turn continues                                                            |
+| Code                                 | Status | Means                                                                                                                                        |
+| ------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tool_unavailable`                   | denied | Not registered, namespace off, or not discoverable — see above                                                                               |
+| `no_matching_grant`                  | denied | The exact argument-selected resource is not authorized                                                                                       |
+| `invalid_request`                    | denied | The resolved requirement names a world other than the caller's own                                                                           |
+| `invalid_tool_arguments`             | failed | `parseArguments` rejected the call. The thrown error goes to `onProviderError` and nowhere else (below)                                      |
+| `invalid_tool_requirement`           | failed | `resolveRequirement` returned something outside the declared ceiling                                                                         |
+| `tool_requirement_resolution_failed` | failed | `resolveRequirement` threw. The thrown error goes to `onProviderError` and nowhere else (below)                                              |
+| `tool_catalog_unavailable`           | failed | A `ContextToolProvider` threw. The catalog is never partially returned. The thrown error goes to `onProviderError` and nowhere else (below)  |
+| `tool_execution_failed`              | failed | Your `invoke` threw. The thrown error goes to `onProviderError` and nowhere else (below)                                                     |
+| `invalid_tool_result`                | failed | Your handler returned something that is not a `ToolResult`                                                                                   |
+| `trace_mismatch`                     | denied | `call.traceId` does not match the context                                                                                                    |
+| `step_limit_exceeded`                | denied | The call names a step at or past the envelope's `maxSteps`. This call is refused; the turn continues                                         |
+| `tool_call_limit_exceeded`           | denied | The envelope's `maxToolCalls` is spent. This call is refused; the turn continues                                                             |
+| `turn_draining`                      | denied | The turn is inside its `drainGraceMs`, or ending on an audit outage, and takes no new calls. Nothing ran; calls already running still answer |
 
 A budget refuses a call; it does not end a turn. The envelope answers the call
 that crosses `maxSteps` or `maxToolCalls` with `denied`, the runtime receives an
@@ -324,7 +325,39 @@ for `tool_unavailable`.
 | `invalid_runtime_outcome`  | failed    | A plugin returned a malformed outcome                                                                                                                                                                                                            |
 | `tool_unavailable`         | failed    | A plugin returned `escalate` on a turn whose catalogue does not offer `sharedos.escalate`. The envelope refuses the outcome as it refuses a call outside the catalogue, under the same code (ADR 0017); the turn's `turn.ended` event carries it |
 | `audit_unavailable`        | failed    | The audit sink could not record a decision, so the envelope ended the turn. `retryable` is `true` only when nothing the turn asked for can have taken effect; the sink's error goes to `onTurnError` (below)                                     |
-| `turn_cancelled`           | cancelled | Deadline expired, or the host aborted                                                                                                                                                                                                            |
+| `turn_cancelled`           | cancelled | Deadline expired, or the host aborted. With a `drainGraceMs` the turn stops taking calls that long before its deadline and ends once the calls in flight have answered (below)                                                                   |
+
+### Before you retry a turn
+
+Read `retryable` on the result, whatever the code. It says whether running the
+turn again repeats anything, and the envelope decides it for `turn_cancelled`,
+`runtime_failed` and `audit_unavailable`, and caps it for a failure a plugin
+reported itself. It is `false` once a call to a `write` tool that is not declared
+`idempotent` came back anything but `denied`, or was still with the kernel when
+the turn ended: that call may have taken effect, and a second run would do it
+again. Calls to `read` tools never count, so a turn that only searched and ran
+out of time is still `retryable: true`.
+
+The rule rests on your tool definitions. Declare a tool `read` only if running
+it twice changes nothing, and mark a `write` `idempotent` only if the second run
+is a no-op; when in doubt leave it a plain `write`. Until this rule the two
+envelope endings said `true` unconditionally, so a host that retried every
+`turn_cancelled` will now be told not to after a transfer.
+
+### A deadline that lets handlers finish
+
+`SharedOSExecutor`'s `drainGraceMs` takes time from the end of `timeoutMs`, never
+adds to it. With 120 000 and 5 000, a call asked for after 115 s is refused
+`turn_draining`, a handler running then is not signalled and answers with its
+real outcome, and the abort reaches whatever is still running at 120 s, which is
+recorded `interrupted`. An audit outage drains the same way for the grace or the
+time left. Your own `signal` does not: aborting it stops the turn at once.
+
+The model is not asked about a result that arrives during the grace, and the
+turn ends once it has. The call's id, tool and status are in the turn's `events`
+as `tool.completed` and its outcome is in the audit trail. SharedOS keeps no
+history between turns, so if you carry a conversation forward, record the call
+from those events before the next turn, or its model may ask for it again.
 
 ## Diagnosing a contained throw
 
@@ -407,9 +440,7 @@ written before an effect. The kernel rejects with an `AuditUnavailableError`
 whose `cause` is what your sink threw, and the envelope ends the turn
 `audit_unavailable` by its own decision -- a plugin that catches the rejection
 does not keep the turn going. `onTurnError` receives the error. Read `retryable`
-on the result before trying the turn again: it is `false` as soon as any call in
-the turn succeeded, failed, was stopped, or had not settled, because a retry
-would repeat whatever those did.
+on the result before trying the turn again, as for any ending (above).
 
 Both hooks are observational and synchronous. One that throws is ignored, a
 component with none installed behaves identically, and neither is awaited —
@@ -682,6 +713,14 @@ invite a retry of something already done. The records written before an effect
 that throws on one of those rejects the operation with an
 `AuditUnavailableError`, nothing runs, and inside a turn the envelope ends the
 turn `audit_unavailable`.
+
+A sink that hangs is not a throw. Set `auditWriteTimeoutMs` on the kernel and a
+record written after an effect that is still unanswered at the limit reaches
+`onAuditError` with an `AuditWriteTimeoutError` (`code: "audit_write_timeout"`),
+and the caller gets its result; the sink may still write the record later.
+Without the option the result of a committed effect waits for the sink, and a
+turn that reaches its deadline first loses it. Records written before an effect
+are never limited.
 
 ## Contract limits
 

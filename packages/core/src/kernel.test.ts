@@ -21,7 +21,7 @@ import {
   InMemoryGrantUsageStore,
 } from "./authorization.js";
 import type { ProviderErrorContext, ProviderErrorReporter } from "./diagnostics.js";
-import { AuditUnavailableError } from "./errors.js";
+import { AuditUnavailableError, AuditWriteTimeoutError } from "./errors.js";
 import { SharedOSKernel, type SharedOSKernelOptions } from "./kernel.js";
 import {
   addressPath,
@@ -2450,6 +2450,134 @@ describe("what a failing audit sink does, by when the record is written", () => 
       expect(onAuditError.mock.calls[0]?.[1]).toMatchObject({ type });
     },
   );
+
+  describe("a sink that does not answer after an effect", () => {
+    /**
+     * Writes every record but the named one, which it never answers. `reached`
+     * resolves once that write is asked for, so a test starts its clock there.
+     */
+    function silentOn(type: AuditEvent["type"]) {
+      let reach: (() => void) | undefined;
+      const reached = new Promise<void>((resolve) => {
+        reach = resolve;
+      });
+      const audit: AuditSink = {
+        record: (event) => {
+          if (event.type !== type) {
+            return Promise.resolve();
+          }
+          reach?.();
+          return new Promise<void>(() => undefined);
+        },
+      };
+      return { audit, reached };
+    }
+
+    it("releases the result at the limit and tells the host the record is unconfirmed", async () => {
+      vi.useFakeTimers();
+      try {
+        const { audit, reached } = silentOn("tool.invoked");
+        const onAuditError = vi.fn<NonNullable<SharedOSKernelOptions["onAuditError"]>>();
+        const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+          audit,
+          onAuditError,
+          auditWriteTimeoutMs: 2_000,
+        });
+        kernel.registerTool(successfulTool());
+
+        const settled = vi.fn();
+        const invoked = kernel.invokeTool(context(["files"]), toolCall()).then(settled);
+        await reached;
+        await vi.advanceTimersByTimeAsync(1_999);
+        // Held until the limit: the result is not released ahead of its record.
+        expect(settled).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(1);
+        await invoked;
+
+        expect(settled.mock.calls[0]?.[0]).toMatchObject({ status: "succeeded" });
+        expect(onAuditError).toHaveBeenCalledOnce();
+        expect(onAuditError.mock.calls[0]?.[0]).toBeInstanceOf(AuditWriteTimeoutError);
+        expect(onAuditError.mock.calls[0]?.[0]).toMatchObject({
+          code: "audit_write_timeout",
+          timeoutMs: 2_000,
+        });
+        expect(onAuditError.mock.calls[0]?.[1]).toMatchObject({
+          type: "tool.invoked",
+          outcome: "succeeded",
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("holds the hook to the same limit, so a hook on the same store cannot hang the result", async () => {
+      vi.useFakeTimers();
+      try {
+        const { audit, reached } = silentOn("tool.invoked");
+        const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+          audit,
+          onAuditError: () => new Promise<void>(() => undefined),
+          auditWriteTimeoutMs: 500,
+        });
+        kernel.registerTool(successfulTool());
+
+        const invoked = kernel.invokeTool(context(["files"]), toolCall());
+        await reached;
+        await vi.advanceTimersByTimeAsync(1_000);
+        await expect(invoked).resolves.toMatchObject({ status: "succeeded" });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("never limits a record written before an effect", async () => {
+      vi.useFakeTimers();
+      try {
+        const { audit, reached } = silentOn("authorization.checked");
+        const handler = successfulTool();
+        const invoke = vi.spyOn(handler, "invoke");
+        const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+          audit,
+          auditWriteTimeoutMs: 500,
+        });
+        kernel.registerTool(handler);
+
+        const settled = vi.fn();
+        void kernel.invokeTool(context(["files"]), toolCall()).then(settled, settled);
+        await reached;
+        await vi.advanceTimersByTimeAsync(60_000);
+
+        // A decision that is not recorded is not acted on, however long that takes.
+        expect(settled).not.toHaveBeenCalled();
+        expect(invoke).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("waits as long as the sink takes when no limit is set", async () => {
+      vi.useFakeTimers();
+      try {
+        const { audit, reached } = silentOn("tool.invoked");
+        const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], { audit });
+        kernel.registerTool(successfulTool());
+
+        const settled = vi.fn();
+        void kernel.invokeTool(context(["files"]), toolCall()).then(settled, settled);
+        await reached;
+        await vi.advanceTimersByTimeAsync(600_000);
+        expect(settled).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it.each([0, -1, 1.5, Number.NaN])("rejects a limit of %s", (auditWriteTimeoutMs) => {
+      expect(() => kernelWith([], { auditWriteTimeoutMs })).toThrow(
+        "auditWriteTimeoutMs must be a positive integer",
+      );
+    });
+  });
 
   describe("a port stopped after it was entered", () => {
     function recording() {
