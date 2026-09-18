@@ -109,6 +109,9 @@ const sleep = (ms: number): Promise<void> =>
 // where it is going before it moves the fake clock past it; moving first arms
 // the turn's timers late and the test then waits on a deadline nobody reaches.
 const realSetTimeout = setTimeout;
+/** Real time for a rejection to travel from the sink to the envelope. */
+const realPause = (): Promise<void> => new Promise((resolve) => realSetTimeout(resolve, 25));
+
 async function until(reached: () => boolean): Promise<void> {
   for (let waited = 0; !reached(); waited += 5) {
     if (waited > 3_000) {
@@ -123,16 +126,32 @@ async function until(reached: () => boolean): Promise<void> {
  * debits before and credits after, and stops between them if it is aborted, the
  * way a handler that passes its signal to its I/O does.
  */
-function world(workMs: number, down: (event: AuditEvent) => boolean = () => false) {
+function world(
+  workMs: number,
+  down: (event: AuditEvent) => boolean = () => false,
+  /** A call whose decision the sink neither writes nor refuses until `failHeld`. */
+  holdDecisionOf?: string,
+) {
   const trail: AuditEvent[] = [];
   const ledger: string[] = [];
-  const state = { entered: 0 };
+  const state = { entered: 0, held: false };
+  let failHeld: () => void = () => undefined;
   const kernel = new SharedOSKernel({
     grantSource: { load: async () => grants },
     audit: {
       record: async (event) => {
         if (down(event)) {
           throw new Error(`audit store unavailable for ${event.type}`);
+        }
+        if (
+          holdDecisionOf !== undefined &&
+          event.type === "authorization.checked" &&
+          event.operationId === holdDecisionOf
+        ) {
+          state.held = true;
+          await new Promise<void>((_resolve, reject) => {
+            failHeld = () => reject(new Error("audit store went away"));
+          });
         }
         trail.push(event);
       },
@@ -158,7 +177,7 @@ function world(workMs: number, down: (event: AuditEvent) => boolean = () => fals
       },
     });
   }
-  return { kernel, trail, ledger, state };
+  return { kernel, trail, ledger, state, failHeld: () => failHeld() };
 }
 
 /** A driver that asks for the given calls in turn, then completes. */
@@ -438,6 +457,84 @@ describe("a turn that drains before its deadline", () => {
     expect(ledger).toEqual(["call-1: debit A", "call-1: credit B"]);
     expect(operation(trail, "call-1")).toMatchObject({ outcome: "succeeded" });
     expect((await result).events.filter(({ type }) => type === "tool.completed")).toHaveLength(1);
+  });
+
+  describe("a sibling call that meets the outage after its turn has closed", () => {
+    // The call is with the kernel, waiting on a sink that has not answered its
+    // decision, when the turn ends. The sink then fails. That is the first
+    // outage the envelope hears of, so it asks the turn to drain, and the turn
+    // it asks has already closed and disposed of its timers.
+    it("changes nothing on a turn that had completed, and arms nothing", async () => {
+      const { kernel, ledger, state, failHeld } = world(0, () => false, "call-1");
+      const late = vi.fn();
+      const plugin: RuntimePlugin = {
+        manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "1" },
+        run: async (_input, host) => {
+          // Left behind by a plugin that answers without waiting for it.
+          host.invokeTool(call("call-1")).catch(late);
+          await until(() => state.held);
+          return { type: "complete", output: { done: true } };
+        },
+      };
+
+      const result = await executor(kernel, plugin, 5_000).execute(request());
+      expect(result).toMatchObject({ status: "succeeded", output: { done: true } });
+      expect(vi.getTimerCount()).toBe(0);
+      const before = structuredClone(result);
+
+      // The plugin's own promise was let go when the turn closed. The kernel's
+      // is still out there, and this is what it now rejects with.
+      expect(late).toHaveBeenCalledOnce();
+      failHeld();
+      await realPause();
+      // Counted before the clock moves: a timer armed by the late drain would
+      // fire and be gone once it did.
+      expect(vi.getTimerCount()).toBe(0);
+      await vi.advanceTimersByTimeAsync(600_000);
+
+      expect(vi.getTimerCount()).toBe(0);
+      expect(result).toEqual(before);
+      // The decision was never recorded, so nothing ran, then or afterwards.
+      expect(ledger).toEqual([]);
+    });
+
+    it("changes nothing on a turn that ended on its deadline, and arms nothing", async () => {
+      const { kernel, ledger, state, failHeld } = world(0, () => false, "call-1");
+      const late = vi.fn();
+      const plugin: RuntimePlugin = {
+        manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "1" },
+        run: async (_input, host) => {
+          await host.invokeTool(call("call-1")).catch((error: unknown) => {
+            late(error);
+            throw error;
+          });
+          return { type: "complete", output: {} };
+        },
+      };
+      const turn = executor(kernel, plugin, 5_000).execute(request());
+
+      await until(() => state.held);
+      await vi.advanceTimersByTimeAsync(120_000);
+      const result = await turn;
+
+      expect(result).toMatchObject({
+        status: "cancelled",
+        // Still with the kernel when the turn ended, so nobody can say it did
+        // nothing, and the ending is the deadline's, not an outage's.
+        error: { code: "turn_cancelled", retryable: false },
+      });
+      expect(vi.getTimerCount()).toBe(0);
+      const before = structuredClone(result);
+
+      failHeld();
+      await realPause();
+      expect(vi.getTimerCount()).toBe(0);
+      await vi.advanceTimersByTimeAsync(600_000);
+
+      expect(vi.getTimerCount()).toBe(0);
+      expect(result).toEqual(before);
+      expect(ledger).toEqual([]);
+    });
   });
 
   it("leaves no timer running once the turn is over, however it ended", async () => {
