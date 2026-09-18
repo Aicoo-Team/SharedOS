@@ -1,8 +1,7 @@
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { spawn } from "node:child_process";
 import { constants } from "node:fs";
 import { access } from "node:fs/promises";
 import { delimiter, join } from "node:path";
-import { createInterface, type Interface } from "node:readline";
 
 import { CLAUDE_CODE_REQUIREMENTS } from "./claude-code/index.js";
 import { CODEX_REQUIREMENTS } from "./codex/index.js";
@@ -17,6 +16,8 @@ import type {
   HarnessTurnRequest,
 } from "./harness.js";
 
+import { HarnessProcess } from "./process.js";
+
 export * from "./mcp-runtime.js";
 
 export interface ChildProcessTransportOptions {
@@ -24,6 +25,8 @@ export interface ChildProcessTransportOptions {
   readonly args?: readonly string[];
   readonly cwd?: string;
   readonly env?: Readonly<Record<string, string>>;
+  /** Kept for diagnosis: the harness's stderr and the stdout lines that are not frames. */
+  readonly onDiagnostic?: (line: string) => void;
   /**
    * Builds the opening frames written to the harness's stdin.
    *
@@ -61,16 +64,7 @@ export class ChildProcessTransport implements HarnessTransport {
   }
 
   async open(request: HarnessTurnRequest, signal: AbortSignal): Promise<HarnessChannel> {
-    if (signal.aborted) {
-      throw signal.reason ?? new Error("turn aborted before the harness started");
-    }
-    const child = spawn(this.#options.command, [...(this.#options.args ?? [])], {
-      ...(this.#options.cwd === undefined ? {} : { cwd: this.#options.cwd }),
-      env: { ...process.env, ...this.#options.env },
-      stdio: ["pipe", "pipe", "pipe"],
-    }) as ChildProcessWithoutNullStreams;
-
-    const channel = new ChildProcessChannel(child);
+    const channel = new ChildProcessChannel(this.#options, signal);
     const opening = this.#options.openingFrame?.(request);
     for (const frame of opening === undefined ? [] : toFrames(opening)) {
       await channel.write(frame);
@@ -83,31 +77,28 @@ function toFrames(opening: HarnessFrame | readonly HarnessFrame[]): readonly Har
   return Array.isArray(opening) ? opening : [opening as HarnessFrame];
 }
 
+/** The pull side of {@link HarnessProcess}: frames buffered until the driver reads them. */
 class ChildProcessChannel implements HarnessChannel {
-  readonly #child: ChildProcessWithoutNullStreams;
-  readonly #lines: Interface;
+  readonly #process: HarnessProcess;
   readonly #buffered: HarnessFrame[] = [];
   readonly #waiting: ((frame: HarnessFrame | undefined) => void)[] = [];
   #ended = false;
-  #stderr = "";
 
-  constructor(child: ChildProcessWithoutNullStreams) {
-    this.#child = child;
-    this.#lines = createInterface({ input: child.stdout });
-    this.#lines.on("line", (line) => this.#push(line));
-    this.#lines.on("close", () => this.#end());
-    child.on("error", () => this.#end());
-    child.on("close", () => this.#end());
-    child.stderr.setEncoding("utf8");
-    // Kept for diagnosis only. A harness that dies mid-turn must surface as a
-    // failed turn, never as a silent completion.
-    child.stderr.on("data", (chunk: string) => {
-      this.#stderr = `${this.#stderr}${chunk}`.slice(-4_096);
-    });
-  }
-
-  get stderr(): string {
-    return this.#stderr;
+  constructor(options: ChildProcessTransportOptions, signal: AbortSignal) {
+    this.#process = new HarnessProcess(
+      options,
+      {
+        onFrame: (frame) => this.#push(frame),
+        // A harness that dies mid-turn must surface as a failed turn, never as
+        // a silent completion: the driver reads the end of frames as that.
+        onOutputEnd: () => this.#end(),
+        ...(options.onDiagnostic === undefined
+          ? {}
+          : { onDiagnostic: (text: string) => options.onDiagnostic?.(text) }),
+      },
+      signal,
+    );
+    void this.#process.exited.then(() => this.#end());
   }
 
   async read(signal: AbortSignal): Promise<HarnessFrame | undefined> {
@@ -132,41 +123,17 @@ class ChildProcessChannel implements HarnessChannel {
     });
   }
 
-  async write(frame: HarnessFrame): Promise<void> {
-    await new Promise<void>((resolve, reject) => {
-      this.#child.stdin.write(`${JSON.stringify(frame)}\n`, (error) =>
-        error === null || error === undefined ? resolve() : reject(error),
-      );
-    });
+  write(frame: HarnessFrame): Promise<void> {
+    return this.#process.write(`${JSON.stringify(frame)}\n`);
   }
 
   async close(): Promise<void> {
-    this.#lines.close();
-    this.#child.stdin.end();
-    if (this.#child.exitCode === null && this.#child.signalCode === null) {
-      this.#child.kill();
-    }
+    this.#process.dispose();
     this.#end();
     await Promise.resolve();
   }
 
-  #push(line: string): void {
-    const trimmed = line.trim();
-    if (trimmed === "") {
-      return;
-    }
-    let frame: HarnessFrame;
-    try {
-      const parsed: unknown = JSON.parse(trimmed);
-      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-        return;
-      }
-      frame = parsed as HarnessFrame;
-    } catch {
-      // Harnesses print human-readable banners alongside their protocol. A line
-      // that is not a frame is not an error.
-      return;
-    }
+  #push(frame: HarnessFrame): void {
     const waiting = this.#waiting.shift();
     if (waiting === undefined) {
       this.#buffered.push(frame);

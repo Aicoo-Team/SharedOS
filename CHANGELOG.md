@@ -182,6 +182,17 @@ each entry calls out what a host has to update.
   A transport of your own that opens a harness from `HarnessTurnRequest` should
   hand `instructions` over, since the hash now covers it.
 
+- **One child-process runner under both ways a vendor CLI is seated.**
+  `ChildProcessTransport` and the MCP harness runtime each spawned, framed JSON
+  lines, kept diagnostics and stopped their child in a copy of their own, and
+  only the MCP copy ended its child when the turn was aborted. Both now run on
+  one `HarnessProcess`, so a driven harness is also ended by the turn's signal
+  where it was left to `close`. Each copy kept a capped tail of the harness's
+  stderr (4,096 and 8,192 characters) that nothing read; diagnostics now go to
+  the callback alone, and `ChildProcessTransportOptions` gains the `onDiagnostic`
+  the MCP runtime already had. A stdout line that is not a frame reaches it too,
+  where the transport dropped it.
+
 - **One seat module in `@aicoo/sharedos-adapters`.** The model driver, the harness
   driver and the MCP harness runtime each composed the seat's two texts, hashed
   them, recognised the escalate affordance and stamped a `ToolCall` in their own

@@ -30,6 +30,6 @@ have no unit test); `OpenAiCompatibleModelClientOptions.maxOutputTokens`,
 `temperature`, and `requestTimeoutMs` (read with defaults, set by no script);
 the `callsAfterEscalation`, `harnessOutcome`, and `harnessErrorCode` metadata
 (reach `ExecutionResult.metadata`, surface in no published artifact);
-`catalogueDelivery` manifest metadata; `ChildProcessChannel.stderr`;
+`catalogueDelivery` manifest metadata;
 `ToolAliasRecord.at`. Each is a declaration with no in-repo writer or reader;
 `git grep` on the name is the evidence.

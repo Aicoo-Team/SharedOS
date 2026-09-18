@@ -1,8 +1,6 @@
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createInterface } from "node:readline";
 
 import type {
   JsonObject,
@@ -43,6 +41,7 @@ import { deepseekProtocol } from "./deepseek/protocol.js";
 import { PI_HARNESS_ID } from "./pi/index.js";
 import { piProtocol } from "./pi/protocol.js";
 import { failed } from "./internal.js";
+import { HarnessProcess } from "./process.js";
 import { SeatCalls, seatText, type SeatTextOptions } from "./seat.js";
 import { PROTOCOL_VERSION, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
 
@@ -174,8 +173,6 @@ export interface McpHarnessRuntimeOptions extends SeatTextOptions {
    */
   readonly clock?: () => string;
 }
-
-const MAX_DIAGNOSTIC_CHARS = 8_192;
 
 /**
  * Install one MCP-connected harness as a SharedOS runtime.
@@ -479,24 +476,8 @@ async function runHarness(
   signal: AbortSignal,
   options: McpHarnessRuntimeOptions,
 ): Promise<RuntimeTurnOutcome> {
-  signal.throwIfAborted();
-
-  const child = spawn(launch.command, [...launch.args], {
-    ...(launch.cwd === undefined ? {} : { cwd: launch.cwd }),
-    env: { ...process.env, ...launch.env },
-    stdio: ["pipe", "pipe", "pipe"],
-  }) as ChildProcessWithoutNullStreams;
-
-  const kill = (): void => {
-    if (child.exitCode === null && child.signalCode === null) {
-      child.kill("SIGTERM");
-    }
-  };
-  signal.addEventListener("abort", kill, { once: true });
-
   const messages: string[] = [];
   let terminal: RuntimeTurnOutcome | undefined;
-  let diagnostics = "";
 
   // A session harness is shut down by closing its command channel, so the close
   // is deferred to the turn's terminal frame instead of happening at the write.
@@ -507,13 +488,10 @@ async function runHarness(
       clearTimeout(idleTimer);
       idleTimer = undefined;
     }
-    if (child.stdin.writableEnded) {
-      return;
-    }
-    child.stdin.end();
+    harness.endInput();
   };
   const touch = (): void => {
-    if (launch.keepStdinOpen !== true || child.stdin.writableEnded) {
+    if (launch.keepStdinOpen !== true || harness.inputEnded) {
       return;
     }
     if (idleTimer !== undefined) {
@@ -529,60 +507,52 @@ async function runHarness(
     idleTimer.unref();
   };
 
-  const lines = createInterface({ input: child.stdout });
-  lines.on("line", (line) => {
-    const trimmed = line.trim();
-    if (trimmed === "") {
-      return;
-    }
-    let frame: unknown;
-    try {
-      frame = JSON.parse(trimmed);
-    } catch {
-      // Harnesses print banners next to their protocol. Keep it for diagnosis.
-      diagnostics = `${diagnostics}${trimmed}\n`.slice(-MAX_DIAGNOSTIC_CHARS);
-      options.onDiagnostic?.(spec.id, trimmed);
-      return;
-    }
-    if (frame === null || typeof frame !== "object" || Array.isArray(frame)) {
-      return;
-    }
-    for (const step of spec.protocol.interpret(frame as JsonObject)) {
-      if (step.type === "message") {
-        messages.push(step.text);
-        continue;
-      }
-      if (step.type === "failed") {
-        terminal ??= { type: "fail", error: step.error };
-        continue;
-      }
-      if (step.type === "complete") {
-        terminal ??= {
-          type: "complete",
-          output: step.output ?? { text: messages.join("\n") },
-        };
-      }
-      // A `tool_call` step cannot occur here: tool calls left over MCP, not over
-      // this channel. If a harness emits one anyway it is transcript noise, and
-      // acting on it would be a second, unauthorized call path.
-    }
-    if (terminal !== undefined) {
-      // The turn is over. For a session harness this is what makes it exit; for
-      // a one-shot one stdin is already closed and this does nothing.
-      closeStdin();
-    }
-    touch();
-  });
-
-  child.stderr.setEncoding("utf8");
-  child.stderr.on("data", (chunk: string) => {
-    diagnostics = `${diagnostics}${chunk}`.slice(-MAX_DIAGNOSTIC_CHARS);
-    options.onDiagnostic?.(spec.id, chunk.trimEnd());
-    touch();
-  });
+  // The turn's hard signal ends the process. A draining turn does not: the
+  // harness reads `turn_draining` on its next call and winds down itself.
+  const harness = new HarnessProcess(
+    launch,
+    {
+      onFrame: (frame) => {
+        for (const step of spec.protocol.interpret(frame)) {
+          if (step.type === "message") {
+            messages.push(step.text);
+            continue;
+          }
+          if (step.type === "failed") {
+            terminal ??= { type: "fail", error: step.error };
+            continue;
+          }
+          if (step.type === "complete") {
+            terminal ??= {
+              type: "complete",
+              output: step.output ?? { text: messages.join("\n") },
+            };
+          }
+          // A `tool_call` step cannot occur here: tool calls left over MCP, not
+          // over this channel. If a harness emits one anyway it is transcript
+          // noise, and acting on it would be a second, unauthorized call path.
+        }
+        if (terminal !== undefined) {
+          // The turn is over. For a session harness this is what makes it exit;
+          // for a one-shot one stdin is already closed and this does nothing.
+          closeStdin();
+        }
+        touch();
+      },
+      onDiagnostic: (text, stream) => {
+        options.onDiagnostic?.(spec.id, text);
+        // A banner on stdout is not the harness working; stderr is.
+        if (stream === "stderr") {
+          touch();
+        }
+      },
+    },
+    signal,
+  );
 
   if (launch.stdin !== undefined) {
-    child.stdin.write(launch.stdin);
+    // A harness that exited before it read its prompt is reported by its exit.
+    harness.write(launch.stdin).catch(() => undefined);
   }
   if (launch.keepStdinOpen === true) {
     touch();
@@ -590,13 +560,9 @@ async function runHarness(
     closeStdin();
   }
 
-  const exit = await new Promise<{ code: number | null; error?: Error }>((resolve) => {
-    child.once("error", (error: Error) => resolve({ code: null, error }));
-    child.once("close", (code) => resolve({ code }));
-  });
-  lines.close();
+  const exit = await harness.exited;
   closeStdin();
-  signal.removeEventListener("abort", kill);
+  harness.dispose();
 
   signal.throwIfAborted();
   if (exit.error !== undefined) {
