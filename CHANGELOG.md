@@ -39,7 +39,49 @@ each entry calls out what a host has to update.
 - **`RefusalExplanation.source` is typed `AuditSource | undefined`**, where it was
   `string | undefined`, and is read from the field.
 
+- **`AuditOutcome` gains `interrupted`.** Five values become six. It is written on
+  `tool.invoked`, `resource.invoked` and `message.sent` for an operation whose
+  port was entered and stopped before it answered: the effect may have committed
+  in part or in whole. `reason` is `operation_aborted` or `audit_unavailable`.
+
+  **Migration.** A host that persists audit under a closed schema adds the value;
+  `AuditOutcomeSchema` in `@aicoo/sharedos-contracts` is the list. A report that
+  counts failures decides where `interrupted` belongs, and it is not with the
+  refusals. Nothing that was recorded before is recorded differently: these
+  operations used to leave no event at all.
+
+- **A sink that throws on a record written before an effect rejects with
+  `AuditUnavailableError`**, where the kernel re-threw whatever the sink threw.
+  The sink's error is its `cause`, `code` is `audit_unavailable`, and `effect`
+  says whether the operation's port had been entered. A caller that matched on
+  the sink's own error type or message reads `error.cause`.
+
 ### Fixed
+
+- **An audit outage before an effect ends the turn `audit_unavailable`, by the
+  envelope.** A sink that threw on an authority load, a decision or a catalogue
+  listing rejected into the turn body, and the turn ended `runtime_failed`, "The
+  runtime plugin failed" -- for an outage the plugin had no part in, and also
+  when the outage was met before any plugin ran. A plugin that caught the
+  rejection could call again, and be refused again. The executor now notes the
+  typed error where it called the kernel itself, aborts the turn, and ends it
+  `failed` / `audit_unavailable` with `endedBy: envelope` and `failClosed`; a
+  plugin can neither carry on past it nor throw the error itself to be credited
+  with the refusal. `retryable` is `true` only when nothing the turn asked for
+  can have taken effect: every call came back `denied` or was refused for the
+  outage, and none is still with the kernel. `onTurnError` receives the error.
+  A record that fails _after_ an effect still never ends a turn. ADR 0023 is
+  revised in place.
+
+- **An operation stopped mid-effect leaves a record.** A handler that did part of
+  its work, saw the turn's deadline and threw left a trail ending at
+  `authorization.checked: allowed`: the abort was re-thrown ahead of the
+  operation event, so a cancelled or timed-out turn could hide a debit. The
+  event is now written first, as `interrupted`. The abort is still re-thrown and
+  still not reported to `onProviderError`; a port that answers despite the abort
+  is recorded with its real outcome, and a call stopped before its port was
+  entered writes nothing. The conformance record reads `interrupted` as `failed`,
+  never `denied`.
 
 - **An outage is marked `failClosed` on every operation event.** `docs/errors.md`
   tells a host to exclude `failClosed` records before computing a denial rate.

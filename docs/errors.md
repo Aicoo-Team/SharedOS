@@ -323,6 +323,7 @@ for `tool_unavailable`.
 | `runtime_failed`           | failed    | A `RuntimePlugin` threw, or a host port the turn body called did. The message is fixed and the thrown error goes nowhere near the wire — install `onTurnError` to see it (below)                                                                 |
 | `invalid_runtime_outcome`  | failed    | A plugin returned a malformed outcome                                                                                                                                                                                                            |
 | `tool_unavailable`         | failed    | A plugin returned `escalate` on a turn whose catalogue does not offer `sharedos.escalate`. The envelope refuses the outcome as it refuses a call outside the catalogue, under the same code (ADR 0017); the turn's `turn.ended` event carries it |
+| `audit_unavailable`        | failed    | The audit sink could not record a decision, so the envelope ended the turn. `retryable` is `true` only when nothing the turn asked for can have taken effect; the sink's error goes to `onTurnError` (below)                                     |
 | `turn_cancelled`           | cancelled | Deadline expired, or the host aborted                                                                                                                                                                                                            |
 
 ## Diagnosing a contained throw
@@ -400,6 +401,15 @@ refuses on the state of the host and so has nothing to report.
 Read the stack. `runtime_failed` is also what a throw from `openTurnAuthority`,
 `admitTurn`, or `listTools` ends a turn as, so the code alone does not say
 whether the plugin or one of your own ports failed; the stack does.
+
+One throw is named rather than folded in: an audit sink that fails on a record
+written before an effect. The kernel rejects with an `AuditUnavailableError`
+whose `cause` is what your sink threw, and the envelope ends the turn
+`audit_unavailable` by its own decision -- a plugin that catches the rejection
+does not keep the turn going. `onTurnError` receives the error. Read `retryable`
+on the result before trying the turn again: it is `false` as soon as any call in
+the turn succeeded, failed, was stopped, or had not settled, because a retry
+would repeat whatever those did.
 
 Both hooks are observational and synchronous. One that throws is ignored, a
 component with none installed behaves identically, and neither is awaited —
@@ -574,9 +584,9 @@ keeps one of the two and loses the other.
 `turn.ended` is the execution envelope's one event, written at the terminal
 through the kernel, which owns audit. It carries the turn's `executionId` as
 `operationId` and the terminal code as `reason`. A cancelled turn is recorded
-`failed` with reason `turn_cancelled` rather than adding a sixth `AuditOutcome`:
-the outcome vocabulary is a compatibility surface, and `reason` already separates
-a deadline from a defect. There is one event per turn, not one per transition —
+`failed` with reason `turn_cancelled` rather than adding an `AuditOutcome` of its
+own: the outcome vocabulary is a compatibility surface, and `reason` already
+separates a deadline from a defect. There is one event per turn, not one per transition —
 a `turn.denied` would double-count against the `authorization.checked` that
 admission already produced for the same refusal (ADR 0023).
 
@@ -650,6 +660,18 @@ closed schemas of their own, so a new type, outcome, or top-level field is a
 contract change to record here; a new `metadata` key or `reason` string is
 not.
 
+`interrupted` is the sixth outcome, on `tool.invoked`, `resource.invoked` and
+`message.sent`. It is written for an operation whose port -- a tool handler, a
+resource provider, a message transport -- was entered and stopped before it
+answered, so **any part of its effect may have committed**. `reason` is
+`operation_aborted` when the caller aborted (a turn's deadline, a cancellation,
+a turn ended on an audit outage) and `audit_unavailable` when the port asked the
+kernel for a decision that could not be recorded. Do not treat it as `failed`:
+`failed` also covers refusals where nothing ran, and an interrupted transfer is
+not safe to retry without checking what it did. A port that answers despite the
+abort is recorded with its real outcome; a port that never answers writes
+nothing, because there is no moment at which the kernel learns it stopped.
+
 Wire `onAuditError` to alerting. A dropped audit write must not pass silently —
 it is the only record that separates "was allowed to" from "did it and nobody
 stopped it". It fires for the records written after an effect: an operation's
@@ -657,7 +679,9 @@ outcome, a turn's ending, an envelope refusal, an escalation. The caller still
 receives the result it would have received, because a failure there would
 invite a retry of something already done. The records written before an effect
 — an authority load, a decision, a catalogue listing — do not reach it: a sink
-that throws on one of those rejects the operation, and nothing runs.
+that throws on one of those rejects the operation with an
+`AuditUnavailableError`, nothing runs, and inside a turn the envelope ends the
+turn `audit_unavailable`.
 
 ## Contract limits
 
