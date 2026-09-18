@@ -481,7 +481,7 @@ that would let a run claim the first while being the second.
 
 ### HarnessMcpConfigFile
 
-Defined in: [mcp/src/harness-config.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L36)
+Defined in: [mcp/src/harness-config.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L45)
 
 One generated file: what to write, and what a harness expects it to be called.
 
@@ -489,9 +489,9 @@ One generated file: what to write, and what a harness expects it to be called.
 
 | Property                                  | Modifier   | Type     | Defined in                                                                                                              |
 | ----------------------------------------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-contents"></a> `contents` | `readonly` | `string` | [mcp/src/harness-config.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L39) |
-| <a id="property-filename"></a> `filename` | `readonly` | `string` | [mcp/src/harness-config.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L38) |
-| <a id="property-harness"></a> `harness`   | `readonly` | `string` | [mcp/src/harness-config.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L37) |
+| <a id="property-contents"></a> `contents` | `readonly` | `string` | [mcp/src/harness-config.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L48) |
+| <a id="property-filename"></a> `filename` | `readonly` | `string` | [mcp/src/harness-config.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L47) |
+| <a id="property-harness"></a> `harness`   | `readonly` | `string` | [mcp/src/harness-config.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L46) |
 
 ---
 
@@ -809,7 +809,7 @@ Defined in: [mcp/src/protocol.ts:79](https://github.com/Aicoo-Team/SharedOS/blob
 
 > **McpHarnessId** = _typeof_ [`MCP_HARNESS_IDS`](#mcp_harness_ids)\[`number`\]
 
-Defined in: [mcp/src/harness-config.ts:213](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L213)
+Defined in: [mcp/src/harness-config.ts:222](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L222)
 
 ## Variables
 
@@ -933,7 +933,7 @@ Defined in: [mcp/src/protocol.ts:21](https://github.com/Aicoo-Team/SharedOS/blob
 
 > `const` **MCP\_HARNESS\_IDS**: readonly \[`"codex"`, `"claude-code"`, `"deepseek"`, `"pi"`\]
 
-Defined in: [mcp/src/harness-config.ts:212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L212)
+Defined in: [mcp/src/harness-config.ts:221](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L221)
 
 The harnesses this package emits a connection for, by id.
 
@@ -986,7 +986,7 @@ a label for equality, not an encoding: nothing parses it back into an
 
 > **claudeAgentSdkMcpOptions**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L117)
+Defined in: [mcp/src/harness-config.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L126)
 
 Claude Agent SDK options for a non-interactive evaluation.
 
@@ -1012,7 +1012,7 @@ every one of those calls is re-authorized by the kernel.
 
 > **claudeCodeMcpConfig**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L93)
+Defined in: [mcp/src/harness-config.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L102)
 
 Claude Code's `.mcp.json`.
 
@@ -1032,7 +1032,7 @@ Claude Code's `.mcp.json`.
 
 > **codexMcpConfig**(`connection`): `string`
 
-Defined in: [mcp/src/harness-config.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L83)
+Defined in: [mcp/src/harness-config.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L92)
 
 Codex's `config.toml` fragment: [codexMcpServerSettings](#codexmcpserversettings) as a table.
 
@@ -1052,7 +1052,7 @@ Codex's `config.toml` fragment: [codexMcpServerSettings](#codexmcpserversettings
 
 > **codexMcpServerSettings**(`connection`): readonly readonly \[`string`, `string`\][]
 
-Defined in: [mcp/src/harness-config.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L67)
+Defined in: [mcp/src/harness-config.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L76)
 
 The settings a Codex MCP server entry carries, as key and TOML value.
 
@@ -1126,7 +1126,7 @@ Defined in: [mcp/src/policy.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/m
 
 > **deepseekMcpConfig**(`connection`): `string`
 
-Defined in: [mcp/src/harness-config.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L149)
+Defined in: [mcp/src/harness-config.ts:158](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L158)
 
 DeepSeek Harness's plugin patch overlay.
 
@@ -1166,7 +1166,7 @@ a harness that declined to use the catalogue, which is a different finding.
 
 > **harnessMcpConfigFile**(`harness`, `connection`): [`HarnessMcpConfigFile`](#harnessmcpconfigfile)
 
-Defined in: [mcp/src/harness-config.ts:216](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L216)
+Defined in: [mcp/src/harness-config.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L225)
 
 Every emitter above, addressed by harness id.
 
@@ -1187,7 +1187,7 @@ Every emitter above, addressed by harness id.
 
 > **harnessToolAlias**(`serverName`, `tool`): `string`
 
-Defined in: [mcp/src/harness-config.ts:255](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L255)
+Defined in: [mcp/src/harness-config.ts:264](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L264)
 
 The harness-facing alias a tool is likely to appear under.
 
@@ -1279,6 +1279,28 @@ long-running harness the host is supervising by other means.
 #### Returns
 
 [`McpToolInvoker`](#mcptoolinvoker)
+
+---
+
+### mcpServerName()
+
+> **mcpServerName**(`connection`): `string`
+
+Defined in: [mcp/src/harness-config.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L40)
+
+The server name a harness namespaces its aliases under: the connection's own,
+or `sharedos`. The one place the default is applied, so an emitted config, a
+launch argument and a turn's metadata cannot name different servers.
+
+#### Parameters
+
+| Parameter    | Type                                                                |
+| ------------ | ------------------------------------------------------------------- |
+| `connection` | `Pick`\<[`HarnessMcpConnection`](#harnessmcpconnection), `"name"`\> |
+
+#### Returns
+
+`string`
 
 ---
 
@@ -1396,7 +1418,7 @@ Defined in: [mcp/src/policy.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/m
 
 > **piMcpConfig**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:195](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L195)
+Defined in: [mcp/src/harness-config.ts:204](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L204)
 
 Pi's `.mcp.json`, read by an MCP extension.
 

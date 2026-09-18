@@ -182,6 +182,12 @@ each entry calls out what a host has to update.
   A transport of your own that opens a harness from `HarnessTurnRequest` should
   hand `instructions` over, since the hash now covers it.
 
+- **One default for the MCP server name.** `connection.name ??
+SHAREDOS_MCP_SERVER_NAME` was written at ten sites across the config emitters,
+  the launch arguments and the turn's metadata. `mcpServerName(connection)` in
+  `@aicoo/sharedos-mcp` applies it, and the four shipped `McpHarnessSpec` entries
+  no longer restate the default as their `serverName`.
+
 - **One vendor descriptor.** Each of the four vendor folders declared its id, its
   driven manifest and its requirements from a copied template, and
   `mcp-runtime.ts` declared each MCP manifest again. `defineHarnessVendor` builds

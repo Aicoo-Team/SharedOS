@@ -11,7 +11,7 @@ import type {
 } from "@aicoo/sharedos-contracts";
 import {
   McpToolServer,
-  SHAREDOS_MCP_SERVER_NAME,
+  mcpServerName,
   claudeAgentSdkMcpOptions,
   codexMcpServerSettings,
   harnessMcpConfigFile,
@@ -197,6 +197,7 @@ export function createMcpHarnessRuntime(
         (key, value) => host.annotate(key, value),
         options.clock ?? (() => new Date().toISOString()),
       );
+      const serverName = spec.serverName ?? mcpServerName({});
       const bridge: SharedOSToolBridge = openToolBridge({
         executionId: request.executionId,
         context: { traceId: request.context.traceId, now: request.context.now },
@@ -214,7 +215,7 @@ export function createMcpHarnessRuntime(
       const server = new McpToolServer({
         invoker: bridge,
         serverInfo: {
-          name: spec.serverName ?? SHAREDOS_MCP_SERVER_NAME,
+          name: serverName,
           version: manifest.version,
         },
         ...(instructions === undefined ? {} : { instructions }),
@@ -231,7 +232,7 @@ export function createMcpHarnessRuntime(
       });
       const connection: HarnessMcpConnection = {
         url: http.url,
-        name: spec.serverName ?? SHAREDOS_MCP_SERVER_NAME,
+        name: serverName,
         ...(options.token === undefined ? {} : { token: options.token }),
       };
 
@@ -447,7 +448,7 @@ function harnessMetadata(
   return {
     harness: spec.id,
     toolshare: "mcp",
-    mcpServer: connection.name ?? SHAREDOS_MCP_SERVER_NAME,
+    mcpServer: mcpServerName(connection),
     ...(catalogHash === undefined ? {} : { catalogHash }),
     // The model the run declared, carried into the execution record so a
     // multi-harness comparison can be checked rather than assumed. It is a
@@ -601,7 +602,6 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
   id: CLAUDE_CODE_VENDOR.id,
   manifest: CLAUDE_CODE_VENDOR.mcpManifest,
   protocol: CLAUDE_CODE_VENDOR.protocol,
-  serverName: SHAREDOS_MCP_SERVER_NAME,
   configFiles: (connection) => [harnessMcpConfigFile("claude-code", connection)],
   launch: ({ prompt, workspace, configPaths, connection }) => ({
     command: "claude",
@@ -615,7 +615,7 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
       configPaths[".mcp.json"] ?? join(workspace, ".mcp.json"),
       "--strict-mcp-config",
       "--allowedTools",
-      `mcp__${connection.name ?? SHAREDOS_MCP_SERVER_NAME}`,
+      `mcp__${mcpServerName(connection)}`,
       "--disallowedTools",
       "Bash,Edit,Write,Read,Glob,Grep,NotebookEdit,Task,WebFetch,WebSearch,TodoWrite",
       "--max-turns",
@@ -638,7 +638,6 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: CODEX_VENDOR.id,
   manifest: CODEX_VENDOR.mcpManifest,
   protocol: CODEX_VENDOR.protocol,
-  serverName: SHAREDOS_MCP_SERVER_NAME,
   launch: ({ prompt, workspace, connection }) => ({
     command: "codex",
     args: [
@@ -657,7 +656,7 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
         .filter(([key]) => key !== "bearer_token")
         .flatMap(([key, value]) => [
           "-c",
-          `mcp_servers.${connection.name ?? SHAREDOS_MCP_SERVER_NAME}.${key}=${value}`,
+          `mcp_servers.${mcpServerName(connection)}.${key}=${value}`,
         ]),
       prompt,
     ],
@@ -682,7 +681,6 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
   id: DEEPSEEK_VENDOR.id,
   manifest: DEEPSEEK_VENDOR.mcpManifest,
   protocol: DEEPSEEK_VENDOR.protocol,
-  serverName: SHAREDOS_MCP_SERVER_NAME,
   configFiles: (connection) => [harnessMcpConfigFile("deepseek", connection)],
   launch: ({ prompt, workspace, configPaths }) => ({
     command: process.env["DSH_COMMAND"] ?? "dsh",
@@ -725,7 +723,6 @@ export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: PI_VENDOR.id,
   manifest: PI_VENDOR.mcpManifest,
   protocol: PI_VENDOR.protocol,
-  serverName: SHAREDOS_MCP_SERVER_NAME,
   configFiles: (connection) => [harnessMcpConfigFile("pi", connection)],
   launch: ({ prompt, workspace, request }) => ({
     command: "pi",
