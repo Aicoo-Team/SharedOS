@@ -1,10 +1,4 @@
-import type {
-  JsonObject,
-  JsonValue,
-  RuntimeManifest,
-  ToolCall,
-  ToolResult,
-} from "@aicoo/sharedos-contracts";
+import type { JsonValue, RuntimeManifest, ToolCall, ToolResult } from "@aicoo/sharedos-contracts";
 import {
   type AgentTurnDecision,
   type AgentTurnDriver,
@@ -27,6 +21,7 @@ import {
   seatText,
   seatToolCall,
   type DeclareStep,
+  type SeatMetadata,
   type SeatText,
   type SeatTextOptions,
 } from "../seat.js";
@@ -380,7 +375,7 @@ class ModelSession implements AgentTurnSession {
    * rejecting it, and a record naming the model that was asked for would be
    * evidence attributed to a model that never ran.
    */
-  #metadata(): JsonObject {
+  #metadata(): SeatMetadata {
     return {
       model: this.#servedModel ?? this.#client.model,
       modelProvider: this.#client.provider,

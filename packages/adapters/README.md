@@ -70,6 +70,29 @@ list. Every rendering says it is descriptive. The kernel decides each call the
 model goes on to make, so an entry is not a permission and a missing one is not
 a refusal.
 
+## What a seat states about its turn
+
+Every seat here writes its facts about a turn onto `ExecutionResult.metadata`
+under one vocabulary, the exported `SeatMetadata` type, so the same fact is under
+the same key whichever seat ran. A seat states the keys that apply to it and
+leaves the rest absent.
+
+| Key                                           | Stated by           | What it says                                                                                                                                                    |
+| --------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model`, `modelProvider`                      | both                | The standard driver states the model the provider **served**; the MCP harness runtime states the one the run **declared**, because a vendor CLI selects its own |
+| `requestedModel`, `modelSettings`             | standard driver     | What was asked for, when the served model may differ                                                                                                            |
+| `finishReason`, `inputTokens`, `outputTokens` | standard driver     | Why the last reply ended, and the turn's summed spend; absent, never zero, when the provider reports none                                                       |
+| `malformedToolCalls`                          | standard driver     | Calls refused in place for unreadable arguments; none reached the envelope                                                                                      |
+| `harness`, `toolshare`, `mcpServer`           | MCP harness runtime | Which vendor CLI ran and how it reached the catalogue                                                                                                           |
+| `catalogHash`, `toolAliases`                  | MCP harness runtime | The catalogue the harness was served, and the names it rewrote (diagnostic only)                                                                                |
+| `harnessOutcome`, `harnessErrorCode`          | MCP harness runtime | On an escalated turn, how the CLI itself ended                                                                                                                  |
+| `callsAfterEscalation`                        | MCP harness runtime | On an escalated turn, calls the CLI made after its ask; each was answered `escalation_pending` and reached no kernel                                            |
+
+The conformance record lifts `model`, `modelProvider`, `catalogHash`, the token
+counts and `callsAfterEscalation`; the rest are for the host that ran the turn.
+The envelope adds its own keys beside these: `runtime`, `promptHash` and
+`escalationAsked`.
+
 ## The three pieces of a driven harness
 
 An adapter is assembled from parts that are replaceable independently, which is

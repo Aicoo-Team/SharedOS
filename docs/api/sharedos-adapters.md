@@ -76,6 +76,29 @@ list. Every rendering says it is descriptive. The kernel decides each call the
 model goes on to make, so an entry is not a permission and a missing one is not
 a refusal.
 
+## What a seat states about its turn
+
+Every seat here writes its facts about a turn onto `ExecutionResult.metadata`
+under one vocabulary, the exported `SeatMetadata` type, so the same fact is under
+the same key whichever seat ran. A seat states the keys that apply to it and
+leaves the rest absent.
+
+| Key                                           | Stated by           | What it says                                                                                                                                                    |
+| --------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model`, `modelProvider`                      | both                | The standard driver states the model the provider **served**; the MCP harness runtime states the one the run **declared**, because a vendor CLI selects its own |
+| `requestedModel`, `modelSettings`             | standard driver     | What was asked for, when the served model may differ                                                                                                            |
+| `finishReason`, `inputTokens`, `outputTokens` | standard driver     | Why the last reply ended, and the turn's summed spend; absent, never zero, when the provider reports none                                                       |
+| `malformedToolCalls`                          | standard driver     | Calls refused in place for unreadable arguments; none reached the envelope                                                                                      |
+| `harness`, `toolshare`, `mcpServer`           | MCP harness runtime | Which vendor CLI ran and how it reached the catalogue                                                                                                           |
+| `catalogHash`, `toolAliases`                  | MCP harness runtime | The catalogue the harness was served, and the names it rewrote (diagnostic only)                                                                                |
+| `harnessOutcome`, `harnessErrorCode`          | MCP harness runtime | On an escalated turn, how the CLI itself ended                                                                                                                  |
+| `callsAfterEscalation`                        | MCP harness runtime | On an escalated turn, calls the CLI made after its ask; each was answered `escalation_pending` and reached no kernel                                            |
+
+The conformance record lifts `model`, `modelProvider`, `catalogHash`, the token
+counts and `callsAfterEscalation`; the rest are for the host that ran the turn.
+The envelope adds its own keys beside these: `runtime`, `promptHash` and
+`escalationAsked`.
+
 ## The three pieces of a driven harness
 
 An adapter is assembled from parts that are replaceable independently, which is
@@ -447,7 +470,7 @@ Defined in: [packages/adapters/src/runtime.ts:42](https://github.com/Aicoo-Team/
 
 ### ModelDriver
 
-Defined in: [packages/adapters/src/model/driver.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L139)
+Defined in: [packages/adapters/src/model/driver.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L134)
 
 A model API driven as a SharedOS agent turn.
 
@@ -479,7 +502,7 @@ the reason the deterministic column stays the reference.
 
 > **new ModelDriver**(`options`): [`ModelDriver`](#modeldriver)
 
-Defined in: [packages/adapters/src/model/driver.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L146)
+Defined in: [packages/adapters/src/model/driver.ts:141](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L141)
 
 ###### Parameters
 
@@ -495,7 +518,7 @@ Defined in: [packages/adapters/src/model/driver.ts:146](https://github.com/Aicoo
 
 | Property                                    | Modifier   | Type                                             | Defined in                                                                                                                               |
 | ------------------------------------------- | ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest-3"></a> `manifest` | `readonly` | `object`                                         | [packages/adapters/src/model/driver.ts:140](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L140) |
+| <a id="property-manifest-3"></a> `manifest` | `readonly` | `object`                                         | [packages/adapters/src/model/driver.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L135) |
 | `manifest.id`                               | `public`   | `string`                                         | packages/contracts/dist/runtime.d.ts:9                                                                                                   |
 | `manifest.metadata?`                        | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | packages/contracts/dist/runtime.d.ts:12                                                                                                  |
 | `manifest.protocolVersion`                  | `public`   | `"1"`                                            | packages/contracts/dist/runtime.d.ts:11                                                                                                  |
@@ -507,7 +530,7 @@ Defined in: [packages/adapters/src/model/driver.ts:146](https://github.com/Aicoo
 
 > **open**(`request`, `_signal`): `Promise`\<[`AgentTurnSession`](sharedos-runtime.md#agentturnsession)>\>
 
-Defined in: [packages/adapters/src/model/driver.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L160)
+Defined in: [packages/adapters/src/model/driver.ts:155](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L155)
 
 ###### Parameters
 
@@ -805,7 +828,7 @@ Defined in: [packages/adapters/src/model/client.ts:244](https://github.com/Aicoo
 
 ### ToolNameCodec
 
-Defined in: [packages/adapters/src/model/driver.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L59)
+Defined in: [packages/adapters/src/model/driver.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L54)
 
 How a SharedOS tool name is spoken to a model, and read back.
 
@@ -827,7 +850,7 @@ a tool that was never tried, not as a tool that was refused.
 
 > **new ToolNameCodec**(`tools`): [`ToolNameCodec`](#toolnamecodec)
 
-Defined in: [packages/adapters/src/model/driver.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L63)
+Defined in: [packages/adapters/src/model/driver.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L58)
 
 ###### Parameters
 
@@ -845,7 +868,7 @@ Defined in: [packages/adapters/src/model/driver.ts:63](https://github.com/Aicoo-
 
 > **fromWire**(`name`): `string`
 
-Defined in: [packages/adapters/src/model/driver.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L89)
+Defined in: [packages/adapters/src/model/driver.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L84)
 
 ###### Parameters
 
@@ -861,7 +884,7 @@ Defined in: [packages/adapters/src/model/driver.ts:89](https://github.com/Aicoo-
 
 > **toWire**(`name`): `string`
 
-Defined in: [packages/adapters/src/model/driver.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L85)
+Defined in: [packages/adapters/src/model/driver.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L80)
 
 ###### Parameters
 
@@ -1450,7 +1473,7 @@ Defined in: [packages/adapters/src/model/client.ts:44](https://github.com/Aicoo-
 
 ### ModelDriverOptions
 
-Defined in: [packages/adapters/src/model/driver.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L100)
+Defined in: [packages/adapters/src/model/driver.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L95)
 
 `instructions` reaches the model as a system message, which is what a
 chat-completions provider's system role is for, and it is the same layer a
@@ -1465,15 +1488,15 @@ is sent.
 
 | Property                                                     | Modifier   | Type                                                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Inherited from                                                                   | Defined in                                                                                                                               |
 | ------------------------------------------------------------ | ---------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-client"></a> `client`                        | `readonly` | [`ModelClient`](#modelclient)                        | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/model/driver.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L102) |
-| <a id="property-declarestep-1"></a> `declareStep?`           | `readonly` | [`DeclareStep`](#declarestep)                        | See [DeclareStep](#declarestep).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | -                                                                                | [packages/adapters/src/model/driver.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L113) |
+| <a id="property-client"></a> `client`                        | `readonly` | [`ModelClient`](#modelclient)                        | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/model/driver.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L97)   |
+| <a id="property-declarestep-1"></a> `declareStep?`           | `readonly` | [`DeclareStep`](#declarestep)                        | See [DeclareStep](#declarestep).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | -                                                                                | [packages/adapters/src/model/driver.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L108) |
 | <a id="property-instructions-2"></a> `instructions?`         | `readonly` | `string` \| ((`request`) => `string` \| `undefined`) | What the seat is told before the prompt: a model's system message, an MCP server's initialize instructions, a harness's preamble. By default it is `request.context.reach` rendered by `describeReach`: where this turn's tools may operate, with the authority left out. The prompt carries the task and this carries the environment the task runs in. A string is the host's standing guidance, placed before the turn's reach so a seat that shows its model one block reads the guidance before the map. A function replaces the composition and says exactly what the seat is told; returning `undefined` hands over no instructions at all. | [`SeatTextOptions`](#seattextoptions).[`instructions`](#property-instructions-3) | [packages/adapters/src/seat.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L40)                   |
-| <a id="property-manifest-7"></a> `manifest`                  | `readonly` | `object`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/model/driver.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L101) |
+| <a id="property-manifest-7"></a> `manifest`                  | `readonly` | `object`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/model/driver.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L96)   |
 | `manifest.id`                                                | `public`   | `string`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:9                                                                                                   |
 | `manifest.metadata?`                                         | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:12                                                                                                  |
 | `manifest.protocolVersion`                                   | `public`   | `"1"`                                                | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:11                                                                                                  |
 | `manifest.version`                                           | `public`   | `string`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:10                                                                                                  |
-| <a id="property-maxmalformedcalls"></a> `maxMalformedCalls?` | `readonly` | `number`                                             | Guard against a model that never forms a readable call. A call whose arguments do not parse is refused by the driver and answered back to the model, which costs the turn no step; a model that kept producing them would otherwise be spoken to until the turn timed out. Past this many in one turn, the turn fails instead.                                                                                                                                                                                                                                                                                                                     | -                                                                                | [packages/adapters/src/model/driver.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L111) |
+| <a id="property-maxmalformedcalls"></a> `maxMalformedCalls?` | `readonly` | `number`                                             | Guard against a model that never forms a readable call. A call whose arguments do not parse is refused by the driver and answered back to the model, which costs the turn no step; a model that kept producing them would otherwise be spoken to until the turn timed out. Past this many in one turn, the turn fails instead.                                                                                                                                                                                                                                                                                                                     | -                                                                                | [packages/adapters/src/model/driver.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L106) |
 | <a id="property-prompt-2"></a> `prompt?`                     | `readonly` | (`request`) => `string`                              | Overrides how the turn message becomes the prompt.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [`SeatTextOptions`](#seattextoptions).[`prompt`](#property-prompt-3)             | [packages/adapters/src/seat.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L27)                   |
 
 ---
@@ -1745,7 +1768,7 @@ before the next one is sent.
 
 > **ModelToolCallReading** = \{ `reason`: `string`; `type`: `"escalate"`; \} \| \{ `call`: [`ToolCall`](sharedos-contracts.md#toolcall); `type`: `"tool_call"`; \} \| \{ `refusal`: [`ToolResult`](sharedos-contracts.md#toolresult); `type`: `"malformed"`; \}
 
-Defined in: [packages/adapters/src/model/driver.ts:417](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L417)
+Defined in: [packages/adapters/src/model/driver.ts:412](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L412)
 
 Where one call the model asked for goes once it has been read.
 
@@ -1794,6 +1817,170 @@ Defined in: [packages/adapters/src/pi/index.ts:31](https://github.com/Aicoo-Team
 ##### transport
 
 > `readonly` **transport**: [`HarnessTransport`](#harnesstransport)
+
+---
+
+### SeatMetadata
+
+> **SeatMetadata** = `object`
+
+Defined in: [packages/adapters/src/seat.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L202)
+
+What a seat states about its turn, on the turn's result metadata.
+
+One vocabulary for every seat here, so a reader of `ExecutionResult.metadata`
+finds the same fact under the same key whichever seat ran. A seat states the
+keys that apply to it and leaves the rest absent; an absent key is "not
+stated", never zero. The envelope adds its own beside these (`runtime`,
+`promptHash`, `escalationAsked`).
+
+The conformance record lifts `model`, `modelProvider`, `catalogHash`, the
+token counts and `callsAfterEscalation`. The rest are for the host that ran
+the turn.
+
+#### Properties
+
+##### callsAfterEscalation?
+
+> `readonly` `optional` **callsAfterEscalation?**: `number`
+
+Defined in: [packages/adapters/src/seat.ts:249](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L249)
+
+On a turn that ended `escalated` over MCP: calls the harness made after its
+ask. Each was answered `escalation_pending` and reached neither the
+envelope nor the kernel, so this is the only place they can be read.
+
+##### catalogHash?
+
+> `readonly` `optional` **catalogHash?**: `string`
+
+Defined in: [packages/adapters/src/seat.ts:233](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L233)
+
+The catalogue the harness was served, so a run can prove which tool set it received.
+
+##### finishReason?
+
+> `readonly` `optional` **finishReason?**: `string`
+
+Defined in: [packages/adapters/src/seat.ts:217](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L217)
+
+Why the last reply ended, in the provider's words.
+
+##### harness?
+
+> `readonly` `optional` **harness?**: `string`
+
+Defined in: [packages/adapters/src/seat.ts:227](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L227)
+
+The vendor harness that ran, by its id.
+
+##### harnessErrorCode?
+
+> `readonly` `optional` **harnessErrorCode?**: `string`
+
+Defined in: [packages/adapters/src/seat.ts:243](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L243)
+
+With `harnessOutcome: "fail"`, the code the harness failed under.
+
+##### harnessOutcome?
+
+> `readonly` `optional` **harnessOutcome?**: `"complete"` \| `"fail"` \| `"escalate"`
+
+Defined in: [packages/adapters/src/seat.ts:241](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L241)
+
+On a turn that ended `escalated` over MCP: how the harness itself ended.
+"The CLI reported success after asking" and "the CLI crashed after asking"
+are different runs.
+
+##### inputTokens?
+
+> `readonly` `optional` **inputTokens?**: `number`
+
+Defined in: [packages/adapters/src/seat.ts:219](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L219)
+
+Summed over every model call this turn; absent until a reply reports one.
+
+##### malformedToolCalls?
+
+> `readonly` `optional` **malformedToolCalls?**: `number`
+
+Defined in: [packages/adapters/src/seat.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L225)
+
+Calls the standard driver refused in place because their arguments were not
+a JSON object. None of them reached the envelope, so no operation shows them.
+
+##### mcpServer?
+
+> `readonly` `optional` **mcpServer?**: `string`
+
+Defined in: [packages/adapters/src/seat.ts:231](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L231)
+
+The MCP server name the harness namespaced its aliases under.
+
+##### model?
+
+> `readonly` `optional` **model?**: `string`
+
+Defined in: [packages/adapters/src/seat.ts:209](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L209)
+
+The model behind the seat. The standard driver states the one the provider
+served, because a provider may substitute; the MCP harness runtime states
+the one the run declared, because a vendor CLI selects its own model and
+SharedOS cannot confirm which answered.
+
+##### modelProvider?
+
+> `readonly` `optional` **modelProvider?**: `string`
+
+Defined in: [packages/adapters/src/seat.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L211)
+
+Who served it (standard driver), or who the run declared (MCP harness runtime).
+
+##### modelSettings?
+
+> `readonly` `optional` **modelSettings?**: [`JsonObject`](sharedos-contracts.md#jsonobject)
+
+Defined in: [packages/adapters/src/seat.ts:215](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L215)
+
+The sampling settings the model client was configured with.
+
+##### outputTokens?
+
+> `readonly` `optional` **outputTokens?**: `number`
+
+Defined in: [packages/adapters/src/seat.ts:220](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L220)
+
+##### requestedModel?
+
+> `readonly` `optional` **requestedModel?**: `string`
+
+Defined in: [packages/adapters/src/seat.ts:213](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L213)
+
+The model the standard driver asked for, when the served one may differ.
+
+##### toolAliases?
+
+> `readonly` `optional` **toolAliases?**: `object`[]
+
+Defined in: [packages/adapters/src/seat.ts:235](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L235)
+
+Names the harness rewrote, for reading its transcript back; never an authorization input.
+
+###### alias
+
+> `readonly` **alias**: `string`
+
+###### tool
+
+> `readonly` **tool**: `string`
+
+##### toolshare?
+
+> `readonly` `optional` **toolshare?**: `"mcp"`
+
+Defined in: [packages/adapters/src/seat.ts:229](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L229)
+
+How the harness reached the catalogue.
 
 ## Variables
 
@@ -2389,7 +2576,7 @@ harness whose opening frame carries a single message.
 
 > **modelToolResultMessage**(`result`): [`ModelMessage`](#modelmessage)
 
-Defined in: [packages/adapters/src/model/driver.ts:469](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L469)
+Defined in: [packages/adapters/src/model/driver.ts:464](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L464)
 
 The message that answers one call, in the shape the model reads it back.
 
@@ -2432,7 +2619,7 @@ which gives `JsonObjectSchema`'s verdict without the schema's cost.
 
 > **readModelToolCall**(`call`, `codec`, `offered`, `context`): [`ModelToolCallReading`](#modeltoolcallreading)
 
-Defined in: [packages/adapters/src/model/driver.ts:438](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L438)
+Defined in: [packages/adapters/src/model/driver.ts:433](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L433)
 
 Read one call off a reply: the provider's alphabet back to the catalogue's,
 the argument blob parsed, and the escalate affordance recognised by name when

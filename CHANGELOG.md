@@ -182,6 +182,20 @@ each entry calls out what a host has to update.
   A transport of your own that opens a harness from `HarnessTurnRequest` should
   hand `instructions` over, since the hash now covers it.
 
+- **One vocabulary for what a seat states about its turn, and
+  `callsAfterEscalation` in the record.** The standard driver and the MCP harness
+  runtime each built their result metadata as an untyped object, and `model` and
+  `modelProvider` meant "served" on one path and "declared" on the other with
+  nothing saying so. Both now return the exported `SeatMetadata`, which declares
+  every key and says which seat states it and what it means there; the keys and
+  their values are unchanged. ADR 0018 names `callsAfterEscalation` as the only
+  place "the harness kept going after it asked" can be read, and nothing read
+  it: the conformance record now lifts it as `execution.callsAfterEscalation`,
+  optional and ungraded, so the record's `version` and the grading rules'
+  version do not move. `harnessOutcome`, `harnessErrorCode` and
+  `malformedToolCalls` stay on the result, documented, for the host that ran the
+  turn. The open-items mention closes.
+
 - **One default for the MCP server name.** `connection.name ??
 SHAREDOS_MCP_SERVER_NAME` was written at ten sites across the config emitters,
   the launch arguments and the turn's metadata. `mcpServerName(connection)` in

@@ -38,7 +38,7 @@ import { DEEPSEEK_VENDOR } from "./deepseek/index.js";
 import { PI_VENDOR } from "./pi/index.js";
 import { failed } from "./internal.js";
 import { HarnessProcess } from "./process.js";
-import { SeatCalls, seatText, type SeatTextOptions } from "./seat.js";
+import { SeatCalls, seatText, type SeatMetadata, type SeatTextOptions } from "./seat.js";
 
 /**
  * A vendor harness run natively, against the SharedOS catalogue over MCP.
@@ -443,7 +443,7 @@ function harnessMetadata(
   bridge: SharedOSToolBridge,
   catalogHash: string | undefined,
   model: { readonly id: string; readonly provider?: string } | undefined,
-): JsonObject {
+): SeatMetadata {
   const aliases = bridge.aliases;
   return {
     harness: spec.id,

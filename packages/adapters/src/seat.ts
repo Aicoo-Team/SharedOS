@@ -185,3 +185,66 @@ export function seatToolCall(
 ): ToolCall {
   return { id, tool, arguments: arguments_, traceId: context.traceId, requestedAt: context.now };
 }
+
+/**
+ * What a seat states about its turn, on the turn's result metadata.
+ *
+ * One vocabulary for every seat here, so a reader of `ExecutionResult.metadata`
+ * finds the same fact under the same key whichever seat ran. A seat states the
+ * keys that apply to it and leaves the rest absent; an absent key is "not
+ * stated", never zero. The envelope adds its own beside these (`runtime`,
+ * `promptHash`, `escalationAsked`).
+ *
+ * The conformance record lifts `model`, `modelProvider`, `catalogHash`, the
+ * token counts and `callsAfterEscalation`. The rest are for the host that ran
+ * the turn.
+ */
+export type SeatMetadata = {
+  /**
+   * The model behind the seat. The standard driver states the one the provider
+   * served, because a provider may substitute; the MCP harness runtime states
+   * the one the run declared, because a vendor CLI selects its own model and
+   * SharedOS cannot confirm which answered.
+   */
+  readonly model?: string;
+  /** Who served it (standard driver), or who the run declared (MCP harness runtime). */
+  readonly modelProvider?: string;
+  /** The model the standard driver asked for, when the served one may differ. */
+  readonly requestedModel?: string;
+  /** The sampling settings the model client was configured with. */
+  readonly modelSettings?: JsonObject;
+  /** Why the last reply ended, in the provider's words. */
+  readonly finishReason?: string;
+  /** Summed over every model call this turn; absent until a reply reports one. */
+  readonly inputTokens?: number;
+  readonly outputTokens?: number;
+  /**
+   * Calls the standard driver refused in place because their arguments were not
+   * a JSON object. None of them reached the envelope, so no operation shows them.
+   */
+  readonly malformedToolCalls?: number;
+  /** The vendor harness that ran, by its id. */
+  readonly harness?: string;
+  /** How the harness reached the catalogue. */
+  readonly toolshare?: "mcp";
+  /** The MCP server name the harness namespaced its aliases under. */
+  readonly mcpServer?: string;
+  /** The catalogue the harness was served, so a run can prove which tool set it received. */
+  readonly catalogHash?: string;
+  /** Names the harness rewrote, for reading its transcript back; never an authorization input. */
+  readonly toolAliases?: { readonly alias: string; readonly tool: string }[];
+  /**
+   * On a turn that ended `escalated` over MCP: how the harness itself ended.
+   * "The CLI reported success after asking" and "the CLI crashed after asking"
+   * are different runs.
+   */
+  readonly harnessOutcome?: "complete" | "fail" | "escalate";
+  /** With `harnessOutcome: "fail"`, the code the harness failed under. */
+  readonly harnessErrorCode?: string;
+  /**
+   * On a turn that ended `escalated` over MCP: calls the harness made after its
+   * ask. Each was answered `escalation_pending` and reached neither the
+   * envelope nor the kernel, so this is the only place they can be read.
+   */
+  readonly callsAfterEscalation?: number;
+};
