@@ -482,13 +482,13 @@ details, event creation, and event deletion remain separately scoped actions.
 
 ### 6. Select a runtime and execute exactly one bounded turn
 
-For the reference loop, the host implements `AgentTurnDriver`, wraps it in
-`StandardRuntime`, and places that plugin inside `SharedOSExecutor`:
+For the standard loop, the host implements `AgentTurnDriver`, seats it with
+`createStandardRuntime`, and places that plugin inside `SharedOSExecutor`:
 
 ```ts
-import { SharedOSExecutor, StandardRuntime } from "@aicoo/sharedos";
+import { SharedOSExecutor, createStandardRuntime } from "@aicoo/sharedos";
 
-const runtime = new StandardRuntime(agentDriver);
+const runtime = createStandardRuntime({ driver: agentDriver });
 const turns = new SharedOSExecutor(kernel, runtime, {
   defaultMaxSteps: 16,
   defaultMaxToolCalls: 16,
@@ -516,7 +516,7 @@ The driver receives the same full `ToolDefinition`s the request listed,
 call will be authorized against, and it is not something a model should be
 told: a driver that talks to a model provider projects first with
 `publishToolCatalog`, which yields the `PublishedToolDefinition` the MCP
-boundary serves and what `ModelDriver` sends. The
+boundary serves and what `StandardTurnDriver` sends. The
 [HTTP reference](http-api.md#get-v1tools) states the same rule for
 `GET /v1/tools`.
 
@@ -630,7 +630,7 @@ tools.
 6. Persist enabled tool namespaces independently from grants.
 7. Issue least-authority grants, including a separate target-agent invocation
    grant.
-8. Select a trusted `RuntimePlugin`; use `StandardRuntime` with a bounded
+8. Select a trusted `RuntimePlugin`; use the standard loop with a bounded
    `AgentTurnDriver` when the reference loop is sufficient.
 9. Add allowed and denied conformance tests for every permission-bearing path.
 10. Record runtime id/version separately from model and execution backend, and

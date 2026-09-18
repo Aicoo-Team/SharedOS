@@ -25,7 +25,7 @@ export interface TurnErrorContext {
  * A host's sink for a throw the turn contained rather than propagated.
  *
  * Both layers that contain one take it: `SharedOSExecutor`, whose catch ends
- * the turn `runtime_failed`, and `StandardRuntime`, whose catch ends it
+ * the turn `runtime_failed`, and the standard loop, whose catch ends it
  * `driver_failed`. A terminal code says a turn stopped and does not say why;
  * the thrown error is the only thing that does, so it is handed over whole and
  * unwrapped, because its stack is what names the origin.

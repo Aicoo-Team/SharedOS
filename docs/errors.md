@@ -282,7 +282,7 @@ on the wire.
 A budget refuses a call; it does not end a turn. The envelope answers the call
 that crosses `maxSteps` or `maxToolCalls` with `denied`, the runtime receives an
 ordinary tool result, and the turn may still complete. The one budget that ends
-a turn is `StandardRuntime`'s own loop: a driver that is still asking for tools
+a turn is the standard loop's own: a driver that is still asking for tools
 when the loop's last step is spent fails the turn with `step_limit_exceeded`
 (see [turns](#turns)). Which boundary refused is `OperationRecord.source`, as
 for `tool_unavailable`.
@@ -318,7 +318,7 @@ for `tool_unavailable`.
 | `message_context_mismatch` | denied    | The delivered message's trace or purpose disagrees with the context                                                                                                                                                                              |
 | `no_matching_grant`        | denied    | No `sharedos.execution` / `invoke` grant for the target agent                                                                                                                                                                                    |
 | `escalation_requested`     | escalated | The runtime stopped and asked for a human. Nothing was granted                                                                                                                                                                                   |
-| `step_limit_exceeded`      | failed    | `StandardRuntime` spent its own steps while the driver was still asking for tools. The envelope's budgets refuse calls instead — see [tool invocation](#tool-invocation)                                                                         |
+| `step_limit_exceeded`      | failed    | The standard loop spent its own steps while the driver was still asking for tools. The envelope's budgets refuse calls instead — see [tool invocation](#tool-invocation)                                                                         |
 | `driver_failed`            | failed    | Your `AgentTurnDriver` threw. The thrown error goes to `onTurnError` and nowhere else (below)                                                                                                                                                    |
 | `invalid_driver_decision`  | failed    | The driver returned something that is not a valid decision                                                                                                                                                                                       |
 | `runtime_failed`           | failed    | A `RuntimePlugin` threw, or a host port the turn body called did. The message is fixed and the thrown error goes nowhere near the wire — install `onTurnError` to see it (below)                                                                 |
@@ -420,7 +420,7 @@ new SharedOSExecutor(kernel, plugin, {
 });
 ```
 
-`StandardRuntime` takes the same option, because only one of the two catches any
+The standard loop takes the same option, because only one of the two catches any
 given throw: a driver's becomes the loop's cooperative `driver_failed` outcome,
 which the envelope never sees as an exception, and the executor catches
 everything else as `runtime_failed`. Install one sink in both options and it
@@ -491,8 +491,8 @@ how a driver or plugin ends its turn, so they surface as a `failed`
 | `harness_arguments_unparseable`       | failed | Codex or DeepSeek Harness sent tool arguments that are not a JSON object                                                                                                                                                                                                 |
 | `harness_command_rejected`            | failed | Pi rejected a command. Retryable                                                                                                                                                                                                                                         |
 | `harness_failed`                      | failed | The harness reported its own failure. Retryable; Codex and Claude Code substitute the vendor's own code when the frame names one                                                                                                                                         |
-| `model_call_failed`                   | failed | `ModelDriver`'s provider call threw, other than by cancellation                                                                                                                                                                                                          |
-| `model_output_truncated`              | failed | The provider cut `ModelDriver`'s reply at the output-token ceiling (`finish_reason: length`). Nothing in a cut-off reply is a decision the model finished making, so none of it is released                                                                              |
+| `model_call_failed`                   | failed | `StandardTurnDriver`'s provider call threw, other than by cancellation                                                                                                                                                                                                   |
+| `model_output_truncated`              | failed | The provider cut `StandardTurnDriver`'s reply at the output-token ceiling (`finish_reason: length`). Nothing in a cut-off reply is a decision the model finished making, so none of it is released                                                                       |
 | `model_malformed_call_limit_exceeded` | failed | The model made more than `maxMalformedCalls` (default 8) calls whose arguments were not a JSON object. Each was refused in place as `invalid_tool_arguments` and answered back to the model, never sent as `{}`; the turn's metadata counts them as `malformedToolCalls` |
 
 ## HTTP

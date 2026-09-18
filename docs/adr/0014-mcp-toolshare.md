@@ -8,7 +8,7 @@
 SharedOS could exercise a vendor harness two ways, and neither reached the
 kernel.
 
-`HarnessDriver` puts SharedOS in the model provider's seat. It speaks the
+`EvalHarnessDriver` puts SharedOS in the model provider's seat. It speaks the
 vendor's API-layer tool-call shape — Responses function calls, Anthropic content
 blocks, `dsh` `tool/call`, Pi `toolCall` — and owns the turn loop. The
 translation is exact, and the scripted columns prove it against the real kernel

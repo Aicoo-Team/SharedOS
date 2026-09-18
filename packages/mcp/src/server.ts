@@ -6,7 +6,7 @@ import type {
   SharedOSToolCatalog,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
-import { isJsonObject } from "@aicoo/sharedos-contracts";
+import { isJsonObject, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
 import {
   SPAN,
   measure,
@@ -85,17 +85,12 @@ export interface McpToolServerOptions {
 export const SHAREDOS_MCP_SERVER_NAME = "sharedos";
 
 /**
- * The version a server built without `serverInfo` reports in `initialize`.
- *
- * It names the build a harness connected to, so it is kept equal to the
- * synchronized package version by the release gate, like every other version
- * constant that reaches a record or a wire.
+ * What a server built without `serverInfo` reports in `initialize`. The version
+ * names the build a harness connected to, so it is `SHAREDOS_VERSION`.
  */
-export const MCP_SERVER_VERSION = "0.1.0-alpha.5";
-
 const DEFAULT_SERVER_INFO: McpServerInfo = Object.freeze({
   name: SHAREDOS_MCP_SERVER_NAME,
-  version: MCP_SERVER_VERSION,
+  version: SHAREDOS_VERSION,
 });
 
 /**

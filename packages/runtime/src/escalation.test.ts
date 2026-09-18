@@ -16,7 +16,7 @@ import {
   ESCALATION_TOOL_NAME,
   ESCALATION_TOOL_NAMESPACE,
   SharedOSExecutor,
-  StandardRuntime,
+  createStandardRuntime,
   createEscalationTool,
   type AgentTurnDriver,
   type AgentTurnInput,
@@ -147,7 +147,7 @@ describe("createEscalationTool", () => {
     let sequence = 0;
     const turns = new SharedOSExecutor(
       kernelWith([escalationGrant, executionGrant]),
-      new StandardRuntime(driver),
+      createStandardRuntime({ driver }),
       { clock: () => now, createId: () => `event-${(sequence += 1)}` },
     );
     const request: ExecutionRequest = {

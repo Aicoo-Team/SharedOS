@@ -223,6 +223,25 @@ describe("execution record assembly", () => {
     ).toBeUndefined();
   });
 
+  it("lifts the calls a harness made after its ask, and only a count", () => {
+    const assemble = (metadata: JsonObject) =>
+      assembleExecutionRecord({
+        request: request(),
+        result: result({ metadata: { ...result().metadata, ...metadata } }),
+        auditEvents: auditTrail(),
+        experiment,
+        system,
+      });
+
+    // None of those calls reached the envelope, so no operation shows them.
+    expect(assemble({ callsAfterEscalation: 2 }).execution.callsAfterEscalation).toBe(2);
+    expect(assemble({ callsAfterEscalation: 0 }).execution.callsAfterEscalation).toBe(0);
+    expect(assemble({}).execution.callsAfterEscalation).toBeUndefined();
+    expect(assemble({ callsAfterEscalation: -1 }).execution.callsAfterEscalation).toBeUndefined();
+    expect(assemble({ callsAfterEscalation: 1.5 }).execution.callsAfterEscalation).toBeUndefined();
+    expect(assemble({ callsAfterEscalation: "2" }).execution.callsAfterEscalation).toBeUndefined();
+  });
+
   it("binds identity, authority, execution, and cost into one comparable record", () => {
     const record = assembleExecutionRecord({
       request: request(),

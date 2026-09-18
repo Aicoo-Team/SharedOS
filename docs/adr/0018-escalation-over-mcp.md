@@ -1,6 +1,7 @@
 # ADR 0018: Escalation over MCP is recovered from the call, not returned by it
 
 - Status: Accepted
+- Revised: 2026-09-18, the conformance record carries `callsAfterEscalation`
 - Date: 2026-08-28
 - Amends: the last consequence of `docs/adr/0011-escalation-terminal-outcome.md`
 
@@ -10,8 +11,8 @@ ADR 0011 made escalation a third terminal outcome, and ADR 0017 published the
 affordance as a catalogued tool and gave `AgentTurnDecision` the variant that
 ends a turn on it. A driver recognises `sharedos.escalate` by name and returns
 an `escalate` decision instead of a tool call, so the loop stops and the kernel
-is never asked. Both driver paths do this — `HarnessDriver` for a vendor
-adapter, `ModelDriver` for a model in the delegate seat — and both pass the
+is never asked. Both driver paths do this — `EvalHarnessDriver` for a vendor
+adapter, `StandardTurnDriver` for a model in the delegate seat — and both pass the
 conformance row.
 
 The MCP path could not. ADR 0014 made MCP the toolshare boundary precisely
@@ -76,7 +77,12 @@ read rather than only in the code.
   on a fact about the client. This moves the case-set hash.
 - A call made after the ask is visible. It executes nothing and appears in no
   record as an operation, so `callsAfterEscalation` is the only place "the
-  harness kept going after it asked" can be read.
+  harness kept going after it asked" can be read. The conformance record lifts
+  it from the result's metadata as `execution.callsAfterEscalation`, beside
+  `execution.escalationAsked`, and reports it without grading it.
+  `harnessOutcome` and `harnessErrorCode` stay on the result for the host that
+  ran the turn; `SeatMetadata` in `@aicoo/sharedos-adapters` is where every such
+  key is declared.
 - The registered handler stays. It is now unreachable on this path, which is
   what it is for: reaching it means some driver forwarded the call, and a stub
   that succeeded would record an escalation the envelope never terminated on.

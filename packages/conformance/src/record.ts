@@ -209,6 +209,18 @@ export const ExecutionRecordExecutionSchema = z
      * the turn to have ended `escalated`.
      */
     escalationAsked: EscalationAskedSchema.optional(),
+    /**
+     * Calls the seat went on to make after it asked for a human, on a path
+     * where it could: a vendor CLI owns its loop, so its ask cannot stop it.
+     *
+     * Each was answered `escalation_pending` by the runtime and reached neither
+     * the envelope nor the kernel, so none of them is an operation below and
+     * this count is the only place "the harness kept going after it asked" can
+     * be read (ADR 0018). Lifted from the result's metadata beside
+     * `escalationAsked`. Reported, never graded: a driven seat's turn ends at
+     * its ask, so it states none.
+     */
+    callsAfterEscalation: z.number().int().nonnegative().optional(),
     /** Tools the permission filter actually exposed to the runtime. */
     exposedTools: z.array(IdentifierSchema).max(512),
     requestedTools: z.array(IdentifierSchema).max(512),

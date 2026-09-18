@@ -10,7 +10,7 @@ database, routes, scheduling, product policy, and model integrations.
 flowchart LR
   UI["Pulse UI and API"] --> HOST["Pulse auth, billing, and policy"]
   HOST --> SE["SharedOS security envelope"]
-  SE --> SR["StandardRuntime"]
+  SE --> SR["createStandardRuntime"]
   SE --> CR["Codex RuntimePlugin"]
   SE --> FP["Pulse files provider"]
   FP --> NOTES["notes and noteFolders"]
@@ -38,7 +38,7 @@ semantic role, and retrieval view over files.
 | Tool namespace preferences    | Host store behind SharedOS namespace control port    |
 | Per-user MCP tool catalog     | SharedOS context-specific tool provider              |
 | Agent permission rows         | Host ceiling plus trusted capability grants          |
-| Agent v04 response path       | `AgentTurnDriver` inside `StandardRuntime`           |
+| Agent v04 response path       | `AgentTurnDriver` inside the standard loop           |
 | Agent v05 Codex path          | Pulse adapter implementing SharedOS `RuntimePlugin`  |
 | Heartbeats and recurring work | Pulse-owned scheduling outside one-turn runtime      |
 
@@ -72,7 +72,7 @@ database or copying `/api/v1/os` into this repository:
 4. Route file reads/search through SharedOS, then file mutations.
 5. Move native and per-user MCP tools behind the SharedOS namespace control
    plane and capability gate.
-6. Put agent-v04 and shared-agent execution behind `StandardRuntime`.
+6. Put agent-v04 and shared-agent execution behind the standard loop.
 7. Adapt the existing Codex cloud package to `RuntimePlugin`; route every
    SharedOS-visible effect through `RuntimeHost` while retaining its sandbox and
    backend implementation.

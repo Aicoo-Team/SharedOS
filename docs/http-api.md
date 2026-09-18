@@ -122,7 +122,7 @@ a model should be told. A client that drives a model from this route projects
 with `publishToolCatalog` first — `name`, `description`, `inputSchema`,
 `outputSchema`, annotations, and `metadata.namespace` / `metadata.source` —
 which is the same `PublishedToolDefinition` the MCP boundary serves and what
-`ModelDriver` sends to a provider. See
+`StandardTurnDriver` sends to a provider. See
 [what crosses the boundary](mcp-toolshare.md#what-crosses-the-boundary).
 
 ### `GET /v1/reach`

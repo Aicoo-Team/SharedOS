@@ -173,8 +173,8 @@ SharedOS gives it the filtered catalog and re-authorizes every call it makes.
 ```ts
 import {
   SharedOSExecutor,
-  StandardRuntime,
   agentExecutionCapability,
+  createStandardRuntime,
   type AgentTurnDriver,
 } from "@aicoo/sharedos";
 
@@ -241,7 +241,7 @@ const turnContext: AccessContext = {
 };
 const tools = await kernel.listTools(turnContext);
 
-const result = await new SharedOSExecutor(kernel, new StandardRuntime(driver), {
+const result = await new SharedOSExecutor(kernel, createStandardRuntime({ driver }), {
   defaultMaxSteps: 8,
   defaultMaxToolCalls: 8,
   defaultTimeoutMs: 30_000,
@@ -289,7 +289,7 @@ import { createKernelSharedOSApi, createSharedOSHandler } from "@aicoo/sharedos"
 
 // The executor the embedded example built, kept for the HTTP turn route. The
 // kernel and driver are the ones defined above.
-const turns = new SharedOSExecutor(kernel, new StandardRuntime(driver), {
+const turns = new SharedOSExecutor(kernel, createStandardRuntime({ driver }), {
   defaultMaxSteps: 8,
   defaultMaxToolCalls: 8,
   defaultTimeoutMs: 30_000,

@@ -15,7 +15,8 @@ import {
   ESCALATION_TOOL_NAME,
   ESCALATION_TOOL_NAMESPACE,
   SharedOSExecutor,
-  StandardRuntime,
+  STANDARD_RUNTIME_MANIFEST,
+  createStandardRuntime,
   escalationReason,
   escalationRequest,
   type AgentTurnDriver,
@@ -111,12 +112,13 @@ function kernel(
 function turnExecutor(
   turnKernel: ConstructorParameters<typeof SharedOSExecutor>[0],
   driver: AgentTurnDriver,
-  options: SharedOSExecutorOptions & StandardRuntimeOptions = {},
+  options: SharedOSExecutorOptions & Omit<StandardRuntimeOptions, "driver"> = {},
 ): SharedOSExecutor {
   const { closeTimeoutMs, onTurnError, ...executorOptions } = options;
   return new SharedOSExecutor(
     turnKernel,
-    new StandardRuntime(driver, {
+    createStandardRuntime({
+      driver,
       ...(closeTimeoutMs === undefined ? {} : { closeTimeoutMs }),
       ...(onTurnError === undefined ? {} : { onTurnError }),
     }),
@@ -125,6 +127,22 @@ function turnExecutor(
 }
 
 describe("the standard composition", () => {
+  it("files the turn under the driver that sat in the seat", async () => {
+    const next = async () => ({ type: "complete" as const, output: null });
+    const manifest = { id: "acme.assistant", version: "2.0.0", protocolVersion: "1" as const };
+    const named: AgentTurnDriver = { manifest, open: async () => ({ next }) };
+    const unnamed: AgentTurnDriver = { open: async () => ({ next }) };
+
+    // The loop is the same whichever driver is seated, so the runtime reports
+    // the driver's manifest, and the envelope stamps that on the result.
+    expect(createStandardRuntime({ driver: named }).manifest).toEqual(manifest);
+    expect(createStandardRuntime({ driver: unnamed }).manifest).toBe(STANDARD_RUNTIME_MANIFEST);
+    const result = await turnExecutor(kernel(), named).execute(request());
+    expect(result.metadata?.["runtime"]).toMatchObject({ id: "acme.assistant", version: "2.0.0" });
+    const standard = await turnExecutor(kernel(), unnamed).execute(request());
+    expect(standard.metadata?.["runtime"]).toMatchObject({ id: "sharedos.standard" });
+  });
+
   it("tells the driver where it may operate, narrowed to what its catalogue can act on", async () => {
     const seen: unknown[] = [];
     const driver: AgentTurnDriver = {

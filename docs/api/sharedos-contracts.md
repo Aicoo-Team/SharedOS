@@ -288,7 +288,7 @@ Defined in: [address.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **Identifier** = `z.infer`\<_typeof_ [`IdentifierSchema`](#identifierschema)>\>
 
-Defined in: [common.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L15)
+Defined in: [common.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L26)
 
 ---
 
@@ -544,7 +544,7 @@ Defined in: [tool.ts:237](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **Timestamp** = `z.infer`\<_typeof_ [`TimestampSchema`](#timestampschema)>\>
 
-Defined in: [common.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L19)
+Defined in: [common.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L30)
 
 ---
 
@@ -979,7 +979,7 @@ Defined in: [address.ts:5](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > `const` **IdentifierSchema**: `ZodString`
 
-Defined in: [common.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L14)
+Defined in: [common.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L25)
 
 An opaque identifier. Callers choose its format; SharedOS only requires stability.
 
@@ -1546,6 +1546,22 @@ in step. `docs/http-api.md` describes the same table for a reader.
 
 ---
 
+### SHAREDOS\_VERSION
+
+> `const` **SHAREDOS\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
+
+Defined in: [common.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L22)
+
+The SharedOS build, as every manifest, MCP server and conformance record
+names it.
+
+The packages share one version and are published together, so there is one
+constant. The release gate holds it equal to the synchronized package
+version, because a record that names the wrong build is evidence attributed
+to code that never ran.
+
+---
+
 ### SharedOSApiErrorResponseSchema
 
 > `const` **SharedOSApiErrorResponseSchema**: `ZodObject`\<\{ `error`: `ZodObject`\<\{ `code`: `ZodString`; `message`: `ZodString`; `requestId`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `code`: `string`; `message`: `string`; `requestId?`: `string`; \}, \{ `code`: `string`; `message`: `string`; `requestId?`: `string`; \}\>; \}, `"strict"`, `ZodTypeAny`, \{ `error`: \{ `code`: `string`; `message`: `string`; `requestId?`: `string`; \}; \}, \{ `error`: \{ `code`: `string`; `message`: `string`; `requestId?`: `string`; \}; \}\>
@@ -1582,7 +1598,7 @@ on equal terms rather than assuming it.
 
 > `const` **TimestampSchema**: `ZodString`
 
-Defined in: [common.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L18)
+Defined in: [common.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L29)
 
 An RFC 3339 timestamp, represented as a string to remain JSON-safe.
 

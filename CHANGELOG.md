@@ -10,6 +10,33 @@ each entry calls out what a host has to update.
 
 ### Changed — breaking
 
+- **The standard loop is `createStandardRuntime({ driver })`, and the names say
+  what each thing is.** "Standard" names the SharedOS-owned default at each
+  layer. `StandardRuntime` read as a runtime with a model in it and was the loop;
+  `ModelRuntime` and `HarnessRuntime` were that loop again, wrapped only to report
+  the driver's manifest in place of `sharedos.standard`. There is now one
+  factory. It seats one `AgentTurnDriver` and reports that driver's manifest, so
+  a record names what sat in the seat; a driver that states none (the new
+  optional `AgentTurnDriver.manifest`) is reported as `sharedos.standard`. The
+  loop class is private. `ModelDriver` is `StandardTurnDriver`, the SharedOS
+  driver that puts a model API in the seat; `HarnessDriver` is
+  `EvalHarnessDriver`, which seats a vendor's wire format for evaluation and
+  nothing else. No name has a deprecated alias. Manifest ids are unchanged, so
+  no record and no hash moves. ADR 0007 is rewritten in these names and takes
+  in ADR 0027, which is withdrawn.
+
+  **Migration.**
+
+  | Before                                                     | After                                                                                                                                                                                                                    |
+  | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+  | `new StandardRuntime(driver, options)`                     | `createStandardRuntime({ driver, ...options })`                                                                                                                                                                          |
+  | `new ModelRuntime(new ModelDriver(o), options)`            | `createStandardRuntime({ driver: new StandardTurnDriver(o), ...options })`                                                                                                                                               |
+  | `new HarnessRuntime(new HarnessDriver(o))`                 | `createStandardRuntime({ driver: new EvalHarnessDriver(o) })`                                                                                                                                                            |
+  | `new DriverRuntime(driver)`                                | `createStandardRuntime({ driver })`                                                                                                                                                                                      |
+  | `createCodexRuntime({ transport })`, and the three like it | `createMcpHarnessRuntime(CODEX_MCP_HARNESS)` in a product; in an evaluation, `createStandardRuntime({ driver: new EvalHarnessDriver({ transport, manifest: CODEX_VENDOR.manifest, protocol: CODEX_VENDOR.protocol }) })` |
+  | `ModelDriverOptions`, `HarnessDriverOptions`               | `StandardTurnDriverOptions`, `EvalHarnessDriverOptions`                                                                                                                                                                  |
+  | `StandardRuntimeOptions` as a second argument              | The same fields beside the required `driver`                                                                                                                                                                             |
+
 - **What the kernel states on an audit event is a field, not a `metadata` key.**
   `source`, `cause`, `failClosed`, `consumed` and `endedBy` are `AuditEvent`
   fields. ADR 0023 first put `source` and `cause` in `metadata`, beside
@@ -147,11 +174,11 @@ each entry calls out what a host has to update.
   the hash to the envelope through the new `RuntimeHost.annotate`, before the
   model or harness is sent anything, and the envelope writes it into
   `ExecutionResult.metadata` on every ending: completed, failed, escalated,
-  cancelled, a plugin that threw, an outcome that did not parse (ADR 0027).
+  cancelled, a plugin that threw, an outcome that did not parse (ADR 0007).
   `createMcpHarnessRuntime` states it before binding its port or spawning the
-  CLI; `StandardRuntime` states it once `open` has resolved, before the first
+  CLI; the standard loop states it once `open` has resolved, before the first
   step, for any `AgentTurnSession` that states a `promptHash`, which
-  `ModelDriver`'s session now does, in place of restating it on its terminal
+  `StandardTurnDriver`'s session now does, in place of restating it on its terminal
   metadata. A turn cancelled before there is a hash to state -- inside a
   driver's `open`, or before the MCP runtime has composed its prompt -- still
   carries none. `assembleExecutionRecord` reads the metadata as before; a
@@ -164,6 +191,72 @@ each entry calls out what a host has to update.
   hashes do not move.
 
 ### Changed
+
+- **A driven harness is told where its turn may operate, and its record says what
+  it was told.** `EvalHarnessDriver` handed its harness a prompt and nothing else,
+  and its session stated no `promptHash`, so the four vendor columns carried no
+  prompt set. It now takes `instructions` like the other two seats (the turn's
+  reach by default), carries them on the new optional
+  `HarnessTurnRequest.instructions`, and states the hash of both texts.
+  `harnessTurnText` renders the two as one message, and
+  `scripts/native-conformance.mjs` sends that in each opening frame where it
+  sent the prompt alone. The reference-host example driver states its hash the
+  same way.
+
+  **Hash effect.** `Codex`, `Claude Code`, `DeepSeek` and `Pi` gain a
+  `promptSetHash` in the conformance manifest, and their records a
+  `system.promptHash`. No other hash moves; `Standard`'s prompt set is unchanged.
+  A transport of your own that opens a harness from `HarnessTurnRequest` should
+  hand `instructions` over, since the hash now covers it.
+
+- **One vocabulary for what a seat states about its turn, and
+  `callsAfterEscalation` in the record.** The standard driver and the MCP harness
+  runtime each built their result metadata as an untyped object, and `model` and
+  `modelProvider` meant "served" on one path and "declared" on the other with
+  nothing saying so. Both now return the exported `SeatMetadata`, which declares
+  every key and says which seat states it and what it means there; the keys and
+  their values are unchanged. ADR 0018 names `callsAfterEscalation` as the only
+  place "the harness kept going after it asked" can be read, and nothing read
+  it: the conformance record now lifts it as `execution.callsAfterEscalation`,
+  optional and ungraded, so the record's `version` and the grading rules'
+  version do not move. `harnessOutcome`, `harnessErrorCode` and
+  `malformedToolCalls` stay on the result, documented, for the host that ran the
+  turn. The open-items mention closes.
+
+- **One default for the MCP server name.** `connection.name ??
+SHAREDOS_MCP_SERVER_NAME` was written at ten sites across the config emitters,
+  the launch arguments and the turn's metadata. `mcpServerName(connection)` in
+  `@aicoo/sharedos-mcp` applies it, and the four shipped `McpHarnessSpec` entries
+  no longer restate the default as their `serverName`.
+
+- **One vendor descriptor.** Each of the four vendor folders declared its id, its
+  driven manifest and its requirements from a copied template, and
+  `mcp-runtime.ts` declared each MCP manifest again. `defineHarnessVendor` builds
+  all of it from a vendor's few facts (id, codec, executable, credential
+  variables), and `CODEX_VENDOR`, `CLAUDE_CODE_VENDOR`, `DEEPSEEK_VENDOR` and
+  `PI_VENDOR` are exported beside the names that were already there. Every
+  manifest and every requirements object is what it was, key for key.
+
+- **One child-process runner under both ways a vendor CLI is seated.**
+  `ChildProcessTransport` and the MCP harness runtime each spawned, framed JSON
+  lines, kept diagnostics and stopped their child in a copy of their own, and
+  only the MCP copy ended its child when the turn was aborted. Both now run on
+  one `HarnessProcess`, so a driven harness is also ended by the turn's signal
+  where it was left to `close`. Each copy kept a capped tail of the harness's
+  stderr (4,096 and 8,192 characters) that nothing read; diagnostics now go to
+  the callback alone, and `ChildProcessTransportOptions` gains the `onDiagnostic`
+  the MCP runtime already had. A stdout line that is not a frame reaches it too,
+  where the transport dropped it.
+
+- **One seat module in `@aicoo/sharedos-adapters`.** The model driver, the harness
+  driver and the MCP harness runtime each composed the seat's two texts, hashed
+  them, recognised the escalate affordance and stamped a `ToolCall` in their own
+  copy, with the reason the catalogue gates the affordance's name written out
+  three times. They now share `seat.ts`, and the reason is stated once. No
+  behaviour changes. `ModelDriverOptions.instructions` also accepts a string,
+  placed before the turn's reach, as `McpHarnessRuntimeOptions.instructions`
+  always has; both interfaces extend the exported `SeatTextOptions`, and
+  `declareStep` is typed by the exported `DeclareStep`.
 
 - **The route-lease row quotes one refusal code, and carries the transport's as
   its cause.** A `messages.request` the transport refuses leaves two operations
@@ -188,6 +281,10 @@ each entry calls out what a host has to update.
   the transport's.
 
 ### Added
+
+- **`SHAREDOS_VERSION` in `@aicoo/sharedos-contracts`.** The one statement of the
+  build, read by every runtime manifest, the MCP server's greeting and the
+  conformance record, and the one constant the release gate checks.
 
 - **`RuntimeHost.draining`**, an `AbortSignal` aborted once the turn takes
   nothing new. Optional on the type so a host double stays viable; the envelope
@@ -223,7 +320,7 @@ each entry calls out what a host has to update.
   write wins. `PROMPT_HASH_ANNOTATION`, `ESCALATION_ASKED_ANNOTATION` and
   `escalationAskedAnnotation` name the two facts SharedOS's own runtimes state.
   **What a host has to update:** only a test double that builds its own
-  `RuntimeHost` adds the member; a plugin is unaffected (ADR 0027).
+  `RuntimeHost` adds the member; a plugin is unaffected (ADR 0007).
 
 - **A refusal's gate is readable from its audit record, by call id.**
   `tool_unavailable` is one code over "not registered", "namespace disabled",
@@ -288,11 +385,38 @@ each entry calls out what a host has to update.
   runtime's `deepFreeze` had short-circuited on a frozen container; core's
   recurses first. **What a host has to update:** a driver's `open` takes
   `RuntimeTurnRequest`, the name `AgentTurnRequest` was an alias of; the
-  standard composition is `new SharedOSExecutor(kernel, new
-StandardRuntime(driver))`, which `TurnExecutor` built (see Removed).
+  standard composition is `new SharedOSExecutor(kernel,
+createStandardRuntime({ driver }))`, which `TurnExecutor` built (see Removed).
 
 ### Removed
 
+- From `@aicoo/sharedos-runtime`: `StandardRuntime`. See
+  `createStandardRuntime` under "Changed — breaking".
+- From `@aicoo/sharedos-adapters`: `ModelRuntime`, `HarnessRuntime` and
+  `DriverRuntime`; `ModelDriver` and `HarnessDriver` with their `…Options` types,
+  under their new names; `createCodexDriver`, `createClaudeCodeDriver`,
+  `createDeepseekDriver`, `createPiDriver` and the four `create…Runtime`
+  functions built on them, with `CodexDriverOptions`, `ClaudeCodeDriverOptions`,
+  `DeepseekDriverOptions` and `PiDriverOptions`. A driver is not a plugin, so
+  there is no factory per driver or per vendor: a vendor CLI is seated in a
+  product through `createMcpHarnessRuntime`, and its wire codec only by an
+  evaluation, from its `*_VENDOR` descriptor. `parseToolArguments` is no longer
+  exported; it was a re-export of an internal helper that no SharedOS interface
+  takes or returns.
+- Seven version constants: `STANDARD_RUNTIME_VERSION` from
+  `@aicoo/sharedos-runtime`, `MCP_SERVER_VERSION` from `@aicoo/sharedos-mcp`, and
+  `MCP_ADAPTER_VERSION`, `CODEX_ADAPTER_VERSION`, `CLAUDE_CODE_ADAPTER_VERSION`,
+  `DEEPSEEK_ADAPTER_VERSION` and `PI_ADAPTER_VERSION` from
+  `@aicoo/sharedos-adapters`. The packages share one version, so each was the
+  same string kept equal by the release gate. Read `SHAREDOS_VERSION` from
+  `@aicoo/sharedos-contracts`, which `@aicoo/sharedos-conformance` still exports
+  under the same name. Every manifest states the same version as before.
+- `OpenToolBridgeOptions.step` from `@aicoo/sharedos-mcp`, and the `options`
+  parameter of `BridgeToolInvoker.invokeTool` with it. No caller passed a step:
+  a harness keeps its own loop, so a turn served over MCP declares none and is
+  bounded by `maxToolCalls` and `timeoutMs`, which `docs/mcp-toolshare.md` now
+  says. `RuntimeHost` still satisfies `BridgeToolInvoker`. The open-items row
+  closes.
 - `ESCALATION_ASKED_EVENT` and `escalationAskedEvent` from
   `@aicoo/sharedos-runtime`, shipped in 0.1.0-alpha.4. A delegate states the ask
   through `RuntimeHost.annotate` under `ESCALATION_ASKED_ANNOTATION`, in the
@@ -300,8 +424,8 @@ StandardRuntime(driver))`, which `TurnExecutor` built (see Removed).
   `execution.escalationAsked` from the record, or `metadata.escalationAsked`
   from the result, instead of decoding a `runtime.event`.
 - `TurnExecutor` and `TurnExecutorOptions` from `@aicoo/sharedos-runtime`. The
-  facade built exactly `new SharedOSExecutor(kernel, new
-StandardRuntime(driver))` and forwarded `onTurnError` to both; a host writes
+  facade built exactly `new SharedOSExecutor(kernel,
+createStandardRuntime({ driver }))` and forwarded `onTurnError` to both; a host writes
   that composition itself and installs one sink in both options. Open-items
   row 19 closes.
 - `AgentVisibleContext` and `AgentTurnRequest` from `@aicoo/sharedos-runtime`,

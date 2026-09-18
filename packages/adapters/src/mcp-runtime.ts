@@ -1,8 +1,6 @@
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createInterface } from "node:readline";
 
 import type {
   JsonObject,
@@ -13,7 +11,7 @@ import type {
 } from "@aicoo/sharedos-contracts";
 import {
   McpToolServer,
-  SHAREDOS_MCP_SERVER_NAME,
+  mcpServerName,
   claudeAgentSdkMcpOptions,
   codexMcpServerSettings,
   harnessMcpConfigFile,
@@ -27,31 +25,22 @@ import { createStreamableHttpMcpServer } from "@aicoo/sharedos-mcp/node";
 import {
   ESCALATION_ASKED_ANNOTATION,
   PROMPT_HASH_ANNOTATION,
-  describeReach,
   escalationAskedAnnotation,
-  escalationOffered,
-  escalationRequest,
   type RuntimeHost,
   type RuntimePlugin,
   type RuntimeTurnRequest,
 } from "@aicoo/sharedos-runtime";
 
 import type { HarnessProtocol } from "./harness.js";
-import { CLAUDE_CODE_HARNESS_ID } from "./claude-code/index.js";
-import { claudeCodeProtocol } from "./claude-code/protocol.js";
-import { CODEX_HARNESS_ID } from "./codex/index.js";
-import { codexProtocol } from "./codex/protocol.js";
-import { DEEPSEEK_HARNESS_ID } from "./deepseek/index.js";
-import { deepseekProtocol } from "./deepseek/protocol.js";
-import { PI_HARNESS_ID } from "./pi/index.js";
-import { piProtocol } from "./pi/protocol.js";
-import { defaultPrompt, failed, handedPromptHash } from "./internal.js";
-import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
+import { failed } from "./internal.js";
+import { HarnessProcess } from "./process.js";
+import { CLAUDE_CODE_VENDOR, CODEX_VENDOR, DEEPSEEK_VENDOR, PI_VENDOR } from "./vendors.js";
+import { SeatCalls, seatText, type SeatMetadata, type SeatTextOptions } from "./seat.js";
 
 /**
  * A vendor harness run natively, against the SharedOS catalogue over MCP.
  *
- * This is a different integration from `HarnessDriver`, and the difference is
+ * This is a different integration from `EvalHarnessDriver`, and the difference is
  * the point. A driver puts SharedOS in the model provider's seat: it speaks the
  * vendor's API-layer tool-call shape and owns the loop. That is exact, and it
  * cannot be run against an installed CLI, because no coding-agent CLI exposes
@@ -126,27 +115,18 @@ export interface McpHarnessSpec {
   readonly launch: (context: McpLaunchContext) => McpHarnessLaunch;
 }
 
-export interface McpHarnessRuntimeOptions {
+/**
+ * `instructions` is handed to the harness at MCP initialize time. That field is
+ * the seat MCP gives a server for saying how its tools are meant to be used,
+ * and a harness that honours it puts the text where the model reads it, so the
+ * model is told where to point the catalogue rather than search for it. Whether
+ * the model sees it is the harness's doing: Claude Code surfaces server
+ * instructions, and a harness that does not leaves the model with the catalogue
+ * alone.
+ */
+export interface McpHarnessRuntimeOptions extends SeatTextOptions {
   /** Overrides the manifest, so a conformance column can name itself. */
   readonly manifest?: RuntimeManifest;
-  /**
-   * Guidance handed to the harness at MCP initialize time.
-   *
-   * The initialize `instructions` field is the seat MCP gives a server for
-   * saying how its tools are meant to be used, and a harness that honours it
-   * puts the text where the model reads it. Per turn it carries where the
-   * turn may operate -- `request.context.reach` rendered by `describeReach`
-   * -- so the model is told where to point the catalogue rather than search
-   * for it. A string here is the host's standing guidance, placed before the
-   * turn's reach. A function replaces the composition and says exactly what
-   * the harness is told; returning `undefined` hands over no instructions.
-   *
-   * Whether the model sees it is the harness's doing: Claude Code surfaces
-   * server instructions, and a harness that does not leaves the model with
-   * the catalogue alone, which is what it had before.
-   */
-  readonly instructions?: string | ((request: RuntimeTurnRequest) => string | undefined);
-  readonly prompt?: (request: RuntimeTurnRequest) => string;
   /** Where the per-turn scratch workspace is created. */
   readonly workspaceRoot?: string;
   /** Kept for diagnosis: the harness's stderr and unparsed stdout. */
@@ -186,8 +166,6 @@ export interface McpHarnessRuntimeOptions {
   readonly clock?: () => string;
 }
 
-const MAX_DIAGNOSTIC_CHARS = 8_192;
-
 /**
  * Install one MCP-connected harness as a SharedOS runtime.
  *
@@ -216,26 +194,25 @@ export function createMcpHarnessRuntime(
         (key, value) => host.annotate(key, value),
         options.clock ?? (() => new Date().toISOString()),
       );
+      const serverName = spec.serverName ?? mcpServerName({});
       const bridge: SharedOSToolBridge = openToolBridge({
         executionId: request.executionId,
         context: { traceId: request.context.traceId, now: request.context.now },
         tools: request.tools,
         host: escalation,
       });
-      const instructions = turnInstructions(options.instructions, request);
-      const prompt = (options.prompt ?? defaultPrompt)(request);
-      // The same two texts, in the same shape, as the model driver hashes:
-      // what the server will say at initialize and what the CLI is launched
-      // with. Taken and stated here, before the port is bound or anything is
-      // written, so a turn cancelled at any later point still records what it
-      // was told: the envelope holds an annotation for every ending, where the
-      // outcome's own metadata rides on an outcome a cancelled turn never
-      // returns. What the CLI adds of its own is not here.
-      host.annotate(PROMPT_HASH_ANNOTATION, await handedPromptHash(instructions, prompt));
+      // What the server will say at initialize and what the CLI is launched
+      // with. Stated here, before the port is bound or anything is written, so
+      // a turn cancelled at any later point still records what it was told:
+      // the envelope holds an annotation for every ending, where the outcome's
+      // own metadata rides on an outcome a cancelled turn never returns. What
+      // the CLI adds of its own is not here.
+      const { instructions, prompt, promptHash } = await seatText(options, request);
+      host.annotate(PROMPT_HASH_ANNOTATION, promptHash);
       const server = new McpToolServer({
         invoker: bridge,
         serverInfo: {
-          name: spec.serverName ?? SHAREDOS_MCP_SERVER_NAME,
+          name: serverName,
           version: manifest.version,
         },
         ...(instructions === undefined ? {} : { instructions }),
@@ -252,7 +229,7 @@ export function createMcpHarnessRuntime(
       });
       const connection: HarnessMcpConnection = {
         url: http.url,
-        name: spec.serverName ?? SHAREDOS_MCP_SERVER_NAME,
+        name: serverName,
         ...(options.token === undefined ? {} : { token: options.token }),
       };
 
@@ -317,8 +294,7 @@ class EscalationLatch implements BridgeToolInvoker {
   readonly #host: BridgeToolInvoker;
   readonly #annotate: RuntimeHost["annotate"];
   readonly #clock: () => string;
-  /** Whether this turn was granted the affordance at all. */
-  readonly #offered: boolean;
+  readonly #calls: SeatCalls;
   #reason: string | undefined;
   #afterwards = 0;
 
@@ -331,22 +307,18 @@ class EscalationLatch implements BridgeToolInvoker {
     this.#host = host;
     this.#annotate = annotate;
     this.#clock = clock;
-    // Read from the turn's own catalogue, because skipping the envelope skips
-    // its effective-catalogue check with it. A call naming the affordance
-    // without holding it is passed through and refused `tool_unavailable` like
-    // any other unpublished name -- the same rule both native drivers apply
-    // before ending a turn on the name.
-    this.#offered = escalationOffered(request.tools);
+    // Read from the turn's own catalogue; `SeatCalls` says why.
+    this.#calls = new SeatCalls(request);
   }
 
-  async invokeTool(call: ToolCall, options?: { readonly step?: number }): Promise<ToolResult> {
+  async invokeTool(call: ToolCall): Promise<ToolResult> {
     if (this.#reason !== undefined) {
       this.#afterwards += 1;
       return this.#refuse(call);
     }
-    const reason = this.#offered ? escalationRequest(call.tool, call.arguments) : undefined;
+    const reason = this.#calls.escalation(call.tool, call.arguments);
     if (reason === undefined) {
-      return this.#host.invokeTool(call, options);
+      return this.#host.invokeTool(call);
     }
     this.#reason = reason;
     // For the record, not for the turn. `annotate` never refuses on the state
@@ -468,12 +440,12 @@ function harnessMetadata(
   bridge: SharedOSToolBridge,
   catalogHash: string | undefined,
   model: { readonly id: string; readonly provider?: string } | undefined,
-): JsonObject {
+): SeatMetadata {
   const aliases = bridge.aliases;
   return {
     harness: spec.id,
     toolshare: "mcp",
-    mcpServer: connection.name ?? SHAREDOS_MCP_SERVER_NAME,
+    mcpServer: mcpServerName(connection),
     ...(catalogHash === undefined ? {} : { catalogHash }),
     // The model the run declared, carried into the execution record so a
     // multi-harness comparison can be checked rather than assumed. It is a
@@ -497,24 +469,8 @@ async function runHarness(
   signal: AbortSignal,
   options: McpHarnessRuntimeOptions,
 ): Promise<RuntimeTurnOutcome> {
-  signal.throwIfAborted();
-
-  const child = spawn(launch.command, [...launch.args], {
-    ...(launch.cwd === undefined ? {} : { cwd: launch.cwd }),
-    env: { ...process.env, ...launch.env },
-    stdio: ["pipe", "pipe", "pipe"],
-  }) as ChildProcessWithoutNullStreams;
-
-  const kill = (): void => {
-    if (child.exitCode === null && child.signalCode === null) {
-      child.kill("SIGTERM");
-    }
-  };
-  signal.addEventListener("abort", kill, { once: true });
-
   const messages: string[] = [];
   let terminal: RuntimeTurnOutcome | undefined;
-  let diagnostics = "";
 
   // A session harness is shut down by closing its command channel, so the close
   // is deferred to the turn's terminal frame instead of happening at the write.
@@ -525,13 +481,10 @@ async function runHarness(
       clearTimeout(idleTimer);
       idleTimer = undefined;
     }
-    if (child.stdin.writableEnded) {
-      return;
-    }
-    child.stdin.end();
+    harness.endInput();
   };
   const touch = (): void => {
-    if (launch.keepStdinOpen !== true || child.stdin.writableEnded) {
+    if (launch.keepStdinOpen !== true || harness.inputEnded) {
       return;
     }
     if (idleTimer !== undefined) {
@@ -547,60 +500,52 @@ async function runHarness(
     idleTimer.unref();
   };
 
-  const lines = createInterface({ input: child.stdout });
-  lines.on("line", (line) => {
-    const trimmed = line.trim();
-    if (trimmed === "") {
-      return;
-    }
-    let frame: unknown;
-    try {
-      frame = JSON.parse(trimmed);
-    } catch {
-      // Harnesses print banners next to their protocol. Keep it for diagnosis.
-      diagnostics = `${diagnostics}${trimmed}\n`.slice(-MAX_DIAGNOSTIC_CHARS);
-      options.onDiagnostic?.(spec.id, trimmed);
-      return;
-    }
-    if (frame === null || typeof frame !== "object" || Array.isArray(frame)) {
-      return;
-    }
-    for (const step of spec.protocol.interpret(frame as JsonObject)) {
-      if (step.type === "message") {
-        messages.push(step.text);
-        continue;
-      }
-      if (step.type === "failed") {
-        terminal ??= { type: "fail", error: step.error };
-        continue;
-      }
-      if (step.type === "complete") {
-        terminal ??= {
-          type: "complete",
-          output: step.output ?? { text: messages.join("\n") },
-        };
-      }
-      // A `tool_call` step cannot occur here: tool calls left over MCP, not over
-      // this channel. If a harness emits one anyway it is transcript noise, and
-      // acting on it would be a second, unauthorized call path.
-    }
-    if (terminal !== undefined) {
-      // The turn is over. For a session harness this is what makes it exit; for
-      // a one-shot one stdin is already closed and this does nothing.
-      closeStdin();
-    }
-    touch();
-  });
-
-  child.stderr.setEncoding("utf8");
-  child.stderr.on("data", (chunk: string) => {
-    diagnostics = `${diagnostics}${chunk}`.slice(-MAX_DIAGNOSTIC_CHARS);
-    options.onDiagnostic?.(spec.id, chunk.trimEnd());
-    touch();
-  });
+  // The turn's hard signal ends the process. A draining turn does not: the
+  // harness reads `turn_draining` on its next call and winds down itself.
+  const harness = new HarnessProcess(
+    launch,
+    {
+      onFrame: (frame) => {
+        for (const step of spec.protocol.interpret(frame)) {
+          if (step.type === "message") {
+            messages.push(step.text);
+            continue;
+          }
+          if (step.type === "failed") {
+            terminal ??= { type: "fail", error: step.error };
+            continue;
+          }
+          if (step.type === "complete") {
+            terminal ??= {
+              type: "complete",
+              output: step.output ?? { text: messages.join("\n") },
+            };
+          }
+          // A `tool_call` step cannot occur here: tool calls left over MCP, not
+          // over this channel. If a harness emits one anyway it is transcript
+          // noise, and acting on it would be a second, unauthorized call path.
+        }
+        if (terminal !== undefined) {
+          // The turn is over. For a session harness this is what makes it exit;
+          // for a one-shot one stdin is already closed and this does nothing.
+          closeStdin();
+        }
+        touch();
+      },
+      onDiagnostic: (text, stream) => {
+        options.onDiagnostic?.(spec.id, text);
+        // A banner on stdout is not the harness working; stderr is.
+        if (stream === "stderr") {
+          touch();
+        }
+      },
+    },
+    signal,
+  );
 
   if (launch.stdin !== undefined) {
-    child.stdin.write(launch.stdin);
+    // A harness that exited before it read its prompt is reported by its exit.
+    harness.write(launch.stdin).catch(() => undefined);
   }
   if (launch.keepStdinOpen === true) {
     touch();
@@ -608,13 +553,9 @@ async function runHarness(
     closeStdin();
   }
 
-  const exit = await new Promise<{ code: number | null; error?: Error }>((resolve) => {
-    child.once("error", (error: Error) => resolve({ code: null, error }));
-    child.once("close", (code) => resolve({ code }));
-  });
-  lines.close();
+  const exit = await harness.exited;
   closeStdin();
-  signal.removeEventListener("abort", kill);
+  harness.dispose();
 
   signal.throwIfAborted();
   if (exit.error !== undefined) {
@@ -638,8 +579,6 @@ async function runHarness(
 /** Two minutes of silence from a session harness is a stall, not a long step. */
 const DEFAULT_SESSION_IDLE_MS = 120_000;
 
-export const MCP_ADAPTER_VERSION = "0.1.0-alpha.5";
-
 /**
  * Claude Code, connected to the SharedOS bridge.
  *
@@ -657,20 +596,9 @@ export const MCP_ADAPTER_VERSION = "0.1.0-alpha.5";
  * one of those calls is re-authorized by the kernel.
  */
 export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
-  id: CLAUDE_CODE_HARNESS_ID,
-  manifest: Object.freeze({
-    id: "sharedos.claude-code.mcp",
-    version: MCP_ADAPTER_VERSION,
-    protocolVersion: PROTOCOL_VERSION,
-    metadata: {
-      package: "@aicoo/sharedos-adapters",
-      harness: CLAUDE_CODE_HARNESS_ID,
-      toolshare: "mcp",
-      executionModel: "native-harness-loop",
-    },
-  }) as RuntimeManifest,
-  protocol: claudeCodeProtocol,
-  serverName: SHAREDOS_MCP_SERVER_NAME,
+  id: CLAUDE_CODE_VENDOR.id,
+  manifest: CLAUDE_CODE_VENDOR.mcpManifest,
+  protocol: CLAUDE_CODE_VENDOR.protocol,
   configFiles: (connection) => [harnessMcpConfigFile("claude-code", connection)],
   launch: ({ prompt, workspace, configPaths, connection }) => ({
     command: "claude",
@@ -684,7 +612,7 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
       configPaths[".mcp.json"] ?? join(workspace, ".mcp.json"),
       "--strict-mcp-config",
       "--allowedTools",
-      `mcp__${connection.name ?? SHAREDOS_MCP_SERVER_NAME}`,
+      `mcp__${mcpServerName(connection)}`,
       "--disallowedTools",
       "Bash,Edit,Write,Read,Glob,Grep,NotebookEdit,Task,WebFetch,WebSearch,TodoWrite",
       "--max-turns",
@@ -704,20 +632,9 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
  * look like a harness that declined to use the catalogue.
  */
 export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
-  id: CODEX_HARNESS_ID,
-  manifest: Object.freeze({
-    id: "sharedos.codex.mcp",
-    version: MCP_ADAPTER_VERSION,
-    protocolVersion: PROTOCOL_VERSION,
-    metadata: {
-      package: "@aicoo/sharedos-adapters",
-      harness: CODEX_HARNESS_ID,
-      toolshare: "mcp",
-      executionModel: "native-harness-loop",
-    },
-  }) as RuntimeManifest,
-  protocol: codexProtocol,
-  serverName: SHAREDOS_MCP_SERVER_NAME,
+  id: CODEX_VENDOR.id,
+  manifest: CODEX_VENDOR.mcpManifest,
+  protocol: CODEX_VENDOR.protocol,
   launch: ({ prompt, workspace, connection }) => ({
     command: "codex",
     args: [
@@ -736,7 +653,7 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
         .filter(([key]) => key !== "bearer_token")
         .flatMap(([key, value]) => [
           "-c",
-          `mcp_servers.${connection.name ?? SHAREDOS_MCP_SERVER_NAME}.${key}=${value}`,
+          `mcp_servers.${mcpServerName(connection)}.${key}=${value}`,
         ]),
       prompt,
     ],
@@ -758,20 +675,9 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
  * should materialise for itself.
  */
 export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
-  id: DEEPSEEK_HARNESS_ID,
-  manifest: Object.freeze({
-    id: "sharedos.deepseek.mcp",
-    version: MCP_ADAPTER_VERSION,
-    protocolVersion: PROTOCOL_VERSION,
-    metadata: {
-      package: "@aicoo/sharedos-adapters",
-      harness: DEEPSEEK_HARNESS_ID,
-      toolshare: "mcp",
-      executionModel: "native-harness-loop",
-    },
-  }) as RuntimeManifest,
-  protocol: deepseekProtocol,
-  serverName: SHAREDOS_MCP_SERVER_NAME,
+  id: DEEPSEEK_VENDOR.id,
+  manifest: DEEPSEEK_VENDOR.mcpManifest,
+  protocol: DEEPSEEK_VENDOR.protocol,
   configFiles: (connection) => [harnessMcpConfigFile("deepseek", connection)],
   launch: ({ prompt, workspace, configPaths }) => ({
     command: process.env["DSH_COMMAND"] ?? "dsh",
@@ -808,26 +714,12 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
  * `--no-builtin-tools` drops Pi's own file and shell tools while keeping
  * extension tools, which is exactly the split a conformance run needs. The
  * prompt goes in as an RPC frame rather than as an argument, because RPC mode is
- * the one whose frames {@link piProtocol} reads.
+ * the one whose frames `piProtocol` reads.
  */
 export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
-  id: PI_HARNESS_ID,
-  manifest: Object.freeze({
-    id: "sharedos.pi.mcp",
-    version: MCP_ADAPTER_VERSION,
-    protocolVersion: PROTOCOL_VERSION,
-    metadata: {
-      package: "@aicoo/sharedos-adapters",
-      harness: PI_HARNESS_ID,
-      toolshare: "mcp",
-      executionModel: "native-harness-loop",
-      /** Named, not implied: Pi has no MCP client of its own. */
-      mcpSupport: "extension",
-      mcpExtension: "pi-mcp-adapter",
-    },
-  }) as RuntimeManifest,
-  protocol: piProtocol,
-  serverName: SHAREDOS_MCP_SERVER_NAME,
+  id: PI_VENDOR.id,
+  manifest: PI_VENDOR.mcpManifest,
+  protocol: PI_VENDOR.protocol,
   configFiles: (connection) => [harnessMcpConfigFile("pi", connection)],
   launch: ({ prompt, workspace, request }) => ({
     command: "pi",
@@ -838,22 +730,5 @@ export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
     keepStdinOpen: true,
   }),
 });
-
-/**
- * What one turn's server says at initialize; see `McpHarnessRuntimeOptions.instructions`.
- *
- * The host's standing text first, then the turn's reach, so a harness that
- * shows the model one block reads the guidance before the map.
- */
-function turnInstructions(
-  configured: McpHarnessRuntimeOptions["instructions"],
-  request: RuntimeTurnRequest,
-): string | undefined {
-  if (typeof configured === "function") {
-    return configured(request);
-  }
-  const reach = describeReach(request.context.reach);
-  return configured === undefined ? reach : `${configured}\n\n${reach}`;
-}
 
 export { claudeAgentSdkMcpOptions };

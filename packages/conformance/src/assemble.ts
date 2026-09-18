@@ -96,6 +96,7 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
       status: result.status,
       ...terminalOutcome(result),
       ...escalationAsked(result),
+      ...callsAfterEscalation(result),
       exposedTools: exposedTools(result.events),
       requestedTools: request.tools.map(({ name }) => name),
       decisions: decisions(audit),
@@ -201,6 +202,17 @@ function handedPrompt(result: ExecutionResult): Partial<SystemIdentity> {
 function escalationAsked(result: ExecutionResult): Partial<ExecutionRecordExecution> {
   const asked = EscalationAskedSchema.safeParse(result.metadata?.[ESCALATION_ASKED_ANNOTATION]);
   return asked.success ? { escalationAsked: asked.data } : {};
+}
+
+/**
+ * How many calls the seat made after its ask, lifted the same way and for the
+ * same reason. A count that is not a non-negative integer reads as none.
+ */
+function callsAfterEscalation(result: ExecutionResult): Partial<ExecutionRecordExecution> {
+  const calls = result.metadata?.["callsAfterEscalation"];
+  return typeof calls === "number" && Number.isInteger(calls) && calls >= 0
+    ? { callsAfterEscalation: calls }
+    : {};
 }
 
 /** The one definition of a content hash the record is validated against. */
