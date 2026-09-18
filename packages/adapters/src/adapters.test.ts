@@ -14,38 +14,31 @@ import {
   ESCALATION_TOOL_NAMESPACE,
   PROMPT_HASH_ANNOTATION,
   SharedOSExecutor,
-  StandardRuntime,
+  createStandardRuntime,
+  type AgentTurnDriver,
 } from "@aicoo/sharedos-runtime";
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
 
+import { EvalHarnessDriver, type EvalHarnessDriverOptions } from "./driver.js";
 import {
   CLAUDE_CODE_REQUIREMENTS,
   CLAUDE_CODE_RUNTIME_MANIFEST,
-  claudeCodeProtocol,
-  createClaudeCodeDriver,
-  createClaudeCodeRuntime,
-} from "./claude-code/index.js";
-import {
+  CLAUDE_CODE_VENDOR,
   CODEX_REQUIREMENTS,
   CODEX_RUNTIME_MANIFEST,
-  codexProtocol,
-  createCodexDriver,
-  createCodexRuntime,
-} from "./codex/index.js";
-import {
+  CODEX_VENDOR,
   DEEPSEEK_REQUIREMENTS,
   DEEPSEEK_RUNTIME_MANIFEST,
-  createDeepseekDriver,
-  createDeepseekRuntime,
-  deepseekProtocol,
-} from "./deepseek/index.js";
-import {
+  DEEPSEEK_VENDOR,
   PI_REQUIREMENTS,
   PI_RUNTIME_MANIFEST,
-  createPiDriver,
-  createPiRuntime,
-  piProtocol,
-} from "./pi/index.js";
+  PI_VENDOR,
+  type HarnessVendor,
+} from "./vendors.js";
+import { claudeCodeProtocol } from "./claude-code/protocol.js";
+import { codexProtocol } from "./codex/protocol.js";
+import { deepseekProtocol } from "./deepseek/protocol.js";
+import { piProtocol } from "./pi/protocol.js";
 import { probeHarness } from "./node.js";
 import { deepseekFrameWriter, piFrameWriter } from "./writer.js";
 import { TranscriptTransport, type HarnessTranscript } from "./transcript.js";
@@ -139,15 +132,22 @@ function request(escalation = false): ExecutionRequest {
   };
 }
 
+/** One vendor's wire codec in the evaluation driver, filed under that vendor's manifest. */
+function driverFor(vendor: HarnessVendor) {
+  return (options: Omit<EvalHarnessDriverOptions, "manifest" | "protocol">): EvalHarnessDriver =>
+    new EvalHarnessDriver({ ...options, manifest: vendor.manifest, protocol: vendor.protocol });
+}
+const createCodexDriver = driverFor(CODEX_VENDOR);
+const createClaudeCodeDriver = driverFor(CLAUDE_CODE_VENDOR);
+const createDeepseekDriver = driverFor(DEEPSEEK_VENDOR);
+const createPiDriver = driverFor(PI_VENDOR);
+
 /**
  * Run one turn. With `escalation`, the affordance is registered, granted, and
  * its namespace enabled; without it the tool is still registered in the world,
  * so what an ungranted turn lacks is exactly the grant.
  */
-async function runWith(
-  driver: ConstructorParameters<typeof StandardRuntime>[0],
-  options: { readonly escalation?: boolean } = {},
-) {
+async function runWith(driver: AgentTurnDriver, options: { readonly escalation?: boolean } = {}) {
   const escalation = options.escalation === true;
   const { kernel, audit } = createTestKernel({ grants: grants(escalation) });
   kernel.registerTool({
@@ -172,7 +172,7 @@ async function runWith(
       completedAt: context.now,
     }),
   });
-  const result = await new SharedOSExecutor(kernel, new StandardRuntime(driver), {
+  const result = await new SharedOSExecutor(kernel, createStandardRuntime({ driver }), {
     clock: () => NOW,
   }).execute(request(escalation));
   return { result, audit };
@@ -440,18 +440,23 @@ describe("a harness driven as a SharedOS turn", () => {
   });
 
   it("files a turn's evidence under the harness that produced it", async () => {
-    // The executor stamps the plugin's manifest onto the execution record. A
-    // driver wrapped in StandardRuntime alone reports sharedos.standard, which
-    // would attribute every harness column to the reference loop.
+    // The executor stamps the plugin's manifest onto the execution record, and
+    // the loop is the same whichever driver is seated, so the runtime reports
+    // the seated driver's manifest. A driver that states none is the standard.
     const transport = new TranscriptTransport(codexTranscript);
-    const codex = createCodexRuntime({ transport });
-    const claude = createClaudeCodeRuntime({ transport: new TranscriptTransport(codexTranscript) });
+    const codexDriver = createCodexDriver({ transport });
+    const codex = createStandardRuntime({ driver: codexDriver });
+    const claude = createStandardRuntime({
+      driver: createClaudeCodeDriver({ transport: new TranscriptTransport(codexTranscript) }),
+    });
 
     expect(codex.manifest.id).toBe(CODEX_RUNTIME_MANIFEST.id);
     expect(claude.manifest.id).toBe(CLAUDE_CODE_RUNTIME_MANIFEST.id);
-    expect(new StandardRuntime(createCodexDriver({ transport })).manifest.id).toBe(
-      "sharedos.standard",
-    );
+    expect(
+      createStandardRuntime({
+        driver: { open: (request, signal) => codexDriver.open(request, signal) },
+      }).manifest.id,
+    ).toBe("sharedos.standard");
 
     const { kernel } = createTestKernel({ grants: grants() });
     kernel.registerTool({
@@ -802,14 +807,12 @@ describe("the DeepSeek and Pi harnesses driven as SharedOS turns", () => {
       label: "DeepSeek",
       writer: deepseekFrameWriter,
       driver: createDeepseekDriver,
-      runtime: createDeepseekRuntime,
       manifest: DEEPSEEK_RUNTIME_MANIFEST,
     },
     {
       label: "Pi",
       writer: piFrameWriter,
       driver: createPiDriver,
-      runtime: createPiRuntime,
       manifest: PI_RUNTIME_MANIFEST,
     },
   ] as const;
@@ -846,7 +849,9 @@ describe("the DeepSeek and Pi harnesses driven as SharedOS turns", () => {
     it(`files a ${harness.label} turn's evidence under the harness that produced it`, () => {
       const transport = new TranscriptTransport({ batches: [[harness.writer.complete()]] });
 
-      expect(harness.runtime({ transport }).manifest.id).toBe(harness.manifest.id);
+      expect(createStandardRuntime({ driver: harness.driver({ transport }) }).manifest.id).toBe(
+        harness.manifest.id,
+      );
     });
 
     it(`shows the ${harness.label} harness the sanitised context and nothing else`, async () => {

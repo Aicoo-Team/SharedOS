@@ -587,7 +587,7 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
     "driver and no catalogue rendering, so its cell says what the kernel does to an",
     "attempt and nothing about the loop SharedOS ships.",
     "",
-    "The `Standard` column is that loop: the native harness, `StandardRuntime` with",
+    "The `Standard` column is that loop: the native harness, the standard loop with",
     "the model driver in the seat and the permission-filtered catalogue rendered",
     "into the model's own tool-call shape. In the committed manifest a transcript",
     "stands where the provider would, written here from the declared attempt, and",

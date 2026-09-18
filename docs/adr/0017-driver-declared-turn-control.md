@@ -20,7 +20,7 @@ not applicable, explaining that no vendor frame means "ask a human to decide" --
 an explanation about CLIs, for a gap in a type no CLI touches.
 
 The step ceiling had the same shape. The envelope enforces its ceiling over the
-steps a runtime declares, and inside `StandardRuntime` the loop declared them.
+steps a runtime declares, and inside the standard loop the loop declared them.
 The loop's index stops at `maxSteps` because the loop stops there, so a call at
 or past the ceiling could not be made from any driven column at all, and the row
 was reported not applicable under a reason that sounded like a fact about
@@ -35,7 +35,7 @@ A driver may declare two things about its own turn, and the envelope keeps
 deciding both.
 
 **It may declare that the turn ends in an ask.** `AgentTurnDecision` gains an
-escalate variant, and `StandardRuntime` settles the turn on the outcome ADR 0011
+escalate variant, and the standard loop settles the turn on the outcome ADR 0011
 already defined.
 
 **The ask is published as a tool.** `sharedos.escalate` is catalogued and
@@ -76,11 +76,11 @@ because a runtime returning an outcome it was not allowed to return is a
 runtime misbehaving, the case `invalid_runtime_outcome` already covers.
 
 **It may declare the step it is calling at.** `AgentTurnDecision.tool_call`
-carries an optional `step`, and `StandardRuntime` uses `decision.step ?? step`.
+carries an optional `step`, and the standard loop uses `decision.step ?? step`.
 A driver that says nothing is bounded exactly as before. One that names a step
 is refused for it if the envelope disagrees, because **declaring a step is a
 claim, not a permission**: nothing a driver says widens what it may do. The
-claim reaches forward only: `StandardRuntime` refuses a declared step behind its
+claim reaches forward only: the standard loop refuses a declared step behind its
 own position as a malformed decision (`invalid_driver_decision`), since the
 declaration exists to reach past the budget and a position the loop has already
 passed is not that -- it is a claim the loop can see is false.

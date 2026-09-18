@@ -7,7 +7,7 @@ import {
   RuntimeRegistry,
   SharedOSClient,
   SharedOSExecutor,
-  StandardRuntime,
+  createStandardRuntime,
 } from "./index.js";
 
 describe("@aicoo/sharedos", () => {
@@ -18,6 +18,6 @@ describe("@aicoo/sharedos", () => {
     expect(RuntimeManifestSchema).toBeDefined();
     expect(RuntimeRegistry).toBeTypeOf("function");
     expect(SharedOSExecutor).toBeTypeOf("function");
-    expect(StandardRuntime).toBeTypeOf("function");
+    expect(createStandardRuntime).toBeTypeOf("function");
   });
 });

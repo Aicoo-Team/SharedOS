@@ -12,7 +12,7 @@ import { SharedOSKernel } from "@aicoo/sharedos-core";
 
 import {
   SharedOSExecutor,
-  StandardRuntime,
+  createStandardRuntime,
   type AgentTurnDecision,
   type AgentTurnInput,
   type AgentTurnSession,
@@ -207,11 +207,13 @@ function scripted(calls: readonly ToolCall[]): {
 /** The standard loop over `driver`, whose session opens `afterMs` into the turn. */
 function opening(afterMs: number, driver: { open: () => Promise<AgentTurnSession> }) {
   const progress = { opening: false };
-  const runtime: RuntimePlugin = new StandardRuntime({
-    open: async () => {
-      progress.opening = true;
-      await sleep(afterMs);
-      return driver.open();
+  const runtime: RuntimePlugin = createStandardRuntime({
+    driver: {
+      open: async () => {
+        progress.opening = true;
+        await sleep(afterMs);
+        return driver.open();
+      },
     },
   });
   return { runtime, progress };
@@ -318,15 +320,17 @@ describe("a turn that drains before its deadline", () => {
   it("refuses a call asked for once the turn is draining, records it, and asks the seat nothing more", async () => {
     const { kernel, trail, ledger } = world(10);
     let asked = 0;
-    const runtime = new StandardRuntime({
-      open: async () => ({
-        // A decision already being made when the turn starts to drain.
-        next: async () => {
-          asked += 1;
-          await sleep(116_000);
-          return { type: "tool_call", call: call("call-late") };
-        },
-      }),
+    const runtime = createStandardRuntime({
+      driver: {
+        open: async () => ({
+          // A decision already being made when the turn starts to drain.
+          next: async () => {
+            asked += 1;
+            await sleep(116_000);
+            return { type: "tool_call", call: call("call-late") };
+          },
+        }),
+      },
     });
     const result = executor(kernel, runtime, 5_000).execute(request());
 
@@ -388,14 +392,16 @@ describe("a turn that drains before its deadline", () => {
   it("honours a decision already being made when it ends the turn", async () => {
     const { kernel } = world(10);
     let asked = 0;
-    const runtime = new StandardRuntime({
-      open: async () => ({
-        next: async () => {
-          asked += 1;
-          await sleep(116_000);
-          return { type: "complete", output: { answer: 42 } };
-        },
-      }),
+    const runtime = createStandardRuntime({
+      driver: {
+        open: async () => ({
+          next: async () => {
+            asked += 1;
+            await sleep(116_000);
+            return { type: "complete", output: { answer: 42 } };
+          },
+        }),
+      },
     });
     const result = executor(kernel, runtime, 5_000).execute(request());
 
@@ -409,7 +415,7 @@ describe("a turn that drains before its deadline", () => {
     const { kernel, trail, ledger, state } = world(3_000);
     const { driver } = scripted([call("call-1")]);
     const controller = new AbortController();
-    const result = executor(kernel, new StandardRuntime(driver), 5_000).execute(request(), {
+    const result = executor(kernel, createStandardRuntime({ driver }), 5_000).execute(request(), {
       signal: controller.signal,
     });
     const settled = vi.fn();
@@ -543,7 +549,7 @@ describe("a turn that drains before its deadline", () => {
     const completed = world(0);
     await executor(
       completed.kernel,
-      new StandardRuntime(scripted([call("call-1")]).driver),
+      createStandardRuntime({ driver: scripted([call("call-1")]).driver }),
       5_000,
     ).execute(request());
     expect(vi.getTimerCount()).toBe(0);
@@ -555,7 +561,7 @@ describe("a turn that drains before its deadline", () => {
     );
     const result = await executor(
       outage.kernel,
-      new StandardRuntime(scripted([call("call-1")]).driver),
+      createStandardRuntime({ driver: scripted([call("call-1")]).driver }),
       5_000,
     ).execute(request());
     expect(result).toMatchObject({ status: "failed", error: { code: "audit_unavailable" } });
@@ -564,9 +570,9 @@ describe("a turn that drains before its deadline", () => {
 
   it.each([-1, 1.5, Number.NaN])("rejects a grace of %s", (drainGraceMs) => {
     const { kernel } = world(0);
-    expect(() => executor(kernel, new StandardRuntime(scripted([]).driver), drainGraceMs)).toThrow(
-      "drainGraceMs must be between 0 and",
-    );
+    expect(() =>
+      executor(kernel, createStandardRuntime({ driver: scripted([]).driver }), drainGraceMs),
+    ).toThrow("drainGraceMs must be between 0 and");
   });
 });
 

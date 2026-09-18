@@ -32,18 +32,15 @@ import {
 } from "@aicoo/sharedos-runtime";
 
 import type { HarnessProtocol } from "./harness.js";
-import { CLAUDE_CODE_VENDOR } from "./claude-code/index.js";
-import { CODEX_VENDOR } from "./codex/index.js";
-import { DEEPSEEK_VENDOR } from "./deepseek/index.js";
-import { PI_VENDOR } from "./pi/index.js";
 import { failed } from "./internal.js";
 import { HarnessProcess } from "./process.js";
+import { CLAUDE_CODE_VENDOR, CODEX_VENDOR, DEEPSEEK_VENDOR, PI_VENDOR } from "./vendors.js";
 import { SeatCalls, seatText, type SeatMetadata, type SeatTextOptions } from "./seat.js";
 
 /**
  * A vendor harness run natively, against the SharedOS catalogue over MCP.
  *
- * This is a different integration from `HarnessDriver`, and the difference is
+ * This is a different integration from `EvalHarnessDriver`, and the difference is
  * the point. A driver puts SharedOS in the model provider's seat: it speaks the
  * vendor's API-layer tool-call shape and owns the loop. That is exact, and it
  * cannot be run against an installed CLI, because no coding-agent CLI exposes

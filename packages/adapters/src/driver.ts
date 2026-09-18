@@ -21,7 +21,7 @@ import { SeatCalls, seatText, type DeclareStep, type SeatTextOptions } from "./s
  * `instructions` reaches the harness on `HarnessTurnRequest.instructions`, for
  * its transport to hand over with the prompt.
  */
-export interface HarnessDriverOptions extends SeatTextOptions {
+export interface EvalHarnessDriverOptions extends SeatTextOptions {
   readonly manifest: RuntimeManifest;
   readonly protocol: HarnessProtocol;
   readonly transport: HarnessTransport;
@@ -34,7 +34,16 @@ export interface HarnessDriverOptions extends SeatTextOptions {
 const DEFAULT_MAX_IGNORED_FRAMES = 512;
 
 /**
- * One vendor harness, driven as a SharedOS agent turn.
+ * One vendor's wire format, seated in the standard loop for evaluation.
+ *
+ * It puts SharedOS in the model provider's seat and speaks the vendor's
+ * API-layer tool-call shape exactly, which is how a vendor's codec is graded
+ * against the kernel: over a recorded transcript in the committed conformance
+ * columns, or over a live CLI's stdio in `scripts/native-conformance.mjs`. It is
+ * not how a vendor CLI runs in a product. No coding-agent CLI accepts a
+ * host-supplied catalogue on its own protocol; `createMcpHarnessRuntime` is the
+ * path for that. It is also the one driver that can name a step past its budget
+ * (`declareStep`), which only an evaluation has a reason to do.
  *
  * A driver is only translation. The turn loop, the permission-filtered
  * catalogue, per-call re-authorization, and audit all belong to the SharedOS
@@ -47,15 +56,15 @@ const DEFAULT_MAX_IGNORED_FRAMES = 512;
  * guess at an unexposed tool has to reach the envelope to be refused and
  * recorded.
  */
-export class HarnessDriver implements AgentTurnDriver {
+export class EvalHarnessDriver implements AgentTurnDriver {
   readonly manifest: RuntimeManifest;
   readonly #protocol: HarnessProtocol;
   readonly #transport: HarnessTransport;
   readonly #text: SeatTextOptions;
   readonly #maxIgnoredFrames: number;
-  readonly #declareStep: HarnessDriverOptions["declareStep"];
+  readonly #declareStep: EvalHarnessDriverOptions["declareStep"];
 
-  constructor(options: HarnessDriverOptions) {
+  constructor(options: EvalHarnessDriverOptions) {
     this.manifest = options.manifest;
     this.#protocol = options.protocol;
     this.#transport = options.transport;

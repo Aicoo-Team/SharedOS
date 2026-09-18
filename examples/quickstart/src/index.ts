@@ -1,7 +1,11 @@
 import type { ExecutionRequest, ResourceResult } from "@aicoo/sharedos-contracts";
 import { agentExecutionCapability } from "@aicoo/sharedos-core";
 import { createFileTools } from "@aicoo/sharedos-os";
-import { SharedOSExecutor, StandardRuntime, type AgentTurnDriver } from "@aicoo/sharedos-runtime";
+import {
+  SharedOSExecutor,
+  createStandardRuntime,
+  type AgentTurnDriver,
+} from "@aicoo/sharedos-runtime";
 import {
   InMemoryResourceProvider,
   createTestContext,
@@ -104,7 +108,7 @@ const request: ExecutionRequest = {
 };
 
 let eventSequence = 0;
-const result = await new SharedOSExecutor(kernel, new StandardRuntime(driver), {
+const result = await new SharedOSExecutor(kernel, createStandardRuntime({ driver }), {
   clock: () => now,
   createId: () => `event-${(eventSequence += 1)}`,
 }).execute(request);

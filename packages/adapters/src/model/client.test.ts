@@ -4,10 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ModelRequestError,
   OpenAiCompatibleModelClient,
-  parseToolArguments,
   type ModelCompletionRequest,
   type OpenAiCompatibleModelClientOptions,
 } from "./client.js";
+import { parseToolArguments } from "../internal.js";
 
 const REQUEST: ModelCompletionRequest = {
   messages: [

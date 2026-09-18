@@ -92,7 +92,7 @@ export class ToolNameCodec {
  * harness maps MCP initialize instructions into. With none, no system message
  * is sent.
  */
-export interface ModelDriverOptions extends SeatTextOptions {
+export interface StandardTurnDriverOptions extends SeatTextOptions {
   readonly manifest: RuntimeManifest;
   readonly client: ModelClient;
   /**
@@ -111,18 +111,19 @@ export interface ModelDriverOptions extends SeatTextOptions {
 const DEFAULT_MAX_MALFORMED_CALLS = 8;
 
 /**
- * A model API driven as a SharedOS agent turn.
+ * The SharedOS driver for the standard loop: a model API in the seat.
  *
- * The same port a vendor harness occupies, with the vendor removed. A harness
- * driver translates frames from a CLI that has already decided what to call;
- * this one puts the model itself in the seat, so the catalogue it sees is the
+ * "Standard" names the SharedOS-owned default at each layer, and this is the
+ * default driver: what `createStandardRuntime` seats when a host has no model
+ * path of its own. The evaluation driver translates frames from a vendor's
+ * wire format; this one puts the model itself in the seat, so the catalogue it sees is the
  * permission-filtered one the kernel built and nothing between the two can add
  * a tool, drop a tool, or answer a call on its own.
  *
  * What that buys is an axis the other columns cannot separate. A scripted
  * column leaves out the transport; a live CLI column leaves out the catalogue;
  * an MCP column keeps both but hands the turn loop to the vendor's scaffolding.
- * This one keeps the loop inside `StandardRuntime` and drops the vendor
+ * This one keeps the loop with SharedOS and drops the vendor
  * entirely, which is what makes "the model behaved this way" distinguishable
  * from "the vendor's scaffolding made the model behave this way".
  *
@@ -131,14 +132,14 @@ const DEFAULT_MAX_MALFORMED_CALLS = 8;
  * in the record and is graded as unexercised. That is the honest grading, and
  * the reason the deterministic column stays the reference.
  */
-export class ModelDriver implements AgentTurnDriver {
+export class StandardTurnDriver implements AgentTurnDriver {
   readonly manifest: RuntimeManifest;
   readonly #client: ModelClient;
   readonly #text: SeatTextOptions;
   readonly #maxMalformedCalls: number;
   readonly #declareStep: DeclareStep | undefined;
 
-  constructor(options: ModelDriverOptions) {
+  constructor(options: StandardTurnDriverOptions) {
     this.manifest = options.manifest;
     this.#client = options.client;
     this.#text = {

@@ -13,7 +13,7 @@ import {
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAMESPACE,
   SharedOSExecutor,
-  StandardRuntime,
+  createStandardRuntime,
   type AgentTurnDriver,
   type RuntimeTurnRequest,
   createEscalationTool,
@@ -21,8 +21,7 @@ import {
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
 
 import {
-  ModelDriver,
-  ModelRuntime,
+  StandardTurnDriver,
   ToolNameCodec,
   decodeChatCompletion,
   encodeModelMessage,
@@ -30,7 +29,7 @@ import {
   readModelToolCall,
   type ModelClient,
   type ModelCompletionRequest,
-  type ModelDriverOptions,
+  type StandardTurnDriverOptions,
   type ModelReply,
 } from "./index.js";
 
@@ -193,12 +192,12 @@ async function runWith(
     maxSteps?: number;
     maxMalformedCalls?: number;
     escalation?: boolean;
-    instructions?: ModelDriverOptions["instructions"];
+    instructions?: StandardTurnDriverOptions["instructions"];
   } = {},
 ) {
   const { kernel, audit } = testKernel(options);
-  const runtime = new ModelRuntime(
-    new ModelDriver({
+  const runtime = createStandardRuntime({
+    driver: new StandardTurnDriver({
       manifest: MANIFEST,
       client,
       ...(options.maxMalformedCalls === undefined
@@ -206,7 +205,7 @@ async function runWith(
         : { maxMalformedCalls: options.maxMalformedCalls }),
       ...(options.instructions === undefined ? {} : { instructions: options.instructions }),
     }),
-  );
+  });
   const result = await new SharedOSExecutor(kernel, runtime, { clock: () => NOW }).execute(
     // Lowered per test rather than by arming a world, so a ceiling this narrow
     // truncates exactly the turn that wants it and no other.
@@ -559,9 +558,9 @@ describe("a model driving a SharedOS turn", () => {
 
   it("refuses to be built with a guard that is not a positive integer", () => {
     const client = scriptedClient([]);
-    expect(() => new ModelDriver({ manifest: MANIFEST, client, maxMalformedCalls: 0 })).toThrow(
-      /positive integer/u,
-    );
+    expect(
+      () => new StandardTurnDriver({ manifest: MANIFEST, client, maxMalformedCalls: 0 }),
+    ).toThrow(/positive integer/u);
   });
 
   it("ends the turn when the model chooses the escalate affordance", async () => {
@@ -704,9 +703,13 @@ describe("a model driving a SharedOS turn", () => {
       },
     };
     const { kernel, audit } = testKernel();
-    const result = await new SharedOSExecutor(kernel, new StandardRuntime(forwarding), {
-      clock: () => NOW,
-    }).execute(request());
+    const result = await new SharedOSExecutor(
+      kernel,
+      createStandardRuntime({ driver: forwarding }),
+      {
+        clock: () => NOW,
+      },
+    ).execute(request());
 
     expect(result.status).toBe("succeeded");
     expect(completedCalls(result)).toEqual([
@@ -738,7 +741,7 @@ describe("a model driving a SharedOS turn", () => {
         toolCalls: [{ id: "call-2", name: "files_read", arguments: '{"path":["Workspace","b"]}' }],
       },
     ]);
-    const session = await new ModelDriver({ manifest: MANIFEST, client }).open(
+    const session = await new StandardTurnDriver({ manifest: MANIFEST, client }).open(
       turnRequest(),
       new AbortController().signal,
     );
@@ -764,9 +767,9 @@ describe("a model driving a SharedOS turn", () => {
       },
       { text: "done", toolCalls: [] },
     ]);
-    const runtime = new ModelRuntime(
-      new ModelDriver({ manifest: MANIFEST, client, declareStep: () => 4 }),
-    );
+    const runtime = createStandardRuntime({
+      driver: new StandardTurnDriver({ manifest: MANIFEST, client, declareStep: () => 4 }),
+    });
     const { kernel } = testKernel();
     const result = await new SharedOSExecutor(kernel, runtime, { clock: () => NOW }).execute({
       ...request(),
@@ -924,7 +927,7 @@ describe("what the model is told about where it may operate", () => {
     const turn = turnRequest({ status: "unavailable", reasonCode: "usage_store_unavailable" });
     const signal = new AbortController().signal;
 
-    const session = await new ModelDriver({ manifest: MANIFEST, client }).open(turn, signal);
+    const session = await new StandardTurnDriver({ manifest: MANIFEST, client }).open(turn, signal);
     await session.next({ type: "start" }, signal);
 
     const system = client.seen[0]?.messages[0];
@@ -997,7 +1000,9 @@ describe("what the model is told about where it may operate", () => {
     const { kernel } = testKernel();
     const result = await new SharedOSExecutor(
       kernel,
-      new ModelRuntime(new ModelDriver({ manifest: MANIFEST, client: hanging })),
+      createStandardRuntime({
+        driver: new StandardTurnDriver({ manifest: MANIFEST, client: hanging }),
+      }),
       { clock: () => NOW },
     ).execute(request(), { signal: cancel.signal });
 

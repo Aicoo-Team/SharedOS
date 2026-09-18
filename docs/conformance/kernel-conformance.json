@@ -3270,7 +3270,7 @@
           "recordGaps": [],
           "driverIssued": [],
           "turns": 0,
-          "detail": "a model driver returns a decision and `StandardRuntime` turns it into an outcome; neither a transcript nor a live model can express throwing out of the turn. Only a plugin that owns its outcome can, so the row is run where that is true and declared here rather than approximated"
+          "detail": "a model driver returns a decision and the standard loop turns it into an outcome; neither a transcript nor a live model can express throwing out of the turn. Only a plugin that owns its outcome can, so the row is run where that is true and declared here rather than approximated"
         },
         {
           "columnId": "codex-scripted",

@@ -887,7 +887,7 @@ export const MODEL_TRANSLATION_PROTOCOL_ID = "model.chat-completions";
 /**
  * The native harness as a translation subject.
  *
- * `ModelDriver` has a translation layer like any vendor adapter, and it is
+ * `StandardTurnDriver` has a translation layer like any vendor adapter, and it is
  * measured here on the same terms. The frame that carries a call is one
  * chat-completions response body, in the shape the provider's wire carries it;
  * reading it is the client's decode plus the driver's own per-call read -- the

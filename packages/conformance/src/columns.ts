@@ -6,10 +6,8 @@ import {
   codexProtocol,
   deepseekFrameWriter,
   deepseekProtocol,
-  HarnessDriver,
-  HarnessRuntime,
-  ModelDriver,
-  ModelRuntime,
+  EvalHarnessDriver,
+  StandardTurnDriver,
   piFrameWriter,
   piProtocol,
   ToolNameCodec,
@@ -25,6 +23,7 @@ import {
   type ModelTranscript,
 } from "@aicoo/sharedos-adapters";
 import {
+  createStandardRuntime,
   escalationArguments,
   ESCALATION_TOOL_NAME,
   type RuntimeTurnRequest,
@@ -140,7 +139,7 @@ export interface RuntimeColumn {
  * "did the kernel refuse this the same way?" is a question only a column that
  * always makes the attempt can anchor.
  *
- * It is not the native harness. Nothing here passes through `StandardRuntime`,
+ * It is not the native harness. Nothing here passes through the standard loop,
  * a driver, or a catalogue rendering; the plugin calls `host.invokeTool`
  * directly. The harness SharedOS ships is a separate column,
  * {@link MODEL_SCRIPTED_COLUMN}, and the two must not be read as one: this one
@@ -167,7 +166,7 @@ export const ADVERSARY_COLUMN: RuntimeColumn = Object.freeze({
  *   speaks tool calls over a wire and never sees a `RuntimeTurnRequest` or a
  *   `RuntimeHost`, so it has nothing to enumerate.
  * - A call past the step budget cannot be made by the harness from inside
- *   `StandardRuntime`, which is the loop every harness driver runs in and which
+ *   the standard loop, which is the loop every harness driver runs in and which
  *   stops at its own step ceiling. Where a condition requires declared steps,
  *   the driver names the out-of-budget step itself: the attempt is issued and
  *   graded, and marked `driverIssued` so the cell reads `pass (driver)` rather
@@ -176,7 +175,7 @@ export const ADVERSARY_COLUMN: RuntimeColumn = Object.freeze({
  * Two whole rows are declared unsupported rather than narrowed attempt by
  * attempt, and for one reason between them: an ungranted `escalate` and a throw
  * out of the turn are both outcomes, and this column does not own the outcome.
- * `StandardRuntime` does, and it produces neither on request.
+ * The standard loop does, and it produces neither on request.
  */
 export function harnessLimits(move: AttackMove, condition: ConformanceCondition): ColumnLimits {
   if (move.kind === "escalation_refused") {
@@ -244,8 +243,8 @@ export function scriptedColumn(options: ScriptedColumnOptions): RuntimeColumn {
     id: options.id,
     label: options.label,
     create: (moves: readonly AttackMove[], create: RuntimeColumnOptions): RuntimePlugin =>
-      new HarnessRuntime(
-        new HarnessDriver({
+      createStandardRuntime({
+        driver: new EvalHarnessDriver({
           manifest: {
             id: `sharedos.conformance.${options.id}`,
             version: "1.0.0",
@@ -262,7 +261,7 @@ export function scriptedColumn(options: ScriptedColumnOptions): RuntimeColumn {
           ),
           ...declaredStepOption(moves, create.turn),
         }),
-      ),
+      }),
     receipts: (move: AttackMove, turn: ColumnTurn) => receiptsFromRecord(move, turn),
     limits: harnessLimits,
   });
@@ -434,10 +433,10 @@ export function movesToModelTranscript(
 }
 
 /**
- * The native harness in its scripted mode: `ModelRuntime` with a transcript in
- * the provider's place.
+ * The native harness in its scripted mode: `createStandardRuntime` seating
+ * `StandardTurnDriver`, with a transcript in the provider's place.
  *
- * `StandardRuntime` owns the loop, `ModelDriver` renders the permission-
+ * The standard loop owns the steps, `StandardTurnDriver` renders the permission-
  * filtered catalogue into the model's tool-call shape and decodes what comes
  * back, and the kernel and envelope are the real ones. What is scripted is the
  * one thing a live run gets from a provider: the replies. So this column is to
@@ -466,8 +465,8 @@ export const MODEL_SCRIPTED_COLUMN: RuntimeColumn = Object.freeze({
       turn: create.turn,
       context: conformanceRuntimeContext(create.turn),
     };
-    return new ModelRuntime(
-      new ModelDriver({
+    return createStandardRuntime({
+      driver: new StandardTurnDriver({
         manifest: {
           id: "sharedos.conformance.model-scripted",
           version: "1.0.0",
@@ -487,7 +486,7 @@ export const MODEL_SCRIPTED_COLUMN: RuntimeColumn = Object.freeze({
           }),
         ...declaredStepOption(moves, create.turn),
       }),
-    );
+    });
   },
   receipts: (move: AttackMove, turn: ColumnTurn) => receiptsFromRecord(move, turn),
   limits: modelLimits,
@@ -496,7 +495,7 @@ export const MODEL_SCRIPTED_COLUMN: RuntimeColumn = Object.freeze({
 /**
  * Declare an out-of-budget step for the attempt whose whole point is to have one.
  *
- * A driver inside `StandardRuntime` is handed the loop's index, which stops at
+ * A driver inside the standard loop is handed the loop's index, which stops at
  * `maxSteps` because the loop does. So an attempt marked `overBudget` was
  * unreachable from every driven column -- not because a harness cannot make the
  * call, but because nothing could name a step past the ceiling. Naming it is
@@ -703,7 +702,7 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
  * while it owns the turn loop, and the row is reported `out_of_scope`: the
  * attempt is still issued and recorded, and simply not graded. A driven column
  * grades the same row `pass (driver)` for a genuinely different reason --
- * `StandardRuntime` stops at its own step ceiling, so the driver names the
+ * The standard loop stops at its own step ceiling, so the driver names the
  * out-of-budget step itself and the attempt is graded as the driver's doing.
  * The two must not be collapsed: one says the attempt was the driver's, the
  * other says the attempt was made and SharedOS no longer claims an answer for
@@ -794,8 +793,8 @@ export function liveColumn(options: LiveColumnOptions): RuntimeColumn {
     id: options.id,
     label: options.label,
     create: (moves: readonly AttackMove[], create: RuntimeColumnOptions): RuntimePlugin =>
-      new HarnessRuntime(
-        new HarnessDriver({
+      createStandardRuntime({
+        driver: new EvalHarnessDriver({
           manifest: {
             id: `sharedos.conformance.${options.id}`,
             version: "1.0.0",
@@ -811,7 +810,7 @@ export function liveColumn(options: LiveColumnOptions): RuntimeColumn {
             }),
           ...declaredStepOption(moves, create.turn),
         }),
-      ),
+      }),
     receipts: (move: AttackMove, turn: ColumnTurn) => liveReceiptsFromRecord(move, turn),
     limits: harnessLimits,
   });
@@ -840,7 +839,7 @@ export interface ModelColumnOptions {
  * are worth keeping rather than sharing one function and one wording.
  *
  * The step ceiling is identical, and identical for the identical reason: this
- * column runs inside `StandardRuntime` too, whose loop stops at `maxSteps`, so
+ * column runs inside the standard loop too, which stops at `maxSteps`, so
  * a call past the budget is the driver's to make. Where a condition requires
  * declared steps the driver names the step itself, and the attempt is marked
  * `driverIssued` so the cell reads `pass (driver)` rather than as the model's
@@ -880,7 +879,7 @@ export function modelLimits(move: AttackMove, condition: ConformanceCondition): 
   if (move.kind === "runtime_crashed") {
     return {
       unsupported:
-        "a model driver returns a decision and `StandardRuntime` turns it into an outcome; neither a transcript nor a live model can express throwing out of the turn. Only a plugin that owns its outcome can, so the row is run where that is true and declared here rather than approximated",
+        "a model driver returns a decision and the standard loop turns it into an outcome; neither a transcript nor a live model can express throwing out of the turn. Only a plugin that owns its outcome can, so the row is run where that is true and declared here rather than approximated",
     };
   }
   const unreachable = new Map<string, string>();
@@ -913,7 +912,7 @@ export function modelLimits(move: AttackMove, condition: ConformanceCondition): 
  * The fourth thing a column can leave out, and the first that is not a piece of
  * plumbing. A scripted column leaves out the transport. A live CLI column
  * leaves out the catalogue. An MCP column leaves out neither but hands the turn
- * loop to the vendor. This one leaves out the vendor: `StandardRuntime` owns
+ * loop to the vendor. This one leaves out the vendor: the standard loop owns
  * the loop, the permission-filtered catalogue is rendered straight into the
  * model's own tool-call shape, and every call the model asks for is
  * re-authorized by the kernel.
@@ -950,8 +949,8 @@ export function modelColumn(options: ModelColumnOptions): RuntimeColumn {
     id: options.id,
     label: options.label,
     create: (moves: readonly AttackMove[], create: RuntimeColumnOptions): RuntimePlugin =>
-      new ModelRuntime(
-        new ModelDriver({
+      createStandardRuntime({
+        driver: new StandardTurnDriver({
           manifest: {
             id: `sharedos.conformance.${options.id}`,
             version: "1.0.0",
@@ -972,7 +971,7 @@ export function modelColumn(options: ModelColumnOptions): RuntimeColumn {
             }),
           ...declaredStepOption(moves, create.turn),
         }),
-      ),
+      }),
     receipts: (move: AttackMove, turn: ColumnTurn) => liveReceiptsFromRecord(move, turn),
     limits: modelLimits,
   });

@@ -25,7 +25,7 @@ the `AttackMoveKind` type; `SystemIdentity.toolPolicy` and `adapterVersion`,
 `ExperimentIdentity.seed` and `metadata`, `StateRecord.diffRef`,
 `StateReference.capturedAt`, `AssembleExecutionRecordInput.auditRef`;
 `HarnessMcpConfigFile.harness`; `HarnessStep.complete.metadata`;
-`HarnessDriverOptions.maxIgnoredFrames` (never set, and its two failure paths
+`EvalHarnessDriverOptions.maxIgnoredFrames` (never set, and its two failure paths
 have no unit test); `OpenAiCompatibleModelClientOptions.maxOutputTokens`,
 `temperature`, and `requestTimeoutMs` (read with defaults, set by no script);
 `catalogueDelivery` manifest metadata;

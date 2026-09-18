@@ -40,7 +40,7 @@ import {
   deriveGrant,
 } from "@aicoo/sharedos-core";
 import { registerStandardOsTools } from "@aicoo/sharedos-os";
-import { SharedOSExecutor, StandardRuntime } from "@aicoo/sharedos-runtime";
+import { SharedOSExecutor, createStandardRuntime } from "@aicoo/sharedos-runtime";
 
 import { AnthropicTurnDriver, ScriptedTurnDriver } from "./driver.js";
 import { FilesystemResourceProvider } from "./filesystem-provider.js";
@@ -191,16 +191,17 @@ async function main(): Promise<void> {
   stores.storeGrant(WORLD, atlasRead);
   stores.storeGrant(WORLD, invokeAlice);
 
-  const runtime = new StandardRuntime(
-    apiKey === undefined
-      ? new ScriptedTurnDriver([
-          { tool: "files.search", arguments: { path: ATLAS, query: "ship date" } },
-          { tool: "files.read", arguments: { path: STATUS } },
-          { tool: "files.read", arguments: { path: PAYROLL } },
-          { tool: "files.read", arguments: { path: ["Personal", "diary.md"] } },
-        ])
-      : new AnthropicTurnDriver(apiKey),
-  );
+  const runtime = createStandardRuntime({
+    driver:
+      apiKey === undefined
+        ? new ScriptedTurnDriver([
+            { tool: "files.search", arguments: { path: ATLAS, query: "ship date" } },
+            { tool: "files.read", arguments: { path: STATUS } },
+            { tool: "files.read", arguments: { path: PAYROLL } },
+            { tool: "files.read", arguments: { path: ["Personal", "diary.md"] } },
+          ])
+        : new AnthropicTurnDriver(apiKey),
+  });
   const turns = new SharedOSExecutor(kernel, runtime, {
     defaultMaxSteps: 8,
     defaultMaxToolCalls: 8,

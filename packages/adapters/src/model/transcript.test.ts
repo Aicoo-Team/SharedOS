@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { ExecutionRequest, ToolDefinition } from "@aicoo/sharedos-contracts";
 import { agentExecutionCapability } from "@aicoo/sharedos-core";
-import { SharedOSExecutor } from "@aicoo/sharedos-runtime";
+import { SharedOSExecutor, createStandardRuntime } from "@aicoo/sharedos-runtime";
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
 
-import { ModelDriver, ModelRuntime, TranscriptModelClient } from "./index.js";
+import { StandardTurnDriver, TranscriptModelClient } from "./index.js";
 
 const NOW = "2026-08-30T09:00:00.000Z";
 const AGENT = { kind: "agent", agentId: "agent-1" } as const;
@@ -83,12 +83,12 @@ async function runWith(client: TranscriptModelClient) {
       completedAt: context.now,
     }),
   });
-  const runtime = new ModelRuntime(
-    new ModelDriver({
+  const runtime = createStandardRuntime({
+    driver: new StandardTurnDriver({
       manifest: { id: "sharedos.test.model", version: "1.0.0", protocolVersion: "1" },
       client,
     }),
-  );
+  });
   return new SharedOSExecutor(kernel, runtime, { clock: () => NOW }).execute(request());
 }
 
@@ -125,7 +125,7 @@ describe("a transcript in the model seat", () => {
     // and the driver showed the answer to the "model" before asking again.
     expect(client.seen).toHaveLength(2);
     // The system message is the turn's reach, said before the prompt on every
-    // model call; see `ModelDriverOptions.instructions`.
+    // model call; see `StandardTurnDriverOptions.instructions`.
     expect(client.seen[1]?.messages.map(({ role }) => role)).toEqual([
       "system",
       "user",

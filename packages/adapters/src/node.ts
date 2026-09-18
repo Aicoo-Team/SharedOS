@@ -3,10 +3,6 @@ import { constants } from "node:fs";
 import { access } from "node:fs/promises";
 import { delimiter, join } from "node:path";
 
-import { CLAUDE_CODE_REQUIREMENTS } from "./claude-code/index.js";
-import { CODEX_REQUIREMENTS } from "./codex/index.js";
-import { DEEPSEEK_REQUIREMENTS } from "./deepseek/index.js";
-import { PI_REQUIREMENTS } from "./pi/index.js";
 import type {
   HarnessAvailability,
   HarnessChannel,
@@ -17,6 +13,12 @@ import type {
 } from "./harness.js";
 
 import { HarnessProcess } from "./process.js";
+import {
+  CLAUDE_CODE_REQUIREMENTS,
+  CODEX_REQUIREMENTS,
+  DEEPSEEK_REQUIREMENTS,
+  PI_REQUIREMENTS,
+} from "./vendors.js";
 
 export * from "./mcp-runtime.js";
 

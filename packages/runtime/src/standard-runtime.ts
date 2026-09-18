@@ -109,12 +109,28 @@ export interface AgentTurnSession {
   close?(outcome: ExecutionResult["status"], signal: AbortSignal): void | Promise<void>;
 }
 
-/** Model/provider-specific code implements this port inside the standard runtime. */
+/**
+ * What sits in the standard loop's driver slot.
+ *
+ * Model- or provider-specific code implements this port. The loop asks it what
+ * to do next; it never reaches the envelope itself.
+ */
 export interface AgentTurnDriver {
+  /**
+   * Who this driver is, for the record.
+   *
+   * The executor stamps the plugin's manifest on every execution record, and
+   * the loop is the same whichever driver is seated, so the loop reports the
+   * seated driver's manifest as its own: evidence is filed under what produced
+   * it. A driver that states none is reported as `sharedos.standard`.
+   */
+  readonly manifest?: RuntimeManifest;
   open(request: RuntimeTurnRequest, signal: AbortSignal): Promise<AgentTurnSession>;
 }
 
 export interface StandardRuntimeOptions {
+  /** The one driver this runtime seats. */
+  driver: AgentTurnDriver;
   closeTimeoutMs?: number;
   /**
    * Notification for a throw the loop contained rather than propagated.
@@ -137,15 +153,34 @@ export const STANDARD_RUNTIME_MANIFEST: RuntimeManifest = deepFreeze({
   },
 });
 
-/** The reference SharedOS loop. Hosts may replace it with another RuntimePlugin. */
-export class StandardRuntime implements RuntimePlugin {
-  readonly manifest = STANDARD_RUNTIME_MANIFEST;
+/**
+ * The SharedOS loop, with one driver seated.
+ *
+ * "Standard" names the SharedOS-owned default at each layer: this is the
+ * default runtime, and a host may install another `RuntimePlugin` in its place.
+ * The loop asks the seated driver what to do next, forwards every tool call to
+ * the envelope, stops at `maxSteps`, and asks nothing more of the driver once
+ * the turn is draining. What differs between two uses of it is only the driver,
+ * so the runtime reports the driver's manifest (see
+ * {@link AgentTurnDriver.manifest}) and a record names what sat in the seat.
+ *
+ * The driver slot takes any {@link AgentTurnDriver}: a host's own, or
+ * `StandardTurnDriver` from `@aicoo/sharedos-adapters`, which puts a model API
+ * in the seat.
+ */
+export function createStandardRuntime(options: StandardRuntimeOptions): RuntimePlugin {
+  return new StandardLoop(options);
+}
+
+class StandardLoop implements RuntimePlugin {
+  readonly manifest: RuntimeManifest;
   readonly #driver: AgentTurnDriver;
   readonly #closeTimeoutMs: number;
   readonly #onTurnError: TurnErrorReporter | undefined;
 
-  constructor(driver: AgentTurnDriver, options: StandardRuntimeOptions = {}) {
-    this.#driver = driver;
+  constructor(options: StandardRuntimeOptions) {
+    this.#driver = options.driver;
+    this.manifest = options.driver.manifest ?? STANDARD_RUNTIME_MANIFEST;
     this.#onTurnError = options.onTurnError;
     this.#closeTimeoutMs = options.closeTimeoutMs ?? 1_000;
     if (!Number.isInteger(this.#closeTimeoutMs) || this.#closeTimeoutMs <= 0) {

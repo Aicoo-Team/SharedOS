@@ -1,11 +1,10 @@
-export * from "./claude-code/index.js";
-export * from "./codex/index.js";
-export * from "./deepseek/index.js";
+export * from "./claude-code/protocol.js";
+export * from "./codex/protocol.js";
+export * from "./deepseek/protocol.js";
 export * from "./driver.js";
 export * from "./harness.js";
 export * from "./model/index.js";
-export * from "./pi/index.js";
-export * from "./runtime.js";
+export * from "./pi/protocol.js";
 export type { DeclareStep, SeatMetadata, SeatTextOptions } from "./seat.js";
 export * from "./transcript.js";
 export * from "./vendors.js";
