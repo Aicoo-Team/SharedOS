@@ -68,6 +68,13 @@ describe("the harness process runner", () => {
     harness.dispose();
   });
 
+  it("ends a child that is still running when it is disposed", async () => {
+    // Closing stdin is not enough for a harness that does not read it.
+    const harness = new HarnessProcess(node(WAITS), { onFrame: () => undefined });
+    harness.dispose();
+    expect((await harness.exited).code).not.toBe(0);
+  });
+
   it("refuses to start under a signal that has already aborted", () => {
     const abort = new AbortController();
     abort.abort(new Error("cancelled"));
