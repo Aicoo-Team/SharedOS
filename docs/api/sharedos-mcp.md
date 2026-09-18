@@ -106,7 +106,7 @@ SharedOS is currently an `0.x` prerelease.
 
 ### McpToolServer
 
-Defined in: [mcp/src/server.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L116)
+Defined in: [mcp/src/server.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L111)
 
 SharedOS's catalogue and authorization broker, spoken as MCP.
 
@@ -128,7 +128,7 @@ see [toCallToolResult](#tocalltoolresult).
 
 > **new McpToolServer**(`options`): [`McpToolServer`](#mcptoolserver)
 
-Defined in: [mcp/src/server.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L125)
+Defined in: [mcp/src/server.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L120)
 
 ###### Parameters
 
@@ -148,7 +148,7 @@ Defined in: [mcp/src/server.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/
 
 > **get** **initialized**(): `boolean`
 
-Defined in: [mcp/src/server.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L138)
+Defined in: [mcp/src/server.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L133)
 
 ###### Returns
 
@@ -160,7 +160,7 @@ Defined in: [mcp/src/server.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/
 
 > **get** **protocolVersion**(): `string` \| `undefined`
 
-Defined in: [mcp/src/server.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L134)
+Defined in: [mcp/src/server.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L129)
 
 The revision agreed with this client, once `initialize` has been answered.
 
@@ -174,7 +174,7 @@ The revision agreed with this client, once `initialize` has been answered.
 
 > **handle**(`message`, `signal`): `Promise`\<[`JsonRpcResponse`](#jsonrpcresponse) \| `undefined`>\>
 
-Defined in: [mcp/src/server.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L149)
+Defined in: [mcp/src/server.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L144)
 
 Handle one JSON-RPC message.
 
@@ -939,20 +939,6 @@ The harnesses this package emits a connection for, by id.
 
 ---
 
-### MCP\_SERVER\_VERSION
-
-> `const` **MCP\_SERVER\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
-
-Defined in: [mcp/src/server.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L94)
-
-The version a server built without `serverInfo` reports in `initialize`.
-
-It names the build a harness connected to, so it is kept equal to the
-synchronized package version by the release gate, like every other version
-constant that reaches a record or a wire.
-
----
-
 ### SHAREDOS\_MCP\_SERVER\_NAME
 
 > `const` **SHAREDOS\_MCP\_SERVER\_NAME**: `"sharedos"` = `"sharedos"`
@@ -1451,7 +1437,7 @@ some later moment the turn may already have closed.
 
 > **resolveCanonicalName**(`tools`, `exposed`): `string`
 
-Defined in: [mcp/src/server.ts:309](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L309)
+Defined in: [mcp/src/server.ts:304](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L304)
 
 Map an exposed name back to the canonical SharedOS tool ID.
 
@@ -1484,7 +1470,7 @@ the permission-filtered catalogue, so it can never widen authority.
 
 > **toCallToolResult**(`result`, `published?`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/server.ts:336](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L336)
+Defined in: [mcp/src/server.ts:331](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L331)
 
 A SharedOS `ToolResult` as an MCP `CallToolResult`.
 
@@ -1528,7 +1514,7 @@ would make a denial rate uncountable from the evidence.
 
 > **toMcpTool**(`tool`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/server.ts:276](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L276)
+Defined in: [mcp/src/server.ts:271](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L271)
 
 One published tool in MCP's own shape.
 

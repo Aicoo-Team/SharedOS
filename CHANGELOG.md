@@ -189,6 +189,10 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **`SHAREDOS_VERSION` in `@aicoo/sharedos-contracts`.** The one statement of the
+  build, read by every runtime manifest, the MCP server's greeting and the
+  conformance record, and the one constant the release gate checks.
+
 - **`RuntimeHost.draining`**, an `AbortSignal` aborted once the turn takes
   nothing new. Optional on the type so a host double stays viable; the envelope
   always supplies it. Its reason is fixed and carries nothing from the host.
@@ -293,6 +297,14 @@ StandardRuntime(driver))`, which `TurnExecutor` built (see Removed).
 
 ### Removed
 
+- Seven version constants: `STANDARD_RUNTIME_VERSION` from
+  `@aicoo/sharedos-runtime`, `MCP_SERVER_VERSION` from `@aicoo/sharedos-mcp`, and
+  `MCP_ADAPTER_VERSION`, `CODEX_ADAPTER_VERSION`, `CLAUDE_CODE_ADAPTER_VERSION`,
+  `DEEPSEEK_ADAPTER_VERSION` and `PI_ADAPTER_VERSION` from
+  `@aicoo/sharedos-adapters`. The packages share one version, so each was the
+  same string kept equal by the release gate. Read `SHAREDOS_VERSION` from
+  `@aicoo/sharedos-contracts`, which `@aicoo/sharedos-conformance` still exports
+  under the same name. Every manifest states the same version as before.
 - `OpenToolBridgeOptions.step` from `@aicoo/sharedos-mcp`, and the `options`
   parameter of `BridgeToolInvoker.invokeTool` with it. No caller passed a step:
   a harness keeps its own loop, so a turn served over MCP declares none and is

@@ -6,18 +6,16 @@ import { HarnessRuntime } from "../runtime.js";
 import type { HarnessRequirements, HarnessTransport } from "../harness.js";
 import type { StandardRuntimeOptions } from "@aicoo/sharedos-runtime";
 import { DEEPSEEK_PROTOCOL_ID, deepseekProtocol } from "./protocol.js";
-import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
+import { PROTOCOL_VERSION, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
 
 export { DEEPSEEK_PROTOCOL_ID, deepseekProtocol } from "./protocol.js";
 
 /** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
 export const DEEPSEEK_HARNESS_ID = "deepseek" satisfies McpHarnessId;
 
-export const DEEPSEEK_ADAPTER_VERSION = "0.1.0-alpha.5";
-
 export const DEEPSEEK_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   id: "sharedos.deepseek",
-  version: DEEPSEEK_ADAPTER_VERSION,
+  version: SHAREDOS_VERSION,
   protocolVersion: PROTOCOL_VERSION,
   metadata: {
     package: "@aicoo/sharedos-adapters",

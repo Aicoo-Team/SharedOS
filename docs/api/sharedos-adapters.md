@@ -1543,7 +1543,7 @@ Defined in: [packages/adapters/src/model/transcript.ts:15](https://github.com/Ai
 
 > **ClaudeCodeDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [packages/adapters/src/claude-code/index.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L39)
+Defined in: [packages/adapters/src/claude-code/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L37)
 
 #### Type Declaration
 
@@ -1561,7 +1561,7 @@ Defined in: [packages/adapters/src/claude-code/index.ts:39](https://github.com/A
 
 > **CodexDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [packages/adapters/src/codex/index.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L39)
+Defined in: [packages/adapters/src/codex/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L37)
 
 #### Type Declaration
 
@@ -1579,7 +1579,7 @@ Defined in: [packages/adapters/src/codex/index.ts:39](https://github.com/Aicoo-T
 
 > **DeepseekDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [packages/adapters/src/deepseek/index.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L46)
+Defined in: [packages/adapters/src/deepseek/index.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L44)
 
 #### Type Declaration
 
@@ -1673,7 +1673,7 @@ The refusal the model is shown for a call made with unreadable arguments.
 
 > **PiDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [packages/adapters/src/pi/index.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L50)
+Defined in: [packages/adapters/src/pi/index.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L48)
 
 #### Type Declaration
 
@@ -1686,14 +1686,6 @@ Defined in: [packages/adapters/src/pi/index.ts:50](https://github.com/Aicoo-Team
 > `readonly` **transport**: [`HarnessTransport`](#harnesstransport)
 
 ## Variables
-
-### CLAUDE\_CODE\_ADAPTER\_VERSION
-
-> `const` **CLAUDE\_CODE\_ADAPTER\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
-
-Defined in: [packages/adapters/src/claude-code/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L16)
-
----
 
 ### CLAUDE\_CODE\_HARNESS\_ID
 
@@ -1724,7 +1716,7 @@ part and are what this module translates. The `{type:"assistant"|"user"|
 
 > `const` **CLAUDE\_CODE\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: [packages/adapters/src/claude-code/index.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L31)
+Defined in: [packages/adapters/src/claude-code/index.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L29)
 
 What a live Claude Code session needs before it can run.
 
@@ -1734,7 +1726,7 @@ What a live Claude Code session needs before it can run.
 
 > `const` **CLAUDE\_CODE\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/adapters/src/claude-code/index.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L18)
+Defined in: [packages/adapters/src/claude-code/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L16)
 
 ---
 
@@ -1753,14 +1745,6 @@ Frames in the Anthropic content-block shape Claude Code speaks.
 > `const` **claudeCodeProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
 Defined in: [packages/adapters/src/claude-code/protocol.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L48)
-
----
-
-### CODEX\_ADAPTER\_VERSION
-
-> `const` **CODEX\_ADAPTER\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
-
-Defined in: [packages/adapters/src/codex/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L16)
 
 ---
 
@@ -1794,7 +1778,7 @@ Responses call -- is the transport's problem, not the protocol's.
 
 > `const` **CODEX\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: [packages/adapters/src/codex/index.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L31)
+Defined in: [packages/adapters/src/codex/index.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L29)
 
 What a live Codex session needs before it can run.
 
@@ -1804,7 +1788,7 @@ What a live Codex session needs before it can run.
 
 > `const` **CODEX\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/adapters/src/codex/index.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L18)
+Defined in: [packages/adapters/src/codex/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L16)
 
 ---
 
@@ -1823,14 +1807,6 @@ Frames in the OpenAI Responses function-calling shape Codex speaks.
 > `const` **codexProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
 Defined in: [packages/adapters/src/codex/protocol.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L66)
-
----
-
-### DEEPSEEK\_ADAPTER\_VERSION
-
-> `const` **DEEPSEEK\_ADAPTER\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
-
-Defined in: [packages/adapters/src/deepseek/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L16)
 
 ---
 
@@ -1874,7 +1850,7 @@ that out-of-band channel carries, and no frame is emitted for it.
 
 > `const` **DEEPSEEK\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: [packages/adapters/src/deepseek/index.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L38)
+Defined in: [packages/adapters/src/deepseek/index.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L36)
 
 What a live DeepSeek Harness session needs before it can run.
 
@@ -1884,7 +1860,7 @@ What a live DeepSeek Harness session needs before it can run.
 
 > `const` **DEEPSEEK\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/adapters/src/deepseek/index.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L18)
+Defined in: [packages/adapters/src/deepseek/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L16)
 
 ---
 
@@ -1907,14 +1883,6 @@ envelope would exercise only half of what the parser has to accept.
 > `const` **deepseekProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
 Defined in: [packages/adapters/src/deepseek/protocol.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L107)
-
----
-
-### PI\_ADAPTER\_VERSION
-
-> `const` **PI\_ADAPTER\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
-
-Defined in: [packages/adapters/src/pi/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L16)
 
 ---
 
@@ -1962,7 +1930,7 @@ harness rather than of this adapter:
 
 > `const` **PI\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
 
-Defined in: [packages/adapters/src/pi/index.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L38)
+Defined in: [packages/adapters/src/pi/index.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L36)
 
 What a live Pi session needs before it can run.
 
@@ -1972,7 +1940,7 @@ What a live Pi session needs before it can run.
 
 > `const` **PI\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/adapters/src/pi/index.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L18)
+Defined in: [packages/adapters/src/pi/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L16)
 
 ---
 
@@ -1998,7 +1966,7 @@ Defined in: [packages/adapters/src/pi/protocol.ts:86](https://github.com/Aicoo-T
 
 > **createClaudeCodeDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [packages/adapters/src/claude-code/index.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L51)
+Defined in: [packages/adapters/src/claude-code/index.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L49)
 
 Claude Code as a SharedOS agent turn driver.
 
@@ -2022,7 +1990,7 @@ and adds no second permission path.
 
 > **createClaudeCodeRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: [packages/adapters/src/claude-code/index.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L66)
+Defined in: [packages/adapters/src/claude-code/index.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L64)
 
 Claude Code as an installable runtime, reporting its own manifest.
 
@@ -2047,7 +2015,7 @@ this form files a turn's evidence under the harness that produced it.
 
 > **createCodexDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [packages/adapters/src/codex/index.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L51)
+Defined in: [packages/adapters/src/codex/index.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L49)
 
 Codex as a SharedOS agent turn driver.
 
@@ -2071,7 +2039,7 @@ audit all come from the SharedOS execution envelope unchanged.
 
 > **createCodexRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: [packages/adapters/src/codex/index.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L66)
+Defined in: [packages/adapters/src/codex/index.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L64)
 
 Codex as an installable runtime, reporting its own manifest.
 
@@ -2096,7 +2064,7 @@ this form files a turn's evidence under the harness that produced it.
 
 > **createDeepseekDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [packages/adapters/src/deepseek/index.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L58)
+Defined in: [packages/adapters/src/deepseek/index.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L56)
 
 DeepSeek Harness as a SharedOS agent turn driver.
 
@@ -2120,7 +2088,7 @@ changes no kernel code and adds no second permission path.
 
 > **createDeepseekRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: [packages/adapters/src/deepseek/index.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L73)
+Defined in: [packages/adapters/src/deepseek/index.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L71)
 
 DeepSeek Harness as an installable runtime, reporting its own manifest.
 
@@ -2145,7 +2113,7 @@ this form files a turn's evidence under the harness that produced it.
 
 > **createPiDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [packages/adapters/src/pi/index.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L62)
+Defined in: [packages/adapters/src/pi/index.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L60)
 
 Pi as a SharedOS agent turn driver.
 
@@ -2169,7 +2137,7 @@ changes no kernel code and adds no second permission path.
 
 > **createPiRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: [packages/adapters/src/pi/index.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L77)
+Defined in: [packages/adapters/src/pi/index.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L75)
 
 Pi as an installable runtime, reporting its own manifest.
 

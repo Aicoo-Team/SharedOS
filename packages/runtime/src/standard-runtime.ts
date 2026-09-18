@@ -2,6 +2,7 @@ import {
   JsonObjectSchema,
   JsonValueSchema,
   PROTOCOL_VERSION,
+  SHAREDOS_VERSION,
   ProtocolErrorSchema,
   ToolCallSchema,
   type ExecutionResult,
@@ -126,12 +127,9 @@ export interface StandardRuntimeOptions {
   onTurnError?: TurnErrorReporter;
 }
 
-/** Kept equal to the synchronized package version by the release gate. */
-export const STANDARD_RUNTIME_VERSION = "0.1.0-alpha.5";
-
 export const STANDARD_RUNTIME_MANIFEST: RuntimeManifest = deepFreeze({
   id: "sharedos.standard",
-  version: STANDARD_RUNTIME_VERSION,
+  version: SHAREDOS_VERSION,
   protocolVersion: PROTOCOL_VERSION,
   metadata: {
     package: "@aicoo/sharedos-runtime",

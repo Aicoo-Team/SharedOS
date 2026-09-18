@@ -46,7 +46,7 @@ import { deepseekProtocol } from "./deepseek/protocol.js";
 import { PI_HARNESS_ID } from "./pi/index.js";
 import { piProtocol } from "./pi/protocol.js";
 import { defaultPrompt, failed, handedPromptHash } from "./internal.js";
-import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
+import { PROTOCOL_VERSION, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
 
 /**
  * A vendor harness run natively, against the SharedOS catalogue over MCP.
@@ -638,8 +638,6 @@ async function runHarness(
 /** Two minutes of silence from a session harness is a stall, not a long step. */
 const DEFAULT_SESSION_IDLE_MS = 120_000;
 
-export const MCP_ADAPTER_VERSION = "0.1.0-alpha.5";
-
 /**
  * Claude Code, connected to the SharedOS bridge.
  *
@@ -660,7 +658,7 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
   id: CLAUDE_CODE_HARNESS_ID,
   manifest: Object.freeze({
     id: "sharedos.claude-code.mcp",
-    version: MCP_ADAPTER_VERSION,
+    version: SHAREDOS_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     metadata: {
       package: "@aicoo/sharedos-adapters",
@@ -707,7 +705,7 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: CODEX_HARNESS_ID,
   manifest: Object.freeze({
     id: "sharedos.codex.mcp",
-    version: MCP_ADAPTER_VERSION,
+    version: SHAREDOS_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     metadata: {
       package: "@aicoo/sharedos-adapters",
@@ -761,7 +759,7 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
   id: DEEPSEEK_HARNESS_ID,
   manifest: Object.freeze({
     id: "sharedos.deepseek.mcp",
-    version: MCP_ADAPTER_VERSION,
+    version: SHAREDOS_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     metadata: {
       package: "@aicoo/sharedos-adapters",
@@ -814,7 +812,7 @@ export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: PI_HARNESS_ID,
   manifest: Object.freeze({
     id: "sharedos.pi.mcp",
-    version: MCP_ADAPTER_VERSION,
+    version: SHAREDOS_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     metadata: {
       package: "@aicoo/sharedos-adapters",

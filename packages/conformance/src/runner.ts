@@ -33,16 +33,10 @@ import {
   type ConformanceCondition,
 } from "./suite.js";
 import { createConformanceWorld, type ConformanceWorld } from "./world.js";
-import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
+import { PROTOCOL_VERSION, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
 
-/**
- * The SharedOS build an execution record was produced by.
- *
- * Pinned to the synchronized workspace version by the release gate, because a
- * record that names the wrong build is evidence attributed to code that never
- * ran.
- */
-export const SHAREDOS_VERSION = "0.1.0-alpha.5";
+/** The SharedOS build an execution record was produced by: the one in contracts. */
+export { SHAREDOS_VERSION };
 
 /**
  * One cell of the manifest.

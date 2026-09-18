@@ -151,32 +151,16 @@ function verifyReleaseMetadata(packageEntries) {
 }
 
 /**
- * Pin every version constant that is compiled into a published artifact.
+ * Pin the version constant that is compiled into the published artifacts.
  *
- * Each of these ends up in a runtime manifest or an execution record, where it
- * identifies which build produced a piece of evidence. A stale one is worse
- * than a missing one, so they are checked here rather than trusted to be
- * updated by hand.
+ * It ends up in every runtime manifest, MCP server greeting and execution
+ * record, where it identifies which build produced a piece of evidence. A stale
+ * one is worse than a missing one, so it is checked here rather than trusted to
+ * be updated by hand.
  */
 function verifyEmbeddedVersions(version_) {
   const embedded = [
-    {
-      path: ["packages", "runtime", "src", "standard-runtime.ts"],
-      name: "STANDARD_RUNTIME_VERSION",
-    },
-    { path: ["packages", "adapters", "src", "codex", "index.ts"], name: "CODEX_ADAPTER_VERSION" },
-    {
-      path: ["packages", "adapters", "src", "claude-code", "index.ts"],
-      name: "CLAUDE_CODE_ADAPTER_VERSION",
-    },
-    {
-      path: ["packages", "adapters", "src", "deepseek", "index.ts"],
-      name: "DEEPSEEK_ADAPTER_VERSION",
-    },
-    { path: ["packages", "adapters", "src", "pi", "index.ts"], name: "PI_ADAPTER_VERSION" },
-    { path: ["packages", "adapters", "src", "mcp-runtime.ts"], name: "MCP_ADAPTER_VERSION" },
-    { path: ["packages", "mcp", "src", "server.ts"], name: "MCP_SERVER_VERSION" },
-    { path: ["packages", "conformance", "src", "runner.ts"], name: "SHAREDOS_VERSION" },
+    { path: ["packages", "contracts", "src", "common.ts"], name: "SHAREDOS_VERSION" },
   ];
 
   for (const { path, name } of embedded) {
