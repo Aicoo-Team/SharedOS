@@ -35,8 +35,22 @@ export type AuditEventType = z.infer<typeof AuditEventTypeSchema>;
  * A denial is a decision SharedOS made. An escalation is a decision it declined
  * to make and handed to a human, and counting the two together would inflate
  * every denial rate by the cases where the system correctly asked for help.
+ *
+ * `interrupted` is its own outcome, not a failure. It is written for an
+ * operation whose port was entered and stopped before it answered -- a turn that
+ * timed out or was cancelled mid-call, or an audit outage under a decision the
+ * port itself asked for -- so any part of its effect may have committed.
+ * `failed` also covers refusals where nothing ran, and a reader that took an
+ * interrupted call for one of those would retry something already done.
  */
-export const AuditOutcomeSchema = z.enum(["allowed", "denied", "succeeded", "failed", "escalated"]);
+export const AuditOutcomeSchema = z.enum([
+  "allowed",
+  "denied",
+  "succeeded",
+  "failed",
+  "escalated",
+  "interrupted",
+]);
 export type AuditOutcome = z.infer<typeof AuditOutcomeSchema>;
 
 /**

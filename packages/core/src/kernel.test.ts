@@ -21,6 +21,7 @@ import {
   InMemoryGrantUsageStore,
 } from "./authorization.js";
 import type { ProviderErrorContext, ProviderErrorReporter } from "./diagnostics.js";
+import { AuditUnavailableError } from "./errors.js";
 import { SharedOSKernel, type SharedOSKernelOptions } from "./kernel.js";
 import {
   addressPath,
@@ -2302,10 +2303,71 @@ describe("what a failing audit sink does, by when the record is written", () => 
     });
     kernel.registerTool({ ...successfulTool(), invoke });
 
-    await expect(operate(kernel)).rejects.toThrow(`audit store unavailable for ${type}`);
+    // Typed, so a caller can tell an audit outage from a fault of its own, with
+    // what the sink threw inside it. `effect: "none"`: no port was entered.
+    const refusal = await operate(kernel).then(
+      () => undefined,
+      (error: unknown) => error,
+    );
+    expect(refusal).toBeInstanceOf(AuditUnavailableError);
+    expect(refusal).toMatchObject({
+      code: "audit_unavailable",
+      effect: "none",
+      cause: { message: `audit store unavailable for ${type}` },
+    });
 
     expect(invoke).not.toHaveBeenCalled();
     expect(onAuditError).not.toHaveBeenCalled();
+  });
+
+  it("says the effect is unknown when the outage is met inside a port already entered", async () => {
+    const kept: AuditEvent[] = [];
+    let written = 0;
+    let decisions = 0;
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+      // Down for the second decision, the one the handler asks for. The tool's
+      // own decision is recorded, so its handler is entered.
+      audit: {
+        async record(event) {
+          if (event.type === "authorization.checked" && (decisions += 1) === 2) {
+            throw new Error("audit store unavailable for the inner decision");
+          }
+          kept.push(event);
+        },
+      },
+    });
+    kernel.registerTool({
+      ...successfulTool(),
+      // A host tool that does some of its work and then calls back into the
+      // kernel for a governed read.
+      invoke: async (access, call, signal) => {
+        written += 1;
+        await kernel.invokeResource(access, RESOURCE_REQUEST, { signal });
+        return successfulTool().invoke(access, call, signal);
+      },
+    });
+
+    const refusal = await kernel.invokeTool(context(), toolCall()).then(
+      () => undefined,
+      (error: unknown) => error,
+    );
+
+    expect(refusal).toBeInstanceOf(AuditUnavailableError);
+    expect(refusal).toMatchObject({
+      effect: "unknown",
+      cause: { message: "audit store unavailable for the inner decision" },
+    });
+    expect(written).toBe(1);
+    // The tool call was entered and stopped, so it is recorded as that rather
+    // than left as an allowed decision with nothing after it, and the outage is
+    // not reported as the handler's failure.
+    expect(kept.at(-1)).toMatchObject({
+      type: "tool.invoked",
+      operationId: toolCall().id,
+      outcome: "interrupted",
+      reason: "audit_unavailable",
+      failClosed: true,
+    });
   });
 
   // Written after the effect, or after an answer that is already final.
@@ -2388,6 +2450,143 @@ describe("what a failing audit sink does, by when the record is written", () => 
       expect(onAuditError.mock.calls[0]?.[1]).toMatchObject({ type });
     },
   );
+
+  describe("a port stopped after it was entered", () => {
+    function recording() {
+      const events: AuditEvent[] = [];
+      const seen: ProviderErrorContext[] = [];
+      const audit: AuditSink = { record: async (event) => void events.push(event) };
+      const onProviderError: ProviderErrorReporter = (_error, operation) =>
+        void seen.push(operation);
+      return { events, seen, audit, onProviderError };
+    }
+
+    it("records a tool call interrupted, and still re-throws the abort unreported", async () => {
+      const { events, seen, audit, onProviderError } = recording();
+      const controller = new AbortController();
+      let debited = 0;
+      const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+        audit,
+        onProviderError,
+      });
+      kernel.registerTool({
+        ...successfulTool(),
+        invoke: async () => {
+          debited += 1; // the first half of the effect commits
+          controller.abort(new Error("turn timed out"));
+          throw new Error("stopped before the second half");
+        },
+      });
+
+      await expect(
+        kernel.invokeTool(context(), toolCall(), { signal: controller.signal }),
+      ).rejects.toThrow(/turn timed out/u);
+
+      expect(debited).toBe(1);
+      // Before this the trail ended at `authorization.checked: allowed`, which
+      // reads as a call that never started.
+      expect(events.at(-1)).toMatchObject({
+        type: "tool.invoked",
+        operationId: toolCall().id,
+        outcome: "interrupted",
+        reason: "operation_aborted",
+        source: "kernel",
+        grantId: "grant-search",
+      });
+      expect(events.at(-1)).not.toHaveProperty("failClosed");
+      expect(seen).toEqual([]);
+    });
+
+    it("records a resource operation and a message delivery the same way", async () => {
+      const { events, audit } = recording();
+      const controller = new AbortController();
+      const stop = async (): Promise<never> => {
+        controller.abort(new Error("caller went away"));
+        throw new Error("stopped part-way");
+      };
+      const kernel = kernelWith(
+        [
+          grant("grant-search", FILE_RESOURCE, ["search"]),
+          grant("grant-message", MESSAGE_RESOURCE, ["send"]),
+        ],
+        { audit, messageTransport: { deliver: stop } },
+      );
+      kernel.registerResourceProvider({ namespace: "files", invoke: stop });
+
+      await expect(
+        kernel.invokeResource(context(), RESOURCE_REQUEST, { signal: controller.signal }),
+      ).rejects.toThrow(/caller went away/u);
+      expect(events.at(-1)).toMatchObject({
+        type: "resource.invoked",
+        operationId: "operation-1",
+        outcome: "interrupted",
+        reason: "operation_aborted",
+        grantId: "grant-search",
+      });
+
+      const second = new AbortController();
+      const sending = kernelWith([grant("grant-message", MESSAGE_RESOURCE, ["send"])], {
+        audit,
+        messageTransport: {
+          deliver: async () => {
+            second.abort(new Error("caller went away"));
+            throw new Error("stopped part-way");
+          },
+        },
+      });
+      await expect(
+        sending.sendMessage(context(), MESSAGE, { signal: second.signal }),
+      ).rejects.toThrow(/caller went away/u);
+      expect(events.at(-1)).toMatchObject({
+        type: "message.sent",
+        messageId: "message-1",
+        outcome: "interrupted",
+        reason: "operation_aborted",
+        grantId: "grant-message",
+      });
+    });
+
+    it("records the real outcome when the port answers despite the abort", async () => {
+      const { events, audit } = recording();
+      const controller = new AbortController();
+      const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], { audit });
+      kernel.registerTool({
+        ...successfulTool(),
+        invoke: async (access, call, signal) => {
+          controller.abort(new Error("turn timed out"));
+          return successfulTool().invoke(access, call, signal);
+        },
+      });
+
+      await expect(
+        kernel.invokeTool(context(), toolCall(), { signal: controller.signal }),
+      ).resolves.toMatchObject({ status: "succeeded" });
+      expect(events.at(-1)).toMatchObject({ type: "tool.invoked", outcome: "succeeded" });
+    });
+
+    it("records nothing for a call stopped before its port was entered", async () => {
+      const { events, audit } = recording();
+      const controller = new AbortController();
+      const invoke = vi.fn(successfulTool().invoke);
+      const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], { audit });
+      kernel.registerTool({
+        ...successfulTool(),
+        // The requirement is resolved after the decision to look and before the
+        // handler, so an abort here is one the handler never sees.
+        resolveRequirement: () => {
+          controller.abort(new Error("caller went away"));
+          return { resource: FILE_RESOURCE, action: "search" };
+        },
+        invoke,
+      });
+
+      await expect(
+        kernel.invokeTool(context(), toolCall(), { signal: controller.signal }),
+      ).rejects.toThrow(/caller went away/u);
+      expect(invoke).not.toHaveBeenCalled();
+      expect(events.filter((event) => event.type === "tool.invoked")).toEqual([]);
+    });
+  });
 
   it("joins an escalation to the turn it ended, when it is told which", async () => {
     const events: AuditEvent[] = [];
