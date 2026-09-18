@@ -935,3 +935,264 @@ describe("what the harness is told at initialize", () => {
     expect(none.output["instructions"]).toBeNull();
   }, 60_000);
 });
+
+/**
+ * The same drain, reached over MCP.
+ *
+ * `StandardRuntime` and this runtime hand their calls to the same
+ * `RuntimeHost.invokeTool`, so the envelope's grace is not something either of
+ * them implements. What differs is who owns the loop: here it is the harness,
+ * which is never asked for a decision and so cannot be told to stop asking. It
+ * reads `turn_draining` as the result of a call and decides for itself.
+ *
+ * Real subprocess, real HTTP, real clocks, so the margins are wide: the soft
+ * deadline sits seconds after any plausible start-up, and the handler's work
+ * carries it well past that and well short of the hard one.
+ */
+describe("a harness connected over MCP toolshare, on a turn that drains", () => {
+  const TRANSFER_TOOL: ToolDefinition = {
+    name: "payments.transfer_funds",
+    description: "Debit one account and credit another.",
+    namespace: "payments",
+    source: "sharedos",
+    readWrite: "write",
+    inputSchema: { type: "object" },
+    requiredCapability: {
+      resource: { namespace: "payments", path: [], owner: OWNER },
+      action: "transfer",
+    },
+  };
+  const TRANSFER = { name: TRANSFER_TOOL.name, arguments: {} };
+  const READ = { name: "files.read", arguments: { path: GRANTED } };
+
+  /** A real kernel and a ledger; the handler stops between its halves if aborted. */
+  function world(workMs: number, down: (event: AuditEvent) => boolean = () => false) {
+    const trail: AuditEvent[] = [];
+    const ledger: string[] = [];
+    const startedAt = Date.now();
+    const abortSeenAfterMs: number[] = [];
+    const tools = new ToolRegistry();
+    tools.register({
+      definition: TRANSFER_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      invoke: async (_context, call, signal) => {
+        ledger.push("debit A");
+        signal.addEventListener("abort", () => abortSeenAfterMs.push(Date.now() - startedAt), {
+          once: true,
+        });
+        // The work between the halves is I/O given the signal, so an abort ends
+        // it there and then rather than after it would have finished.
+        await new Promise<void>((resolve, reject) => {
+          const work = setTimeout(resolve, workMs);
+          signal.addEventListener(
+            "abort",
+            () => {
+              clearTimeout(work);
+              reject(signal.reason as Error);
+            },
+            { once: true },
+          );
+        });
+        ledger.push("credit B");
+        return {
+          callId: call.id,
+          tool: call.tool,
+          status: "succeeded",
+          output: { moved: true },
+          completedAt: NOW,
+        };
+      },
+    });
+    tools.register({
+      definition: READ_TOOL,
+      parseArguments: (arguments_) => arguments_,
+      invoke: async (_context, call) => ({
+        callId: call.id,
+        tool: call.tool,
+        status: "succeeded",
+        output: { content: "contents" },
+        completedAt: NOW,
+      }),
+    });
+    const drainKernel = new SharedOSKernel({
+      grantSource: {
+        load: async () => [
+          {
+            id: "grant-payments",
+            namespaceId: "world-1",
+            subject: DELEGATE,
+            issuer: OWNER,
+            capabilities: [
+              {
+                resource: { namespace: "payments", path: [], owner: OWNER },
+                actions: ["transfer"],
+                scope: "exact",
+              },
+              {
+                resource: { namespace: "files", path: [], owner: OWNER },
+                actions: ["read"],
+                scope: "descendants",
+              },
+              agentExecutionCapability(DELEGATE, OWNER),
+            ],
+            constraints: { purposes: ["mcp-toolshare"] },
+            issuedAt: "2020-01-01T00:00:00.000Z",
+          },
+        ],
+      },
+      tools,
+      audit: {
+        record: async (event) => {
+          if (down(event)) {
+            throw new Error(`audit store unavailable for ${event.type}`);
+          }
+          trail.push(event);
+        },
+      },
+    });
+    return { kernel: drainKernel, trail, ledger, startedAt, abortSeenAfterMs };
+  }
+
+  async function drainTurn(
+    drainKernel: SharedOSKernel,
+    calls: readonly unknown[],
+    limits: { readonly timeoutMs: number; readonly drainGraceMs?: number },
+  ): Promise<{ result: ExecutionResult; harnessSaw: Record<string, unknown>[] }> {
+    const executor = new SharedOSExecutor(
+      drainKernel,
+      createMcpHarnessRuntime(fakeHarness(calls)),
+      limits.drainGraceMs === undefined ? {} : { drainGraceMs: limits.drainGraceMs },
+    );
+    const base = executionRequest();
+    const result = await executor.execute({
+      ...base,
+      context: { ...base.context, enabledToolNamespaces: ["files", "payments"] },
+      tools: [READ_TOOL, TRANSFER_TOOL],
+      options: { timeoutMs: limits.timeoutMs },
+    });
+    const text =
+      result.status === "succeeded" && typeof result.output === "object" && result.output !== null
+        ? ((result.output as { text?: string }).text ?? "{}")
+        : "{}";
+    const parsed = JSON.parse(text) as { calls?: Record<string, unknown>[] };
+    return { result, harnessSaw: parsed.calls ?? [] };
+  }
+
+  const transfers = (trail: readonly AuditEvent[]) =>
+    trail.filter((event) => event.type === "tool.invoked" && event.tool === TRANSFER_TOOL.name);
+
+  it("lets a transfer that straddles the soft deadline finish, and refuses the call made after it", async () => {
+    // Soft deadline at 3 s, hard at 10 s. The transfer takes 4 s, so it is
+    // inside its handler at 3 s however the subprocess took to start, and the
+    // harness makes its second call once the first has answered.
+    const { kernel: drainKernel, trail, ledger, abortSeenAfterMs } = world(4_000);
+
+    const { result, harnessSaw } = await drainTurn(drainKernel, [TRANSFER, TRANSFER], {
+      timeoutMs: 10_000,
+      drainGraceMs: 7_000,
+    });
+
+    // The handler was never signalled while it worked, and B was credited once.
+    expect(ledger).toEqual(["debit A", "credit B"]);
+    const [moved, late] = harnessSaw;
+    expect(moved?.["isError"]).toBe(false);
+    // The refusal reaches the harness as a result it can read, like any other.
+    expect(late?.["isError"]).toBe(true);
+    expect((late?.["_meta"] as Record<string, unknown>)["sharedos/status"]).toBe("denied");
+    expect(JSON.stringify(late)).toContain("turn_draining");
+    expect(transfers(trail)).toMatchObject([
+      { outcome: "succeeded" },
+      { outcome: "denied", reason: "turn_draining", source: "envelope" },
+    ]);
+    // The harness owns its loop. It read the refusal, finished on its own, and
+    // an ending that arrives inside the grace is honoured as it is for a driver.
+    expect(result.status).toBe("succeeded");
+    // The only abort the handler ever saw is the turn closing behind it.
+    expect(abortSeenAfterMs.every((afterMs) => afterMs >= 3_900)).toBe(true);
+  }, 30_000);
+
+  it("stops the same transfer half-way when no grace is set", async () => {
+    const { kernel: drainKernel, trail, ledger } = world(8_000);
+
+    const { result } = await drainTurn(drainKernel, [TRANSFER], { timeoutMs: 3_000 });
+
+    expect(result).toMatchObject({
+      status: "cancelled",
+      error: { code: "turn_cancelled", retryable: false },
+    });
+    expect(ledger).toEqual(["debit A"]);
+    await expect
+      .poll(() => transfers(trail))
+      .toMatchObject([{ outcome: "interrupted", reason: "operation_aborted" }]);
+  }, 30_000);
+
+  it("signals a handler only at the limit, and ends the turn there and not after it", async () => {
+    // Soft at 2 s, hard at 5 s, and a transfer that cannot finish in either.
+    const { kernel: drainKernel, trail, ledger, startedAt, abortSeenAfterMs } = world(60_000);
+
+    const { result } = await drainTurn(drainKernel, [TRANSFER], {
+      timeoutMs: 5_000,
+      drainGraceMs: 3_000,
+    });
+    const endedAfterMs = Date.now() - startedAt;
+
+    expect(result).toMatchObject({
+      status: "cancelled",
+      error: { code: "turn_cancelled", retryable: false },
+    });
+    // Not at the soft deadline: the grace is the handler's, undisturbed.
+    expect(abortSeenAfterMs).toHaveLength(1);
+    expect(abortSeenAfterMs[0]).toBeGreaterThanOrEqual(4_900);
+    // And the grace is inside the limit, so the turn is not held past it.
+    expect(endedAfterMs).toBeLessThan(7_000);
+    expect(ledger).toEqual(["debit A"]);
+    await expect.poll(() => transfers(trail)).toMatchObject([{ outcome: "interrupted" }]);
+  }, 30_000);
+
+  it("keeps a turn that only read retryable when the harness stalls past the deadline", async () => {
+    const { kernel: drainKernel } = world(0);
+
+    const { result } = await drainTurn(drainKernel, [READ, { ...READ, afterMs: 60_000 }], {
+      timeoutMs: 3_000,
+      drainGraceMs: 1_000,
+    });
+
+    expect(result).toMatchObject({
+      status: "cancelled",
+      error: { code: "turn_cancelled", retryable: true },
+    });
+  }, 30_000);
+
+  it("drains an audit outage: the transfer in flight finishes, and the turn still ends on the outage", async () => {
+    // Two transfers at once, the second held back half a second. The sink is
+    // down for the second one's decision, which is met while the first is
+    // inside its handler.
+    let decisions = 0;
+    const {
+      kernel: drainKernel,
+      trail,
+      ledger,
+    } = world(
+      2_500,
+      (event) =>
+        event.type === "authorization.checked" &&
+        event.action === "transfer" &&
+        (decisions += 1) === 2,
+    );
+
+    const { result } = await drainTurn(drainKernel, [[TRANSFER, { ...TRANSFER, afterMs: 500 }]], {
+      timeoutMs: 20_000,
+      drainGraceMs: 10_000,
+    });
+
+    expect(result).toMatchObject({
+      status: "failed",
+      // The harness reported success. The ending is the envelope's all the same.
+      error: { code: "audit_unavailable", retryable: false },
+    });
+    // The first transfer is whole; the second never ran.
+    expect(ledger).toEqual(["debit A", "credit B"]);
+    expect(transfers(trail)).toMatchObject([{ outcome: "succeeded" }]);
+    expect(result.events.filter(({ type }) => type === "tool.completed")).toHaveLength(1);
+  }, 30_000);
+});
