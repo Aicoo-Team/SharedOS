@@ -1,9 +1,9 @@
 import type { JsonObject, JsonValue, ToolDefinition, ToolResult } from "@aicoo/sharedos-contracts";
-import { parseToolArguments } from "../internal.js";
 import { z } from "zod";
 
-import { toolResultBody } from "../codex/protocol.js";
 import type { HarnessFrame, HarnessProtocol, HarnessStep } from "../harness.js";
+import { parseToolArguments, toolResultBody } from "../internal.js";
+import { TextBlockSchema, UnknownBlockSchema, contentBlockSteps } from "../protocol-base.js";
 
 /**
  * DeepSeek Harness speaks its own session-log vocabulary over a
@@ -26,9 +26,6 @@ import type { HarnessFrame, HarnessProtocol, HarnessStep } from "../harness.js";
  */
 export const DEEPSEEK_PROTOCOL_ID = "deepseek.harness.session-events";
 
-/** Content blocks a DeepSeek Harness assistant message can carry. */
-const TextBlockSchema = z.object({ type: z.literal("text"), text: z.string() });
-
 const ToolCallBlockSchema = z.object({
   type: z.literal("tool-call"),
   id: z.string().min(1),
@@ -36,8 +33,6 @@ const ToolCallBlockSchema = z.object({
   /** The harness carries model arguments as a raw JSON string, unparsed. */
   arguments: z.string(),
 });
-
-const UnknownBlockSchema = z.object({ type: z.string() }).passthrough();
 
 /**
  * A session-log event, either bare or inside its `session.event` notification.
@@ -152,17 +147,10 @@ export const deepseekProtocol: HarnessProtocol = {
       if (!assistant.success) {
         return [];
       }
-      const steps: HarnessStep[] = [];
-      for (const block of assistant.data.message.content) {
-        if (block.type === "text" && typeof (block as { text?: unknown }).text === "string") {
-          steps.push({ type: "message", text: (block as { text: string }).text });
-          continue;
-        }
-        // A tool call reaches the turn through `tool/call`, which is the event
-        // the harness pairs with its result. Reading it here as well would
-        // issue every call twice.
-      }
-      return steps;
+      // Prose only. A tool call reaches the turn through `tool/call`, which is
+      // the event the harness pairs with its result; reading the block here as
+      // well would issue every call twice.
+      return contentBlockSteps(assistant.data.message.content);
     }
 
     if (event.type === "turn/end") {

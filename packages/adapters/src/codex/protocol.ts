@@ -1,7 +1,6 @@
 import type { JsonValue, ToolDefinition, ToolResult } from "@aicoo/sharedos-contracts";
 import { parseToolArguments, toolResultBody } from "../internal.js";
 
-export { toolResultBody } from "../internal.js";
 import { z } from "zod";
 
 import type { HarnessFrame, HarnessProtocol, HarnessStep } from "../harness.js";

@@ -1,8 +1,9 @@
 import type { JsonObject, JsonValue, ToolDefinition, ToolResult } from "@aicoo/sharedos-contracts";
 import { z } from "zod";
 
-import { toolResultBody } from "../codex/protocol.js";
 import type { HarnessFrame, HarnessProtocol, HarnessStep } from "../harness.js";
+import { toolResultBody } from "../internal.js";
+import { TextBlockSchema, UnknownBlockSchema, contentBlockSteps } from "../protocol-base.js";
 
 /**
  * Pi speaks newline-delimited JSON events in its RPC mode (`pi --mode rpc`).
@@ -29,8 +30,6 @@ import type { HarnessFrame, HarnessProtocol, HarnessStep } from "../harness.js";
  */
 export const PI_PROTOCOL_ID = "pi.rpc.jsonl";
 
-const TextBlockSchema = z.object({ type: z.literal("text"), text: z.string() });
-
 const ToolCallBlockSchema = z.object({
   type: z.literal("toolCall"),
   id: z.string().min(1),
@@ -38,8 +37,6 @@ const ToolCallBlockSchema = z.object({
   /** Pi carries assembled arguments as an object, not as a JSON string. */
   arguments: z.record(z.unknown()).optional(),
 });
-
-const UnknownBlockSchema = z.object({ type: z.string() }).passthrough();
 
 const AssistantMessageSchema = z
   .object({
@@ -83,6 +80,18 @@ const ErrorSchema = z
   })
   .passthrough();
 
+function toolCallStep(block: unknown): HarnessStep | undefined {
+  const toolCall = ToolCallBlockSchema.safeParse(block);
+  return toolCall.success
+    ? {
+        type: "tool_call",
+        callId: toolCall.data.id,
+        tool: toolCall.data.name,
+        arguments: (toolCall.data.arguments ?? {}) as JsonObject,
+      }
+    : undefined;
+}
+
 export const piProtocol: HarnessProtocol = {
   id: PI_PROTOCOL_ID,
 
@@ -101,23 +110,7 @@ export const piProtocol: HarnessProtocol = {
   interpret(frame: HarnessFrame): readonly HarnessStep[] {
     const end = MessageEndSchema.safeParse(frame);
     if (end.success) {
-      const steps: HarnessStep[] = [];
-      for (const block of end.data.message.content) {
-        if (block.type === "text" && typeof (block as { text?: unknown }).text === "string") {
-          steps.push({ type: "message", text: (block as { text: string }).text });
-          continue;
-        }
-        const toolCall = ToolCallBlockSchema.safeParse(block);
-        if (toolCall.success) {
-          steps.push({
-            type: "tool_call",
-            callId: toolCall.data.id,
-            tool: toolCall.data.name,
-            arguments: (toolCall.data.arguments ?? {}) as JsonObject,
-          });
-        }
-      }
-      return steps;
+      return contentBlockSteps(end.data.message.content, toolCallStep);
     }
 
     const response = ResponseSchema.safeParse(frame);

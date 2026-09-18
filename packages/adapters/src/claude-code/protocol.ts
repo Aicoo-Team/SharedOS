@@ -1,8 +1,9 @@
 import type { JsonObject, JsonValue, ToolDefinition, ToolResult } from "@aicoo/sharedos-contracts";
 import { z } from "zod";
 
-import { toolResultBody } from "../codex/protocol.js";
 import type { HarnessFrame, HarnessProtocol, HarnessStep } from "../harness.js";
+import { toolResultBody } from "../internal.js";
+import { TextBlockSchema, UnknownBlockSchema, contentBlockSteps } from "../protocol-base.js";
 
 /**
  * Claude Code speaks Anthropic message content blocks inside a stream-json
@@ -14,16 +15,12 @@ import type { HarnessFrame, HarnessProtocol, HarnessStep } from "../harness.js";
  */
 export const CLAUDE_CODE_PROTOCOL_ID = "anthropic.messages.stream-json";
 
-const TextBlockSchema = z.object({ type: z.literal("text"), text: z.string() });
-
 const ToolUseBlockSchema = z.object({
   type: z.literal("tool_use"),
   id: z.string().min(1),
   name: z.string().min(1),
   input: z.record(z.unknown()).optional(),
 });
-
-const UnknownBlockSchema = z.object({ type: z.string() }).passthrough();
 
 const AssistantSchema = z
   .object({
@@ -45,6 +42,18 @@ const ResultSchema = z
   })
   .passthrough();
 
+function toolUseStep(block: unknown): HarnessStep | undefined {
+  const toolUse = ToolUseBlockSchema.safeParse(block);
+  return toolUse.success
+    ? {
+        type: "tool_call",
+        callId: toolUse.data.id,
+        tool: toolUse.data.name,
+        arguments: (toolUse.data.input ?? {}) as JsonObject,
+      }
+    : undefined;
+}
+
 export const claudeCodeProtocol: HarnessProtocol = {
   id: CLAUDE_CODE_PROTOCOL_ID,
 
@@ -59,23 +68,7 @@ export const claudeCodeProtocol: HarnessProtocol = {
   interpret(frame: HarnessFrame): readonly HarnessStep[] {
     const assistant = AssistantSchema.safeParse(frame);
     if (assistant.success) {
-      const steps: HarnessStep[] = [];
-      for (const block of assistant.data.message.content) {
-        if (block.type === "text" && typeof (block as { text?: unknown }).text === "string") {
-          steps.push({ type: "message", text: (block as { text: string }).text });
-          continue;
-        }
-        const toolUse = ToolUseBlockSchema.safeParse(block);
-        if (toolUse.success) {
-          steps.push({
-            type: "tool_call",
-            callId: toolUse.data.id,
-            tool: toolUse.data.name,
-            arguments: (toolUse.data.input ?? {}) as JsonObject,
-          });
-        }
-      }
-      return steps;
+      return contentBlockSteps(assistant.data.message.content, toolUseStep);
     }
 
     const result = ResultSchema.safeParse(frame);

@@ -1768,7 +1768,7 @@ The id this harness goes by everywhere: manifests, requirements, MCP specs, scri
 
 > `const` **CLAUDE\_CODE\_PROTOCOL\_ID**: `"anthropic.messages.stream-json"` = `"anthropic.messages.stream-json"`
 
-Defined in: [packages/adapters/src/claude-code/protocol.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L15)
+Defined in: [packages/adapters/src/claude-code/protocol.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L16)
 
 Claude Code speaks Anthropic message content blocks inside a stream-json
 envelope.
@@ -1811,7 +1811,7 @@ Frames in the Anthropic content-block shape Claude Code speaks.
 
 > `const` **claudeCodeProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/claude-code/protocol.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L48)
+Defined in: [packages/adapters/src/claude-code/protocol.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L57)
 
 ---
 
@@ -1829,7 +1829,7 @@ The id this harness goes by everywhere: manifests, requirements, MCP specs, scri
 
 > `const` **CODEX\_PROTOCOL\_ID**: `"openai.responses.function-calling"` = `"openai.responses.function-calling"`
 
-Defined in: [packages/adapters/src/codex/protocol.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L18)
+Defined in: [packages/adapters/src/codex/protocol.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L17)
 
 Codex speaks the OpenAI Responses function-calling shape.
 
@@ -1873,7 +1873,7 @@ Frames in the OpenAI Responses function-calling shape Codex speaks.
 
 > `const` **codexProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/codex/protocol.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L66)
+Defined in: [packages/adapters/src/codex/protocol.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L65)
 
 ---
 
@@ -1949,7 +1949,7 @@ envelope would exercise only half of what the parser has to accept.
 
 > `const` **deepseekProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/deepseek/protocol.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L107)
+Defined in: [packages/adapters/src/deepseek/protocol.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L102)
 
 ---
 
@@ -1967,7 +1967,7 @@ The id this harness goes by everywhere: manifests, requirements, MCP specs, scri
 
 > `const` **PI\_PROTOCOL\_ID**: `"pi.rpc.jsonl"` = `"pi.rpc.jsonl"`
 
-Defined in: [packages/adapters/src/pi/protocol.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L30)
+Defined in: [packages/adapters/src/pi/protocol.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L31)
 
 Pi speaks newline-delimited JSON events in its RPC mode (`pi --mode rpc`).
 
@@ -2025,7 +2025,7 @@ Frames in the RPC message shape Pi speaks.
 
 > `const` **piProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/pi/protocol.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L86)
+Defined in: [packages/adapters/src/pi/protocol.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L95)
 
 ## Functions
 
