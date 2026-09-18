@@ -145,6 +145,19 @@ export interface RuntimeToolInvocationOptions {
  */
 export interface RuntimeHost {
   readonly limits: RuntimeLimits;
+  /**
+   * Aborted once the turn takes nothing new: `drainGraceMs` ahead of its
+   * deadline, or when the envelope is ending it on an audit outage.
+   *
+   * From then a new `invokeTool` comes back `denied` with `turn_draining`, and
+   * a call already with the kernel still answers with its real result. A plugin
+   * that reads this stops asking its model for decisions, which is what the
+   * standard loop does. One that does not read it is refused the same calls
+   * and stopped at the deadline.
+   * It is also aborted whenever the turn's own signal is. Optional so a narrow
+   * host double stays viable; the envelope always supplies it.
+   */
+  readonly draining?: AbortSignal;
   invokeTool(call: ToolCall, options?: RuntimeToolInvocationOptions): Promise<ToolResult>;
   emit(event: RuntimeEvent): void;
   /**

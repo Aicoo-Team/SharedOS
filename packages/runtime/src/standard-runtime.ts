@@ -172,6 +172,10 @@ export class StandardRuntime implements RuntimePlugin {
       let nextInput: AgentTurnInput = { type: "start" };
 
       for (let step = 0; step < host.limits.maxSteps; step += 1) {
+        // Once the turn takes nothing new the seat is not asked again. A
+        // decision already being made is left to land: one that ends the turn
+        // is honoured below, and a tool call is refused by the envelope.
+        host.draining?.throwIfAborted();
         const decisionCandidate: unknown = await raceAbort(session.next(nextInput, signal), signal);
         const decision = parseAgentTurnDecision(decisionCandidate);
         if (decision === undefined) {
@@ -221,6 +225,10 @@ export class StandardRuntime implements RuntimePlugin {
           };
         }
         const result = await host.invokeTool(decision.call, { step: decision.step ?? step });
+        // A result that arrives once the turn is draining ends the loop here.
+        // It is in the turn's events and the audit trail; the seat is not
+        // asked about it, on the last step included.
+        host.draining?.throwIfAborted();
         nextInput = { type: "tool_result", result };
       }
 
@@ -233,7 +241,9 @@ export class StandardRuntime implements RuntimePlugin {
         ),
       };
     } catch (error) {
-      if (signal.aborted) {
+      // A draining turn is ending on its deadline or on the envelope's own
+      // decision, and what stopped the loop is that, not a driver that failed.
+      if (signal.aborted || host.draining?.aborted === true) {
         closeOutcome = "cancelled";
         throw error;
       }

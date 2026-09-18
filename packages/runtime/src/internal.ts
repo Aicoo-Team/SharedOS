@@ -30,3 +30,69 @@ export function createAbortController(
     },
   };
 }
+
+/**
+ * The two signals of a turn that drains before it stops.
+ *
+ * `signal` is the one above: the host's cancellation and the turn's deadline,
+ * and the only one a tool handler is given. `draining` is aborted first, `graceMs`
+ * ahead of the deadline, and says only that the turn takes nothing new. What is
+ * already inside a handler is left alone until `signal`, so it answers with its
+ * real outcome rather than being stopped half-way through an effect. The grace
+ * is inside the limit: `timeoutMs` is still when the turn ends at the latest.
+ *
+ * `drain` starts the same thing early, for an ending the envelope makes itself,
+ * and the hard stop then follows after the grace or at the deadline, whichever
+ * comes first. With no grace the two signals are one and `drain` is `abort`.
+ * A host's own cancellation never drains: it asked for a stop, and gets it.
+ */
+export function createTurnDeadlines(
+  parent: AbortSignal | undefined,
+  timeoutMs: number,
+  graceMs: number,
+): {
+  signal: AbortSignal;
+  draining: AbortSignal;
+  drain: (reason?: unknown) => void;
+  abort: (reason?: unknown) => void;
+  dispose: () => void;
+} {
+  const hard = createAbortController(parent, timeoutMs);
+  const soft = new AbortController();
+  // Registered before anything else can listen, so nothing observes a turn that
+  // is stopped and not yet draining.
+  const drainFromHard = (): void => soft.abort(hard.signal.reason);
+  hard.signal.addEventListener("abort", drainFromHard, { once: true });
+  if (hard.signal.aborted) {
+    drainFromHard();
+  }
+
+  let softTimeout =
+    graceMs > 0 && !soft.signal.aborted
+      ? setTimeout(() => soft.abort(new Error("turn draining")), Math.max(0, timeoutMs - graceMs))
+      : undefined;
+  let stopAfterGrace: ReturnType<typeof setTimeout> | undefined;
+
+  return {
+    signal: hard.signal,
+    draining: soft.signal,
+    drain: (reason?: unknown): void => {
+      // The reason is for the hard stop, where it already went. The draining
+      // signal is handed to the plugin, and says only that the turn is ending.
+      soft.abort(new Error("turn draining"));
+      if (graceMs === 0) {
+        hard.abort(reason);
+      } else if (!hard.signal.aborted) {
+        stopAfterGrace ??= setTimeout(() => hard.abort(reason), graceMs);
+      }
+    },
+    abort: hard.abort,
+    dispose: (): void => {
+      clearTimeout(softTimeout);
+      clearTimeout(stopAfterGrace);
+      softTimeout = undefined;
+      hard.signal.removeEventListener("abort", drainFromHard);
+      hard.dispose();
+    },
+  };
+}

@@ -42,7 +42,7 @@ import {
 } from "@aicoo/sharedos-core/internal";
 
 import { escalationOffered } from "./escalation.js";
-import { createAbortController } from "./internal.js";
+import { createTurnDeadlines } from "./internal.js";
 import {
   reportTurnError,
   type RuntimeHost,
@@ -59,6 +59,22 @@ export interface SharedOSExecutorOptions {
   defaultMaxSteps?: number;
   defaultMaxToolCalls?: number;
   defaultTimeoutMs?: number;
+  /**
+   * How long before a turn's deadline it stops taking new tool calls, so the
+   * calls already inside a handler can answer before the deadline stops them.
+   *
+   * Inside the limit, never on top of it: with `timeoutMs` 120 000 and a grace
+   * of 5 000 a new call is refused from 115 s, a handler running then is left
+   * alone, and the abort reaches it at 120 s as it always did. A handler still
+   * running at the deadline is recorded `interrupted`. An audit outage drains
+   * the same way, for the grace or the time left, whichever is shorter. A
+   * host's own cancellation does not: it stops the turn at once, as before.
+   *
+   * Zero, the default, is the behaviour before this option. It is not capped
+   * against a request's `timeoutMs`; a grace no smaller than the limit leaves a
+   * turn no time in which a call is taken, and choosing it is the host's.
+   */
+  drainGraceMs?: number;
   /**
    * Where the envelope reports what it cost, when a host is measuring.
    *
@@ -128,6 +144,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
   readonly #defaultMaxSteps: number;
   readonly #defaultMaxToolCalls: number | undefined;
   readonly #defaultTimeoutMs: number;
+  readonly #drainGraceMs: number;
   readonly #spans: SpanSink | undefined;
   readonly #onTurnError: TurnErrorReporter | undefined;
 
@@ -151,6 +168,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
     this.#defaultMaxSteps = options.defaultMaxSteps ?? 16;
     this.#defaultMaxToolCalls = options.defaultMaxToolCalls;
     this.#defaultTimeoutMs = options.defaultTimeoutMs ?? 120_000;
+    this.#drainGraceMs = options.drainGraceMs ?? 0;
     this.#spans = options.spans;
     this.#onTurnError = options.onTurnError;
 
@@ -171,6 +189,13 @@ export class SharedOSExecutor implements TurnExecutionPort {
       this.#defaultTimeoutMs > MAX_EXECUTION_TIMEOUT_MS
     ) {
       throw new TypeError(`defaultTimeoutMs must be between 1 and ${MAX_EXECUTION_TIMEOUT_MS}`);
+    }
+    if (
+      !Number.isInteger(this.#drainGraceMs) ||
+      this.#drainGraceMs < 0 ||
+      this.#drainGraceMs > MAX_EXECUTION_TIMEOUT_MS
+    ) {
+      throw new TypeError(`drainGraceMs must be between 0 and ${MAX_EXECUTION_TIMEOUT_MS}`);
     }
   }
 
@@ -321,7 +346,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
       maxToolCalls: request.options?.maxToolCalls ?? this.#defaultMaxToolCalls ?? maxSteps,
       timeoutMs,
     });
-    const abort = createAbortController(options.signal, timeoutMs);
+    const abort = createTurnDeadlines(options.signal, timeoutMs, this.#drainGraceMs);
     let runtimeHostActive = true;
     let toolCallCount = 0;
     const steps = new Set<number>();
@@ -333,14 +358,22 @@ export class SharedOSExecutor implements TurnExecutionPort {
     // and a plugin can neither swallow the rejection and carry on nor throw the
     // error itself to be credited with a refusal the envelope did not make.
     let auditOutage: AuditUnavailableError | undefined;
-    // Whether anything this turn asked for may have taken effect. A call the
-    // kernel refused outright (`denied`) or whose decision could not be recorded
-    // did nothing. Every other call may have, and so may one still with the
-    // kernel when the turn ends. It decides `retryable` on the outage ending:
-    // refusing a retry costs a host one decision, and allowing one after a
-    // committed effect costs it a second payment.
+    // Whether running this turn again could repeat something it already did. A
+    // call the kernel refused outright (`denied`) or whose decision could not be
+    // recorded did nothing. Every other call may have taken effect, and so may
+    // one still with the kernel when the turn ends. Only a call that cannot be
+    // repeated safely counts: a `read` tool, and one its definition declares
+    // `idempotent`, are safe to run twice, and a search that outlived its
+    // deadline is the case a retry is for. The classification is the kernel's
+    // listed catalogue, never the plugin's word. It decides `retryable` on
+    // every ending that offers one: refusing a retry costs a host one decision,
+    // and allowing one after a committed effect costs it a second payment.
     let effectPossible = false;
-    let callsWithKernel = 0;
+    let writesWithKernel = 0;
+    const safeToRetry = (): boolean => !effectPossible && writesWithKernel === 0;
+    // Mediated calls the turn has not yet seen the end of, `tool.completed`
+    // included, so an ending that drains knows what it is waiting for.
+    const inFlight = new Set<Promise<unknown>>();
     const watchAudit = <T>(work: Promise<T>): Promise<T> =>
       work.catch((error: unknown) => {
         if (error instanceof AuditUnavailableError) {
@@ -351,7 +384,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
 
     try {
       if (abort.signal.aborted) {
-        return cancelledResult(request, events, startedAt, this.#clock(), resultMetadata());
+        return cancelledResult(request, events, startedAt, this.#clock(), resultMetadata(), true);
       }
 
       const executionContext = structuredClone(contextAt(request.context, this.#clock()));
@@ -409,6 +442,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
       const requestedNames = new Set(request.tools.map(({ name }) => name));
       const effectiveTools = allowedTools.filter(({ name }) => requestedNames.has(name));
       const effectiveToolNames = new Set(effectiveTools.map(({ name }) => name));
+      const repeatableToolNames = new Set(
+        effectiveTools.filter(isSafeToRepeat).map(({ name }) => name),
+      );
       // Narrowed to what this turn's catalogue operates on: a runtime acts only
       // through the tools it was handed, so reach it cannot exercise is not
       // somewhere it can work.
@@ -444,6 +480,22 @@ export class SharedOSExecutor implements TurnExecutionPort {
         const step = parseRuntimeStep(invocationOptions.step);
         const eventData = toolEventData(parsedCall.data, step);
         emit("tool.requested", eventData);
+
+        if (abort.draining.aborted) {
+          // The turn is ending and takes nothing new. Refused and recorded like
+          // any call the envelope stops, so the trail shows a call that was
+          // asked for and did not run rather than nothing at all.
+          const result = refusedToolResult(
+            parsedCall.data,
+            "denied",
+            this.#clock(),
+            TURN_DRAINING,
+            "The turn is ending and takes no new tool calls.",
+          );
+          emit("tool.completed", completedToolEventData(result, step));
+          await this.#recordRefusedCall(executionContext, result);
+          return result;
+        }
 
         if (step !== undefined && !stepIsWithinBudget(step, steps, limits.maxSteps)) {
           const result = refusedToolResult(
@@ -486,19 +538,20 @@ export class SharedOSExecutor implements TurnExecutionPort {
 
         // Counted on the kernel's own promise rather than on the race below, so
         // a call the turn stopped waiting for is still known to be out there.
-        callsWithKernel += 1;
+        const repeatable = repeatableToolNames.has(parsedCall.data.tool);
+        writesWithKernel += repeatable ? 0 : 1;
         const withKernel = watchAudit(
           this.#kernel.invokeTool(contextAt(executionContext, this.#clock()), parsedCall.data, {
             signal: abort.signal,
           }),
         ).then(
           (settled) => {
-            callsWithKernel -= 1;
-            effectPossible ||= !isRefusedBeforeEffect(settled);
+            writesWithKernel -= repeatable ? 0 : 1;
+            effectPossible ||= !repeatable && !isRefusedBeforeEffect(settled);
             return settled;
           },
           (error: unknown) => {
-            callsWithKernel -= 1;
+            writesWithKernel -= repeatable ? 0 : 1;
             // Known to have done nothing only when the kernel itself refused it
             // for the outage, before its port was entered. Once the turn has
             // been aborted a sibling rejects with the abort's reason, which is
@@ -507,12 +560,15 @@ export class SharedOSExecutor implements TurnExecutionPort {
               error instanceof AuditUnavailableError &&
               error.effect === "none" &&
               !abort.signal.aborted;
-            effectPossible ||= !refusedForOutage;
+            effectPossible ||= !repeatable && !refusedForOutage;
             if (error === auditOutage) {
               // Ended here, not left to the plugin: every later decision in the
               // turn would fail its record too, and a plugin that caught this
               // and called again would spend a bounded use on each attempt.
-              abort.abort(error);
+              // Drained rather than aborted, so a sibling inside its handler
+              // answers instead of being stopped part-way; with no grace the
+              // two are the same thing.
+              abort.drain(error);
             }
             throw error;
           },
@@ -532,8 +588,8 @@ export class SharedOSExecutor implements TurnExecutionPort {
         invokeTool: (
           call: ToolCall,
           invocationOptions: RuntimeToolInvocationOptions = {},
-        ): Promise<ToolResult> =>
-          measure(
+        ): Promise<ToolResult> => {
+          const mediated = measure(
             this.#spans,
             SPAN.TOOL_MEDIATE,
             () => mediateTool(call, invocationOptions),
@@ -542,7 +598,15 @@ export class SharedOSExecutor implements TurnExecutionPort {
               span.set("tool", result.tool);
               span.set("outcome", result.status);
             },
-          ),
+          );
+          const tracked = mediated.then(
+            () => void inFlight.delete(tracked),
+            () => void inFlight.delete(tracked),
+          );
+          inFlight.add(tracked);
+          return mediated;
+        },
+        draining: abort.draining,
         emit: (event: RuntimeEvent): void => {
           assertRuntimeHostActive(runtimeHostActive, abort.signal);
           const parsedEvent = RuntimeEventSchema.safeParse(structuredClone(event));
@@ -590,6 +654,12 @@ export class SharedOSExecutor implements TurnExecutionPort {
         this.#runtime.run(runtimeRequest, host, abort.signal),
         abort.signal,
       );
+      if (auditOutage !== undefined) {
+        // A plugin that swallowed the refusal and answered anyway. The ending
+        // is the envelope's, and with a grace the turn's signal has not fired
+        // to make it, so it is made here.
+        throw auditOutage;
+      }
       const outcome = RuntimeTurnOutcomeSchema.safeParse(outcomeCandidate);
       if (!outcome.success) {
         const error = protocolError(
@@ -699,10 +769,23 @@ export class SharedOSExecutor implements TurnExecutionPort {
         startedAt,
         this.#clock(),
         "failed",
-        outcome.data.error,
+        // A plugin says whether its own failure is the passing kind. It does not
+        // know what the calls it made went on to do, and the harness adapters
+        // state `retryable` on any harness failure, so its `true` stands only
+        // where running the turn again repeats nothing.
+        outcome.data.error.retryable === true && !safeToRetry()
+          ? { ...outcome.data.error, retryable: false }
+          : outcome.data.error,
         resultMetadata(outcome.data),
       );
     } catch (thrown) {
+      if (abort.draining.aborted && !abort.signal.aborted && inFlight.size > 0) {
+        // The turn is ending and its calls are not all back. They are given
+        // until the turn's signal, which a drain leaves for exactly this, and
+        // the turn ends as soon as the last one has answered.
+        await raceAbort(Promise.allSettled(inFlight), abort.signal).catch(() => undefined);
+      }
+
       if (auditOutage !== undefined) {
         // Ahead of the cancellation check, because the latch ends the turn by
         // aborting it. The envelope refused to go on, so the ending is the
@@ -710,7 +793,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
         const error = protocolError(
           AUDIT_UNAVAILABLE,
           "The audit sink could not record a decision, so the turn was ended.",
-          !effectPossible && callsWithKernel === 0,
+          safeToRetry(),
         );
         emit("turn.failed", { code: error.code, source: "envelope" });
         reportTurnError(this.#onTurnError, auditOutage, {
@@ -728,12 +811,23 @@ export class SharedOSExecutor implements TurnExecutionPort {
         );
       }
 
-      if (abort.signal.aborted) {
+      // A turn that is draining is ending on its deadline, and a plugin that
+      // stops when told to does so by throwing. That is the turn being
+      // cancelled, not the plugin failing, as it already is once the signal
+      // itself has fired.
+      if (abort.draining.aborted) {
         emit("turn.cancelled", {});
-        return cancelledResult(request, events, startedAt, this.#clock(), resultMetadata());
+        return cancelledResult(
+          request,
+          events,
+          startedAt,
+          this.#clock(),
+          resultMetadata(),
+          safeToRetry(),
+        );
       }
 
-      const error = protocolError("runtime_failed", "The runtime plugin failed.", true);
+      const error = protocolError("runtime_failed", "The runtime plugin failed.", safeToRetry());
       emit("turn.failed", { code: error.code, source: "envelope" });
       // Reported here rather than from the `finally`, which also runs for a
       // turn that ended normally and would have to work out whether there was
@@ -930,6 +1024,7 @@ function cancelledResult(
   startedAt: string,
   completedAt: string,
   metadata: JsonObject,
+  retryable: boolean,
 ): ExecutionResult {
   return resultFor(
     request,
@@ -937,9 +1032,21 @@ function cancelledResult(
     startedAt,
     completedAt,
     "cancelled",
-    protocolError("turn_cancelled", "The agent turn was cancelled.", true),
+    protocolError("turn_cancelled", "The agent turn was cancelled.", retryable),
     metadata,
   );
+}
+
+/** The code a new tool call is refused under once the turn takes nothing new. */
+export const TURN_DRAINING = "turn_draining";
+
+/**
+ * Whether a second run of the tool repeats nothing: a `read`, or a `write` its
+ * definition declares `idempotent`. Conservative by the schema's own rule, which
+ * makes `readWrite` required and refuses a `read` that is `destructive`.
+ */
+function isSafeToRepeat(definition: ToolDefinition): boolean {
+  return definition.readWrite === "read" || definition.annotations?.idempotent === true;
 }
 
 /**
