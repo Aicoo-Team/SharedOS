@@ -25,6 +25,8 @@ import {
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
+  AUDIT_UNAVAILABLE,
+  AuditUnavailableError,
   SPAN,
   canonicalJson,
   measure,
@@ -325,6 +327,27 @@ export class SharedOSExecutor implements TurnExecutionPort {
     const steps = new Set<number>();
     let authority: TurnAuthorityScope | undefined;
     let opening: Promise<TurnAuthorityScope> | undefined;
+    // An audit outage on a record that comes before an effect. Noted where the
+    // envelope itself called the kernel, never read off whatever the plugin
+    // threw: the turn then ends `audit_unavailable` by the envelope's decision,
+    // and a plugin can neither swallow the rejection and carry on nor throw the
+    // error itself to be credited with a refusal the envelope did not make.
+    let auditOutage: AuditUnavailableError | undefined;
+    // Whether anything this turn asked for may have taken effect. A call the
+    // kernel refused outright (`denied`) or whose decision could not be recorded
+    // did nothing. Every other call may have, and so may one still with the
+    // kernel when the turn ends. It decides `retryable` on the outage ending:
+    // refusing a retry costs a host one decision, and allowing one after a
+    // committed effect costs it a second payment.
+    let effectPossible = false;
+    let callsWithKernel = 0;
+    const watchAudit = <T>(work: Promise<T>): Promise<T> =>
+      work.catch((error: unknown) => {
+        if (error instanceof AuditUnavailableError) {
+          auditOutage ??= error;
+        }
+        throw error;
+      });
 
     try {
       if (abort.signal.aborted) {
@@ -339,11 +362,16 @@ export class SharedOSExecutor implements TurnExecutionPort {
       // through this one. The promise is kept as well as the handle, because a
       // turn cancelled while this is still in flight never receives the handle
       // and would leave the lease answering for a turn that has ended.
-      opening = this.#kernel.openTurnAuthority?.(executionContext, { signal: abort.signal });
+      const authorityOpening = this.#kernel.openTurnAuthority?.(executionContext, {
+        signal: abort.signal,
+      });
+      opening = authorityOpening === undefined ? undefined : watchAudit(authorityOpening);
       authority = await raceAbort(opening ?? Promise.resolve(undefined), abort.signal);
 
       const admission = await raceAbort(
-        this.#kernel.admitTurn(executionContext, request.agent, { signal: abort.signal }),
+        watchAudit(
+          this.#kernel.admitTurn(executionContext, request.agent, { signal: abort.signal }),
+        ),
         abort.signal,
       );
       if (!admission.allowed) {
@@ -370,12 +398,12 @@ export class SharedOSExecutor implements TurnExecutionPort {
       // nothing, and a false one here. The turn runs either way; a call that
       // depends on the unreadable budget fails closed on its own (ADR 0021).
       const reach = await raceAbort(
-        this.#kernel.reach(executionContext, { signal: abort.signal }),
+        watchAudit(this.#kernel.reach(executionContext, { signal: abort.signal })),
         abort.signal,
       );
 
       const allowedTools = await raceAbort(
-        this.#kernel.listTools(executionContext, { signal: abort.signal }),
+        watchAudit(this.#kernel.listTools(executionContext, { signal: abort.signal })),
         abort.signal,
       );
       const requestedNames = new Set(request.tools.map(({ name }) => name));
@@ -456,12 +484,40 @@ export class SharedOSExecutor implements TurnExecutionPort {
           return result;
         }
 
-        const resultCandidate = await raceAbort(
+        // Counted on the kernel's own promise rather than on the race below, so
+        // a call the turn stopped waiting for is still known to be out there.
+        callsWithKernel += 1;
+        const withKernel = watchAudit(
           this.#kernel.invokeTool(contextAt(executionContext, this.#clock()), parsedCall.data, {
             signal: abort.signal,
           }),
-          abort.signal,
+        ).then(
+          (settled) => {
+            callsWithKernel -= 1;
+            effectPossible ||= !isRefusedBeforeEffect(settled);
+            return settled;
+          },
+          (error: unknown) => {
+            callsWithKernel -= 1;
+            // Known to have done nothing only when the kernel itself refused it
+            // for the outage, before its port was entered. Once the turn has
+            // been aborted a sibling rejects with the abort's reason, which is
+            // this same error, so after that point a rejection proves nothing.
+            const refusedForOutage =
+              error instanceof AuditUnavailableError &&
+              error.effect === "none" &&
+              !abort.signal.aborted;
+            effectPossible ||= !refusedForOutage;
+            if (error === auditOutage) {
+              // Ended here, not left to the plugin: every later decision in the
+              // turn would fail its record too, and a plugin that caught this
+              // and called again would spend a bounded use on each attempt.
+              abort.abort(error);
+            }
+            throw error;
+          },
         );
+        const resultCandidate = await raceAbort(withKernel, abort.signal);
         const result = ToolResultSchema.safeParse(resultCandidate);
         if (!result.success) {
           throw new TypeError("Kernel returned an invalid tool result");
@@ -608,12 +664,13 @@ export class SharedOSExecutor implements TurnExecutionPort {
         // the turn as escalated -- the outcome is the runtime's to declare, and
         // dropping it because audit is unavailable would lose the one fact this
         // path exists to record.
+        const recording = this.#kernel.recordEscalation?.(
+          contextAt(executionContext, this.#clock()),
+          outcome.data.reason,
+          { signal: abort.signal, executionId: request.executionId },
+        );
         const escalation = (await raceAbort(
-          this.#kernel.recordEscalation?.(
-            contextAt(executionContext, this.#clock()),
-            outcome.data.reason,
-            { signal: abort.signal, executionId: request.executionId },
-          ) ?? Promise.resolve(undefined),
+          recording === undefined ? Promise.resolve(undefined) : watchAudit(recording),
           abort.signal,
         )) ?? {
           reason: outcome.data.reason,
@@ -646,6 +703,31 @@ export class SharedOSExecutor implements TurnExecutionPort {
         resultMetadata(outcome.data),
       );
     } catch (thrown) {
+      if (auditOutage !== undefined) {
+        // Ahead of the cancellation check, because the latch ends the turn by
+        // aborting it. The envelope refused to go on, so the ending is the
+        // envelope's and the plugin is not named (ADR 0023).
+        const error = protocolError(
+          AUDIT_UNAVAILABLE,
+          "The audit sink could not record a decision, so the turn was ended.",
+          !effectPossible && callsWithKernel === 0,
+        );
+        emit("turn.failed", { code: error.code, source: "envelope" });
+        reportTurnError(this.#onTurnError, auditOutage, {
+          executionId: request.executionId,
+          traceId: request.context.traceId,
+        });
+        return resultFor(
+          request,
+          events,
+          startedAt,
+          this.#clock(),
+          "failed",
+          error,
+          resultMetadata(),
+        );
+      }
+
       if (abort.signal.aborted) {
         emit("turn.cancelled", {});
         return cancelledResult(request, events, startedAt, this.#clock(), resultMetadata());
@@ -777,6 +859,18 @@ function assertRuntimeHostActive(active: boolean, signal: AbortSignal): void {
   if (!active || signal.aborted) {
     throw new Error("Runtime host is closed");
   }
+}
+
+/**
+ * Whether a settled call is known to have done nothing.
+ *
+ * `denied` is a refusal made before the tool ran. `failed` is not read that
+ * way: it covers a handler that threw part-way as well as arguments that never
+ * reached one, and the result does not say which.
+ */
+function isRefusedBeforeEffect(result: unknown): boolean {
+  const parsed = ToolResultSchema.safeParse(result);
+  return parsed.success && parsed.data.status === "denied";
 }
 
 function contextAt(context: AccessContext, now: string): AccessContext {

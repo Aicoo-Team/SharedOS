@@ -6,6 +6,9 @@
   are `AuditEvent` fields rather than `metadata` keys, and the rule for which
   audit write may refuse an operation is stated. Both revisions are in the
   Decision below, which describes what ships.
+- Revised: 2026-09-18. An audit outage before an effect is a typed error and
+  ends the turn `audit_unavailable`, and an operation stopped after its port was
+  entered is recorded `interrupted`. Also in the Decision below.
 - Extends: `docs/adr/0012-one-refusal-vocabulary.md`
 
 ## Context
@@ -183,8 +186,9 @@ release in which a fact is written in both places.
 The kernel writes to its sink on two paths, and which one a write takes is
 decided by when it happens. An authority load, an authorization decision and a
 catalogue listing are written before anything acts on them: a sink that throws
-there rejects the operation, nothing runs, and `onAuditError` is not called
-because the caller is handed the failure. An operation's outcome, a turn's
+there rejects the operation with an `AuditUnavailableError` carrying what the
+sink threw, nothing runs, and `onAuditError` is not called because the caller is
+handed the failure. An operation's outcome, a turn's
 ending, an envelope refusal and an escalation are written once the answer is
 final: a sink that throws there is handed to `onAuditError`, and the caller
 receives the result it would have received, because returning a failure would
@@ -195,6 +199,72 @@ not a gate; written on the first, a sink that threw ended the turn
 `runtime_failed` and blamed a plugin that had done nothing wrong. One limit is
 known and unchanged: a bounded use is spent before `authorization.checked` is
 written, so a sink that throws there costs a use with nothing run.
+
+### An audit outage before an effect ends the turn
+
+Inside a turn the rejection used to reach the runtime plugin as whatever the
+sink threw. A plugin that did not catch it ended the turn `runtime_failed`, "The
+runtime plugin failed", for an outage the plugin had no part in; the same
+happened when the outage was met while the envelope was still opening the turn,
+before any plugin ran. A plugin that did catch it could call again, and every
+call under the outage is refused the same way.
+
+So the error is typed and the ending is the envelope's. The executor notes an
+`AuditUnavailableError` where it called the kernel itself -- opening authority,
+admitting the turn, reading reach, listing the catalogue, mediating a tool call,
+recording an escalation -- aborts the turn, and ends it `failed` with
+`audit_unavailable`, `endedBy: envelope`, `failClosed`. It does not read the
+error off what a plugin threw: a plugin can neither swallow the rejection and
+carry on, nor throw the error itself and be credited with a refusal the envelope
+did not make. The host's `onTurnError` receives the error, and with it the
+sink's. Only the first path latches. A record that fails after an effect never
+ends a turn: the effect stands, and ending the turn as failed would invite the
+retry the second path exists to prevent.
+
+The ending's `retryable` is decided by what the turn may already have done. It
+is `true` only when every call handed to the kernel came back `denied` or was
+refused for the outage before its port was entered, and none is still with the
+kernel. One call that succeeded, failed, was stopped, or has not settled makes
+it `false`: refusing a retry costs a host one decision of its own, and allowing
+one after a committed effect costs it a second payment. During the outage the
+`ExecutionResult` is the reliable account of what ran, which is why the rule
+reads it and not the trail. A direct kernel caller has no turn to end and still
+receives the rejection; `effect` on the error says `none` when nothing ran and
+`unknown` when the outage was met by a port already entered, such as a host tool
+calling back into the kernel.
+
+A typed refusal that let the turn continue was weighed and rejected. A model
+reads a refusal as something to try again, each attempt is refused again, and
+while a bounded use is spent before its record each attempt also costs a use.
+
+### An operation stopped after its port was entered is recorded `interrupted`
+
+When a caller aborts, the kernel re-throws the abort ahead of containing the
+port's throw, so a cancelled call is never reported as a provider that failed.
+It also used to write nothing. A handler that debited one account, saw the
+turn's deadline and threw before crediting the other left a trail that ended at
+`authorization.checked: allowed`, which reads as a call that never started.
+
+The operation event is now written before the abort is re-thrown, with a sixth
+`AuditOutcome`, `interrupted`: the port was entered and stopped before it
+answered, so any part of its effect may have committed. `reason` says what
+stopped it, `operation_aborted` for the caller's abort and `audit_unavailable`
+for an outage under a decision the port itself asked for. Not `failed`: that
+outcome also covers refusals where nothing ran (`invalid_tool_arguments`,
+`tool_catalog_unavailable`), and a reader that took an interrupted transfer for
+one of those would retry it. A cancelled turn keeps `failed` with reason
+`turn_cancelled`, because there `reason` separates two causes of one fact; here
+the fact differs. A port that answers despite the abort is recorded with its
+real outcome, a call stopped before its port was entered writes nothing, and the
+abort is still not reported to `onProviderError`. The conformance record has
+three outcomes and reads `interrupted` as `failed`, never `denied`, so no
+boundary is credited with refusing a call that may have run; giving the record
+the outcome of its own waits for the judge's next version.
+
+What is not decided here: letting calls already inside a handler settle before a
+turn ends, rather than aborting them, so that most get their real outcome and
+`interrupted` is left for the ones that cannot. That changes what a deadline and
+a cancellation mean to a handler, and is a decision of its own.
 
 ### Discovery is recorded in aggregate
 
@@ -240,7 +310,12 @@ withheld tool is still recorded on `tool.invoked` with its own `cause`.
   four causes rather than one of three.
 - Hosts wire nothing new. No option is added to the executor, no sink is passed
   twice, and no compatibility facade has a new field to forget to forward.
-- `AuditEventType` goes from nine values to ten. `AuditOutcome` is unchanged.
+- `AuditEventType` goes from nine values to ten. `AuditOutcome` goes from five
+  values to six with `interrupted`; a host that persists events under a closed
+  schema of its own adds the value.
+- A turn can end `audit_unavailable`. Turn error codes are open strings, so no
+  schema moves; a host that retried every `runtime_failed` should read
+  `retryable` on this ending instead.
 - Audit volume rises by roughly one event per turn plus one per envelope-refused
   call. Envelope refusals are bounded by `maxToolCalls`, which the host set.
 - **`assembleExecutionRecord` must change or it will double-count.** Its
@@ -269,6 +344,14 @@ withheld tool is still recorded on `tool.invoked` with its own `cause`.
   kind is a field from the start.
 
 ## Rejected alternatives
+
+**Answer an audit outage with a typed refusal and let the turn go on.** Rejected.
+Every later decision in the turn fails its record too, a model retries a
+refusal, and the ending the host most needs to see is buried in tool results.
+
+**Record a stopped operation as `failed` with a reason.** Rejected. `failed`
+already covers refusals where nothing ran, so the outcome a host filters on would
+say "safe to retry" about the one call where that is least known.
 
 **Give the envelope its own `AuditSink` option.** Rejected; see above. Two
 places to pass one sink, and the failure mode of missing the second is silent.

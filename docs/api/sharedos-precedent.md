@@ -707,7 +707,7 @@ nothing.
 
 ##### outcome
 
-> **outcome**: `"allowed"` \| `"denied"` \| `"succeeded"` \| `"failed"` \| `"escalated"`
+> **outcome**: `"allowed"` \| `"denied"` \| `"succeeded"` \| `"failed"` \| `"escalated"` \| `"interrupted"`
 
 ##### owner
 
