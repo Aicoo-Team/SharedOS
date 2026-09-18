@@ -9,6 +9,9 @@
 - Revised: 2026-09-18. An audit outage before an effect is a typed error and
   ends the turn `audit_unavailable`, and an operation stopped after its port was
   entered is recorded `interrupted`. Also in the Decision below.
+- Revised: 2026-09-18. A record written after an effect may be held to a time
+  limit, and the turn an outage ends drains first where the host set a grace
+  (ADR 0007, which also now states the `retryable` rule for every ending).
 - Extends: `docs/adr/0012-one-refusal-vocabulary.md`
 
 ## Context
@@ -194,6 +197,18 @@ final: a sink that throws there is handed to `onAuditError`, and the caller
 receives the result it would have received, because returning a failure would
 invite a retry of something already done.
 
+A sink that does not answer is not a throw, and on the second path it held the
+result of a committed effect for as long as the caller waited: a turn that
+reached its deadline first dropped the result of a transfer that went through.
+`auditWriteTimeoutMs` bounds that write. Past it the event is handed to
+`onAuditError` with an `AuditWriteTimeoutError`, the hook is held to the same
+limit, and the caller receives its result. So a result is released once its
+record is written or the host has been told it was not, and never before the
+write was attempted: the seat cannot act on an effect ahead of its record. The
+first path is never bounded. There a sink that does not answer holds back an
+operation that has not run, which is what that path is for. Absent, the option
+changes nothing.
+
 `escalation.requested` is on the second path. It is the turn's terminal record,
 not a gate; written on the first, a sink that threw ended the turn
 `runtime_failed` and blamed a plugin that had done nothing wrong. One limit is
@@ -212,7 +227,9 @@ call under the outage is refused the same way.
 So the error is typed and the ending is the envelope's. The executor notes an
 `AuditUnavailableError` where it called the kernel itself -- opening authority,
 admitting the turn, reading reach, listing the catalogue, mediating a tool call,
-recording an escalation -- aborts the turn, and ends it `failed` with
+recording an escalation -- stops the turn taking anything new, lets what is
+already inside a handler answer for as long as the host's grace allows (ADR
+0007; with no grace the turn is aborted at once), and ends it `failed` with
 `audit_unavailable`, `endedBy: envelope`, `failClosed`. It does not read the
 error off what a plugin threw: a plugin can neither swallow the rejection and
 carry on, nor throw the error itself and be credited with a refusal the envelope
@@ -222,11 +239,12 @@ ends a turn: the effect stands, and ending the turn as failed would invite the
 retry the second path exists to prevent.
 
 The ending's `retryable` is decided by what the turn may already have done. It
-is `true` only when every call handed to the kernel came back `denied` or was
-refused for the outage before its port was entered, and none is still with the
-kernel. One call that succeeded, failed, was stopped, or has not settled makes
-it `false`: refusing a retry costs a host one decision of its own, and allowing
-one after a committed effect costs it a second payment. During the outage the
+is `true` only when every call that cannot safely be repeated came back `denied`
+or was refused for the outage before its port was entered, and none is still
+with the kernel. One such call that succeeded, failed, was stopped, or has not
+settled makes it `false`: refusing a retry costs a host one decision of its own,
+and allowing one after a committed effect costs it a second payment. Which calls
+can be repeated, and the same rule on every other ending, are in ADR 0007. During the outage the
 `ExecutionResult` is the reliable account of what ran, which is why the rule
 reads it and not the trail. A direct kernel caller has no turn to end and still
 receives the rejection; `effect` on the error says `none` when nothing ran and
@@ -261,10 +279,9 @@ three outcomes and reads `interrupted` as `failed`, never `denied`, so no
 boundary is credited with refusing a call that may have run; giving the record
 the outcome of its own waits for the judge's next version.
 
-What is not decided here: letting calls already inside a handler settle before a
-turn ends, rather than aborting them, so that most get their real outcome and
-`interrupted` is left for the ones that cannot. That changes what a deadline and
-a cancellation mean to a handler, and is a decision of its own.
+Letting calls already inside a handler answer before a turn ends, so that most
+get their real outcome and `interrupted` is left for the ones that cannot, is
+what a deadline means to a handler and is decided in ADR 0007.
 
 ### Discovery is recorded in aggregate
 
