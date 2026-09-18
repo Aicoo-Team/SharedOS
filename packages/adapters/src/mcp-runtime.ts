@@ -32,18 +32,13 @@ import {
 } from "@aicoo/sharedos-runtime";
 
 import type { HarnessProtocol } from "./harness.js";
-import { CLAUDE_CODE_HARNESS_ID } from "./claude-code/index.js";
-import { claudeCodeProtocol } from "./claude-code/protocol.js";
-import { CODEX_HARNESS_ID } from "./codex/index.js";
-import { codexProtocol } from "./codex/protocol.js";
-import { DEEPSEEK_HARNESS_ID } from "./deepseek/index.js";
-import { deepseekProtocol } from "./deepseek/protocol.js";
-import { PI_HARNESS_ID } from "./pi/index.js";
-import { piProtocol } from "./pi/protocol.js";
+import { CLAUDE_CODE_VENDOR } from "./claude-code/index.js";
+import { CODEX_VENDOR } from "./codex/index.js";
+import { DEEPSEEK_VENDOR } from "./deepseek/index.js";
+import { PI_VENDOR } from "./pi/index.js";
 import { failed } from "./internal.js";
 import { HarnessProcess } from "./process.js";
 import { SeatCalls, seatText, type SeatTextOptions } from "./seat.js";
-import { PROTOCOL_VERSION, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
 
 /**
  * A vendor harness run natively, against the SharedOS catalogue over MCP.
@@ -603,19 +598,9 @@ const DEFAULT_SESSION_IDLE_MS = 120_000;
  * one of those calls is re-authorized by the kernel.
  */
 export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
-  id: CLAUDE_CODE_HARNESS_ID,
-  manifest: Object.freeze({
-    id: "sharedos.claude-code.mcp",
-    version: SHAREDOS_VERSION,
-    protocolVersion: PROTOCOL_VERSION,
-    metadata: {
-      package: "@aicoo/sharedos-adapters",
-      harness: CLAUDE_CODE_HARNESS_ID,
-      toolshare: "mcp",
-      executionModel: "native-harness-loop",
-    },
-  }) as RuntimeManifest,
-  protocol: claudeCodeProtocol,
+  id: CLAUDE_CODE_VENDOR.id,
+  manifest: CLAUDE_CODE_VENDOR.mcpManifest,
+  protocol: CLAUDE_CODE_VENDOR.protocol,
   serverName: SHAREDOS_MCP_SERVER_NAME,
   configFiles: (connection) => [harnessMcpConfigFile("claude-code", connection)],
   launch: ({ prompt, workspace, configPaths, connection }) => ({
@@ -650,19 +635,9 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
  * look like a harness that declined to use the catalogue.
  */
 export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
-  id: CODEX_HARNESS_ID,
-  manifest: Object.freeze({
-    id: "sharedos.codex.mcp",
-    version: SHAREDOS_VERSION,
-    protocolVersion: PROTOCOL_VERSION,
-    metadata: {
-      package: "@aicoo/sharedos-adapters",
-      harness: CODEX_HARNESS_ID,
-      toolshare: "mcp",
-      executionModel: "native-harness-loop",
-    },
-  }) as RuntimeManifest,
-  protocol: codexProtocol,
+  id: CODEX_VENDOR.id,
+  manifest: CODEX_VENDOR.mcpManifest,
+  protocol: CODEX_VENDOR.protocol,
   serverName: SHAREDOS_MCP_SERVER_NAME,
   launch: ({ prompt, workspace, connection }) => ({
     command: "codex",
@@ -704,19 +679,9 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
  * should materialise for itself.
  */
 export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
-  id: DEEPSEEK_HARNESS_ID,
-  manifest: Object.freeze({
-    id: "sharedos.deepseek.mcp",
-    version: SHAREDOS_VERSION,
-    protocolVersion: PROTOCOL_VERSION,
-    metadata: {
-      package: "@aicoo/sharedos-adapters",
-      harness: DEEPSEEK_HARNESS_ID,
-      toolshare: "mcp",
-      executionModel: "native-harness-loop",
-    },
-  }) as RuntimeManifest,
-  protocol: deepseekProtocol,
+  id: DEEPSEEK_VENDOR.id,
+  manifest: DEEPSEEK_VENDOR.mcpManifest,
+  protocol: DEEPSEEK_VENDOR.protocol,
   serverName: SHAREDOS_MCP_SERVER_NAME,
   configFiles: (connection) => [harnessMcpConfigFile("deepseek", connection)],
   launch: ({ prompt, workspace, configPaths }) => ({
@@ -754,25 +719,12 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
  * `--no-builtin-tools` drops Pi's own file and shell tools while keeping
  * extension tools, which is exactly the split a conformance run needs. The
  * prompt goes in as an RPC frame rather than as an argument, because RPC mode is
- * the one whose frames {@link piProtocol} reads.
+ * the one whose frames `piProtocol` reads.
  */
 export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
-  id: PI_HARNESS_ID,
-  manifest: Object.freeze({
-    id: "sharedos.pi.mcp",
-    version: SHAREDOS_VERSION,
-    protocolVersion: PROTOCOL_VERSION,
-    metadata: {
-      package: "@aicoo/sharedos-adapters",
-      harness: PI_HARNESS_ID,
-      toolshare: "mcp",
-      executionModel: "native-harness-loop",
-      /** Named, not implied: Pi has no MCP client of its own. */
-      mcpSupport: "extension",
-      mcpExtension: "pi-mcp-adapter",
-    },
-  }) as RuntimeManifest,
-  protocol: piProtocol,
+  id: PI_VENDOR.id,
+  manifest: PI_VENDOR.mcpManifest,
+  protocol: PI_VENDOR.protocol,
   serverName: SHAREDOS_MCP_SERVER_NAME,
   configFiles: (connection) => [harnessMcpConfigFile("pi", connection)],
   launch: ({ prompt, workspace, request }) => ({

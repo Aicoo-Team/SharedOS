@@ -1,49 +1,32 @@
 import type { RuntimeManifest } from "@aicoo/sharedos-contracts";
-import type { McpHarnessId } from "@aicoo/sharedos-mcp";
 
 import { HarnessDriver, type HarnessDriverOptions } from "../driver.js";
 import { HarnessRuntime } from "../runtime.js";
 import type { HarnessRequirements, HarnessTransport } from "../harness.js";
 import type { StandardRuntimeOptions } from "@aicoo/sharedos-runtime";
-import { PI_PROTOCOL_ID, piProtocol } from "./protocol.js";
-import { PROTOCOL_VERSION, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
+import { piProtocol } from "./protocol.js";
+import { defineHarnessVendor, type HarnessVendor } from "../vendors.js";
 
 export { PI_PROTOCOL_ID, piProtocol } from "./protocol.js";
 
-/** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
-export const PI_HARNESS_ID = "pi" satisfies McpHarnessId;
-
-export const PI_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
-  id: "sharedos.pi",
-  version: SHAREDOS_VERSION,
-  protocolVersion: PROTOCOL_VERSION,
-  metadata: {
-    package: "@aicoo/sharedos-adapters",
-    harness: PI_HARNESS_ID,
-    wireProtocol: PI_PROTOCOL_ID,
-    executionModel: "bounded-driver-loop",
-    /**
-     * The harness runs its own tools, so the permission-filtered catalogue
-     * cannot be declared in a frame. Stamped on every record this driver
-     * produces, because a column whose catalogue arrived out of band is making
-     * a narrower claim than one whose catalogue was on the wire.
-     */
-    catalogueDelivery: "out-of-band",
-  },
-});
-
-/** What a live Pi session needs before it can run. */
-export const PI_REQUIREMENTS: HarnessRequirements = Object.freeze({
-  harness: PI_HARNESS_ID,
+/** Pi, stated once; see {@link HarnessVendor}. */
+export const PI_VENDOR: HarnessVendor = defineHarnessVendor({
+  id: "pi",
+  protocol: piProtocol,
   executable: "pi",
   /**
    * Pi routes to whichever provider its model config names, so no single
    * variable is the credential. These are the ones its shipped providers read.
    */
   credentialVariables: ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "PI_API_KEY"],
-  /** Pi can also authenticate from a stored `~/.pi/agent/auth.json`. */
-  credentialsOptional: true,
+  catalogueOutOfBand: true,
+  /** Named, not implied: Pi has no MCP client of its own. */
+  mcpMetadata: { mcpSupport: "extension", mcpExtension: "pi-mcp-adapter" },
 });
+
+export const PI_HARNESS_ID = PI_VENDOR.id;
+export const PI_RUNTIME_MANIFEST: RuntimeManifest = PI_VENDOR.manifest;
+export const PI_REQUIREMENTS: HarnessRequirements = PI_VENDOR.requirements;
 
 export type PiDriverOptions = Omit<HarnessDriverOptions, "manifest" | "protocol"> & {
   readonly transport: HarnessTransport;

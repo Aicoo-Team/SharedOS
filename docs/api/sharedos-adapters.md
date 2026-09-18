@@ -1351,6 +1351,49 @@ Everything a harness needs to start one turn.
 
 ---
 
+### HarnessVendor
+
+Defined in: packages/adapters/src/vendors.ts:12
+
+What one vendor harness is, stated once: its id, its codec, what it needs, how its records are named.
+
+#### Properties
+
+| Property                                          | Modifier   | Type                                                   | Description                                                                          | Defined in                              |
+| ------------------------------------------------- | ---------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------ | --------------------------------------- |
+| <a id="property-id-1"></a> `id`                   | `readonly` | `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` | The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. | packages/adapters/src/vendors.ts:14     |
+| <a id="property-manifest-6"></a> `manifest`       | `readonly` | `object`                                               | The manifest of a turn the SharedOS loop drives, speaking the vendor's wire format.  | packages/adapters/src/vendors.ts:19     |
+| `manifest.id`                                     | `public`   | `string`                                               | -                                                                                    | packages/contracts/dist/runtime.d.ts:9  |
+| `manifest.metadata?`                              | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)       | -                                                                                    | packages/contracts/dist/runtime.d.ts:12 |
+| `manifest.protocolVersion`                        | `public`   | `"1"`                                                  | -                                                                                    | packages/contracts/dist/runtime.d.ts:11 |
+| `manifest.version`                                | `public`   | `string`                                               | -                                                                                    | packages/contracts/dist/runtime.d.ts:10 |
+| <a id="property-mcpmanifest"></a> `mcpManifest`   | `readonly` | `object`                                               | The manifest of a turn the vendor CLI runs itself, connected over MCP.               | packages/adapters/src/vendors.ts:21     |
+| `mcpManifest.id`                                  | `public`   | `string`                                               | -                                                                                    | packages/contracts/dist/runtime.d.ts:9  |
+| `mcpManifest.metadata?`                           | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)       | -                                                                                    | packages/contracts/dist/runtime.d.ts:12 |
+| `mcpManifest.protocolVersion`                     | `public`   | `"1"`                                                  | -                                                                                    | packages/contracts/dist/runtime.d.ts:11 |
+| `mcpManifest.version`                             | `public`   | `string`                                               | -                                                                                    | packages/contracts/dist/runtime.d.ts:10 |
+| <a id="property-protocol-1"></a> `protocol`       | `readonly` | [`HarnessProtocol`](#harnessprotocol)                  | -                                                                                    | packages/adapters/src/vendors.ts:15     |
+| <a id="property-requirements"></a> `requirements` | `readonly` | [`HarnessRequirements`](#harnessrequirements)          | What a live session needs before it can run.                                         | packages/adapters/src/vendors.ts:17     |
+
+---
+
+### HarnessVendorDefinition
+
+Defined in: packages/adapters/src/vendors.ts:24
+
+#### Properties
+
+| Property                                                          | Modifier   | Type                                                   | Description                                                                                                                                                                                                                                                                         | Defined in                          |
+| ----------------------------------------------------------------- | ---------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| <a id="property-catalogueoutofband"></a> `catalogueOutOfBand?`    | `readonly` | `boolean`                                              | The harness runs its own tools, so the permission-filtered catalogue cannot be declared in a frame. Stamped on every record its driven manifest produces, because a column whose catalogue arrived out of band is making a narrower claim than one whose catalogue was on the wire. | packages/adapters/src/vendors.ts:37 |
+| <a id="property-credentialvariables-1"></a> `credentialVariables` | `readonly` | readonly `string`[]                                    | Environment variables, any one of which satisfies the credential need.                                                                                                                                                                                                              | packages/adapters/src/vendors.ts:30 |
+| <a id="property-executable-1"></a> `executable`                   | `readonly` | `string`                                               | Executable expected on PATH.                                                                                                                                                                                                                                                        | packages/adapters/src/vendors.ts:28 |
+| <a id="property-id-2"></a> `id`                                   | `readonly` | `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` | -                                                                                                                                                                                                                                                                                   | packages/adapters/src/vendors.ts:25 |
+| <a id="property-mcpmetadata"></a> `mcpMetadata?`                  | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)       | What else the MCP manifest says about how this harness reaches MCP.                                                                                                                                                                                                                 | packages/adapters/src/vendors.ts:39 |
+| <a id="property-protocol-2"></a> `protocol`                       | `readonly` | [`HarnessProtocol`](#harnessprotocol)                  | -                                                                                                                                                                                                                                                                                   | packages/adapters/src/vendors.ts:26 |
+
+---
+
 ### ModelClient
 
 Defined in: [packages/adapters/src/model/client.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L91)
@@ -1425,7 +1468,7 @@ is sent.
 | <a id="property-client"></a> `client`                        | `readonly` | [`ModelClient`](#modelclient)                        | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/model/driver.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L102) |
 | <a id="property-declarestep-1"></a> `declareStep?`           | `readonly` | [`DeclareStep`](#declarestep)                        | See [DeclareStep](#declarestep).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | -                                                                                | [packages/adapters/src/model/driver.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L113) |
 | <a id="property-instructions-2"></a> `instructions?`         | `readonly` | `string` \| ((`request`) => `string` \| `undefined`) | What the seat is told before the prompt: a model's system message, an MCP server's initialize instructions, a harness's preamble. By default it is `request.context.reach` rendered by `describeReach`: where this turn's tools may operate, with the authority left out. The prompt carries the task and this carries the environment the task runs in. A string is the host's standing guidance, placed before the turn's reach so a seat that shows its model one block reads the guidance before the map. A function replaces the composition and says exactly what the seat is told; returning `undefined` hands over no instructions at all. | [`SeatTextOptions`](#seattextoptions).[`instructions`](#property-instructions-3) | [packages/adapters/src/seat.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L40)                   |
-| <a id="property-manifest-6"></a> `manifest`                  | `readonly` | `object`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/model/driver.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L101) |
+| <a id="property-manifest-7"></a> `manifest`                  | `readonly` | `object`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/model/driver.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L101) |
 | `manifest.id`                                                | `public`   | `string`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:9                                                                                                   |
 | `manifest.metadata?`                                         | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:12                                                                                                  |
 | `manifest.protocolVersion`                                   | `public`   | `"1"`                                                | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:11                                                                                                  |
@@ -1485,7 +1528,7 @@ an unrecognised name means is a policy question that belongs to the driver.
 | Property                                    | Modifier   | Type     | Defined in                                                                                                                             |
 | ------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="property-arguments"></a> `arguments` | `readonly` | `string` | [packages/adapters/src/model/client.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L17) |
-| <a id="property-id-1"></a> `id`             | `readonly` | `string` | [packages/adapters/src/model/client.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L15) |
+| <a id="property-id-3"></a> `id`             | `readonly` | `string` | [packages/adapters/src/model/client.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L15) |
 | <a id="property-name-2"></a> `name`         | `readonly` | `string` | [packages/adapters/src/model/client.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L16) |
 
 ---
@@ -1581,7 +1624,7 @@ Defined in: [packages/adapters/src/model/transcript.ts:15](https://github.com/Ai
 
 > **ClaudeCodeDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [packages/adapters/src/claude-code/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L37)
+Defined in: [packages/adapters/src/claude-code/index.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L24)
 
 #### Type Declaration
 
@@ -1599,7 +1642,7 @@ Defined in: [packages/adapters/src/claude-code/index.ts:37](https://github.com/A
 
 > **CodexDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [packages/adapters/src/codex/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L37)
+Defined in: [packages/adapters/src/codex/index.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L24)
 
 #### Type Declaration
 
@@ -1646,7 +1689,7 @@ choosing it, and a column that uses it should say so.
 
 > **DeepseekDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [packages/adapters/src/deepseek/index.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L44)
+Defined in: [packages/adapters/src/deepseek/index.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L25)
 
 #### Type Declaration
 
@@ -1740,7 +1783,7 @@ The refusal the model is shown for a call made with unreadable arguments.
 
 > **PiDriverOptions** = `Omit`\<[`HarnessDriverOptions`](#harnessdriveroptions), `"manifest"` \| `"protocol"`> \> & `object`
 
-Defined in: [packages/adapters/src/pi/index.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L48)
+Defined in: [packages/adapters/src/pi/index.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L31)
 
 #### Type Declaration
 
@@ -1756,11 +1799,9 @@ Defined in: [packages/adapters/src/pi/index.ts:48](https://github.com/Aicoo-Team
 
 ### CLAUDE\_CODE\_HARNESS\_ID
 
-> `const` **CLAUDE\_CODE\_HARNESS\_ID**: `"claude-code"`
+> `const` **CLAUDE\_CODE\_HARNESS\_ID**: `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` = `CLAUDE_CODE_VENDOR.id`
 
-Defined in: [packages/adapters/src/claude-code/index.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L14)
-
-The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts.
+Defined in: [packages/adapters/src/claude-code/index.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L20)
 
 ---
 
@@ -1781,19 +1822,27 @@ part and are what this module translates. The `{type:"assistant"|"user"|
 
 ### CLAUDE\_CODE\_REQUIREMENTS
 
-> `const` **CLAUDE\_CODE\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
+> `const` **CLAUDE\_CODE\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements) = `CLAUDE_CODE_VENDOR.requirements`
 
-Defined in: [packages/adapters/src/claude-code/index.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L29)
-
-What a live Claude Code session needs before it can run.
+Defined in: [packages/adapters/src/claude-code/index.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L22)
 
 ---
 
 ### CLAUDE\_CODE\_RUNTIME\_MANIFEST
 
-> `const` **CLAUDE\_CODE\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
+> `const` **CLAUDE\_CODE\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest) = `CLAUDE_CODE_VENDOR.manifest`
 
-Defined in: [packages/adapters/src/claude-code/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L16)
+Defined in: [packages/adapters/src/claude-code/index.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L21)
+
+---
+
+### CLAUDE\_CODE\_VENDOR
+
+> `const` **CLAUDE\_CODE\_VENDOR**: [`HarnessVendor`](#harnessvendor)
+
+Defined in: [packages/adapters/src/claude-code/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L13)
+
+Claude Code, stated once; see [HarnessVendor](#harnessvendor).
 
 ---
 
@@ -1817,11 +1866,9 @@ Defined in: [packages/adapters/src/claude-code/protocol.ts:57](https://github.co
 
 ### CODEX\_HARNESS\_ID
 
-> `const` **CODEX\_HARNESS\_ID**: `"codex"`
+> `const` **CODEX\_HARNESS\_ID**: `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` = `CODEX_VENDOR.id`
 
-Defined in: [packages/adapters/src/codex/index.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L14)
-
-The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts.
+Defined in: [packages/adapters/src/codex/index.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L20)
 
 ---
 
@@ -1843,19 +1890,27 @@ Responses call -- is the transport's problem, not the protocol's.
 
 ### CODEX\_REQUIREMENTS
 
-> `const` **CODEX\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
+> `const` **CODEX\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements) = `CODEX_VENDOR.requirements`
 
-Defined in: [packages/adapters/src/codex/index.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L29)
-
-What a live Codex session needs before it can run.
+Defined in: [packages/adapters/src/codex/index.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L22)
 
 ---
 
 ### CODEX\_RUNTIME\_MANIFEST
 
-> `const` **CODEX\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
+> `const` **CODEX\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest) = `CODEX_VENDOR.manifest`
 
-Defined in: [packages/adapters/src/codex/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L16)
+Defined in: [packages/adapters/src/codex/index.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L21)
+
+---
+
+### CODEX\_VENDOR
+
+> `const` **CODEX\_VENDOR**: [`HarnessVendor`](#harnessvendor)
+
+Defined in: [packages/adapters/src/codex/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L13)
+
+Codex, stated once; see [HarnessVendor](#harnessvendor).
 
 ---
 
@@ -1879,11 +1934,9 @@ Defined in: [packages/adapters/src/codex/protocol.ts:65](https://github.com/Aico
 
 ### DEEPSEEK\_HARNESS\_ID
 
-> `const` **DEEPSEEK\_HARNESS\_ID**: `"deepseek"`
+> `const` **DEEPSEEK\_HARNESS\_ID**: `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` = `DEEPSEEK_VENDOR.id`
 
-Defined in: [packages/adapters/src/deepseek/index.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L14)
-
-The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts.
+Defined in: [packages/adapters/src/deepseek/index.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L21)
 
 ---
 
@@ -1915,19 +1968,27 @@ that out-of-band channel carries, and no frame is emitted for it.
 
 ### DEEPSEEK\_REQUIREMENTS
 
-> `const` **DEEPSEEK\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
+> `const` **DEEPSEEK\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements) = `DEEPSEEK_VENDOR.requirements`
 
-Defined in: [packages/adapters/src/deepseek/index.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L36)
-
-What a live DeepSeek Harness session needs before it can run.
+Defined in: [packages/adapters/src/deepseek/index.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L23)
 
 ---
 
 ### DEEPSEEK\_RUNTIME\_MANIFEST
 
-> `const` **DEEPSEEK\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
+> `const` **DEEPSEEK\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest) = `DEEPSEEK_VENDOR.manifest`
 
-Defined in: [packages/adapters/src/deepseek/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L16)
+Defined in: [packages/adapters/src/deepseek/index.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L22)
+
+---
+
+### DEEPSEEK\_VENDOR
+
+> `const` **DEEPSEEK\_VENDOR**: [`HarnessVendor`](#harnessvendor)
+
+Defined in: [packages/adapters/src/deepseek/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L13)
+
+DeepSeek Harness, stated once; see [HarnessVendor](#harnessvendor).
 
 ---
 
@@ -1955,11 +2016,9 @@ Defined in: [packages/adapters/src/deepseek/protocol.ts:102](https://github.com/
 
 ### PI\_HARNESS\_ID
 
-> `const` **PI\_HARNESS\_ID**: `"pi"`
+> `const` **PI\_HARNESS\_ID**: `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` = `PI_VENDOR.id`
 
-Defined in: [packages/adapters/src/pi/index.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L14)
-
-The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts.
+Defined in: [packages/adapters/src/pi/index.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L27)
 
 ---
 
@@ -1995,19 +2054,27 @@ harness rather than of this adapter:
 
 ### PI\_REQUIREMENTS
 
-> `const` **PI\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements)
+> `const` **PI\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements) = `PI_VENDOR.requirements`
 
-Defined in: [packages/adapters/src/pi/index.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L36)
-
-What a live Pi session needs before it can run.
+Defined in: [packages/adapters/src/pi/index.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L29)
 
 ---
 
 ### PI\_RUNTIME\_MANIFEST
 
-> `const` **PI\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
+> `const` **PI\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest) = `PI_VENDOR.manifest`
 
-Defined in: [packages/adapters/src/pi/index.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L16)
+Defined in: [packages/adapters/src/pi/index.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L28)
+
+---
+
+### PI\_VENDOR
+
+> `const` **PI\_VENDOR**: [`HarnessVendor`](#harnessvendor)
+
+Defined in: [packages/adapters/src/pi/index.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L13)
+
+Pi, stated once; see [HarnessVendor](#harnessvendor).
 
 ---
 
@@ -2033,7 +2100,7 @@ Defined in: [packages/adapters/src/pi/protocol.ts:95](https://github.com/Aicoo-T
 
 > **createClaudeCodeDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [packages/adapters/src/claude-code/index.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L49)
+Defined in: [packages/adapters/src/claude-code/index.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L36)
 
 Claude Code as a SharedOS agent turn driver.
 
@@ -2057,7 +2124,7 @@ and adds no second permission path.
 
 > **createClaudeCodeRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: [packages/adapters/src/claude-code/index.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L64)
+Defined in: [packages/adapters/src/claude-code/index.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/index.ts#L51)
 
 Claude Code as an installable runtime, reporting its own manifest.
 
@@ -2082,7 +2149,7 @@ this form files a turn's evidence under the harness that produced it.
 
 > **createCodexDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [packages/adapters/src/codex/index.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L49)
+Defined in: [packages/adapters/src/codex/index.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L36)
 
 Codex as a SharedOS agent turn driver.
 
@@ -2106,7 +2173,7 @@ audit all come from the SharedOS execution envelope unchanged.
 
 > **createCodexRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: [packages/adapters/src/codex/index.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L64)
+Defined in: [packages/adapters/src/codex/index.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/index.ts#L51)
 
 Codex as an installable runtime, reporting its own manifest.
 
@@ -2131,7 +2198,7 @@ this form files a turn's evidence under the harness that produced it.
 
 > **createDeepseekDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [packages/adapters/src/deepseek/index.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L56)
+Defined in: [packages/adapters/src/deepseek/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L37)
 
 DeepSeek Harness as a SharedOS agent turn driver.
 
@@ -2155,7 +2222,7 @@ changes no kernel code and adds no second permission path.
 
 > **createDeepseekRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: [packages/adapters/src/deepseek/index.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L71)
+Defined in: [packages/adapters/src/deepseek/index.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/index.ts#L52)
 
 DeepSeek Harness as an installable runtime, reporting its own manifest.
 
@@ -2180,7 +2247,7 @@ this form files a turn's evidence under the harness that produced it.
 
 > **createPiDriver**(`options`): [`HarnessDriver`](#harnessdriver)
 
-Defined in: [packages/adapters/src/pi/index.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L60)
+Defined in: [packages/adapters/src/pi/index.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L43)
 
 Pi as a SharedOS agent turn driver.
 
@@ -2204,7 +2271,7 @@ changes no kernel code and adds no second permission path.
 
 > **createPiRuntime**(`options`, `runtimeOptions?`): [`HarnessRuntime`](#harnessruntime)
 
-Defined in: [packages/adapters/src/pi/index.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L75)
+Defined in: [packages/adapters/src/pi/index.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/index.ts#L58)
 
 Pi as an installable runtime, reporting its own manifest.
 
@@ -2248,6 +2315,30 @@ the bench charges it per call the way it charges the others.
 #### Returns
 
 [`ModelReply`](#modelreply) \| `undefined`
+
+---
+
+### defineHarnessVendor()
+
+> **defineHarnessVendor**(`definition`): [`HarnessVendor`](#harnessvendor)
+
+Defined in: packages/adapters/src/vendors.ts:51
+
+One vendor's manifests and requirements from its few facts.
+
+Every harness here can also authenticate from a session it stored itself
+(`codex login`, a Claude subscription, `dsh`'s credentials file, Pi's
+`auth.json`), so credentials are optional for all of them.
+
+#### Parameters
+
+| Parameter    | Type                                                  |
+| ------------ | ----------------------------------------------------- |
+| `definition` | [`HarnessVendorDefinition`](#harnessvendordefinition) |
+
+#### Returns
+
+[`HarnessVendor`](#harnessvendor)
 
 ---
 

@@ -1,38 +1,25 @@
 import type { RuntimeManifest } from "@aicoo/sharedos-contracts";
-import type { McpHarnessId } from "@aicoo/sharedos-mcp";
 
 import { HarnessDriver, type HarnessDriverOptions } from "../driver.js";
 import { HarnessRuntime } from "../runtime.js";
 import type { HarnessRequirements, HarnessTransport } from "../harness.js";
 import type { StandardRuntimeOptions } from "@aicoo/sharedos-runtime";
-import { CODEX_PROTOCOL_ID, codexProtocol } from "./protocol.js";
-import { PROTOCOL_VERSION, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
+import { codexProtocol } from "./protocol.js";
+import { defineHarnessVendor, type HarnessVendor } from "../vendors.js";
 
 export { CODEX_PROTOCOL_ID, codexProtocol } from "./protocol.js";
 
-/** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
-export const CODEX_HARNESS_ID = "codex" satisfies McpHarnessId;
-
-export const CODEX_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
-  id: "sharedos.codex",
-  version: SHAREDOS_VERSION,
-  protocolVersion: PROTOCOL_VERSION,
-  metadata: {
-    package: "@aicoo/sharedos-adapters",
-    harness: CODEX_HARNESS_ID,
-    wireProtocol: CODEX_PROTOCOL_ID,
-    executionModel: "bounded-driver-loop",
-  },
-});
-
-/** What a live Codex session needs before it can run. */
-export const CODEX_REQUIREMENTS: HarnessRequirements = Object.freeze({
-  harness: CODEX_HARNESS_ID,
+/** Codex, stated once; see {@link HarnessVendor}. */
+export const CODEX_VENDOR: HarnessVendor = defineHarnessVendor({
+  id: "codex",
+  protocol: codexProtocol,
   executable: "codex",
   credentialVariables: ["OPENAI_API_KEY", "CODEX_API_KEY"],
-  /** Codex can also authenticate from a stored `codex login` session. */
-  credentialsOptional: true,
 });
+
+export const CODEX_HARNESS_ID = CODEX_VENDOR.id;
+export const CODEX_RUNTIME_MANIFEST: RuntimeManifest = CODEX_VENDOR.manifest;
+export const CODEX_REQUIREMENTS: HarnessRequirements = CODEX_VENDOR.requirements;
 
 export type CodexDriverOptions = Omit<HarnessDriverOptions, "manifest" | "protocol"> & {
   readonly transport: HarnessTransport;

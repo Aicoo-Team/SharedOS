@@ -8,4 +8,5 @@ export * from "./pi/index.js";
 export * from "./runtime.js";
 export type { DeclareStep, SeatTextOptions } from "./seat.js";
 export * from "./transcript.js";
+export * from "./vendors.js";
 export * from "./writer.js";

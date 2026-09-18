@@ -1,45 +1,26 @@
 import type { RuntimeManifest } from "@aicoo/sharedos-contracts";
-import type { McpHarnessId } from "@aicoo/sharedos-mcp";
 
 import { HarnessDriver, type HarnessDriverOptions } from "../driver.js";
 import { HarnessRuntime } from "../runtime.js";
 import type { HarnessRequirements, HarnessTransport } from "../harness.js";
 import type { StandardRuntimeOptions } from "@aicoo/sharedos-runtime";
-import { DEEPSEEK_PROTOCOL_ID, deepseekProtocol } from "./protocol.js";
-import { PROTOCOL_VERSION, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
+import { deepseekProtocol } from "./protocol.js";
+import { defineHarnessVendor, type HarnessVendor } from "../vendors.js";
 
 export { DEEPSEEK_PROTOCOL_ID, deepseekProtocol } from "./protocol.js";
 
-/** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
-export const DEEPSEEK_HARNESS_ID = "deepseek" satisfies McpHarnessId;
-
-export const DEEPSEEK_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
-  id: "sharedos.deepseek",
-  version: SHAREDOS_VERSION,
-  protocolVersion: PROTOCOL_VERSION,
-  metadata: {
-    package: "@aicoo/sharedos-adapters",
-    harness: DEEPSEEK_HARNESS_ID,
-    wireProtocol: DEEPSEEK_PROTOCOL_ID,
-    executionModel: "bounded-driver-loop",
-    /**
-     * The harness runs its own tools, so the permission-filtered catalogue
-     * cannot be declared in a frame. Stamped on every record this driver
-     * produces, because a column whose catalogue arrived out of band is making
-     * a narrower claim than one whose catalogue was on the wire.
-     */
-    catalogueDelivery: "out-of-band",
-  },
-});
-
-/** What a live DeepSeek Harness session needs before it can run. */
-export const DEEPSEEK_REQUIREMENTS: HarnessRequirements = Object.freeze({
-  harness: DEEPSEEK_HARNESS_ID,
+/** DeepSeek Harness, stated once; see {@link HarnessVendor}. */
+export const DEEPSEEK_VENDOR: HarnessVendor = defineHarnessVendor({
+  id: "deepseek",
+  protocol: deepseekProtocol,
   executable: "dsh",
   credentialVariables: ["DEEPSEEK_API_KEY", "DSH_API_KEY"],
-  /** `dsh` can also authenticate from a stored credentials file. */
-  credentialsOptional: true,
+  catalogueOutOfBand: true,
 });
+
+export const DEEPSEEK_HARNESS_ID = DEEPSEEK_VENDOR.id;
+export const DEEPSEEK_RUNTIME_MANIFEST: RuntimeManifest = DEEPSEEK_VENDOR.manifest;
+export const DEEPSEEK_REQUIREMENTS: HarnessRequirements = DEEPSEEK_VENDOR.requirements;
 
 export type DeepseekDriverOptions = Omit<HarnessDriverOptions, "manifest" | "protocol"> & {
   readonly transport: HarnessTransport;

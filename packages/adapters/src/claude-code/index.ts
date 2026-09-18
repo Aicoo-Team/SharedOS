@@ -1,38 +1,25 @@
 import type { RuntimeManifest } from "@aicoo/sharedos-contracts";
-import type { McpHarnessId } from "@aicoo/sharedos-mcp";
 
 import { HarnessDriver, type HarnessDriverOptions } from "../driver.js";
 import { HarnessRuntime } from "../runtime.js";
 import type { HarnessRequirements, HarnessTransport } from "../harness.js";
 import type { StandardRuntimeOptions } from "@aicoo/sharedos-runtime";
-import { CLAUDE_CODE_PROTOCOL_ID, claudeCodeProtocol } from "./protocol.js";
-import { PROTOCOL_VERSION, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
+import { claudeCodeProtocol } from "./protocol.js";
+import { defineHarnessVendor, type HarnessVendor } from "../vendors.js";
 
 export { CLAUDE_CODE_PROTOCOL_ID, claudeCodeProtocol } from "./protocol.js";
 
-/** The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. */
-export const CLAUDE_CODE_HARNESS_ID = "claude-code" satisfies McpHarnessId;
-
-export const CLAUDE_CODE_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
-  id: "sharedos.claude-code",
-  version: SHAREDOS_VERSION,
-  protocolVersion: PROTOCOL_VERSION,
-  metadata: {
-    package: "@aicoo/sharedos-adapters",
-    harness: CLAUDE_CODE_HARNESS_ID,
-    wireProtocol: CLAUDE_CODE_PROTOCOL_ID,
-    executionModel: "bounded-driver-loop",
-  },
-});
-
-/** What a live Claude Code session needs before it can run. */
-export const CLAUDE_CODE_REQUIREMENTS: HarnessRequirements = Object.freeze({
-  harness: CLAUDE_CODE_HARNESS_ID,
+/** Claude Code, stated once; see {@link HarnessVendor}. */
+export const CLAUDE_CODE_VENDOR: HarnessVendor = defineHarnessVendor({
+  id: "claude-code",
+  protocol: claudeCodeProtocol,
   executable: "claude",
   credentialVariables: ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"],
-  /** Claude Code can also authenticate from a stored subscription login. */
-  credentialsOptional: true,
 });
+
+export const CLAUDE_CODE_HARNESS_ID = CLAUDE_CODE_VENDOR.id;
+export const CLAUDE_CODE_RUNTIME_MANIFEST: RuntimeManifest = CLAUDE_CODE_VENDOR.manifest;
+export const CLAUDE_CODE_REQUIREMENTS: HarnessRequirements = CLAUDE_CODE_VENDOR.requirements;
 
 export type ClaudeCodeDriverOptions = Omit<HarnessDriverOptions, "manifest" | "protocol"> & {
   readonly transport: HarnessTransport;

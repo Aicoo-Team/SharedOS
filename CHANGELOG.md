@@ -182,6 +182,14 @@ each entry calls out what a host has to update.
   A transport of your own that opens a harness from `HarnessTurnRequest` should
   hand `instructions` over, since the hash now covers it.
 
+- **One vendor descriptor.** Each of the four vendor folders declared its id, its
+  driven manifest and its requirements from a copied template, and
+  `mcp-runtime.ts` declared each MCP manifest again. `defineHarnessVendor` builds
+  all of it from a vendor's few facts (id, codec, executable, credential
+  variables), and `CODEX_VENDOR`, `CLAUDE_CODE_VENDOR`, `DEEPSEEK_VENDOR` and
+  `PI_VENDOR` are exported beside the names that were already there. Every
+  manifest and every requirements object is what it was, key for key.
+
 - **One child-process runner under both ways a vendor CLI is seated.**
   `ChildProcessTransport` and the MCP harness runtime each spawned, framed JSON
   lines, kept diagnostics and stopped their child in a copy of their own, and
