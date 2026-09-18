@@ -28,6 +28,10 @@ live session. Live-run columns are a separate claim and are not made here.
 - Grading rules: version `5`
 - Columns: `Adversary`, `Standard`, `Codex`, `Claude Code`, `DeepSeek`, `Pi`
 - Prompt set, `Standard`: `4dbefcbd4c3cd3a8e59a612a2deb64d8f1b7a6315fc580b4deb0dd584491a424`
+- Prompt set, `Codex`: `fb7c0108ce899ab01c814a4dafce7515e390c660657e8c07f6f873766d76dd91`
+- Prompt set, `Claude Code`: `fb7c0108ce899ab01c814a4dafce7515e390c660657e8c07f6f873766d76dd91`
+- Prompt set, `DeepSeek`: `fb7c0108ce899ab01c814a4dafce7515e390c660657e8c07f6f873766d76dd91`
+- Prompt set, `Pi`: `fb7c0108ce899ab01c814a4dafce7515e390c660657e8c07f6f873766d76dd91`
 
 The case-set hash covers the declarations only: ids, tools, arguments,
 conditions, expectations, and the markers that decide whether an attempt is
@@ -42,8 +46,9 @@ match. Tool prose is inside this one: a description and an input schema are
 served to the model, so rewording them is a different world.
 
 The prompt-set hash covers how the seat was asked: what the column's runtime
-told it before each turn -- the turn's reach as a system message or as MCP
-initialize instructions, and the prompt written from the declared attempts --
+told it before each turn -- the turn's reach as a system message, as MCP
+initialize instructions or on a driven harness's opening request, and the
+prompt written from the declared attempts --
 taken from each turn's record rather than from the code that wrote it. It is
 per column, because the wording differs by design between a seat whose
 channel carries any name and one behind an MCP router, and a column that

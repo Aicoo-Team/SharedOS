@@ -12,6 +12,7 @@ import {
   ESCALATION_RESOURCE_PATH,
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAMESPACE,
+  PROMPT_HASH_ANNOTATION,
   SharedOSExecutor,
   StandardRuntime,
 } from "@aicoo/sharedos-runtime";
@@ -48,6 +49,8 @@ import {
 import { probeHarness } from "./node.js";
 import { deepseekFrameWriter, piFrameWriter } from "./writer.js";
 import { TranscriptTransport, type HarnessTranscript } from "./transcript.js";
+import { harnessTurnText } from "./harness.js";
+import { handedPromptHash } from "./seat.js";
 
 const NOW = "2026-08-18T09:00:00.000Z";
 const AGENT = { kind: "agent", agentId: "agent-1" } as const;
@@ -341,6 +344,39 @@ describe("a harness driven as a SharedOS turn", () => {
     expect(audit.events.some(({ type }) => type === "tool.invoked")).toBe(true);
     expect(transport.written).toHaveLength(1);
     expect(transport.written[0]).toMatchObject({ type: "function_call_output" });
+  });
+
+  it("hands the harness where the turn may operate, and records what it was told", async () => {
+    const transport = new TranscriptTransport(codexTranscript);
+    const { result } = await runWith(createCodexDriver({ transport }));
+
+    const opened = transport.opened[0];
+    expect(opened?.instructions).toMatch(/\S/u);
+    expect(harnessTurnText({ instructions: "where", prompt: "what" })).toBe("where\n\nwhat");
+    expect(harnessTurnText({ prompt: "what" })).toBe("what");
+    // The same identity a model seat told the same two texts would carry.
+    expect(result.metadata?.[PROMPT_HASH_ANNOTATION]).toBe(
+      await handedPromptHash(opened?.instructions, opened?.prompt ?? ""),
+    );
+  });
+
+  it("places a host's standing guidance before the reach, and hands over none when told to", async () => {
+    const plain = new TranscriptTransport(codexTranscript);
+    await runWith(createCodexDriver({ transport: plain }));
+    const guided = new TranscriptTransport(codexTranscript);
+    await runWith(createCodexDriver({ transport: guided, instructions: "Read before you write." }));
+    expect(guided.opened[0]?.instructions).toBe(
+      `Read before you write.\n\n${String(plain.opened[0]?.instructions)}`,
+    );
+
+    const silent = new TranscriptTransport(codexTranscript);
+    const { result } = await runWith(
+      createCodexDriver({ transport: silent, instructions: () => undefined }),
+    );
+    expect(silent.opened[0]).not.toHaveProperty("instructions");
+    expect(result.metadata?.[PROMPT_HASH_ANNOTATION]).toBe(
+      await handedPromptHash(undefined, silent.opened[0]?.prompt ?? ""),
+    );
   });
 
   it("shows the harness the sanitised context and nothing else", async () => {

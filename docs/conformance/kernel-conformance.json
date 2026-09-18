@@ -15,19 +15,23 @@
     },
     {
       "id": "codex-scripted",
-      "label": "Codex"
+      "label": "Codex",
+      "promptSetHash": "fb7c0108ce899ab01c814a4dafce7515e390c660657e8c07f6f873766d76dd91"
     },
     {
       "id": "claude-code-scripted",
-      "label": "Claude Code"
+      "label": "Claude Code",
+      "promptSetHash": "fb7c0108ce899ab01c814a4dafce7515e390c660657e8c07f6f873766d76dd91"
     },
     {
       "id": "deepseek-scripted",
-      "label": "DeepSeek"
+      "label": "DeepSeek",
+      "promptSetHash": "fb7c0108ce899ab01c814a4dafce7515e390c660657e8c07f6f873766d76dd91"
     },
     {
       "id": "pi-scripted",
-      "label": "Pi"
+      "label": "Pi",
+      "promptSetHash": "fb7c0108ce899ab01c814a4dafce7515e390c660657e8c07f6f873766d76dd91"
     }
   ],
   "rows": [

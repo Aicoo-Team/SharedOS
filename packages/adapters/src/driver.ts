@@ -14,15 +14,17 @@ import type {
   HarnessTransport,
   HarnessTurnRequest,
 } from "./harness.js";
-import { defaultPrompt, failed } from "./internal.js";
-import { SeatCalls, type DeclareStep } from "./seat.js";
+import { failed } from "./internal.js";
+import { SeatCalls, seatText, type DeclareStep, type SeatTextOptions } from "./seat.js";
 
-export interface HarnessDriverOptions {
+/**
+ * `instructions` reaches the harness on `HarnessTurnRequest.instructions`, for
+ * its transport to hand over with the prompt.
+ */
+export interface HarnessDriverOptions extends SeatTextOptions {
   readonly manifest: RuntimeManifest;
   readonly protocol: HarnessProtocol;
   readonly transport: HarnessTransport;
-  /** Overrides how the turn message becomes the harness prompt. */
-  readonly prompt?: (request: RuntimeTurnRequest) => string;
   /** Guard against a harness that streams unrelated frames without end. */
   readonly maxIgnoredFrames?: number;
   /** See {@link DeclareStep}. */
@@ -49,7 +51,7 @@ export class HarnessDriver implements AgentTurnDriver {
   readonly manifest: RuntimeManifest;
   readonly #protocol: HarnessProtocol;
   readonly #transport: HarnessTransport;
-  readonly #prompt: (request: RuntimeTurnRequest) => string;
+  readonly #text: SeatTextOptions;
   readonly #maxIgnoredFrames: number;
   readonly #declareStep: HarnessDriverOptions["declareStep"];
 
@@ -57,7 +59,10 @@ export class HarnessDriver implements AgentTurnDriver {
     this.manifest = options.manifest;
     this.#protocol = options.protocol;
     this.#transport = options.transport;
-    this.#prompt = options.prompt ?? defaultPrompt;
+    this.#text = {
+      ...(options.prompt === undefined ? {} : { prompt: options.prompt }),
+      ...(options.instructions === undefined ? {} : { instructions: options.instructions }),
+    };
     this.#maxIgnoredFrames = options.maxIgnoredFrames ?? DEFAULT_MAX_IGNORED_FRAMES;
     this.#declareStep = options.declareStep;
     if (!Number.isInteger(this.#maxIgnoredFrames) || this.#maxIgnoredFrames <= 0) {
@@ -66,9 +71,13 @@ export class HarnessDriver implements AgentTurnDriver {
   }
 
   async open(request: RuntimeTurnRequest, signal: AbortSignal): Promise<AgentTurnSession> {
+    // Hashed before the transport opens, which is where the harness is first
+    // told anything.
+    const text = await seatText(this.#text, request);
     const turn: HarnessTurnRequest = {
       executionId: request.executionId,
-      prompt: this.#prompt(request),
+      prompt: text.prompt,
+      ...(text.instructions === undefined ? {} : { instructions: text.instructions }),
       tools: this.#protocol.describeTools(request.tools),
       context: request.context,
       ...(request.metadata === undefined ? {} : { metadata: request.metadata }),
@@ -79,6 +88,7 @@ export class HarnessDriver implements AgentTurnDriver {
       this.#protocol,
       this.#maxIgnoredFrames,
       new SeatCalls(request, this.#declareStep),
+      text.promptHash,
     );
   }
 }
@@ -98,17 +108,21 @@ class HarnessSession implements AgentTurnSession {
   readonly #pending: HarnessStep[] = [];
   readonly #messages: string[] = [];
   readonly #calls: SeatCalls;
+  /** What the harness was told before it answered, hashed; the loop states it. */
+  readonly promptHash: string;
 
   constructor(
     channel: HarnessChannel,
     protocol: HarnessProtocol,
     maxIgnoredFrames: number,
     calls: SeatCalls,
+    promptHash: string,
   ) {
     this.#channel = channel;
     this.#protocol = protocol;
     this.#maxIgnoredFrames = maxIgnoredFrames;
     this.#calls = calls;
+    this.promptHash = promptHash;
   }
 
   async next(input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision> {

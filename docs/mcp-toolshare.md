@@ -164,7 +164,10 @@ system message by the model driver — and `prompt` is the task the harness was
 launched with. `instructions` is `null` when the host sent none.
 
 Both shipped runtimes compute it, in this one shape, before the seat is sent
-anything, and it lands in `SystemIdentity` beside `catalogHash`. The same words
+anything, and it lands in `SystemIdentity` beside `catalogHash`. The evaluation
+harness driver does too: it hands both texts to its transport on
+`HarnessTurnRequest`, and `harnessTurnText` is the two as one message for a
+harness whose opening frame has one slot. The same words
 carry the same hash whichever runtime said them. It covers what SharedOS said:
 a CLI's own system prompt is added on the far side of the wire and is not
 claimed.

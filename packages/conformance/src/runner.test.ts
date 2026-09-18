@@ -936,7 +936,12 @@ describe("the conformance suite", () => {
 
     expect(identity(run.manifest, MODEL_SCRIPTED_COLUMN.id)).toMatch(/^[0-9a-f]{64}$/u);
     expect(identity(run.manifest, ADVERSARY_COLUMN.id)).toBeUndefined();
-    expect(identity(run.manifest, CODEX_SCRIPTED_COLUMN.id)).toBeUndefined();
+    // A driven harness is handed the turn's reach and its prompt like any seat,
+    // in its own default wording, so it carries a set and not the model's.
+    expect(identity(run.manifest, CODEX_SCRIPTED_COLUMN.id)).toMatch(/^[0-9a-f]{64}$/u);
+    expect(identity(run.manifest, CODEX_SCRIPTED_COLUMN.id)).not.toBe(
+      identity(run.manifest, MODEL_SCRIPTED_COLUMN.id),
+    );
 
     // Same cases, same worlds, different wording: only the prompt set moves.
     expect(run.manifest.caseSetHash).toBe(again.manifest.caseSetHash);

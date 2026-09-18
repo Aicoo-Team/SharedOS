@@ -58,6 +58,7 @@ const {
   claudeCodeProtocol,
   codexProtocol,
   deepseekProtocol,
+  harnessTurnText,
   piProtocol,
 } = await import(join(root, "packages", "adapters", "dist", "index.js"));
 const { ChildProcessTransport, probeHarness } = await import(
@@ -160,7 +161,11 @@ const harnessConfig = (id) => {
 };
 
 /**
- * How each harness is launched, and how the turn's prompt reaches it.
+ * How each harness is launched, and how the turn's text reaches it.
+ *
+ * Each opening frame has one slot for text, so it carries `harnessTurnText`:
+ * the turn's instructions (where its tools may operate) and then the prompt.
+ * Both are in the column's prompt hash, so both are handed over.
  *
  * Every entry carries the flags that keep the harness's own tools out of the
  * run. Where a CLI has no such flag the harness is still launched, because a
@@ -182,7 +187,7 @@ const HARNESSES = [
     launch: (extra = []) => ({
       command: CODEX_REQUIREMENTS.executable,
       args: ["exec", "--json", "--skip-git-repo-check", ...extra, "-"],
-      openingFrame: (request) => ({ type: "user_input", text: request.prompt }),
+      openingFrame: (request) => ({ type: "user_input", text: harnessTurnText(request) }),
     }),
   },
   {
@@ -211,7 +216,7 @@ const HARNESSES = [
       ],
       openingFrame: (request) => ({
         type: "user",
-        message: { role: "user", content: [{ type: "text", text: request.prompt }] },
+        message: { role: "user", content: [{ type: "text", text: harnessTurnText(request) }] },
       }),
     }),
   },
@@ -256,7 +261,7 @@ const HARNESSES = [
           method: "session/prompt",
           params: {
             sessionId: request.executionId,
-            contentBlocks: [{ type: "text", text: request.prompt }],
+            contentBlocks: [{ type: "text", text: harnessTurnText(request) }],
           },
         },
       ],
@@ -274,7 +279,7 @@ const HARNESSES = [
       openingFrame: (request) => ({
         id: request.executionId,
         type: "prompt",
-        message: request.prompt,
+        message: harnessTurnText(request),
       }),
     }),
   },

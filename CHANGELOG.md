@@ -165,6 +165,23 @@ each entry calls out what a host has to update.
 
 ### Changed
 
+- **A driven harness is told where its turn may operate, and its record says what
+  it was told.** `HarnessDriver` handed its harness a prompt and nothing else,
+  and its session stated no `promptHash`, so the four vendor columns carried no
+  prompt set. It now takes `instructions` like the other two seats (the turn's
+  reach by default), carries them on the new optional
+  `HarnessTurnRequest.instructions`, and states the hash of both texts.
+  `harnessTurnText` renders the two as one message, and
+  `scripts/native-conformance.mjs` sends that in each opening frame where it
+  sent the prompt alone. The reference-host example driver states its hash the
+  same way.
+
+  **Hash effect.** `Codex`, `Claude Code`, `DeepSeek` and `Pi` gain a
+  `promptSetHash` in the conformance manifest, and their records a
+  `system.promptHash`. No other hash moves; `Standard`'s prompt set is unchanged.
+  A transport of your own that opens a harness from `HarnessTurnRequest` should
+  hand `instructions` over, since the hash now covers it.
+
 - **One seat module in `@aicoo/sharedos-adapters`.** The model driver, the harness
   driver and the MCP harness runtime each composed the seat's two texts, hashed
   them, recognised the escalate affordance and stamped a `ToolCall` in their own
