@@ -293,6 +293,12 @@ StandardRuntime(driver))`, which `TurnExecutor` built (see Removed).
 
 ### Removed
 
+- `OpenToolBridgeOptions.step` from `@aicoo/sharedos-mcp`, and the `options`
+  parameter of `BridgeToolInvoker.invokeTool` with it. No caller passed a step:
+  a harness keeps its own loop, so a turn served over MCP declares none and is
+  bounded by `maxToolCalls` and `timeoutMs`, which `docs/mcp-toolshare.md` now
+  says. `RuntimeHost` still satisfies `BridgeToolInvoker`. The open-items row
+  closes.
 - `ESCALATION_ASKED_EVENT` and `escalationAskedEvent` from
   `@aicoo/sharedos-runtime`, shipped in 0.1.0-alpha.4. A delegate states the ask
   through `RuntimeHost.annotate` under `ESCALATION_ASKED_ANNOTATION`, in the

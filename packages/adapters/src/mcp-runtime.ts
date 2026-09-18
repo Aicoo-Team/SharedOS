@@ -339,14 +339,14 @@ class EscalationLatch implements BridgeToolInvoker {
     this.#offered = escalationOffered(request.tools);
   }
 
-  async invokeTool(call: ToolCall, options?: { readonly step?: number }): Promise<ToolResult> {
+  async invokeTool(call: ToolCall): Promise<ToolResult> {
     if (this.#reason !== undefined) {
       this.#afterwards += 1;
       return this.#refuse(call);
     }
     const reason = this.#offered ? escalationRequest(call.tool, call.arguments) : undefined;
     if (reason === undefined) {
-      return this.#host.invokeTool(call, options);
+      return this.#host.invokeTool(call);
     }
     this.#reason = reason;
     // For the record, not for the turn. `annotate` never refuses on the state

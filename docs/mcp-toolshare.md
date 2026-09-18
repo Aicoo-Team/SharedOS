@@ -242,6 +242,12 @@ try {
 }
 ```
 
+A turn served this way is bounded by calls. The harness keeps its own loop and
+declares no step, so the envelope's `maxSteps` does not apply and
+`step_limit_exceeded` cannot arise; `maxToolCalls` and `timeoutMs` are the
+limits, and a call past the budget comes back `denied` /
+`tool_call_limit_exceeded` as a result the harness reads.
+
 ### Outside a turn
 
 ```ts
