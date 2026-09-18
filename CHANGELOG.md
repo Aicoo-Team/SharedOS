@@ -165,6 +165,16 @@ each entry calls out what a host has to update.
 
 ### Changed
 
+- **One seat module in `@aicoo/sharedos-adapters`.** The model driver, the harness
+  driver and the MCP harness runtime each composed the seat's two texts, hashed
+  them, recognised the escalate affordance and stamped a `ToolCall` in their own
+  copy, with the reason the catalogue gates the affordance's name written out
+  three times. They now share `seat.ts`, and the reason is stated once. No
+  behaviour changes. `ModelDriverOptions.instructions` also accepts a string,
+  placed before the turn's reach, as `McpHarnessRuntimeOptions.instructions`
+  always has; both interfaces extend the exported `SeatTextOptions`, and
+  `declareStep` is typed by the exported `DeclareStep`.
+
 - **The route-lease row quotes one refusal code, and carries the transport's as
   its cause.** A `messages.request` the transport refuses leaves two operations
   under one call id: `message.sent`, denied with the transport's code, then the

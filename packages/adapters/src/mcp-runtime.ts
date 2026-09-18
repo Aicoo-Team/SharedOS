@@ -27,10 +27,7 @@ import { createStreamableHttpMcpServer } from "@aicoo/sharedos-mcp/node";
 import {
   ESCALATION_ASKED_ANNOTATION,
   PROMPT_HASH_ANNOTATION,
-  describeReach,
   escalationAskedAnnotation,
-  escalationOffered,
-  escalationRequest,
   type RuntimeHost,
   type RuntimePlugin,
   type RuntimeTurnRequest,
@@ -45,7 +42,8 @@ import { DEEPSEEK_HARNESS_ID } from "./deepseek/index.js";
 import { deepseekProtocol } from "./deepseek/protocol.js";
 import { PI_HARNESS_ID } from "./pi/index.js";
 import { piProtocol } from "./pi/protocol.js";
-import { defaultPrompt, failed, handedPromptHash } from "./internal.js";
+import { failed } from "./internal.js";
+import { SeatCalls, seatText, type SeatTextOptions } from "./seat.js";
 import { PROTOCOL_VERSION, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
 
 /**
@@ -126,27 +124,18 @@ export interface McpHarnessSpec {
   readonly launch: (context: McpLaunchContext) => McpHarnessLaunch;
 }
 
-export interface McpHarnessRuntimeOptions {
+/**
+ * `instructions` is handed to the harness at MCP initialize time. That field is
+ * the seat MCP gives a server for saying how its tools are meant to be used,
+ * and a harness that honours it puts the text where the model reads it, so the
+ * model is told where to point the catalogue rather than search for it. Whether
+ * the model sees it is the harness's doing: Claude Code surfaces server
+ * instructions, and a harness that does not leaves the model with the catalogue
+ * alone.
+ */
+export interface McpHarnessRuntimeOptions extends SeatTextOptions {
   /** Overrides the manifest, so a conformance column can name itself. */
   readonly manifest?: RuntimeManifest;
-  /**
-   * Guidance handed to the harness at MCP initialize time.
-   *
-   * The initialize `instructions` field is the seat MCP gives a server for
-   * saying how its tools are meant to be used, and a harness that honours it
-   * puts the text where the model reads it. Per turn it carries where the
-   * turn may operate -- `request.context.reach` rendered by `describeReach`
-   * -- so the model is told where to point the catalogue rather than search
-   * for it. A string here is the host's standing guidance, placed before the
-   * turn's reach. A function replaces the composition and says exactly what
-   * the harness is told; returning `undefined` hands over no instructions.
-   *
-   * Whether the model sees it is the harness's doing: Claude Code surfaces
-   * server instructions, and a harness that does not leaves the model with
-   * the catalogue alone, which is what it had before.
-   */
-  readonly instructions?: string | ((request: RuntimeTurnRequest) => string | undefined);
-  readonly prompt?: (request: RuntimeTurnRequest) => string;
   /** Where the per-turn scratch workspace is created. */
   readonly workspaceRoot?: string;
   /** Kept for diagnosis: the harness's stderr and unparsed stdout. */
@@ -222,16 +211,14 @@ export function createMcpHarnessRuntime(
         tools: request.tools,
         host: escalation,
       });
-      const instructions = turnInstructions(options.instructions, request);
-      const prompt = (options.prompt ?? defaultPrompt)(request);
-      // The same two texts, in the same shape, as the model driver hashes:
-      // what the server will say at initialize and what the CLI is launched
-      // with. Taken and stated here, before the port is bound or anything is
-      // written, so a turn cancelled at any later point still records what it
-      // was told: the envelope holds an annotation for every ending, where the
-      // outcome's own metadata rides on an outcome a cancelled turn never
-      // returns. What the CLI adds of its own is not here.
-      host.annotate(PROMPT_HASH_ANNOTATION, await handedPromptHash(instructions, prompt));
+      // What the server will say at initialize and what the CLI is launched
+      // with. Stated here, before the port is bound or anything is written, so
+      // a turn cancelled at any later point still records what it was told:
+      // the envelope holds an annotation for every ending, where the outcome's
+      // own metadata rides on an outcome a cancelled turn never returns. What
+      // the CLI adds of its own is not here.
+      const { instructions, prompt, promptHash } = await seatText(options, request);
+      host.annotate(PROMPT_HASH_ANNOTATION, promptHash);
       const server = new McpToolServer({
         invoker: bridge,
         serverInfo: {
@@ -317,8 +304,7 @@ class EscalationLatch implements BridgeToolInvoker {
   readonly #host: BridgeToolInvoker;
   readonly #annotate: RuntimeHost["annotate"];
   readonly #clock: () => string;
-  /** Whether this turn was granted the affordance at all. */
-  readonly #offered: boolean;
+  readonly #calls: SeatCalls;
   #reason: string | undefined;
   #afterwards = 0;
 
@@ -331,12 +317,8 @@ class EscalationLatch implements BridgeToolInvoker {
     this.#host = host;
     this.#annotate = annotate;
     this.#clock = clock;
-    // Read from the turn's own catalogue, because skipping the envelope skips
-    // its effective-catalogue check with it. A call naming the affordance
-    // without holding it is passed through and refused `tool_unavailable` like
-    // any other unpublished name -- the same rule both native drivers apply
-    // before ending a turn on the name.
-    this.#offered = escalationOffered(request.tools);
+    // Read from the turn's own catalogue; `SeatCalls` says why.
+    this.#calls = new SeatCalls(request);
   }
 
   async invokeTool(call: ToolCall): Promise<ToolResult> {
@@ -344,7 +326,7 @@ class EscalationLatch implements BridgeToolInvoker {
       this.#afterwards += 1;
       return this.#refuse(call);
     }
-    const reason = this.#offered ? escalationRequest(call.tool, call.arguments) : undefined;
+    const reason = this.#calls.escalation(call.tool, call.arguments);
     if (reason === undefined) {
       return this.#host.invokeTool(call);
     }
@@ -836,22 +818,5 @@ export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
     keepStdinOpen: true,
   }),
 });
-
-/**
- * What one turn's server says at initialize; see `McpHarnessRuntimeOptions.instructions`.
- *
- * The host's standing text first, then the turn's reach, so a harness that
- * shows the model one block reads the guidance before the map.
- */
-function turnInstructions(
-  configured: McpHarnessRuntimeOptions["instructions"],
-  request: RuntimeTurnRequest,
-): string | undefined {
-  if (typeof configured === "function") {
-    return configured(request);
-  }
-  const reach = describeReach(request.context.reach);
-  return configured === undefined ? reach : `${configured}\n\n${reach}`;
-}
 
 export { claudeAgentSdkMcpOptions };

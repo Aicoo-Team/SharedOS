@@ -6,9 +6,6 @@ import type {
   ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
-  describeReach,
-  escalationOffered,
-  escalationRequest,
   type AgentTurnDecision,
   type AgentTurnDriver,
   type AgentTurnInput,
@@ -23,13 +20,16 @@ import {
   type ModelTool,
   type ModelToolCall,
 } from "./client.js";
+import { failed, parseToolArguments, toolResultBody } from "../internal.js";
 import {
-  defaultPrompt,
-  failed,
-  handedPromptHash,
-  parseToolArguments,
-  toolResultBody,
-} from "../internal.js";
+  SeatCalls,
+  askedToEscalate,
+  seatText,
+  seatToolCall,
+  type DeclareStep,
+  type SeatText,
+  type SeatTextOptions,
+} from "../seat.js";
 
 /**
  * The alphabet a chat-completions provider accepts for a function name.
@@ -91,22 +91,15 @@ export class ToolNameCodec {
   }
 }
 
-export interface ModelDriverOptions {
+/**
+ * `instructions` reaches the model as a system message, which is what a
+ * chat-completions provider's system role is for, and it is the same layer a
+ * harness maps MCP initialize instructions into. With none, no system message
+ * is sent.
+ */
+export interface ModelDriverOptions extends SeatTextOptions {
   readonly manifest: RuntimeManifest;
   readonly client: ModelClient;
-  /** Overrides how the turn message becomes the model's prompt. */
-  readonly prompt?: (request: RuntimeTurnRequest) => string;
-  /**
-   * Overrides what the model is told before the prompt, as a system message.
-   *
-   * By default it is `request.context.reach` rendered by `describeReach`:
-   * where this turn's tools may operate, with the authority left out. The
-   * prompt carries the task and this carries the environment the task runs
-   * in, which is what a chat-completions provider's system role is for, and
-   * it is the same layer a harness maps MCP initialize instructions into.
-   * Returning `undefined` sends no system message at all.
-   */
-  readonly instructions?: (request: RuntimeTurnRequest) => string | undefined;
   /**
    * Guard against a model that never forms a readable call.
    *
@@ -116,20 +109,8 @@ export interface ModelDriverOptions {
    * this many in one turn, the turn fails instead.
    */
   readonly maxMalformedCalls?: number;
-  /**
-   * The step to declare for the nth call this turn releases, if any.
-   *
-   * Returning `undefined` -- the default for every call -- leaves the step to
-   * the loop, which is what a driver asking for one call at a time should do.
-   *
-   * It exists for the one thing a driver cannot otherwise express: reaching
-   * past its own budget. The loop's index stops at `maxSteps`, so a call at or
-   * past the ceiling can only be made by a driver that names the step itself.
-   * Supplying this makes the driver the attacker for that call, which is a
-   * different claim from the model choosing it, and a column that uses it
-   * should say so rather than letting the row read as a model's doing.
-   */
-  readonly declareStep?: (index: number, request: RuntimeTurnRequest) => number | undefined;
+  /** See {@link DeclareStep}. */
+  readonly declareStep?: DeclareStep;
 }
 
 const DEFAULT_MAX_MALFORMED_CALLS = 8;
@@ -158,16 +139,17 @@ const DEFAULT_MAX_MALFORMED_CALLS = 8;
 export class ModelDriver implements AgentTurnDriver {
   readonly manifest: RuntimeManifest;
   readonly #client: ModelClient;
-  readonly #prompt: (request: RuntimeTurnRequest) => string;
-  readonly #instructions: (request: RuntimeTurnRequest) => string | undefined;
+  readonly #text: SeatTextOptions;
   readonly #maxMalformedCalls: number;
-  readonly #declareStep: ModelDriverOptions["declareStep"];
+  readonly #declareStep: DeclareStep | undefined;
 
   constructor(options: ModelDriverOptions) {
     this.manifest = options.manifest;
     this.#client = options.client;
-    this.#prompt = options.prompt ?? defaultPrompt;
-    this.#instructions = options.instructions ?? defaultInstructions;
+    this.#text = {
+      ...(options.prompt === undefined ? {} : { prompt: options.prompt }),
+      ...(options.instructions === undefined ? {} : { instructions: options.instructions }),
+    };
     this.#maxMalformedCalls = options.maxMalformedCalls ?? DEFAULT_MAX_MALFORMED_CALLS;
     if (!Number.isInteger(this.#maxMalformedCalls) || this.#maxMalformedCalls <= 0) {
       throw new TypeError("maxMalformedCalls must be a positive integer");
@@ -182,16 +164,15 @@ export class ModelDriver implements AgentTurnDriver {
       description: tool.description,
       parameters: tool.inputSchema,
     }));
-    const instructions = this.#instructions(request);
-    const prompt = this.#prompt(request);
-    return new ModelSession(this.#client, request, codec, tools, instructions, prompt, {
-      maxMalformedCalls: this.#maxMalformedCalls,
-      // Taken over the two texts the model is about to be sent, before it is
-      // sent anything, so the identity the record carries is the one the
-      // first request was built from and not a reconstruction.
-      promptHash: await handedPromptHash(instructions, prompt),
-      ...(this.#declareStep === undefined ? {} : { declareStep: this.#declareStep }),
-    });
+    return new ModelSession(
+      this.#client,
+      request,
+      codec,
+      tools,
+      await seatText(this.#text, request),
+      new SeatCalls(request, this.#declareStep),
+      this.#maxMalformedCalls,
+    );
   }
 }
 
@@ -213,11 +194,9 @@ class ModelSession implements AgentTurnSession {
    */
   readonly #pending: ModelToolCall[] = [];
   readonly #maxMalformedCalls: number;
-  readonly #declareStep: ModelDriverOptions["declareStep"];
+  readonly #calls: SeatCalls;
   /** What the model was told before it answered: the system message and the prompt, hashed. */
   readonly #promptHash: string;
-  /** Whether this turn's catalogue offers the escalate affordance at all. */
-  readonly #offered: boolean;
   #servedModel: string | undefined;
   /** Why the last reply ended, in the provider's words, once one has. */
   #finishReason: string | undefined;
@@ -226,20 +205,15 @@ class ModelSession implements AgentTurnSession {
   #outputTokens: number | undefined;
   /** Calls refused here for unreadable arguments this turn. */
   #malformed = 0;
-  /** Calls released to the loop this turn, which is what a step policy indexes. */
-  #released = 0;
 
   constructor(
     client: ModelClient,
     request: RuntimeTurnRequest,
     codec: ToolNameCodec,
     tools: readonly ModelTool[],
-    instructions: string | undefined,
-    prompt: string,
-    options: Pick<ModelDriverOptions, "declareStep"> & {
-      readonly maxMalformedCalls: number;
-      readonly promptHash: string;
-    },
+    text: SeatText,
+    calls: SeatCalls,
+    maxMalformedCalls: number,
   ) {
     this.#client = client;
     this.#request = request;
@@ -249,13 +223,14 @@ class ModelSession implements AgentTurnSession {
     // turn may operate, then the prompt. Nothing the model is told here is a
     // permission; the kernel decides every call the model goes on to make.
     this.#messages = [
-      ...(instructions === undefined ? [] : [{ role: "system", content: instructions } as const]),
-      { role: "user", content: prompt },
+      ...(text.instructions === undefined
+        ? []
+        : [{ role: "system", content: text.instructions } as const]),
+      { role: "user", content: text.prompt },
     ];
-    this.#maxMalformedCalls = options.maxMalformedCalls;
-    this.#promptHash = options.promptHash;
-    this.#declareStep = options.declareStep;
-    this.#offered = escalationOffered(request.tools);
+    this.#maxMalformedCalls = maxMalformedCalls;
+    this.#promptHash = text.promptHash;
+    this.#calls = calls;
   }
 
   /**
@@ -345,13 +320,9 @@ class ModelSession implements AgentTurnSession {
    * running the calls the model asked for after it would execute work on the
    * far side of a decision nobody has made yet.
    *
-   * "Off the catalogue" is load-bearing. Ending the turn here skips the
-   * envelope, and with it the envelope's check that the tool was published to
-   * this agent, so the catalogue is read first: a model that emits the name
-   * without having been offered it -- a hallucinated tool, or one remembered
-   * from another turn -- has its call passed through to be refused
-   * `tool_unavailable` like any other invented name. Without that, any model
-   * could reach the owner on the strength of a string no host granted.
+   * "Off the catalogue" is load-bearing, and `SeatCalls` says why: a model that
+   * emits the name without having been offered it has its call passed through
+   * to be refused `tool_unavailable` like any other invented name.
    *
    * Arguments that do not parse are not sent as `{}`. An empty object is a call
    * the model never made, and a tool whose schema accepts one -- every parameter
@@ -374,14 +345,19 @@ class ModelSession implements AgentTurnSession {
         return undefined;
       }
 
-      const reading = readModelToolCall(next, this.#codec, this.#offered, this.#request.context);
+      const reading = readModelToolCall(
+        next,
+        this.#codec,
+        this.#calls.escalationOffered,
+        this.#request.context,
+      );
       if (reading.type === "escalate") {
         this.#pending.length = 0;
         return { type: "escalate", reason: reading.reason, metadata: this.#metadata() };
       }
 
       if (reading.type === "tool_call") {
-        return this.#call(reading.call);
+        return this.#calls.release(reading.call);
       }
       this.#malformed += 1;
       if (this.#malformed > this.#maxMalformedCalls) {
@@ -435,17 +411,6 @@ class ModelSession implements AgentTurnSession {
       this.#outputTokens = (this.#outputTokens ?? 0) + reply.usage.outputTokens;
     }
   }
-
-  #call(call: ToolCall): AgentTurnDecision {
-    const index = this.#released;
-    this.#released += 1;
-    const step = this.#declareStep?.(index, this.#request);
-    return {
-      type: "tool_call",
-      call,
-      ...(step === undefined ? {} : { step }),
-    };
-  }
 }
 
 /** Where one call the model asked for goes once it has been read. */
@@ -478,7 +443,7 @@ export function readModelToolCall(
 ): ModelToolCallReading {
   const tool = codec.fromWire(call.name);
   const parsed = parseToolArguments(call.arguments);
-  const escalation = offered ? escalationRequest(tool, parsed) : undefined;
+  const escalation = askedToEscalate(offered, tool, parsed);
   if (escalation !== undefined) {
     return { type: "escalate", reason: escalation };
   }
@@ -497,16 +462,7 @@ export function readModelToolCall(
       },
     };
   }
-  return {
-    type: "tool_call",
-    call: {
-      id: call.id,
-      tool,
-      arguments: parsed,
-      traceId: context.traceId,
-      requestedAt: context.now,
-    },
-  };
+  return { type: "tool_call", call: seatToolCall(context, call.id, tool, parsed) };
 }
 
 /** The message that answers one call, in the shape the model reads it back. */
@@ -521,10 +477,3 @@ export function modelToolResultMessage(result: ToolResult): ModelMessage {
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
-
-/** What a model is told before its prompt when the driver is given no `instructions`. */
-function defaultInstructions(request: RuntimeTurnRequest): string {
-  return describeReach(request.context.reach);
-}
-
-/** The message payload as a prompt, matching what a harness driver does with it. */

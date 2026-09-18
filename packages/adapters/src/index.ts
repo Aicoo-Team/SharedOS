@@ -6,5 +6,6 @@ export * from "./harness.js";
 export * from "./model/index.js";
 export * from "./pi/index.js";
 export * from "./runtime.js";
+export type { DeclareStep, SeatTextOptions } from "./seat.js";
 export * from "./transcript.js";
 export * from "./writer.js";
