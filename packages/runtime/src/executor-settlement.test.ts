@@ -501,6 +501,7 @@ describe("executor settlement profile", () => {
 
   it("settles a published result after the natural work deadline without another model decision", async () => {
     let published = false;
+    const publication = gate();
     let workSignal: AbortSignal | undefined;
     const nextDecision = vi.fn(async () => ({ type: "tool_call" as const, call }));
     const ingestToolResult = vi.fn(
@@ -516,6 +517,7 @@ describe("executor settlement profile", () => {
       invoke: async (_context, _call, signal) => {
         published = true;
         workSignal = signal;
+        publication.resolve();
         await new Promise<void>((resolve) => {
           if (signal.aborted) resolve();
           else signal.addEventListener("abort", () => resolve(), { once: true });
@@ -529,7 +531,8 @@ describe("executor settlement profile", () => {
         };
       },
     });
-    const result = await new TurnExecutor(
+    vi.useFakeTimers();
+    const execution = new TurnExecutor(
       actualKernel,
       {
         settlement: driverSettlement,
@@ -546,8 +549,32 @@ describe("executor settlement profile", () => {
       },
       { clock: () => now, settlement: { version: "1", timeoutMs: 100 } },
     ).execute({ ...request(), tools: [tool], options: { timeoutMs: 20 } });
-    expect(result).toMatchObject({ status: "cancelled", settlement: { status: "settled" } });
-    expect(nextDecision).toHaveBeenCalledOnce();
-    expect(ingestToolResult).toHaveBeenCalledOnce();
+    try {
+      // Wait for actual publication; crypto/provider setup can outlive a microtask drain.
+      await Promise.race([
+        publication.promise,
+        execution.then(() => {
+          throw new Error("Turn ended before tool result publication");
+        }),
+      ]);
+      expect(published).toBe(true);
+      expect(workSignal?.aborted).toBe(false);
+      expect(nextDecision).toHaveBeenCalledOnce();
+      expect(ingestToolResult).not.toHaveBeenCalled();
+
+      // Exercise the executor's actual timer, rather than a manual AbortController.
+      await vi.advanceTimersByTimeAsync(20);
+      const result = await execution;
+      expect(result).toMatchObject({ status: "cancelled", settlement: { status: "settled" } });
+      expect(nextDecision).toHaveBeenCalledOnce();
+      expect(ingestToolResult).toHaveBeenCalledOnce();
+    } finally {
+      try {
+        await vi.runAllTimersAsync();
+        await execution;
+      } finally {
+        vi.useRealTimers();
+      }
+    }
   });
 });
