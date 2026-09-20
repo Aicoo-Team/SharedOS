@@ -197,7 +197,7 @@ export async function probeHarness(
   requirements: HarnessRequirements,
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ): Promise<HarnessAvailability> {
-  const executable = await findExecutable(requirements.executable, environment["PATH"]);
+  const executable = await findExecutable(requirements.executable, environment);
   if (executable === undefined) {
     return {
       harness: requirements.harness,
@@ -345,15 +345,37 @@ export function probePi(
   return probeHarness(PI_REQUIREMENTS, environment);
 }
 
-async function findExecutable(name: string, path: string | undefined): Promise<string | undefined> {
-  for (const directory of (path ?? "").split(delimiter).filter((entry) => entry !== "")) {
-    const candidate = join(directory, name);
-    try {
-      await access(candidate, constants.X_OK);
-      return candidate;
-    } catch {
-      continue;
+async function findExecutable(
+  name: string,
+  environment: Readonly<Record<string, string | undefined>>,
+): Promise<string | undefined> {
+  const suffixes = executableSuffixes(environment["PATHEXT"]);
+  for (const directory of (environment["PATH"] ?? "")
+    .split(delimiter)
+    .filter((entry) => entry !== "")) {
+    for (const suffix of suffixes) {
+      const candidate = join(directory, `${name}${suffix}`);
+      try {
+        await access(candidate, constants.X_OK);
+        return candidate;
+      } catch {
+        continue;
+      }
     }
   }
   return undefined;
+}
+
+function executableSuffixes(pathExt: string | undefined): readonly string[] {
+  const declared = pathExt
+    ?.split(";")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== "");
+  const extensions =
+    declared !== undefined && declared.length > 0
+      ? declared
+      : process.platform === "win32"
+        ? [".COM", ".EXE", ".BAT", ".CMD"]
+        : [];
+  return ["", ...extensions];
 }
