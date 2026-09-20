@@ -1059,7 +1059,7 @@ export class SharedOSKernel {
         "denied",
         context.now,
         "authority_unavailable",
-        "Authority could not be loaded from its trusted source",
+        AUTHORITY_UNAVAILABLE_MESSAGE,
       );
       await this.#recordToolResult(context, call, result);
       return result;
@@ -1351,7 +1351,7 @@ export class SharedOSKernel {
         "denied",
         context.now,
         "authority_unavailable",
-        "Authority could not be loaded from its trusted source",
+        AUTHORITY_UNAVAILABLE_MESSAGE,
       );
       await this.#recordResourceResult(context, request, result);
       return result;
@@ -1673,7 +1673,7 @@ export class SharedOSKernel {
         "denied",
         context.now,
         "authority_unavailable",
-        "Authority could not be loaded from its trusted source",
+        AUTHORITY_UNAVAILABLE_MESSAGE,
       );
       await this.#recordMessageResult(context, envelope, result);
       return result;
@@ -2294,6 +2294,13 @@ export class SharedOSKernel {
     }
   }
 }
+
+/**
+ * What a tool call, a resource operation and a message are each told when
+ * authority could not be resolved. The three refuse in their own result shape;
+ * the sentence is the one thing they share.
+ */
+const AUTHORITY_UNAVAILABLE_MESSAGE = "Authority could not be loaded from its trusted source";
 
 /** What a policy source that could not be read is reported as; it names no operation. */
 const POLICY_OUTAGE = { kind: "policy", reasonCode: "host_policy_unavailable" } as const;
