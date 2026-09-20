@@ -1502,3 +1502,32 @@ offers the same hook.
 #### Returns
 
 `void`
+
+---
+
+### terminalSource()
+
+> **terminalSource**(`events`): `"envelope"` \| `"runtime"` \| `undefined`
+
+Defined in: [packages/runtime/src/executor.ts:1100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L1100)
+
+Whether the envelope refused the turn or the runtime reported its own failure.
+
+Read back from the event the envelope already emits rather than threaded
+through every return, and it is the distinction a record reader needs before
+crediting enforcement: a plugin that reports its own error is not the envelope
+stopping it.
+
+Exported for that reader. Whoever assembles a record from a turn's events has
+the same question, and a second loop over `turn.failed` would be a second
+place to decide what the event means.
+
+#### Parameters
+
+| Parameter | Type                |
+| --------- | ------------------- |
+| `events`  | readonly `object`[] |
+
+#### Returns
+
+`"envelope"` \| `"runtime"` \| `undefined`

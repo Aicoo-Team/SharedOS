@@ -7,7 +7,11 @@ import type {
 } from "@aicoo/sharedos-contracts";
 import { RuntimeManifestSchema, isJsonObject } from "@aicoo/sharedos-contracts";
 import { type AuditEvent, isInfrastructureDenial } from "@aicoo/sharedos-core";
-import { ESCALATION_ASKED_ANNOTATION, PROMPT_HASH_ANNOTATION } from "@aicoo/sharedos-runtime";
+import {
+  ESCALATION_ASKED_ANNOTATION,
+  PROMPT_HASH_ANNOTATION,
+  terminalSource,
+} from "@aicoo/sharedos-runtime";
 
 import {
   type AuthoritySnapshotRecord,
@@ -95,6 +99,7 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
       agent: request.agent,
       status: result.status,
       ...terminalOutcome(result),
+      ...endedBy(result),
       ...escalationAsked(result),
       ...callsAfterEscalation(result),
       exposedTools: exposedTools(result.events),
@@ -126,6 +131,17 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
     throw new TypeError(`Assembled execution record is not valid: ${parsed.error.message}`);
   }
   return parsed.data;
+}
+
+/**
+ * Who ended a failed turn, read from the turn's events with the reader the
+ * envelope itself uses. From the events and not from the `turn.ended` audit
+ * event, which says the same thing: that write can be dropped, and a record is
+ * assembled from a result that always has its events.
+ */
+function endedBy(result: ExecutionResult): Partial<ExecutionRecordExecution> {
+  const source = terminalSource(result.events);
+  return source === undefined ? {} : { endedBy: source };
 }
 
 /**

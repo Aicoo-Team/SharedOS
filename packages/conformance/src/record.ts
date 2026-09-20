@@ -188,6 +188,13 @@ export const ExecutionRecordExecutionSchema = z
     agent: AddressSchema,
     status: z.enum(["succeeded", "denied", "failed", "cancelled", "escalated"]),
     terminalReasonCode: IdentifierSchema.optional(),
+    /**
+     * Who ended a failed turn: `envelope` when it refused the runtime's outcome
+     * or the runtime threw, `runtime` when it relayed a failure the runtime
+     * reported as its own. Absent on a turn that did not fail. A reader needs it
+     * before crediting a failed turn to a boundary as enforcement.
+     */
+    endedBy: z.enum(["envelope", "runtime"]).optional(),
     output: JsonValueSchema.optional(),
     /**
      * Set when the turn stopped and asked a human to decide. Carried in the

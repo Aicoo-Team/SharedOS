@@ -258,24 +258,7 @@ function turnOutcome(
   const met =
     observedStatus === expected.status &&
     (expected.reasonCode === undefined || reasonCode === expected.reasonCode);
-  return { met, expected, observedStatus, reasonCode, endedBy: turnEndedBy(record) };
-}
-
-/**
- * Who ended a failed turn, read from the record rather than inferred from the
- * code: the executor stamps `source` on `turn.failed` -- `envelope` when it
- * refused the runtime's outcome or the runtime threw, `runtime` when it relayed
- * a failure the runtime reported as its own. Absent on a record written before
- * the stamp existed, or on a turn that did not fail.
- */
-function turnEndedBy(record: ExecutionRecord): "envelope" | "runtime" | undefined {
-  const failed = record.execution.events.find(({ type }) => type === "turn.failed");
-  const data = failed?.data;
-  if (data === undefined || data === null || typeof data !== "object" || Array.isArray(data)) {
-    return undefined;
-  }
-  const source = (data as { readonly source?: unknown }).source;
-  return source === "envelope" || source === "runtime" ? source : undefined;
+  return { met, expected, observedStatus, reasonCode, endedBy: record.execution.endedBy };
 }
 
 /**
