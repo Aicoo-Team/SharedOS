@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import type { Capability } from "@aicoo/sharedos-contracts";
+import type { Capability, MessageEnvelope } from "@aicoo/sharedos-contracts";
+import { CapabilityAuthorizer, SharedOSKernel } from "@aicoo/sharedos-core";
 
 import {
   InMemoryDelegationChainResolver,
+  InMemoryGrantSource,
+  InMemoryMessageRequestRouter,
+  InMemoryMessageTransport,
   InMemoryToolNamespaceSettingsStore,
   UnavailableDelegationChainResolver,
+  UnavailableGrantUsageStore,
   createTestContext,
   createTestGrant,
   createTestKernel,
@@ -149,5 +154,108 @@ describe("testkit", () => {
       store.applyUpdate(context, { enable: ["calendar"], disable: ["files"] }),
     ).resolves.toEqual(["calendar"]);
     expect(store.get("namespace-1")).toEqual(["calendar"]);
+  });
+
+  it("moves a grant's expiry in both grant stores, and refuses an id it does not hold", async () => {
+    const notes: Capability = {
+      resource: { namespace: "files", path: ["Workspace", "notes.md"] },
+      actions: ["read"],
+      scope: "exact",
+    };
+    const parent = createTestGrant({
+      id: "grant-parent",
+      subject: { kind: "human", userId: "owner-1" },
+      capabilities: [notes],
+      purposes: ["test"],
+      delegationDepth: 1,
+    });
+    const child = createTestGrant({
+      parentGrantId: parent.id,
+      capabilities: [notes],
+      purposes: ["test"],
+    });
+    const grants = new InMemoryGrantSource([child]);
+    const chain = new InMemoryDelegationChainResolver([parent, child]);
+    const { kernel } = createTestKernel({ grantSource: grants, delegationResolver: chain });
+    const request = { resource: notes.resource, action: "read" };
+
+    await expect(kernel.authorize(createTestContext(), request)).resolves.toMatchObject({
+      allowed: true,
+    });
+
+    // The window closes on the ancestor alone, which is the edit a delegated
+    // grant cannot see for itself and the resolver exists to show it.
+    chain.expire(parent.namespaceId, parent.id, "2026-01-01T00:00:00.001Z");
+    await expect(kernel.authorize(createTestContext(), request)).resolves.toMatchObject({
+      allowed: false,
+    });
+
+    grants.expire(child.id, "2026-01-01T00:00:00.001Z");
+    await expect(grants.load(createTestContext())).resolves.toMatchObject([
+      { constraints: { expiresAt: "2026-01-01T00:00:00.001Z" } },
+    ]);
+
+    expect(() => grants.expire("grant-unknown", "2026-01-01T00:00:00.001Z")).toThrow(
+      "grant is not registered",
+    );
+    expect(() => chain.expire(parent.namespaceId, "grant-unknown", "x")).toThrow(
+      "grant is not registered",
+    );
+  });
+
+  it("fails a bounded decision closed when the usage store cannot answer", async () => {
+    const bounded = createTestGrant({
+      capabilities: [
+        {
+          resource: { namespace: "files", path: ["Workspace", "notes.md"] },
+          actions: ["read"],
+          scope: "exact",
+        },
+      ],
+      purposes: ["test"],
+      maxUses: 1,
+    });
+    const kernel = new SharedOSKernel({
+      grantSource: new InMemoryGrantSource([bounded]),
+      authorizer: new CapabilityAuthorizer({ usageStore: new UnavailableGrantUsageStore() }),
+    });
+
+    const decision = await kernel.authorize(createTestContext(), {
+      resource: { namespace: "files", path: ["Workspace", "notes.md"] },
+      action: "read",
+    });
+    expect(decision.allowed).toBe(false);
+  });
+
+  it("answers a request the transport accepted, and no other", async () => {
+    const transport = new InMemoryMessageTransport();
+    const router = new InMemoryMessageRequestRouter(transport);
+    const context = createTestContext();
+    const request: MessageEnvelope = {
+      version: "1",
+      id: "message-1",
+      sender: { kind: "agent", agentId: "agent-1" },
+      receiver: { kind: "agent", agentId: "agent-2" },
+      purpose: "test",
+      payload: { question: "status" },
+      traceId: context.traceId,
+      createdAt: context.now,
+    };
+    const delivery = await transport.deliver(context, request);
+    await expect(router.resolveReply(context, request, delivery)).resolves.toEqual({
+      version: "1",
+      id: "message-1-reply",
+      sender: request.receiver,
+      receiver: request.sender,
+      purpose: "test",
+      payload: { messageId: "message-1" },
+      traceId: context.traceId,
+      createdAt: context.now,
+      replyTo: "message-1",
+    });
+
+    await expect(
+      router.resolveReply(context, { ...request, id: "message-2" }, delivery),
+    ).rejects.toThrow("absent from the accepted message log");
   });
 });
