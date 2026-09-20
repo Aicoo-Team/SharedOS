@@ -401,6 +401,14 @@ createStandardRuntime({ driver }))`, which `TurnExecutor` built (see Removed).
 
 ### Removed
 
+- From `@aicoo/sharedos-core`: `MID_TURN_AUTHORITY_REFRESH`, and the
+  per-operation authority path it switched on. It was an exported `const false`:
+  a host could not set it, no test did, and since ADR 0016 moved expiry to the
+  operation's instant the one thing left behind it was seeing a store edit
+  before the next turn, at a store read per operation. A turn resolves authority
+  once. A kernel call outside any turn still resolves its own, which is a turn
+  of one operation and is unchanged. ADRs 0009, 0010 and 0016 are revised in
+  place, and the open-items row is closed.
 - From `@aicoo/sharedos-runtime`: `StandardRuntime`. See
   `createStandardRuntime` under "Changed — breaking".
 - From `@aicoo/sharedos-adapters`: `ModelRuntime`, `HarnessRuntime` and

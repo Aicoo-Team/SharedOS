@@ -2,6 +2,8 @@
 
 - Status: Proposed
 - Date: 2026-09-02
+- Revised: 2026-09-20. A rejected alternative named a fuse that is removed
+  (ADR 0010); it is restated without it.
 
 ## Context
 
@@ -287,8 +289,8 @@ prevent. It would also authorize a send the model was told had already been
 accepted, and there is no honest thing to do with a denial that arrives after
 the tool call returned.
 
-**Refresh the turn's authority before each delivery** — pull
-`MID_TURN_AUTHORITY_REFRESH` for the messaging path. Rejected twice over.
+**Refresh the turn's authority before each delivery** — per-operation
+resolution, for the messaging path alone. Rejected twice over.
 ADR 0010 decided the general question, and ADR 0016 settled the one part of it
 that was open. And it would not work here even if it were free: the route lease
 is not a `CapabilityGrant`, so re-reading the grant store tells the kernel

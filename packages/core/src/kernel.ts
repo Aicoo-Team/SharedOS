@@ -48,7 +48,6 @@ import {
   type AuthorityUnavailableCode,
   type GrantSource,
   type LoadedPolicy,
-  MID_TURN_AUTHORITY_REFRESH,
   type PolicyResolution,
   type PolicySource,
   type ResolvedAuthority,
@@ -441,12 +440,6 @@ export class SharedOSKernel {
   ): Promise<TurnAuthorityScope> {
     options.signal?.throwIfAborted();
     context = structuredClone(context);
-
-    if (MID_TURN_AUTHORITY_REFRESH) {
-      // The fuse is in. Report the boundary outcome so admission is unchanged,
-      // but hold nothing: every later operation resolves its own authority.
-      return scopeFor(await this.#loadAuthority(context, options.signal), () => undefined);
-    }
 
     const key = turnAuthorityKey(context);
     const existing = this.#leases.get(key);
@@ -1857,24 +1850,14 @@ export class SharedOSKernel {
    * A turn that opened a lease is answered from it, with no store read and no
    * second `authority.resolved` event: the turn loaded its authority once and
    * every decision in it names that one state. An operation outside any turn
-   * resolves its own.
-   *
-   * Setting `MID_TURN_AUTHORITY_REFRESH` skips the lease entirely and restores
-   * per-operation resolution, in which a grant removed from the store mid-turn
-   * is refused at the next decision inside that turn. See the constant for why
-   * that is off and what is still open about it.
+   * resolves its own, which is a turn of one operation (ADR 0010).
    */
   async #resolveAuthority(
     context: AccessContext,
     signal: AbortSignal | undefined,
   ): Promise<AuthorityResolution> {
-    if (!MID_TURN_AUTHORITY_REFRESH) {
-      const lease = this.#leases.get(turnAuthorityKey(context));
-      if (lease !== undefined) {
-        return lease.resolution;
-      }
-    }
-    return this.#loadAuthority(context, signal);
+    const lease = this.#leases.get(turnAuthorityKey(context));
+    return lease === undefined ? this.#loadAuthority(context, signal) : lease.resolution;
   }
 
   /** Read authority from the trusted source once, and audit the attempt. */

@@ -31,8 +31,7 @@ and the turn's `AuditEvent`s into an `ExecutionRecord`:
 Authority is recorded per decision rather than per turn. A turn resolves
 authority once, at admission, so its decisions all name one snapshot; the
 per-decision field is kept because a host may still call the kernel outside any
-turn, and because restoring `MID_TURN_AUTHORITY_REFRESH` must not change the
-shape of the evidence.
+turn, and each such call resolves its own.
 
 ## Reproducibility
 

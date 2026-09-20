@@ -3,6 +3,8 @@
 - Status: Accepted; per-operation resolution superseded by
   `docs/adr/0010-per-turn-authority.md`
 - Date: 2026-08-18
+- Revised: 2026-09-20. The per-operation path ADR 0010 kept behind a fuse is
+  removed; the Consequences below say so.
 
 ## Context
 
@@ -70,8 +72,9 @@ rates: they are SharedOS failing to establish a fact, not a policy decision.
   effect at the next decision inside a running turn. Hosts that need caching
   implement it inside their `GrantSource` and own the staleness window.
   **Superseded by ADR 0010:** authority is resolved once per turn and a
-  revocation lands at the next turn. The per-operation path is retained behind
-  `MID_TURN_AUTHORITY_REFRESH`.
+  revocation lands at the next turn. The per-operation path was kept for a
+  time behind a build-time fuse and is removed; a kernel call outside any turn
+  still resolves its own authority.
 - A grant source that answers with a superset (for example, every grant in a
   namespace) fails closed rather than being silently filtered. Pre-filtering is
   part of the contract.

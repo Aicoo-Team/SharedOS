@@ -8,36 +8,6 @@ import { addressesEqual, canonicalJson } from "./internal.js";
 export const MAX_RESOLVED_GRANTS = 256;
 
 /**
- * The fuse over per-operation authority resolution. Off.
- *
- * SharedOS originally re-loaded authority from the trusted source for every
- * kernel operation, so a grant removed from the store part-way through a turn
- * was refused at the next decision inside that same turn. That path is retained
- * in {@link SharedOSKernel} and is re-enabled by setting this to `true`.
- *
- * It is off because a turn must decide against one *grant set*. Authority is
- * resolved once, at the turn boundary, and a store-side edit -- a revocation, a
- * withdrawn purpose -- is observed by the *next* turn. A request therefore
- * carries the authority it was admitted with, rather than having authority
- * resolved underneath it while it runs.
- *
- * The fuse no longer covers expiry. ADR 0016 settled the question this constant
- * used to carry as a TBD: expiry is a property the grant already held when the
- * turn began, so honouring it part-way through costs no store read and leaks no
- * store state, and `grantIsActive` in `internal.ts` now evaluates it against the
- * instant of the operation while every other removal stays at the instant the
- * turn's authority was resolved. Nothing about that needs this fuse, which is
- * why it stays off.
- *
- * What remains behind it is exactly one behaviour: seeing a store edit without
- * waiting for the next turn. A host cannot set it: it is an exported constant,
- * a build-time switch for this package's maintainers, and turning it on means
- * patching the package. Whether it becomes a kernel option, with the store read
- * per operation that implies, is an open item (`docs/open-items.md`).
- */
-export const MID_TURN_AUTHORITY_REFRESH = false;
-
-/**
  * The identity a turn's frozen authority is held against.
  *
  * `now` is excluded because the turn instant is precisely what a lease freezes,
@@ -176,13 +146,12 @@ export type AuthorityUnavailableCode =
 /**
  * A content identifier for exactly the authority one decision was made against.
  *
- * With {@link MID_TURN_AUTHORITY_REFRESH} off, a turn resolves authority once
- * and every decision in it names the same snapshot -- including a decision that
- * refused an expired grant, because expiry narrows what a snapshot authorizes
- * without changing which snapshot it is. The per-decision field is
- * kept rather than collapsed to a per-turn one because a host may still make
- * kernel calls outside any turn, and because re-enabling the fuse must not
- * change the shape of the evidence.
+ * A turn resolves authority once and every decision in it names the same
+ * snapshot -- including a decision that refused an expired grant, because
+ * expiry narrows what a snapshot authorizes without changing which snapshot it
+ * is. The per-decision field is kept rather than collapsed to a per-turn one
+ * because a host may still make kernel calls outside any turn, each of which
+ * resolves its own.
  */
 export interface AuthoritySnapshot {
   /** SHA-256 over the canonical, order-independent form of the grant set. */

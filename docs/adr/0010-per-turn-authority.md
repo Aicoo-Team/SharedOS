@@ -3,6 +3,9 @@
 - Status: Accepted, amended by
   `docs/adr/0016-expiry-is-instant-bound.md`
 - Date: 2026-08-21
+- Revised: 2026-09-20. The per-operation path this ADR kept behind
+  `MID_TURN_AUTHORITY_REFRESH` is removed. "The old path" below says what it was
+  and why it went; the turn of one operation is unchanged.
 - Supersedes: the per-operation resolution decided in
   `docs/adr/0009-trusted-grant-source.md`
 
@@ -81,14 +84,15 @@ four are observed by the _next_ turn.
 Audit still records the live instant of each decision. The freeze governs what
 was decided, not when a record says it happened.
 
-### The old path is retained, not deleted
+### The old path
 
-`MID_TURN_AUTHORITY_REFRESH` in `packages/core/src/authority.ts` is the fuse.
-Setting it restores per-operation resolution exactly as ADR 0009 specified: the
-turn handle then reports the boundary outcome but holds nothing, and every
-operation resolves its own authority.
+Per-operation resolution, as ADR 0009 specified it, was first retained rather
+than deleted. `MID_TURN_AUTHORITY_REFRESH` in `packages/core/src/authority.ts`
+was the fuse: an exported `const false` which, set, made the turn handle report
+the boundary outcome but hold nothing, so every operation resolved its own
+authority.
 
-It is off, and carried the open question it existed for:
+It was off, and carried the open question it existed for:
 
 > TBD Expiry with mid-turn grant refusal.
 
@@ -100,9 +104,16 @@ because they shared one removal check.
 
 ADR 0016 settled it: expiry is decided at the operation's instant and every
 other removal at the turn's, so a turn no longer outlives the validity window of
-the authority that admitted it. That needed nothing from this fuse, which stays
-off. What remains behind it is one behaviour and no open question — observing a
-store edit without waiting for the next turn.
+the authority that admitted it. That needed nothing from the fuse. What was left
+behind it was one behaviour and no open question — observing a store edit
+without waiting for the next turn — at the price of the store read per operation
+this ADR exists to remove. No host could set it, because it was a constant and
+turning it on meant patching the package, and no test did. It is removed, and
+with it the only second way authority was ever resolved inside a turn.
+
+What is not removed is the operation with no open turn. That was never the old
+path: it is a turn of one operation, stated above, and the HTTP surface and a
+host serving MCP outside a turn both run on it.
 
 ## Consequences
 
@@ -116,8 +127,7 @@ store edit without waiting for the next turn.
 - Every decision in a turn names one authority state.
   `AuthorityRecord.snapshots` holds exactly one entry and `stableAuthorityHash`
   is always set. Both are kept rather than collapsed: a host may still make
-  kernel calls outside any turn, and re-enabling the fuse must not change the
-  shape of the evidence.
+  kernel calls outside any turn, each of which resolves its own.
 - **The grant-store conformance row moves to the turn boundary.** With one load
   per turn there is no mid-turn outage to inject: an unavailable store refuses
   the turn at admission, the runtime is never started, and no attempt exists to
