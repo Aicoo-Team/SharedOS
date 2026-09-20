@@ -3,6 +3,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { moduleSpecifier } from "./module-specifier.mjs";
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const summaryDirectory = join(root, "docs", "conformance");
 const summaryMarkdown = join(summaryDirectory, "kernel-conformance.md");
@@ -27,7 +29,7 @@ if (!skipBuild) {
 }
 
 const { SHAREDOS_VERSION, renderConformanceSummary, runConformanceSuite, strictFailures } =
-  await import(join(root, "packages", "conformance", "dist", "index.js"));
+  await import(moduleSpecifier(join(root, "packages", "conformance", "dist", "index.js")));
 
 const { manifest, evidence } = await runConformanceSuite();
 const markdown = renderConformanceSummary(manifest);

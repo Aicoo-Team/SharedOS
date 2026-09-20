@@ -46,6 +46,8 @@ import { join, resolve } from "node:path";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { moduleSpecifier } from "./module-specifier.mjs";
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputDirectory = join(root, "artifacts", "conformance");
 const outputJson = join(outputDirectory, "native-conformance.json");
@@ -59,12 +61,12 @@ const {
   codexProtocol,
   deepseekProtocol,
   piProtocol,
-} = await import(join(root, "packages", "adapters", "dist", "index.js"));
+} = await import(moduleSpecifier(join(root, "packages", "adapters", "dist", "index.js")));
 const { ChildProcessTransport, probeHarness } = await import(
-  join(root, "packages", "adapters", "dist", "node.js")
+  moduleSpecifier(join(root, "packages", "adapters", "dist", "node.js"))
 );
 const { OpenAiCompatibleModelClient } = await import(
-  join(root, "packages", "adapters", "dist", "index.js")
+  moduleSpecifier(join(root, "packages", "adapters", "dist", "index.js"))
 );
 const {
   CANONICAL_CONFORMANCE_CASES,
@@ -73,7 +75,7 @@ const {
   modelColumn,
   runConformanceSuite,
   strictFailures,
-} = await import(join(root, "packages", "conformance", "dist", "index.js"));
+} = await import(moduleSpecifier(join(root, "packages", "conformance", "dist", "index.js")));
 
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {

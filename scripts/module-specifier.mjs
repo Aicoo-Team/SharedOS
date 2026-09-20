@@ -1,3 +1,5 @@
+import { pathToFileURL } from "node:url";
+
 export function moduleSpecifier(path) {
-  return path;
+  return pathToFileURL(path).href;
 }

@@ -41,6 +41,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { moduleSpecifier } from "./module-specifier.mjs";
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputDirectory = join(root, "artifacts", "conformance");
 const outputJson = join(outputDirectory, "mcp-conformance.json");
@@ -132,7 +134,7 @@ const harnessConfig = (id) => {
 };
 
 const { CLAUDE_CODE_REQUIREMENTS, CODEX_REQUIREMENTS, DEEPSEEK_REQUIREMENTS, PI_REQUIREMENTS } =
-  await import(join(root, "packages", "adapters", "dist", "index.js"));
+  await import(moduleSpecifier(join(root, "packages", "adapters", "dist", "index.js")));
 const {
   CLAUDE_CODE_MCP_HARNESS,
   CODEX_MCP_HARNESS,
@@ -140,9 +142,9 @@ const {
   PI_MCP_HARNESS,
   createMcpHarnessRuntime,
   probeHarness,
-} = await import(join(root, "packages", "adapters", "dist", "node.js"));
+} = await import(moduleSpecifier(join(root, "packages", "adapters", "dist", "node.js")));
 const { declareToolPolicy, toolPolicyHash } = await import(
-  join(root, "packages", "mcp", "dist", "index.js")
+  moduleSpecifier(join(root, "packages", "mcp", "dist", "index.js"))
 );
 const {
   CANONICAL_CONFORMANCE_CASES,
@@ -151,7 +153,7 @@ const {
   mcpColumn,
   runConformanceSuite,
   strictFailures,
-} = await import(join(root, "packages", "conformance", "dist", "index.js"));
+} = await import(moduleSpecifier(join(root, "packages", "conformance", "dist", "index.js")));
 
 /**
  * What each harness keeps for itself, declared rather than assumed.
