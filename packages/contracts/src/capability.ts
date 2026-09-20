@@ -14,9 +14,9 @@ import { JsonObjectSchema } from "./json.js";
  */
 export const PathSegmentSchema = z
   .string()
-  .trim()
   .min(1)
   .max(256)
+  .regex(/^\S(?:[\s\S]*\S)?$/u, { message: "path segments must not be padded" })
   .regex(/^(?!\.{1,2}$)[^/\\\u0000-\u001f\u007f]+$/u, {
     message: "path segments must not contain traversal markers, separators, or control characters",
   });
