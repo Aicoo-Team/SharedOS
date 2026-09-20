@@ -387,18 +387,20 @@ function operations(
 }
 
 /**
- * Tool calls the envelope terminated that reached no audit sink.
+ * Tool calls the envelope refused whose audit write was dropped.
  *
  * A runtime that guesses an unexposed tool name, or exceeds the hard tool-call
  * or step ceiling, never reaches `SharedOSKernel.invokeTool`. Those attempts are
  * real attempted violations and belong in the record.
  *
- * Since ADR 0023 the envelope records them through the kernel, so for a kernel
- * that offers `recordRefusedCall` they arrive as ordinary audit events carrying
- * `source: "envelope"` and this adds nothing -- the call id is already in
- * `mediated` and is skipped. It remains for the kernel that does not: the
- * recorder is an optional member of `TurnKernel`, so an older or partial kernel
- * still runs a turn, and its record should still show what the envelope refused.
+ * Since ADR 0023 the envelope records them through the kernel, so they arrive
+ * as ordinary audit events carrying `source: "envelope"`, the call id is
+ * already in `mediated`, and this adds nothing. What it is here for is the
+ * write that did not land. `recordRefusedCall` writes after the fact, so a sink
+ * that throws or does not answer is handed to `onAuditError` and the turn goes
+ * on as it would have: an observation must not change what it observed. Audit
+ * then holds nothing for that call, and a record built from audit alone would
+ * show a turn in which the refusal never happened.
  *
  * The refusal code comes from the `tool.completed` event, which on that path is
  * the only record of a call audit never saw. It is read rather than inferred so
