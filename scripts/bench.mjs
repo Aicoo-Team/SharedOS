@@ -13,11 +13,12 @@
  * reports, and the spread between runs is printed so a reader can see whether
  * the machine was steady while it was measured.
  */
-import { spawnSync } from "node:child_process";
 import { cpus, totalmem } from "node:os";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { spawnPnpmSync } from "./spawn-pnpm.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const summaryDirectory = join(root, "docs", "conformance");
@@ -35,8 +36,7 @@ const measuredTurns = Number(flag("turns", "200"));
 const warmupTurns = Number(flag("warmup", "60"));
 
 if (!argv.includes("--no-build")) {
-  const command = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-  const build = spawnSync(command, ["build"], { cwd: root, stdio: "inherit" });
+  const build = spawnPnpmSync(["build"], { cwd: root, stdio: "inherit" });
   if (build.error) {
     throw build.error;
   }

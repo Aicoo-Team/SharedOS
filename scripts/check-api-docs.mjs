@@ -1,8 +1,9 @@
-import { spawnSync } from "node:child_process";
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { spawnPnpmSync } from "./spawn-pnpm.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedDirectory = join(root, "docs", "api");
@@ -26,8 +27,7 @@ async function listFiles(directory, base = directory) {
 }
 
 try {
-  const command = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-  const build = spawnSync(command, ["build"], { cwd: root, stdio: "inherit" });
+  const build = spawnPnpmSync(["build"], { cwd: root, stdio: "inherit" });
 
   if (build.error) {
     throw build.error;
@@ -35,7 +35,7 @@ try {
 
   const result =
     build.status === 0
-      ? spawnSync(command, ["exec", "typedoc", "--out", generatedDirectory], {
+      ? spawnPnpmSync(["exec", "typedoc", "--out", generatedDirectory], {
           cwd: root,
           stdio: "inherit",
         })
