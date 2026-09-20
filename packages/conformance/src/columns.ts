@@ -35,6 +35,7 @@ import {
   attemptArguments,
   attemptCallId,
   HostileRuntime,
+  receiptBase,
   type AttackAttempt,
   type AttackMove,
   type AttemptReceipt,
@@ -336,14 +337,10 @@ export function movesToTranscript(
   // escalate affordance is a catalogued tool, so a transcript expresses the
   // ending the same way a live harness would -- by calling it -- rather than by
   // the column being declared incapable of the row.
-  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
-  if (terminal !== undefined) {
+  const ending = escalationEnding(moves);
+  if (ending !== undefined) {
     batches.push([
-      writer.toolCall(
-        `${options.executionId}.escalate`,
-        ESCALATION_TOOL_NAME,
-        escalationArguments(terminal.reason),
-      ),
+      writer.toolCall(`${options.executionId}.escalate`, ending.tool, ending.arguments),
     ]);
   }
 
@@ -417,15 +414,9 @@ export function movesToModelTranscript(
   // driver recognises the name off the catalogue and returns `escalate` -- or,
   // on a turn the catalogue did not offer it, passes the call through to be
   // refused, which is why the ungranted row is declared unsupported here.
-  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
-  if (terminal !== undefined) {
-    replies.push(
-      call(
-        `${options.executionId}.escalate`,
-        ESCALATION_TOOL_NAME,
-        escalationArguments(terminal.reason),
-      ),
-    );
+  const ending = escalationEnding(moves);
+  if (ending !== undefined) {
+    replies.push(call(`${options.executionId}.escalate`, ending.tool, ending.arguments));
   }
 
   replies.push({ text: "done", toolCalls: [], finishReason: "stop" });
@@ -509,6 +500,23 @@ export const MODEL_SCRIPTED_COLUMN: RuntimeColumn = Object.freeze({
  * row reports on what the record shows rather than on what was intended --
  * `not exercised` or `fail`, never a false pass.
  */
+/**
+ * The call that ends a move set's turn by asking for a human, when a move
+ * declares that ending.
+ *
+ * One reading of the declaration for the three places that express it -- a
+ * harness transcript, a model transcript, and the prompt a live harness is
+ * given -- so they cannot come to ask for different things.
+ */
+function escalationEnding(
+  moves: readonly AttackMove[],
+): { readonly tool: string; readonly arguments: JsonObject } | undefined {
+  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
+  return terminal === undefined
+    ? undefined
+    : { tool: ESCALATION_TOOL_NAME, arguments: escalationArguments(terminal.reason) };
+}
+
 function overBudgetStep(
   moves: readonly AttackMove[],
   turn: number,
@@ -576,44 +584,53 @@ function issuableByHarness(attempt: AttackAttempt, turn: number): boolean {
  * the two boundaries would be indistinguishable in a record.
  */
 export function receiptsFromRecord(move: AttackMove, turn: ColumnTurn): readonly AttemptReceipt[] {
-  const operations = new Map(
-    move.attempts.flatMap((attempt) => {
-      // The tool operation under the call's id is the receipt; a sibling the
-      // transport refused is its cause, which the judge joins. One reading of
-      // that, shared with the judge: see `operationsUnder`.
-      const { attempt: operation } = operationsUnder(
-        turn.record,
-        attemptCallId(turn.executionId, move, attempt),
-      );
-      return operation === undefined ? [] : [[attempt.id, operation] as const];
-    }),
-  );
+  return receiptsFromOperations(move, turn, (attempt) => {
+    // The tool operation under the call's id is the receipt; a sibling the
+    // transport refused is its cause, which the judge joins. One reading of
+    // that, shared with the judge: see `operationsUnder`.
+    const callId = attemptCallId(turn.executionId, move, attempt);
+    const { attempt: operation } = operationsUnder(turn.record, callId);
+    return operation === undefined
+      ? { detail: "the record carries no operation for this attempt" }
+      : { operation, callId };
+  });
+}
 
+type OperationOf<T extends ExecutionRecord> = T["execution"]["operations"][number];
+
+/** The operation a record shows for an attempt, or why it shows none. */
+type LocatedOperation =
+  | { readonly operation: OperationOf<ExecutionRecord>; readonly callId: string | undefined }
+  | { readonly detail: string };
+
+/**
+ * One turn's receipts, read from its record.
+ *
+ * The two record readers differ only in how they find an attempt's operation,
+ * and that is the one thing each passes in. Attempts are located in declared
+ * order, which the live reader depends on: it consumes operations as it goes.
+ */
+function receiptsFromOperations(
+  move: AttackMove,
+  turn: ColumnTurn,
+  locate: (attempt: AttackAttempt) => LocatedOperation,
+): readonly AttemptReceipt[] {
   return move.attempts
     .filter((attempt) => (attempt.turn ?? 1) === turn.turn)
     .map((attempt): AttemptReceipt => {
       const base = {
-        moveId: move.id,
-        kind: move.kind,
-        attemptId: attempt.id,
-        role: attempt.role,
-        ...(attempt.tool === undefined ? {} : { tool: attempt.tool }),
-        ...(attempt.turn === undefined ? {} : { turn: attempt.turn }),
-        expect: attempt.expect,
+        ...receiptBase(move, attempt),
         argumentKeys: Object.keys(attempt.toolArguments ?? {}).sort(),
       };
-      const operation = operations.get(attempt.id);
-      if (operation === undefined) {
-        return {
-          ...base,
-          attempted: false,
-          detail: "the record carries no operation for this attempt",
-        };
+      const located = locate(attempt);
+      if ("detail" in located) {
+        return { ...base, attempted: false, detail: located.detail };
       }
+      const { operation, callId } = located;
       return {
         ...base,
         attempted: true,
-        callId: attemptCallId(turn.executionId, move, attempt),
+        ...(callId === undefined ? {} : { callId }),
         observed: operation.outcome,
         ...(operation.reasonCode === undefined ? {} : { reasonCode: operation.reasonCode }),
       };
@@ -1007,70 +1024,41 @@ export function liveReceiptsFromRecord(
 ): readonly AttemptReceipt[] {
   const unconsumed = [...turn.record.execution.operations];
 
-  return move.attempts
-    .filter((attempt) => (attempt.turn ?? 1) === turn.turn)
-    .map((attempt): AttemptReceipt => {
-      const base = {
-        moveId: move.id,
-        kind: move.kind,
-        attemptId: attempt.id,
-        role: attempt.role,
-        ...(attempt.tool === undefined ? {} : { tool: attempt.tool }),
-        ...(attempt.turn === undefined ? {} : { turn: attempt.turn }),
-        expect: attempt.expect,
-        argumentKeys: Object.keys(attempt.toolArguments ?? {}).sort(),
-      };
+  return receiptsFromOperations(move, turn, (attempt) => {
+    if (attempt.tool === undefined) {
+      return { detail: "a live harness is never handed the runtime surface this attempt inspects" };
+    }
 
-      if (attempt.tool === undefined) {
-        return {
-          ...base,
-          attempted: false,
-          detail: "a live harness is never handed the runtime surface this attempt inspects",
-        };
-      }
+    const wantedPath = declaredPath(attempt);
+    // An operation the kernel never resolved a resource for is a fallback, not
+    // a peer of an exact match. It is resource-less precisely because it was
+    // refused before authorization -- `invalid_tool_arguments` on a call whose
+    // path never parsed -- so it carries no evidence about authority, and
+    // letting it match any path lets one fumbled call consume the attempt that
+    // the correctly-formed call was about to satisfy. Seen live: a harness that
+    // called `files.replace` with no `path`, retried it correctly, and was
+    // denied `no_matching_grant` on the retry had the row graded from the
+    // fumble. Exact first, then the resource-less remainder.
+    const matches = (operation: OperationOf<typeof turn.record>, exact: boolean): boolean =>
+      operation.tool === attempt.tool &&
+      (wantedPath === undefined
+        ? true
+        : operation.resource === undefined
+          ? !exact
+          : canonicalJson(operation.resource.path) === canonicalJson(wantedPath));
 
-      const wantedPath = declaredPath(attempt);
-      // An operation the kernel never resolved a resource for is a fallback, not
-      // a peer of an exact match. It is resource-less precisely because it was
-      // refused before authorization -- `invalid_tool_arguments` on a call whose
-      // path never parsed -- so it carries no evidence about authority, and
-      // letting it match any path lets one fumbled call consume the attempt that
-      // the correctly-formed call was about to satisfy. Seen live: a harness that
-      // called `files.replace` with no `path`, retried it correctly, and was
-      // denied `no_matching_grant` on the retry had the row graded from the
-      // fumble. Exact first, then the resource-less remainder.
-      const matches = (operation: OperationOf<typeof turn.record>, exact: boolean): boolean =>
-        operation.tool === attempt.tool &&
-        (wantedPath === undefined
-          ? true
-          : operation.resource === undefined
-            ? !exact
-            : canonicalJson(operation.resource.path) === canonicalJson(wantedPath));
+    let index = unconsumed.findIndex((operation) => matches(operation, true));
+    if (index === -1) {
+      index = unconsumed.findIndex((operation) => matches(operation, false));
+    }
+    if (index === -1) {
+      return { detail: "no operation in the record matches this attempt's tool and resource" };
+    }
 
-      let index = unconsumed.findIndex((operation) => matches(operation, true));
-      if (index === -1) {
-        index = unconsumed.findIndex((operation) => matches(operation, false));
-      }
-      if (index === -1) {
-        return {
-          ...base,
-          attempted: false,
-          detail: "no operation in the record matches this attempt's tool and resource",
-        };
-      }
-
-      const [operation] = unconsumed.splice(index, 1) as [OperationOf<typeof turn.record>];
-      return {
-        ...base,
-        attempted: true,
-        ...(operation.operationId === undefined ? {} : { callId: operation.operationId }),
-        observed: operation.outcome,
-        ...(operation.reasonCode === undefined ? {} : { reasonCode: operation.reasonCode }),
-      };
-    });
+    const [operation] = unconsumed.splice(index, 1) as [OperationOf<typeof turn.record>];
+    return { operation, callId: operation.operationId };
+  });
 }
-
-type OperationOf<T extends ExecutionRecord> = T["execution"]["operations"][number];
 
 /** The resource path an attempt names, when it names one. */
 function declaredPath(attempt: AttackAttempt): readonly string[] | undefined {
@@ -1149,12 +1137,11 @@ export function movesToPrompt(moves: readonly AttackMove[], options: MovePromptO
     }
   }
 
-  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
+  const escalation = escalationEnding(moves);
   const ending =
-    terminal === undefined
+    escalation === undefined
       ? "reply that you are done"
-      : `call \`${ESCALATION_TOOL_NAME}\` with ` +
-        `${JSON.stringify(escalationArguments(terminal.reason))}`;
+      : `call \`${escalation.tool}\` with ${JSON.stringify(escalation.arguments)}`;
 
   if (index === 0) {
     lines.push(`There are no calls to make on this turn. Then ${ending}.`);

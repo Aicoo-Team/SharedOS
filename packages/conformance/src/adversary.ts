@@ -718,7 +718,15 @@ function surfaceKeys(value: object): string[] {
   return [...keys];
 }
 
-function receiptBase(
+/**
+ * What a receipt says about its attempt before anything was observed.
+ *
+ * Exported because a receipt is built in three places -- by the adversary from
+ * what it was answered, and twice from a record for a runtime that cannot
+ * report on itself -- and the declared half has to read the same in all three
+ * for the judge to grade them as one thing.
+ */
+export function receiptBase(
   move: AttackMove,
   attempt: AttackAttempt,
 ): Pick<AttemptReceipt, "moveId" | "kind" | "attemptId" | "role" | "tool" | "turn" | "expect"> {
