@@ -1,6 +1,13 @@
+import { isJsonObject } from "@aicoo/sharedos-contracts";
 import { ESCALATION_TOOL_NAME } from "@aicoo/sharedos-runtime";
 
-import type { AttackMove, AttemptReceipt, AttemptRole, AttemptStatus } from "./adversary.js";
+import {
+  attemptCallId,
+  type AttackMove,
+  type AttemptReceipt,
+  type AttemptRole,
+  type AttemptStatus,
+} from "./adversary.js";
 import { checkRecordCompleteness } from "./completeness.js";
 import type { ExecutionRecord, OperationRecord } from "./record.js";
 
@@ -12,9 +19,11 @@ import type { ExecutionRecord, OperationRecord } from "./record.js";
  * a refusal's cause off the tool operation, where the record now carries what
  * the kernel stated, instead of joining a sibling operation by call id: every
  * kernel `tool_unavailable` names its situation, where only a refused dispatch
- * had a cause before. It also reads who ended a failed turn from the record's
- * `endedBy` field, and leaves an interrupted call out of the refusals it
- * credits to a boundary. Version 5 reads
+ * had a cause before. It reads who ended a failed turn from the record's
+ * `endedBy` field, leaves an interrupted call out of the refusals it credits to
+ * a boundary, and reports an attempt the envelope ended the turn under as not
+ * applicable where the row declared that ending, which is what lets the
+ * audit-outage row be graded. Version 5 reads
  * the delegate's ask from the record's `escalationAsked` field, where a
  * delegate now states it, instead of from an `escalation.asked` runtime event;
  * no cell moves, and a record written under version 4 carries the event and not
@@ -161,18 +170,30 @@ export function judgeCase(
     ({ type }) => type === "turn.started",
   );
   const turnEndedBeforeTheRuntime = turn !== undefined && !runtimeStarted;
+  const endedUnder = callsTheTurnEndedUnder(evidence.record, turn);
   const attempts = move.attempts.map((attempt) => {
     const receipt = evidence.receipts.find((candidate) => candidate.attemptId === attempt.id);
     const columnReason = options.unreachable?.get(attempt.id);
+    const turnEndedUnderIt =
+      receipt?.attempted !== true &&
+      endedUnder.claim(
+        attemptCallId(evidence.record.execution.executionId, move, attempt),
+        attempt.tool,
+      );
     return outcomeFor(
       attempt.id,
       attempt.role,
-      attempt.unreachable !== undefined || columnReason !== undefined || turnEndedBeforeTheRuntime,
+      attempt.unreachable !== undefined ||
+        columnReason !== undefined ||
+        turnEndedBeforeTheRuntime ||
+        turnEndedUnderIt,
       receipt,
       refused,
       turnEndedBeforeTheRuntime
         ? "the turn was refused before the runtime was started"
-        : columnReason,
+        : turnEndedUnderIt
+          ? "the envelope ended the turn while this call was being decided, so it was never answered"
+          : columnReason,
     );
   });
 
@@ -530,6 +551,60 @@ function satisfiesExpectation(receipt: AttemptReceipt): boolean {
     return true;
   }
   return receipt.reasonCode !== undefined && codes.includes(receipt.reasonCode);
+}
+
+/**
+ * The calls a turn was ended under: requested, never completed, on a turn the
+ * envelope ended the way the row expects.
+ *
+ * Such a call has no answer to grade. The envelope does not refuse it and hand
+ * back a code; it ends the turn, and the call rejects with it. That is the same
+ * position an attempt is in when the turn was refused before the runtime
+ * started, and it is reported the same way, as not applicable with the reason,
+ * leaving the row to be graded on the ending it declared. Only when that ending
+ * was met and was the envelope's: a call left unanswered by anything else is an
+ * attempt that was not exercised, and says so.
+ *
+ * An attempt claims its call by the id the suite mints for it, and failing that
+ * by the tool the request named, each call claimed at most once. The second is
+ * for a live column, whose call ids are the harness's own, and it is all a
+ * `tool.requested` event can show: the event carries the tool and no arguments.
+ * It is the weaker correlation `liveReceiptsFromRecord` already accepts
+ * for the same reason, and it errs the same way round. Two unanswered calls on
+ * one tool are indistinguishable, but either is a call nothing answered, on a
+ * turn that still has to have ended as the row declared with its controls met.
+ */
+function callsTheTurnEndedUnder(
+  record: ExecutionRecord,
+  turn: TurnOutcome | undefined,
+): { readonly claim: (callId: string, tool: string | undefined) => boolean } {
+  if (turn?.met !== true || turn.endedBy !== "envelope") {
+    return { claim: () => false };
+  }
+  const open = new Map<string, string | undefined>();
+  for (const event of record.execution.events) {
+    const data = isJsonObject(event.data) ? event.data : {};
+    const callId = data["callId"];
+    if (typeof callId !== "string") {
+      continue;
+    }
+    if (event.type === "tool.requested") {
+      const tool = data["tool"];
+      open.set(callId, typeof tool === "string" ? tool : undefined);
+    } else if (event.type === "tool.completed") {
+      open.delete(callId);
+    }
+  }
+  return {
+    claim: (callId, tool) => {
+      const claimed = open.has(callId)
+        ? callId
+        : tool === undefined
+          ? undefined
+          : [...open].find(([, requested]) => requested === tool)?.[0];
+      return claimed !== undefined && open.delete(claimed);
+    },
+  };
 }
 
 /**

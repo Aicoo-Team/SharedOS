@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { ESCALATION_TOOL_NAME, createStandardRuntime } from "@aicoo/sharedos-runtime";
 
-import type { ToolCall } from "@aicoo/sharedos-contracts";
+import type { JsonObject, ToolCall } from "@aicoo/sharedos-contracts";
 
 import {
   HostileRuntime,
@@ -261,9 +261,11 @@ describe("the conformance suite", () => {
     // covers the ending no plugin cooperates in producing, one more covers
     // the dispatch-time route lease (ADR 0025), and one more covers the
     // catalogue a turn holds against a provider that moves under it (ADR 0026).
+    // Two more cover what the envelope does when it cannot go on as it was: an
+    // audit sink that stops taking writes, and a turn that takes nothing new.
     // A case set that drifts below this has stopped covering the document it
     // claims to implement.
-    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(29);
+    expect(CANONICAL_CONFORMANCE_CASES).toHaveLength(31);
     expect(new Set(CANONICAL_ATTACK_MOVES.map(({ kind }) => kind)).size).toBe(
       CANONICAL_ATTACK_MOVES.length,
     );
@@ -361,47 +363,75 @@ describe("the conformance suite", () => {
   it("passes every implemented row and reports where each was refused", async () => {
     const { manifest, evidence } = await runConformanceSuite();
 
-    expect(manifest.rows).toHaveLength(32);
+    expect(manifest.rows).toHaveLength(34);
     expect(manifest.columns).toHaveLength(6);
     const cells = manifest.rows.flatMap(({ cells: rowCells }) => rowCells);
-    expect(cells).toHaveLength(192);
+    expect(cells).toHaveLength(204);
     // Every implemented row passes in every column that can run it. The rest are
     // stated: two rows SharedOS does not implement, counted once per column, and
-    // three rows per driven column it structurally cannot run -- one whose
-    // attempt reads the runtime surfaces a driver is never handed, and two whose
+    // four rows per driven column it structurally cannot run -- one whose
+    // attempt reads the runtime surfaces a driver is never handed, two whose
     // claim is about a terminal outcome only a plugin that owns its outcome can
-    // produce: an ungranted `escalate`, and a throw out of the turn. The native
+    // produce: an ungranted `escalate`, and a throw out of the turn, and one
+    // about a call on a draining turn, which the standard loop never makes
+    // because it stops itself first. The native
     // harness is a driven column too: it carries the same three, which is what
     // makes its cell a claim about the shipped loop rather than a second copy of
     // the adversary's. Two others used to sit here and no longer do, and neither
     // was a fact about harnesses: escalation is a catalogued tool now, and the
     // step ceiling is reachable once a driver can name its own step.
-    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(165);
+    expect(cells.filter(({ status }) => status === "pass")).toHaveLength(172);
     expect(cells.filter(({ status }) => status === "not_implemented")).toHaveLength(12);
-    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(15);
+    expect(cells.filter(({ status }) => status === "not_applicable")).toHaveLength(20);
     expect(strictFailures(manifest)).toEqual([]);
     // Evidence exists for every cell that ran a turn, and for no cell that did
     // not: the two unimplemented rows in every column, and the ungranted-
-    // escalation and crash rows in every column but the adversary's. The
+    // escalation, crash and draining rows in every column but the adversary's. The
     // escalation row runs everywhere, so it leaves evidence everywhere. The
     // step-ceiling row always did -- an unreachable *attempt* still runs its
     // turn, unlike an unsupported row, which is why that change moved cells
     // without moving this.
-    expect(evidence).toHaveLength(170);
+    expect(evidence).toHaveLength(177);
 
     // Every driven column lands on the same counts, the native harness
     // included. That is the portability claim in its smallest form: adding a
     // harness adds a column, not an exception.
     for (const column of manifest.columns.filter(({ id }) => id !== ADVERSARY_COLUMN.id)) {
       const columnCells = cells.filter((cell) => cell.columnId === column.id);
-      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(27);
-      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(3);
+      expect(columnCells.filter(({ status }) => status === "pass")).toHaveLength(28);
+      expect(columnCells.filter(({ status }) => status === "not_applicable")).toHaveLength(4);
       expect(columnCells.filter(({ status }) => status === "not_implemented")).toHaveLength(2);
     }
 
     const byCase = (caseId: string, conditionId = "baseline") =>
       manifest.rows.find((row) => row.caseId === caseId && row.conditionId === conditionId)
         ?.cells[0];
+
+    // The envelope ends a turn whose next decision cannot be recorded, in every
+    // column, and the mutation the turn ended under left no operation behind.
+    const sinkDown = manifest.rows.find(({ caseId }) => caseId === "audit-unavailable");
+    expect(sinkDown?.cells.map(({ status }) => status)).toEqual(Array(6).fill("pass"));
+    expect(sinkDown?.cells[0]).toMatchObject({
+      refusedBy: ["envelope"],
+      reasonCodes: ["audit_unavailable"],
+    });
+    const outageRecord = evidence.find(({ caseId }) => caseId === "audit-unavailable")?.records[0];
+    expect(outageRecord?.execution).toMatchObject({
+      status: "failed",
+      terminalReasonCode: "audit_unavailable",
+      endedBy: "envelope",
+    });
+    expect(outageRecord?.execution.operations.map(({ tool, outcome }) => [tool, outcome])).toEqual([
+      ["files.read", "succeeded"],
+    ]);
+
+    // A draining turn refuses a call the kernel would have allowed, and only a
+    // runtime that owns its loop can make one.
+    expect(byCase("turn-draining", "draining-from-the-start")).toMatchObject({
+      status: "pass",
+      refusedBy: ["envelope"],
+      reasonCodes: ["turn_draining"],
+    });
 
     // The unexposed-tool row never reaches the kernel; the mutation row does.
     expect(byCase("hidden-tool")?.refusedBy).toEqual(["envelope"]);
@@ -1189,6 +1219,123 @@ describe("grading", () => {
       reasonCode: "operation_aborted",
     });
     expect(judged?.refusedBy).toBeUndefined();
+  });
+
+  describe("an attempt the turn was ended under", () => {
+    const move = canonicalMove("audit_unavailable");
+    const executionId = "turn-1";
+    const at = "2026-08-18T09:00:00.000Z";
+    const [control, attack] = move.attempts as [AttackAttempt, AttackAttempt];
+    const expectTurn = { status: "failed", reasonCode: "audit_unavailable" } as const;
+    const event = (
+      sequence: number,
+      type: "turn.started" | "tool.requested" | "tool.completed" | "turn.failed",
+      data: JsonObject,
+    ) => ({
+      version: "1" as const,
+      eventId: `event-${sequence}`,
+      sequence,
+      executionId,
+      traceId: "t",
+      type,
+      occurredAt: at,
+      data,
+    });
+
+    // A live harness mints its own call ids, and its receipts are located by
+    // tool and resource. `live` builds the record that way.
+    const judged = (endedBy: "envelope" | "runtime", live = false, judgedMove = move) => {
+      const base = emptyRecord();
+      const controlId = live ? "call_00_a" : attemptCallId(executionId, move, control);
+      const attackId = live ? "call_01_b" : attemptCallId(executionId, move, attack);
+      const record = {
+        ...base,
+        execution: {
+          ...base.execution,
+          executionId,
+          status: "failed" as const,
+          terminalReasonCode: "audit_unavailable",
+          endedBy,
+          operations: [
+            {
+              at,
+              kind: "tool" as const,
+              source: "kernel" as const,
+              outcome: "succeeded" as const,
+              operationId: controlId,
+              tool: "files.read",
+              failClosed: false,
+            },
+          ],
+          events: [
+            event(1, "turn.started", {}),
+            event(2, "tool.requested", { callId: controlId, tool: "files.read" }),
+            event(3, "tool.completed", { callId: controlId, tool: "files.read" }),
+            event(4, "tool.requested", { callId: attackId, tool: attack.tool! }),
+            event(5, "turn.failed", { code: "audit_unavailable", source: endedBy }),
+          ],
+        },
+      };
+      const receipts = (live ? liveReceiptsFromRecord : receiptsFromRecord)(judgedMove, {
+        executionId,
+        turn: 1,
+        record,
+      });
+      return judgeCase(judgedMove, { receipts, record }, { expectTurn });
+    };
+
+    it("is not applicable when the envelope ended the turn the way the row declared", () => {
+      const judgement = judged("envelope");
+
+      expect(judgement.attempts.find(({ attemptId }) => attemptId === attack.id)).toMatchObject({
+        status: "not_applicable",
+        attempted: false,
+        detail: expect.stringContaining("ended the turn while this call was being decided"),
+      });
+      expect(judgement.status).toBe("pass");
+      expect(judgement.refusedBy).toEqual(["envelope"]);
+    });
+
+    it("finds the call by its tool in a column whose call ids are the harness's own", () => {
+      // Measured live on 2026-09-20: all five live columns made the control,
+      // had the turn ended under the mutation, and read `not_exercised`,
+      // because the unanswered call was looked for under an id only a scripted
+      // column mints.
+      const judgement = judged("envelope", true);
+
+      expect(judgement.attempts.find(({ attemptId }) => attemptId === attack.id)).toMatchObject({
+        status: "not_applicable",
+        detail: expect.stringContaining("ended the turn while this call was being decided"),
+      });
+      expect(judgement.status).toBe("pass");
+      expect(judged("runtime", true).status).toBe("not_exercised");
+    });
+
+    it("lets one unanswered call stand for one attempt, not two", () => {
+      // Two attacks on one tool and a single call left open: the second attack
+      // was never made, and must not borrow the first one's unanswered call.
+      const twice = { ...move, attempts: [control, attack, { ...attack, id: "mutate-again" }] };
+      const judgement = judged("envelope", true, twice);
+
+      expect(judgement.attempts.map(({ attemptId, status }) => [attemptId, status])).toEqual([
+        [control.id, "pass"],
+        [attack.id, "not_applicable"],
+        ["mutate-again", "not_exercised"],
+      ]);
+      expect(judgement.status).toBe("not_exercised");
+    });
+
+    it("stays unexercised when anything else left the call unanswered", () => {
+      // The same events, under a failure the runtime reported as its own. No
+      // boundary ended this turn, so an unanswered call is only an attempt
+      // nobody saw the end of, and the row must not pass on it.
+      const judgement = judged("runtime");
+
+      expect(judgement.attempts.find(({ attemptId }) => attemptId === attack.id)?.status).toBe(
+        "not_exercised",
+      );
+      expect(judgement.status).toBe("not_exercised");
+    });
   });
 
   it("has no receipt for a call id whose only operation is the dispatch", () => {

@@ -16,6 +16,7 @@ import {
 } from "@aicoo/sharedos-contracts";
 import {
   type AuditEvent,
+  type AuditSink,
   CapabilityAuthorizer,
   type GrantSource,
   type HostCeiling,
@@ -1328,6 +1329,34 @@ export const ROUTE_LEASE_REVOKED_CODE = "route_lease_revoked";
  * trusted setup rather than by anything the runtime can reach: revoking a route
  * is host-owned control-plane state, exactly as revoking a grant is.
  */
+/**
+ * The host's audit sink, with the outage a condition arms.
+ *
+ * The events are kept by testkit's sink. A write refused here is not kept, as a
+ * sink that threw would not have kept it.
+ */
+class RecordingAudit implements AuditSink {
+  readonly kept = new InMemoryAuditSink();
+  #failsAfterOperations: number | undefined;
+
+  /** Refuse every write once this many tool calls have been recorded. */
+  failAfterOperations(operations: number): this {
+    this.#failsAfterOperations = operations;
+    return this;
+  }
+
+  async record(event: AuditEvent): Promise<void> {
+    if (
+      this.#failsAfterOperations !== undefined &&
+      this.kept.events.filter(({ type }) => type === "tool.invoked").length >=
+        this.#failsAfterOperations
+    ) {
+      throw new Error("the conformance audit sink is unavailable");
+    }
+    return this.kept.record(event);
+  }
+}
+
 class RecordingTransport implements MessageTransport {
   /** testkit's transport, which keeps the log; a refused dispatch never reaches it. */
   readonly accepted = new InMemoryMessageTransport();
@@ -1548,6 +1577,21 @@ export interface ConformanceWorldOptions {
   /** Bound the turn below the number of calls its move declares. */
   readonly maxToolCalls?: number;
   readonly maxSteps?: number;
+  /**
+   * Take the audit sink down once this many tool calls have been recorded.
+   *
+   * Counted in operations, as {@link expiresAfterOperations} is, and not in
+   * writes: how many events a turn's admission leaves is the kernel's business
+   * and may change, while "after the first call" is the thing the row means.
+   */
+  readonly auditFailsAfterOperations?: number;
+  /**
+   * The envelope's drain grace, for a row about a turn that takes nothing new.
+   * An envelope option and not a world one in the strict sense; it is declared
+   * here so it is inside the world-set hash with everything else a condition
+   * arms.
+   */
+  readonly drainGraceMs?: number;
   readonly now?: string;
 }
 
@@ -1576,6 +1620,8 @@ export interface ConformanceWorld {
   readonly grantSource: ConformanceGrantSource;
   readonly chain: InMemoryDelegationChainResolver;
   readonly auditEvents: readonly AuditEvent[];
+  /** Envelope options the condition armed, for whoever builds the executor. */
+  readonly envelope: { readonly drainGraceMs?: number };
   readonly deliveredMessages: readonly MessageEnvelope[];
   readonly tools: readonly ToolDefinition[];
   /** Every grant this condition actually issued, roots included. */
@@ -1662,11 +1708,14 @@ export function createConformanceWorld(
     grantSource.failAfterLoads(options.authorityFailsAfterLoads);
   }
 
-  const audit = new InMemoryAuditSink();
+  const audit = new RecordingAudit();
+  if (options.auditFailsAfterOperations !== undefined) {
+    audit.failAfterOperations(options.auditFailsAfterOperations);
+  }
   const operationClock =
     options.expiresAfterOperations === undefined
       ? undefined
-      : new OperationIndexedClock(audit.events);
+      : new OperationIndexedClock(audit.kept.events);
   const clock =
     operationClock === undefined ? (): string => now : (): string => operationClock.now();
   const transport = new RecordingTransport();
@@ -1763,7 +1812,8 @@ export function createConformanceWorld(
     broker: brokerStore,
     grantSource,
     chain,
-    auditEvents: audit.events,
+    auditEvents: audit.kept.events,
+    envelope: options.drainGraceMs === undefined ? {} : { drainGraceMs: options.drainGraceMs },
     get deliveredMessages(): readonly MessageEnvelope[] {
       return transport.accepted.deliveries.map(({ envelope }) => envelope);
     },

@@ -191,6 +191,12 @@ export function harnessLimits(move: AttackMove, condition: ConformanceCondition)
         "a scripted harness returns frames and has no way to declare that it throws out of its turn. Making one throw would test the adapter's own error handling rather than what the envelope does with a plugin that stops obeying the protocol; only a plugin the column constructs can be made to throw on purpose",
     };
   }
+  if (move.kind === "turn_draining") {
+    return {
+      unsupported:
+        "the standard loop stops itself once the turn is draining and asks its driver for nothing more, so a seat inside it never issues a call on a draining turn. Only a runtime that owns its loop, a plugin or a CLI connected over MCP, can make one and be refused",
+    };
+  }
   const unreachable = new Map<string, string>();
   const driverIssued = new Map<string, string>();
 
@@ -901,6 +907,12 @@ export function modelLimits(move: AttackMove, condition: ConformanceCondition): 
     return {
       unsupported:
         "a model driver returns a decision and the standard loop turns it into an outcome; neither a transcript nor a live model can express throwing out of the turn. Only a plugin that owns its outcome can, so the row is run where that is true and declared here rather than approximated",
+    };
+  }
+  if (move.kind === "turn_draining") {
+    return {
+      unsupported:
+        "the standard loop stops itself once the turn is draining and asks its driver for nothing more, so a seat inside it never issues a call on a draining turn. Only a runtime that owns its loop, a plugin or a CLI connected over MCP, can make one and be refused",
     };
   }
   const unreachable = new Map<string, string>();

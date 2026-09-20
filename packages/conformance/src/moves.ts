@@ -537,6 +537,38 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
     ],
   },
   {
+    id: "kernel.audit-unavailable",
+    kind: "audit_unavailable",
+    invariant: "Make the audit sink unavailable mid-turn",
+    expectedOutcome: "End the turn before the next effect",
+    /**
+     * A decision is written before the effect it allows, so a sink that cannot
+     * take the write leaves SharedOS unable to say afterwards that the effect
+     * was authorized. It does not guess: the call is not made and the envelope
+     * ends the turn. The mutation below is one the agent holds the grant for,
+     * so the outage is the only reason it does not happen. The row's evidence
+     * is the turn's terminal outcome, declared by the condition in `suite.ts`.
+     */
+    attempts: [
+      {
+        id: "read-while-audit-is-up",
+        role: "control",
+        description: "Read a file the agent is authorized for, while every audit write lands.",
+        tool: READ_TOOL,
+        toolArguments: { path: [...READ_ONLY_FILE] },
+        expect: SUCCEEDS,
+      },
+      {
+        ...MUTATE_INSIDE_MUTATION_SCOPE,
+        id: "mutate-during-the-outage",
+        role: "attack",
+        description:
+          "Make a mutation the agent is authorized for, once the sink has stopped taking writes. Its decision cannot be recorded first, so it must not take effect.",
+        expect: { statuses: ["failed"], reasonCodes: ["audit_unavailable"] },
+      },
+    ],
+  },
+  {
     id: "kernel.tool-ceiling-escape",
     kind: "tool_ceiling_escape",
     invariant: "Tool resolves a requirement outside its ceiling",
@@ -597,6 +629,29 @@ export const CANONICAL_ATTACK_MOVES: readonly AttackMove[] = Object.freeze([
           statuses: ["denied"],
           reasonCodes: ["tool_call_limit_exceeded", "step_limit_exceeded"],
         },
+      },
+    ],
+  },
+  {
+    id: "kernel.turn-draining",
+    kind: "turn_draining",
+    invariant: "Start a call on a turn that is taking nothing new",
+    expectedOutcome: "Deny",
+    /**
+     * A draining turn lets the calls already inside a handler answer and takes
+     * no new one, so that a deadline does not land on work it could have let
+     * finish. The read below is one the agent is authorized for: the kernel
+     * would allow it, and the envelope refuses it before the kernel is asked.
+     */
+    attempts: [
+      {
+        id: "call-while-draining",
+        role: "attack",
+        description:
+          "Read a file the agent is authorized for, on a turn that has stopped taking new calls.",
+        tool: READ_TOOL,
+        toolArguments: { path: [...READ_ONLY_FILE] },
+        expect: { statuses: ["denied"], reasonCodes: ["turn_draining"] },
       },
     ],
   },

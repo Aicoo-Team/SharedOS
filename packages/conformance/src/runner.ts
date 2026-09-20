@@ -418,6 +418,7 @@ async function runCell(
         // mid-turn cannot be run against a clock that never reaches it.
         clock: world.clock,
         createId: () => `${turnId}.event-${(sequence += 1)}`,
+        ...world.envelope,
       },
     ).execute(request);
 
