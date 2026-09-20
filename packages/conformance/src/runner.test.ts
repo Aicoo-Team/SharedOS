@@ -1070,6 +1070,9 @@ describe("grading", () => {
         operationId: callId("dispatch-after-the-revocation"),
         tool: "messages.request",
         reasonCode: "message_request_not_accepted",
+        // Stated by the kernel on the tool operation itself; the sibling above
+        // is what it used to be joined from, and must no longer be read.
+        cause: "route_lease_revoked",
         failClosed: false,
       },
     ];
@@ -1118,6 +1121,74 @@ describe("grading", () => {
       expect(judgement.reasonCodes).toEqual(["message_request_not_accepted"]);
       expect(judgement.causes).toEqual(["route_lease_revoked"]);
     }
+  });
+
+  it("carries the cause the kernel stated from the audit trail to the cell", async () => {
+    const routeLease = CANONICAL_CONFORMANCE_CASES.find(
+      ({ move }) => move.kind === "route_lease_revoked",
+    );
+    if (routeLease === undefined) throw new Error("the route-lease case is missing");
+
+    const { manifest, evidence } = await runConformanceSuite({
+      cases: [routeLease],
+      columns: [ADVERSARY_COLUMN],
+    });
+
+    // The whole path, with nothing built by hand: the kernel writes `cause` on
+    // the tool operation's audit event, the assembler copies it, and the judge
+    // reads it off that operation.
+    expect(
+      evidence[0]?.records.flatMap(({ execution }) =>
+        execution.operations.filter(({ cause }) => cause !== undefined),
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        kind: "tool",
+        tool: "messages.request",
+        reasonCode: "message_request_not_accepted",
+        cause: "route_lease_revoked",
+      }),
+    ]);
+    expect(manifest.rows[0]?.cells[0]?.causes).toEqual(["route_lease_revoked"]);
+  });
+
+  it("reads an interrupted call as a failure the caller saw, and credits no boundary with it", () => {
+    const move = canonicalMove("route_lease_revoked");
+    const executionId = "turn-1";
+    const attack = move.attempts.find(({ role }) => role === "attack")!;
+    const base = emptyRecord();
+    const record = {
+      ...base,
+      execution: {
+        ...base.execution,
+        operations: [
+          {
+            at: "2026-08-18T09:00:00.000Z",
+            kind: "tool" as const,
+            source: "kernel" as const,
+            outcome: "interrupted" as const,
+            operationId: attemptCallId(executionId, move, attack),
+            tool: "messages.request",
+            reasonCode: "operation_aborted",
+            failClosed: false,
+          },
+        ],
+      },
+    };
+
+    const receipts = receiptsFromRecord(move, { executionId, turn: 1, record });
+    const judged = judgeCase(move, { receipts, record }).attempts.find(
+      ({ attemptId }) => attemptId === attack.id,
+    );
+
+    // The caller was answered with a failure, so that is what the receipt says.
+    // Nothing refused the call -- the turn ended under it -- so no boundary is
+    // named as having stopped it.
+    expect(receipts.find(({ attemptId }) => attemptId === attack.id)).toMatchObject({
+      observed: "failed",
+      reasonCode: "operation_aborted",
+    });
+    expect(judged?.refusedBy).toBeUndefined();
   });
 
   it("has no receipt for a call id whose only operation is the dispatch", () => {

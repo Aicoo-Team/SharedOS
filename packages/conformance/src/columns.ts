@@ -41,7 +41,7 @@ import {
   type AttemptReceipt,
 } from "./adversary.js";
 import { canonicalJson } from "./hashing.js";
-import { operationsUnder, type ExecutionRecord } from "./record.js";
+import type { ExecutionRecord } from "./record.js";
 import type { ConformanceCondition } from "./suite.js";
 import { conformanceRuntimeContext } from "./world.js";
 import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
@@ -585,11 +585,13 @@ function issuableByHarness(attempt: AttackAttempt, turn: number): boolean {
  */
 export function receiptsFromRecord(move: AttackMove, turn: ColumnTurn): readonly AttemptReceipt[] {
   return receiptsFromOperations(move, turn, (attempt) => {
-    // The tool operation under the call's id is the receipt; a sibling the
-    // transport refused is its cause, which the judge joins. One reading of
-    // that, shared with the judge: see `operationsUnder`.
+    // The tool operation under the call's id, and no other kind: a
+    // `messages.request` leaves a `message.sent` under the same id, and that is
+    // a dispatch the record shows, not the call the caller made.
     const callId = attemptCallId(turn.executionId, move, attempt);
-    const { attempt: operation } = operationsUnder(turn.record, callId);
+    const operation = turn.record.execution.operations.find(
+      ({ kind, operationId }) => kind === "tool" && operationId === callId,
+    );
     return operation === undefined
       ? { detail: "the record carries no operation for this attempt" }
       : { operation, callId };
@@ -631,7 +633,9 @@ function receiptsFromOperations(
         ...base,
         attempted: true,
         ...(callId === undefined ? {} : { callId }),
-        observed: operation.outcome,
+        // What a caller can be told has three values. An interrupted call was
+        // answered as a failure, and the record keeps the distinction.
+        observed: operation.outcome === "interrupted" ? "failed" : operation.outcome,
         ...(operation.reasonCode === undefined ? {} : { reasonCode: operation.reasonCode }),
       };
     });

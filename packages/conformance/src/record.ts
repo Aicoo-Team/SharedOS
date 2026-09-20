@@ -163,13 +163,26 @@ export const OperationRecordSchema = z
     at: TimestampSchema,
     kind: z.enum(["tool", "resource", "message"]),
     source: z.enum(["kernel", "envelope"]),
-    outcome: z.enum(["succeeded", "denied", "failed"]),
+    /**
+     * `interrupted` is its own outcome, as it is in audit: the turn ended while
+     * the call was in flight, so whether it took effect is not known. It is not
+     * a refusal, and a reader must not credit it to a boundary as one.
+     */
+    outcome: z.enum(["succeeded", "denied", "failed", "interrupted"]),
     operationId: IdentifierSchema.optional(),
     tool: IdentifierSchema.optional(),
     resource: ResourceRefSchema.optional(),
     action: IdentifierSchema.optional(),
     grantId: IdentifierSchema.optional(),
     reasonCode: IdentifierSchema.optional(),
+    /**
+     * Which situation a coarse `reasonCode` stood in for, as the kernel stated
+     * it on the audit event. `reasonCode` stays the code the caller was given:
+     * `tool_unavailable` is one code over "not registered", "namespace disabled"
+     * and "not offered this turn", and `message_request_not_accepted` is one
+     * code over whatever the transport answered.
+     */
+    cause: IdentifierSchema.optional(),
     failClosed: z.boolean(),
   })
   .strict();
@@ -313,52 +326,3 @@ export const ExecutionRecordSchema = z
   })
   .strict();
 export type ExecutionRecord = z.infer<typeof ExecutionRecordSchema>;
-
-/** What one call left in the record; see {@link operationsUnder}. */
-export interface CallOperations {
-  /**
-   * The `tool` operation under the call's id: what the caller was told.
-   * Absent when the record shows no such call.
-   */
-  readonly attempt: OperationRecord | undefined;
-  /**
-   * The code a refused sibling operation carried under the same id, where
-   * one did. Never present without an attempt to be the cause of.
-   */
-  readonly cause: string | undefined;
-}
-
-/**
- * Read what one call left in the record, by its id.
- *
- * Several operations can share a call's id. The kernel records a
- * `message.sent` for the dispatch a `messages.request` makes, and when the
- * transport refuses it that operation carries the transport's code while the
- * tool operation carries `message_request_not_accepted`, the code the caller
- * was told -- the same pairing `docs/errors.md` describes for
- * `message_delivery_failed`. The tool operation is the attempt; the sibling's
- * code is its cause, joined by id so a reader can say both what SharedOS said
- * and why without the two competing for one field.
- *
- * An id with no tool operation left no attempt, and so no cause either: a
- * `message` operation alone is a dispatch the record shows, not a call the
- * caller made, and handing it back as the attempt would grade the call on the
- * transport's code. Taking the first operation under the id, whatever its
- * kind, once made the scripted columns' reason code depend on audit order.
- * Every reader of a call's operations goes through here so that rule is
- * stated once.
- */
-export function operationsUnder(record: ExecutionRecord, callId: string): CallOperations {
-  const under = record.execution.operations.filter(({ operationId }) => operationId === callId);
-  const attempt = under.find(({ kind }) => kind === "tool");
-  const cause =
-    attempt === undefined
-      ? undefined
-      : under.find(
-          (operation) =>
-            operation.kind !== "tool" &&
-            operation.outcome !== "succeeded" &&
-            operation.reasonCode !== undefined,
-        )?.reasonCode;
-  return { attempt, cause };
-}

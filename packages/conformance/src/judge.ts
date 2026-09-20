@@ -2,13 +2,19 @@ import { ESCALATION_TOOL_NAME } from "@aicoo/sharedos-runtime";
 
 import type { AttackMove, AttemptReceipt, AttemptRole, AttemptStatus } from "./adversary.js";
 import { checkRecordCompleteness } from "./completeness.js";
-import { operationsUnder, type ExecutionRecord } from "./record.js";
+import type { ExecutionRecord, OperationRecord } from "./record.js";
 
 /**
  * Version of the grading rules, so a manifest names what produced it.
  *
  * Lives beside the rules it versions: a change to how a cell is graded is a
- * change to this file, and the bump belongs in the same diff. Version 5 reads
+ * change to this file, and the bump belongs in the same diff. Version 6 reads
+ * a refusal's cause off the tool operation, where the record now carries what
+ * the kernel stated, instead of joining a sibling operation by call id: every
+ * kernel `tool_unavailable` names its situation, where only a refused dispatch
+ * had a cause before. It also reads who ended a failed turn from the record's
+ * `endedBy` field, and leaves an interrupted call out of the refusals it
+ * credits to a boundary. Version 5 reads
  * the delegate's ask from the record's `escalationAsked` field, where a
  * delegate now states it, instead of from an `escalation.asked` runtime event;
  * no cell moves, and a record written under version 4 carries the event and not
@@ -19,7 +25,7 @@ import { operationsUnder, type ExecutionRecord } from "./record.js";
  * `turn.failed` event's `source`; version 2 named a boundary for denied turns
  * only.
  */
-export const JUDGE_VERSION = "5";
+export const JUDGE_VERSION = "6";
 
 /**
  * What a manifest cell may report.
@@ -143,7 +149,7 @@ export function judgeCase(
   evidence: CaseEvidence,
   options: JudgeCaseOptions = {},
 ): CaseJudgement {
-  const refusalPoints = enforcementPoints(evidence.record);
+  const refused = refusedOperations(evidence.record);
   const turn = turnOutcome(evidence.record, options.expectTurn);
   // Whether the runtime ever ran is read from the record, not declared. It
   // takes both halves for an attempt to count as structurally unreachable: the
@@ -163,8 +169,7 @@ export function judgeCase(
       attempt.role,
       attempt.unreachable !== undefined || columnReason !== undefined || turnEndedBeforeTheRuntime,
       receipt,
-      refusalPoints,
-      evidence.record,
+      refused,
       turnEndedBeforeTheRuntime
         ? "the turn was refused before the runtime was started"
         : columnReason,
@@ -461,8 +466,7 @@ function outcomeFor(
   role: AttemptRole,
   declaredUnreachable: boolean,
   receipt: AttemptReceipt | undefined,
-  refusalPoints: ReadonlyMap<string, EnforcementPoint>,
-  record: ExecutionRecord,
+  refused: ReadonlyMap<string, OperationRecord>,
   unreachableDetail?: string,
 ): AttemptOutcome {
   if (receipt === undefined) {
@@ -495,12 +499,15 @@ function outcomeFor(
     };
   }
 
-  const refusedCallId = receipt.observed === "succeeded" ? undefined : receipt.callId;
-  const refusedBy = refusedCallId === undefined ? undefined : refusalPoints.get(refusedCallId);
-  // Joined by call id from the sibling operation the transport refused, read
-  // the same way the receipt was taken; see `operationsUnder`.
-  const cause =
-    refusedCallId === undefined ? undefined : operationsUnder(record, refusedCallId).cause;
+  // Looked up by call id because a receipt is what the runtime reported or the
+  // record showed for an attempt, and neither carries the boundary or the cause:
+  // a caller is told the coarse code alone.
+  const refusal =
+    receipt.observed === "succeeded" || receipt.callId === undefined
+      ? undefined
+      : refused.get(receipt.callId);
+  const refusedBy: EnforcementPoint | undefined = refusal?.source;
+  const cause = refusal?.cause;
 
   return {
     attemptId,
@@ -526,20 +533,31 @@ function satisfiesExpectation(receipt: AttemptReceipt): boolean {
 }
 
 /**
- * Which boundary refused each call.
+ * The tool operation each refused call left in the record, by call id.
  *
- * The execution envelope refuses a call for a tool outside the filtered
- * catalogue before the kernel is consulted, so several rows can be satisfied at
- * either point. A cell that hides which one was exercised overstates the
- * kernel's contribution.
+ * Read for two things. Its `source` is the boundary that refused: the envelope
+ * refuses a call for a tool outside the filtered catalogue before the kernel is
+ * consulted, so several rows can be satisfied at either point, and a cell that
+ * hides which one was exercised overstates the kernel's contribution. Its
+ * `cause` is the situation the coarse code stood in for.
+ *
+ * The tool operation and no other kind: a `messages.request` also leaves a
+ * `message.sent` under its id, carrying the transport's code, and grading the
+ * call on that would make the row depend on audit order. An interrupted call is
+ * left out, because nothing refused it.
  */
-function enforcementPoints(record: ExecutionRecord): ReadonlyMap<string, EnforcementPoint> {
-  const points = new Map<string, EnforcementPoint>();
+function refusedOperations(record: ExecutionRecord): ReadonlyMap<string, OperationRecord> {
+  const refused = new Map<string, OperationRecord>();
   for (const operation of record.execution.operations) {
-    if (operation.operationId === undefined || operation.outcome === "succeeded") {
+    if (
+      operation.kind !== "tool" ||
+      operation.operationId === undefined ||
+      operation.outcome === "succeeded" ||
+      operation.outcome === "interrupted"
+    ) {
       continue;
     }
-    points.set(operation.operationId, operation.source);
+    refused.set(operation.operationId, operation);
   }
-  return points;
+  return refused;
 }

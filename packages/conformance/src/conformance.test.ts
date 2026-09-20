@@ -396,9 +396,9 @@ describe("execution record assembly", () => {
       system,
     });
 
-    // The record's vocabulary has three outcomes. `denied` would credit
-    // enforcement with stopping a call that may have taken effect.
-    expect(record.execution.operations.map(({ outcome }) => outcome)).toEqual(["failed"]);
+    // Carried as itself. `denied` would credit enforcement with stopping a call
+    // that may have taken effect, and `failed` would say it is known not to have.
+    expect(record.execution.operations.map(({ outcome }) => outcome)).toEqual(["interrupted"]);
   });
 
   it("ignores audit events from another trace", () => {
