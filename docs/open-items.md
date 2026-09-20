@@ -21,7 +21,7 @@ Also recorded by the audit and not yet decided, each declared and never set or
 never read: `ConformanceWorldOptions.now`; `HostileRuntimeOptions.version`, the
 `HostileRuntime.moves`, `ConformanceGrantSource.loads`, and
 `SpanCollector.pause`/`resume`/`named` accessors, `RecordingMessageRouter.replies`,
-the `AttackMoveKind` type; `SystemIdentity.toolPolicy` and `adapterVersion`,
+the `AttackMoveKind` type; `SystemIdentity.adapterVersion`,
 `ExperimentIdentity.seed` and `metadata`, `StateRecord.diffRef`,
 `StateReference.capturedAt`, `AssembleExecutionRecordInput.auditRef`;
 `HarnessMcpConfigFile.harness`; `HarnessStep.complete.metadata`;

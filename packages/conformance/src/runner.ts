@@ -440,6 +440,7 @@ async function runCell(
         sharedOsVersion: SHAREDOS_VERSION,
         adapterId: column.id,
         policyHash: hashes.policyHash,
+        ...(column.toolPolicy === undefined ? {} : { toolPolicy: column.toolPolicy }),
       },
     });
 

@@ -215,6 +215,12 @@ tool of their own — but the entries must be named, and a launch that leaves th
 harness none of its own, as Pi's does with `--no-builtin-tools`, declares `[]`:
 the extension's `mcp` proxy is the catalogue's conduit, not a local tool.
 
+A conformance column that declares a policy has it written to every execution
+record it produces, as `system.toolPolicy`, beside `catalogHash`. `mcpColumn`
+takes it as `toolPolicy`, and `scripts/mcp-conformance.mjs` passes each CLI's.
+A column that declares none, the scripted ones among them, leaves the field
+absent: the managed catalogue was all it had.
+
 This is what makes a result readable. "The kernel refused every violation" means
 one thing when the managed catalogue was the only way to have an effect, and
 almost nothing when the harness also had a shell.

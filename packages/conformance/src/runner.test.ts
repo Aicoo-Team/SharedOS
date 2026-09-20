@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ESCALATION_TOOL_NAME, createStandardRuntime } from "@aicoo/sharedos-runtime";
 
 import type { JsonObject, ToolCall } from "@aicoo/sharedos-contracts";
+import { declareToolPolicy } from "@aicoo/sharedos-mcp";
 
 import {
   HostileRuntime,
@@ -25,6 +26,7 @@ import {
 
 import {
   liveReceiptsFromRecord,
+  mcpColumn,
   mcpHarnessLimits,
   movesToModelTranscript,
   movesToPrompt,
@@ -134,6 +136,36 @@ const reworded = (kase: ConformanceCase): ConformanceCase => ({
     ...condition,
     description: `${condition.description} Reworded for a reader.`,
   })),
+});
+
+describe("a column's declared tool policy", () => {
+  const policy = declareToolPolicy({ harnessLocal: ["shell", "apply_patch"] });
+
+  it("is on every record the column produces, and on none from a column that declared nothing", async () => {
+    const { evidence } = await runConformanceSuite({
+      cases: [caseOf(BROKEN_CONTROL)],
+      columns: [ADVERSARY_COLUMN, { ...ADVERSARY_COLUMN, id: "with-a-shell", toolPolicy: policy }],
+    });
+    const systemOf = (columnId: string) =>
+      evidence.find((entry) => entry.columnId === columnId)?.records[0]?.system;
+
+    expect(systemOf("with-a-shell")?.toolPolicy).toEqual(policy);
+    expect(systemOf(ADVERSARY_COLUMN.id)).toBeDefined();
+    expect(systemOf(ADVERSARY_COLUMN.id)?.toolPolicy).toBeUndefined();
+  });
+
+  it("is carried by the MCP column, which is the one that has a surface to declare", () => {
+    const column = mcpColumn({
+      id: "codex-mcp",
+      label: "Codex",
+      toolPolicy: policy,
+      createRuntime: () => {
+        throw new Error("not run by this test");
+      },
+    });
+
+    expect(column.toolPolicy).toEqual(policy);
+  });
 });
 
 describe("the case-set hash", () => {

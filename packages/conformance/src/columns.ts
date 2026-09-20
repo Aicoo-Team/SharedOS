@@ -1,4 +1,4 @@
-import type { JsonObject } from "@aicoo/sharedos-contracts";
+import type { JsonObject, ToolPolicy } from "@aicoo/sharedos-contracts";
 import {
   claudeCodeFrameWriter,
   claudeCodeProtocol,
@@ -127,6 +127,14 @@ export interface RuntimeColumn {
   receipts?(move: AttackMove, turn: ColumnTurn): readonly AttemptReceipt[];
   /** What this column structurally cannot do for one row under one condition. */
   limits?(move: AttackMove, condition: ConformanceCondition): ColumnLimits;
+  /**
+   * The tool surface the seat was declared to have, for a column that has one
+   * beyond the managed catalogue (ADR 0014). Written to every record the column
+   * produces as `system.toolPolicy`, because "the kernel refused every
+   * violation" means one thing when the catalogue was the only way to have an
+   * effect and almost nothing when the harness also had a shell.
+   */
+  readonly toolPolicy?: ToolPolicy;
 }
 
 /**
@@ -663,6 +671,8 @@ export interface McpColumnOptions {
    * {@link liveColumn}. This package stays host-neutral.
    */
   readonly createRuntime: (options: McpColumnRuntimeOptions) => RuntimePlugin;
+  /** What the CLI was declared to have besides the SharedOS catalogue. */
+  readonly toolPolicy?: ToolPolicy;
 }
 
 /**
@@ -692,6 +702,7 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
   return Object.freeze({
     id: options.id,
     label: options.label,
+    ...(options.toolPolicy === undefined ? {} : { toolPolicy: options.toolPolicy }),
     create: (moves: readonly AttackMove[], create: RuntimeColumnOptions): RuntimePlugin =>
       options.createRuntime({
         ...create,
