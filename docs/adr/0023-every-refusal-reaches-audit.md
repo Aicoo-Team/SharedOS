@@ -12,6 +12,9 @@
 - Revised: 2026-09-18. A record written after an effect may be held to a time
   limit, and the turn an outage ends drains first where the host set a grace
   (ADR 0007, which also now states the `retryable` rule for every ending).
+- Revised: 2026-09-20. The four turn ports on `TurnKernel` are required, where
+  they were optional members a partial kernel could leave out. In the Decision
+  below.
 - Extends: `docs/adr/0012-one-refusal-vocabulary.md`
 
 ## Context
@@ -64,10 +67,12 @@ boundary made it.
 
 ### The envelope records through the kernel
 
-`TurnKernel` already reaches the kernel through a narrow interface whose
-optional members degrade gracefully — `openTurnAuthority` and `recordEscalation`
-are both `Partial`, and a kernel offering neither still runs a turn. The
-recording surface this ADR needs joins them there.
+`TurnKernel` already reaches the kernel through a narrow interface, which holds
+`openTurnAuthority` and `recordEscalation` beside the four operations a turn
+asks for. The recording surface this ADR needs joins them there:
+`recordTurnEnd` and `recordRefusedCall`. All of them are required. A kernel
+without the recorders would run a turn whose envelope refusals reach no trail,
+which is the defect this ADR removes, so the type does not admit one.
 
 The envelope does not take an `AuditSink` of its own. A host would then have to
 pass the same sink in two places, and the failure mode of forgetting the second

@@ -24,6 +24,7 @@ import {
   type RuntimeTurnRequest,
   type SharedOSExecutorOptions,
   type StandardRuntimeOptions,
+  type TurnKernel,
 } from "./index.js";
 
 const now = "2026-08-03T00:00:00.000Z";
@@ -81,10 +82,7 @@ function request(options: { readonly escalation?: boolean } = {}): ExecutionRequ
   };
 }
 
-function kernel(
-  result?: ToolResult,
-  options: { readonly escalation?: boolean } = {},
-): Pick<SharedOSKernel, "admitTurn" | "reach" | "listTools" | "invokeTool"> {
+function kernel(result?: ToolResult, options: { readonly escalation?: boolean } = {}): TurnKernel {
   const catalogue = options.escalation === true ? [tool, ESCALATION_TOOL_DEFINITION] : [tool];
   return {
     admitTurn: vi.fn(async () => ({
@@ -105,6 +103,17 @@ function kernel(
         }
       );
     }),
+    // What makes it a turn: the lease, and the three recorders. Inert here, so
+    // a test that cares about one replaces it.
+    openTurnAuthority: vi.fn(async () => ({ status: "resolved" as const, close: () => undefined })),
+    recordEscalation: vi.fn(async (access: AccessContext, reason: string) => ({
+      reason,
+      reviewer: access.owner,
+      requestedAt: access.now,
+      status: "pending" as const,
+    })),
+    recordTurnEnd: vi.fn(async () => undefined),
+    recordRefusedCall: vi.fn(async () => undefined),
   };
 }
 
@@ -606,17 +615,11 @@ describe("the standard composition", () => {
   });
 
   it("applies timeout while loading the visible tool catalog", async () => {
-    const runtimeKernel: Pick<SharedOSKernel, "admitTurn" | "reach" | "listTools" | "invokeTool"> =
-      {
-        admitTurn: async () => ({
-          allowed: true,
-          reasonCode: "allowed",
-          matchedGrantId: "grant-turn",
-        }),
-        reach: async () => ({ status: "computed", reach: [] }),
-        listTools: async () => new Promise(() => undefined),
-        invokeTool: vi.fn(),
-      };
+    const runtimeKernel: TurnKernel = {
+      ...kernel(),
+      listTools: async () => new Promise(() => undefined),
+      invokeTool: vi.fn(),
+    };
     const input = request();
     input.options = { timeoutMs: 5 };
     const driver: AgentTurnDriver = { open: vi.fn() };
