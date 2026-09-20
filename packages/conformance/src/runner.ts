@@ -387,7 +387,10 @@ async function runCell(
   const turns = moveTurnCount(kase.move);
   const limits: ColumnLimits = column.limits?.(kase.move, condition) ?? {};
   const hashes = await hashExperimentInputs({
-    spec: { case: kase.id, move: kase.move, condition: condition.id },
+    // Without the prose, as the case-set hash is taken: a reworded description
+    // is the same experiment, and a hash that moved for one would say otherwise
+    // on every record of the cell.
+    spec: { case: kase.id, move: withoutDescriptions(kase.move), condition: condition.id },
     world: worldDescription(world, condition),
     evaluator: { judge: "sharedos-conformance", version: JUDGE_VERSION },
     policy: {

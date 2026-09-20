@@ -1928,31 +1928,31 @@ Identity the experiment layer owns; SharedOS cannot derive any of it.
 
 ### ExperimentHashes
 
-Defined in: [conformance/src/hashing.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L23)
+Defined in: [conformance/src/hashing.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L18)
 
 #### Properties
 
 | Property                                            | Modifier   | Type     | Defined in                                                                                                                |
 | --------------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-evaluatorhash"></a> `evaluatorHash` | `readonly` | `string` | [conformance/src/hashing.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L26) |
-| <a id="property-policyhash-1"></a> `policyHash`     | `readonly` | `string` | [conformance/src/hashing.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L27) |
-| <a id="property-spechash"></a> `specHash`           | `readonly` | `string` | [conformance/src/hashing.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L24) |
-| <a id="property-worldhash"></a> `worldHash`         | `readonly` | `string` | [conformance/src/hashing.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L25) |
+| <a id="property-evaluatorhash"></a> `evaluatorHash` | `readonly` | `string` | [conformance/src/hashing.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L21) |
+| <a id="property-policyhash-1"></a> `policyHash`     | `readonly` | `string` | [conformance/src/hashing.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L22) |
+| <a id="property-spechash"></a> `specHash`           | `readonly` | `string` | [conformance/src/hashing.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L19) |
+| <a id="property-worldhash"></a> `worldHash`         | `readonly` | `string` | [conformance/src/hashing.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L20) |
 
 ---
 
 ### ExperimentHashInput
 
-Defined in: [conformance/src/hashing.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L12)
+Defined in: [conformance/src/hashing.ts:7](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L7)
 
 #### Properties
 
 | Property                                    | Modifier   | Type      | Description                                                      | Defined in                                                                                                                |
 | ------------------------------------------- | ---------- | --------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-evaluator"></a> `evaluator` | `readonly` | `unknown` | The evaluator that will score runs of this specification.        | [conformance/src/hashing.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L18) |
-| <a id="property-policy"></a> `policy?`      | `readonly` | `unknown` | Policy or configuration in force, if it is versioned separately. | [conformance/src/hashing.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L20) |
-| <a id="property-spec"></a> `spec`           | `readonly` | `unknown` | The frozen, declarative experiment specification.                | [conformance/src/hashing.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L14) |
-| <a id="property-world-1"></a> `world`       | `readonly` | `unknown` | The world that specification materialised.                       | [conformance/src/hashing.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L16) |
+| <a id="property-evaluator"></a> `evaluator` | `readonly` | `unknown` | The evaluator that will score runs of this specification.        | [conformance/src/hashing.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L13) |
+| <a id="property-policy"></a> `policy?`      | `readonly` | `unknown` | Policy or configuration in force, if it is versioned separately. | [conformance/src/hashing.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L15) |
+| <a id="property-spec"></a> `spec`           | `readonly` | `unknown` | The frozen, declarative experiment specification.                | [conformance/src/hashing.ts:9](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L9)   |
+| <a id="property-world-1"></a> `world`       | `readonly` | `unknown` | The world that specification materialised.                       | [conformance/src/hashing.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L11) |
 
 ---
 
@@ -2132,15 +2132,15 @@ Defined in: [conformance/src/completeness.ts:128](https://github.com/Aicoo-Team/
 
 ### ReproducibilityCheck
 
-Defined in: [conformance/src/hashing.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L49)
+Defined in: [conformance/src/hashing.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L44)
 
 #### Properties
 
 | Property                                      | Modifier   | Type                                              | Defined in                                                                                                                |
 | --------------------------------------------- | ---------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-comparable"></a> `comparable` | `readonly` | `boolean`                                         | [conformance/src/hashing.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L51) |
-| <a id="property-detail-4"></a> `detail`       | `readonly` | `string`                                          | [conformance/src/hashing.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L52) |
-| <a id="property-status-3"></a> `status`       | `readonly` | [`ReproducibilityStatus`](#reproducibilitystatus) | [conformance/src/hashing.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L50) |
+| <a id="property-comparable"></a> `comparable` | `readonly` | `boolean`                                         | [conformance/src/hashing.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L46) |
+| <a id="property-detail-4"></a> `detail`       | `readonly` | `string`                                          | [conformance/src/hashing.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L47) |
+| <a id="property-status-3"></a> `status`       | `readonly` | [`ReproducibilityStatus`](#reproducibilitystatus) | [conformance/src/hashing.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L45) |
 
 ---
 
@@ -2284,17 +2284,17 @@ Defined in: [conformance/src/columns.ts:217](https://github.com/Aicoo-Team/Share
 
 ### StrictFailure
 
-Defined in: [conformance/src/runner.ts:525](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L525)
+Defined in: [conformance/src/runner.ts:528](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L528)
 
 #### Properties
 
 | Property                                          | Modifier   | Type                                      | Defined in                                                                                                                |
 | ------------------------------------------------- | ---------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-caseid-2"></a> `caseId`           | `readonly` | `string`                                  | [conformance/src/runner.ts:526](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L526) |
-| <a id="property-columnid-2"></a> `columnId`       | `readonly` | `string`                                  | [conformance/src/runner.ts:528](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L528) |
-| <a id="property-conditionid-2"></a> `conditionId` | `readonly` | `string`                                  | [conformance/src/runner.ts:527](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L527) |
-| <a id="property-detail-5"></a> `detail`           | `readonly` | `string`                                  | [conformance/src/runner.ts:530](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L530) |
-| <a id="property-status-4"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus) | [conformance/src/runner.ts:529](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L529) |
+| <a id="property-caseid-2"></a> `caseId`           | `readonly` | `string`                                  | [conformance/src/runner.ts:529](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L529) |
+| <a id="property-columnid-2"></a> `columnId`       | `readonly` | `string`                                  | [conformance/src/runner.ts:531](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L531) |
+| <a id="property-conditionid-2"></a> `conditionId` | `readonly` | `string`                                  | [conformance/src/runner.ts:530](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L530) |
+| <a id="property-detail-5"></a> `detail`           | `readonly` | `string`                                  | [conformance/src/runner.ts:533](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L533) |
+| <a id="property-status-4"></a> `status`           | `readonly` | [`ConformanceStatus`](#conformancestatus) | [conformance/src/runner.ts:532](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L532) |
 
 ---
 
@@ -2782,7 +2782,7 @@ Defined in: [conformance/src/record.ts:176](https://github.com/Aicoo-Team/Shared
 
 > **ReproducibilityStatus** = `"identical"` \| `"world_differs"` \| `"spec_differs"`
 
-Defined in: [conformance/src/hashing.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L47)
+Defined in: [conformance/src/hashing.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L42)
 
 ---
 
@@ -5422,7 +5422,7 @@ same rule is re-checked here rather than assumed.
 
 > **compareReproducibility**(`expected`, `actual`): [`ReproducibilityCheck`](#reproducibilitycheck)
 
-Defined in: [conformance/src/hashing.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L62)
+Defined in: [conformance/src/hashing.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L57)
 
 Decide whether two materialisations may be compared at all.
 
@@ -5514,26 +5514,6 @@ unchanged.
 #### Returns
 
 `string`
-
----
-
-### contentHash()
-
-> **contentHash**(`value`): `Promise`\<`string`>\>
-
-Defined in: [conformance/src/hashing.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L8)
-
-Content identifier for any JSON-safe value, stable across key ordering.
-
-#### Parameters
-
-| Parameter | Type      |
-| --------- | --------- |
-| `value`   | `unknown` |
-
-#### Returns
-
-`Promise`\<`string`\>
 
 ---
 
@@ -5631,7 +5611,7 @@ writer that drives it, the same pair the scripted column is exercised with.
 
 > **hashExperimentInputs**(`input`): `Promise`\<[`ExperimentHashes`](#experimenthashes)>\>
 
-Defined in: [conformance/src/hashing.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L37)
+Defined in: [conformance/src/hashing.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/hashing.ts#L32)
 
 Hash the inputs of one experiment.
 
@@ -6503,7 +6483,7 @@ readonly `object`[]
 
 > **renderConformanceSummary**(`manifest`): `string`
 
-Defined in: [conformance/src/runner.ts:571](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L571)
+Defined in: [conformance/src/runner.ts:574](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L574)
 
 Render the manifest as a stable Markdown document.
 
@@ -6805,7 +6785,7 @@ Defined in: core/dist/hashing.d.ts:11
 
 > **strictFailures**(`manifest`): readonly [`StrictFailure`](#strictfailure)[]
 
-Defined in: [conformance/src/runner.ts:552](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L552)
+Defined in: [conformance/src/runner.ts:555](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/runner.ts#L555)
 
 Cells that must break a build.
 

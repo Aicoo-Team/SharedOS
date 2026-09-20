@@ -145,6 +145,18 @@ describe("the case-set hash", () => {
     expect(after).toBe(before);
   });
 
+  it("leaves a record's spec hash where it was when only the prose changed", async () => {
+    const kase = caseOf(BROKEN_CONTROL);
+    const specHashOf = async (cases: readonly ConformanceCase[]): Promise<string | undefined> => {
+      const { evidence } = await runConformanceSuite({ cases, columns: [ADVERSARY_COLUMN] });
+      return evidence[0]?.records[0]?.experiment.specHash;
+    };
+
+    const before = await specHashOf([kase]);
+    expect(before).toMatch(/^[0-9a-f]{64}$/);
+    expect(await specHashOf([reworded(kase)])).toBe(before);
+  });
+
   it("still moves when a declaration a run actually depends on changes", async () => {
     const [first, ...rest] = CANONICAL_CONFORMANCE_CASES as readonly ConformanceCase[];
     if (first === undefined) throw new Error("the canonical case set is empty");

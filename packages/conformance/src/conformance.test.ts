@@ -5,7 +5,7 @@ import type { AuditEvent } from "@aicoo/sharedos-core";
 
 import { assembleExecutionRecord } from "./assemble.js";
 import { checkRecordCompleteness, checkRecordRedaction } from "./completeness.js";
-import { compareReproducibility, contentHash, hashExperimentInputs } from "./hashing.js";
+import { compareReproducibility, hashExperimentInputs } from "./hashing.js";
 import type { ExperimentIdentity, SystemIdentity } from "./record.js";
 
 const NOW = "2026-08-03T09:00:00.000Z";
@@ -603,9 +603,14 @@ describe("reproducibility hashes", () => {
   });
 
   it("ignores key order so two hosts agree on one world hash", async () => {
-    await expect(contentHash({ a: 1, b: [2, { c: 3, d: 4 }] })).resolves.toBe(
-      await contentHash({ b: [2, { d: 4, c: 3 }], a: 1 }),
-    );
+    const inputs = { spec: "spec", evaluator: "evaluator" };
+    const one = await hashExperimentInputs({ ...inputs, world: { a: 1, b: [2, { c: 3, d: 4 }] } });
+    const other = await hashExperimentInputs({
+      ...inputs,
+      world: { b: [2, { d: 4, c: 3 }], a: 1 },
+    });
+
+    expect(other.worldHash).toBe(one.worldHash);
   });
 
   it("refuses to compare runs whose worlds differ", () => {
