@@ -483,6 +483,10 @@ const rpc = async (id, method, params) => {
 
 for await (const line of createInterface({ input: process.stdin })) {
   const command = JSON.parse(line);
+  // Let an EOF delivered with this command close the session before the
+  // command starts. Otherwise child-process scheduling decides whether the
+  // call escapes first, which made this regression nondeterministic.
+  await new Promise((resolve) => setImmediate(resolve));
   const answered = await rpc(2, "tools/call", command.call);
   process.stdout.write(
     JSON.stringify({
