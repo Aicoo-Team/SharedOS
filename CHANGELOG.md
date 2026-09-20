@@ -409,6 +409,14 @@ createStandardRuntime({ driver }))`, which `TurnExecutor` built (see Removed).
   once. A kernel call outside any turn still resolves its own, which is a turn
   of one operation and is unchanged. ADRs 0009, 0010 and 0016 are revised in
   place, and the open-items row is closed.
+- From `@aicoo/sharedos-core`: `AuthorizationRequest`. It was
+  `CapabilityRequirement` from contracts declared a second time: the same
+  `resource` and `action`, and `POST /v1/authorize` already took the contract
+  schema. Core uses the contract type throughout, the two host ports that named
+  the old one included: `HostCeiling.narrow` and
+  `MessageCapabilityResolver.resolve`. A host that builds the object without
+  importing the type changes nothing; one that imports it renames one type. ADR
+  0020 is revised in place.
 - From `@aicoo/sharedos-runtime`: `StandardRuntime`. See
   `createStandardRuntime` under "Changed — breaking".
 - From `@aicoo/sharedos-adapters`: `ModelRuntime`, `HarnessRuntime` and

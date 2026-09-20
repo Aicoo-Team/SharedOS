@@ -2,6 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-08-31
+- Revised: 2026-09-20. The port takes `CapabilityRequirement`, the contract type;
+  core's `AuthorizationRequest` was the same two fields and is removed.
 - Reverts: the documentation change in `663dd94`
 
 ## Context
@@ -110,7 +112,7 @@ export interface LoadedPolicy {
 export interface HostCeiling {
   narrow(
     decision: AllowedDecision,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     context: AccessContext,
     policy: HostPolicy,
   ): HostCeilingVerdict;

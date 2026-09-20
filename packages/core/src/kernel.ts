@@ -4,6 +4,7 @@ import type {
   AgentCardView,
   AuthorizationDecision,
   Capability,
+  CapabilityRequirement,
   Escalation,
   JsonObject,
   MessageDeliveryResult,
@@ -57,7 +58,6 @@ import {
 } from "./authority.js";
 import {
   type AuthorizationExplanation,
-  type AuthorizationRequest,
   CapabilityAuthorizer,
   addressesEqual,
   isInfrastructureDenial,
@@ -215,7 +215,7 @@ export interface RefusedCall {
 /** What a `tool.invoked` event carries beyond the call and its result. */
 interface ToolResultAuditDetail {
   readonly grantId?: string;
-  readonly requirement?: AuthorizationRequest;
+  readonly requirement?: CapabilityRequirement;
   /**
    * Which situation a coarse refusal was, when the code covers several.
    *
@@ -466,7 +466,7 @@ export class SharedOSKernel {
 
   async authorize(
     context: AccessContext,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     options: KernelOperationOptions = {},
   ): Promise<AuthorizationDecision> {
     options.signal?.throwIfAborted();
@@ -488,7 +488,7 @@ export class SharedOSKernel {
     options.signal?.throwIfAborted();
     context = structuredClone(context);
     agent = structuredClone(agent);
-    const request: AuthorizationRequest = {
+    const request: CapabilityRequirement = {
       resource: {
         namespace: EXECUTION_NAMESPACE,
         path: addressPath(agent),
@@ -1195,7 +1195,7 @@ export class SharedOSKernel {
       return result;
     }
 
-    let requirement: AuthorizationRequest;
+    let requirement: CapabilityRequirement;
     try {
       requirement =
         handler.resolveRequirement?.(context, parsedCall) ?? handler.definition.requiredCapability;
@@ -1638,7 +1638,7 @@ export class SharedOSKernel {
       return result;
     }
 
-    let requirement: AuthorizationRequest;
+    let requirement: CapabilityRequirement;
     try {
       requirement = this.#messageCapabilityResolver.resolve(
         structuredClone(context),
@@ -1789,7 +1789,7 @@ export class SharedOSKernel {
   async #authorize(
     context: AccessContext,
     authority: ResolvedAuthority,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     consume: boolean,
     /**
      * The operation this decision was made for, when there is one.
@@ -1818,7 +1818,7 @@ export class SharedOSKernel {
   async #decideAndRecord(
     context: AccessContext,
     authority: ResolvedAuthority,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     consume: boolean,
     operationId?: string,
   ): Promise<AuthorizationDecision> {
@@ -1985,7 +1985,7 @@ export class SharedOSKernel {
 
   async #denyUnavailableAuthority(
     context: AccessContext,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     code: AuthorityUnavailableCode,
     consume: boolean,
   ): Promise<AuthorizationDecision> {
@@ -2005,7 +2005,7 @@ export class SharedOSKernel {
 
   async #recordAuthorizationDecision(
     context: AccessContext,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     decision: AuthorizationDecision,
     consume: boolean,
     authorityHash?: string,
@@ -2422,7 +2422,7 @@ function explanationMetadata(explanation: AuthorizationExplanation): JsonObject 
  * refusal a crossing is, never to perform the refusal itself.
  */
 function requirementBelongsToContext(
-  requirement: AuthorizationRequest,
+  requirement: CapabilityRequirement,
   context: AccessContext,
 ): boolean {
   return (
@@ -2440,7 +2440,7 @@ function requirementBelongsToContext(
  */
 function requirementIsWithinDefinition(
   definition: ToolDefinition,
-  requirement: AuthorizationRequest,
+  requirement: CapabilityRequirement,
   context: AccessContext,
 ): boolean {
   const declared = definition.requiredCapability;
