@@ -5,7 +5,15 @@ import { join } from "node:path";
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { packageContentDigest } from "./package-archive.mjs";
+import { packageArchiveEntries, packageContentDigest } from "./package-archive.mjs";
+
+test("package archive entries handle CRLF tar output", () => {
+  // Regression: a retained carriage return looked like a conflict-copy space.
+  assert.deepEqual(
+    packageArchiveEntries("package/index.js\r\npackage/package.json\r\n"),
+    ["package/index.js", "package/package.json"],
+  );
+});
 
 test("package content digest ignores JSON object key order", () => {
   const temporaryDirectory = mkdtempSync(join(tmpdir(), "sharedos-package-digest-"));

@@ -40,11 +40,7 @@ export async function registryPackageContentDigest(metadata, cwd) {
 }
 
 export function packageContentDigest(archive, cwd) {
-  const entries = capture("tar", ["-tf", archive], cwd)
-    .trim()
-    .split("\n")
-    .filter((entry) => entry && !entry.endsWith("/"))
-    .sort();
+  const entries = packageArchiveEntries(capture("tar", ["-tf", archive], cwd));
   assertSafePackageEntries(entries, archive);
 
   const digest = createHash("sha512");
@@ -61,6 +57,14 @@ export function packageContentDigest(archive, cwd) {
   }
 
   return digest.digest("base64");
+}
+
+export function packageArchiveEntries(output) {
+  return output
+    .trim()
+    .split("\n")
+    .filter((entry) => entry && !entry.endsWith("/"))
+    .sort();
 }
 
 export function assertSafePackageEntries(entries, archive) {
