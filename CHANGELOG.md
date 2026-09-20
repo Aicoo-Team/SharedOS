@@ -110,6 +110,26 @@ each entry calls out what a host has to update.
   or test that hands `SharedOSExecutor` its own narrow kernel implements the
   four: a lease whose `close` may do nothing, and three recorders that may.
 
+- **The conformance record carries a refusal's cause and an `interrupted`
+  outcome, and the judge is version 6.** `OperationRecord` gains an optional
+  `cause`, copied from the audit event, and `outcome` gains `interrupted`, where
+  the assembler used to write `failed`. A reader that switches on the three
+  outcomes has a fourth to handle; a receipt still reports `failed`, which is
+  what the caller saw, and the judge credits no boundary with an interrupted
+  call. The cause was recovered before by joining a call's sibling operations by
+  id, which only ever found a refused dispatch's code. Read off the operation,
+  every kernel `tool_unavailable` names its situation: 42 committed cells gain
+  `cause not_offered`. `execution.endedBy` is new and optional. Two rows are
+  added, `audit_unavailable` and `turn_draining`, so the manifest has 34 rows
+  and `caseSetHash` and `worldSetHash` move: a live column recorded against the
+  old pair is no longer comparable with the scripted columns by hash.
+  `experiment.specHash` ignores descriptions, as `caseSetHash` does, and moves
+  once on every record. ADRs 0014 and 0023 are revised in place.
+
+  **Migration.** Regenerate any stored manifest. Code that called
+  `operationsUnder(record, id).cause` reads `cause` on the `tool` operation
+  under that id.
+
 ### Fixed
 
 - **A deadline no longer has to stop a handler half-way.** A `transfer_funds`
@@ -293,6 +313,26 @@ SHAREDOS_MCP_SERVER_NAME` was written at ten sites across the config emitters,
 
 ### Added
 
+- **testkit: `expire()` on the two grant stores, `UnavailableGrantUsageStore`,
+  and `InMemoryMessageRequestRouter`.** testkit is where ADR 0002 puts the
+  in-memory stand-ins for the storage a host supplies, and the conformance world
+  restated four of them for want of these. `expire` edits a grant's window in
+  place and throws on an id the store does not hold, as `revoke` does. The
+  conformance package now depends on testkit and builds its world on these
+  stores.
+- **`terminalSource` in `@aicoo/sharedos-runtime`.** Who ended a failed turn,
+  read from its events: `envelope` or `runtime`. It is the reader the envelope
+  uses for its own `turn.ended` record, exported so whoever assembles a record
+  does not write a second one.
+- **`receiptBase` in `@aicoo/sharedos-conformance`,** the declared half of an
+  attempt receipt, shared by the three places that build one.
+- **A conformance column can declare its tool policy.** `RuntimeColumn.toolPolicy`
+  and `McpColumnOptions.toolPolicy`; the runner writes it to
+  `system.toolPolicy` on every record the column produces, which is where ADR
+  0014 said it belonged. `scripts/mcp-conformance.mjs` passes each CLI's.
+- **`ConformanceWorldOptions.auditFailsAfterOperations` and `drainGraceMs`,** for
+  the two new rows, and `ConformanceWorld.envelope`, the envelope options a
+  condition armed.
 - **`SHAREDOS_VERSION` in `@aicoo/sharedos-contracts`.** The one statement of the
   build, read by every runtime manifest, the MCP server's greeting and the
   conformance record, and the one constant the release gate checks.
@@ -401,6 +441,14 @@ createStandardRuntime({ driver }))`, which `TurnExecutor` built (see Removed).
 
 ### Removed
 
+- From `@aicoo/sharedos-conformance`: `operationsUnder` and `CallOperations`
+  (the operation carries its `cause`); `contentHash` (use `hashJson`, exported
+  from the same place); `ConformanceChainResolver` (`ConformanceWorld.chain` is
+  testkit's `InMemoryDelegationChainResolver`); and nine declarations nothing
+  set or read: `SystemIdentity.adapterVersion`, `ConformanceWorldOptions.now`,
+  `HostileRuntimeOptions.version`, `HostileRuntime.moves`,
+  `ConformanceGrantSource.loads`, `SpanCollector.pause`, `resume` and `named`,
+  and `AttemptReceipt.forgedGrantId`. No alias for any of them.
 - From `@aicoo/sharedos-core`: `MID_TURN_AUTHORITY_REFRESH`, and the
   per-operation authority path it switched on. It was an exported `const false`:
   a host could not set it, no test did, and since ADR 0016 moved expiry to the
