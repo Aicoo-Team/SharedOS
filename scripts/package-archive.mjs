@@ -62,7 +62,7 @@ export function packageContentDigest(archive, cwd) {
 export function packageArchiveEntries(output) {
   return output
     .trim()
-    .split("\n")
+    .split(/\r?\n/u)
     .filter((entry) => entry && !entry.endsWith("/"))
     .sort();
 }

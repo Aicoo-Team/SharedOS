@@ -9,10 +9,10 @@ import { packageArchiveEntries, packageContentDigest } from "./package-archive.m
 
 test("package archive entries handle CRLF tar output", () => {
   // Regression: a retained carriage return looked like a conflict-copy space.
-  assert.deepEqual(
-    packageArchiveEntries("package/index.js\r\npackage/package.json\r\n"),
-    ["package/index.js", "package/package.json"],
-  );
+  assert.deepEqual(packageArchiveEntries("package/index.js\r\npackage/package.json\r\n"), [
+    "package/index.js",
+    "package/package.json",
+  ]);
 });
 
 test("package content digest ignores JSON object key order", () => {
