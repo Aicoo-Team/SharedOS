@@ -197,12 +197,9 @@ export interface StructuralFootprint {
 /** Buffers spans for a bench run. SharedOS itself accumulates nothing. */
 export class SpanCollector implements SpanSink {
   #spans: Span[] = [];
-  #collecting = true;
 
   record(span: Span): void {
-    if (this.#collecting) {
-      this.#spans.push(span);
-    }
+    this.#spans.push(span);
   }
 
   get spans(): readonly Span[] {
@@ -212,18 +209,6 @@ export class SpanCollector implements SpanSink {
   /** Drop everything seen so far, which is how a warmup phase is discarded. */
   reset(): void {
     this.#spans = [];
-  }
-
-  named(name: string): readonly Span[] {
-    return this.#spans.filter((span) => span.name === name);
-  }
-
-  pause(): void {
-    this.#collecting = false;
-  }
-
-  resume(): void {
-    this.#collecting = true;
   }
 }
 

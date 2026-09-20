@@ -1246,10 +1246,6 @@ export class ConformanceGrantSource implements GrantSource {
     this.#grants = new InMemoryGrantSource(grants);
   }
 
-  get loads(): number {
-    return this.#loads;
-  }
-
   /**
    * Fail every load after this many successful ones.
    *
@@ -1592,7 +1588,6 @@ export interface ConformanceWorldOptions {
    * arms.
    */
   readonly drainGraceMs?: number;
-  readonly now?: string;
 }
 
 /**
@@ -1651,7 +1646,7 @@ export function createConformanceWorld(
   options: ConformanceWorldOptions = {},
   instrumentation: ConformanceWorldInstrumentation = {},
 ): ConformanceWorld {
-  const now = options.now ?? CONFORMANCE_NOW;
+  const now = CONFORMANCE_NOW;
   const bounded = options.bounded === true || options.usageStoreUnavailable === true;
   // A moved tool has to be a published one first, so arming the move arms the
   // grant that publishes it.

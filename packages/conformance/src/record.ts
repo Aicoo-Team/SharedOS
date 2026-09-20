@@ -50,7 +50,6 @@ export const SystemIdentitySchema = z
     runtime: RuntimeManifestSchema,
     /** Adapter identity, for example `sharedos-embedded` or `sharedos-http`. */
     adapterId: IdentifierSchema,
-    adapterVersion: IdentifierSchema.optional(),
     model: IdentifierSchema.optional(),
     modelProvider: IdentifierSchema.optional(),
     /** Hash of the policy or configuration in force for this run. */
