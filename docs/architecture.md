@@ -55,6 +55,7 @@ flowchart TD
   CF["@aicoo/sharedos-conformance"] --> RT
   CF --> CO
   CF --> CT
+  CF --> TK
   AD["@aicoo/sharedos-adapters"] --> RT
   AD --> CT
   AD --> MCP
@@ -107,7 +108,8 @@ resolution, and stable tool definitions.
 must not develop a second authorization model.
 
 `@aicoo/sharedos-testkit` supplies deterministic in-memory providers and conformance
-fixtures. It is intended for unit tests and examples, not production storage.
+fixtures. It is intended for unit tests and examples, not production storage. The
+conformance world builds on its stores and adds only the faults it arms.
 
 `@aicoo/sharedos-conformance` turns a turn's evidence into one comparable
 execution record, and runs the adversarial conformance suite that reports what

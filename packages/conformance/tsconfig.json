@@ -12,6 +12,7 @@
     { "path": "../core" },
     { "path": "../mcp" },
     { "path": "../os" },
-    { "path": "../runtime" }
+    { "path": "../runtime" },
+    { "path": "../testkit" }
   ]
 }

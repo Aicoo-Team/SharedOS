@@ -16,16 +16,12 @@ import {
 } from "@aicoo/sharedos-contracts";
 import {
   type AuditEvent,
-  type AuditSink,
   CapabilityAuthorizer,
-  type DelegationChainResolver,
   type GrantSource,
-  type GrantUsageStore,
   type HostCeiling,
   InMemoryGrantUsageStore,
   MESSAGE_REQUEST_TOOL_DEFINITION,
   MESSAGE_REQUEST_TOOL_NAME,
-  type MessageRequestRouter,
   type MessageTransport,
   type ResourceProvider,
   SharedOSKernel,
@@ -41,6 +37,14 @@ import {
   type RuntimeVisibleContext,
   createEscalationTool,
 } from "@aicoo/sharedos-runtime";
+import {
+  InMemoryAuditSink,
+  InMemoryDelegationChainResolver,
+  InMemoryGrantSource,
+  InMemoryMessageRequestRouter,
+  InMemoryMessageTransport,
+  UnavailableGrantUsageStore,
+} from "@aicoo/sharedos-testkit";
 
 /** The world every canonical conformance move is declared against. */
 export const CONFORMANCE_NAMESPACE_ID = "world-conformance";
@@ -1222,17 +1226,23 @@ export class ConformanceBrokerStore {
   }
 }
 
-/** A trusted grant store whose availability the fixture controls. */
+/**
+ * A trusted grant store whose availability the fixture controls.
+ *
+ * The grants live in testkit's store. What is added here is what only this
+ * package arms: an outage and an edit, both counted in loads. The two share one
+ * counter on purpose, because a failed load counts as a load, and two counters
+ * kept in two packages could come to disagree about that with nothing to show
+ * it.
+ */
 export class ConformanceGrantSource implements GrantSource {
-  readonly #grants = new Map<string, CapabilityGrant>();
+  readonly #grants: InMemoryGrantSource;
   readonly #hooks = new Map<number, () => void>();
   #loads = 0;
   #failAfterLoads: number | undefined;
 
   constructor(grants: readonly CapabilityGrant[]) {
-    for (const grant of grants) {
-      this.#grants.set(grant.id, structuredClone(grant));
-    }
+    this.#grants = new InMemoryGrantSource(grants);
   }
 
   get loads(): number {
@@ -1254,23 +1264,15 @@ export class ConformanceGrantSource implements GrantSource {
     return this;
   }
 
+  /** Throws on a grant this store does not hold, as testkit's store does. */
   revoke(grantId: string, revokedAt: string): this {
-    const grant = this.#grants.get(grantId);
-    if (grant !== undefined) {
-      this.#grants.set(grantId, { ...grant, revokedAt });
-    }
+    this.#grants.revoke(grantId, revokedAt);
     return this;
   }
 
   /** Move a grant's expiry to an instant that has already passed. */
   expire(grantId: string, expiresAt: string): this {
-    const grant = this.#grants.get(grantId);
-    if (grant !== undefined) {
-      this.#grants.set(grantId, {
-        ...grant,
-        constraints: { ...grant.constraints, expiresAt },
-      });
-    }
+    this.#grants.expire(grantId, expiresAt);
     return this;
   }
 
@@ -1288,20 +1290,15 @@ export class ConformanceGrantSource implements GrantSource {
   }
 
   async load(context: AccessContext): Promise<readonly CapabilityGrant[]> {
-    await Promise.resolve();
     if (this.#failAfterLoads !== undefined && this.#loads >= this.#failAfterLoads) {
+      await Promise.resolve();
       this.#loads += 1;
       throw new Error("the conformance grant store is unavailable");
     }
     this.#loads += 1;
-    const loaded = [...this.#grants.values()]
-      .filter(
-        (grant) =>
-          grant.namespaceId === context.namespaceId &&
-          sameAddress(grant.subject, context.actor) &&
-          sameAddress(grant.issuer, context.authority),
-      )
-      .map((grant) => structuredClone(grant));
+    // Loaded before the hook runs, so the turn in flight holds the grants as
+    // they were and the edit is first seen by the load after it.
+    const loaded = await this.#grants.load(context);
 
     const hook = this.#hooks.get(this.#loads);
     if (hook !== undefined) {
@@ -1310,65 +1307,6 @@ export class ConformanceGrantSource implements GrantSource {
     }
 
     return loaded;
-  }
-}
-
-/** Namespace-scoped ancestor lookup over every grant the fixture issued. */
-export class ConformanceChainResolver implements DelegationChainResolver {
-  readonly #grants = new Map<string, CapabilityGrant>();
-
-  constructor(grants: readonly CapabilityGrant[]) {
-    for (const grant of grants) {
-      this.#grants.set(`${grant.namespaceId}/${grant.id}`, structuredClone(grant));
-    }
-  }
-
-  revoke(namespaceId: string, grantId: string, revokedAt: string): this {
-    const key = `${namespaceId}/${grantId}`;
-    const grant = this.#grants.get(key);
-    if (grant !== undefined) {
-      this.#grants.set(key, { ...grant, revokedAt });
-    }
-    return this;
-  }
-
-  expire(namespaceId: string, grantId: string, expiresAt: string): this {
-    const key = `${namespaceId}/${grantId}`;
-    const grant = this.#grants.get(key);
-    if (grant !== undefined) {
-      this.#grants.set(key, {
-        ...grant,
-        constraints: { ...grant.constraints, expiresAt },
-      });
-    }
-    return this;
-  }
-
-  async resolve(namespaceId: string, grantId: string): Promise<CapabilityGrant | undefined> {
-    await Promise.resolve();
-    const grant = this.#grants.get(`${namespaceId}/${grantId}`);
-    return grant === undefined ? undefined : structuredClone(grant);
-  }
-}
-
-/**
- * A usage store that cannot answer.
- *
- * Bounded use is the one authorization question SharedOS cannot decide from the
- * grant set alone, so an unreachable counter is an unknown fact rather than a
- * policy outcome. It throws on both reads and writes: a store that answered
- * reads while failing writes would let discovery quietly disagree with
- * execution.
- */
-class UnavailableGrantUsageStore implements GrantUsageStore {
-  async getUsage(): Promise<number> {
-    await Promise.resolve();
-    throw new Error("the conformance usage store is unavailable");
-  }
-
-  async tryConsume(): Promise<boolean> {
-    await Promise.resolve();
-    throw new Error("the conformance usage store is unavailable");
   }
 }
 
@@ -1391,7 +1329,8 @@ export const ROUTE_LEASE_REVOKED_CODE = "route_lease_revoked";
  * is host-owned control-plane state, exactly as revoking a grant is.
  */
 class RecordingTransport implements MessageTransport {
-  readonly delivered: MessageEnvelope[] = [];
+  /** testkit's transport, which keeps the log; a refused dispatch never reaches it. */
+  readonly accepted = new InMemoryMessageTransport();
   #closesAfterDeliveries: number | undefined;
 
   /** Revoke the route lease once this many dispatches have been accepted. */
@@ -1404,7 +1343,7 @@ class RecordingTransport implements MessageTransport {
     await Promise.resolve();
     if (
       this.#closesAfterDeliveries !== undefined &&
-      this.delivered.length >= this.#closesAfterDeliveries
+      this.accepted.deliveries.length >= this.#closesAfterDeliveries
     ) {
       return {
         messageId: envelope.id,
@@ -1416,61 +1355,7 @@ class RecordingTransport implements MessageTransport {
         },
       };
     }
-    this.delivered.push(structuredClone(envelope));
-    return { messageId: envelope.id, status: "accepted", timestamp: context.now };
-  }
-}
-
-/** Deterministic durable-reply fixture for the canonical request tool. */
-class RecordingMessageRouter implements MessageRequestRouter {
-  readonly replies: MessageEnvelope[] = [];
-  readonly #transport: RecordingTransport;
-
-  constructor(transport: RecordingTransport) {
-    this.#transport = transport;
-  }
-
-  async resolveReply(
-    context: AccessContext,
-    request: MessageEnvelope,
-    delivery: MessageDeliveryResult,
-  ): Promise<MessageEnvelope> {
-    await Promise.resolve();
-    if (
-      (delivery.status !== "accepted" && delivery.status !== "delivered") ||
-      !this.#transport.delivered.some(({ id }) => id === request.id)
-    ) {
-      throw new Error("request is absent from the accepted message log");
-    }
-
-    const reply: MessageEnvelope = {
-      version: PROTOCOL_VERSION,
-      id: `${request.id}-reply`,
-      sender: request.receiver,
-      receiver: request.sender,
-      purpose: request.purpose,
-      payload: { messageId: request.id },
-      traceId: request.traceId,
-      createdAt: context.now,
-      replyTo: request.id,
-    };
-    this.replies.push(structuredClone(reply));
-    return structuredClone(reply);
-  }
-}
-
-class RecordingAudit implements AuditSink {
-  readonly events: AuditEvent[] = [];
-  readonly #observe: ((event: AuditEvent) => void) | undefined;
-
-  constructor(observe?: (event: AuditEvent) => void) {
-    this.#observe = observe;
-  }
-
-  async record(event: AuditEvent): Promise<void> {
-    await Promise.resolve();
-    this.events.push(structuredClone(event));
-    this.#observe?.(event);
+    return this.accepted.deliver(context, envelope);
   }
 }
 
@@ -1497,15 +1382,20 @@ class RecordingAudit implements AuditSink {
  * arm expiries that landed before the runtime had done anything.
  */
 class OperationIndexedClock {
+  readonly #audit: readonly AuditEvent[];
   #operations = 0;
+  #read = 0;
 
-  observe(event: AuditEvent): void {
-    if (event.type === "tool.invoked") {
-      this.#operations += 1;
-    }
+  constructor(audit: readonly AuditEvent[]) {
+    this.#audit = audit;
   }
 
   now(): string {
+    for (; this.#read < this.#audit.length; this.#read += 1) {
+      if (this.#audit[this.#read]?.type === "tool.invoked") {
+        this.#operations += 1;
+      }
+    }
     return conformanceInstant(this.#operations);
   }
 }
@@ -1684,7 +1574,7 @@ export interface ConformanceWorld {
   /** The brokered external server, so a row can see what it was actually asked. */
   readonly broker: ConformanceBrokerStore;
   readonly grantSource: ConformanceGrantSource;
-  readonly chain: ConformanceChainResolver;
+  readonly chain: InMemoryDelegationChainResolver;
   readonly auditEvents: readonly AuditEvent[];
   readonly deliveredMessages: readonly MessageEnvelope[];
   readonly tools: readonly ToolDefinition[];
@@ -1734,48 +1624,56 @@ export function createConformanceWorld(
     ...agent,
   ];
   const grantSource = new ConformanceGrantSource(agent);
-  const chain = new ConformanceChainResolver(all);
-  for (const grantId of options.revoked ?? []) {
-    grantSource.revoke(grantId, now);
+  const chain = new InMemoryDelegationChainResolver(all);
+  // The chain holds every grant and the agent's store only the agent's, so an
+  // edit to a root grant is an edit to the chain alone. testkit's stores refuse
+  // an id they do not hold, which is what catches a mistyped one in a condition.
+  const held = new Set(agent.map(({ id }) => id));
+  const revoke = (grantId: string): void => {
+    if (held.has(grantId)) {
+      grantSource.revoke(grantId, now);
+    }
     chain.revoke(CONFORMANCE_NAMESPACE_ID, grantId, now);
+  };
+  const expire = (grantId: string, expiresAt: string): void => {
+    if (held.has(grantId)) {
+      grantSource.expire(grantId, expiresAt);
+    }
+    chain.expire(CONFORMANCE_NAMESPACE_ID, grantId, expiresAt);
+  };
+  for (const grantId of options.revoked ?? []) {
+    revoke(grantId);
   }
   for (const grantId of options.expired ?? []) {
-    grantSource.expire(grantId, now);
-    chain.expire(CONFORMANCE_NAMESPACE_ID, grantId, now);
+    expire(grantId, now);
   }
   if (options.revokedAfterTurn !== undefined) {
     const { turn, grantIds } = options.revokedAfterTurn;
-    grantSource.afterLoads(turn, () => {
-      for (const grantId of grantIds) {
-        grantSource.revoke(grantId, now);
-        chain.revoke(CONFORMANCE_NAMESPACE_ID, grantId, now);
-      }
-    });
+    grantSource.afterLoads(turn, () => grantIds.forEach(revoke));
   }
   if (options.expiresAfterOperations !== undefined) {
     const { operations, grantIds } = options.expiresAfterOperations;
     const expiresAt = conformanceInstant(operations);
     for (const grantId of grantIds) {
-      grantSource.expire(grantId, expiresAt);
-      chain.expire(CONFORMANCE_NAMESPACE_ID, grantId, expiresAt);
+      expire(grantId, expiresAt);
     }
   }
   if (options.authorityFailsAfterLoads !== undefined) {
     grantSource.failAfterLoads(options.authorityFailsAfterLoads);
   }
 
+  const audit = new InMemoryAuditSink();
   const operationClock =
-    options.expiresAfterOperations === undefined ? undefined : new OperationIndexedClock();
+    options.expiresAfterOperations === undefined
+      ? undefined
+      : new OperationIndexedClock(audit.events);
   const clock =
     operationClock === undefined ? (): string => now : (): string => operationClock.now();
-  const audit = new RecordingAudit(
-    operationClock === undefined ? undefined : (event) => operationClock.observe(event),
-  );
   const transport = new RecordingTransport();
   if (options.routeRevokedAfterDeliveries !== undefined) {
     transport.closeLeaseAfter(options.routeRevokedAfterDeliveries);
   }
-  const messageRouter = new RecordingMessageRouter(transport);
+  const messageRouter = new InMemoryMessageRequestRouter(transport.accepted);
   const files = new ConformanceFileStore();
   const brokerStore = new ConformanceBrokerStore({
     movesAfterListing: options.brokerMovedAfterListing === true,
@@ -1866,7 +1764,9 @@ export function createConformanceWorld(
     grantSource,
     chain,
     auditEvents: audit.events,
-    deliveredMessages: transport.delivered,
+    get deliveredMessages(): readonly MessageEnvelope[] {
+      return transport.accepted.deliveries.map(({ envelope }) => envelope);
+    },
     tools,
     grants: all,
     request: (executionId: string, turn = 1): ExecutionRequest => {
@@ -1917,21 +1817,4 @@ function unregisteredToolStub(): ToolDefinition {
       action: "issue",
     },
   };
-}
-
-function sameAddress(left: Address, right: Address): boolean {
-  return canonicalAddress(left) === canonicalAddress(right);
-}
-
-function canonicalAddress(address: Address): string {
-  switch (address.kind) {
-    case "human":
-      return `human:${address.userId}`;
-    case "agent":
-      return `agent:${address.agentId}`;
-    case "group":
-      return `group:${address.conversationId}`;
-    case "service":
-      return `service:${address.serviceId}`;
-  }
 }
