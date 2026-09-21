@@ -185,7 +185,12 @@ name (ADR 0012).
 Where the refusal came from a decision, an `authorization.checked` event is also
 recorded immediately before, carries the same reason, and carries the call's id
 as `operationId`, so the two records join on the id rather than on their order
-in the sink. Two of the situations produce no decision — nothing was checked when the tool is not registered, and
+in the sink. That decision carries the same account as any other denial:
+`grantsResolved`, `rejectedGrants`, and `missingDependency` where a port was
+never wired. A tool whose only grant is bounded is refused here when there is no
+`usageStore`, before `authorize` is reached, so this is the record that says so.
+Listing a catalogue runs the same check on every tool and records no account
+for any of them. Two of the situations produce no decision — nothing was checked when the tool is not registered, and
 nothing was checked when its namespace is off — so `cause` is what makes the
 disambiguation hold for all of them rather than for the one that happens to
 consult the authorizer.
