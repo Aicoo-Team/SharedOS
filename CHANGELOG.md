@@ -99,6 +99,17 @@ each entry calls out what a host has to update.
   rule rests on them: `readWrite: "read"` only where a second run changes
   nothing, `annotations.idempotent` only where a second run is a no-op.
 
+- **`TurnKernel` requires its four turn ports.** `openTurnAuthority`,
+  `recordEscalation`, `recordTurnEnd` and `recordRefusedCall` were optional
+  members, so a partial kernel could run a turn that re-read its authority on
+  every call and recorded none of what the envelope decided. They are required,
+  and the executor no longer branches on their absence. ADR 0023 is revised in
+  place.
+
+  **Migration.** A host that passes a `SharedOSKernel` changes nothing. A host
+  or test that hands `SharedOSExecutor` its own narrow kernel implements the
+  four: a lease whose `close` may do nothing, and three recorders that may.
+
 ### Fixed
 
 - **A deadline no longer has to stop a handler half-way.** A `transfer_funds`
@@ -390,6 +401,22 @@ createStandardRuntime({ driver }))`, which `TurnExecutor` built (see Removed).
 
 ### Removed
 
+- From `@aicoo/sharedos-core`: `MID_TURN_AUTHORITY_REFRESH`, and the
+  per-operation authority path it switched on. It was an exported `const false`:
+  a host could not set it, no test did, and since ADR 0016 moved expiry to the
+  operation's instant the one thing left behind it was seeing a store edit
+  before the next turn, at a store read per operation. A turn resolves authority
+  once. A kernel call outside any turn still resolves its own, which is a turn
+  of one operation and is unchanged. ADRs 0009, 0010 and 0016 are revised in
+  place, and the open-items row is closed.
+- From `@aicoo/sharedos-core`: `AuthorizationRequest`. It was
+  `CapabilityRequirement` from contracts declared a second time: the same
+  `resource` and `action`, and `POST /v1/authorize` already took the contract
+  schema. Core uses the contract type throughout, the two host ports that named
+  the old one included: `HostCeiling.narrow` and
+  `MessageCapabilityResolver.resolve`. A host that builds the object without
+  importing the type changes nothing; one that imports it renames one type. ADR
+  0020 is revised in place.
 - From `@aicoo/sharedos-runtime`: `StandardRuntime`. See
   `createStandardRuntime` under "Changed — breaking".
 - From `@aicoo/sharedos-adapters`: `ModelRuntime`, `HarnessRuntime` and

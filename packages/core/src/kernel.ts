@@ -4,6 +4,7 @@ import type {
   AgentCardView,
   AuthorizationDecision,
   Capability,
+  CapabilityRequirement,
   Escalation,
   JsonObject,
   MessageDeliveryResult,
@@ -48,7 +49,6 @@ import {
   type AuthorityUnavailableCode,
   type GrantSource,
   type LoadedPolicy,
-  MID_TURN_AUTHORITY_REFRESH,
   type PolicyResolution,
   type PolicySource,
   type ResolvedAuthority,
@@ -58,7 +58,6 @@ import {
 } from "./authority.js";
 import {
   type AuthorizationExplanation,
-  type AuthorizationRequest,
   CapabilityAuthorizer,
   addressesEqual,
   isInfrastructureDenial,
@@ -216,7 +215,7 @@ export interface RefusedCall {
 /** What a `tool.invoked` event carries beyond the call and its result. */
 interface ToolResultAuditDetail {
   readonly grantId?: string;
-  readonly requirement?: AuthorizationRequest;
+  readonly requirement?: CapabilityRequirement;
   /**
    * Which situation a coarse refusal was, when the code covers several.
    *
@@ -442,12 +441,6 @@ export class SharedOSKernel {
     options.signal?.throwIfAborted();
     context = structuredClone(context);
 
-    if (MID_TURN_AUTHORITY_REFRESH) {
-      // The fuse is in. Report the boundary outcome so admission is unchanged,
-      // but hold nothing: every later operation resolves its own authority.
-      return scopeFor(await this.#loadAuthority(context, options.signal), () => undefined);
-    }
-
     const key = turnAuthorityKey(context);
     const existing = this.#leases.get(key);
     if (existing !== undefined) {
@@ -473,7 +466,7 @@ export class SharedOSKernel {
 
   async authorize(
     context: AccessContext,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     options: KernelOperationOptions = {},
   ): Promise<AuthorizationDecision> {
     options.signal?.throwIfAborted();
@@ -495,7 +488,7 @@ export class SharedOSKernel {
     options.signal?.throwIfAborted();
     context = structuredClone(context);
     agent = structuredClone(agent);
-    const request: AuthorizationRequest = {
+    const request: CapabilityRequirement = {
       resource: {
         namespace: EXECUTION_NAMESPACE,
         path: addressPath(agent),
@@ -1059,7 +1052,7 @@ export class SharedOSKernel {
         "denied",
         context.now,
         "authority_unavailable",
-        "Authority could not be loaded from its trusted source",
+        AUTHORITY_UNAVAILABLE_MESSAGE,
       );
       await this.#recordToolResult(context, call, result);
       return result;
@@ -1202,7 +1195,7 @@ export class SharedOSKernel {
       return result;
     }
 
-    let requirement: AuthorizationRequest;
+    let requirement: CapabilityRequirement;
     try {
       requirement =
         handler.resolveRequirement?.(context, parsedCall) ?? handler.definition.requiredCapability;
@@ -1351,7 +1344,7 @@ export class SharedOSKernel {
         "denied",
         context.now,
         "authority_unavailable",
-        "Authority could not be loaded from its trusted source",
+        AUTHORITY_UNAVAILABLE_MESSAGE,
       );
       await this.#recordResourceResult(context, request, result);
       return result;
@@ -1645,7 +1638,7 @@ export class SharedOSKernel {
       return result;
     }
 
-    let requirement: AuthorizationRequest;
+    let requirement: CapabilityRequirement;
     try {
       requirement = this.#messageCapabilityResolver.resolve(
         structuredClone(context),
@@ -1673,7 +1666,7 @@ export class SharedOSKernel {
         "denied",
         context.now,
         "authority_unavailable",
-        "Authority could not be loaded from its trusted source",
+        AUTHORITY_UNAVAILABLE_MESSAGE,
       );
       await this.#recordMessageResult(context, envelope, result);
       return result;
@@ -1796,7 +1789,7 @@ export class SharedOSKernel {
   async #authorize(
     context: AccessContext,
     authority: ResolvedAuthority,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     consume: boolean,
     /**
      * The operation this decision was made for, when there is one.
@@ -1825,7 +1818,7 @@ export class SharedOSKernel {
   async #decideAndRecord(
     context: AccessContext,
     authority: ResolvedAuthority,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     consume: boolean,
     operationId?: string,
   ): Promise<AuthorizationDecision> {
@@ -1857,24 +1850,14 @@ export class SharedOSKernel {
    * A turn that opened a lease is answered from it, with no store read and no
    * second `authority.resolved` event: the turn loaded its authority once and
    * every decision in it names that one state. An operation outside any turn
-   * resolves its own.
-   *
-   * Setting `MID_TURN_AUTHORITY_REFRESH` skips the lease entirely and restores
-   * per-operation resolution, in which a grant removed from the store mid-turn
-   * is refused at the next decision inside that turn. See the constant for why
-   * that is off and what is still open about it.
+   * resolves its own, which is a turn of one operation (ADR 0010).
    */
   async #resolveAuthority(
     context: AccessContext,
     signal: AbortSignal | undefined,
   ): Promise<AuthorityResolution> {
-    if (!MID_TURN_AUTHORITY_REFRESH) {
-      const lease = this.#leases.get(turnAuthorityKey(context));
-      if (lease !== undefined) {
-        return lease.resolution;
-      }
-    }
-    return this.#loadAuthority(context, signal);
+    const lease = this.#leases.get(turnAuthorityKey(context));
+    return lease === undefined ? this.#loadAuthority(context, signal) : lease.resolution;
   }
 
   /** Read authority from the trusted source once, and audit the attempt. */
@@ -2002,7 +1985,7 @@ export class SharedOSKernel {
 
   async #denyUnavailableAuthority(
     context: AccessContext,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     code: AuthorityUnavailableCode,
     consume: boolean,
   ): Promise<AuthorizationDecision> {
@@ -2022,7 +2005,7 @@ export class SharedOSKernel {
 
   async #recordAuthorizationDecision(
     context: AccessContext,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     decision: AuthorizationDecision,
     consume: boolean,
     authorityHash?: string,
@@ -2295,6 +2278,13 @@ export class SharedOSKernel {
   }
 }
 
+/**
+ * What a tool call, a resource operation and a message are each told when
+ * authority could not be resolved. The three refuse in their own result shape;
+ * the sentence is the one thing they share.
+ */
+const AUTHORITY_UNAVAILABLE_MESSAGE = "Authority could not be loaded from its trusted source";
+
 /** What a policy source that could not be read is reported as; it names no operation. */
 const POLICY_OUTAGE = { kind: "policy", reasonCode: "host_policy_unavailable" } as const;
 
@@ -2432,7 +2422,7 @@ function explanationMetadata(explanation: AuthorizationExplanation): JsonObject 
  * refusal a crossing is, never to perform the refusal itself.
  */
 function requirementBelongsToContext(
-  requirement: AuthorizationRequest,
+  requirement: CapabilityRequirement,
   context: AccessContext,
 ): boolean {
   return (
@@ -2450,7 +2440,7 @@ function requirementBelongsToContext(
  */
 function requirementIsWithinDefinition(
   definition: ToolDefinition,
-  requirement: AuthorizationRequest,
+  requirement: CapabilityRequirement,
   context: AccessContext,
 ): boolean {
   const declared = definition.requiredCapability;

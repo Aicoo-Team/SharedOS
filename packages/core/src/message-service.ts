@@ -2,12 +2,11 @@ import type {
   AccessContext,
   Address,
   Capability,
+  CapabilityRequirement,
   MessageDeliveryResult,
   MessageEnvelope,
   ResourceRef,
 } from "@aicoo/sharedos-contracts";
-
-import type { AuthorizationRequest } from "./authorization.js";
 
 export const MESSAGING_NAMESPACE = "sharedos.messaging";
 export const MESSAGE_SEND_ACTION = "send";
@@ -46,7 +45,7 @@ export interface MessageRequestRouter {
 }
 
 export interface MessageCapabilityResolver {
-  resolve(context: AccessContext, envelope: MessageEnvelope): AuthorizationRequest;
+  resolve(context: AccessContext, envelope: MessageEnvelope): CapabilityRequirement;
 }
 
 export class RecipientScopedMessageCapabilityResolver implements MessageCapabilityResolver {
@@ -56,7 +55,7 @@ export class RecipientScopedMessageCapabilityResolver implements MessageCapabili
     this.#namespace = namespace;
   }
 
-  resolve(context: AccessContext, envelope: MessageEnvelope): AuthorizationRequest {
+  resolve(context: AccessContext, envelope: MessageEnvelope): CapabilityRequirement {
     const resource: ResourceRef = {
       namespace: this.#namespace,
       path: addressPath(envelope.receiver),

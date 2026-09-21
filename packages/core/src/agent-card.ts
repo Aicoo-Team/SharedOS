@@ -5,12 +5,12 @@ import type {
   AgentCardView,
   Capability,
   CapabilityRequest,
+  CapabilityRequirement,
   ReachSummary,
   ResourceReach,
 } from "@aicoo/sharedos-contracts";
 import { AgentCardSchema } from "@aicoo/sharedos-contracts";
 
-import type { AuthorizationRequest } from "./authorization.js";
 import { addressPath } from "./message-service.js";
 
 /** Kernel affordances live in one namespace; the directory is the second one. */
@@ -80,7 +80,7 @@ export function agentCardRequest(
   subject: Address,
   owner: Address,
   view: AgentCardView,
-): AuthorizationRequest {
+): CapabilityRequirement {
   return {
     resource: { namespace: DIRECTORY_NAMESPACE, path: agentCardPath(subject, view), owner },
     action: DIRECTORY_READ_ACTION,

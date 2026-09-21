@@ -1246,8 +1246,8 @@ export class ConformanceGrantSource implements GrantSource {
    * it makes afterwards is answered from that one load. `0` therefore arms an
    * outage the turn cannot survive, and any value of `1` or more leaves the turn
    * entirely unaffected: there is no second load for a later failure to catch.
-   * Restoring `MID_TURN_AUTHORITY_REFRESH` in `@aicoo/sharedos-core` makes the
-   * higher values meaningful again.
+   * A higher value matters only to kernel calls made outside a turn, each of
+   * which loads its own.
    */
   failAfterLoads(count: number): this {
     this.#failAfterLoads = count;

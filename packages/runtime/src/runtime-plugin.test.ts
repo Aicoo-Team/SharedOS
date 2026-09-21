@@ -7,7 +7,6 @@ import type {
   ToolDefinition,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
-import type { SharedOSKernel } from "@aicoo/sharedos-core";
 
 import {
   ESCALATION_TOOL_DEFINITION,
@@ -19,6 +18,7 @@ import {
   type RuntimePlugin,
   type RuntimeTurnRequest,
   type TurnErrorContext,
+  type TurnKernel,
 } from "./index.js";
 
 const now = "2026-08-14T00:00:00.000Z";
@@ -86,10 +86,7 @@ function request(options: { readonly escalation?: boolean } = {}): ExecutionRequ
  * permission-filtered catalogue holds the affordance, which is what a turn
  * granted it looks like from the envelope.
  */
-function kernel(
-  result?: ToolResult,
-  options: { readonly escalation?: boolean } = {},
-): Pick<SharedOSKernel, "admitTurn" | "reach" | "listTools" | "invokeTool"> {
+function kernel(result?: ToolResult, options: { readonly escalation?: boolean } = {}): TurnKernel {
   const catalogue = options.escalation === true ? [tool, ESCALATION_TOOL_DEFINITION] : [tool];
   return {
     admitTurn: vi.fn(async () => ({
@@ -110,6 +107,17 @@ function kernel(
         }
       );
     }),
+    // What makes it a turn: the lease, and the three recorders. Inert here, so
+    // a test that cares about one replaces it.
+    openTurnAuthority: vi.fn(async () => ({ status: "resolved" as const, close: () => undefined })),
+    recordEscalation: vi.fn(async (access: AccessContext, reason: string) => ({
+      reason,
+      reviewer: access.owner,
+      requestedAt: access.now,
+      status: "pending" as const,
+    })),
+    recordTurnEnd: vi.fn(async () => undefined),
+    recordRefusedCall: vi.fn(async () => undefined),
   };
 }
 
@@ -520,22 +528,6 @@ describe("RuntimePlugin security envelope", () => {
     // record of it joins to the turn's own terminal record on an id.
     expect(recordEscalation.mock.calls[0]?.[2]).toMatchObject({ executionId: "execution-1" });
     expect(result.events.map(({ type }) => type)).toContain("turn.escalated");
-  });
-
-  it("still ends the turn as escalated when the kernel offers no escalation port", async () => {
-    const plugin = runtime(async () => ({ type: "escalate", reason: "needs a human" }));
-
-    const result = await new SharedOSExecutor(kernel(undefined, { escalation: true }), plugin, {
-      clock: () => now,
-      createId: () => "event-1",
-    }).execute(request({ escalation: true }));
-
-    // Losing the audit trail is bad; losing the fact that the turn stopped to
-    // ask would be worse, so the outcome survives an unavailable port.
-    expect(result.status).toBe("escalated");
-    if (result.status === "escalated") {
-      expect(result.escalation.reviewer).toEqual(owner);
-    }
   });
 
   it("refuses an escalate outcome from a plugin whose turn was never granted the affordance", async () => {
@@ -961,14 +953,6 @@ describe("what the envelope writes into audit", () => {
         endedBy: "envelope",
       },
     ]);
-  });
-
-  it("runs a turn against a kernel that offers neither recorder", async () => {
-    // Both are optional members of `TurnKernel`. A kernel without them still
-    // runs a turn, exactly as one without `recordEscalation` does.
-    const result = await new SharedOSExecutor(kernel() as never, runtime()).execute(request());
-
-    expect(result.status).toBe("succeeded");
   });
 
   it("does not let a failing audit write change the turn it was recording", async () => {

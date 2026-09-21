@@ -376,7 +376,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:254](https://github.com/Aico
 
 ### SharedOSExecutor
 
-Defined in: [packages/runtime/src/executor.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L138)
+Defined in: [packages/runtime/src/executor.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L143)
 
 The non-replaceable security envelope around one replaceable RuntimePlugin.
 Scheduling, retries, and network-level stopping remain host responsibilities.
@@ -391,7 +391,7 @@ Scheduling, retries, and network-level stopping remain host responsibilities.
 
 > **new SharedOSExecutor**(`kernel`, `runtime`, `options?`): [`SharedOSExecutor`](#sharedosexecutor)
 
-Defined in: [packages/runtime/src/executor.ts:151](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L151)
+Defined in: [packages/runtime/src/executor.ts:156](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L156)
 
 ###### Parameters
 
@@ -413,7 +413,7 @@ Defined in: [packages/runtime/src/executor.ts:151](https://github.com/Aicoo-Team
 
 > **get** **runtimeManifest**(): `object`
 
-Defined in: [packages/runtime/src/executor.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L202)
+Defined in: [packages/runtime/src/executor.ts:207](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L207)
 
 ###### Returns
 
@@ -441,7 +441,7 @@ Defined in: [packages/runtime/src/executor.ts:202](https://github.com/Aicoo-Team
 
 > **execute**(`input`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/runtime/src/executor.ts:206](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L206)
+Defined in: [packages/runtime/src/executor.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L211)
 
 ###### Parameters
 
@@ -1058,15 +1058,23 @@ turn's identifiers are not the ones a mediated call has.
 
 ### TurnKernel
 
-> **TurnKernel** = `Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"admitTurn"` \| `"reach"` \| `"listTools"` \| `"invokeTool"`> \> & `Partial`\<`Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"openTurnAuthority"` \| `"recordEscalation"` \| `"recordTurnEnd"` \| `"recordRefusedCall"`>>\>\>
+> **TurnKernel** = `Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"admitTurn"` \| `"reach"` \| `"listTools"` \| `"invokeTool"` \| `"openTurnAuthority"` \| `"recordEscalation"` \| `"recordTurnEnd"` \| `"recordRefusedCall"`>\>
 
-Defined in: [packages/runtime/src/executor.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L119)
+Defined in: [packages/runtime/src/executor.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L127)
 
 The minimal deny-by-default kernel surface required by a turn executor.
 
 Hosts normally pass a [SharedOSKernel](sharedos-core.md#sharedoskernel). Keeping this port explicit also
 permits narrow test doubles without granting a runtime direct access to
 registries, namespace settings, or other host policy state.
+
+Every member is required. The first four are what a turn asks of the kernel.
+The other four are what makes it a turn: `openTurnAuthority` is the boundary
+authority is resolved at and held from (ADR 0010), and the three recorders
+are how an ask, an ending and a call the envelope refused reach the trail the
+kernel owns (ADR 0023). A kernel without them would run a turn that re-reads
+its authority on every call and records none of what the envelope decided,
+which is not a narrower turn but a different one.
 
 ## Variables
 
@@ -1210,7 +1218,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:146](https://github.com/Ai
 
 > `const` **TURN\_DRAINING**: `"turn_draining"` = `"turn_draining"`
 
-Defined in: [packages/runtime/src/executor.ts:1041](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L1041)
+Defined in: [packages/runtime/src/executor.ts:1037](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/executor.ts#L1037)
 
 The code a new tool call is refused under once the turn takes nothing new.
 

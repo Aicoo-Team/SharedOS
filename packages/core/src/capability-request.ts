@@ -1,7 +1,11 @@
-import type { AccessContext, Capability, CapabilityRequest } from "@aicoo/sharedos-contracts";
+import type {
+  AccessContext,
+  Capability,
+  CapabilityRequest,
+  CapabilityRequirement,
+} from "@aicoo/sharedos-contracts";
 import { CapabilityRequestSchema } from "@aicoo/sharedos-contracts";
 
-import type { AuthorizationRequest } from "./authorization.js";
 import { hashJson } from "./hashing.js";
 
 /**
@@ -97,7 +101,7 @@ export async function mintCapabilityRequest(
  */
 export async function describeRequiredAuthority(
   context: AccessContext,
-  request: AuthorizationRequest,
+  request: CapabilityRequirement,
 ): Promise<CapabilityRequest | undefined> {
   const capability: Capability = {
     resource: {

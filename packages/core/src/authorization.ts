@@ -3,6 +3,7 @@ import type {
   AuthorizationDecision,
   Capability,
   CapabilityGrant,
+  CapabilityRequirement,
   JsonObject,
   ReachResult,
   ResourceReach,
@@ -30,11 +31,6 @@ import {
 } from "./internal.js";
 
 export { addressesEqual };
-
-export interface AuthorizationRequest {
-  readonly resource: ResourceRef;
-  readonly action: string;
-}
 
 export type AuthorizationReasonCode =
   | "allowed"
@@ -227,7 +223,7 @@ export type HostCeilingVerdict = AllowedDecision | HostPolicyDenial;
 export interface HostCeiling<Policy = HostPolicy> {
   narrow(
     decision: AllowedDecision,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     context: AccessContext,
     policy: Policy | undefined,
   ): HostCeilingVerdict;
@@ -360,7 +356,7 @@ export class CapabilityAuthorizer {
 
   async authorize(
     authority: ResolvedAuthority,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     options: AuthorizeOptions = {},
   ): Promise<AuthorizationDecision> {
     return this.#decide(
@@ -383,7 +379,7 @@ export class CapabilityAuthorizer {
    */
   async canDiscover(
     authority: ResolvedAuthority,
-    ceiling: AuthorizationRequest,
+    ceiling: CapabilityRequirement,
     options: AuthorizationInstantOptions = {},
   ): Promise<AuthorizationDecision> {
     // The last two arguments are `false` and `undefined`: a discovery check is
@@ -535,10 +531,10 @@ export class CapabilityAuthorizer {
 
   async #decide(
     authority: ResolvedAuthority,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     matches: (
       capability: Capability,
-      request: AuthorizationRequest,
+      request: CapabilityRequirement,
       context: AccessContext,
     ) => boolean,
     consume: boolean,
@@ -735,7 +731,7 @@ export class CapabilityAuthorizer {
    */
   #applyCeiling(
     grantId: string,
-    request: AuthorizationRequest,
+    request: CapabilityRequirement,
     context: AccessContext,
     hostPolicy: PolicyResolution | undefined,
   ): AuthorizationDecision {
@@ -885,7 +881,7 @@ function isVerdict(value: unknown): value is AuthorizationDecision {
 
 export function capabilityMatches(
   capability: Capability,
-  request: AuthorizationRequest,
+  request: CapabilityRequirement,
   context: AccessContext,
 ): boolean {
   const grantedResource = capability.resource;
@@ -913,7 +909,7 @@ export function capabilityMatches(
 
 export function capabilityIntersectsCeiling(
   capability: Capability,
-  ceiling: AuthorizationRequest,
+  ceiling: CapabilityRequirement,
   context: AccessContext,
 ): boolean {
   const grantedResource = capability.resource;

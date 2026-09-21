@@ -469,11 +469,11 @@ length; the kernel will not cut a turn short. Issuing short-lived grants is one
 way to bound it, because their expiry now lands inside the turn. A host that
 additionally caches inside its `GrantSource` owns that staleness window on top.
 
-The per-operation path is retained behind `MID_TURN_AUTHORITY_REFRESH`. What
-remains behind it is one behaviour -- observing a store edit without waiting for
-the next turn -- and no open question about what it governs; whether the fuse
-becomes a kernel option is an open item (see [open items](../open-items.md)).
-See `docs/adr/0010-per-turn-authority.md`.
+Nothing inside a turn observes a store edit before the next turn. The
+per-operation path that once did was kept behind a build-time switch no host
+could set, and is removed. A kernel call made outside any turn still resolves
+its own authority, which is a turn of one operation. See
+`docs/adr/0010-per-turn-authority.md`.
 
 ## Audit requirements
 

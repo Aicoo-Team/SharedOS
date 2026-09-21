@@ -258,6 +258,12 @@ describe("an audit outage before an effect ends the turn", () => {
       }),
       reach: async () => ({ status: "computed" as const, reach: [] }),
       listTools: async () => [transfer],
+      openTurnAuthority: async () => ({ status: "resolved" as const, close: () => undefined }),
+      recordEscalation: async () => {
+        throw new Error("this turn does not escalate");
+      },
+      recordTurnEnd: async () => undefined,
+      recordRefusedCall: async () => undefined,
       invokeTool: (_context: unknown, toolCall: ToolCall, options: { signal: AbortSignal }) =>
         toolCall.id === "call-1"
           ? new Promise<never>((_resolve, reject) => {

@@ -115,21 +115,26 @@ export interface TurnExecutionPort {
  * Hosts normally pass a {@link SharedOSKernel}. Keeping this port explicit also
  * permits narrow test doubles without granting a runtime direct access to
  * registries, namespace settings, or other host policy state.
+ *
+ * Every member is required. The first four are what a turn asks of the kernel.
+ * The other four are what makes it a turn: `openTurnAuthority` is the boundary
+ * authority is resolved at and held from (ADR 0010), and the three recorders
+ * are how an ask, an ending and a call the envelope refused reach the trail the
+ * kernel owns (ADR 0023). A kernel without them would run a turn that re-reads
+ * its authority on every call and records none of what the envelope decided,
+ * which is not a narrower turn but a different one.
  */
-export type TurnKernel = Pick<SharedOSKernel, "admitTurn" | "reach" | "listTools" | "invokeTool"> &
-  /**
-   * Optional so a narrow test double stays viable. A kernel that does not offer
-   * `openTurnAuthority` resolves authority per operation, which is the older and
-   * stricter behaviour; one that does not offer `recordEscalation` still ends an
-   * escalated turn as escalated, but without an audit trail for it.
-   * `SharedOSKernel` offers both.
-   */
-  Partial<
-    Pick<
-      SharedOSKernel,
-      "openTurnAuthority" | "recordEscalation" | "recordTurnEnd" | "recordRefusedCall"
-    >
-  >;
+export type TurnKernel = Pick<
+  SharedOSKernel,
+  | "admitTurn"
+  | "reach"
+  | "listTools"
+  | "invokeTool"
+  | "openTurnAuthority"
+  | "recordEscalation"
+  | "recordTurnEnd"
+  | "recordRefusedCall"
+>;
 
 /**
  * The non-replaceable security envelope around one replaceable RuntimePlugin.
@@ -247,9 +252,6 @@ export class SharedOSExecutor implements TurnExecutionPort {
    * it must not turn a turn that completed into one that threw.
    */
   async #recordTurnEnd(request: ExecutionRequest, result: ExecutionResult): Promise<void> {
-    if (this.#kernel.recordTurnEnd === undefined) {
-      return;
-    }
     const reasonCode = terminalReasonCode(result);
     const endedBy = terminalSource(result.events);
     try {
@@ -278,7 +280,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
     result: ToolResult,
     cause?: string,
   ): Promise<void> {
-    if (this.#kernel.recordRefusedCall === undefined || result.status === "succeeded") {
+    if (result.status === "succeeded") {
       return;
     }
     try {
@@ -395,11 +397,10 @@ export class SharedOSExecutor implements TurnExecutionPort {
       // through this one. The promise is kept as well as the handle, because a
       // turn cancelled while this is still in flight never receives the handle
       // and would leave the lease answering for a turn that has ended.
-      const authorityOpening = this.#kernel.openTurnAuthority?.(executionContext, {
-        signal: abort.signal,
-      });
-      opening = authorityOpening === undefined ? undefined : watchAudit(authorityOpening);
-      authority = await raceAbort(opening ?? Promise.resolve(undefined), abort.signal);
+      opening = watchAudit(
+        this.#kernel.openTurnAuthority(executionContext, { signal: abort.signal }),
+      );
+      authority = await raceAbort(opening, abort.signal);
 
       const admission = await raceAbort(
         watchAudit(
@@ -730,24 +731,19 @@ export class SharedOSExecutor implements TurnExecutionPort {
         // The escalation is recorded through the kernel, which owns audit, and
         // then the turn ends. Nothing here waits for a reviewer: resolving an
         // escalation means issuing a grant to the trusted store, which the next
-        // turn loads. A kernel that offers no escalation port still terminates
-        // the turn as escalated -- the outcome is the runtime's to declare, and
-        // dropping it because audit is unavailable would lose the one fact this
-        // path exists to record.
-        const recording = this.#kernel.recordEscalation?.(
-          contextAt(executionContext, this.#clock()),
-          outcome.data.reason,
-          { signal: abort.signal, executionId: request.executionId },
-        );
-        const escalation = (await raceAbort(
-          recording === undefined ? Promise.resolve(undefined) : watchAudit(recording),
+        // turn loads. The kernel writes the ask after the fact, so a sink that
+        // cannot take it still hands back the stub: the outcome is the runtime's
+        // to declare, and the turn ends escalated either way.
+        const escalation = await raceAbort(
+          watchAudit(
+            this.#kernel.recordEscalation(
+              contextAt(executionContext, this.#clock()),
+              outcome.data.reason,
+              { signal: abort.signal, executionId: request.executionId },
+            ),
+          ),
           abort.signal,
-        )) ?? {
-          reason: outcome.data.reason,
-          reviewer: request.context.owner,
-          requestedAt: this.#clock(),
-          status: "pending" as const,
-        };
+        );
         emit("turn.escalated", { reason: escalation.reason, reviewer: escalation.reviewer });
         return {
           version: PROTOCOL_VERSION,

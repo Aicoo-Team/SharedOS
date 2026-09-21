@@ -2,6 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-08-27
+- Revised: 2026-09-20. The fuse this ADR left off is removed (ADR 0010). What
+  is decided here does not change.
 - Amends: the "Removals are frozen together" section of
   `docs/adr/0010-per-turn-authority.md`
 
@@ -14,8 +16,9 @@ instant: the one carried by the turn's resolved authority. Revocation, expiry,
 `notBefore`, and purpose withdrawal were therefore all observed by the _next_
 turn.
 
-ADR 0010 recorded that as a deferral rather than a decision, in
-`MID_TURN_AUTHORITY_REFRESH`:
+ADR 0010 recorded that as a deferral rather than a decision, on
+`MID_TURN_AUTHORITY_REFRESH`, the build-time fuse it then kept over
+per-operation resolution:
 
 > TBD Expiry with mid-turn grant refusal.
 
@@ -78,9 +81,9 @@ mid-turn does not.
 - Discovery moves with execution. `listTools` and the per-call discovery filter
   take the same instant, so a catalogue is not offered on authority that
   execution would refuse.
-- `MID_TURN_AUTHORITY_REFRESH` keeps its TBD no longer. What remains behind the
-  fuse is exactly one behaviour: observing a store edit without waiting for the
-  next turn. It is still off.
+- The fuse kept its TBD no longer. What remained behind it was exactly one
+  behaviour: observing a store edit without waiting for the next turn. With no
+  question left for it to hold open, it was removed (ADR 0010).
 - **The mid-turn conformance row becomes two rows.** `revoked-mid-turn` and
   `expired-mid-turn` make the identical call at the identical path at the
   identical position in their scripts and require opposite answers, so one
@@ -96,8 +99,8 @@ mid-turn does not.
 
 ## Rejected alternatives
 
-**Leave both frozen and pull `MID_TURN_AUTHORITY_REFRESH` when expiry matters.**
-Rejected because the fuse buys mid-turn expiry only by also buying a store read
+**Leave both frozen and pull the fuse when expiry matters.**
+Rejected because the fuse bought mid-turn expiry only by also buying a store read
 per operation, which is the cost ADR 0010 removed and the execution model it
 rejected. The two are unrelated problems and should not share one switch.
 

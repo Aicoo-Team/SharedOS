@@ -101,8 +101,8 @@ export type SystemIdentity = z.infer<typeof SystemIdentitySchema>;
  *
  * A turn resolves authority once, when it is admitted, so a turn normally
  * records exactly one and `stableAuthorityHash` is always set. This stays a list
- * because a host may make kernel calls outside any turn, and because restoring
- * `MID_TURN_AUTHORITY_REFRESH` must not change the shape of the evidence.
+ * because a host may make kernel calls outside any turn, each of which resolves
+ * its own.
  */
 export const AuthoritySnapshotRecordSchema = z
   .object({

@@ -65,6 +65,18 @@ safe to expose:
 
 Unknown paths are `404`. A known path with the wrong verb is `405`.
 
+### What has no route, on purpose
+
+No route issues a grant, answers an escalation, or reads audit. SharedOS issues
+no grant anywhere: a turn that needs more ends `escalated` and carries the
+request, the kernel records the ask, and deciding it and writing the grant to
+the store your `GrantSource` reads is host control-plane work
+([ADR 0011](adr/0011-escalation-terminal-outcome.md)). The
+next turn loads what you wrote. A route that did it from here would be a second
+way for authority to enter, reachable by whatever can reach this surface. Audit
+is the same division: the kernel writes to your `AuditSink`, and you read your
+own store.
+
 ### `GET /health`
 
 Liveness and protocol version. Requires no authentication and resolves no

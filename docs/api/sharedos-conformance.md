@@ -37,8 +37,7 @@ and the turn's `AuditEvent`s into an `ExecutionRecord`:
 Authority is recorded per decision rather than per turn. A turn resolves
 authority once, at admission, so its decisions all name one snapshot; the
 per-decision field is kept because a host may still call the kernel outside any
-turn, and because restoring `MID_TURN_AUTHORITY_REFRESH` must not change the
-shape of the evidence.
+turn, and each such call resolves its own.
 
 ## Reproducibility
 
@@ -721,8 +720,8 @@ A turn loads authority exactly once, when it is admitted, and every decision
 it makes afterwards is answered from that one load. `0` therefore arms an
 outage the turn cannot survive, and any value of `1` or more leaves the turn
 entirely unaffected: there is no second load for a later failure to catch.
-Restoring `MID_TURN_AUTHORITY_REFRESH` in `@aicoo/sharedos-core` makes the
-higher values meaningful again.
+A higher value matters only to kernel calls made outside a turn, each of
+which loads its own.
 
 ###### Parameters
 
@@ -3102,8 +3101,8 @@ One authority state observed during the turn.
 
 A turn resolves authority once, when it is admitted, so a turn normally
 records exactly one and `stableAuthorityHash` is always set. This stays a list
-because a host may make kernel calls outside any turn, and because restoring
-`MID_TURN_AUTHORITY_REFRESH` must not change the shape of the evidence.
+because a host may make kernel calls outside any turn, each of which resolves
+its own.
 
 ---
 

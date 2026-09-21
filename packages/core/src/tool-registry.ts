@@ -1,5 +1,6 @@
 import type {
   AccessContext,
+  CapabilityRequirement,
   JsonObject,
   ToolCall,
   ToolDefinition,
@@ -8,7 +9,6 @@ import type {
 } from "@aicoo/sharedos-contracts";
 import { ToolDefinitionSchema } from "@aicoo/sharedos-contracts";
 
-import type { AuthorizationRequest } from "./authorization.js";
 import { DuplicateRegistrationError } from "./errors.js";
 import { deepFreeze, readJsonObject } from "./internal.js";
 
@@ -17,7 +17,7 @@ export interface ToolHandler {
   /** Parse and normalize untrusted arguments before authorization or execution. */
   readonly parseArguments: (arguments_: JsonObject) => unknown;
   /** Resolve argument-selected resources immediately before execution. */
-  readonly resolveRequirement?: (context: AccessContext, call: ToolCall) => AuthorizationRequest;
+  readonly resolveRequirement?: (context: AccessContext, call: ToolCall) => CapabilityRequirement;
   invoke(context: AccessContext, call: ToolCall, signal: AbortSignal): Promise<ToolResult>;
 }
 

@@ -212,15 +212,22 @@ describe("execution records from a real turn", () => {
   });
 
   it("records the tool denial when a turn is admitted but the call is not", async () => {
-    const { record } = await runTurn([grant("grant-turn", ["agent", "agent-alice"], ["invoke"])]);
+    const { record, audit } = await runTurn([
+      grant("grant-turn", ["agent", "agent-alice"], ["invoke"]),
+    ]);
 
     expect(record.execution.status).toBe("succeeded");
     expect(record.execution.exposedTools).toEqual([]);
     expect(record.execution.operations).toContainEqual(
       expect.objectContaining({ kind: "tool", source: "envelope", outcome: "denied" }),
     );
-    // The envelope refuses an unexposed tool before the kernel is consulted, so
-    // this attempt appears in no audit event at all.
+    // The envelope refuses an unexposed tool before the kernel is consulted, and
+    // records the refusal through the kernel (ADR 0023), so the operation comes
+    // from audit. The event stream says the same thing, and it is not counted twice.
+    expect(audit).toContainEqual(
+      expect.objectContaining({ type: "tool.invoked", source: "envelope", operationId: "call-1" }),
+    );
+    expect(record.execution.operations).toHaveLength(1);
     expect(record.execution.operations.every(({ source }) => source === "envelope")).toBe(true);
     // And it still says which refusal it was. Without the code the record could
     // report that an envelope refusal happened but not whether it was a guess at
@@ -229,6 +236,60 @@ describe("execution records from a real turn", () => {
     expect(record.execution.operations).toContainEqual(
       expect.objectContaining({ source: "envelope", reasonCode: "tool_unavailable" }),
     );
+  });
+
+  it("still records an envelope refusal whose audit write was dropped", async () => {
+    // The refusal is written after the fact, so a sink that throws on it is
+    // handed to `onAuditError` and the turn goes on as it would have. Audit then
+    // holds nothing for the call, and its `tool.completed` event is the only
+    // place the record can read it from.
+    const audit: AuditEvent[] = [];
+    const dropped: AuditEvent[] = [];
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        async load() {
+          return [grant("grant-turn", ["agent", "agent-alice"], ["invoke"])];
+        },
+      },
+      audit: {
+        record: async (event) => {
+          if (event.type === "tool.invoked" && event.source === "envelope") {
+            throw new Error("audit store is unreachable");
+          }
+          audit.push(event);
+        },
+      },
+      onAuditError: (_error, event) => void dropped.push(event),
+    });
+    kernel.registerTool(readHandler);
+
+    const result = await new SharedOSExecutor(kernel, runtime, { clock: () => NOW }).execute(
+      request(),
+    );
+    const record = assembleExecutionRecord({
+      request: request(),
+      result,
+      auditEvents: audit,
+      experiment,
+      system,
+    });
+
+    expect(dropped).toEqual([
+      expect.objectContaining({ type: "tool.invoked", source: "envelope", operationId: "call-1" }),
+    ]);
+    expect(audit.some(({ type }) => type === "tool.invoked")).toBe(false);
+    // An observation that failed did not change what it observed.
+    expect(result).toMatchObject({ status: "succeeded", output: { toolStatus: "denied" } });
+    expect(record.execution.operations).toEqual([
+      expect.objectContaining({
+        kind: "tool",
+        source: "envelope",
+        outcome: "denied",
+        operationId: "call-1",
+        tool: "files.read",
+        reasonCode: "tool_unavailable",
+      }),
+    ]);
   });
 
   it("fails closed and marks it, when authority cannot be loaded", async () => {
