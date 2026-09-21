@@ -1,4 +1,4 @@
-**SharedOS API v0.1.0-alpha.5**
+**SharedOS API v1.0.0-preview**
 
 ---
 

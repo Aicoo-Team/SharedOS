@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.5**](README.md)
+[**SharedOS API v1.0.0-preview**](README.md)
 
 ---
 
@@ -3953,7 +3953,7 @@ Defined in: [conformance/src/world.ts:124](https://github.com/Aicoo-Team/SharedO
 
 ### SHAREDOS\_VERSION
 
-> `const` **SHAREDOS\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
+> `const` **SHAREDOS\_VERSION**: `"1.0.0-preview"` = `"1.0.0-preview"`
 
 Defined in: contracts/dist/common.d.ts:19
 

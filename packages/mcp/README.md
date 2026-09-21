@@ -94,4 +94,4 @@ compared until that is explained.
 Full design: [MCP toolshare](https://github.com/Aicoo-Team/SharedOS/blob/main/docs/mcp-toolshare.md)
 and [ADR 0014](https://github.com/Aicoo-Team/SharedOS/blob/main/docs/adr/0014-mcp-toolshare.md).
 
-SharedOS is currently an `0.x` prerelease.
+SharedOS is currently a `1.0.0` preview.
