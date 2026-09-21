@@ -56,7 +56,43 @@ each entry calls out what a host has to update.
   says whether the operation's port had been entered. A caller that matched on
   the sink's own error type or message reads `error.cause`.
 
+- **`retryable` on a turn's ending says whether running it again repeats
+  anything.** `turn_cancelled` and `runtime_failed` said `true` whatever the turn
+  had done, and a plugin's own failure said what the plugin said, which for the
+  harness adapters is `true` on any harness failure. A host that followed the
+  flag after a turn had sent a payment sent it twice. The envelope now decides
+  it for `turn_cancelled`, `runtime_failed` and `audit_unavailable`, and caps a
+  plugin's `true`: it is `false` once a call to a `write` tool not declared
+  `idempotent` came back anything but `denied`, or was still with the kernel
+  when the turn ended. Calls to `read` tools never count, so a turn that only
+  searched and ran out of time is still retried. ADR 0007 is revised in place.
+
+  **Migration.** A host that retried every `turn_cancelled` or `runtime_failed`
+  will retry fewer; that is the fix. Check your tool definitions, because the
+  rule rests on them: `readWrite: "read"` only where a second run changes
+  nothing, `annotations.idempotent` only where a second run is a no-op.
+
 ### Fixed
+
+- **A deadline no longer has to stop a handler half-way.** A `transfer_funds`
+  between its debit and its credit when the deadline fired stopped there. A
+  host may now set `drainGraceMs` on `SharedOSExecutor`: the turn stops taking
+  tool calls that long before its deadline (`denied`, `turn_draining`, recorded),
+  handlers already running are not signalled and answer with their real outcome,
+  and the abort reaches what is still running at `timeoutMs`, which is recorded
+  `interrupted`. The grace is inside the limit, never on top of it, and the turn
+  ends as soon as what was in flight has answered; the standard loop asks the
+  seat nothing more once it is draining. An audit outage drains the
+  same way; a host's own cancellation still stops the turn at once. Zero, the
+  default, is the behaviour before. ADR 0007 is revised in place.
+
+- **A sink that hangs after an effect no longer holds the result.** A sink that
+  threw there was already handed to `onAuditError`; one that never answered kept
+  the result of a committed effect waiting, and a turn that reached its deadline
+  first lost it. `auditWriteTimeoutMs` on the kernel bounds the write: past it
+  `onAuditError` receives an `AuditWriteTimeoutError` and the caller its result.
+  Records written before an effect are never limited. ADR 0023 is revised in
+  place.
 
 - **An audit outage before an effect ends the turn `audit_unavailable`, by the
   envelope.** A sink that threw on an authority load, a decision or a catalogue
@@ -64,12 +100,11 @@ each entry calls out what a host has to update.
   runtime plugin failed" -- for an outage the plugin had no part in, and also
   when the outage was met before any plugin ran. A plugin that caught the
   rejection could call again, and be refused again. The executor now notes the
-  typed error where it called the kernel itself, aborts the turn, and ends it
-  `failed` / `audit_unavailable` with `endedBy: envelope` and `failClosed`; a
-  plugin can neither carry on past it nor throw the error itself to be credited
-  with the refusal. `retryable` is `true` only when nothing the turn asked for
-  can have taken effect: every call came back `denied` or was refused for the
-  outage, and none is still with the kernel. `onTurnError` receives the error.
+  typed error where it called the kernel itself, stops the turn taking anything
+  new, and ends it `failed` / `audit_unavailable` with `endedBy: envelope` and
+  `failClosed`; a plugin can neither carry on past it nor throw the error itself
+  to be credited with the refusal. `retryable` follows the rule above.
+  `onTurnError` receives the error.
   A record that fails _after_ an effect still never ends a turn. ADR 0023 is
   revised in place.
 
@@ -153,6 +188,12 @@ each entry calls out what a host has to update.
   the transport's.
 
 ### Added
+
+- **`RuntimeHost.draining`**, an `AbortSignal` aborted once the turn takes
+  nothing new. Optional on the type so a host double stays viable; the envelope
+  always supplies it. Its reason is fixed and carries nothing from the host.
+  `TURN_DRAINING`, `AuditWriteTimeoutError` and `AUDIT_WRITE_TIMEOUT` are
+  exported beside it.
 
 - **A refused `messages.request` names what the transport answered.** The caller is
   told `message_request_not_accepted` whatever the transport said, and only the

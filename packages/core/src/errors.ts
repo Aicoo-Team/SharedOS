@@ -23,6 +23,28 @@ export class MissingRegistrationError extends Error {
 /** The code a turn ends on, and an error carries, when audit could not record a decision. */
 export const AUDIT_UNAVAILABLE = "audit_unavailable";
 
+/** The code on the error `onAuditError` is handed when a sink did not answer in time. */
+export const AUDIT_WRITE_TIMEOUT = "audit_write_timeout";
+
+/**
+ * Handed to `onAuditError` when a record written after an effect was still
+ * unanswered at `auditWriteTimeoutMs`.
+ *
+ * Never thrown at a caller. The effect has committed, so the caller is given
+ * its result and the host is told the record is unconfirmed: the sink may still
+ * write it, and nothing waits to find out.
+ */
+export class AuditWriteTimeoutError extends Error {
+  override readonly name = "AuditWriteTimeoutError";
+  readonly code = AUDIT_WRITE_TIMEOUT;
+  readonly timeoutMs: number;
+
+  constructor(timeoutMs: number) {
+    super(`The audit sink did not answer a record written after an effect within ${timeoutMs} ms`);
+    this.timeoutMs = timeoutMs;
+  }
+}
+
 /**
  * The audit sink failed on a record that comes before an effect.
  *

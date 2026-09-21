@@ -69,20 +69,27 @@ export type TurnRequestContextIsSanitised = Assert<
 >;
 
 /**
- * The host is exactly four members.
+ * The host is exactly five members.
  *
  * Written as an exhaustive equality rather than a set of absences, because a
  * leak arrives as a field somebody added and a list of things to check for
  * would not have that field on it. `annotate` is on the list because it only
  * takes: it returns nothing, so it is no more a way to read authority than
- * `emit` is.
+ * `emit` is. `draining` is on it because it only tells: an `AbortSignal` says
+ * that the turn takes nothing new and under what reason, the envelope sets that
+ * reason to a fixed one of its own, and nothing can be asked of it.
  */
-export type HostIsExactlyLimitsCallEmitAndAnnotate = Assert<
-  keyof RuntimeHost extends "limits" | "invokeTool" | "emit" | "annotate"
-    ? "limits" | "invokeTool" | "emit" | "annotate" extends keyof RuntimeHost
+export type HostIsExactlyLimitsCallEmitAnnotateAndDraining = Assert<
+  keyof RuntimeHost extends "limits" | "invokeTool" | "emit" | "annotate" | "draining"
+    ? "limits" | "invokeTool" | "emit" | "annotate" | "draining" extends keyof RuntimeHost
       ? true
       : false
     : false
+>;
+
+/** The one thing the plugin learns about the turn's ending is a signal. */
+export type DrainingIsOnlyASignal = Assert<
+  NonNullable<RuntimeHost["draining"]> extends AbortSignal ? true : false
 >;
 
 /** Nothing comes back from a statement for the record. */

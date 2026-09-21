@@ -86,6 +86,7 @@ import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
 import {
   AUDIT_UNAVAILABLE,
   AuditUnavailableError,
+  AuditWriteTimeoutError,
   DuplicateRegistrationError,
   MissingRegistrationError,
 } from "./errors.js";
@@ -146,6 +147,22 @@ export interface SharedOSKernelOptions {
    * with an `AuditUnavailableError`, and nothing runs.
    */
   readonly onAuditError?: (error: unknown, event: AuditEvent) => void | Promise<void>;
+  /**
+   * How long a record written after an effect may keep a caller from its result.
+   *
+   * A sink that throws on such a record is already handed to `onAuditError`. A
+   * sink that does not answer at all is not a throw, and without a limit the
+   * result of an effect that has committed waits behind it for as long as the
+   * caller does: a turn that reaches its deadline first drops a result whose
+   * transfer went through. Past the limit the event is handed to `onAuditError`
+   * with an `AuditWriteTimeoutError` and the caller receives its result. The
+   * hook is held to the same limit, since it usually writes to the same store.
+   *
+   * Absent means no limit, which is the behaviour before this option. The
+   * records written before an effect are never limited: there a sink that does
+   * not answer holds back an operation that has not run, which is the point.
+   */
+  readonly auditWriteTimeoutMs?: number;
   /**
    * Notification for a throw the kernel contained rather than propagated.
    *
@@ -345,6 +362,7 @@ export class SharedOSKernel {
   readonly #createAuditId: () => string;
   readonly #audit: AuditSink;
   readonly #onAuditError: ((error: unknown, event: AuditEvent) => void | Promise<void>) | undefined;
+  readonly #auditWriteTimeoutMs: number | undefined;
   readonly #onProviderError: ProviderErrorReporter | undefined;
   readonly #spans: SpanSink | undefined;
 
@@ -370,6 +388,13 @@ export class SharedOSKernel {
     this.#createAuditId = options.createAuditId ?? (() => crypto.randomUUID());
     this.#audit = options.audit ?? new NoopAuditSink();
     this.#onAuditError = options.onAuditError;
+    this.#auditWriteTimeoutMs = options.auditWriteTimeoutMs;
+    if (
+      this.#auditWriteTimeoutMs !== undefined &&
+      (!Number.isInteger(this.#auditWriteTimeoutMs) || this.#auditWriteTimeoutMs <= 0)
+    ) {
+      throw new TypeError("auditWriteTimeoutMs must be a positive integer");
+    }
     this.#onProviderError = options.onProviderError;
     this.#spans = options.spans;
   }
@@ -2231,16 +2256,41 @@ export class SharedOSKernel {
    * committed or the answer is final, so a sink that throws is handed to
    * `onAuditError` and the caller receives the result it would have received:
    * returning a failure here would invite a retry of something already done.
+   * A sink that does not answer within `auditWriteTimeoutMs` is treated the
+   * same way, so the result is released either once its record is written or
+   * once the host has been told it was not.
    */
   async #recordOutcome(event: AuditEvent): Promise<void> {
     try {
-      await this.#audit.record(event);
+      await this.#withinAuditWriteLimit(this.#audit.record(event));
     } catch (error) {
       try {
-        await this.#onAuditError?.(error, event);
+        await this.#withinAuditWriteLimit(this.#onAuditError?.(error, event));
       } catch {
         // A post-effect observability hook must not turn success into a retry.
       }
+    }
+  }
+
+  async #withinAuditWriteLimit(write: void | Promise<void>): Promise<void> {
+    const timeoutMs = this.#auditWriteTimeoutMs;
+    if (timeoutMs === undefined) {
+      await write;
+      return;
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const pending = Promise.resolve(write);
+    // Left running past the limit, so what it then does must land somewhere.
+    pending.catch(() => undefined);
+    try {
+      await Promise.race([
+        pending,
+        new Promise<never>((_resolve, reject) => {
+          timer = setTimeout(() => reject(new AuditWriteTimeoutError(timeoutMs)), timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
     }
   }
 }
