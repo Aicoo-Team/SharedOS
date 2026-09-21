@@ -132,6 +132,19 @@ each entry calls out what a host has to update.
 
 ### Fixed
 
+- **A harness probe reads the version a CLI answered with, not the first thing
+  it printed.** `probeHarness` read stdout and stderr as one text and took the
+  first line, so Codex -- which warns on stderr when `CODEX_HOME` is under a
+  temporary directory before it answers on stdout -- was recorded with its
+  warning as `versionOutput` and no `version`, and its build in a conformance
+  artifact was whatever the runbook said had been installed. The streams are
+  now read apart, stdout first, and a line counts only if the whole of it is a
+  version answer (`codex-cli 0.149.0`, `2.1.278 (Claude Code)`, `v22.14.0`):
+  a notice that a newer build exists is a sentence, or names two versions, and
+  is never taken for the build that ran. Lines that answer with different
+  builds record none. Still fails open: no readable answer leaves `version`
+  absent, `versionOutput` the first line said, and the harness available.
+
 - **A deadline no longer has to stop a handler half-way.** A `transfer_funds`
   between its debit and its credit when the deadline fired stopped there. A
   host may now set `drainGraceMs` on `SharedOSExecutor`: the turn stops taking

@@ -538,6 +538,21 @@ describe("a harness asking for a human", () => {
   });
 });
 
+/** Probe `node` standing in for a CLI whose `--version` writes these lines, stderr first. */
+function probeAsVersionOutput(said: {
+  readonly stdout?: readonly string[];
+  readonly stderr?: readonly string[];
+}) {
+  const script = [
+    ...(said.stderr ?? []).map((line) => `console.error(${JSON.stringify(line)});`),
+    ...(said.stdout ?? []).map((line) => `console.log(${JSON.stringify(line)});`),
+  ].join("");
+  return probeHarness(
+    { ...CODEX_REQUIREMENTS, executable: "node", versionArguments: ["-e", script] },
+    { PATH: process.env["PATH"] ?? "", OPENAI_API_KEY: "test-key" },
+  );
+}
+
 describe("harness availability", () => {
   it("reports a missing executable rather than failing a run", async () => {
     const availability = await probeHarness(CODEX_REQUIREMENTS, { PATH: "/nonexistent" });
@@ -568,6 +583,65 @@ describe("harness availability", () => {
 
     expect(availability.version).toMatch(/^\d+\.\d+\.\d+/u);
     expect(availability.detail?.["versionOutput"]).toContain(availability.version);
+  });
+
+  it("reads the version from stdout past a warning that reached stderr first", async () => {
+    // What Codex does with `CODEX_HOME` under a temporary directory.
+    const availability = await probeAsVersionOutput({
+      stderr: [
+        'WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp"',
+      ],
+      stdout: ["codex-cli 0.149.0"],
+    });
+
+    expect(availability.version).toBe("0.149.0");
+    expect(availability.detail?.["versionOutput"]).toBe("codex-cli 0.149.0");
+  });
+
+  it("does not take a notice about a newer build for the build that answered", async () => {
+    const notices = [
+      "Update available: 0.149.0 -> 0.153.2",
+      "A new version of Codex is available: 0.153.2",
+      "Run `npm install -g @openai/codex@0.153.2` to update.",
+    ];
+
+    for (const notice of notices) {
+      const ahead = await probeAsVersionOutput({ stdout: [notice, "codex-cli 0.149.0"] });
+      expect(ahead.version).toBe("0.149.0");
+      expect(ahead.detail?.["versionOutput"]).toBe("codex-cli 0.149.0");
+
+      const onStderr = await probeAsVersionOutput({ stderr: [notice], stdout: ["0.149.0"] });
+      expect(onStderr.version).toBe("0.149.0");
+
+      const alone = await probeAsVersionOutput({ stdout: [notice] });
+      expect(alone.available).toBe(true);
+      expect(alone.version).toBeUndefined();
+      expect(alone.detail?.["versionOutput"]).toBe(notice);
+    }
+  });
+
+  it("reads the shapes the vendor CLIs answer in, and a version said only on stderr", async () => {
+    const shapes: readonly (readonly [string, string])[] = [
+      ["codex-cli 0.149.0", "0.149.0"],
+      ["2.1.278 (Claude Code)", "2.1.278"],
+      ["0.1.1-rc.2", "0.1.1-rc.2"],
+      ["v22.14.0", "22.14.0"],
+    ];
+
+    for (const [line, version] of shapes) {
+      expect((await probeAsVersionOutput({ stdout: [line] })).version).toBe(version);
+      expect((await probeAsVersionOutput({ stderr: [line] })).version).toBe(version);
+    }
+  });
+
+  it("records no version when two lines answer with different builds", async () => {
+    const availability = await probeAsVersionOutput({
+      stdout: ["latest 0.153.2", "codex-cli 0.149.0"],
+    });
+
+    expect(availability.available).toBe(true);
+    expect(availability.version).toBeUndefined();
+    expect(availability.detail?.["versionOutput"]).toBe("latest 0.153.2");
   });
 
   it("stays available when the executable will not say what it is", async () => {
