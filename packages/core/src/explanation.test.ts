@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import type { AccessContext, CapabilityGrant, ResourceRef } from "@aicoo/sharedos-contracts";
+import type {
+  AccessContext,
+  CapabilityGrant,
+  ResourceRef,
+  ToolCall,
+} from "@aicoo/sharedos-contracts";
 
 import type { AuditEvent } from "./audit.js";
 import type { GrantSource } from "./authority.js";
@@ -8,10 +13,10 @@ import type { ResolvedAuthority } from "./authority.js";
 import { SharedOSKernel } from "./kernel.js";
 import {
   type AuthorizationExplanation,
-  type AuthorizationInstantOptions,
   CapabilityAuthorizer,
   InMemoryGrantUsageStore,
 } from "./authorization.js";
+import type { ToolHandler } from "./tool-registry.js";
 
 const NOW = "2026-08-03T09:00:00.000Z";
 const ACTOR = { kind: "agent", agentId: "agent-bob" } as const;
@@ -201,22 +206,29 @@ describe("the host-facing account of a denial", () => {
     expect(explanation).toBeUndefined();
   });
 
-  it("is not called for discovery, which denies constantly by design", async () => {
+  it("is handed over on a discovery check that asks for it", async () => {
     const authority = authorityFor(accessContext({ authority: CAROL }), [grant()]);
-    let called = false;
+    const authorizer = new CapabilityAuthorizer();
+    let explanation: AuthorizationExplanation | undefined;
 
-    // `canDiscover` does not take the callback in its type. Force one past the
-    // type to prove the discovery path ignores it rather than merely not
-    // offering it: catalog filtering denies on nearly every tool, and routing
-    // that through the account would bury the denial somebody was looking for.
-    const decision = await new CapabilityAuthorizer().canDiscover(
+    // Filtering a catalogue denies on nearly every tool, so the account is the
+    // caller's to ask for. The kernel asks when the check refuses a call
+    // somebody made, and not when it lists.
+    const asked = await authorizer.canDiscover(
       authority,
       { resource: RESOURCE, action: "read" },
-      { onExplain: () => (called = true) } as AuthorizationInstantOptions,
+      { onExplain: (received) => (explanation = received) },
     );
 
-    expect(decision.allowed).toBe(false);
-    expect(called).toBe(false);
+    expect(asked.allowed).toBe(false);
+    expect(explanation).toMatchObject({
+      reasonCode: "no_matching_grant",
+      grantsResolved: 1,
+      rejections: [{ grantId: "grant-files-read", reason: "issuer" }],
+    });
+    // The description of what was missing is still the invocation's alone: a
+    // declared ceiling may be broader than anything a call needed (ADR 0019).
+    expect(asked.requiredAuthority).toBeUndefined();
   });
 
   it("hands back a frozen account so a diagnostic cannot become a decision", async () => {
@@ -339,5 +351,133 @@ describe("the account on the audit record", () => {
     expect(checked?.consumed).toBe(false);
     expect(checked?.failClosed).toBeUndefined();
     expect(checked?.metadata).toBeUndefined();
+  });
+});
+
+describe("the account on a call refused at discovery", () => {
+  const TOOL: ToolHandler = {
+    definition: {
+      name: "files.read",
+      description: "Read a file",
+      namespace: "files",
+      source: "sharedos",
+      readWrite: "read",
+      inputSchema: { type: "object" },
+      requiredCapability: { resource: RESOURCE, action: "read" },
+    },
+    parseArguments: (arguments_) => arguments_,
+    invoke: async (_context, call) => ({
+      callId: call.id,
+      tool: call.tool,
+      status: "succeeded",
+      output: {},
+      completedAt: NOW,
+    }),
+  };
+  const CALL: ToolCall = {
+    id: "call-1",
+    tool: "files.read",
+    arguments: {},
+    traceId: "trace-1",
+    requestedAt: NOW,
+  };
+
+  function harness(grants: readonly CapabilityGrant[], authorizer = new CapabilityAuthorizer()) {
+    const events: AuditEvent[] = [];
+    const kernel = new SharedOSKernel({
+      grantSource: { load: async () => grants },
+      audit: { record: async (event) => void events.push(event) },
+      authorizer,
+    });
+    kernel.registerTool(TOOL);
+    return { kernel, events, access: accessContext({ enabledToolNamespaces: ["files"] }) };
+  }
+
+  it("names the grant that was turned away, on the decision the refusal joins to", async () => {
+    const wrongAction = grant({
+      capabilities: [{ resource: RESOURCE, actions: ["delete"], scope: "exact" }],
+    });
+    const { kernel, events, access } = harness([wrongAction]);
+
+    const result = await kernel.invokeTool(access, CALL);
+
+    // The caller is told what it was told before, and nothing of the account.
+    expect(result).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+    expect(JSON.stringify(result)).not.toContain("grant-files-read");
+
+    const checked = events.find((event) => event.type === "authorization.checked");
+    expect(checked).toMatchObject({
+      outcome: "denied",
+      reason: "no_matching_grant",
+      operationId: "call-1",
+      consumed: false,
+      metadata: {
+        grantsResolved: 1,
+        rejectedGrants: [{ grantId: "grant-files-read", reason: "capability" }],
+      },
+    });
+  });
+
+  it("names the store that was never wired, which is where a bounded grant is refused", async () => {
+    // A tool whose only grant is bounded is refused here and never reaches
+    // `authorize`, so this record is the only one that can say why.
+    const bounded = grant({ constraints: { purposes: ["prepare-update"], maxUses: 1 } });
+    const { kernel, events, access } = harness([bounded]);
+
+    const result = await kernel.invokeTool(access, CALL);
+
+    expect(result).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+    const checked = events.find((event) => event.type === "authorization.checked");
+    expect(checked?.reason).toBe("usage_store_unavailable");
+    expect(checked?.failClosed).toBe(true);
+    expect(checked?.metadata).toMatchObject({ missingDependency: "usageStore" });
+    expect(events.find((event) => event.type === "tool.invoked")).toMatchObject({
+      outcome: "denied",
+      cause: "usage_store_unavailable",
+    });
+  });
+
+  it("names the resolver that was never wired, the other port a grant can need", async () => {
+    const derived = grant({ id: "grant-derived", parentGrantId: "grant-root" });
+    const { kernel, events, access } = harness([derived]);
+
+    const result = await kernel.invokeTool(access, CALL);
+
+    expect(result).toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
+    const checked = events.find((event) => event.type === "authorization.checked");
+    expect(checked?.reason).toBe("delegation_chain_unverified");
+    expect(checked?.failClosed).toBe(true);
+    expect(checked?.metadata).toMatchObject({
+      missingDependency: "delegationResolver",
+      rejectedGrants: [{ grantId: "grant-derived", reason: "delegation" }],
+    });
+  });
+
+  it("says nothing of the kind once the store is supplied", async () => {
+    const bounded = grant({ constraints: { purposes: ["prepare-update"], maxUses: 1 } });
+    const { kernel, events, access } = harness(
+      [bounded],
+      new CapabilityAuthorizer({ usageStore: new InMemoryGrantUsageStore() }),
+    );
+
+    const result = await kernel.invokeTool(access, CALL);
+
+    expect(result.status).toBe("succeeded");
+    for (const checked of events.filter((event) => event.type === "authorization.checked")) {
+      expect(checked.outcome).toBe("allowed");
+      expect(checked.metadata).toBeUndefined();
+    }
+  });
+
+  it("writes no account when the same check only filters a catalogue", async () => {
+    const wrongAction = grant({
+      capabilities: [{ resource: RESOURCE, actions: ["delete"], scope: "exact" }],
+    });
+    const { kernel, events, access } = harness([wrongAction]);
+
+    await expect(kernel.listTools(access)).resolves.toEqual([]);
+
+    expect(events.some((event) => event.type === "authorization.checked")).toBe(false);
+    expect(JSON.stringify(events)).not.toContain("rejectedGrants");
   });
 });

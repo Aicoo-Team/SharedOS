@@ -253,12 +253,25 @@ export interface AuthorizeOptions extends AuthorizationInstantOptions {
   readonly consume?: boolean;
   /**
    * Called once with the host-facing account of a denial, before it is
-   * returned. Never called for an allow, and never for a discovery check --
-   * catalog filtering denies constantly and by design, and explaining each
-   * one would bury the denials that surprised somebody.
+   * returned. Never called for an allow.
    *
    * The callback runs synchronously on a frozen value and must not throw: a
    * diagnostic that can change a decision is a decision.
+   */
+  readonly onExplain?: (explanation: AuthorizationExplanation) => void;
+}
+
+export interface DiscoverOptions extends AuthorizationInstantOptions {
+  /**
+   * The same account {@link AuthorizeOptions.onExplain} hands over, for a
+   * discovery check that refuses a call somebody made.
+   *
+   * Left unset when a catalogue is being filtered: that denies constantly and
+   * by design, and explaining each one would bury the denials that surprised
+   * somebody. `SharedOSKernel.listTools` passes none. `invokeTool` passes one,
+   * because a call refused at this check is refused nowhere else, and it is the
+   * path a missing `usageStore` always takes for a tool whose only grant is
+   * bounded.
    */
   readonly onExplain?: (explanation: AuthorizationExplanation) => void;
 }
@@ -380,13 +393,14 @@ export class CapabilityAuthorizer {
   async canDiscover(
     authority: ResolvedAuthority,
     ceiling: CapabilityRequirement,
-    options: AuthorizationInstantOptions = {},
+    options: DiscoverOptions = {},
   ): Promise<AuthorizationDecision> {
-    // The last two arguments are `false` and `undefined`: a discovery check is
-    // made against a tool's declared capability, which may be a broader ceiling
-    // than any call, so a description built here would name authority no
-    // operation needed; and catalogue filtering denies constantly and by
-    // design, so nothing is explained.
+    // `describeMissing` is `false`: a discovery check is made against a tool's
+    // declared capability, which may be a broader ceiling than any call, so a
+    // description built here would name authority no operation needed. The
+    // account is another matter. It says which grants were turned away and why,
+    // asks for nothing, and stays with the host, so it is handed over when the
+    // caller asks for it; see `DiscoverOptions.onExplain` for who does.
     return this.#decide(
       authority,
       ceiling,
@@ -394,7 +408,7 @@ export class CapabilityAuthorizer {
       false,
       options.now,
       false,
-      undefined,
+      options.onExplain,
     );
   }
 

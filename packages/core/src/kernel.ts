@@ -1117,6 +1117,11 @@ export class SharedOSKernel {
       return result;
     }
 
+    // Asked for here and not in `listTools`. A catalogue being filtered denies
+    // on most of what it looks at; this is one call somebody made, refused at
+    // this check and nowhere else, and the record of it is the only place a
+    // host can read which grant was turned away or which port was never wired.
+    let discoveryExplanation: AuthorizationExplanation | undefined;
     const discoverable = await measure(
       this.#spans,
       SPAN.TOOL_DISCOVER,
@@ -1128,7 +1133,12 @@ export class SharedOSKernel {
             resource: handler.definition.requiredCapability.resource,
             action: handler.definition.requiredCapability.action,
           },
-          { now: context.now },
+          {
+            now: context.now,
+            onExplain: (received) => {
+              discoveryExplanation = received;
+            },
+          },
         );
       },
       (decision, span) => span.set("outcome", decision.allowed ? "visible" : "hidden"),
@@ -1147,6 +1157,7 @@ export class SharedOSKernel {
         // the same id. Without it the two records join only on time order,
         // and a reader with two turns on one sink joins the wrong pair.
         call.id,
+        discoveryExplanation,
       );
       const result = refusedToolResult(
         call,
