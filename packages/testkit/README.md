@@ -17,4 +17,4 @@ call, so a test can show a decision failing closed.
 `revoke` and `expire` on the two grant stores edit a grant in place, the way a
 host store would, and throw on an id the store does not hold.
 
-SharedOS is currently an `0.x` prerelease.
+SharedOS is currently a `1.0.0` preview.

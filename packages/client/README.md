@@ -27,4 +27,4 @@ for the server's `resolveContext` to read. Neither header is authority: the
 server derives the `AccessContext` from its own authenticated state, and every
 operation still needs a matching grant.
 
-SharedOS is currently an `0.x` prerelease.
+SharedOS is currently a `1.0.0` preview.

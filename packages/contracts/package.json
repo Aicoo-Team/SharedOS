@@ -1,6 +1,6 @@
 {
   "name": "@aicoo/sharedos-contracts",
-  "version": "0.1.0-alpha.5",
+  "version": "1.0.0-preview",
   "description": "JSON-safe protocol contracts for SharedOS",
   "license": "Apache-2.0",
   "keywords": [

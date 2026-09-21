@@ -39,8 +39,8 @@ if (versions.size !== 1) {
 }
 
 const version = packages[0]?.manifest.version;
-if (typeof version !== "string" || !/^0\.\d+\.\d+-[0-9A-Za-z.-]+$/.test(version)) {
-  throw new Error(`Expected a 0.x prerelease version, received ${String(version)}.`);
+if (typeof version !== "string" || !/^\d+\.\d+\.\d+-[0-9A-Za-z.-]+$/.test(version)) {
+  throw new Error(`Expected a prerelease version, received ${String(version)}.`);
 }
 
 verifyReleaseMetadata(packages);

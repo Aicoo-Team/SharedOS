@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.5**](README.md)
+[**SharedOS API v1.0.0-preview**](README.md)
 
 ---
 
@@ -27,7 +27,7 @@ kernel's host-provided `ToolNamespaceSettingsStore`; this adapter never stores
 user settings itself. Treat both routes as an authenticated management surface;
 the turn runtime exposes only the filtered `GET /v1/tools` catalog to models.
 
-SharedOS is currently an `0.x` prerelease.
+SharedOS is currently a `1.0.0` preview.
 
 ## Classes
 

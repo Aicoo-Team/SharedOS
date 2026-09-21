@@ -19,7 +19,7 @@ export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
  * version, because a record that names the wrong build is evidence attributed
  * to code that never ran.
  */
-export const SHAREDOS_VERSION = "0.1.0-alpha.5";
+export const SHAREDOS_VERSION = "1.0.0-preview";
 
 /** An opaque identifier. Callers choose its format; SharedOS only requires stability. */
 export const IdentifierSchema = z.string().trim().min(1).max(256);

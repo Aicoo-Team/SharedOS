@@ -17,7 +17,7 @@ tools without allowing a message, or a model, to grant itself authority. It is
 the reusable authorization and execution layer beneath agent products and agent
 evaluation systems alike.
 
-> **Status:** a `0.x` release. The API is not stable or production-hardened yet;
+> **Status:** a `1.0.0` preview. The API is not stable or production-hardened yet;
 > pin an exact version if you need reproducibility.
 
 ## About SharedOS

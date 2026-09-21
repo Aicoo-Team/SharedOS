@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.5**](README.md)
+[**SharedOS API v1.0.0-preview**](README.md)
 
 ---
 
@@ -34,7 +34,7 @@ surface of `@aicoo/sharedos-contracts`, `@aicoo/sharedos-core`, `@aicoo/sharedos
 The generated reference documents those symbols on their owning package pages
 instead of duplicating their definitions on the SDK page.
 
-SharedOS is currently an `0.x` prerelease. Production hosts must provide trusted
+SharedOS is currently a `1.0.0` preview. Production hosts must provide trusted
 identity and grant resolution, durable replay protection, provider isolation,
 and durable audit storage.
 
