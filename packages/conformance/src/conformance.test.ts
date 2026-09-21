@@ -346,6 +346,9 @@ describe("execution record assembly", () => {
           outcome: "denied",
           reason: "authority_unavailable",
           authorityHash: AUTHORITY_HASH,
+          // Read from the event, not re-derived from the code: the kernel is
+          // the one that knows whether it failed closed, and says so.
+          failClosed: true,
         }),
       ],
       experiment,
@@ -493,7 +496,7 @@ describe("record completeness", () => {
           type: "authorization.checked",
           outcome: "denied",
           reason: "authority_unavailable",
-          metadata: { failClosed: true },
+          failClosed: true,
         }),
       ],
       experiment,

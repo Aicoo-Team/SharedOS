@@ -447,7 +447,7 @@ describe("SharedOSKernel.readAgentCard", () => {
       actor: READER,
       action: "read",
       resource: { namespace: "sharedos", path: ["directory", "agent", "agent-bob"] },
-      metadata: { consumed: false },
+      consumed: false,
     });
   });
 

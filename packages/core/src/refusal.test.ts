@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import type {
   AccessContext,
   CapabilityGrant,
-  JsonObject,
   ResourceRef,
   ToolCall,
 } from "@aicoo/sharedos-contracts";
@@ -35,13 +34,13 @@ function event(overrides: Partial<AuditEvent> = {}): AuditEvent {
     operationId: "call-1",
     tool: "files.search",
     reason: "tool_unavailable",
-    metadata: { source: "kernel" },
+    source: "kernel",
     ...overrides,
   };
 }
 
-function denied(reason: string, metadata: JsonObject = {}): AuditEvent {
-  return event({ reason, metadata: { source: "kernel", ...metadata } });
+function denied(reason: string, facts: Pick<AuditEvent, "cause" | "failClosed"> = {}): AuditEvent {
+  return event({ reason, ...facts });
 }
 
 describe("classifyRefusal pins every code to one gate", () => {
@@ -110,23 +109,25 @@ describe("classifyRefusal reads the cause behind tool_unavailable", () => {
       ["step_limit_exceeded", undefined],
       ["tool_call_limit_exceeded", undefined],
     ] as const) {
-      const metadata: JsonObject = {
+      const refused = event({
+        reason,
         source: "envelope",
         ...(cause === undefined ? {} : { cause }),
-      };
-      expect(classifyRefusal(event({ reason, metadata }))).toBe("envelope");
+      });
+      expect(classifyRefusal(refused)).toBe("envelope");
     }
   });
 
   it("does not read the envelope's authorship of a turn.ended as the envelope refusing", () => {
-    // Every turn.ended is recorded by the envelope and says so in `source`.
-    // A turn refused for want of an execution grant was refused by a decision.
-    const ended = event({
-      type: "turn.ended",
-      operationId: "execution-1",
-      reason: "no_matching_grant",
-      metadata: { source: "envelope", endedBy: "envelope" },
-    });
+    // Every turn.ended is recorded by the envelope, which is why it carries no
+    // `source` at all: that field says who refused, and a turn refused for want
+    // of an execution grant was refused by a decision. `endedBy` is the
+    // turn's own fact and is not read here.
+    const ended: AuditEvent = {
+      ...event({ type: "turn.ended", operationId: "execution-1", reason: "no_matching_grant" }),
+      endedBy: "envelope",
+    };
+    delete (ended as { source?: unknown }).source;
     expect(classifyRefusal(ended)).toBe("grant");
   });
 });
@@ -137,7 +138,7 @@ describe("explainRefusal joins on the call id, never on recency", () => {
       id: "audit-1",
       operationId: "call-mine",
       reason: "tool_unavailable",
-      metadata: { source: "kernel", cause: "not_registered" },
+      cause: "not_registered",
     });
     const mineDecision = event({
       id: "audit-2",
@@ -151,7 +152,7 @@ describe("explainRefusal joins on the call id, never on recency", () => {
       operationId: "call-theirs",
       traceId: "trace-2",
       reason: "no_matching_grant",
-      metadata: { source: "kernel", cause: "no_matching_grant" },
+      cause: "no_matching_grant",
     });
     const theirsDecision = event({
       id: "audit-4",
@@ -180,9 +181,7 @@ describe("explainRefusal joins on the call id, never on recency", () => {
   });
 
   it("returns no prose", () => {
-    const explained = explainRefusal({ callId: "call-1" }, [
-      event({ metadata: { source: "kernel", cause: "not_registered" } }),
-    ]);
+    const explained = explainRefusal({ callId: "call-1" }, [event({ cause: "not_registered" })]);
     expect(Object.keys(explained ?? {}).sort()).toEqual([
       "cause",
       "code",

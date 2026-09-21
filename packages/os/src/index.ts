@@ -598,6 +598,24 @@ function pathOnlyTool(
 }
 
 function resourceTool(provider: ResourceProvider, spec: ResourceToolSpec): ToolHandler {
+  // `parseArguments` is the gate: it refuses a malformed call before anything is
+  // authorized, and the kernel builds its own frozen call from what it returns,
+  // so nothing parsed there can be handed on. `resolveRequirement` and `invoke`
+  // are then given that one call object, and the second reads what the first
+  // parsed rather than parsing the same arguments a third time. Keyed on the
+  // object, as the message-request tool keys its prepared envelope: an id is
+  // something a caller chose. A host that calls `invoke` on its own, without
+  // resolving a requirement first, is parsed for there.
+  const parsedCalls = new WeakMap<ToolCall, ParsedResourceCall>();
+  const parsedFor = (call: ToolCall): ParsedResourceCall => {
+    let parsed = parsedCalls.get(call);
+    if (parsed === undefined) {
+      parsed = spec.parse(call.arguments);
+      parsedCalls.set(call, parsed);
+    }
+    return parsed;
+  };
+
   return {
     definition: spec.definition,
     parseArguments: (arguments_) => {
@@ -607,13 +625,13 @@ function resourceTool(provider: ResourceProvider, spec: ResourceToolSpec): ToolH
     resolveRequirement: (context, call) => ({
       resource: {
         namespace: provider.namespace,
-        path: spec.parse(call.arguments).path,
+        path: parsedFor(call).path,
         owner: context.owner,
       },
       action: spec.definition.requiredCapability.action,
     }),
     invoke: async (context, call, signal) => {
-      const parsed = spec.parse(call.arguments);
+      const parsed = parsedFor(call);
       const operation: ResourceOperation = {
         operationId: call.id,
         context,

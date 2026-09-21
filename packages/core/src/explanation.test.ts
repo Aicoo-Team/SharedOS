@@ -273,8 +273,8 @@ describe("the account on the audit record", () => {
     );
 
     expect(resolved.outcome).toBe("failed");
+    expect(resolved.failClosed).toBe(true);
     expect(resolved.metadata).toMatchObject({
-      failClosed: true,
       authority: "grant_scope_mismatch",
       rejectedGrants: [{ grantId: "grant-files-read", reason: "issuer" }],
     });
@@ -321,10 +321,8 @@ describe("the account on the audit record", () => {
     const checked = await denyThroughKernel([bounded], accessContext());
 
     expect(checked.reason).toBe("usage_store_unavailable");
-    expect(checked.metadata).toMatchObject({
-      failClosed: true,
-      missingDependency: "usageStore",
-    });
+    expect(checked.failClosed).toBe(true);
+    expect(checked.metadata).toMatchObject({ missingDependency: "usageStore" });
   });
 
   it("says nothing extra on an allow", async () => {
@@ -338,6 +336,8 @@ describe("the account on the audit record", () => {
 
     const checked = events.find((event) => event.type === "authorization.checked");
     expect(checked?.outcome).toBe("allowed");
-    expect(checked?.metadata).toEqual({ consumed: false });
+    expect(checked?.consumed).toBe(false);
+    expect(checked?.failClosed).toBeUndefined();
+    expect(checked?.metadata).toBeUndefined();
   });
 });

@@ -4,7 +4,6 @@ import type {
   MessageEnvelope,
   ToolCall,
   ToolDefinition,
-  ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
   MessageEnvelopeSchema,
@@ -21,7 +20,7 @@ import {
   type MessageRequestRouter,
 } from "./message-service.js";
 import type { ToolHandler } from "./tool-registry.js";
-import { deepFreeze, protocolError } from "./internal.js";
+import { deepFreeze, refusedToolResult } from "./internal.js";
 
 export const MESSAGE_TOOL_NAMESPACE = "messages";
 export const MESSAGE_REQUEST_TOOL_NAME = "messages.request";
@@ -118,11 +117,20 @@ export const MESSAGE_REQUEST_TOOL_DEFINITION: ToolDefinition = {
   annotations: { readOnly: false, destructive: true, idempotent: false },
 };
 
+/**
+ * How this tool hands an authorized envelope to the kernel for delivery.
+ *
+ * It passes the call, not the call's id. The kernel records the dispatch under
+ * the id and, when the transport refuses it, keeps the transport's code against
+ * the call object so the tool's own record can name it as its `cause`. The
+ * object is the key for the reason it is the key below: an id is something a
+ * caller chose, and two calls in flight can share one.
+ */
 export type AuthorizedMessageDelivery = (
   context: AccessContext,
   envelope: MessageEnvelope,
   signal: AbortSignal,
-  operationId: string,
+  call: ToolCall,
 ) => Promise<MessageDeliveryResult>;
 
 /**
@@ -207,8 +215,9 @@ export function createMessageRequestTool(options: MessageRequestToolOptions): To
     async invoke(context, call, signal) {
       const held = prepared.get(call);
       if (held === undefined || held.callId !== call.id) {
-        return failedResult(
+        return refusedToolResult(
           call,
+          "failed",
           context.now,
           "message_request_not_prepared",
           "The message request was not prepared for authorization",
@@ -220,11 +229,12 @@ export function createMessageRequestTool(options: MessageRequestToolOptions): To
         context,
         structuredClone(request),
         signal,
-        call.id,
+        call,
       );
       if (delivery.status !== "accepted" && delivery.status !== "delivered") {
-        return failedResult(
+        return refusedToolResult(
           call,
+          "failed",
           context.now,
           "message_request_not_accepted",
           "The message request was not accepted for delivery",
@@ -252,8 +262,9 @@ export function createMessageRequestTool(options: MessageRequestToolOptions): To
           operationId: call.id,
           tool: call.tool,
         });
-        return failedResult(
+        return refusedToolResult(
           call,
+          "failed",
           context.now,
           "message_reply_resolution_failed",
           "The message router could not resolve a reply",
@@ -262,8 +273,9 @@ export function createMessageRequestTool(options: MessageRequestToolOptions): To
 
       const parsed = MessageEnvelopeSchema.safeParse(candidate);
       if (!parsed.success || !replyMatchesRequest(parsed.data, request)) {
-        return failedResult(
+        return refusedToolResult(
           call,
+          "failed",
           context.now,
           "invalid_message_reply",
           "The message router returned an invalid reply",
@@ -289,19 +301,4 @@ function replyMatchesRequest(reply: MessageEnvelope, request: MessageEnvelope): 
     reply.purpose === request.purpose &&
     reply.traceId === request.traceId
   );
-}
-
-function failedResult(
-  call: ToolCall,
-  completedAt: string,
-  code: string,
-  message: string,
-): ToolResult {
-  return {
-    callId: call.id,
-    tool: call.tool,
-    status: "failed",
-    completedAt,
-    error: protocolError(code, message),
-  };
 }

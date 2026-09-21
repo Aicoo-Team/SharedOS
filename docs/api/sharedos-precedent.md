@@ -596,7 +596,7 @@ not happen and the request stays where it was.
 
 ### autoDecisionAuditEvent()
 
-> **autoDecisionAuditEvent**(`context`, `decision`, `createId?`): [`AuditEvent`](sharedos-core.md#auditevent)
+> **autoDecisionAuditEvent**(`context`, `decision`, `createId?`): `object`
 
 Defined in: [precedent/src/audit.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/audit.ts#L32)
 
@@ -643,7 +643,183 @@ nothing.
 
 #### Returns
 
-[`AuditEvent`](sharedos-core.md#auditevent)
+`object`
+
+##### action?
+
+> `optional` **action?**: `string`
+
+##### actor
+
+> **actor**: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}
+
+##### at
+
+> **at**: `string`
+
+##### authority
+
+> **authority**: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}
+
+##### authorityHash?
+
+> `optional` **authorityHash?**: `string`
+
+##### cause?
+
+> `optional` **cause?**: `string`
+
+##### consumed?
+
+> `optional` **consumed?**: `boolean`
+
+##### endedBy?
+
+> `optional` **endedBy?**: `"envelope"` \| `"runtime"`
+
+##### failClosed?
+
+> `optional` **failClosed?**: `boolean`
+
+##### grantId?
+
+> `optional` **grantId?**: `string`
+
+##### id
+
+> **id**: `string`
+
+##### messageId?
+
+> `optional` **messageId?**: `string`
+
+##### metadata?
+
+> `optional` **metadata?**: [`JsonObject`](sharedos-contracts.md#jsonobject)
+
+##### namespaceId
+
+> **namespaceId**: `string`
+
+##### operationId?
+
+> `optional` **operationId?**: `string`
+
+##### outcome
+
+> **outcome**: `"allowed"` \| `"denied"` \| `"succeeded"` \| `"failed"` \| `"escalated"`
+
+##### owner
+
+> **owner**: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}
+
+##### purpose
+
+> **purpose**: `string`
+
+##### reason?
+
+> `optional` **reason?**: `string`
+
+##### receiver?
+
+> `optional` **receiver?**: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}
+
+##### requestedAuthority?
+
+> `optional` **requestedAuthority?**: `object`
+
+###### requestedAuthority.capabilities
+
+> **capabilities**: `object`[]
+
+###### requestedAuthority.constraints?
+
+> `optional` **constraints?**: `object`
+
+###### requestedAuthority.constraints.delegationDepth?
+
+> `optional` **delegationDepth?**: `number`
+
+###### requestedAuthority.constraints.expiresAt?
+
+> `optional` **expiresAt?**: `string`
+
+###### requestedAuthority.constraints.maxUses?
+
+> `optional` **maxUses?**: `number`
+
+###### requestedAuthority.constraints.notBefore?
+
+> `optional` **notBefore?**: `string`
+
+###### requestedAuthority.constraints.purposes?
+
+> `optional` **purposes?**: `string`[]
+
+###### requestedAuthority.id
+
+> **id**: `string`
+
+###### requestedAuthority.metadata?
+
+> `optional` **metadata?**: [`JsonObject`](sharedos-contracts.md#jsonobject)
+
+###### requestedAuthority.namespaceId
+
+> **namespaceId**: `string`
+
+###### requestedAuthority.owner
+
+> **owner**: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}
+
+###### requestedAuthority.purpose
+
+> **purpose**: `string`
+
+###### requestedAuthority.requestedAt
+
+> **requestedAt**: `string`
+
+###### requestedAuthority.requester
+
+> **requester**: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}
+
+##### resource?
+
+> `optional` **resource?**: `object`
+
+###### resource.namespace
+
+> **namespace**: `string`
+
+###### resource.owner?
+
+> `optional` **owner?**: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}
+
+###### resource.path
+
+> **path**: `string`[]
+
+##### source?
+
+> `optional` **source?**: `"kernel"` \| `"envelope"`
+
+##### tool?
+
+> `optional` **tool?**: `string`
+
+##### traceId
+
+> **traceId**: `string`
+
+##### type
+
+> **type**: `"escalation.auto_decided"` \| `"authority.resolved"` \| `"authorization.checked"` \| `"escalation.requested"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`
+
+##### version
+
+> **version**: `"1"`
 
 ---
 

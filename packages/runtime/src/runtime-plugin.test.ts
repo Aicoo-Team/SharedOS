@@ -485,12 +485,14 @@ describe("RuntimePlugin security envelope", () => {
   });
 
   it("ends a turn that asked a human to decide as escalated, and records it", async () => {
-    const recordEscalation = vi.fn(async (access: AccessContext, reason: string) => ({
-      reason,
-      reviewer: access.owner,
-      requestedAt: access.now,
-      status: "pending" as const,
-    }));
+    const recordEscalation = vi.fn(
+      async (access: AccessContext, reason: string, _options?: { executionId?: string }) => ({
+        reason,
+        reviewer: access.owner,
+        requestedAt: access.now,
+        status: "pending" as const,
+      }),
+    );
     const plugin = runtime(async () => ({
       type: "escalate",
       reason: "issuing a grant is outside this agent's authority",
@@ -514,6 +516,9 @@ describe("RuntimePlugin security envelope", () => {
       });
     }
     expect(recordEscalation).toHaveBeenCalledOnce();
+    // The envelope says which execution the escalation ended, so the kernel's
+    // record of it joins to the turn's own terminal record on an id.
+    expect(recordEscalation.mock.calls[0]?.[2]).toMatchObject({ executionId: "execution-1" });
     expect(result.events.map(({ type }) => type)).toContain("turn.escalated");
   });
 

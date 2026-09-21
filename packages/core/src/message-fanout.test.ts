@@ -89,7 +89,7 @@ function setup(count: number, bounded = true) {
     }
   };
   const toolCauses = () =>
-    events.filter((event) => event.type === "tool.invoked").map((event) => event.metadata?.cause);
+    events.filter((event) => event.type === "tool.invoked").map((event) => event.cause);
   return { ask, grants, usage, deliveries, withTurn, toolCauses };
 }
 describe("recipient-scoped single-use request fanout", () => {

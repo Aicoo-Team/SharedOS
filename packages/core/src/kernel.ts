@@ -38,6 +38,7 @@ import {
 import {
   type AuditEvent,
   type AuditEventInput,
+  type AuditSource,
   type AuditSink,
   NoopAuditSink,
   auditEvent,
@@ -62,11 +63,7 @@ import {
   addressesEqual,
   isInfrastructureDenial,
 } from "./authorization.js";
-import {
-  reportContainedError,
-  type ProviderErrorContext,
-  type ProviderErrorReporter,
-} from "./diagnostics.js";
+import type { ProviderErrorContext, ProviderErrorReporter } from "./diagnostics.js";
 import { type CapabilityRequestPayload, mintCapabilityRequest } from "./capability-request.js";
 import {
   type MessageCapabilityResolver,
@@ -87,7 +84,14 @@ import { SPAN, measure, type SpanSink } from "./spans.js";
 import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
 import { DuplicateRegistrationError, MissingRegistrationError } from "./errors.js";
-import { deepFreeze, protocolError, raceAbort, readJsonObject } from "./internal.js";
+import {
+  deepFreeze,
+  protocolError,
+  raceAbort,
+  readJsonObject,
+  refusedToolResult,
+  reportProviderError,
+} from "./internal.js";
 
 export interface SharedOSKernelOptions {
   /**
@@ -126,7 +130,16 @@ export interface SharedOSKernelOptions {
    */
   readonly createAuditId?: () => string;
   readonly audit?: AuditSink;
-  /** Notification for audit failures that occur after a side effect. */
+  /**
+   * Notification for an audit write that failed after the effect it records.
+   *
+   * An operation's outcome, a turn's ending and an escalation are written once
+   * the answer is final; a sink that throws there is handed here and the caller
+   * receives the result it would have received. The writes made *before* an
+   * effect -- an authority load, a decision, a catalogue listing -- are not
+   * reported here: a sink that throws on one of those rejects the operation,
+   * and nothing runs.
+   */
   readonly onAuditError?: (error: unknown, event: AuditEvent) => void | Promise<void>;
   /**
    * Notification for a throw the kernel contained rather than propagated.
@@ -193,6 +206,16 @@ interface ToolResultAuditDetail {
 }
 
 export interface EscalationOptions extends KernelOperationOptions {
+  /**
+   * The execution the escalation ended, where the caller has one.
+   *
+   * Recorded as the event's `operationId`, which is what `turn.ended` carries
+   * for the same turn, so a reviewer's queue built from audit joins an
+   * escalation to its turn on an id rather than on `traceId` and time order.
+   * The execution envelope passes it; a host escalating outside a turn has
+   * none and omits it.
+   */
+  readonly executionId?: string;
   /**
    * The authority this escalation is asking for.
    *
@@ -292,6 +315,19 @@ export class SharedOSKernel {
   readonly #authority: TrustedAuthorityResolver;
   readonly #policySource: PolicySource | undefined;
   readonly #leases = new Map<string, AuthorityLease>();
+  /**
+   * What a message transport answered when it refused a `messages.request`.
+   *
+   * The caller is told `message_request_not_accepted` whatever the transport
+   * said, for the reason `tool_unavailable` is one code over several: the
+   * transport's vocabulary is the host's, and what it reveals is not the
+   * caller's to learn. The tool's audit record is not the caller, and names the
+   * transport's code as its `cause`. It travels here rather than through the
+   * handler's result, which is returned to the caller whole. Keyed on the
+   * frozen call the kernel hands the handler, so concurrent calls sharing an id
+   * cannot read each other's, and held weakly, so nothing outlives its call.
+   */
+  readonly #dispatchCauses = new WeakMap<ToolCall, string>();
   readonly #authorizer: CapabilityAuthorizer;
   readonly #resources: ResourceProviderRegistry;
   readonly #tools: ToolRegistry;
@@ -482,11 +518,17 @@ export class SharedOSKernel {
       throw new TypeError("escalation does not match the SharedOS v1 contract");
     }
 
-    await this.#audit.record(
+    // The outcome path, not the decision path. This is the turn's terminal
+    // record: the runtime has already elected to escalate and nothing is
+    // waiting on the write, so a sink that throws here is reported to
+    // `onAuditError` and the turn still ends `escalated`. Propagating it would
+    // end the turn `runtime_failed` and blame a plugin that did nothing wrong.
+    await this.#recordOutcome(
       this.#auditEvent(context, {
         type: "escalation.requested",
         outcome: "escalated",
         reason: "escalation_requested",
+        ...(options.executionId === undefined ? {} : { operationId: options.executionId }),
         metadata: {
           detail: parsed.data.reason,
           reviewer: parsed.data.reviewer,
@@ -540,13 +582,10 @@ export class SharedOSKernel {
         outcome: turn.status === "cancelled" ? "failed" : turn.status,
         operationId: turn.executionId,
         ...(turn.reasonCode === undefined ? {} : { reason: turn.reasonCode }),
-        metadata: {
-          source: "envelope",
-          ...(turn.endedBy === undefined ? {} : { endedBy: turn.endedBy }),
-          ...(turn.reasonCode !== undefined && isInfrastructureDenial(turn.reasonCode)
-            ? { failClosed: true }
-            : {}),
-        },
+        // No `source`. It would say who recorded, which is always the envelope;
+        // who *ended* the turn is `endedBy`, and that is the fact a reader wants.
+        ...(turn.endedBy === undefined ? {} : { endedBy: turn.endedBy }),
+        ...failClosedFor(turn.reasonCode),
       }),
     );
   }
@@ -560,7 +599,7 @@ export class SharedOSKernel {
    * all, because the boundary that refused them does not own one.
    *
    * Recorded as `tool.invoked`, because that is what it is: a tool call that was
-   * attempted and denied. `metadata.source` says `envelope`, which is the fact
+   * attempted and denied. `source` says `envelope`, which is the fact
    * that stops being inferable the moment this method exists (ADR 0023).
    */
   async recordRefusedCall(
@@ -570,20 +609,14 @@ export class SharedOSKernel {
   ): Promise<void> {
     options.signal?.throwIfAborted();
     context = structuredClone(context);
-    await this.#recordOutcome(
-      this.#auditEvent(context, {
-        type: "tool.invoked",
-        outcome: "denied",
-        operationId: call.callId,
-        tool: call.tool,
-        reason: call.reasonCode,
-        metadata: {
-          source: "envelope",
-          ...(call.cause === undefined ? {} : { cause: call.cause }),
-          ...(isInfrastructureDenial(call.reasonCode) ? { failClosed: true } : {}),
-        },
-      }),
-    );
+    await this.#recordToolInvoked(context, {
+      source: "envelope",
+      callId: call.callId,
+      tool: call.tool,
+      outcome: "denied",
+      reasonCode: call.reasonCode,
+      ...(call.cause === undefined ? {} : { cause: call.cause }),
+    });
   }
 
   /**
@@ -765,18 +798,18 @@ export class SharedOSKernel {
     context = structuredClone(context);
     const authority = await this.#resolveAuthority(context, options.signal);
     if (authority.status !== "resolved") {
-      await this.#audit.record(
+      await this.#recordDecision(
         this.#auditEvent(context, {
           type: "tool.catalog.listed",
           outcome: "denied",
           reason: "authority_unavailable",
+          source: "kernel",
+          failClosed: true,
           metadata: {
             catalogHash: this.#holdCatalogHash(context, await catalogHash([])),
             enabledNamespaces: [...context.enabledToolNamespaces],
             withheldCount: 0,
-            failClosed: true,
             authority: authority.code,
-            source: "kernel",
           },
         }),
       );
@@ -812,11 +845,13 @@ export class SharedOSKernel {
     }
 
     const { hostPolicy } = authority.authority;
-    await this.#audit.record(
+    await this.#recordDecision(
       this.#auditEvent(context, {
         type: "tool.catalog.listed",
         outcome: "succeeded",
         authorityHash: authority.authority.snapshot.hash,
+        source: "kernel",
+        ...(withheldByOutage ? { failClosed: true } : {}),
         metadata: {
           // What the listing was computed from and what it came to, as
           // identifiers and a count rather than as names. `catalogHash` is the
@@ -840,8 +875,6 @@ export class SharedOSKernel {
           enabledNamespaces: [...context.enabledToolNamespaces],
           ...(hostPolicy?.status === "loaded" ? { hostPolicyVersion: hostPolicy.version } : {}),
           withheldCount,
-          ...(withheldByOutage ? { failClosed: true } : {}),
-          source: "kernel",
         },
       }),
     );
@@ -881,7 +914,7 @@ export class SharedOSKernel {
     const tools = await this.#resolveToolRegistry(context, options.signal);
     const catalog = tools.namespaceCatalog(context.enabledToolNamespaces);
 
-    await this.#audit.record(
+    await this.#recordDecision(
       this.#auditEvent(context, {
         type: "tool.namespace.catalog.listed",
         outcome: "succeeded",
@@ -978,8 +1011,9 @@ export class SharedOSKernel {
     context = structuredClone(context);
     call = structuredClone(call);
     if (call.traceId !== context.traceId) {
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         "trace_mismatch",
         "Tool call traceId does not match its access context",
@@ -990,8 +1024,9 @@ export class SharedOSKernel {
 
     const authority = await this.#resolveAuthority(context, options.signal);
     if (authority.status !== "resolved") {
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         "authority_unavailable",
         "Authority could not be loaded from its trusted source",
@@ -1023,8 +1058,9 @@ export class SharedOSKernel {
         operationId: call.id,
         tool: call.tool,
       });
-      const result = failedToolResult(
+      const result = refusedToolResult(
         call,
+        "failed",
         context.now,
         "tool_catalog_unavailable",
         "The tool catalog could not be resolved",
@@ -1035,8 +1071,9 @@ export class SharedOSKernel {
 
     const handler = tools.get(call.tool);
     if (handler === undefined) {
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         "tool_unavailable",
         "The requested tool is not available in this access context",
@@ -1046,8 +1083,9 @@ export class SharedOSKernel {
     }
 
     if (!context.enabledToolNamespaces.includes(handler.definition.namespace)) {
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         "tool_unavailable",
         "The requested tool is not available in this access context",
@@ -1087,8 +1125,9 @@ export class SharedOSKernel {
         // and a reader with two turns on one sink joins the wrong pair.
         call.id,
       );
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         "tool_unavailable",
         "The requested tool is not available in this access context",
@@ -1122,8 +1161,9 @@ export class SharedOSKernel {
         operationId: call.id,
         tool: call.tool,
       });
-      const result = failedToolResult(
+      const result = refusedToolResult(
         call,
+        "failed",
         context.now,
         "invalid_tool_arguments",
         "The requested tool arguments are invalid",
@@ -1143,8 +1183,9 @@ export class SharedOSKernel {
         operationId: call.id,
         tool: call.tool,
       });
-      const result = failedToolResult(
+      const result = refusedToolResult(
         call,
+        "failed",
         context.now,
         "tool_requirement_resolution_failed",
         "The tool could not resolve its required capability",
@@ -1168,8 +1209,9 @@ export class SharedOSKernel {
         false,
         call.id,
       );
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         crossing.reasonCode,
         "The requested resource lies outside this access context's world",
@@ -1179,8 +1221,9 @@ export class SharedOSKernel {
     }
 
     if (!requirementIsWithinDefinition(handler.definition, requirement, context)) {
-      const result = failedToolResult(
+      const result = refusedToolResult(
         call,
+        "failed",
         context.now,
         "invalid_tool_requirement",
         "The tool resolved a capability outside its declared boundary",
@@ -1197,8 +1240,9 @@ export class SharedOSKernel {
       call.id,
     );
     if (!decision.allowed) {
-      const result = deniedToolResult(
+      const result = refusedToolResult(
         call,
+        "denied",
         context.now,
         decision.reasonCode,
         "The access context does not grant this tool capability",
@@ -1207,45 +1251,40 @@ export class SharedOSKernel {
       return result;
     }
 
-    let result: ToolResult;
-    try {
-      options.signal?.throwIfAborted();
-      const candidate = await measure(this.#spans, SPAN.TOOL_HANDLER, (span) => {
-        span.set("callId", call.id);
-        span.set("tool", call.tool);
-        return handler.invoke(context, parsedCall, options.signal ?? neverAbortedSignal());
-      });
-      const parsed = ToolResultSchema.safeParse(candidate);
-      result =
-        parsed.success && parsed.data.callId === call.id && parsed.data.tool === call.tool
+    const result = await this.#invokePort<ToolResult>({
+      context,
+      signal: options.signal,
+      invoke: () =>
+        measure(this.#spans, SPAN.TOOL_HANDLER, (span) => {
+          span.set("callId", call.id);
+          span.set("tool", call.tool);
+          return handler.invoke(context, parsedCall, options.signal ?? neverAbortedSignal());
+        }),
+      accept: (candidate) => {
+        const parsed = ToolResultSchema.safeParse(candidate);
+        return parsed.success && parsed.data.callId === call.id && parsed.data.tool === call.tool
           ? parsed.data
-          : failedToolResult(
-              call,
-              context.now,
-              "invalid_tool_result",
-              "The tool returned an invalid protocol result",
-            );
-    } catch (error) {
-      options.signal?.throwIfAborted();
-      this.#reportProviderError(error, context, {
+          : undefined;
+      },
+      refuse: (code, message) => refusedToolResult(call, "failed", context.now, code, message),
+      invalid: ["invalid_tool_result", "The tool returned an invalid protocol result"],
+      failed: ["tool_execution_failed", "The tool failed while executing"],
+      operation: {
         kind: "tool",
-        reasonCode: "tool_execution_failed",
         operationId: call.id,
         tool: call.tool,
         resource: requirement.resource,
         action: requirement.action,
-      });
-      result = failedToolResult(
-        call,
-        context.now,
-        "tool_execution_failed",
-        "The tool failed while executing",
-      );
-    }
+      },
+    });
 
+    const dispatchCause = this.#dispatchCauses.get(parsedCall);
     await this.#recordToolResult(context, call, result, {
       ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
       requirement,
+      ...(result.status === "succeeded" || dispatchCause === undefined
+        ? {}
+        : { cause: dispatchCause }),
     });
     return result;
   }
@@ -1267,8 +1306,9 @@ export class SharedOSKernel {
     };
     const authority = await this.#resolveAuthority(context, options.signal);
     if (authority.status !== "resolved") {
-      const result = deniedResourceResult(
+      const result = refusedResourceResult(
         request,
+        "denied",
         context.now,
         "authority_unavailable",
         "Authority could not be loaded from its trusted source",
@@ -1284,8 +1324,9 @@ export class SharedOSKernel {
       true,
     );
     if (!decision.allowed) {
-      const result = deniedResourceResult(
+      const result = refusedResourceResult(
         request,
+        "denied",
         context.now,
         decision.reasonCode,
         "The access context does not grant this resource capability",
@@ -1297,45 +1338,42 @@ export class SharedOSKernel {
     const provider = this.#resources.get(request.resource.namespace);
     let result: ResourceResult;
     if (provider === undefined) {
-      result = failedResourceResult(
+      result = refusedResourceResult(
         request,
+        "failed",
         context.now,
         "resource_provider_not_found",
         "No provider is registered for the requested resource namespace",
       );
     } else {
-      try {
-        options.signal?.throwIfAborted();
-        const candidate = await provider.invoke(
-          toResourceOperation(context, request),
-          options.signal ?? neverAbortedSignal(),
-        );
-        const parsed = ResourceResultSchema.safeParse(candidate);
-        result =
-          parsed.success && parsed.data.operationId === request.operationId
+      result = await this.#invokePort<ResourceResult>({
+        context,
+        signal: options.signal,
+        invoke: () =>
+          provider.invoke(
+            toResourceOperation(context, request),
+            options.signal ?? neverAbortedSignal(),
+          ),
+        accept: (candidate) => {
+          const parsed = ResourceResultSchema.safeParse(candidate);
+          return parsed.success && parsed.data.operationId === request.operationId
             ? parsed.data
-            : failedResourceResult(
-                request,
-                context.now,
-                "invalid_resource_result",
-                "The resource provider returned an invalid protocol result",
-              );
-      } catch (error) {
-        options.signal?.throwIfAborted();
-        this.#reportProviderError(error, context, {
+            : undefined;
+        },
+        refuse: (code, message) =>
+          refusedResourceResult(request, "failed", context.now, code, message),
+        invalid: [
+          "invalid_resource_result",
+          "The resource provider returned an invalid protocol result",
+        ],
+        failed: ["resource_execution_failed", "The resource provider failed while executing"],
+        operation: {
           kind: "resource",
-          reasonCode: "resource_execution_failed",
           operationId: request.operationId,
           resource: request.resource,
           action: request.action,
-        });
-        result = failedResourceResult(
-          request,
-          context.now,
-          "resource_execution_failed",
-          "The resource provider failed while executing",
-        );
-      }
+        },
+      });
     }
 
     await this.#recordResourceResult(context, request, result, decision.matchedGrantId);
@@ -1466,14 +1504,19 @@ export class SharedOSKernel {
           createMessageId: this.#createMessageId,
           reportProviderError: (error, access, operation) =>
             this.#reportProviderError(error, access, operation),
-          deliverAuthorizedMessage: (access, envelope, operationSignal, operationId) =>
-            this.#deliverAuthorizedMessage(
+          deliverAuthorizedMessage: async (access, envelope, operationSignal, call) => {
+            const delivery = await this.#deliverAuthorizedMessage(
               access,
               envelope,
               operationSignal,
               undefined,
-              operationId,
-            ),
+              call.id,
+            );
+            if (delivery.status === "denied" || delivery.status === "failed") {
+              this.#dispatchCauses.set(call, delivery.error.code);
+            }
+            return delivery;
+          },
         }),
       );
     }
@@ -1537,8 +1580,9 @@ export class SharedOSKernel {
       context.purpose !== envelope.purpose ||
       context.traceId !== envelope.traceId
     ) {
-      const result = deniedMessageResult(
+      const result = refusedMessageResult(
         envelope,
+        "denied",
         context.now,
         "message_context_mismatch",
         "Message sender, purpose, or trace does not match its access context",
@@ -1558,8 +1602,9 @@ export class SharedOSKernel {
         kind: "message",
         reasonCode: "message_requirement_resolution_failed",
       });
-      const result = failedMessageResult(
+      const result = refusedMessageResult(
         envelope,
+        "failed",
         context.now,
         "message_requirement_resolution_failed",
         "The message capability requirement could not be resolved",
@@ -1569,8 +1614,9 @@ export class SharedOSKernel {
     }
     const authority = await this.#resolveAuthority(context, options.signal);
     if (authority.status !== "resolved") {
-      const result = deniedMessageResult(
+      const result = refusedMessageResult(
         envelope,
+        "denied",
         context.now,
         "authority_unavailable",
         "Authority could not be loaded from its trusted source",
@@ -1581,8 +1627,9 @@ export class SharedOSKernel {
 
     const decision = await this.#authorize(context, authority.authority, requirement, true);
     if (!decision.allowed) {
-      const result = deniedMessageResult(
+      const result = refusedMessageResult(
         envelope,
+        "denied",
         context.now,
         decision.reasonCode,
         "The access context does not grant permission to send this message",
@@ -1610,8 +1657,9 @@ export class SharedOSKernel {
     const trustedContext = deepFreeze(structuredClone(context));
     const trustedEnvelope = deepFreeze(structuredClone(envelope));
     if (this.#messageTransport === undefined) {
-      const result = failedMessageResult(
+      const result = refusedMessageResult(
         trustedEnvelope,
+        "failed",
         trustedContext.now,
         "message_transport_not_configured",
         "No message transport is configured",
@@ -1626,38 +1674,31 @@ export class SharedOSKernel {
       return result;
     }
 
-    let result: MessageDeliveryResult;
-    try {
-      signal.throwIfAborted();
-      const receipt = await this.#messageTransport.deliver(
-        structuredClone(trustedContext),
-        structuredClone(trustedEnvelope),
-        signal,
-      );
-      const parsed = MessageDeliveryResultSchema.safeParse(receipt);
-      result =
-        parsed.success && parsed.data.messageId === trustedEnvelope.id
+    const transport = this.#messageTransport;
+    const result = await this.#invokePort<MessageDeliveryResult>({
+      context: trustedContext,
+      signal,
+      invoke: () =>
+        transport.deliver(
+          structuredClone(trustedContext),
+          structuredClone(trustedEnvelope),
+          signal,
+        ),
+      accept: (receipt) => {
+        const parsed = MessageDeliveryResultSchema.safeParse(receipt);
+        return parsed.success && parsed.data.messageId === trustedEnvelope.id
           ? parsed.data
-          : failedMessageResult(
-              trustedEnvelope,
-              trustedContext.now,
-              "invalid_message_receipt",
-              "The message transport returned a mismatched receipt",
-            );
-    } catch (error) {
-      signal.throwIfAborted();
-      this.#reportProviderError(error, trustedContext, {
-        kind: "message",
-        reasonCode: "message_delivery_failed",
-        ...(operationId === undefined ? {} : { operationId }),
-      });
-      result = failedMessageResult(
-        trustedEnvelope,
-        trustedContext.now,
+          : undefined;
+      },
+      refuse: (code, message) =>
+        refusedMessageResult(trustedEnvelope, "failed", trustedContext.now, code, message),
+      invalid: ["invalid_message_receipt", "The message transport returned a mismatched receipt"],
+      failed: [
         "message_delivery_failed",
         "The message transport failed while delivering the message",
-      );
-    }
+      ],
+      operation: { kind: "message", ...(operationId === undefined ? {} : { operationId }) },
+    });
 
     await this.#recordMessageResult(trustedContext, trustedEnvelope, result, grantId, operationId);
     return result;
@@ -1800,7 +1841,7 @@ export class SharedOSKernel {
       resolved.status === "resolved" && hostPolicy !== undefined
         ? { status: "resolved", authority: { ...resolved.authority, hostPolicy } }
         : resolved;
-    await this.#audit.record(
+    await this.#recordDecision(
       this.#auditEvent(
         context,
         resolution.status === "resolved"
@@ -1819,8 +1860,8 @@ export class SharedOSKernel {
               type: "authority.resolved",
               outcome: "failed",
               reason: "authority_unavailable",
+              failClosed: true,
               metadata: {
-                failClosed: true,
                 authority: resolution.code,
                 hostCeiling: this.#hostCeilingState(),
                 hostPolicy: hostPolicyState(hostPolicy),
@@ -1864,28 +1905,20 @@ export class SharedOSKernel {
       loaded = await this.#policySource.load(structuredClone(context), signal);
     } catch (error) {
       signal.throwIfAborted();
-      this.#reportPolicyOutage(context, error);
+      this.#reportProviderError(error, context, POLICY_OUTAGE);
       return { status: "unavailable" };
     }
     if (!isLoadedPolicy(loaded)) {
-      this.#reportPolicyOutage(
-        context,
+      this.#reportProviderError(
         new TypeError(
           "A policy source must resolve to { policy, version } with a non-empty version",
         ),
+        context,
+        POLICY_OUTAGE,
       );
       return { status: "unavailable" };
     }
     return { status: "loaded", policy: loaded.policy, version: loaded.version };
-  }
-
-  #reportPolicyOutage(context: AccessContext, error: unknown): void {
-    reportContainedError(this.#onProviderError, error, {
-      kind: "policy",
-      reasonCode: "host_policy_unavailable",
-      traceId: context.traceId,
-      namespaceId: context.namespaceId,
-    });
   }
 
   /**
@@ -1930,7 +1963,7 @@ export class SharedOSKernel {
     operationId?: string,
     explanation?: AuthorizationExplanation,
   ): Promise<void> {
-    await this.#audit.record(
+    await this.#recordDecision(
       this.#auditEvent(context, {
         type: "authorization.checked",
         outcome: decision.allowed ? "allowed" : "denied",
@@ -1940,21 +1973,18 @@ export class SharedOSKernel {
         ...(operationId === undefined ? {} : { operationId }),
         ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
         ...(!decision.allowed ? { reason: decision.reasonCode } : {}),
-        metadata: {
-          // A decision may carry metadata of its own: a host ceiling's rule,
-          // or the authorizer's delegation detail on a broken chain. The two
-          // keys the kernel states are removed from it rather than overwritten.
-          // Order alone would already win for `consumed`, but not for
-          // `failClosed`, which is only ever *set* on an infrastructure denial:
-          // a port's `failClosed: false` would stand on every other denial, and
-          // a `failClosed: true` would move a deliberate refusal out of the
-          // policy counts it belongs in. Both are stripped, so the rule is one
-          // rule rather than one that happens to hold for one of the keys.
-          ...decisionMetadata(decision.metadata),
-          consumed: consume,
-          ...(isInfrastructureDenial(decision.reasonCode) ? { failClosed: true } : {}),
+        // Fields, so nothing a port supplies can stand in for them. A decision
+        // may carry metadata of its own -- a host ceiling's rule, or the
+        // authorizer's delegation detail on a broken chain -- and while these
+        // two lived in the same bag a port's `failClosed: true` would have
+        // moved a deliberate refusal out of the policy counts it belongs in
+        // (ADR 0023).
+        consumed: consume,
+        ...(decision.allowed ? {} : failClosedFor(decision.reasonCode)),
+        ...metadataOf({
+          ...decision.metadata,
           ...(explanation === undefined ? {} : explanationMetadata(explanation)),
-        },
+        }),
       }),
     );
   }
@@ -1965,44 +1995,56 @@ export class SharedOSKernel {
     result: ToolResult,
     detail: ToolResultAuditDetail = {},
   ): Promise<void> {
-    const { grantId, requirement, cause } = detail;
+    await this.#recordToolInvoked(context, {
+      source: "kernel",
+      callId: call.id,
+      tool: call.tool,
+      outcome: result.status,
+      ...(result.status === "succeeded" ? {} : { reasonCode: result.error.code }),
+      ...detail,
+    });
+  }
+
+  /**
+   * The one `tool.invoked` record, whichever boundary answered the call.
+   *
+   * The kernel records the calls it decided and, through `recordRefusedCall`,
+   * the ones the envelope refused before asking it. They are one event type
+   * and were built twice, which is how the envelope's came to lack the
+   * catalogue the kernel's carried.
+   */
+  async #recordToolInvoked(
+    context: AccessContext,
+    invoked: ToolResultAuditDetail & {
+      readonly source: AuditSource;
+      readonly callId: string;
+      readonly tool: string;
+      readonly outcome: "succeeded" | "denied" | "failed";
+      readonly reasonCode?: string;
+    },
+  ): Promise<void> {
+    const { grantId, requirement } = invoked;
+    // Which catalogue answered it. The turn resolves one and holds it
+    // (ADR 0026), so this is the same value the turn's `tool.catalog.listed`
+    // carries, and the two join on it: a reader can say which calls a
+    // catalogue produced -- and which guessed names it never offered --
+    // without inferring it from time order. Absent on a call whose turn never
+    // listed -- a turn of one operation, or a host that invokes without
+    // discovering -- because there is no catalogue the caller was shown to
+    // name.
     const catalogueServed = this.#leases.get(turnAuthorityKey(context))?.catalogHash;
     await this.#recordOutcome(
       this.#auditEvent(context, {
         type: "tool.invoked",
-        outcome: result.status,
-        operationId: call.id,
-        tool: call.tool,
+        outcome: invoked.outcome,
+        operationId: invoked.callId,
+        tool: invoked.tool,
         ...(requirement === undefined
           ? {}
-          : {
-              resource: requirement.resource,
-              action: requirement.action,
-            }),
+          : { resource: requirement.resource, action: requirement.action }),
         ...(grantId === undefined ? {} : { grantId }),
-        ...(result.status === "succeeded" ? {} : { reason: result.error.code }),
-        metadata: {
-          // Which boundary refused. Free to infer until the envelope started
-          // recording too -- anything in audit was the kernel's -- and a fact
-          // with nowhere to live the moment that stopped being true (ADR 0023).
-          source: "kernel",
-          // Which catalogue answered it. The turn resolves one and holds it
-          // (ADR 0026), so this is the same value the turn's `tool.catalog.listed`
-          // carries, and the two join on it: a reader can say which calls a
-          // catalogue produced without inferring it from time order. Absent on a
-          // call whose turn never listed -- a turn of one operation, or a host
-          // that invokes without discovering -- because there is no catalogue
-          // the caller was shown to name.
-          ...(catalogueServed === undefined ? {} : { catalogHash: catalogueServed }),
-          // `tool_unavailable` is one code over several situations by design,
-          // so the model cannot tell them apart. An audit reader is not the
-          // model. `reason` stays the code the caller was given and this says
-          // which one it was.
-          ...(cause === undefined ? {} : { cause }),
-          ...(result.status !== "succeeded" && isInfrastructureDenial(result.error.code)
-            ? { failClosed: true }
-            : {}),
-        },
+        ...operationFacts(invoked.source, invoked.reasonCode, invoked.cause),
+        ...metadataOf(catalogueServed === undefined ? {} : { catalogHash: catalogueServed }),
       }),
     );
   }
@@ -2021,8 +2063,7 @@ export class SharedOSKernel {
         resource: request.resource,
         action: request.action,
         ...(grantId === undefined ? {} : { grantId }),
-        ...(result.status === "succeeded" ? {} : { reason: result.error.code }),
-        metadata: { source: "kernel" },
+        ...operationFacts("kernel", result.status === "succeeded" ? undefined : result.error.code),
       }),
     );
   }
@@ -2045,12 +2086,48 @@ export class SharedOSKernel {
         receiver: envelope.receiver,
         ...(operationId === undefined ? {} : { operationId }),
         ...(grantId === undefined ? {} : { grantId }),
-        ...(result.status === "denied" || result.status === "failed"
-          ? { reason: result.error.code }
-          : {}),
-        metadata: { source: "kernel" },
+        ...operationFacts(
+          "kernel",
+          result.status === "denied" || result.status === "failed" ? result.error.code : undefined,
+        ),
       }),
     );
+  }
+
+  /**
+   * Call one host port, and answer for it when it cannot be believed.
+   *
+   * The three ports that do an operation's work -- a tool handler, a resource
+   * provider, a message transport -- are called the same way: not at all once
+   * the caller has stopped, then validated against the contract and matched to
+   * the operation that asked, and contained when they throw. An abort is
+   * re-thrown ahead of the containment, so a caller that stopped the work is
+   * never reported as a port that failed. Each code is stated once here and
+   * reaches both the result and the host's diagnostic sink, which is what lets
+   * a log line join to audit on it.
+   */
+  async #invokePort<Result>(port: {
+    readonly context: AccessContext;
+    readonly signal: AbortSignal | undefined;
+    readonly invoke: () => Promise<unknown>;
+    /** The port's answer when it is well-formed and names this operation. */
+    readonly accept: (candidate: unknown) => Result | undefined;
+    readonly refuse: (code: string, message: string) => Result;
+    readonly invalid: readonly [code: string, message: string];
+    readonly failed: readonly [code: string, message: string];
+    readonly operation: Omit<ProviderErrorContext, "traceId" | "namespaceId" | "reasonCode">;
+  }): Promise<Result> {
+    try {
+      port.signal?.throwIfAborted();
+      return port.accept(await port.invoke()) ?? port.refuse(...port.invalid);
+    } catch (error) {
+      port.signal?.throwIfAborted();
+      this.#reportProviderError(error, port.context, {
+        ...port.operation,
+        reasonCode: port.failed[0],
+      });
+      return port.refuse(...port.failed);
+    }
   }
 
   /**
@@ -2066,13 +2143,33 @@ export class SharedOSKernel {
     context: AccessContext,
     operation: Omit<ProviderErrorContext, "traceId" | "namespaceId">,
   ): void {
-    reportContainedError(this.#onProviderError, error, {
-      ...operation,
-      traceId: context.traceId,
-      namespaceId: context.namespaceId,
-    });
+    reportProviderError(this.#onProviderError, error, context, operation);
   }
 
+  /**
+   * Write a record that comes before an effect, and let a failure refuse it.
+   *
+   * An authority load, an authorization decision and a catalogue listing are
+   * each written before anything acts on them. A sink that throws here rejects
+   * the operation: nothing has run, and a decision that was never recorded is
+   * not one SharedOS will act on. `onAuditError` is not called, because the
+   * caller is handed the failure itself.
+   *
+   * This and `#recordOutcome` are the only two callers of
+   * the sink, so which rule a write follows is visible at its call site.
+   */
+  async #recordDecision(event: AuditEvent): Promise<void> {
+    await this.#audit.record(event);
+  }
+
+  /**
+   * Write a record that comes after an effect, and never let a failure change it.
+   *
+   * An operation's outcome, a turn's ending, an escalation. The effect has
+   * committed or the answer is final, so a sink that throws is handed to
+   * `onAuditError` and the caller receives the result it would have received:
+   * returning a failure here would invite a retry of something already done.
+   */
   async #recordOutcome(event: AuditEvent): Promise<void> {
     try {
       await this.#audit.record(event);
@@ -2086,20 +2183,39 @@ export class SharedOSKernel {
   }
 }
 
+/** What a policy source that could not be read is reported as; it names no operation. */
+const POLICY_OUTAGE = { kind: "policy", reasonCode: "host_policy_unavailable" } as const;
+
 /**
- * Metadata the decision itself carried, less the two keys the kernel states.
+ * What the kernel states about one operation event, in the fields that carry it.
  *
- * Two things produce it, and naming only the newer one would be misleading: a
- * `HostCeiling` saying which rule refused, and the authorizer's own delegation
- * detail on a broken chain. The latter is the reason this is a behaviour change
- * as well as a guard -- until now no decision metadata reached audit at all.
+ * One builder for `tool.invoked`, `resource.invoked` and `message.sent`: who
+ * answered, the code the caller was given, which situation a coarse code stood
+ * in for, and whether SharedOS failed closed. The three were written apart, and
+ * the resource and message records came to omit `failClosed` on exactly the
+ * denials a host is told to filter on.
  */
-function decisionMetadata(metadata: JsonObject | undefined): JsonObject {
-  if (metadata === undefined) {
-    return {};
-  }
-  const { consumed: _consumed, failClosed: _failClosed, ...rest } = metadata;
-  return rest;
+function operationFacts(
+  source: AuditSource,
+  reasonCode: string | undefined,
+  cause?: string,
+): Pick<AuditEventInput, "source" | "reason" | "cause" | "failClosed"> {
+  return {
+    source,
+    ...(reasonCode === undefined ? {} : { reason: reasonCode }),
+    ...(cause === undefined ? {} : { cause }),
+    ...failClosedFor(reasonCode),
+  };
+}
+
+/** `failClosed`, present only on a code that is SharedOS failing to establish a fact. */
+function failClosedFor(reasonCode: string | undefined): Pick<AuditEventInput, "failClosed"> {
+  return reasonCode !== undefined && isInfrastructureDenial(reasonCode) ? { failClosed: true } : {};
+}
+
+/** `metadata`, present only when there is something in it. */
+function metadataOf(metadata: JsonObject): Pick<AuditEventInput, "metadata"> {
+  return Object.keys(metadata).length === 0 ? {} : { metadata };
 }
 
 /**
@@ -2125,87 +2241,38 @@ function scopeFor(resolution: AuthorityResolution, release: () => void): TurnAut
   };
 }
 
-function deniedToolResult(
-  call: ToolCall,
-  completedAt: string,
-  code: string,
-  message: string,
-): ToolResult {
-  return {
-    callId: call.id,
-    tool: call.tool,
-    status: "denied",
-    completedAt,
-    error: protocolError(code, message),
-  };
-}
-
-function failedToolResult(
-  call: ToolCall,
-  completedAt: string,
-  code: string,
-  message: string,
-): ToolResult {
-  return {
-    callId: call.id,
-    tool: call.tool,
-    status: "failed",
-    completedAt,
-    error: protocolError(code, message),
-  };
-}
-
-function deniedResourceResult(
+/**
+ * A resource operation answered without its provider's result.
+ *
+ * `refusedToolResult` in `internal.ts` is the tool-shaped one; these two differ
+ * from it only in the id they carry and, for a message, in what the instant is
+ * called.
+ */
+function refusedResourceResult(
   request: ResourceInvocationRequest,
+  status: "denied" | "failed",
   completedAt: string,
   code: string,
   message: string,
 ): ResourceResult {
   return {
     operationId: request.operationId,
-    status: "denied",
+    status,
     completedAt,
     error: protocolError(code, message),
   };
 }
 
-function failedResourceResult(
-  request: ResourceInvocationRequest,
-  completedAt: string,
-  code: string,
-  message: string,
-): ResourceResult {
-  return {
-    operationId: request.operationId,
-    status: "failed",
-    completedAt,
-    error: protocolError(code, message),
-  };
-}
-
-function deniedMessageResult(
+function refusedMessageResult(
   envelope: MessageEnvelope,
+  status: "denied" | "failed",
   completedAt: string,
   code: string,
   message: string,
 ): MessageDeliveryResult {
   return {
     messageId: envelope.id,
-    status: "denied",
-    timestamp: completedAt,
-    error: protocolError(code, message),
-  };
-}
-
-function failedMessageResult(
-  envelope: MessageEnvelope,
-  completedAt: string,
-  code: string,
-  message: string,
-): MessageDeliveryResult {
-  return {
-    messageId: envelope.id,
-    status: "failed",
+    status,
     timestamp: completedAt,
     error: protocolError(code, message),
   };

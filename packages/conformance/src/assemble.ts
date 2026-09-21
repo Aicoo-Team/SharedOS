@@ -321,7 +321,7 @@ function decisions(audit: readonly AuditEvent[]): DecisionRecord[] {
       ...(event.action === undefined ? {} : { action: event.action }),
       ...(event.grantId === undefined ? {} : { grantId: event.grantId }),
       ...(event.authorityHash === undefined ? {} : { authorityHash: event.authorityHash }),
-      failClosed: event.reason !== undefined && isInfrastructureDenial(event.reason),
+      failClosed: event.failClosed === true,
     }));
 }
 
@@ -350,7 +350,7 @@ function operations(
       // the event rather than from the fact that an event exists is what keeps
       // `refusedBy` a claim about who refused rather than about who happened to
       // own an audit sink (ADR 0023).
-      source: event.metadata?.["source"] === "envelope" ? "envelope" : "kernel",
+      source: event.source ?? "kernel",
       outcome:
         event.outcome === "succeeded"
           ? "succeeded"
@@ -363,7 +363,7 @@ function operations(
       ...(event.action === undefined ? {} : { action: event.action }),
       ...(event.grantId === undefined ? {} : { grantId: event.grantId }),
       ...(event.reason === undefined ? {} : { reasonCode: event.reason }),
-      failClosed: event.reason !== undefined && isInfrastructureDenial(event.reason),
+      failClosed: event.failClosed === true,
     });
   }
 

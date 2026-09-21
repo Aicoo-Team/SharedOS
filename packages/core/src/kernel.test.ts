@@ -6,6 +6,7 @@ import type {
   CapabilityRequest,
   CapabilityGrant,
   JsonObject,
+  MessageDeliveryResult,
   MessageEnvelope,
   ResourceRef,
   ToolCall,
@@ -1783,6 +1784,84 @@ describe("SharedOSKernel messaging and audit", () => {
     },
   );
 
+  it.each([
+    [
+      "refuses with a code of its own",
+      async (
+        _access: AccessContext,
+        envelope: MessageEnvelope,
+      ): Promise<MessageDeliveryResult> => ({
+        messageId: envelope.id,
+        status: "denied",
+        timestamp: NOW,
+        error: { code: "route_lease_revoked", message: "The recipient's route is gone" },
+      }),
+      "route_lease_revoked",
+    ],
+    [
+      "throws",
+      async (): Promise<MessageDeliveryResult> => {
+        throw new Error("transport socket closed");
+      },
+      "message_delivery_failed",
+    ],
+  ] as const)(
+    "names what the transport answered as the tool record's cause when it %s",
+    async (_label, deliver, transportCode) => {
+      const events: AuditEvent[] = [];
+      const kernel = kernelWith([grant("grant-tina", messageResource(), ["send"])], {
+        audit: { record: async (event) => void events.push(event) },
+        messageTransport: { deliver },
+        messageRequestRouter: { resolveReply: async (_access, request) => replyTo(request) },
+      });
+
+      const result = await kernel.invokeTool(context(["messages"]), messageRequestCall());
+
+      // The caller learns the request was not accepted and nothing about why:
+      // the transport's vocabulary is the host's. The trail is not the caller.
+      expect(result).toMatchObject({
+        status: "failed",
+        error: { code: "message_request_not_accepted" },
+      });
+      expect(JSON.stringify(result)).not.toContain(transportCode);
+
+      // Until this, only the sibling `message.sent` carried the transport's
+      // code, and a reader had to join the two by call id to say why a request
+      // was refused. The tool's own record says it now, in the field every
+      // other coarse code already uses.
+      const invoked = events.find(({ type }) => type === "tool.invoked");
+      expect(invoked).toMatchObject({
+        reason: "message_request_not_accepted",
+        cause: transportCode,
+        operationId: "untrusted-model-call-1",
+      });
+      expect(events.find(({ type }) => type === "message.sent")).toMatchObject({
+        reason: transportCode,
+        operationId: "untrusted-model-call-1",
+      });
+    },
+  );
+
+  it("names no cause on a request the transport accepted", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([grant("grant-tina", messageResource(), ["send"])], {
+      audit: { record: async (event) => void events.push(event) },
+      messageTransport: {
+        deliver: async (_access, envelope) => ({
+          messageId: envelope.id,
+          status: "accepted",
+          timestamp: NOW,
+        }),
+      },
+      messageRequestRouter: { resolveReply: async (_access, request) => replyTo(request) },
+    });
+
+    await expect(
+      kernel.invokeTool(context(["messages"]), messageRequestCall()),
+    ).resolves.toMatchObject({ status: "succeeded" });
+    expect(events.find(({ type }) => type === "tool.invoked")?.cause).toBeUndefined();
+  });
+
   it("rejects malformed durable replies and sanitizes router failures", async () => {
     const deliver = vi.fn<MessageTransport["deliver"]>(async (_access, message) => ({
       messageId: message.id,
@@ -2163,6 +2242,185 @@ describe("SharedOSKernel messaging and audit", () => {
     });
     expect(invoke).toHaveBeenCalledOnce();
     expect(onAuditError).toHaveBeenCalledOnce();
+  });
+});
+
+describe("what a failing audit sink does, by when the record is written", () => {
+  /** A sink that throws on one event type and keeps everything else. */
+  function failingOn(type: AuditEvent["type"]) {
+    const kept: AuditEvent[] = [];
+    const onAuditError = vi.fn<NonNullable<SharedOSKernelOptions["onAuditError"]>>();
+    const audit: AuditSink = {
+      async record(event) {
+        if (event.type === type) {
+          throw new Error(`audit store unavailable for ${type}`);
+        }
+        kept.push(event);
+      },
+    };
+    return { audit, onAuditError, kept };
+  }
+
+  const MESSAGE: MessageEnvelope = {
+    version: "1",
+    id: "message-1",
+    sender: ACTOR,
+    receiver: RECEIVER,
+    purpose: "prepare-update",
+    payload: { request: "Summarize" },
+    traceId: "trace-1",
+    createdAt: NOW,
+  };
+  const MESSAGE_RESOURCE: ResourceRef = {
+    namespace: "sharedos.messaging",
+    path: addressPath(RECEIVER),
+    owner: OWNER,
+  };
+  const RESOURCE_REQUEST: ResourceInvocationRequest = {
+    operationId: "operation-1",
+    resource: FILE_RESOURCE,
+    action: "search",
+  };
+
+  // Written before anything acts on them. Nothing has run, and a decision that
+  // was never recorded is not one the kernel acts on, so the failure is the
+  // caller's to see. `onAuditError` is for the other half.
+  it.each([
+    ["authority.resolved", (kernel: SharedOSKernel) => kernel.invokeTool(context(), toolCall())],
+    ["authorization.checked", (kernel: SharedOSKernel) => kernel.invokeTool(context(), toolCall())],
+    ["tool.catalog.listed", (kernel: SharedOSKernel) => kernel.listTools(context())],
+    [
+      "tool.namespace.catalog.listed",
+      (kernel: SharedOSKernel) => kernel.listToolNamespaces(context()),
+    ],
+  ] as const)("refuses the operation when %s cannot be written", async (type, operate) => {
+    const { audit, onAuditError } = failingOn(type);
+    const invoke = vi.fn(successfulTool().invoke);
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+      audit,
+      onAuditError,
+    });
+    kernel.registerTool({ ...successfulTool(), invoke });
+
+    await expect(operate(kernel)).rejects.toThrow(`audit store unavailable for ${type}`);
+
+    expect(invoke).not.toHaveBeenCalled();
+    expect(onAuditError).not.toHaveBeenCalled();
+  });
+
+  // Written after the effect, or after an answer that is already final.
+  it.each([
+    [
+      "resource.invoked",
+      async (kernel: SharedOSKernel) =>
+        expect(await kernel.invokeResource(context(), RESOURCE_REQUEST)).toMatchObject({
+          status: "succeeded",
+        }),
+    ],
+    [
+      "message.sent",
+      async (kernel: SharedOSKernel) =>
+        expect(await kernel.sendMessage(context(), MESSAGE)).toMatchObject({
+          status: "accepted",
+        }),
+    ],
+    [
+      "turn.ended",
+      (kernel: SharedOSKernel) =>
+        kernel.recordTurnEnd(context(), { executionId: "execution-1", status: "succeeded" }),
+    ],
+    [
+      "tool.invoked",
+      (kernel: SharedOSKernel) =>
+        kernel.recordRefusedCall(context(), {
+          callId: "call-guessed",
+          tool: "files.delete",
+          reasonCode: "tool_unavailable",
+          cause: "not_offered",
+        }),
+    ],
+    [
+      "tool.namespace.selection.updated",
+      async (kernel: SharedOSKernel) =>
+        expect(
+          (await kernel.updateToolNamespaces(context(["files"]), { enable: ["calendar"] })).summary,
+        ).toMatchObject({ enabled: 1 }),
+    ],
+  ] as const)(
+    "keeps the answer and reports it when %s cannot be written",
+    async (type, operate) => {
+      const { audit, onAuditError } = failingOn(type);
+      const kernel = kernelWith(
+        [
+          grant("grant-search", FILE_RESOURCE, ["search"]),
+          grant("grant-send", MESSAGE_RESOURCE, ["send"]),
+        ],
+        {
+          audit,
+          onAuditError,
+          messageTransport: {
+            deliver: async (_access, envelope) => ({
+              messageId: envelope.id,
+              status: "accepted",
+              timestamp: NOW,
+            }),
+          },
+          toolNamespaceSettings: {
+            applyUpdate: async (access, update) =>
+              applyToolNamespaceUpdate(access.enabledToolNamespaces, update),
+          },
+        },
+      );
+      kernel.registerTool(successfulTool());
+      kernel.registerResourceProvider({
+        namespace: "files",
+        invoke: async (operation) => ({
+          operationId: operation.operationId,
+          status: "succeeded",
+          output: {},
+          completedAt: NOW,
+        }),
+      });
+
+      await operate(kernel);
+
+      expect(onAuditError).toHaveBeenCalledOnce();
+      expect(onAuditError.mock.calls[0]?.[1]).toMatchObject({ type });
+    },
+  );
+
+  it("joins an escalation to the turn it ended, when it is told which", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([], { audit: { record: async (e) => void events.push(e) } });
+
+    await kernel.recordEscalation(context(), "Needs a human", { executionId: "execution-1" });
+    await kernel.recordTurnEnd(context(), { executionId: "execution-1", status: "escalated" });
+    await kernel.recordEscalation(context(), "A host asking outside a turn");
+
+    // `turn.ended` has always carried the execution as its `operationId`. The
+    // escalation it ended on carried nothing, so a reviewer's queue built from
+    // audit joined the two on `traceId` and the order they arrived in.
+    expect(events.map(({ type, operationId }) => [type, operationId])).toEqual([
+      ["escalation.requested", "execution-1"],
+      ["turn.ended", "execution-1"],
+      ["escalation.requested", undefined],
+    ]);
+  });
+
+  it("still ends the turn escalated when the escalation cannot be written", async () => {
+    // The record is the turn's terminal, not a gate: the runtime has already
+    // elected to escalate and nothing waits on the write. Rejecting here ended
+    // the turn `runtime_failed` and blamed a plugin that had done nothing wrong.
+    const { audit, onAuditError } = failingOn("escalation.requested");
+    const kernel = kernelWith([], { audit, onAuditError });
+
+    await expect(kernel.recordEscalation(context(), "Needs a human")).resolves.toMatchObject({
+      reason: "Needs a human",
+      status: "pending",
+    });
+
+    expect(onAuditError).toHaveBeenCalledOnce();
+    expect(onAuditError.mock.calls[0]?.[1]).toMatchObject({ type: "escalation.requested" });
   });
 });
 
@@ -2628,7 +2886,7 @@ describe("SharedOSKernel host ceiling", () => {
   });
 
   it.each([false, true])(
-    "does not let a ceiling stamp failClosed: %s onto its own refusal",
+    "keeps the kernel's flags where a ceiling's failClosed: %s cannot reach them",
     async (forged) => {
       const events: AuditEvent[] = [];
       const forging: HostCeiling = {
@@ -2646,13 +2904,19 @@ describe("SharedOSKernel host ceiling", () => {
 
       await kernel.invokeTool(context(), toolCall());
 
-      // `true` is the dangerous direction and the reason the key is stripped
-      // rather than overwritten: the kernel only ever *sets* `failClosed` on an
-      // infrastructure denial, so a ceiling could otherwise relabel a deliberate
-      // refusal as an outage and move it out of the policy counts.
-      expect(events.find(({ type }) => type === "authorization.checked")?.metadata).toEqual({
+      // `true` is the dangerous direction: the kernel only ever *sets*
+      // `failClosed` on an infrastructure denial, so while the two shared one
+      // bag a ceiling could relabel a deliberate refusal as an outage and move
+      // it out of the policy counts. The kernel's flags are fields now, which a
+      // port has no way to write; what the ceiling said stays in `metadata`,
+      // as the ceiling's (ADR 0023).
+      const checked = events.find(({ type }) => type === "authorization.checked");
+      expect(checked?.failClosed).toBeUndefined();
+      expect(checked?.consumed).toBe(false);
+      expect(checked?.metadata).toMatchObject({
         rule: "hr-freeze",
-        consumed: false,
+        failClosed: forged,
+        consumed: true,
       });
     },
   );
@@ -2678,7 +2942,7 @@ describe("SharedOSKernel host ceiling", () => {
     expect(events.find(({ type }) => type === "authorization.checked")).toMatchObject({
       outcome: "denied",
       reason: "host_policy_unavailable",
-      metadata: { failClosed: true },
+      failClosed: true,
     });
   });
 
@@ -2701,7 +2965,8 @@ describe("SharedOSKernel host ceiling", () => {
     // is misbehaving.
     expect(events.find(({ type }) => type === "authority.resolved")).toMatchObject({
       outcome: "failed",
-      metadata: { failClosed: true, hostCeiling: "installed" },
+      failClosed: true,
+      metadata: { hostCeiling: "installed" },
     });
   });
 
@@ -2863,7 +3128,7 @@ describe("SharedOSKernel host policy", () => {
       expect(decision).toMatchObject({
         outcome: "denied",
         reason: "host_policy_unavailable",
-        metadata: { failClosed: true },
+        failClosed: true,
       });
     }
     // The catalogue was computed, and empty, and the record says why the
@@ -2873,7 +3138,8 @@ describe("SharedOSKernel host policy", () => {
     const listing = events.find(({ type }) => type === "tool.catalog.listed");
     expect(listing).toMatchObject({
       outcome: "succeeded",
-      metadata: { withheldCount: 1, failClosed: true },
+      failClosed: true,
+      metadata: { withheldCount: 1 },
     });
     expect(listing?.metadata).not.toHaveProperty("hostPolicyVersion");
   });
@@ -2932,7 +3198,8 @@ describe("SharedOSKernel host policy", () => {
     // The two loads are independent, and the record says what each did.
     expect(events.find(({ type }) => type === "authority.resolved")).toMatchObject({
       outcome: "failed",
-      metadata: { failClosed: true, hostCeiling: "absent", hostPolicy: "loaded" },
+      failClosed: true,
+      metadata: { hostCeiling: "absent", hostPolicy: "loaded" },
     });
   });
 
@@ -3002,12 +3269,92 @@ describe("SharedOSKernel audit routing", () => {
     ]);
     // One code on the wire, three situations in the trail. `errors.md` has
     // promised this disambiguation all along and delivered it for one of them.
-    expect(invoked.map(({ metadata }) => metadata?.["cause"])).toEqual([
+    expect(invoked.map(({ cause }) => cause)).toEqual([
       "not_registered",
       "namespace_disabled",
       "no_matching_grant",
     ]);
-    expect(invoked.every(({ metadata }) => metadata?.["source"] === "kernel")).toBe(true);
+    expect(invoked.every(({ source }) => source === "kernel")).toBe(true);
+  });
+
+  it("marks an outage failClosed on every operation event, not only on a tool call", async () => {
+    // `docs/errors.md` tells a host to exclude `failClosed` records before it
+    // computes a denial rate. The resource and message records were built apart
+    // from the tool one and never carried the flag, so a grant store that was
+    // down read as two deliberate refusals and one outage.
+    const events: AuditEvent[] = [];
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        load: async () => {
+          throw new Error("grant store is unreachable");
+        },
+      },
+      audit: { record: async (e) => void events.push(e) },
+    });
+
+    await kernel.invokeTool(context(), toolCall());
+    await kernel.invokeResource(context(), {
+      operationId: "operation-1",
+      resource: FILE_RESOURCE,
+      action: "search",
+    });
+    await kernel.sendMessage(context(), {
+      version: "1",
+      id: "message-1",
+      sender: ACTOR,
+      receiver: RECEIVER,
+      purpose: "prepare-update",
+      payload: {},
+      traceId: "trace-1",
+      createdAt: NOW,
+    });
+
+    const operations = events.filter(({ type }) =>
+      ["tool.invoked", "resource.invoked", "message.sent"].includes(type),
+    );
+    expect(operations.map(({ type }) => type)).toEqual([
+      "tool.invoked",
+      "resource.invoked",
+      "message.sent",
+    ]);
+    for (const operation of operations) {
+      expect(operation).toMatchObject({
+        outcome: "denied",
+        reason: "authority_unavailable",
+        source: "kernel",
+        failClosed: true,
+      });
+    }
+  });
+
+  it("names the catalogue a guessed tool was never offered from", async () => {
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+      audit: { record: async (e) => void events.push(e) },
+    });
+    kernel.registerTool(successfulTool());
+    const access = context(["files"]);
+
+    const scope = await kernel.openTurnAuthority(access);
+    try {
+      await kernel.listTools(access);
+      await kernel.recordRefusedCall(access, {
+        callId: "call-guessed",
+        tool: "files.delete",
+        reasonCode: "tool_unavailable",
+        cause: "not_offered",
+      });
+    } finally {
+      scope.close();
+    }
+
+    // The kernel's own `tool.invoked` has carried the turn's catalogue since
+    // ADR 0026. The envelope's was built separately and did not, so the one
+    // refusal that is *about* the catalogue could not be joined to it.
+    const listed = events.find(({ type }) => type === "tool.catalog.listed");
+    const refused = events.find(({ type }) => type === "tool.invoked");
+    expect(refused?.source).toBe("envelope");
+    expect(refused?.metadata).toEqual({ catalogHash: listed?.metadata?.["catalogHash"] });
   });
 
   it("records a listing by what it was computed from, not by the names it returned or withheld", async () => {
@@ -3033,8 +3380,8 @@ describe("SharedOSKernel audit routing", () => {
       catalogHash: await catalogHash(publishToolCatalog([FILE_TOOL])),
       enabledNamespaces: ["files"],
       withheldCount: 1,
-      source: "kernel",
     });
+    expect(listed[0]?.source).toBe("kernel");
   });
 
   it("records the catalogue under the identifier a harness is handed for it", async () => {
@@ -3078,13 +3425,13 @@ describe("SharedOSKernel audit routing", () => {
     expect(events.find(({ type }) => type === "tool.catalog.listed")).toMatchObject({
       outcome: "denied",
       reason: "authority_unavailable",
+      source: "kernel",
+      failClosed: true,
       metadata: {
         catalogHash: await catalogHash([]),
         enabledNamespaces: ["files"],
         withheldCount: 0,
-        failClosed: true,
         authority: "grant_source_failed",
-        source: "kernel",
       },
     });
   });
@@ -3106,9 +3453,13 @@ describe("SharedOSKernel audit routing", () => {
         outcome: "failed",
         reason: "runtime_failed",
         operationId: "exec-1",
-        metadata: { source: "envelope", endedBy: "envelope" },
+        endedBy: "envelope",
       }),
     ]);
+    // Who recorded is always the envelope, so the record does not say it;
+    // `source` is who refused, and is kept for the events where that varies.
+    expect(events[0]?.source).toBeUndefined();
+    expect(events[0]?.metadata).toBeUndefined();
   });
 
   it("records a cancelled turn as failed with its own reason, adding no outcome", async () => {
@@ -3146,7 +3497,8 @@ describe("SharedOSKernel audit routing", () => {
       reason: "tool_unavailable",
       operationId: "call-9",
       tool: "files.delete",
-      metadata: { source: "envelope", cause: "not_offered" },
+      source: "envelope",
+      cause: "not_offered",
     });
   });
 });
