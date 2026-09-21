@@ -438,6 +438,27 @@ SHAREDOS_MCP_SERVER_NAME` was written at ten sites across the config emitters,
   `RuntimeTurnRequest`, the name `AgentTurnRequest` was an alias of; the
   standard composition is `new SharedOSExecutor(kernel,
 createStandardRuntime({ driver }))`, which `TurnExecutor` built (see Removed).
+- **`MessageEnvelope.provenance` is host-owned metadata, and says so.** The
+  kernel checks its shape with the envelope, neither sets nor reads it, and hands
+  it to the transport as sent. Its row in `docs/open-items.md` is closed on that
+  reading; the schema and the threat model state it. ADR 0025 is revised in
+  place for where the `route-lease-revoked` row reads the transport's code: the
+  tool operation's `cause`, not a second operation joined by call id. No
+  behaviour, record or hash changes.
+- **The root README is rewritten around what ships, and installs are untagged.**
+  It opens on Grant, Delegate, Execute, the tagline and the three parts of
+  "About SharedOS"; names the two shipped runtimes,
+  `createStandardRuntime` and `createMcpHarnessRuntime`; turns the examples into
+  a table; and leaves the ADR list to the index in `docs/README.md`, which gains
+  the conformance manifest and the systems-cost page under "Start here". Every
+  install line is `npm install @aicoo/sharedos…` with no `@next`, so it takes
+  the release npm's `latest` tag points at. The release runbook still verifies
+  a new publication under `next`, where releases land.
+- **The pages the root README links are corrected against the code.** The
+  quickstart's first program now prints what it says, `docs/mcp-api.md` imports
+  the HTTP transport from `@aicoo/sharedos-mcp/node`, `docs/endpoints.md` counts
+  what ships, and the design pages name the two runtimes and the turn endings
+  `docs/errors.md` already described. Docs only.
 
 ### Removed
 
