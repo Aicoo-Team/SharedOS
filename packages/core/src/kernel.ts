@@ -83,7 +83,12 @@ import { buildToolCatalog, catalogHash, publishToolCatalog } from "./published-t
 import { SPAN, measure, type SpanSink } from "./spans.js";
 import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
-import { DuplicateRegistrationError, MissingRegistrationError } from "./errors.js";
+import {
+  AUDIT_UNAVAILABLE,
+  AuditUnavailableError,
+  DuplicateRegistrationError,
+  MissingRegistrationError,
+} from "./errors.js";
 import {
   deepFreeze,
   protocolError,
@@ -137,8 +142,8 @@ export interface SharedOSKernelOptions {
    * the answer is final; a sink that throws there is handed here and the caller
    * receives the result it would have received. The writes made *before* an
    * effect -- an authority load, a decision, a catalogue listing -- are not
-   * reported here: a sink that throws on one of those rejects the operation,
-   * and nothing runs.
+   * reported here: a sink that throws on one of those rejects the operation
+   * with an `AuditUnavailableError`, and nothing runs.
    */
   readonly onAuditError?: (error: unknown, event: AuditEvent) => void | Promise<void>;
   /**
@@ -1276,6 +1281,16 @@ export class SharedOSKernel {
         resource: requirement.resource,
         action: requirement.action,
       },
+      interrupted: (reasonCode) =>
+        this.#recordToolInvoked(context, {
+          source: "kernel",
+          callId: call.id,
+          tool: call.tool,
+          outcome: "interrupted",
+          reasonCode,
+          ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
+          requirement,
+        }),
     });
 
     const dispatchCause = this.#dispatchCauses.get(parsedCall);
@@ -1373,6 +1388,20 @@ export class SharedOSKernel {
           resource: request.resource,
           action: request.action,
         },
+        interrupted: (reasonCode) =>
+          this.#recordOutcome(
+            this.#auditEvent(context, {
+              type: "resource.invoked",
+              outcome: "interrupted",
+              operationId: request.operationId,
+              resource: request.resource,
+              action: request.action,
+              ...(decision.matchedGrantId === undefined
+                ? {}
+                : { grantId: decision.matchedGrantId }),
+              ...operationFacts("kernel", reasonCode),
+            }),
+          ),
       });
     }
 
@@ -1698,6 +1727,18 @@ export class SharedOSKernel {
         "The message transport failed while delivering the message",
       ],
       operation: { kind: "message", ...(operationId === undefined ? {} : { operationId }) },
+      interrupted: (reasonCode) =>
+        this.#recordOutcome(
+          this.#auditEvent(trustedContext, {
+            type: "message.sent",
+            outcome: "interrupted",
+            messageId: trustedEnvelope.id,
+            receiver: trustedEnvelope.receiver,
+            ...(operationId === undefined ? {} : { operationId }),
+            ...(grantId === undefined ? {} : { grantId }),
+            ...operationFacts("kernel", reasonCode),
+          }),
+        ),
     });
 
     await this.#recordMessageResult(trustedContext, trustedEnvelope, result, grantId, operationId);
@@ -2019,7 +2060,7 @@ export class SharedOSKernel {
       readonly source: AuditSource;
       readonly callId: string;
       readonly tool: string;
-      readonly outcome: "succeeded" | "denied" | "failed";
+      readonly outcome: "succeeded" | "denied" | "failed" | "interrupted";
       readonly reasonCode?: string;
     },
   ): Promise<void> {
@@ -2105,6 +2146,13 @@ export class SharedOSKernel {
    * never reported as a port that failed. Each code is stated once here and
    * reaches both the result and the host's diagnostic sink, which is what lets
    * a log line join to audit on it.
+   *
+   * A port that was entered and stopped before it answered is recorded
+   * `interrupted` before the stop is re-thrown. The decision is already in the
+   * trail and the port may have done any part of its work, so leaving no
+   * operation event would read as a call that never started. Two things stop a
+   * port: the caller's abort, and an audit outage on a decision the port itself
+   * asked the kernel for, which is the kernel's failure and not the port's.
    */
   async #invokePort<Result>(port: {
     readonly context: AccessContext;
@@ -2116,12 +2164,21 @@ export class SharedOSKernel {
     readonly invalid: readonly [code: string, message: string];
     readonly failed: readonly [code: string, message: string];
     readonly operation: Omit<ProviderErrorContext, "traceId" | "namespaceId" | "reasonCode">;
+    /** Record the operation as entered and stopped, under the code that stopped it. */
+    readonly interrupted: (reasonCode: string) => Promise<void>;
   }): Promise<Result> {
+    port.signal?.throwIfAborted();
     try {
-      port.signal?.throwIfAborted();
       return port.accept(await port.invoke()) ?? port.refuse(...port.invalid);
     } catch (error) {
-      port.signal?.throwIfAborted();
+      if (error instanceof AuditUnavailableError) {
+        await port.interrupted(AUDIT_UNAVAILABLE);
+        throw new AuditUnavailableError(error.cause, "unknown");
+      }
+      if (port.signal?.aborted === true) {
+        await port.interrupted(OPERATION_ABORTED);
+        port.signal.throwIfAborted();
+      }
       this.#reportProviderError(error, port.context, {
         ...port.operation,
         reasonCode: port.failed[0],
@@ -2151,15 +2208,20 @@ export class SharedOSKernel {
    *
    * An authority load, an authorization decision and a catalogue listing are
    * each written before anything acts on them. A sink that throws here rejects
-   * the operation: nothing has run, and a decision that was never recorded is
-   * not one SharedOS will act on. `onAuditError` is not called, because the
-   * caller is handed the failure itself.
+   * the operation with an `AuditUnavailableError` carrying what the sink threw:
+   * nothing has run, and a decision that was never recorded is not one SharedOS
+   * will act on. `onAuditError` is not called, because the caller is handed the
+   * failure itself.
    *
    * This and `#recordOutcome` are the only two callers of
    * the sink, so which rule a write follows is visible at its call site.
    */
   async #recordDecision(event: AuditEvent): Promise<void> {
-    await this.#audit.record(event);
+    try {
+      await this.#audit.record(event);
+    } catch (error) {
+      throw new AuditUnavailableError(error);
+    }
   }
 
   /**
@@ -2208,9 +2270,15 @@ function operationFacts(
   };
 }
 
+/** The reason on an operation its caller stopped after the port was entered. */
+const OPERATION_ABORTED = "operation_aborted";
+
 /** `failClosed`, present only on a code that is SharedOS failing to establish a fact. */
 function failClosedFor(reasonCode: string | undefined): Pick<AuditEventInput, "failClosed"> {
-  return reasonCode !== undefined && isInfrastructureDenial(reasonCode) ? { failClosed: true } : {};
+  return reasonCode !== undefined &&
+    (isInfrastructureDenial(reasonCode) || reasonCode === AUDIT_UNAVAILABLE)
+    ? { failClosed: true }
+    : {};
 }
 
 /** `metadata`, present only when there is something in it. */

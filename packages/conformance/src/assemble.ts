@@ -351,10 +351,13 @@ function operations(
       // `refusedBy` a claim about who refused rather than about who happened to
       // own an audit sink (ADR 0023).
       source: event.source ?? "kernel",
+      // `interrupted` reads as `failed` here, never `denied`: the record's
+      // vocabulary has three outcomes, and a call that may have taken effect
+      // must not be credited to a boundary as a refusal it made.
       outcome:
         event.outcome === "succeeded"
           ? "succeeded"
-          : event.outcome === "failed"
+          : event.outcome === "failed" || event.outcome === "interrupted"
             ? "failed"
             : "denied",
       ...(event.operationId === undefined ? {} : { operationId: event.operationId }),

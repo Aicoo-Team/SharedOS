@@ -634,4 +634,12 @@ describe("AuditEventSchema", () => {
     expect(AuditEventSchema.safeParse({ ...event, source: "runtime" }).success).toBe(false);
     expect(AuditEventSchema.safeParse({ ...event, type: "tool.guessed" }).success).toBe(false);
   });
+
+  it("takes interrupted as an outcome of its own, beside failed", () => {
+    // An operation whose port was entered and stopped before it answered. Not
+    // `failed`, which also covers refusals where nothing ran.
+    const stopped = { ...event, outcome: "interrupted", reason: "operation_aborted" };
+    expect(AuditEventSchema.parse(stopped)).toEqual(stopped);
+    expect(AuditEventSchema.safeParse({ ...event, outcome: "aborted" }).success).toBe(false);
+  });
 });

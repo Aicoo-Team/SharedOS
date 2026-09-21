@@ -359,6 +359,29 @@ describe("execution record assembly", () => {
     expect(record.execution.terminalReasonCode).toBe("authority_unavailable");
   });
 
+  it("never reads an interrupted operation as a refusal a boundary made", () => {
+    const record = assembleExecutionRecord({
+      request: request(),
+      result: result({ status: "cancelled", error: { code: "turn_cancelled", message: "x" } }),
+      auditEvents: [
+        auditEvent({
+          type: "tool.invoked",
+          outcome: "interrupted",
+          reason: "operation_aborted",
+          operationId: "call-1",
+          tool: "files.search",
+          source: "kernel",
+        }),
+      ],
+      experiment,
+      system,
+    });
+
+    // The record's vocabulary has three outcomes. `denied` would credit
+    // enforcement with stopping a call that may have taken effect.
+    expect(record.execution.operations.map(({ outcome }) => outcome)).toEqual(["failed"]);
+  });
+
   it("ignores audit events from another trace", () => {
     const record = assembleExecutionRecord({
       request: request(),
