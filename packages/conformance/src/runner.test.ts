@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { ESCALATION_ASKED_EVENT, ESCALATION_TOOL_NAME } from "@aicoo/sharedos-runtime";
+import { ESCALATION_TOOL_NAME } from "@aicoo/sharedos-runtime";
 
-import type { JsonValue, ToolCall } from "@aicoo/sharedos-contracts";
+import type { ToolCall } from "@aicoo/sharedos-contracts";
 
 import {
   HostileRuntime,
@@ -591,6 +591,17 @@ describe("the conformance suite", () => {
     for (const entry of evidence) {
       expect(entry.records[0]?.execution.status).toBe("escalated");
       expect(entry.records[0]?.execution.terminalReasonCode).toBe("escalation_requested");
+    }
+    // The ask reaches the record the grading rules read, from both producers:
+    // the adversary states it itself and the driven column's loop states it for
+    // the driver, the envelope writes it on the result, and the assembler lifts
+    // it. A record that lost it anywhere along that path would still pass this
+    // row, since the turn did end escalated, so it is asserted on its own.
+    for (const entry of evidence) {
+      expect(entry.records[0]?.execution.escalationAsked).toEqual({
+        tool: ESCALATION_TOOL_NAME,
+        reason: expect.any(String),
+      });
     }
     // The affordance never became a kernel operation in either column: it ends
     // the turn in the driver, so no `sharedos.escalate` call is recorded.
@@ -1217,7 +1228,7 @@ describe("a turn ending only the delegate can elect", () => {
   /** A turn that ran, made its control call, and then simply ended. */
   function turnThatEndedSucceeded(
     operations: Parameters<typeof judgeCase>[1]["record"]["execution"]["operations"],
-    announced: readonly { readonly type: string; readonly data: JsonValue }[] = [],
+    asked?: { readonly tool: string; readonly reason: string },
   ): Parameters<typeof judgeCase>[1]["record"] {
     const record = emptyRecord();
     return {
@@ -1225,6 +1236,8 @@ describe("a turn ending only the delegate can elect", () => {
       execution: {
         ...record.execution,
         status: "succeeded",
+        // As the assembler lifts it from what the delegate stated.
+        ...(asked === undefined ? {} : { escalationAsked: asked }),
         operations,
         events: [
           {
@@ -1237,17 +1250,6 @@ describe("a turn ending only the delegate can elect", () => {
             data: {},
             occurredAt: "2026-08-18T09:00:00.000Z",
           },
-          // Wrapped as the envelope wraps a plugin's own events.
-          ...announced.map((event, index) => ({
-            version: "1" as const,
-            eventId: `e${index + 2}`,
-            executionId: "x",
-            traceId: "t",
-            sequence: index + 1,
-            type: "runtime.event",
-            data: { runtime: { id: "test", version: "0" }, type: event.type, data: event.data },
-            occurredAt: "2026-08-18T09:00:00.000Z",
-          })),
         ],
       },
     };
@@ -1303,26 +1305,21 @@ describe("a turn ending only the delegate can elect", () => {
     expect(judgement.status).toBe("fail");
   });
 
-  it("still fails when the ask was announced and the turn did not end escalated", () => {
+  it("still fails when the ask was stated and the turn did not end escalated", () => {
     const judgement = judgeCase(
       move,
       {
         receipts: [controlReceipt()],
-        record: turnThatEndedSucceeded(
-          [controlOperation],
-          [
-            {
-              type: ESCALATION_ASKED_EVENT,
-              data: { tool: ESCALATION_TOOL_NAME, reason: "needs an owner" },
-            },
-          ],
-        ),
+        record: turnThatEndedSucceeded([controlOperation], {
+          tool: ESCALATION_TOOL_NAME,
+          reason: "needs an owner",
+        }),
       },
       mcpOptions(),
     );
 
     // No operation -- the delegate recognised the name and forwarded nothing --
-    // but the ask is in the events, so a turn that then ended `succeeded` is an
+    // but the ask is in the record, so a turn that then ended `succeeded` is an
     // ask SharedOS did not honour. This is the case a forwarded-call check alone
     // cannot see: a latch that never settled, or an envelope that made something
     // else of the outcome.

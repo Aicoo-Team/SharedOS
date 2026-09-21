@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  ExecutionRequest,
-  ExecutionResult,
-  JsonObject,
-  JsonValue,
-} from "@aicoo/sharedos-contracts";
+import type { ExecutionRequest, ExecutionResult, JsonObject } from "@aicoo/sharedos-contracts";
 import type { AuditEvent } from "@aicoo/sharedos-core";
 
 import { assembleExecutionRecord } from "./assemble.js";
@@ -182,73 +177,50 @@ describe("execution record assembly", () => {
     expect(assemble({ promptHash: "reworded" }).system.promptHash).toBeUndefined();
   });
 
-  it("reads what the seat was told off the announcement when the turn returned no metadata", () => {
+  it("reads what the seat was told off a cancelled turn, which the envelope wrote it on", () => {
     const hash = "ab".repeat(32);
-    const other = "cd".repeat(32);
-    const handed = (promptHash: JsonValue): ExecutionResult["events"][number] => ({
-      version: "1",
-      eventId: "event-3",
-      executionId: "execution-1",
-      traceId: "trace-1",
-      sequence: 2,
-      type: "runtime.event",
-      data: {
-        runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "1" },
-        type: "prompt.handed",
-        data: { promptHash },
-      },
-      occurredAt: NOW,
-    });
-    const assemble = (overrides: Partial<ExecutionResult>) =>
+    const cancelled = { status: "cancelled", output: undefined } as const;
+    const provenance = {
+      runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "1" },
+    };
+    const assemble = (metadata: JsonObject) =>
       assembleExecutionRecord({
         request: request(),
-        result: result(overrides),
+        result: result({ ...cancelled, metadata }),
         auditEvents: auditTrail(),
         experiment,
         system,
       });
-    const cancelled = {
-      status: "cancelled",
-      output: undefined,
-      metadata: {
-        runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "1" },
-      },
-    } as const;
 
-    // A cancelled turn has no outcome to carry metadata; the runtime announced
-    // the hash before it launched anything, and that is what the record keeps.
-    // Without it the turn dropped out of its column's prompt set and a stall
-    // read as a reworded prompt.
+    // A cancelled turn has no outcome to carry metadata of its own; the runtime
+    // stated the hash to the envelope before it launched anything, and the
+    // envelope wrote it on the result. Without it the turn dropped out of its
+    // column's prompt set and a stall read as a reworded prompt.
+    expect(assemble({ ...provenance, promptHash: hash }).system.promptHash).toBe(hash);
+    // A turn cancelled before its runtime had anything to state carries none.
+    expect(assemble(provenance).system.promptHash).toBeUndefined();
+  });
+
+  it("lifts the delegate's stated ask into the record, and only a well-formed one", () => {
+    const asked = { tool: "sharedos.escalate", reason: "needs a human" };
+    const assemble = (metadata: JsonObject) =>
+      assembleExecutionRecord({
+        request: request(),
+        result: result({ metadata: { ...result().metadata, ...metadata } }),
+        auditEvents: auditTrail(),
+        experiment,
+        system,
+      });
+
+    // The grading rules read a record, and a record carries none of the
+    // result's metadata, so the ask reaches them only by being lifted.
+    expect(assemble({ escalationAsked: asked }).execution.escalationAsked).toEqual(asked);
+    expect(assemble({}).execution.escalationAsked).toBeUndefined();
+    // The delegate's own statement, so validated rather than trusted on shape.
+    expect(assemble({ escalationAsked: "yes" }).execution.escalationAsked).toBeUndefined();
     expect(
-      assemble({ ...cancelled, events: [...result().events, handed(hash)] }).system.promptHash,
-    ).toBe(hash);
-    // Where the result has the field at all, the metadata decides -- a valid
-    // one over any announcement, and a malformed one as absent rather than as
-    // a fall-through to the event, the same way a malformed catalogue hash is
-    // treated.
-    expect(
-      assemble({
-        metadata: { ...result().metadata, promptHash: hash },
-        events: [...result().events, handed(other)],
-      }).system.promptHash,
-    ).toBe(hash);
-    expect(
-      assemble({
-        metadata: { ...result().metadata, promptHash: "reworded" },
-        events: [...result().events, handed(hash)],
-      }).system.promptHash,
+      assemble({ escalationAsked: { ...asked, extra: true } }).execution.escalationAsked,
     ).toBeUndefined();
-    // Several announcements: the first is what the seat was first told.
-    expect(
-      assemble({ ...cancelled, events: [...result().events, handed(hash), handed(other)] }).system
-        .promptHash,
-    ).toBe(hash);
-    // An announcement that is not a content hash is not believed either.
-    expect(
-      assemble({ ...cancelled, events: [...result().events, handed("reworded")] }).system
-        .promptHash,
-    ).toBeUndefined();
-    expect(assemble({ ...cancelled, events: result().events }).system.promptHash).toBeUndefined();
   });
 
   it("binds identity, authority, execution, and cost into one comparable record", () => {

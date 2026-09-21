@@ -7,13 +7,14 @@ import type {
 } from "@aicoo/sharedos-contracts";
 import { RuntimeManifestSchema, isJsonObject } from "@aicoo/sharedos-contracts";
 import { type AuditEvent, isInfrastructureDenial } from "@aicoo/sharedos-core";
-import { promptHandedHash } from "@aicoo/sharedos-runtime";
+import { ESCALATION_ASKED_ANNOTATION, PROMPT_HASH_ANNOTATION } from "@aicoo/sharedos-runtime";
 
 import {
   type AuthoritySnapshotRecord,
   type ContentHash,
   ContentHashSchema,
   type DecisionRecord,
+  EscalationAskedSchema,
   type ExecutionRecord,
   type ExecutionRecordExecution,
   ExecutionRecordSchema,
@@ -94,6 +95,7 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
       agent: request.agent,
       status: result.status,
       ...terminalOutcome(result),
+      ...escalationAsked(result),
       exposedTools: exposedTools(result.events),
       requestedTools: request.tools.map(({ name }) => name),
       decisions: decisions(audit),
@@ -174,24 +176,31 @@ function publishedCatalogue(result: ExecutionResult): Partial<SystemIdentity> {
  * it -- leaves the field absent rather than carrying a hash over a prompt no
  * model was shown.
  *
- * Two places can carry it, and the rule is: the result's metadata decides
- * where the result has the field at all, and the first `prompt.handed`
- * announcement decides otherwise. A turn cancelled at its deadline returns no
- * metadata -- the plugin threw at the abort and the envelope built the result
- * from its own provenance -- but it was asked something, and the event the
- * runtime emitted before it launched anything is where that survives. Without
- * the fallback a stalled turn dropped out of its column's prompt set and the
- * column's moved hash read as a reworded prompt. Whichever place is read, a
- * value that is not a content hash is ignored the same way a malformed
- * catalogue hash is: it does not fall through to the other place.
+ * One place carries it: the result's metadata, under the key the runtime
+ * stated it with. The envelope writes an annotation on every ending, so a turn
+ * cancelled at its deadline -- which returns no outcome, and used to need an
+ * event beside the metadata for that reason -- carries it like any other. A
+ * turn cancelled before its runtime had composed anything carries none, because
+ * there was nothing yet to state. A value that is not a content hash is ignored
+ * the same way a malformed catalogue hash is.
  */
 function handedPrompt(result: ExecutionResult): Partial<SystemIdentity> {
-  const declared = result.metadata?.["promptHash"];
-  const promptHash =
-    declared !== undefined
-      ? declared
-      : result.events.map(promptHandedHash).find((hash) => hash !== undefined);
+  const promptHash = result.metadata?.[PROMPT_HASH_ANNOTATION];
   return isContentHash(promptHash) ? { promptHash } : {};
+}
+
+/**
+ * That the delegate said it asked for a human, lifted into the record.
+ *
+ * A record carries the turn's events and none of its metadata, and the grading
+ * rules read a record, so a fact stated through `RuntimeHost.annotate` reaches
+ * them only if it is lifted -- as the prompt hash is lifted into the system
+ * identity above. Validated rather than trusted on shape: it is the delegate's
+ * own statement, and a malformed one reads as none.
+ */
+function escalationAsked(result: ExecutionResult): Partial<ExecutionRecordExecution> {
+  const asked = EscalationAskedSchema.safeParse(result.metadata?.[ESCALATION_ASKED_ANNOTATION]);
+  return asked.success ? { escalationAsked: asked.data } : {};
 }
 
 /** The one definition of a content hash the record is validated against. */

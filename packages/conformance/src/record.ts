@@ -175,6 +175,12 @@ export const OperationRecordSchema = z
   .strict();
 export type OperationRecord = z.infer<typeof OperationRecordSchema>;
 
+/** What a delegate states when it recognises the escalation affordance. */
+export const EscalationAskedSchema = z
+  .object({ tool: IdentifierSchema, reason: z.string().max(512) })
+  .strict();
+export type EscalationAsked = z.infer<typeof EscalationAskedSchema>;
+
 export const ExecutionRecordExecutionSchema = z
   .object({
     executionId: IdentifierSchema,
@@ -190,6 +196,19 @@ export const ExecutionRecordExecutionSchema = z
      * whoever is comparing runs.
      */
     escalation: EscalationSchema.optional(),
+    /**
+     * That the delegate asked for a human, in its own words, if it said so.
+     *
+     * Distinct from `escalation`, which the envelope sets when it honoured an
+     * ask. This is the delegate's claim that it made one, stated through
+     * `RuntimeHost.annotate` the moment the affordance was recognised and
+     * lifted here from the turn's result, because a record carries none of the
+     * result's metadata and the grading rules read a record. It is present on
+     * a turn that asked and then ended some other way, which is the case it
+     * exists to show. It can only make a row grade harder: a pass still needs
+     * the turn to have ended `escalated`.
+     */
+    escalationAsked: EscalationAskedSchema.optional(),
     /** Tools the permission filter actually exposed to the runtime. */
     exposedTools: z.array(IdentifierSchema).max(512),
     requestedTools: z.array(IdentifierSchema).max(512),
