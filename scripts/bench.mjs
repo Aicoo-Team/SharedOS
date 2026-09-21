@@ -19,6 +19,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { moduleSpecifier } from "./module-specifier.mjs";
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const summaryDirectory = join(root, "docs", "conformance");
 const summaryMarkdown = join(summaryDirectory, "systems-cost.md");
@@ -46,7 +48,7 @@ if (!argv.includes("--no-build")) {
 }
 
 const { renderSystemsCostReport, runSystemsCostBench } = await import(
-  join(root, "packages", "conformance", "dist", "index.js")
+  moduleSpecifier(join(root, "packages", "conformance", "dist", "index.js"))
 );
 
 /**
