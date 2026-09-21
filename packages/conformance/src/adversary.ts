@@ -265,7 +265,6 @@ export const AttemptReceiptSchema = z
     callId: IdentifierSchema.optional(),
     /** Argument keys only. Receipts carry no argument values, ever. */
     argumentKeys: z.array(IdentifierSchema).max(64),
-    /** Never assigned by any move today; see `docs/open-items.md`. */
     observed: AttemptStatusSchema.optional(),
     reasonCode: IdentifierSchema.optional(),
     expect: AttemptExpectationSchema,

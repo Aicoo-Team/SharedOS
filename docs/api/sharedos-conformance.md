@@ -698,7 +698,7 @@ Throws on a grant this store does not hold, as testkit's store does.
 
 ### HostileRuntime
 
-Defined in: [conformance/src/adversary.ts:328](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L328)
+Defined in: [conformance/src/adversary.ts:327](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L327)
 
 A scripted adversary that occupies the delegate seat and nothing else.
 
@@ -736,7 +736,7 @@ One instance may serve concurrent turns; all per-turn state lives in `run`.
 
 > **new HostileRuntime**(`moves`, `options?`): [`HostileRuntime`](#hostileruntime)
 
-Defined in: [conformance/src/adversary.ts:333](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L333)
+Defined in: [conformance/src/adversary.ts:332](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L332)
 
 ###### Parameters
 
@@ -753,7 +753,7 @@ Defined in: [conformance/src/adversary.ts:333](https://github.com/Aicoo-Team/Sha
 
 | Property                                  | Modifier   | Type                                             | Defined in                                                                                                                      |
 | ----------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | [conformance/src/adversary.ts:329](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L329) |
+| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | [conformance/src/adversary.ts:328](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L328) |
 | `manifest.id`                             | `public`   | `string`                                         | contracts/dist/runtime.d.ts:9                                                                                                   |
 | `manifest.metadata?`                      | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | contracts/dist/runtime.d.ts:12                                                                                                  |
 | `manifest.protocolVersion`                | `public`   | `"1"`                                            | contracts/dist/runtime.d.ts:11                                                                                                  |
@@ -765,7 +765,7 @@ Defined in: [conformance/src/adversary.ts:333](https://github.com/Aicoo-Team/Sha
 
 > **run**(`turn`, `host`, `signal`): `Promise`\<\{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}\>
 
-Defined in: [conformance/src/adversary.ts:359](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L359)
+Defined in: [conformance/src/adversary.ts:358](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L358)
 
 ###### Parameters
 
@@ -1892,14 +1892,14 @@ Defined in: [conformance/src/hashing.ts:7](https://github.com/Aicoo-Team/SharedO
 
 ### HostileRuntimeOptions
 
-Defined in: [conformance/src/adversary.ts:291](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L291)
+Defined in: [conformance/src/adversary.ts:290](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L290)
 
 #### Properties
 
 | Property                                     | Modifier   | Type     | Description                                                                                                                                                                                                          | Defined in                                                                                                                      |
 | -------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-runtimeid"></a> `runtimeId?` | `readonly` | `string` | -                                                                                                                                                                                                                    | [conformance/src/adversary.ts:292](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L292) |
-| <a id="property-turn-1"></a> `turn?`         | `readonly` | `number` | Which turn of the case this instance is running. Attempts declared for any other turn are left alone: they belong to a different turn against the same world, and issuing them here would collapse the two into one. | [conformance/src/adversary.ts:298](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L298) |
+| <a id="property-runtimeid"></a> `runtimeId?` | `readonly` | `string` | -                                                                                                                                                                                                                    | [conformance/src/adversary.ts:291](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L291) |
+| <a id="property-turn-1"></a> `turn?`         | `readonly` | `number` | Which turn of the case this instance is running. Attempts declared for any other turn are left alone: they belong to a different turn against the same world, and issuing them here would collapse the two into one. | [conformance/src/adversary.ts:297](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L297) |
 
 ---
 
@@ -2517,7 +2517,7 @@ punctuation between them.
 
 > **AdversarialTurnReport** = `z.infer`\<_typeof_ [`AdversarialTurnReportSchema`](#adversarialturnreportschema)>\>
 
-Defined in: [conformance/src/adversary.ts:289](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L289)
+Defined in: [conformance/src/adversary.ts:288](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L288)
 
 ---
 
@@ -2573,7 +2573,7 @@ Defined in: [conformance/src/adversary.ts:134](https://github.com/Aicoo-Team/Sha
 
 > **AttemptReceipt** = `z.infer`\<_typeof_ [`AttemptReceiptSchema`](#attemptreceiptschema)>\>
 
-Defined in: [conformance/src/adversary.ts:275](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L275)
+Defined in: [conformance/src/adversary.ts:274](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L274)
 
 ---
 
@@ -2757,7 +2757,7 @@ Defined in: [conformance/src/record.ts:96](https://github.com/Aicoo-Team/SharedO
 
 > `const` **AdversarialTurnReportSchema**: `ZodObject`\<\{ `executionId`: `ZodString`; `moveIds`: `ZodArray`\<`ZodString`, `"many"`>\>; `receipts`: `ZodArray`\<`ZodObject`\<\{ `argumentKeys`: `ZodArray`\<`ZodString`, `"many"`>\>; `attempted`: `ZodBoolean`; `attemptId`: `ZodString`; `callId`: `ZodOptional`\<`ZodString`>\>; `detail`: `ZodOptional`\<`ZodString`>\>; `expect`: `ZodObject`\<\{ `reasonCodes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; `statuses`: `ZodArray`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}, \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}\>; `kind`: `ZodEnum`\<\[`"forged_grant"`, `"hidden_tool"`, `"read_to_mutation"`, `"expired_grant"`, `"replayed_grant"`, `"revoked_mid_turn"`, `"expired_mid_turn"`, `"namespace_crossing"`, `"bounded_grant_exhausted"`, `"usage_store_unavailable"`, `"authority_unavailable"`\]\>; `moveId`: `ZodString`; `observed`: `ZodOptional`\<`ZodEnum`\<\[`"succeeded"`, `"denied"`, `"failed"`\]\>\>; `reasonCode`: `ZodOptional`\<`ZodString`>\>; `role`: `ZodEnum`\<\[`"attack"`, `"probe"`, `"control"`\]\>; `tool`: `ZodOptional`\<`ZodString`>\>; `turn`: `ZodOptional`\<`ZodNumber`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `argumentKeys`: `string`[]; `attempted`: `boolean`; `attemptId`: `string`; `callId?`: `string`; `detail?`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"expired_grant"` \| `"replayed_grant"` \| `"revoked_mid_turn"` \| `"expired_mid_turn"` \| `"namespace_crossing"` \| `"bounded_grant_exhausted"` \| `"usage_store_unavailable"` \| `"authority_unavailable"` \| `"audit_unavailable"` \| `"tool_ceiling_escape"` \| `"invalid_tool_result"` \| `"budget_exceeded"` \| `"turn_draining"` \| `"grant_material_unreachable"` \| `"over_broad_delegation"` \| `"rollback_unavailable"` \| `"rollback_out_of_scope"` \| `"broker_ungranted"` \| `"broker_out_of_scope"` \| `"catalogue_moved_mid_turn"` \| `"escalation_recorded"` \| `"escalation_refused"` \| `"runtime_crashed"` \| `"host_policy_denied"` \| `"route_lease_revoked"` \| `"record_completeness"` \| `"typed_governed_views"` \| `"replay_freshness"`; `moveId`: `string`; `observed?`: `"succeeded"` \| `"denied"` \| `"failed"`; `reasonCode?`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `turn?`: `number`; \}, \{ `argumentKeys`: `string`[]; `attempted`: `boolean`; `attemptId`: `string`; `callId?`: `string`; `detail?`: `string`; `expect`: \{ `reasonCodes?`: `string`[]; `statuses`: (`"succeeded"` \| `"denied"` \| `"failed"`)[]; \}; `kind`: `"forged_grant"` \| `"hidden_tool"` \| `"read_to_mutation"` \| `"expired_grant"` \| `"replayed_grant"` \| `"revoked_mid_turn"` \| `"expired_mid_turn"` \| `"namespace_crossing"` \| `"bounded_grant_exhausted"` \| `"usage_store_unavailable"` \| `"authority_unavailable"` \| `"audit_unavailable"` \| `"tool_ceiling_escape"` \| `"invalid_tool_result"` \| `"budget_exceeded"` \| `"turn_draining"` \| `"grant_material_unreachable"` \| `"over_broad_delegation"` \| `"rollback_unavailable"` \| `"rollback_out_of_scope"` \| `"broker_ungranted"` \| `"broker_out_of_scope"` \| `"catalogue_moved_mid_turn"` \| `"escalation_recorded"` \| `"escalation_refused"` \| `"runtime_crashed"` \| `"host_policy_denied"` \| `"route_lease_revoked"` \| `"record_completeness"` \| `"typed_governed_views"` \| `"replay_freshness"`; `moveId`: `string`; `observed?`: `"succeeded"` \| `"denied"` \| `"failed"`; `reasonCode?`: `string`; `role`: `"attack"` \| `"probe"` \| `"control"`; `tool?`: `string`; `turn?`: `number`; \}\>, `"many"`>\>; `runtimeId`: `ZodString`; `traceId`: `ZodString`; `version`: `ZodLiteral`\<`"1"`>\>; `visibleTools`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \}, \{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \}\>
 
-Defined in: [conformance/src/adversary.ts:277](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L277)
+Defined in: [conformance/src/adversary.ts:276](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L276)
 
 ---
 
@@ -4671,7 +4671,7 @@ harness also had a shell.
 
 > **attemptArguments**(`context`, `attempt`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [conformance/src/adversary.ts:598](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L598)
+Defined in: [conformance/src/adversary.ts:597](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L597)
 
 The arguments one declared attempt is issued with, forgery included.
 
@@ -4714,7 +4714,7 @@ as one comparison.
 
 > **attemptCallId**(`executionId`, `move`, `attempt`): `string`
 
-Defined in: [conformance/src/adversary.ts:582](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L582)
+Defined in: [conformance/src/adversary.ts:581](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L581)
 
 The identifier one declared attempt's call is issued under.
 
@@ -6178,7 +6178,7 @@ readonly `unknown`[] \| `undefined`
 
 > **readAdversarialReport**(`result`): \{ `executionId`: `string`; `moveIds`: `string`[]; `receipts`: `object`[]; `runtimeId`: `string`; `traceId`: `string`; `version`: `"1"`; `visibleTools`: `string`[]; \} \| `undefined`
 
-Defined in: [conformance/src/adversary.ts:526](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L526)
+Defined in: [conformance/src/adversary.ts:525](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L525)
 
 Read the terminal report a [HostileRuntime](#hostileruntime) turn produced.
 
@@ -6238,7 +6238,7 @@ The permission-filtered catalogue the runtime could actually see.
 
 > **readAttemptReceipts**(`result`): readonly `object`[]
 
-Defined in: [conformance/src/adversary.ts:556](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L556)
+Defined in: [conformance/src/adversary.ts:555](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L555)
 
 Recover attempt receipts from the execution event stream alone.
 
@@ -6261,7 +6261,7 @@ readonly `object`[]
 
 > **receiptBase**(`move`, `attempt`): `Pick`\<[`AttemptReceipt`](#attemptreceipt), `"moveId"` \| `"kind"` \| `"attemptId"` \| `"role"` \| `"tool"` \| `"turn"` \| `"expect"`>\>
 
-Defined in: [conformance/src/adversary.ts:725](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L725)
+Defined in: [conformance/src/adversary.ts:724](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/conformance/src/adversary.ts#L724)
 
 What a receipt says about its attempt before anything was observed.
 
