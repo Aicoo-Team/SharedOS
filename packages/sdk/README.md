@@ -4,7 +4,7 @@ The complete SharedOS SDK entry point. Install this package when one dependency
 is more convenient than selecting individual SharedOS layers.
 
 ```bash
-npm install @aicoo/sharedos@next
+npm install @aicoo/sharedos
 ```
 
 ```ts

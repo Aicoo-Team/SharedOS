@@ -1,8 +1,9 @@
 # MCP API reference
 
 SharedOS presents its permission-filtered tool catalogue as an MCP server, so a
-harness that already speaks MCP — Codex, Claude Code, DeepSeek Harness, Pi — runs
-natively against it without a shim. This page is the wire reference: transports,
+harness that already speaks MCP — Codex, Claude Code, DeepSeek Harness — runs
+natively against it without a shim. Pi ships no MCP client and reaches it through
+an MCP extension. This page is the wire reference: transports,
 methods, status codes, and headers. Why this boundary exists, what crosses it,
 and what is deliberately never published are in
 [MCP toolshare](mcp-toolshare.md) and [ADR 0014](adr/0014-mcp-toolshare.md).
@@ -13,7 +14,8 @@ the kernel behind them is the same, and a `tools/call` here becomes exactly the
 `ToolCall` that `POST /v1/tools/invoke` would have made.
 
 ```ts
-import { createStreamableHttpMcpServer, McpToolServer } from "@aicoo/sharedos-mcp";
+import { McpToolServer } from "@aicoo/sharedos-mcp";
+import { createStreamableHttpMcpServer } from "@aicoo/sharedos-mcp/node";
 
 const bridge = await createStreamableHttpMcpServer({
   server: new McpToolServer({ invoker, serverInfo: { name: "sharedos", version: "1" } }),
@@ -44,7 +46,9 @@ harness. Everything else about this surface follows from that:
 | stdio           | `serveMcpOverStdio`             | The harness spawns SharedOS; the process ends with the invocation |
 | Streamable HTTP | `createStreamableHttpMcpServer` | Loopback listener, closed with the turn                           |
 
-Both carry the same `McpToolServer`. Choose stdio when SharedOS _is_ the
+Both entry points are exported from `@aicoo/sharedos-mcp/node`, which keeps
+`node:http` out of the package's main entry point. Both carry the same
+`McpToolServer`. Choose stdio when SharedOS _is_ the
 subprocess — a turn-scoped bridge and a process lifetime that already match need
 nothing to keep them in step. Choose HTTP when the harness is sandboxed or
 remote and cannot be handed a stream pair at all; it is also the transport every
@@ -84,7 +88,10 @@ The returned server carries `url`, `port`, `sessionId`, and `close()`.
 | Empty JSON-RPC batch                       | `400`  | JSON-RPC `-32600`                                                            |
 | Unhandled failure                          | `500`  | `{"error":"internal_error"}`                                                 |
 
-Every response carries `mcp-session-id`.
+Every answer to an accepted `POST` carries `mcp-session-id`: the `200`, the
+`202`, and the `400` for a body that could not be read as JSON-RPC. The refusals
+that come before a message is read (`401`, both `404`s, `405`), the `DELETE`
+`200` and the `500` do not.
 
 `authorize` receives the bearer token, or `undefined` when none was sent. Leave
 it absent for a loopback bridge whose port is known only to the subprocess it was
@@ -154,9 +161,9 @@ its own display — Claude Code, Codex, and DeepSeek all use
 never on the `ToolCall`, so it cannot reach an authorization decision even by
 mistake.
 
-Two fields change name on the way out. SharedOS annotates a tool `readOnly` and
-`destructive`; what is published are MCP's own `readOnlyHint` and
-`destructiveHint`. Namespace and source are not MCP fields at all, so they travel
+Three fields change name on the way out. SharedOS annotates a tool `readOnly`,
+`destructive` and `idempotent`; what is published are MCP's own `readOnlyHint`,
+`destructiveHint` and `idempotentHint`. Namespace and source are not MCP fields at all, so they travel
 under `_meta` as `sharedos/namespace` and `sharedos/source`. What is never
 published — the required capability, the grants behind it, the issuing authority,
 namespace settings, credentials, handler references — is listed in
@@ -210,7 +217,8 @@ back as a tool result, not a JSON-RPC error:
 }
 ```
 
-Read `_meta["sharedos/status"]` to separate `denied` from `failed`, and
+The text body also carries `retryable` when the result's error states one. Read
+`_meta["sharedos/status"]` to separate `denied` from `failed`, and
 `sharedos/code` for the [reason code](errors.md). A client that treats every
 `isError` alike will report a permission decision as an outage.
 
@@ -218,13 +226,13 @@ Read `_meta["sharedos/status"]` to separate `denied` from `failed`, and
 
 Reserved for messages that never reached a tool at all.
 
-| Code     | Meaning                                   |
-| -------- | ----------------------------------------- |
-| `-32700` | Body is not JSON                          |
-| `-32600` | Not a JSON-RPC message, or an empty batch |
-| `-32601` | Unknown method                            |
-| `-32602` | `tools/call` without a tool name          |
-| `-32603` | Internal failure                          |
+| Code     | Meaning                                                                         |
+| -------- | ------------------------------------------------------------------------------- |
+| `-32700` | Body is not JSON, or is JSON with no usable `id` that is not a JSON-RPC message |
+| `-32600` | A message with an `id` that is not a JSON-RPC request, or an empty batch        |
+| `-32601` | Unknown method                                                                  |
+| `-32602` | `tools/call` without a tool name                                                |
+| `-32603` | Internal failure                                                                |
 
 ## Harness configuration
 
@@ -236,12 +244,13 @@ bridge URL becomes a working configuration without hand-editing.
 | `codex`        | `config.toml`      | `codexMcpConfig`      |
 | `claude-code`  | `.mcp.json`        | `claudeCodeMcpConfig` |
 | `deepseek`     | `cordis.patch.yml` | `deepseekMcpConfig`   |
-| `pi`           | JSON options       | `piMcpConfig`         |
+| `pi`           | `.mcp.json`        | `piMcpConfig`         |
 
 `harnessMcpConfigFile(harness, connection)` returns the filename and contents for
 any of them; `claudeAgentSdkMcpOptions` reuses the Claude Code server block for
 the Agent SDK; `harnessToolAlias` reproduces the display name a harness will
-show.
+show. Pi's file is the shape `pi-mcp-adapter` reads, because Pi has no MCP client
+of its own; which extension a host installs is the host's choice.
 
 ## Escalation over MCP
 
@@ -250,8 +259,11 @@ driven in-process. The affordance is published as an ordinary tool,
 `sharedos.escalate`, and is permission-filtered like any other — an agent with no
 grant over it does not see it in the catalogue at all.
 
-It is never invoked. A driver that recognizes the name ends the turn with an
-escalate outcome instead of making a tool call, so nothing reaches the kernel.
+The harness calls it like any other tool, and the call never reaches the kernel.
+`createMcpHarnessRuntime` answers it `succeeded` with
+`{ escalated: true, reason, note }` and ends the turn with an escalate outcome.
+Every later call on that turn is answered `denied` with `escalation_pending`,
+`retryable: false`: the turn has ended by asking, so nothing further runs on it.
 See [ADR 0018](adr/0018-escalation-over-mcp.md) and
 [ADR 0011](adr/0011-escalation-terminal-outcome.md).
 

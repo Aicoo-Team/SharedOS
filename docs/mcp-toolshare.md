@@ -80,7 +80,8 @@ Publishing a capability requirement would therefore be both a leak and a lie.
 The same projection applies wherever a model is shown a catalogue, not only over
 MCP. `GET /v1/tools` and `RuntimeTurnRequest.tools` carry full `ToolDefinition`s
 for the host's benefit; a client or driver that feeds a model from either
-applies `publishToolCatalog` first, as `StandardTurnDriver` does. See the
+applies `publishToolCatalog` first. `StandardTurnDriver` projects further, to a
+name, a description and the input schema. See the
 [HTTP reference](http-api.md#get-v1tools).
 
 ## Per turn, never global
@@ -180,11 +181,11 @@ so that check is one field per column rather than one per record.
 
 ## Tool classes
 
-| Class             | Example                         | SharedOS authorized? | Recommendation                                   |
-| ----------------- | ------------------------------- | -------------------- | ------------------------------------------------ |
-| `managed`         | `files.search`, brokered GitHub | Yes                  | The normal SharedOS path                         |
-| `harness_local`   | patch tool, bounded shell       | No                   | Allow only if the sandbox cannot bypass SharedOS |
-| `external_direct` | independently configured Jira   | No                   | Explicit opt-in hybrid mode                      |
+| Class           | `ToolPolicy` field | Example                         | SharedOS authorized? | Recommendation                                   |
+| --------------- | ------------------ | ------------------------------- | -------------------- | ------------------------------------------------ |
+| Managed         | `managedMcp`       | `files.search`, brokered GitHub | Yes                  | The normal SharedOS path                         |
+| Harness-local   | `harnessLocal`     | patch tool, bounded shell       | No                   | Allow only if the sandbox cannot bypass SharedOS |
+| External direct | `externalDirect`   | independently configured Jira   | No                   | Explicit opt-in hybrid mode                      |
 
 `ToolPolicy` declares which a run had:
 

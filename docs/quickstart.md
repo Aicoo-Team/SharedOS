@@ -36,6 +36,7 @@ subtree, for one purpose, and nothing else.
 ```ts
 import {
   CapabilityAuthorizer,
+  InMemoryGrantUsageStore,
   SharedOSKernel,
   registerStandardOsTools,
   type AccessContext,
@@ -100,7 +101,8 @@ const kernel = new SharedOSKernel({
       );
     },
   },
-  authorizer: new CapabilityAuthorizer(),
+  // `maxUses` needs somewhere to count. See the next section.
+  authorizer: new CapabilityAuthorizer({ usageStore: new InMemoryGrantUsageStore() }),
 });
 kernel.registerResourceProvider(files);
 registerStandardOsTools(kernel, { files });
@@ -151,15 +153,14 @@ permission, and the exact resource is authorized again at invocation.
 
 ### `maxUses` is denied unless you give the kernel somewhere to count
 
-`maxUses: 3` above will refuse on the _first_ call with
-`usage_store_unavailable` — a bounded grant with nowhere to record usage fails
-closed rather than silently becoming unbounded. For a local experiment:
-
-```ts
-import { CapabilityAuthorizer, InMemoryGrantUsageStore } from "@aicoo/sharedos";
-
-const authorizer = new CapabilityAuthorizer({ usageStore: new InMemoryGrantUsageStore() });
-```
+The authorizer above is given an `InMemoryGrantUsageStore` because the grant
+sets `maxUses: 3`. Build it as a bare `new CapabilityAuthorizer()` and the
+program prints `[]`, `denied`, `denied`: a bounded grant with nowhere to record
+usage fails closed rather than silently becoming unbounded, so it makes nothing
+discoverable, and both calls are answered `tool_unavailable`. The decision's own
+code is `usage_store_unavailable`. `kernel.authorize` returns it, and the audit
+trail carries it as the `cause` of the refusal; see
+[`tool_unavailable` covers three different situations](errors.md#tool_unavailable-covers-three-different-situations).
 
 In production this must be a durable store whose `tryConsume` is one atomic
 statement. Two concurrent turns must not both be allowed to spend the last use.
@@ -357,7 +358,8 @@ minted per call. Every route, request shape, and status code is listed in the
 
 **`authority` is not the data owner.** It is the issuer whose grants are being
 exercised. For a grant Alice issued, that is Alice. For a grant Bob _derived_
-from it, that is Bob. Get it wrong and the grant is invisible — reported as
+from it, that is Bob. Get it wrong and the grant is invisible: the catalogue is empty, a
+call is answered `tool_unavailable`, and the decision behind it reads
 `no_matching_grant`, identical to having no grant at all.
 
 **Your `GrantSource` must pre-filter.** Answer only for the context's namespace,
@@ -367,7 +369,8 @@ about scope is treated as one that is broken.
 
 **Bounded and derived grants fail closed.** `maxUses` needs a `usageStore`;
 `deriveGrant` output needs a `delegationResolver`. Without them the kernel denies
-rather than assuming, and the reason code tells you which one is missing.
+rather than assuming, and the decision's reason code, from `kernel.authorize` or
+as the `cause` on the audit record, tells you which one is missing.
 
 **A filesystem provider must reject links, not just escapes.** Authorization is
 decided on the logical path; your provider serves the physical target. Staying

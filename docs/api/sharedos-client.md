@@ -9,7 +9,7 @@
 Runtime-validated HTTP client for a SharedOS service.
 
 ```bash
-npm install @aicoo/sharedos-client@next
+npm install @aicoo/sharedos-client
 ```
 
 ```ts

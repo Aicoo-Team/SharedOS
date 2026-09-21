@@ -9,7 +9,7 @@
 Admission rules for an auto-decision proposed from an owner's prior answers.
 
 ```bash
-npm install @aicoo/sharedos-precedent@next
+npm install @aicoo/sharedos-precedent
 ```
 
 A **precedent** is a resolved escalation: the `CapabilityRequest` that was

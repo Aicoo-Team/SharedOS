@@ -5,8 +5,8 @@ each one means and what to do about it.
 
 ## Denied is not failed
 
-Three statuses appear across `ToolResult`, `ResourceResult`,
-`MessageDeliveryResult`, and `ExecutionResult`:
+Three statuses appear across `ToolResult`, `ResourceResult`, and
+`ExecutionResult`:
 
 | Status      | Meaning                                            | Retry?                    |
 | ----------- | -------------------------------------------------- | ------------------------- |
@@ -14,13 +14,15 @@ Three statuses appear across `ToolResult`, `ResourceResult`,
 | `denied`    | Authorization refused it. Nothing ran              | No — change the grant     |
 | `failed`    | It was allowed, and something broke while doing it | Maybe — check `retryable` |
 
-`ExecutionResult` adds `cancelled` for a deadline or host cancellation, and
+`MessageDeliveryResult` has the same `denied` and `failed`, and says `accepted`
+or `delivered` where the others say `succeeded`. `ExecutionResult` adds `cancelled` for a deadline or host cancellation, and
 `escalated` for a turn that stopped and asked for a human. An escalated result
 carries an `escalation`, not an `error`: a denial is a decision SharedOS made,
 and an escalation is one it declined to make. Counting them together inflates
 every denial rate by the cases where the system correctly asked.
 
-Over HTTP all four are **200**. A `403` means the request never reached the
+Over HTTP a denial is a **200**, like a success or a failure; the one exception
+is a message the transport `accepted` for later delivery, which is **202**. A `403` means the request never reached the
 kernel's decision. Client code that only checks the HTTP status will read
 denials as successes.
 
@@ -234,14 +236,14 @@ return facts the kernel recorded and no prose: what each gate means and what
 fixes it is the table below, and a sentence copied into a return value is a
 sentence that drifts.
 
-| Gate             | It was refused because                                            | Fix                                                      |
-| ---------------- | ----------------------------------------------------------------- | -------------------------------------------------------- |
-| `envelope`       | The turn's catalogue never offered the tool, or a budget is spent | The model guessed a name, or the turn is over-budget     |
-| `registration`   | No such tool for this context, or its namespace is off            | `registerTool`, or enable the namespace                  |
-| `request`        | The call or context is malformed, or names another world          | A host bug. Fix the caller                               |
-| `infrastructure` | SharedOS could not establish a fact and failed closed             | Wire the missing port, or fix the store that threw       |
-| `ceiling`        | A grant authorized it and host policy overrode it                 | Product or organization policy. A grant will not help    |
-| `grant`          | Nothing the source returned covers it, or what covers it is spent | Issue a grant. `rejectedGrants` says why each one failed |
+| Gate             | It was refused because                                                                  | Fix                                                                |
+| ---------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `envelope`       | The turn's catalogue never offered the tool, a budget is spent, or the turn is draining | The model guessed a name, the turn is over-budget, or it is ending |
+| `registration`   | No such tool for this context, or its namespace is off                                  | `registerTool`, or enable the namespace                            |
+| `request`        | The call or context is malformed, or names another world                                | A host bug. Fix the caller                                         |
+| `infrastructure` | SharedOS could not establish a fact and failed closed                                   | Wire the missing port, or fix the store that threw                 |
+| `ceiling`        | A grant authorized it and host policy overrode it                                       | Product or organization policy. A grant will not help              |
+| `grant`          | Nothing the source returned covers it, or what covers it is spent                       | Issue a grant. `rejectedGrants` says why each one failed           |
 
 The classifier reads the record in the order the checks ran: `source` first,
 because the envelope refuses before the kernel is asked; `cause` next, because the kernel refuses an unregistered or disabled tool before
@@ -263,21 +265,22 @@ on the wire.
 
 ## Tool invocation
 
-| Code                                 | Status | Means                                                                                                                                        |
-| ------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tool_unavailable`                   | denied | Not registered, namespace off, or not discoverable — see above                                                                               |
-| `no_matching_grant`                  | denied | The exact argument-selected resource is not authorized                                                                                       |
-| `invalid_request`                    | denied | The resolved requirement names a world other than the caller's own                                                                           |
-| `invalid_tool_arguments`             | failed | `parseArguments` rejected the call. The thrown error goes to `onProviderError` and nowhere else (below)                                      |
-| `invalid_tool_requirement`           | failed | `resolveRequirement` returned something outside the declared ceiling                                                                         |
-| `tool_requirement_resolution_failed` | failed | `resolveRequirement` threw. The thrown error goes to `onProviderError` and nowhere else (below)                                              |
-| `tool_catalog_unavailable`           | failed | A `ContextToolProvider` threw. The catalog is never partially returned. The thrown error goes to `onProviderError` and nowhere else (below)  |
-| `tool_execution_failed`              | failed | Your `invoke` threw. The thrown error goes to `onProviderError` and nowhere else (below)                                                     |
-| `invalid_tool_result`                | failed | Your handler returned something that is not a `ToolResult`                                                                                   |
-| `trace_mismatch`                     | denied | `call.traceId` does not match the context                                                                                                    |
-| `step_limit_exceeded`                | denied | The call names a step at or past the envelope's `maxSteps`. This call is refused; the turn continues                                         |
-| `tool_call_limit_exceeded`           | denied | The envelope's `maxToolCalls` is spent. This call is refused; the turn continues                                                             |
-| `turn_draining`                      | denied | The turn is inside its `drainGraceMs`, or ending on an audit outage, and takes no new calls. Nothing ran; calls already running still answer |
+| Code                                 | Status | Means                                                                                                                                                 |
+| ------------------------------------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tool_unavailable`                   | denied | Not registered, namespace off, or not discoverable — see above                                                                                        |
+| `no_matching_grant`                  | denied | The exact argument-selected resource is not authorized                                                                                                |
+| `invalid_request`                    | denied | The resolved requirement names a world other than the caller's own                                                                                    |
+| `invalid_tool_arguments`             | failed | `parseArguments` rejected the call. The thrown error goes to `onProviderError` and nowhere else (below)                                               |
+| `invalid_tool_requirement`           | failed | `resolveRequirement` returned something outside the declared ceiling                                                                                  |
+| `tool_requirement_resolution_failed` | failed | `resolveRequirement` threw. The thrown error goes to `onProviderError` and nowhere else (below)                                                       |
+| `tool_catalog_unavailable`           | failed | A `ContextToolProvider` threw. The catalog is never partially returned. The thrown error goes to `onProviderError` and nowhere else (below)           |
+| `tool_execution_failed`              | failed | Your `invoke` threw. The thrown error goes to `onProviderError` and nowhere else (below)                                                              |
+| `invalid_tool_result`                | failed | Your handler returned something that is not a `ToolResult`                                                                                            |
+| `escalation_not_terminated`          | failed | `sharedos.escalate` reached its handler: the runtime passed the call on instead of ending the turn on it. See [tools](tools.md#kernel-supplied-tools) |
+| `trace_mismatch`                     | denied | `call.traceId` does not match the context                                                                                                             |
+| `step_limit_exceeded`                | denied | The call names a step at or past the envelope's `maxSteps`. This call is refused; the turn continues                                                  |
+| `tool_call_limit_exceeded`           | denied | The envelope's `maxToolCalls` is spent. This call is refused; the turn continues                                                                      |
+| `turn_draining`                      | denied | The turn is inside its `drainGraceMs`, or ending on an audit outage, and takes no new calls. Nothing ran; calls already running still answer          |
 
 A budget refuses a call; it does not end a turn. The envelope answers the call
 that crosses `maxSteps` or `maxToolCalls` with `denied`, the runtime receives an
@@ -481,19 +484,20 @@ Codes from `@aicoo/sharedos-adapters`. The `harness_*` and `model_*` codes are
 how a driver or plugin ends its turn, so they surface as a `failed`
 `ExecutionResult`; `escalation_pending` is a tool result on the MCP path.
 
-| Code                                  | Status | Means                                                                                                                                                                                                                                                                    |
-| ------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `escalation_pending`                  | denied | A `tools/call` made after the turn asked for a human. The bridge refuses it in band and nothing further runs on that turn (ADR 0018). An agent without the escalation grant gets `tool_unavailable`                                                                      |
-| `harness_not_started`                 | failed | The vendor CLI could not be spawned                                                                                                                                                                                                                                      |
-| `harness_exited_without_outcome`      | failed | The CLI exited non-zero without a terminal frame                                                                                                                                                                                                                         |
-| `harness_ended_without_outcome`       | failed | The harness closed its channel before completing the turn                                                                                                                                                                                                                |
-| `harness_frame_limit_exceeded`        | failed | Too many frames without an outcome (`maxIgnoredFrames`)                                                                                                                                                                                                                  |
-| `harness_arguments_unparseable`       | failed | Codex or DeepSeek Harness sent tool arguments that are not a JSON object                                                                                                                                                                                                 |
-| `harness_command_rejected`            | failed | Pi rejected a command. Retryable                                                                                                                                                                                                                                         |
-| `harness_failed`                      | failed | The harness reported its own failure. Retryable; Codex and Claude Code substitute the vendor's own code when the frame names one                                                                                                                                         |
-| `model_call_failed`                   | failed | `StandardTurnDriver`'s provider call threw, other than by cancellation                                                                                                                                                                                                   |
-| `model_output_truncated`              | failed | The provider cut `StandardTurnDriver`'s reply at the output-token ceiling (`finish_reason: length`). Nothing in a cut-off reply is a decision the model finished making, so none of it is released                                                                       |
-| `model_malformed_call_limit_exceeded` | failed | The model made more than `maxMalformedCalls` (default 8) calls whose arguments were not a JSON object. Each was refused in place as `invalid_tool_arguments` and answered back to the model, never sent as `{}`; the turn's metadata counts them as `malformedToolCalls` |
+| Code                                                                                                                        | Status | Means                                                                                                                                                                                                                                                                    |
+| --------------------------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `escalation_pending`                                                                                                        | denied | A `tools/call` made after the turn asked for a human. The bridge refuses it in band and nothing further runs on that turn (ADR 0018). An agent without the escalation grant gets `tool_unavailable`                                                                      |
+| `harness_not_started`                                                                                                       | failed | The vendor CLI could not be spawned                                                                                                                                                                                                                                      |
+| `harness_exited_without_outcome`                                                                                            | failed | The CLI exited non-zero without a terminal frame                                                                                                                                                                                                                         |
+| `harness_ended_without_outcome`                                                                                             | failed | The harness closed its channel before completing the turn                                                                                                                                                                                                                |
+| `harness_frame_limit_exceeded`                                                                                              | failed | Too many frames without an outcome (`maxIgnoredFrames`)                                                                                                                                                                                                                  |
+| `harness_arguments_unparseable`                                                                                             | failed | Codex or DeepSeek Harness sent tool arguments that are not a JSON object                                                                                                                                                                                                 |
+| `harness_command_rejected`                                                                                                  | failed | Pi rejected a command. Retryable                                                                                                                                                                                                                                         |
+| `harness_failed`                                                                                                            | failed | The harness reported its own failure. Retryable; Codex and Claude Code substitute the vendor's own code when the frame names one                                                                                                                                         |
+| `harness_turn_aborted`, `harness_turn_blocked`, `harness_turn_error`, `harness_turn_max_tokens`, `harness_turn_interrupted` | failed | DeepSeek Harness ended its turn without completing it, for the reason the code names. Retryable; the vendor's own code is substituted when the frame names one, and DeepSeek never reports `harness_failed`                                                              |
+| `model_call_failed`                                                                                                         | failed | `StandardTurnDriver`'s provider call threw, other than by cancellation                                                                                                                                                                                                   |
+| `model_output_truncated`                                                                                                    | failed | The provider cut `StandardTurnDriver`'s reply at the output-token ceiling (`finish_reason: length`). Nothing in a cut-off reply is a decision the model finished making, so none of it is released                                                                       |
+| `model_malformed_call_limit_exceeded`                                                                                       | failed | The model made more than `maxMalformedCalls` (default 8) calls whose arguments were not a JSON object. Each was refused in place as `invalid_tool_arguments` and answered back to the model, never sent as `{}`; the turn's metadata counts them as `malformedToolCalls` |
 
 ## HTTP
 
@@ -506,6 +510,13 @@ how a driver or plugin ends its turn, so they surface as a `failed`
 | 405    | `method_not_allowed`     | Wrong verb                                      |
 | 500    | `invalid_access_context` | `resolveContext` returned an invalid context    |
 | 500    | `internal_error`         | Anything else; details never leak               |
+
+`resolveContext` answers with a status and code of its own by throwing
+`SharedOSHttpError(status, code, message)`, which is how a failed authentication
+becomes a `401`; a plain `Error` thrown there is a `500`. `SharedOSClientError`
+carries the handler's code, or one of two the client raises itself:
+`invalid_response` for an answer that is not JSON or fails the route's schema, and
+`request_failed` for a non-2xx answer with no error body.
 
 ## Delegation
 
@@ -573,18 +584,19 @@ differently, so an outage is never reported as a policy decision.
 
 ## Audit events
 
-| Type                               | Outcomes                                     | When                                                            |
-| ---------------------------------- | -------------------------------------------- | --------------------------------------------------------------- |
-| `authority.resolved`               | `succeeded`, `failed`                        | A turn loaded its authority, once; `failed` is fail-closed      |
-| `authorization.checked`            | `allowed`, `denied`                          | One decision, before any tool, resource, message, or turn       |
-| `escalation.requested`             | `escalated`                                  | A turn ended by asking for a human; nothing was granted         |
-| `resource.invoked`                 | `succeeded`, `denied`, `failed`              | A direct resource operation                                     |
-| `tool.invoked`                     | `succeeded`, `denied`, `failed`              | A tool call                                                     |
-| `tool.catalog.listed`              | `succeeded`, `denied`                        | A catalogue was computed; `denied` is an empty one, fail-closed |
-| `tool.namespace.catalog.listed`    | `succeeded`                                  | The management-plane namespace catalogue was read               |
-| `tool.namespace.selection.updated` | `succeeded`, `failed`                        | A namespace patch was applied                                   |
-| `message.sent`                     | `succeeded`, `denied`, `failed`              | A message was delivered through the transport                   |
-| `turn.ended`                       | `succeeded`, `denied`, `failed`, `escalated` | One turn reached a terminal outcome, recorded by the envelope   |
+| Type                               | Outcomes                                       | When                                                                                                                                |
+| ---------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `authority.resolved`               | `succeeded`, `failed`                          | A turn loaded its authority, once; `failed` is fail-closed                                                                          |
+| `authorization.checked`            | `allowed`, `denied`                            | One decision, before any tool, resource, message, or turn                                                                           |
+| `escalation.requested`             | `escalated`                                    | A turn ended by asking for a human; nothing was granted                                                                             |
+| `escalation.auto_decided`          | `allowed`, `denied`                            | An escalation was decided from precedent, without a human. Built by `@aicoo/sharedos-precedent`; the host's control plane writes it |
+| `resource.invoked`                 | `succeeded`, `denied`, `failed`, `interrupted` | A direct resource operation                                                                                                         |
+| `tool.invoked`                     | `succeeded`, `denied`, `failed`, `interrupted` | A tool call                                                                                                                         |
+| `tool.catalog.listed`              | `succeeded`, `denied`                          | A catalogue was computed; `denied` is an empty one, fail-closed                                                                     |
+| `tool.namespace.catalog.listed`    | `succeeded`                                    | The management-plane namespace catalogue was read                                                                                   |
+| `tool.namespace.selection.updated` | `succeeded`                                    | A namespace patch was applied; a refused patch throws and writes nothing                                                            |
+| `message.sent`                     | `succeeded`, `denied`, `failed`, `interrupted` | A message was delivered through the transport                                                                                       |
+| `turn.ended`                       | `succeeded`, `denied`, `failed`, `escalated`   | One turn reached a terminal outcome, recorded by the envelope                                                                       |
 
 `authority.resolved` opens a turn: a turn resolves authority once, and this is
 the event that records which grants it resolved to. It carries `authorityHash`
@@ -603,7 +615,8 @@ asked for help.
 Every event carries `version`, `id`, `type`, `outcome`, `at`, `traceId`,
 `namespaceId`, `actor`, `authority`, `owner`, `purpose`, and where applicable
 `resource`, `action`, `grantId`, `authorityHash`, `operationId`, `tool`,
-`messageId`, `receiver`, `reason`, `requestedAuthority`, and `metadata`.
+`messageId`, `receiver`, `reason`, `source`, `cause`, `failClosed`, `consumed`,
+`endedBy`, `requestedAuthority`, and `metadata`.
 
 `id` is the record's own identity, minted when the event is made and never
 derived from its content. `at` is the turn's instant, so every record of one

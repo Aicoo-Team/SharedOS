@@ -4,7 +4,7 @@ The SharedOS permission-filtered tool catalogue, served to external harnesses as
 a Model Context Protocol server.
 
 ```bash
-npm install @aicoo/sharedos-mcp@next
+npm install @aicoo/sharedos-mcp
 ```
 
 ```

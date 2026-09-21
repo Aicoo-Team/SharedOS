@@ -6,8 +6,9 @@ import { JsonObjectSchema, JsonValueSchema } from "./json.js";
 import { ProtocolErrorSchema } from "./protocol-error.js";
 
 /**
- * Hop provenance a host may attach to an envelope. The kernel neither sets nor
- * reads it; see `docs/open-items.md`.
+ * Hop provenance a host may attach to an envelope. It is host-owned metadata:
+ * the kernel checks its shape with the rest of the envelope, neither sets nor
+ * reads it, and hands it to the transport as the host sent it.
  */
 export const MessageProvenanceSchema = z
   .object({

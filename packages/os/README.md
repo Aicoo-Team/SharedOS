@@ -3,7 +3,7 @@
 Standard permission-controlled file tool adapters for SharedOS.
 
 ```bash
-npm install @aicoo/sharedos-os@next
+npm install @aicoo/sharedos-os
 ```
 
 Hosts provide storage implementations; this package provides one canonical
