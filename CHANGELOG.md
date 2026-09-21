@@ -144,6 +144,19 @@ each entry calls out what a host has to update.
   same way; a host's own cancellation still stops the turn at once. Zero, the
   default, is the behaviour before. ADR 0007 is revised in place.
 
+- **A tool call refused at discovery records why.** `invokeTool` checks
+  discovery before it authorizes, and a call refused there wrote an
+  `authorization.checked` event with the reason and nothing else: no
+  `grantsResolved`, no `rejectedGrants`, no `missingDependency`. That is the
+  path a missing `usageStore` always takes for a tool whose only grant is
+  bounded, so the wiring fault `docs/host-integration.md` says is "diagnosable
+  from the trail" was absent from the trail exactly where a host meets it. The
+  kernel now asks for the account on that check, and `canDiscover` takes an
+  optional `onExplain` (`DiscoverOptions`) to hand it over. `listTools` does not
+  ask, so filtering a catalogue still records no account, and a discovery
+  denial still carries no `requiredAuthority` (ADR 0019). The caller is told
+  what it was told before.
+
 - **A session that opens after its turn was cancelled is closed.** The standard
   loop stops waiting for `AgentTurnDriver.open` when the turn is cancelled. A
   driver that does not honour its signal, or loses the race with it, handed back
@@ -322,6 +335,10 @@ SHAREDOS_MCP_SERVER_NAME` was written at ten sites across the config emitters,
 
 ### Added
 
+- **`DiscoverOptions`, and `onExplain` on `CapabilityAuthorizer.canDiscover`.**
+  The account `authorize` already hands a host, on a discovery check that asks
+  for it. Optional, and unset wherever a catalogue is filtered. It exists for
+  the fix above: a call refused at discovery now records why.
 - **testkit: `expire()` on the two grant stores, `UnavailableGrantUsageStore`,
   and `InMemoryMessageRequestRouter`.** testkit is where ADR 0002 puts the
   in-memory stand-ins for the storage a host supplies, and the conformance world
