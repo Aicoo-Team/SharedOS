@@ -4,7 +4,7 @@ A fixed permission envelope with standard and replaceable one-turn agent
 runtimes.
 
 ```bash
-npm install @aicoo/sharedos-runtime@next
+npm install @aicoo/sharedos-runtime
 ```
 
 SharedOS is runtime-agnostic, not runtime-less. The package exports two layers:

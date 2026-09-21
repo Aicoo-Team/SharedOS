@@ -9,7 +9,7 @@
 Deterministic in-memory fixtures and recording providers for SharedOS tests.
 
 ```bash
-npm install --save-dev @aicoo/sharedos-testkit@next
+npm install --save-dev @aicoo/sharedos-testkit
 ```
 
 This package is for tests, examples, and isolated experimental worlds. Its

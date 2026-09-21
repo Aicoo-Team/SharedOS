@@ -9,7 +9,7 @@
 Strict, JSON-safe SharedOS protocol schemas and TypeScript types.
 
 ```bash
-npm install @aicoo/sharedos-contracts@next
+npm install @aicoo/sharedos-contracts
 ```
 
 Use this package for addresses, capabilities, messages, resources, tools,

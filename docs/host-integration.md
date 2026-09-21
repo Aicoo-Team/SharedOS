@@ -33,8 +33,8 @@ construct that decision.
 
 The intended one-install entry point is `@aicoo/sharedos`, with individual
 `@aicoo/sharedos-*` packages available for hosts that need a smaller dependency
-surface. The packages are public `0.x` prereleases under npm's `next` dist-tag;
-the contracts are not yet stable or production-hardened.
+surface. The packages are public `0.x` releases on npm; the contracts are not
+yet stable or production-hardened.
 
 For development, clone this repository and either use workspace dependencies or
 create verified local tarballs:
@@ -44,9 +44,10 @@ pnpm install
 pnpm pack:preview
 ```
 
-The tarballs are written to `artifacts/npm/`. Public consumers install the
-explicit prerelease tag with `npm install @aicoo/sharedos@next`; the remaining
-production gates are tracked in [release readiness](release-readiness.md).
+The tarballs are written to `artifacts/npm/`. Public consumers install with
+`npm install @aicoo/sharedos`, which takes the release npm's `latest` tag points
+at; the remaining production gates are tracked in
+[release readiness](release-readiness.md).
 
 ## Choose an integration shape
 
