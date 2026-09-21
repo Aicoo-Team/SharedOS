@@ -128,8 +128,8 @@ boundaries to prevent hidden policy channels.
 A trusted sender identity does not make payload instructions safe. Forwarding a
 message does not forward permission. Each hop is a new routing decision, and
 every requested resource or tool operation is separately authorized. The
-envelope's optional `provenance` is metadata a host may attach; the kernel does
-not record hops itself (see [open items](../open-items.md)).
+envelope's optional `provenance` is host-owned metadata: the kernel checks its
+shape, neither sets nor reads it, and does not record hops itself.
 
 Executing the receiving agent is also a side effect: it requires a
 recipient-scoped `sharedos.execution` + `invoke` grant before the model driver is
