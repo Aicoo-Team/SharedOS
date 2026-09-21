@@ -332,6 +332,14 @@ Defined in: [packages/adapters/src/driver.ts:67](https://github.com/Aicoo-Team/S
 
 Defined in: [packages/adapters/src/driver.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L82)
 
+Open the session one turn is driven through.
+
+A turn cancelled while this is in flight stops waiting for it. A session
+handed back after that is still closed, with the turn's ending, so `close`
+may be called on a session that was never asked for a decision. A driver
+whose `open` rejects releases whatever it had taken itself: there is no
+session to close.
+
 ###### Parameters
 
 | Parameter | Type                                                           |
@@ -617,6 +625,14 @@ Defined in: [packages/adapters/src/model/driver.ts:142](https://github.com/Aicoo
 > **open**(`request`, `_signal`): `Promise`\<[`AgentTurnSession`](sharedos-runtime.md#agentturnsession)>\>
 
 Defined in: [packages/adapters/src/model/driver.ts:156](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L156)
+
+Open the session one turn is driven through.
+
+A turn cancelled while this is in flight stops waiting for it. A session
+handed back after that is still closed, with the turn's ending, so `close`
+may be called on a session that was never asked for a decision. A driver
+whose `open` rejects releases whatever it had taken itself: there is no
+session to close.
 
 ###### Parameters
 
