@@ -98,6 +98,67 @@ each entry calls out what a host has to update.
   two joined only on time order before. A sink or reader keyed on
   `authorization.checked` events without an `operationId` sees one more that has
   it.
+- **One route table, one version constant, one home for the primitives.**
+  `@aicoo/sharedos-contracts` now exports `SHAREDOS_ROUTES`, the HTTP surface
+  as one table of path, verb, request schema and response schema, which
+  `createSharedOSHandler` routes from and `SharedOSClient` calls through; a
+  path with two verbs is two entries, so the handler's `405` names the verbs
+  the table has for that path. `WireSchema<T>` is the shape both sides need
+  from a schema, and `SharedOSApiErrorCode` names the seven codes the handler
+  itself answers with; `SharedOSHttpError.code` and `SharedOSClientError.code`
+  are typed by it, widened to any string because a host's `resolveContext`
+  throws codes of its own and an older client must still carry a newer
+  server's. The wire is unchanged. `PROTOCOL_VERSION` is the one value
+  `ProtocolVersionSchema` accepts, and every runtime manifest, request, event,
+  result and envelope SharedOS builds reads it; the conformance record, the
+  adversarial report, the conformance manifest and the cost report keep their
+  own `"1"`, which are versions of their own shapes. `isJsonObject` sits in
+  contracts beside the `JsonObject` type. The helpers the runtime and the
+  adapters had each copied from core — `deepFreeze`, `protocolError`,
+  `raceAbort`, `readJsonObject`, now with `parseJsonObject` beside it for JSON
+  text, and `compactObject` — are exported once, from
+  `@aicoo/sharedos-core/internal`, a subpath and not the package index. The
+  runtime's `deepFreeze` had short-circuited on a frozen container; core's
+  recurses first. **What a host has to update:** a driver's `open` takes
+  `RuntimeTurnRequest`, the name `AgentTurnRequest` was an alias of; the
+  standard composition is `new SharedOSExecutor(kernel, new
+StandardRuntime(driver))`, which `TurnExecutor` built (see Removed).
+
+### Removed
+
+- `TurnExecutor` and `TurnExecutorOptions` from `@aicoo/sharedos-runtime`. The
+  facade built exactly `new SharedOSExecutor(kernel, new
+StandardRuntime(driver))` and forwarded `onTurnError` to both; a host writes
+  that composition itself and installs one sink in both options. Open-items
+  row 19 closes.
+- `AgentVisibleContext` and `AgentTurnRequest` from `@aicoo/sharedos-runtime`,
+  the backwards-compatible spellings of `RuntimeVisibleContext` and
+  `RuntimeTurnRequest`. The first had no user; the second was the parameter
+  type of `AgentTurnDriver.open`, which now names the type it always was.
+- `ContextCapsule`, `ContextCapsuleSchema`, `validateContextCapsule`,
+  `contextCapsulePreview`, `CONTEXT_CAPSULE_ITEM_KINDS` and the
+  `MAX_CONTEXT_CAPSULE_*` limits from `@aicoo/sharedos-contracts`, and their
+  row in the `docs/errors.md` limits table. Not dead surface: a feature stub, a
+  bounded, content-addressed payload for delegating across a trust boundary,
+  removed because no message, tool or turn path carries a capsule and no ADR
+  asks for one. It returns under governed views, with an ADR of its own.
+  Open-items row 14 closes.
+- `JsonArraySchema` from `@aicoo/sharedos-contracts`. `JsonValueSchema`
+  validates arrays inline; the `JsonArray` type stays.
+- `ToolClassSchema` and `ToolClass` from `@aicoo/sharedos-contracts`, with
+  `classifyTool` from `@aicoo/sharedos-mcp`. Nothing but their own test called
+  them, and neither the conformance package nor the grading rules read a
+  per-call tool class: ADR 0014 declares the classes per run through
+  `ToolPolicy`, which stays with `declareToolPolicy`, `parseToolPolicy` and
+  `toolPolicyHash`, the last of which the MCP conformance script uses for its
+  columns' `policyHash`.
+- `CompositeAuditSink` from `@aicoo/sharedos-core`. The kernel takes one sink;
+  fanning out to several is a five-line host utility, not a SharedOS claim.
+- `measureSync` from `@aicoo/sharedos-core`. Every operation SharedOS measures
+  is asynchronous.
+- `formatCatalogHash` from `@aicoo/sharedos-core`. The record stores the bare
+  hex, and the `sha256:`-prefixed form it produced had no carrier; its comment
+  claiming the record renders it was wrong.
 
 ## 0.1.0-alpha.5
 

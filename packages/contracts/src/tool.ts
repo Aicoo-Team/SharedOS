@@ -237,22 +237,6 @@ export const SharedOSToolCatalogSchema = z
 export type SharedOSToolCatalog = z.infer<typeof SharedOSToolCatalogSchema>;
 
 /**
- * How a tool reached the model, and therefore whether SharedOS authorized it.
- *
- * - `managed`: published by SharedOS and authorized on every call.
- * - `harness_local`: the harness's own tool -- a patch tool, a bounded shell.
- *   SharedOS never sees the call.
- * - `external_direct`: an MCP server the harness was configured with
- *   independently. SharedOS never sees the call.
- *
- * Only the managed class is a SharedOS claim. The other two are declared so a
- * result can be read for what it is: an unclassified run cannot distinguish
- * "the kernel refused every violation" from "the harness had a shell".
- */
-export const ToolClassSchema = z.enum(["managed", "harness_local", "external_direct"]);
-export type ToolClass = z.infer<typeof ToolClassSchema>;
-
-/**
  * The declared tool surface of one experiment or runtime configuration.
  *
  * `strict` asserts that every effect available to the harness went through

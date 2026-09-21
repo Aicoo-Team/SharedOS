@@ -1,6 +1,7 @@
 import {
   ExecutionRequestSchema,
   MAX_EXECUTION_TOOL_CALLS,
+  PROTOCOL_VERSION,
   MAX_EXECUTION_TIMEOUT_MS,
   RuntimeEventSchema,
   RuntimeManifestSchema,
@@ -30,9 +31,10 @@ import {
   type SpanSink,
 } from "@aicoo/sharedos-core";
 import type { SharedOSKernel, TurnAuthorityScope } from "@aicoo/sharedos-core";
+import { deepFreeze, protocolError, raceAbort } from "@aicoo/sharedos-core/internal";
 
 import { escalationOffered } from "./escalation.js";
-import { createAbortController, deepFreeze, protocolError, raceWithAbort } from "./internal.js";
+import { createAbortController } from "./internal.js";
 import {
   reportTurnError,
   type RuntimeHost,
@@ -42,11 +44,6 @@ import {
   type RuntimeTurnRequest,
   type TurnErrorReporter,
 } from "./runtime-plugin.js";
-import {
-  StandardRuntime,
-  type AgentTurnDriver,
-  type StandardRuntimeOptions,
-} from "./standard-runtime.js";
 
 export interface SharedOSExecutorOptions {
   clock?: () => string;
@@ -87,8 +84,6 @@ export interface ExecuteTurnOptions {
 export interface TurnExecutionPort {
   execute(input: ExecutionRequest, options?: ExecuteTurnOptions): Promise<ExecutionResult>;
 }
-
-export interface TurnExecutorOptions extends SharedOSExecutorOptions, StandardRuntimeOptions {}
 
 /**
  * The minimal deny-by-default kernel surface required by a turn executor.
@@ -273,7 +268,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
     const events: ExecutionEvent[] = [];
     const emit = (type: string, data: JsonValue): void => {
       const event: ExecutionEvent = {
-        version: "1",
+        version: PROTOCOL_VERSION,
         eventId: this.#createId(),
         executionId: request.executionId,
         traceId: request.context.traceId,
@@ -325,9 +320,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
       // turn cancelled while this is still in flight never receives the handle
       // and would leave the lease answering for a turn that has ended.
       opening = this.#kernel.openTurnAuthority?.(executionContext, { signal: abort.signal });
-      authority = await raceWithAbort(opening ?? Promise.resolve(undefined), abort.signal);
+      authority = await raceAbort(opening ?? Promise.resolve(undefined), abort.signal);
 
-      const admission = await raceWithAbort(
+      const admission = await raceAbort(
         this.#kernel.admitTurn(executionContext, request.agent, { signal: abort.signal }),
         abort.signal,
       );
@@ -346,12 +341,12 @@ export class SharedOSExecutor implements TurnExecutionPort {
       // that would read as "nothing" -- a true answer for a turn that reaches
       // nothing, and a false one here. The turn runs either way; a call that
       // depends on the unreadable budget fails closed on its own (ADR 0021).
-      const reach = await raceWithAbort(
+      const reach = await raceAbort(
         this.#kernel.reach(executionContext, { signal: abort.signal }),
         abort.signal,
       );
 
-      const allowedTools = await raceWithAbort(
+      const allowedTools = await raceAbort(
         this.#kernel.listTools(executionContext, { signal: abort.signal }),
         abort.signal,
       );
@@ -431,7 +426,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
           return result;
         }
 
-        const resultCandidate = await raceWithAbort(
+        const resultCandidate = await raceAbort(
           this.#kernel.invokeTool(contextAt(executionContext, this.#clock()), parsedCall.data, {
             signal: abort.signal,
           }),
@@ -476,7 +471,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
         },
       });
 
-      const outcomeCandidate: unknown = await raceWithAbort(
+      const outcomeCandidate: unknown = await raceAbort(
         this.#runtime.run(runtimeRequest, host, abort.signal),
         abort.signal,
       );
@@ -493,7 +488,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
       if (outcome.data.type === "complete") {
         emit("turn.completed", {});
         return {
-          version: "1",
+          version: PROTOCOL_VERSION,
           executionId: request.executionId,
           traceId: request.context.traceId,
           status: "succeeded",
@@ -546,7 +541,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
         // the turn as escalated -- the outcome is the runtime's to declare, and
         // dropping it because audit is unavailable would lose the one fact this
         // path exists to record.
-        const escalation = (await raceWithAbort(
+        const escalation = (await raceAbort(
           this.#kernel.recordEscalation?.(
             contextAt(executionContext, this.#clock()),
             outcome.data.reason,
@@ -561,7 +556,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
         };
         emit("turn.escalated", { reason: escalation.reason, reviewer: escalation.reviewer });
         return {
-          version: "1",
+          version: PROTOCOL_VERSION,
           executionId: request.executionId,
           traceId: request.context.traceId,
           status: "escalated",
@@ -613,54 +608,6 @@ export class SharedOSExecutor implements TurnExecutionPort {
       abort.abort(new Error("turn closed"));
       abort.dispose();
     }
-  }
-}
-
-/**
- * Compatibility facade for the original driver-based API. New harnesses should
- * implement RuntimePlugin and use SharedOSExecutor directly.
- *
- * Retained pending a deprecation decision; see `docs/open-items.md`.
- */
-export class TurnExecutor implements TurnExecutionPort {
-  readonly #executor: SharedOSExecutor;
-
-  constructor(kernel: TurnKernel, driver: AgentTurnDriver, options: TurnExecutorOptions = {}) {
-    const runtimeOptions: StandardRuntimeOptions = {
-      ...(options.closeTimeoutMs === undefined ? {} : { closeTimeoutMs: options.closeTimeoutMs }),
-      // To both, because either can contain a throw and only one of them ever
-      // does per turn: the loop catches its driver's, the envelope catches
-      // everything else. A host installs one sink and hears about both.
-      ...(options.onTurnError === undefined ? {} : { onTurnError: options.onTurnError }),
-    };
-    const executorOptions: SharedOSExecutorOptions = {
-      ...(options.clock === undefined ? {} : { clock: options.clock }),
-      ...(options.createId === undefined ? {} : { createId: options.createId }),
-      ...(options.defaultMaxSteps === undefined
-        ? {}
-        : { defaultMaxSteps: options.defaultMaxSteps }),
-      ...(options.defaultMaxToolCalls === undefined
-        ? {}
-        : { defaultMaxToolCalls: options.defaultMaxToolCalls }),
-      ...(options.defaultTimeoutMs === undefined
-        ? {}
-        : { defaultTimeoutMs: options.defaultTimeoutMs }),
-      ...(options.spans === undefined ? {} : { spans: options.spans }),
-      ...(options.onTurnError === undefined ? {} : { onTurnError: options.onTurnError }),
-    };
-    this.#executor = new SharedOSExecutor(
-      kernel,
-      new StandardRuntime(driver, runtimeOptions),
-      executorOptions,
-    );
-  }
-
-  get runtimeManifest(): RuntimeManifest {
-    return this.#executor.runtimeManifest;
-  }
-
-  execute(input: ExecutionRequest, options: ExecuteTurnOptions = {}): Promise<ExecutionResult> {
-    return this.#executor.execute(input, options);
   }
 }
 
@@ -796,7 +743,7 @@ function resultFor(
   metadata: JsonObject,
 ): ExecutionResult {
   const base = {
-    version: "1" as const,
+    version: PROTOCOL_VERSION,
     executionId: request.executionId,
     traceId: request.context.traceId,
     events: [...events],

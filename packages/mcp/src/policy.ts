@@ -1,4 +1,4 @@
-import type { ToolClass, ToolPolicy } from "@aicoo/sharedos-contracts";
+import type { ToolPolicy } from "@aicoo/sharedos-contracts";
 import { ToolPolicySchema } from "@aicoo/sharedos-contracts";
 import { hashJson } from "@aicoo/sharedos-core";
 
@@ -47,32 +47,6 @@ export function parseToolPolicy(value: unknown): ToolPolicy {
     harnessLocal: Object.freeze([...parsed.data.harnessLocal]),
     externalDirect: Object.freeze([...parsed.data.externalDirect]),
   }) as ToolPolicy;
-}
-
-/**
- * Which class a tool the harness called belongs to.
- *
- * `managed` is decided by presence in the published catalogue rather than by the
- * policy's own lists, because the catalogue is the fact and the policy is the
- * declaration. A name in neither is `undefined`: an unclassified tool, which is
- * a gap in the declaration and is reported as one rather than being quietly
- * counted as harness-local.
- */
-export function classifyTool(
-  policy: ToolPolicy,
-  publishedNames: readonly string[],
-  tool: string,
-): ToolClass | undefined {
-  if (publishedNames.includes(tool)) {
-    return "managed";
-  }
-  if (policy.harnessLocal.includes(tool)) {
-    return "harness_local";
-  }
-  if (policy.externalDirect.some((server) => tool.startsWith(`${server}.`))) {
-    return "external_direct";
-  }
-  return undefined;
 }
 
 /** A content identifier for the declared policy, for the run's `policyHash`. */

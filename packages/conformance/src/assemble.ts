@@ -5,7 +5,7 @@ import type {
   JsonObject,
   RuntimeManifest,
 } from "@aicoo/sharedos-contracts";
-import { RuntimeManifestSchema } from "@aicoo/sharedos-contracts";
+import { RuntimeManifestSchema, isJsonObject } from "@aicoo/sharedos-contracts";
 import { type AuditEvent, isInfrastructureDenial } from "@aicoo/sharedos-core";
 import { promptHandedHash } from "@aicoo/sharedos-runtime";
 
@@ -430,8 +430,4 @@ function stringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string")
     : [];
-}
-
-function isJsonObject(value: unknown): value is JsonObject {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

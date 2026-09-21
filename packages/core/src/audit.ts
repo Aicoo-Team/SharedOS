@@ -111,20 +111,6 @@ export class NoopAuditSink implements AuditSink {
   }
 }
 
-export class CompositeAuditSink implements AuditSink {
-  readonly #sinks: readonly AuditSink[];
-
-  constructor(sinks: readonly AuditSink[]) {
-    this.#sinks = [...sinks];
-  }
-
-  async record(event: AuditEvent): Promise<void> {
-    for (const sink of this.#sinks) {
-      await sink.record(immutableAuditEvent(event));
-    }
-  }
-}
-
 /** What an emitter states about one event; the kernel supplies the rest. */
 export type AuditEventInput = Omit<
   AuditEvent,

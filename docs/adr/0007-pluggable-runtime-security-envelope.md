@@ -48,8 +48,11 @@ stream remains a future versioned contract.
 
 `StandardRuntime` is the reference implementation of `RuntimePlugin`. It owns
 the existing bounded driver loop and retains `AgentTurnDriver` as a narrower
-model/provider seam. The original `TurnExecutor(kernel, driver)` API remains as
-a compatibility facade over `SharedOSExecutor` plus `StandardRuntime`.
+model/provider seam. The original `TurnExecutor(kernel, driver)` API remained as
+a compatibility facade over `SharedOSExecutor` plus `StandardRuntime` until
+`0.1.0-alpha.6`, when it was removed: it built exactly
+`new SharedOSExecutor(kernel, new StandardRuntime(driver))`, which a host writes
+itself.
 
 `RuntimeRegistry` is instance-scoped. A trusted host registers plugins at boot
 and resolves a runtime from trusted configuration. Runtime selection is not a

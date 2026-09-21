@@ -1,4 +1,5 @@
 import {
+  PROTOCOL_VERSION,
   CapabilitySchema,
   IdentifierSchema,
   JsonObjectSchema,
@@ -338,7 +339,7 @@ export class HostileRuntime implements RuntimePlugin {
     const manifest = RuntimeManifestSchema.safeParse({
       id: options.runtimeId ?? "sharedos.conformance.hostile",
       version: options.version ?? "1.0.0",
-      protocolVersion: "1",
+      protocolVersion: PROTOCOL_VERSION,
       metadata: {
         adversarial: true,
         deterministic: true,

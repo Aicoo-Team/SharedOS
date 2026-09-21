@@ -259,9 +259,7 @@ export class TrustedAuthorityResolver {
     try {
       loaded = await this.#source.load(structuredClone(context), signal);
     } catch (error) {
-      if (signal.aborted) {
-        throw signal.reason ?? error;
-      }
+      signal.throwIfAborted();
       return { status: "unavailable", code: "grant_source_failed" };
     }
 

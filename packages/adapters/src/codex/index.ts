@@ -6,6 +6,7 @@ import { HarnessRuntime } from "../runtime.js";
 import type { HarnessRequirements, HarnessTransport } from "../harness.js";
 import type { StandardRuntimeOptions } from "@aicoo/sharedos-runtime";
 import { CODEX_PROTOCOL_ID, codexProtocol } from "./protocol.js";
+import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
 
 export { CODEX_PROTOCOL_ID, codexProtocol } from "./protocol.js";
 
@@ -17,7 +18,7 @@ export const CODEX_ADAPTER_VERSION = "0.1.0-alpha.5";
 export const CODEX_RUNTIME_MANIFEST: RuntimeManifest = Object.freeze({
   id: "sharedos.codex",
   version: CODEX_ADAPTER_VERSION,
-  protocolVersion: "1",
+  protocolVersion: PROTOCOL_VERSION,
   metadata: {
     package: "@aicoo/sharedos-adapters",
     harness: CODEX_HARNESS_ID,

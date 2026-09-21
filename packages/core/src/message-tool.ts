@@ -6,7 +6,11 @@ import type {
   ToolDefinition,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
-import { MessageEnvelopeSchema, MessageRequestArgumentsSchema } from "@aicoo/sharedos-contracts";
+import {
+  MessageEnvelopeSchema,
+  MessageRequestArgumentsSchema,
+  PROTOCOL_VERSION,
+} from "@aicoo/sharedos-contracts";
 
 import { addressesEqual } from "./authorization.js";
 import type { ProviderErrorContext } from "./diagnostics.js";
@@ -17,7 +21,7 @@ import {
   type MessageRequestRouter,
 } from "./message-service.js";
 import type { ToolHandler } from "./tool-registry.js";
-import { deepFreeze, throwIfAborted } from "./internal.js";
+import { deepFreeze, protocolError } from "./internal.js";
 
 export const MESSAGE_TOOL_NAMESPACE = "messages";
 export const MESSAGE_REQUEST_TOOL_NAME = "messages.request";
@@ -180,7 +184,7 @@ export function createMessageRequestTool(options: MessageRequestToolOptions): To
       const arguments_ = MessageRequestArgumentsSchema.parse(trustedCall.arguments);
       const envelope = deepFreeze(
         MessageEnvelopeSchema.parse({
-          version: "1",
+          version: PROTOCOL_VERSION,
           id: options.createMessageId(
             structuredClone(trustedContext),
             structuredClone(trustedCall),
@@ -227,7 +231,7 @@ export function createMessageRequestTool(options: MessageRequestToolOptions): To
         );
       }
 
-      throwIfAborted(signal);
+      signal.throwIfAborted();
       let candidate: MessageEnvelope;
       try {
         candidate = await options.router.resolveReply(
@@ -236,11 +240,9 @@ export function createMessageRequestTool(options: MessageRequestToolOptions): To
           structuredClone(delivery),
           signal,
         );
-        throwIfAborted(signal);
+        signal.throwIfAborted();
       } catch (error) {
-        if (signal.aborted) {
-          throw signal.reason ?? error;
-        }
+        signal.throwIfAborted();
         // The router is a host port like any other, and the code it is answered
         // with is documented like any other; the error behind it was the one
         // that had nowhere to go.
@@ -300,6 +302,6 @@ function failedResult(
     tool: call.tool,
     status: "failed",
     completedAt,
-    error: { code, message, retryable: false },
+    error: protocolError(code, message),
   };
 }

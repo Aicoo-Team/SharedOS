@@ -1,4 +1,10 @@
-import type { Address, CapabilityGrant, JsonObject, JsonValue } from "@aicoo/sharedos-contracts";
+import type {
+  Address,
+  CapabilityGrant,
+  JsonObject,
+  JsonValue,
+  ProtocolError,
+} from "@aicoo/sharedos-contracts";
 
 /** Structural JSON equality for protocol values with unordered object keys. */
 export function canonicalJson(value: unknown): string {
@@ -38,7 +44,36 @@ export function readJsonObject(value: unknown): JsonObject | undefined {
   if (!isRecordLike(value)) {
     return undefined;
   }
-  const read = readJsonValue(value);
+  const read = readJsonValue(value, false);
+  return read === REFUSED ? undefined : (read as JsonObject);
+}
+
+/**
+ * A JSON text, as `JsonObjectSchema` would have read what `JSON.parse` made
+ * of it: text that is not JSON, or whose top level is not an object, is
+ * refused as `undefined`.
+ *
+ * The parser's grammar already guarantees strings, booleans, `null`, arrays
+ * and plain objects with own keys only, so the same walk as
+ * {@link readJsonObject} runs here in its copy-on-write mode: it checks the
+ * two places where the parser's output and the schema's verdict part -- a
+ * number literal too large for a double comes back as an infinity, which the
+ * schema refuses because it cannot round-trip, and a `"__proto__"` key comes
+ * back as an own property, which the schema drops at every depth -- and hands
+ * the parsed value back as it is when nothing had to be dropped, copying only
+ * the containers on the path to a dropped key.
+ */
+export function parseJsonObject(text: string): JsonObject | undefined {
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const read = readJsonValue(value, true);
   return read === REFUSED ? undefined : (read as JsonObject);
 }
 
@@ -56,7 +91,14 @@ function isRecordLike(value: unknown): value is Record<string, unknown> {
   return !(value instanceof Map || value instanceof Set || value instanceof Date);
 }
 
-function readJsonValue(value: unknown): JsonValue | typeof REFUSED {
+/**
+ * One walk, two modes. With `fresh` false the value is whatever a parser
+ * returned: every container is copied and a record's keys are the ones
+ * `for...in` reaches. With `fresh` true the value is `JSON.parse` output:
+ * containers are plain and keys are own, so a container is handed back as it
+ * is unless something beneath it had to be dropped or replaced.
+ */
+function readJsonValue(value: unknown, fresh: boolean): JsonValue | typeof REFUSED {
   switch (typeof value) {
     case "string":
     case "boolean":
@@ -72,28 +114,63 @@ function readJsonValue(value: unknown): JsonValue | typeof REFUSED {
     return null;
   }
   if (Array.isArray(value)) {
-    const copy: JsonValue[] = [];
+    let copy: JsonValue[] | undefined = fresh ? undefined : [];
     for (let index = 0; index < value.length; index += 1) {
-      const item = readJsonValue(value[index]);
+      const item = readJsonValue(value[index], fresh);
       if (item === REFUSED) {
         return REFUSED;
       }
-      copy.push(item);
+      if (copy !== undefined) {
+        copy.push(item);
+      } else if (item !== value[index]) {
+        copy = value.slice(0, index) as JsonValue[];
+        copy.push(item);
+      }
     }
-    return copy;
+    return copy ?? (value as JsonValue[]);
   }
   if (!isRecordLike(value)) {
     return REFUSED;
   }
-  const copy: JsonObject = {};
-  for (const key in value) {
-    const item = readJsonValue(value[key]);
+  const keys = fresh ? Object.keys(value) : enumerableKeys(value);
+  let copy: JsonObject | undefined = fresh ? undefined : {};
+  for (let index = 0; index < keys.length; index += 1) {
+    const key = keys[index] as string;
+    const item = readJsonValue(value[key], fresh);
     if (item === REFUSED) {
       return REFUSED;
     }
-    if (key !== "__proto__") {
+    if (key === "__proto__") {
+      copy ??= copyKeys(value, keys, index);
+    } else if (copy !== undefined) {
+      copy[key] = item;
+    } else if (item !== value[key]) {
+      copy = copyKeys(value, keys, index);
       copy[key] = item;
     }
+  }
+  return copy ?? (value as JsonObject);
+}
+
+/** The keys `for...in` reaches: own and inherited enumerable, in that order. */
+function enumerableKeys(record: Record<string, unknown>): string[] {
+  const keys: string[] = [];
+  for (const key in record) {
+    keys.push(key);
+  }
+  return keys;
+}
+
+/** The first `count` keys of a record the walk has already accepted as they are. */
+function copyKeys(
+  record: Record<string, unknown>,
+  keys: readonly string[],
+  count: number,
+): JsonObject {
+  const copy: JsonObject = {};
+  for (let index = 0; index < count; index += 1) {
+    const key = keys[index] as string;
+    copy[key] = record[key] as JsonValue;
   }
   return copy;
 }
@@ -109,10 +186,16 @@ export function deepFreeze<T>(value: T): T {
   return value;
 }
 
-export function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted) {
-    throw signal.reason ?? new Error("operation aborted");
-  }
+/** A protocol error in the one shape every refusal and failure carries. */
+export function protocolError(code: string, message: string, retryable = false): ProtocolError {
+  return { code, message, retryable };
+}
+
+/** Drop absent keys, so an optional field never reaches the wire as `undefined`. */
+export function compactObject(values: Readonly<Record<string, JsonValue | undefined>>): JsonObject {
+  return Object.fromEntries(
+    Object.entries(values).filter((entry): entry is [string, JsonValue] => entry[1] !== undefined),
+  );
 }
 
 /**

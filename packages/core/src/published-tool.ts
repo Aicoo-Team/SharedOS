@@ -125,11 +125,6 @@ export async function catalogHash(tools: readonly PublishedToolDefinition[]): Pr
   return sha256Hex(canonicalJson(sorted));
 }
 
-/** The hash as an experiment record renders it: algorithm-qualified. */
-export function formatCatalogHash(hash: string): string {
-  return `sha256:${hash}`;
-}
-
 export interface ToolCatalogOptions {
   readonly executionId: string;
 }

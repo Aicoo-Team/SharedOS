@@ -12,7 +12,7 @@ import {
 
 import { reportContainedError } from "@aicoo/sharedos-core";
 
-import { deepFreeze } from "./internal.js";
+import { deepFreeze } from "@aicoo/sharedos-core/internal";
 
 /** Which turn a {@link TurnErrorReporter} notification is about. */
 export interface TurnErrorContext {
