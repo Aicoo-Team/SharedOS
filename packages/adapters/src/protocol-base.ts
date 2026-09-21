@@ -28,14 +28,15 @@ export const UnknownBlockSchema = z.object({ type: z.string() }).passthrough();
  * only the prose is read: reading the call here as well would issue it twice.
  */
 export function contentBlockSteps(
-  content: readonly { readonly type: string }[],
+  content: readonly { readonly type: string; readonly text?: unknown }[],
   toolCall?: (block: unknown) => HarnessStep | undefined,
 ): HarnessStep[] {
   const steps: HarnessStep[] = [];
   for (const block of content) {
-    const text = TextBlockSchema.safeParse(block);
-    if (text.success) {
-      steps.push({ type: "message", text: text.data.text });
+    // Compared, not parsed: every call block would fail `TextBlockSchema`, and
+    // a failed parse costs more than the rest of the walk.
+    if (block.type === "text" && typeof block.text === "string") {
+      steps.push({ type: "message", text: block.text });
       continue;
     }
     const call = toolCall?.(block);
