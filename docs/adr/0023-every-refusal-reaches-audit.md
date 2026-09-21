@@ -15,6 +15,8 @@
 - Revised: 2026-09-20. The four turn ports on `TurnKernel` are required, where
   they were optional members a partial kernel could leave out. In the Decision
   below.
+- Revised: 2026-09-20. The conformance record carries `interrupted` as its own
+  outcome and a refusal's `cause` on the operation, under judge version 6.
 - Extends: `docs/adr/0012-one-refusal-vocabulary.md`
 
 ## Context
@@ -279,10 +281,11 @@ one of those would retry it. A cancelled turn keeps `failed` with reason
 `turn_cancelled`, because there `reason` separates two causes of one fact; here
 the fact differs. A port that answers despite the abort is recorded with its
 real outcome, a call stopped before its port was entered writes nothing, and the
-abort is still not reported to `onProviderError`. The conformance record has
-three outcomes and reads `interrupted` as `failed`, never `denied`, so no
-boundary is credited with refusing a call that may have run; giving the record
-the outcome of its own waits for the judge's next version.
+abort is still not reported to `onProviderError`. The conformance record
+carries `interrupted` as an outcome of its own, as audit does. A receipt built
+from it says `failed`, which is what the caller was told, and the judge leaves
+an interrupted call out of the refusals it credits to a boundary, so none is
+credited with refusing a call that may have run.
 
 Letting calls already inside a handler answer before a turn ends, so that most
 get their real outcome and `interrupted` is left for the ones that cannot, is

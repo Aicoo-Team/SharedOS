@@ -51,6 +51,7 @@
     "@aicoo/sharedos-mcp": "workspace:*",
     "@aicoo/sharedos-os": "workspace:*",
     "@aicoo/sharedos-runtime": "workspace:*",
+    "@aicoo/sharedos-testkit": "workspace:*",
     "zod": "^3.24.1"
   }
 }

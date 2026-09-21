@@ -70,7 +70,7 @@ carrying the row's own wording — invariant, expected outcome, and every
 attempt's expectation — so the result table is regenerated from the definitions
 rather than transcribed beside them. The committed manifest,
 `docs/conformance/kernel-conformance.md`, is that table: it is where the rows,
-their signals, and each column's cell are read. The twenty-nine moves, by what
+their signals, and each column's cell are read. The thirty-one moves, by what
 they attack:
 
 - **Authority a message cannot mint:** `forged_grant`, `read_to_mutation`,
@@ -82,7 +82,11 @@ they attack:
   host draws rather than the grant store: a grant covers the path and the
   product ceiling overrides it (ADR 0020).
 - **Failing closed:** `usage_store_unavailable`, `authority_unavailable`,
-  `invalid_tool_result`, `budget_exceeded`.
+  `audit_unavailable`, `invalid_tool_result`, `budget_exceeded`, `turn_draining`.
+  `audit_unavailable` and `turn_draining` are the envelope's: an audit sink that stops
+  taking writes ends the turn before the next effect, because a decision is
+  recorded before the effect it allows, and a turn that is draining refuses a
+  call the kernel would have allowed.
 - **The runtime's reach:** `grant_material_unreachable`.
 - **How a turn ends and what it leaves:** `escalation_recorded`,
   `escalation_refused`, `runtime_crashed`, `record_completeness`.
@@ -235,13 +239,20 @@ except for the record-completeness row itself, where the record _is_ the claim.
 
 Some rows are about how the turn ends rather than about a call inside it. A
 condition can declare `expectTurn`, and the row is then graded on the turn's
-terminal outcome as well as on its attempts. Two shapes use it:
+terminal outcome as well as on its attempts. Three shapes use it:
 
 - an unavailable grant store refuses the turn at admission, so the runtime is
   never started and every declared attempt is reported as structurally
   unreachable rather than as never exercised;
 - an escalated turn did run, so its attempts are graded exactly as any other
-  row's and the ending is an additional requirement on top of them.
+  row's and the ending is an additional requirement on top of them;
+- an audit outage ends the turn under the call whose decision could not be
+  recorded. That call is never answered, so it has nothing to grade: it is
+  reported as not applicable, and only when the record shows it was requested,
+  never completed, and the envelope ended the turn the way the row declared. A
+  call left unanswered by anything else is an attempt that was not exercised. A
+  live column's call ids are the harness's own, so there the call is found by
+  the tool its request named, one unanswered call standing for one attempt.
 
 Whether the runtime started is read from the record, not declared. It takes both
 halves — the condition saying the turn would end this way and the record showing

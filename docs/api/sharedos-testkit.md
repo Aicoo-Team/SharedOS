@@ -17,13 +17,19 @@ in-memory stores are not durable or multi-instance-safe production storage.
 `InMemoryToolNamespaceSettingsStore` can exercise the namespace control plane
 without becoming a production settings backend.
 
+A store that is down is a stand-in too: `UnavailableGrantSource`,
+`UnavailableDelegationChainResolver` and `UnavailableGrantUsageStore` fail every
+call, so a test can show a decision failing closed.
+`revoke` and `expire` on the two grant stores edit a grant in place, the way a
+host store would, and throw on an id the store does not hold.
+
 SharedOS is currently an `0.x` prerelease.
 
 ## Classes
 
 ### InMemoryAuditSink
 
-Defined in: [testkit/src/index.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L29)
+Defined in: [testkit/src/index.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L31)
 
 #### Implements
 
@@ -43,7 +49,7 @@ Defined in: [testkit/src/index.ts:29](https://github.com/Aicoo-Team/SharedOS/blo
 
 | Property                              | Modifier   | Type       | Default value | Defined in                                                                                                    |
 | ------------------------------------- | ---------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------------------- |
-| <a id="property-events"></a> `events` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L30) |
+| <a id="property-events"></a> `events` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L32) |
 
 #### Methods
 
@@ -51,13 +57,13 @@ Defined in: [testkit/src/index.ts:29](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **record**(`event`): `Promise`\<`void`>\>
 
-Defined in: [testkit/src/index.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L32)
+Defined in: [testkit/src/index.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L34)
 
 ###### Parameters
 
 | Parameter                                               | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `event`                                                 | \{ `action?`: `string`; `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `at`: `string`; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authorityHash?`: `string`; `cause?`: `string`; `consumed?`: `boolean`; `endedBy?`: `"envelope"` \| `"runtime"`; `failClosed?`: `boolean`; `grantId?`: `string`; `id`: `string`; `messageId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `operationId?`: `string`; `outcome`: `"denied"` \| `"failed"` \| `"succeeded"` \| `"allowed"` \| `"escalated"` \| `"interrupted"`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `reason?`: `string`; `receiver?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `resource?`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `source?`: `"kernel"` \| `"envelope"`; `tool?`: `string`; `traceId`: `string`; `type`: `"authorization.checked"` \| `"authority.resolved"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`; `version`: `"1"`; \} |
+| `event`                                                 | \{ `action?`: `string`; `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `at`: `string`; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authorityHash?`: `string`; `cause?`: `string`; `consumed?`: `boolean`; `endedBy?`: `"envelope"` \| `"runtime"`; `failClosed?`: `boolean`; `grantId?`: `string`; `id`: `string`; `messageId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `operationId?`: `string`; `outcome`: `"denied"` \| `"failed"` \| `"succeeded"` \| `"allowed"` \| `"escalated"` \| `"interrupted"`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `reason?`: `string`; `receiver?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `resource?`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `source?`: `"envelope"` \| `"kernel"`; `tool?`: `string`; `traceId`: `string`; `type`: `"authorization.checked"` \| `"authority.resolved"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`; `version`: `"1"`; \} |
 | `event.action?`                                         | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `event.actor`                                           | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `event.at`                                              | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -97,7 +103,7 @@ Defined in: [testkit/src/index.ts:32](https://github.com/Aicoo-Team/SharedOS/blo
 | `event.resource.namespace`                              | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `event.resource.owner?`                                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `event.resource.path`                                   | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `event.source?`                                         | `"kernel"` \| `"envelope"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `event.source?`                                         | `"envelope"` \| `"kernel"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `event.tool?`                                           | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `event.traceId`                                         | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `event.type`                                            | `"authorization.checked"` \| `"authority.resolved"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -115,7 +121,7 @@ Defined in: [testkit/src/index.ts:32](https://github.com/Aicoo-Team/SharedOS/blo
 
 ### InMemoryDelegationChainResolver
 
-Defined in: [testkit/src/index.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L136)
+Defined in: [testkit/src/index.ts:190](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L190)
 
 Namespace-scoped ancestor lookup for delegated-grant fixtures.
 
@@ -129,7 +135,7 @@ Namespace-scoped ancestor lookup for delegated-grant fixtures.
 
 > **new InMemoryDelegationChainResolver**(`grants?`): [`InMemoryDelegationChainResolver`](#inmemorydelegationchainresolver)
 
-Defined in: [testkit/src/index.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L139)
+Defined in: [testkit/src/index.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L193)
 
 ###### Parameters
 
@@ -147,7 +153,7 @@ Defined in: [testkit/src/index.ts:139](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **add**(`grant`): `this`
 
-Defined in: [testkit/src/index.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L145)
+Defined in: [testkit/src/index.ts:199](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L199)
 
 ###### Parameters
 
@@ -174,11 +180,31 @@ Defined in: [testkit/src/index.ts:145](https://github.com/Aicoo-Team/SharedOS/bl
 
 `this`
 
+##### expire()
+
+> **expire**(`namespaceId`, `grantId`, `expiresAt`): `this`
+
+Defined in: [testkit/src/index.ts:220](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L220)
+
+Move a grant's expiry in place, as [InMemoryGrantSource.expire](#expire-1) does.
+
+###### Parameters
+
+| Parameter     | Type     |
+| ------------- | -------- |
+| `namespaceId` | `string` |
+| `grantId`     | `string` |
+| `expiresAt`   | `string` |
+
+###### Returns
+
+`this`
+
 ##### resolve()
 
 > **resolve**(`namespaceId`, `grantId`): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: [testkit/src/index.ts:165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L165)
+Defined in: [testkit/src/index.ts:231](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L231)
 
 ###### Parameters
 
@@ -199,7 +225,7 @@ Defined in: [testkit/src/index.ts:165](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **revoke**(`namespaceId`, `grantId`, `revokedAt`): `this`
 
-Defined in: [testkit/src/index.ts:156](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L156)
+Defined in: [testkit/src/index.ts:210](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L210)
 
 Record a revocation the way a host grant store would, in place.
 
@@ -219,7 +245,7 @@ Record a revocation the way a host grant store would, in place.
 
 ### InMemoryGrantSource
 
-Defined in: [testkit/src/index.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L87)
+Defined in: [testkit/src/index.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L130)
 
 A host grant store fixture.
 
@@ -237,7 +263,7 @@ authority inside its namespace, which is the contract every production
 
 > **new InMemoryGrantSource**(`grants?`): [`InMemoryGrantSource`](#inmemorygrantsource)
 
-Defined in: [testkit/src/index.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L90)
+Defined in: [testkit/src/index.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L133)
 
 ###### Parameters
 
@@ -255,7 +281,7 @@ Defined in: [testkit/src/index.ts:90](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **add**(...`grants`): `this`
 
-Defined in: [testkit/src/index.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L96)
+Defined in: [testkit/src/index.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L139)
 
 ###### Parameters
 
@@ -267,11 +293,30 @@ Defined in: [testkit/src/index.ts:96](https://github.com/Aicoo-Team/SharedOS/blo
 
 `this`
 
+##### expire()
+
+> **expire**(`grantId`, `expiresAt`): `this`
+
+Defined in: [testkit/src/index.ts:158](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L158)
+
+Move a grant's expiry, the way a host store would record a shortened window.
+
+###### Parameters
+
+| Parameter   | Type     |
+| ----------- | -------- |
+| `grantId`   | `string` |
+| `expiresAt` | `string` |
+
+###### Returns
+
+`this`
+
 ##### load()
 
 > **load**(`context`): `Promise`\<readonly `object`[]\>
 
-Defined in: [testkit/src/index.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L114)
+Defined in: [testkit/src/index.ts:168](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L168)
 
 ###### Parameters
 
@@ -299,7 +344,7 @@ Defined in: [testkit/src/index.ts:114](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **revoke**(`grantId`, `revokedAt`): `this`
 
-Defined in: [testkit/src/index.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L104)
+Defined in: [testkit/src/index.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L147)
 
 Record a revocation the way a host store would, without deleting history.
 
@@ -316,9 +361,89 @@ Record a revocation the way a host store would, without deleting history.
 
 ---
 
+### InMemoryMessageRequestRouter
+
+Defined in: [testkit/src/index.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L63)
+
+Answers a request from the transport's own log of accepted deliveries.
+
+The reply is derived from the request, so a test can predict it: the id is
+the request's with `-reply` appended, the parties are swapped, and the
+payload names the message it answers. A request the transport never accepted
+has no reply to give, and asking for one throws.
+
+#### Implements
+
+- [`MessageRequestRouter`](sharedos-core.md#messagerequestrouter)
+
+#### Constructors
+
+##### Constructor
+
+> **new InMemoryMessageRequestRouter**(`transport`): [`InMemoryMessageRequestRouter`](#inmemorymessagerequestrouter)
+
+Defined in: [testkit/src/index.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L66)
+
+###### Parameters
+
+| Parameter   | Type                                                    |
+| ----------- | ------------------------------------------------------- |
+| `transport` | [`InMemoryMessageTransport`](#inmemorymessagetransport) |
+
+###### Returns
+
+[`InMemoryMessageRequestRouter`](#inmemorymessagerequestrouter)
+
+#### Methods
+
+##### resolveReply()
+
+> **resolveReply**(`context`, `request`, `delivery`): `Promise`\<\{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"1"`; \}\>
+
+Defined in: [testkit/src/index.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L70)
+
+###### Parameters
+
+| Parameter                       | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `context`                       | \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}                                                                             |
+| `context.actor`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `context.authority`             | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `context.enabledToolNamespaces` | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `context.namespaceId`           | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `context.now`                   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `context.owner`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `context.purpose`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `context.traceId`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `request`                       | \{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"1"`; \}                                                                                                     |
+| `request.createdAt`             | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `request.id`                    | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `request.payload`               | [`JsonValue`](sharedos-contracts.md#jsonvalue)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `request.provenance?`           | \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `request.provenance.metadata?`  | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `request.provenance.parentIds`  | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `request.provenance.source`     | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `request.purpose`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `request.receiver`              | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `request.replyTo?`              | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `request.sender`                | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `request.traceId`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `request.version`               | `"1"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `delivery`                      | \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \} |
+
+###### Returns
+
+`Promise`\<\{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"1"`; \}\>
+
+###### Implementation of
+
+[`MessageRequestRouter`](sharedos-core.md#messagerequestrouter).[`resolveReply`](sharedos-core.md#resolvereply)
+
+---
+
 ### InMemoryMessageTransport
 
-Defined in: [testkit/src/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L37)
+Defined in: [testkit/src/index.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L39)
 
 #### Implements
 
@@ -338,7 +463,7 @@ Defined in: [testkit/src/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blo
 
 | Property                                      | Modifier   | Type       | Default value | Defined in                                                                                                    |
 | --------------------------------------------- | ---------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------------------- |
-| <a id="property-deliveries"></a> `deliveries` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L38) |
+| <a id="property-deliveries"></a> `deliveries` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L40) |
 
 #### Methods
 
@@ -346,7 +471,7 @@ Defined in: [testkit/src/index.ts:37](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **deliver**(`context`, `envelope`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [testkit/src/index.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L40)
+Defined in: [testkit/src/index.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L42)
 
 ###### Parameters
 
@@ -388,7 +513,7 @@ Defined in: [testkit/src/index.ts:40](https://github.com/Aicoo-Team/SharedOS/blo
 
 ### InMemoryResourceProvider
 
-Defined in: [testkit/src/index.ts:183](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L183)
+Defined in: [testkit/src/index.ts:270](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L270)
 
 A host-neutral recording provider for examples, conformance tests, and isolated experiment worlds.
 
@@ -402,7 +527,7 @@ A host-neutral recording provider for examples, conformance tests, and isolated 
 
 > **new InMemoryResourceProvider**(`namespace`, `handler?`): [`InMemoryResourceProvider`](#inmemoryresourceprovider)
 
-Defined in: [testkit/src/index.ts:188](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L188)
+Defined in: [testkit/src/index.ts:275](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L275)
 
 ###### Parameters
 
@@ -419,8 +544,8 @@ Defined in: [testkit/src/index.ts:188](https://github.com/Aicoo-Team/SharedOS/bl
 
 | Property                                      | Modifier   | Type       | Default value | Defined in                                                                                                      |
 | --------------------------------------------- | ---------- | ---------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
-| <a id="property-namespace"></a> `namespace`   | `readonly` | `string`   | `undefined`   | [testkit/src/index.ts:184](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L184) |
-| <a id="property-operations"></a> `operations` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:185](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L185) |
+| <a id="property-namespace"></a> `namespace`   | `readonly` | `string`   | `undefined`   | [testkit/src/index.ts:271](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L271) |
+| <a id="property-operations"></a> `operations` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:272](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L272) |
 
 #### Methods
 
@@ -428,7 +553,7 @@ Defined in: [testkit/src/index.ts:188](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **invoke**(`operation`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [testkit/src/index.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L193)
+Defined in: [testkit/src/index.ts:280](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L280)
 
 ###### Parameters
 
@@ -465,7 +590,7 @@ Defined in: [testkit/src/index.ts:193](https://github.com/Aicoo-Team/SharedOS/bl
 
 ### InMemoryToolNamespaceSettingsStore
 
-Defined in: [testkit/src/index.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L54)
+Defined in: [testkit/src/index.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L97)
 
 Namespace settings fixture keyed by the access-context namespace/world.
 
@@ -479,7 +604,7 @@ Namespace settings fixture keyed by the access-context namespace/world.
 
 > **new InMemoryToolNamespaceSettingsStore**(`initial?`): [`InMemoryToolNamespaceSettingsStore`](#inmemorytoolnamespacesettingsstore)
 
-Defined in: [testkit/src/index.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L57)
+Defined in: [testkit/src/index.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L100)
 
 ###### Parameters
 
@@ -497,7 +622,7 @@ Defined in: [testkit/src/index.ts:57](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **applyUpdate**(`context`, `update`): `Promise`\<readonly `string`[]\>
 
-Defined in: [testkit/src/index.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L63)
+Defined in: [testkit/src/index.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L106)
 
 ###### Parameters
 
@@ -528,7 +653,7 @@ Defined in: [testkit/src/index.ts:63](https://github.com/Aicoo-Team/SharedOS/blo
 
 > **get**(`namespaceId`): readonly `string`[]
 
-Defined in: [testkit/src/index.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L75)
+Defined in: [testkit/src/index.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L118)
 
 ###### Parameters
 
@@ -544,7 +669,7 @@ readonly `string`[]
 
 ### UnavailableDelegationChainResolver
 
-Defined in: [testkit/src/index.ts:173](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L173)
+Defined in: [testkit/src/index.ts:260](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L260)
 
 A resolver whose authoritative source is down; every lookup must fail closed.
 
@@ -568,7 +693,7 @@ A resolver whose authoritative source is down; every lookup must fail closed.
 
 > **resolve**(): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: [testkit/src/index.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L174)
+Defined in: [testkit/src/index.ts:261](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L261)
 
 ###### Returns
 
@@ -582,7 +707,7 @@ Defined in: [testkit/src/index.ts:174](https://github.com/Aicoo-Team/SharedOS/bl
 
 ### UnavailableGrantSource
 
-Defined in: [testkit/src/index.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L128)
+Defined in: [testkit/src/index.ts:182](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L182)
 
 A grant store that is down; every decision made against it must fail closed.
 
@@ -606,7 +731,7 @@ A grant store that is down; every decision made against it must fail closed.
 
 > **load**(): `Promise`\<readonly `object`[]\>
 
-Defined in: [testkit/src/index.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L129)
+Defined in: [testkit/src/index.ts:183](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L183)
 
 ###### Returns
 
@@ -616,77 +741,135 @@ Defined in: [testkit/src/index.ts:129](https://github.com/Aicoo-Team/SharedOS/bl
 
 [`GrantSource`](sharedos-core.md#grantsource).[`load`](sharedos-core.md#load)
 
+---
+
+### UnavailableGrantUsageStore
+
+Defined in: [testkit/src/index.ts:247](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L247)
+
+A usage store that cannot answer.
+
+Bounded use is the one authorization question SharedOS cannot decide from the
+grant set alone, so an unreachable counter is an unknown fact rather than a
+policy outcome. It throws on both reads and writes: a store that answered
+reads while failing writes would let discovery quietly disagree with
+execution.
+
+#### Implements
+
+- [`GrantUsageStore`](sharedos-core.md#grantusagestore)
+
+#### Constructors
+
+##### Constructor
+
+> **new UnavailableGrantUsageStore**(): [`UnavailableGrantUsageStore`](#unavailablegrantusagestore)
+
+###### Returns
+
+[`UnavailableGrantUsageStore`](#unavailablegrantusagestore)
+
+#### Methods
+
+##### getUsage()
+
+> **getUsage**(): `Promise`\<`number`>\>
+
+Defined in: [testkit/src/index.ts:248](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L248)
+
+###### Returns
+
+`Promise`\<`number`\>
+
+###### Implementation of
+
+[`GrantUsageStore`](sharedos-core.md#grantusagestore).[`getUsage`](sharedos-core.md#getusage-1)
+
+##### tryConsume()
+
+> **tryConsume**(): `Promise`\<`boolean`>\>
+
+Defined in: [testkit/src/index.ts:253](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L253)
+
+###### Returns
+
+`Promise`\<`boolean`\>
+
+###### Implementation of
+
+[`GrantUsageStore`](sharedos-core.md#grantusagestore).[`tryConsume`](sharedos-core.md#tryconsume-1)
+
 ## Interfaces
 
 ### TestContextOptions
 
-Defined in: [testkit/src/index.ts:238](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L238)
+Defined in: [testkit/src/index.ts:325](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L325)
 
 #### Properties
 
 | Property                                                             | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                      |
 | -------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| <a id="property-actor"></a> `actor?`                                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:239](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L239) |
-| <a id="property-authority"></a> `authority?`                         | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:240](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L240) |
-| <a id="property-enabledtoolnamespaces"></a> `enabledToolNamespaces?` | `readonly` | readonly `string`[]                                                                                                                                                                                        | [testkit/src/index.ts:243](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L243) |
-| <a id="property-namespaceid"></a> `namespaceId?`                     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:242](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L242) |
-| <a id="property-now"></a> `now?`                                     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:246](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L246) |
-| <a id="property-owner"></a> `owner?`                                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:241](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L241) |
-| <a id="property-purpose"></a> `purpose?`                             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:244](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L244) |
-| <a id="property-traceid"></a> `traceId?`                             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:245](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L245) |
+| <a id="property-actor"></a> `actor?`                                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:326](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L326) |
+| <a id="property-authority"></a> `authority?`                         | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:327](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L327) |
+| <a id="property-enabledtoolnamespaces"></a> `enabledToolNamespaces?` | `readonly` | readonly `string`[]                                                                                                                                                                                        | [testkit/src/index.ts:330](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L330) |
+| <a id="property-namespaceid"></a> `namespaceId?`                     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:329](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L329) |
+| <a id="property-now"></a> `now?`                                     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:333](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L333) |
+| <a id="property-owner"></a> `owner?`                                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:328](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L328) |
+| <a id="property-purpose"></a> `purpose?`                             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:331](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L331) |
+| <a id="property-traceid"></a> `traceId?`                             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:332](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L332) |
 
 ---
 
 ### TestGrantOptions
 
-Defined in: [testkit/src/index.ts:263](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L263)
+Defined in: [testkit/src/index.ts:350](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L350)
 
 #### Properties
 
 | Property                                                 | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                      |
 | -------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| <a id="property-capabilities"></a> `capabilities`        | `readonly` | readonly `object`[]                                                                                                                                                                                        | [testkit/src/index.ts:268](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L268) |
-| <a id="property-delegationdepth"></a> `delegationDepth?` | `readonly` | `number`                                                                                                                                                                                                   | [testkit/src/index.ts:275](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L275) |
-| <a id="property-expiresat"></a> `expiresAt?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:272](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L272) |
-| <a id="property-id"></a> `id?`                           | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:264](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L264) |
-| <a id="property-issuedat"></a> `issuedAt?`               | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:270](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L270) |
-| <a id="property-issuer"></a> `issuer?`                   | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:267](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L267) |
-| <a id="property-maxuses"></a> `maxUses?`                 | `readonly` | `number`                                                                                                                                                                                                   | [testkit/src/index.ts:274](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L274) |
-| <a id="property-namespaceid-1"></a> `namespaceId?`       | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:265](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L265) |
-| <a id="property-notbefore"></a> `notBefore?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:271](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L271) |
-| <a id="property-parentgrantid"></a> `parentGrantId?`     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:276](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L276) |
-| <a id="property-purposes"></a> `purposes?`               | `readonly` | readonly `string`[]                                                                                                                                                                                        | [testkit/src/index.ts:269](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L269) |
-| <a id="property-revokedat"></a> `revokedAt?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:273](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L273) |
-| <a id="property-subject"></a> `subject?`                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:266](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L266) |
+| <a id="property-capabilities"></a> `capabilities`        | `readonly` | readonly `object`[]                                                                                                                                                                                        | [testkit/src/index.ts:355](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L355) |
+| <a id="property-delegationdepth"></a> `delegationDepth?` | `readonly` | `number`                                                                                                                                                                                                   | [testkit/src/index.ts:362](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L362) |
+| <a id="property-expiresat"></a> `expiresAt?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:359](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L359) |
+| <a id="property-id"></a> `id?`                           | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:351](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L351) |
+| <a id="property-issuedat"></a> `issuedAt?`               | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:357](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L357) |
+| <a id="property-issuer"></a> `issuer?`                   | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:354](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L354) |
+| <a id="property-maxuses"></a> `maxUses?`                 | `readonly` | `number`                                                                                                                                                                                                   | [testkit/src/index.ts:361](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L361) |
+| <a id="property-namespaceid-1"></a> `namespaceId?`       | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:352](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L352) |
+| <a id="property-notbefore"></a> `notBefore?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:358](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L358) |
+| <a id="property-parentgrantid"></a> `parentGrantId?`     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:363](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L363) |
+| <a id="property-purposes"></a> `purposes?`               | `readonly` | readonly `string`[]                                                                                                                                                                                        | [testkit/src/index.ts:356](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L356) |
+| <a id="property-revokedat"></a> `revokedAt?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:360](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L360) |
+| <a id="property-subject"></a> `subject?`                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:353](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L353) |
 
 ---
 
 ### TestKernel
 
-Defined in: [testkit/src/index.ts:199](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L199)
+Defined in: [testkit/src/index.ts:286](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L286)
 
 #### Properties
 
 | Property                                  | Modifier   | Type                                                    | Description                                                                      | Defined in                                                                                                      |
 | ----------------------------------------- | ---------- | ------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| <a id="property-audit"></a> `audit`       | `readonly` | [`InMemoryAuditSink`](#inmemoryauditsink)               | -                                                                                | [testkit/src/index.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L201) |
-| <a id="property-grants"></a> `grants`     | `readonly` | [`InMemoryGrantSource`](#inmemorygrantsource)           | The trusted store the kernel loads authority from; mutate it to grant or revoke. | [testkit/src/index.ts:204](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L204) |
-| <a id="property-kernel"></a> `kernel`     | `readonly` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)     | -                                                                                | [testkit/src/index.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L200) |
-| <a id="property-messages"></a> `messages` | `readonly` | [`InMemoryMessageTransport`](#inmemorymessagetransport) | -                                                                                | [testkit/src/index.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L202) |
+| <a id="property-audit"></a> `audit`       | `readonly` | [`InMemoryAuditSink`](#inmemoryauditsink)               | -                                                                                | [testkit/src/index.ts:288](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L288) |
+| <a id="property-grants"></a> `grants`     | `readonly` | [`InMemoryGrantSource`](#inmemorygrantsource)           | The trusted store the kernel loads authority from; mutate it to grant or revoke. | [testkit/src/index.ts:291](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L291) |
+| <a id="property-kernel"></a> `kernel`     | `readonly` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)     | -                                                                                | [testkit/src/index.ts:287](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L287) |
+| <a id="property-messages"></a> `messages` | `readonly` | [`InMemoryMessageTransport`](#inmemorymessagetransport) | -                                                                                | [testkit/src/index.ts:289](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L289) |
 
 ---
 
 ### TestKernelOptions
 
-Defined in: [testkit/src/index.ts:207](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L207)
+Defined in: [testkit/src/index.ts:294](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L294)
 
 #### Properties
 
 | Property                                                       | Modifier   | Type                                                                  | Description                                                           | Defined in                                                                                                      |
 | -------------------------------------------------------------- | ---------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| <a id="property-delegationresolver"></a> `delegationResolver?` | `readonly` | [`DelegationChainResolver`](sharedos-core.md#delegationchainresolver) | Installs ancestor validation so delegated grants can be exercised.    | [testkit/src/index.ts:213](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L213) |
-| <a id="property-grants-1"></a> `grants?`                       | `readonly` | readonly `object`[]                                                   | Seed authority for the kernel's trusted grant source.                 | [testkit/src/index.ts:209](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L209) |
-| <a id="property-grantsource"></a> `grantSource?`               | `readonly` | [`GrantSource`](sharedos-core.md#grantsource)                         | Replaces the trusted grant source, for example to exercise an outage. | [testkit/src/index.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L211) |
+| <a id="property-delegationresolver"></a> `delegationResolver?` | `readonly` | [`DelegationChainResolver`](sharedos-core.md#delegationchainresolver) | Installs ancestor validation so delegated grants can be exercised.    | [testkit/src/index.ts:300](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L300) |
+| <a id="property-grants-1"></a> `grants?`                       | `readonly` | readonly `object`[]                                                   | Seed authority for the kernel's trusted grant source.                 | [testkit/src/index.ts:296](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L296) |
+| <a id="property-grantsource"></a> `grantSource?`               | `readonly` | [`GrantSource`](sharedos-core.md#grantsource)                         | Replaces the trusted grant source, for example to exercise an outage. | [testkit/src/index.ts:298](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L298) |
 
 ## Type Aliases
 
@@ -694,7 +877,7 @@ Defined in: [testkit/src/index.ts:207](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **ResourceHandler** = (`operation`) => `Promise`\<[`ResourceResult`](sharedos-contracts.md#resourceresult)>\>
 
-Defined in: [testkit/src/index.ts:180](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L180)
+Defined in: [testkit/src/index.ts:267](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L267)
 
 #### Parameters
 
@@ -712,7 +895,7 @@ Defined in: [testkit/src/index.ts:180](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **createTestContext**(`options?`): `object`
 
-Defined in: [testkit/src/index.ts:249](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L249)
+Defined in: [testkit/src/index.ts:336](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L336)
 
 #### Parameters
 
@@ -762,7 +945,7 @@ Defined in: [testkit/src/index.ts:249](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **createTestGrant**(`options`): `object`
 
-Defined in: [testkit/src/index.ts:279](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L279)
+Defined in: [testkit/src/index.ts:366](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L366)
 
 #### Parameters
 
@@ -840,7 +1023,7 @@ Defined in: [testkit/src/index.ts:279](https://github.com/Aicoo-Team/SharedOS/bl
 
 > **createTestKernel**(`options?`): [`TestKernel`](#testkernel)
 
-Defined in: [testkit/src/index.ts:216](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L216)
+Defined in: [testkit/src/index.ts:303](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/testkit/src/index.ts#L303)
 
 #### Parameters
 

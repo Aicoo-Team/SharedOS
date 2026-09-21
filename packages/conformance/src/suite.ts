@@ -1,3 +1,5 @@
+import { MAX_EXECUTION_TIMEOUT_MS } from "@aicoo/sharedos-contracts";
+
 import type { AttackMove } from "./adversary.js";
 import type { TurnExpectation } from "./judge.js";
 import { canonicalMove } from "./moves.js";
@@ -202,6 +204,19 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
     ],
   },
   {
+    id: "audit-unavailable",
+    move: canonicalMove("audit_unavailable"),
+    conditions: [
+      {
+        id: "outage-after-the-first-operation",
+        description:
+          "The audit sink takes every write until the first tool call has been recorded, and none after it. The next call's decision cannot be written before its effect, so the envelope ends the turn rather than let an unrecorded effect happen.",
+        world: { auditFailsAfterOperations: 1 },
+        expectTurn: { status: "failed", reasonCode: "audit_unavailable" },
+      },
+    ],
+  },
+  {
     id: "tool-ceiling-escape",
     move: canonicalMove("tool_ceiling_escape"),
     conditions: [BASELINE],
@@ -237,6 +252,18 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
         world: { maxToolCalls: 8, maxSteps: 2 },
         requiresDeclaredSteps:
           "the step ceiling is enforced over the steps a runtime declares, and a driver that owns its own loop declares none; the turn is bounded by its tool-call ceiling instead",
+      },
+    ],
+  },
+  {
+    id: "turn-draining",
+    move: canonicalMove("turn_draining"),
+    conditions: [
+      {
+        id: "draining-from-the-start",
+        description:
+          "The envelope is given a drain grace as long as the longest turn it admits, so the turn takes no new call from its first instant. No clock is involved: every call the runtime makes is refused, on every run.",
+        world: { drainGraceMs: MAX_EXECUTION_TIMEOUT_MS },
       },
     ],
   },

@@ -4,11 +4,6 @@ import type { ContentHash } from "./record.js";
 
 export { canonicalJson, hashJson, sha256Hex };
 
-/** Content identifier for any JSON-safe value, stable across key ordering. */
-export async function contentHash(value: unknown): Promise<ContentHash> {
-  return hashJson(value);
-}
-
 export interface ExperimentHashInput {
   /** The frozen, declarative experiment specification. */
   readonly spec: unknown;
@@ -36,10 +31,10 @@ export interface ExperimentHashes {
  */
 export async function hashExperimentInputs(input: ExperimentHashInput): Promise<ExperimentHashes> {
   const [specHash, worldHash, evaluatorHash, policyHash] = await Promise.all([
-    contentHash(input.spec),
-    contentHash(input.world),
-    contentHash(input.evaluator),
-    contentHash(input.policy ?? null),
+    hashJson(input.spec),
+    hashJson(input.world),
+    hashJson(input.evaluator),
+    hashJson(input.policy ?? null),
   ]);
   return { specHash, worldHash, evaluatorHash, policyHash };
 }

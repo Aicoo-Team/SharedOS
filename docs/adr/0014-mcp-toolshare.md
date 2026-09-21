@@ -2,6 +2,9 @@
 
 - Status: Accepted
 - Date: 2026-08-23
+- Revised: 2026-09-20. The declared `ToolPolicy` is written to the record. "Three
+  tool classes" said what it declares and why a result cannot be read without
+  it; nothing put it anywhere a reader of a record would find it.
 
 ## Context
 
@@ -142,7 +145,10 @@ itself.
 
 This matters for how a result reads. "The kernel refused every violation" means
 one thing when the managed catalogue was the only way to have an effect, and
-almost nothing when the harness also had a shell.
+almost nothing when the harness also had a shell. So the declaration travels
+with the result: a column's policy is written to every execution record it
+produces, as `SystemIdentity.toolPolicy`, beside the `catalogHash` that says
+which managed tools it was given.
 
 ## The MCP conformance column
 

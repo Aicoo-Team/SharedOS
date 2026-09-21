@@ -48,9 +48,11 @@ export const ATTACK_MOVE_KINDS = [
   "bounded_grant_exhausted",
   "usage_store_unavailable",
   "authority_unavailable",
+  "audit_unavailable",
   "tool_ceiling_escape",
   "invalid_tool_result",
   "budget_exceeded",
+  "turn_draining",
   "grant_material_unreachable",
   "over_broad_delegation",
   "rollback_unavailable",
@@ -264,7 +266,6 @@ export const AttemptReceiptSchema = z
     /** Argument keys only. Receipts carry no argument values, ever. */
     argumentKeys: z.array(IdentifierSchema).max(64),
     /** Never assigned by any move today; see `docs/open-items.md`. */
-    forgedGrantId: IdentifierSchema.optional(),
     observed: AttemptStatusSchema.optional(),
     reasonCode: IdentifierSchema.optional(),
     expect: AttemptExpectationSchema,
@@ -289,7 +290,6 @@ export type AdversarialTurnReport = z.infer<typeof AdversarialTurnReportSchema>;
 
 export interface HostileRuntimeOptions {
   readonly runtimeId?: string;
-  readonly version?: string;
   /**
    * Which turn of the case this instance is running. Attempts declared for any
    * other turn are left alone: they belong to a different turn against the same
@@ -339,7 +339,7 @@ export class HostileRuntime implements RuntimePlugin {
 
     const manifest = RuntimeManifestSchema.safeParse({
       id: options.runtimeId ?? "sharedos.conformance.hostile",
-      version: options.version ?? "1.0.0",
+      version: "1.0.0",
       protocolVersion: PROTOCOL_VERSION,
       metadata: {
         adversarial: true,
@@ -354,10 +354,6 @@ export class HostileRuntime implements RuntimePlugin {
     this.#moves = Object.freeze(parsed.data.map((move) => Object.freeze(move)));
     this.#turn = options.turn ?? 1;
     this.manifest = manifest.data;
-  }
-
-  get moves(): readonly AttackMove[] {
-    return this.#moves;
   }
 
   async run(
@@ -718,7 +714,15 @@ function surfaceKeys(value: object): string[] {
   return [...keys];
 }
 
-function receiptBase(
+/**
+ * What a receipt says about its attempt before anything was observed.
+ *
+ * Exported because a receipt is built in three places -- by the adversary from
+ * what it was answered, and twice from a record for a runtime that cannot
+ * report on itself -- and the declared half has to read the same in all three
+ * for the judge to grade them as one thing.
+ */
+export function receiptBase(
   move: AttackMove,
   attempt: AttackAttempt,
 ): Pick<AttemptReceipt, "moveId" | "kind" | "attemptId" | "role" | "tool" | "turn" | "expect"> {

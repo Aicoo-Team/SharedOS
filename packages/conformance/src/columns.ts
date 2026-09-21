@@ -1,4 +1,4 @@
-import type { JsonObject } from "@aicoo/sharedos-contracts";
+import type { JsonObject, ToolPolicy } from "@aicoo/sharedos-contracts";
 import {
   claudeCodeFrameWriter,
   claudeCodeProtocol,
@@ -35,12 +35,13 @@ import {
   attemptArguments,
   attemptCallId,
   HostileRuntime,
+  receiptBase,
   type AttackAttempt,
   type AttackMove,
   type AttemptReceipt,
 } from "./adversary.js";
 import { canonicalJson } from "./hashing.js";
-import { operationsUnder, type ExecutionRecord } from "./record.js";
+import type { ExecutionRecord } from "./record.js";
 import type { ConformanceCondition } from "./suite.js";
 import { conformanceRuntimeContext } from "./world.js";
 import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
@@ -126,6 +127,14 @@ export interface RuntimeColumn {
   receipts?(move: AttackMove, turn: ColumnTurn): readonly AttemptReceipt[];
   /** What this column structurally cannot do for one row under one condition. */
   limits?(move: AttackMove, condition: ConformanceCondition): ColumnLimits;
+  /**
+   * The tool surface the seat was declared to have, for a column that has one
+   * beyond the managed catalogue (ADR 0014). Written to every record the column
+   * produces as `system.toolPolicy`, because "the kernel refused every
+   * violation" means one thing when the catalogue was the only way to have an
+   * effect and almost nothing when the harness also had a shell.
+   */
+  readonly toolPolicy?: ToolPolicy;
 }
 
 /**
@@ -188,6 +197,12 @@ export function harnessLimits(move: AttackMove, condition: ConformanceCondition)
     return {
       unsupported:
         "a scripted harness returns frames and has no way to declare that it throws out of its turn. Making one throw would test the adapter's own error handling rather than what the envelope does with a plugin that stops obeying the protocol; only a plugin the column constructs can be made to throw on purpose",
+    };
+  }
+  if (move.kind === "turn_draining") {
+    return {
+      unsupported:
+        "the standard loop stops itself once the turn is draining and asks its driver for nothing more, so a seat inside it never issues a call on a draining turn. Only a runtime that owns its loop, a plugin or a CLI connected over MCP, can make one and be refused",
     };
   }
   const unreachable = new Map<string, string>();
@@ -336,14 +351,10 @@ export function movesToTranscript(
   // escalate affordance is a catalogued tool, so a transcript expresses the
   // ending the same way a live harness would -- by calling it -- rather than by
   // the column being declared incapable of the row.
-  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
-  if (terminal !== undefined) {
+  const ending = escalationEnding(moves);
+  if (ending !== undefined) {
     batches.push([
-      writer.toolCall(
-        `${options.executionId}.escalate`,
-        ESCALATION_TOOL_NAME,
-        escalationArguments(terminal.reason),
-      ),
+      writer.toolCall(`${options.executionId}.escalate`, ending.tool, ending.arguments),
     ]);
   }
 
@@ -417,15 +428,9 @@ export function movesToModelTranscript(
   // driver recognises the name off the catalogue and returns `escalate` -- or,
   // on a turn the catalogue did not offer it, passes the call through to be
   // refused, which is why the ungranted row is declared unsupported here.
-  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
-  if (terminal !== undefined) {
-    replies.push(
-      call(
-        `${options.executionId}.escalate`,
-        ESCALATION_TOOL_NAME,
-        escalationArguments(terminal.reason),
-      ),
-    );
+  const ending = escalationEnding(moves);
+  if (ending !== undefined) {
+    replies.push(call(`${options.executionId}.escalate`, ending.tool, ending.arguments));
   }
 
   replies.push({ text: "done", toolCalls: [], finishReason: "stop" });
@@ -509,6 +514,23 @@ export const MODEL_SCRIPTED_COLUMN: RuntimeColumn = Object.freeze({
  * row reports on what the record shows rather than on what was intended --
  * `not exercised` or `fail`, never a false pass.
  */
+/**
+ * The call that ends a move set's turn by asking for a human, when a move
+ * declares that ending.
+ *
+ * One reading of the declaration for the three places that express it -- a
+ * harness transcript, a model transcript, and the prompt a live harness is
+ * given -- so they cannot come to ask for different things.
+ */
+function escalationEnding(
+  moves: readonly AttackMove[],
+): { readonly tool: string; readonly arguments: JsonObject } | undefined {
+  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
+  return terminal === undefined
+    ? undefined
+    : { tool: ESCALATION_TOOL_NAME, arguments: escalationArguments(terminal.reason) };
+}
+
 function overBudgetStep(
   moves: readonly AttackMove[],
   turn: number,
@@ -576,45 +598,58 @@ function issuableByHarness(attempt: AttackAttempt, turn: number): boolean {
  * the two boundaries would be indistinguishable in a record.
  */
 export function receiptsFromRecord(move: AttackMove, turn: ColumnTurn): readonly AttemptReceipt[] {
-  const operations = new Map(
-    move.attempts.flatMap((attempt) => {
-      // The tool operation under the call's id is the receipt; a sibling the
-      // transport refused is its cause, which the judge joins. One reading of
-      // that, shared with the judge: see `operationsUnder`.
-      const { attempt: operation } = operationsUnder(
-        turn.record,
-        attemptCallId(turn.executionId, move, attempt),
-      );
-      return operation === undefined ? [] : [[attempt.id, operation] as const];
-    }),
-  );
+  return receiptsFromOperations(move, turn, (attempt) => {
+    // The tool operation under the call's id, and no other kind: a
+    // `messages.request` leaves a `message.sent` under the same id, and that is
+    // a dispatch the record shows, not the call the caller made.
+    const callId = attemptCallId(turn.executionId, move, attempt);
+    const operation = turn.record.execution.operations.find(
+      ({ kind, operationId }) => kind === "tool" && operationId === callId,
+    );
+    return operation === undefined
+      ? { detail: "the record carries no operation for this attempt" }
+      : { operation, callId };
+  });
+}
 
+type OperationOf<T extends ExecutionRecord> = T["execution"]["operations"][number];
+
+/** The operation a record shows for an attempt, or why it shows none. */
+type LocatedOperation =
+  | { readonly operation: OperationOf<ExecutionRecord>; readonly callId: string | undefined }
+  | { readonly detail: string };
+
+/**
+ * One turn's receipts, read from its record.
+ *
+ * The two record readers differ only in how they find an attempt's operation,
+ * and that is the one thing each passes in. Attempts are located in declared
+ * order, which the live reader depends on: it consumes operations as it goes.
+ */
+function receiptsFromOperations(
+  move: AttackMove,
+  turn: ColumnTurn,
+  locate: (attempt: AttackAttempt) => LocatedOperation,
+): readonly AttemptReceipt[] {
   return move.attempts
     .filter((attempt) => (attempt.turn ?? 1) === turn.turn)
     .map((attempt): AttemptReceipt => {
       const base = {
-        moveId: move.id,
-        kind: move.kind,
-        attemptId: attempt.id,
-        role: attempt.role,
-        ...(attempt.tool === undefined ? {} : { tool: attempt.tool }),
-        ...(attempt.turn === undefined ? {} : { turn: attempt.turn }),
-        expect: attempt.expect,
+        ...receiptBase(move, attempt),
         argumentKeys: Object.keys(attempt.toolArguments ?? {}).sort(),
       };
-      const operation = operations.get(attempt.id);
-      if (operation === undefined) {
-        return {
-          ...base,
-          attempted: false,
-          detail: "the record carries no operation for this attempt",
-        };
+      const located = locate(attempt);
+      if ("detail" in located) {
+        return { ...base, attempted: false, detail: located.detail };
       }
+      const { operation, callId } = located;
       return {
         ...base,
         attempted: true,
-        callId: attemptCallId(turn.executionId, move, attempt),
-        observed: operation.outcome,
+        ...(callId === undefined ? {} : { callId }),
+        // What a caller can be told has three values. An interrupted call was
+        // answered as a failure, and the record keeps the distinction.
+        observed: operation.outcome === "interrupted" ? "failed" : operation.outcome,
         ...(operation.reasonCode === undefined ? {} : { reasonCode: operation.reasonCode }),
       };
     });
@@ -636,6 +671,8 @@ export interface McpColumnOptions {
    * {@link liveColumn}. This package stays host-neutral.
    */
   readonly createRuntime: (options: McpColumnRuntimeOptions) => RuntimePlugin;
+  /** What the CLI was declared to have besides the SharedOS catalogue. */
+  readonly toolPolicy?: ToolPolicy;
 }
 
 /**
@@ -665,6 +702,7 @@ export function mcpColumn(options: McpColumnOptions): RuntimeColumn {
   return Object.freeze({
     id: options.id,
     label: options.label,
+    ...(options.toolPolicy === undefined ? {} : { toolPolicy: options.toolPolicy }),
     create: (moves: readonly AttackMove[], create: RuntimeColumnOptions): RuntimePlugin =>
       options.createRuntime({
         ...create,
@@ -882,6 +920,12 @@ export function modelLimits(move: AttackMove, condition: ConformanceCondition): 
         "a model driver returns a decision and the standard loop turns it into an outcome; neither a transcript nor a live model can express throwing out of the turn. Only a plugin that owns its outcome can, so the row is run where that is true and declared here rather than approximated",
     };
   }
+  if (move.kind === "turn_draining") {
+    return {
+      unsupported:
+        "the standard loop stops itself once the turn is draining and asks its driver for nothing more, so a seat inside it never issues a call on a draining turn. Only a runtime that owns its loop, a plugin or a CLI connected over MCP, can make one and be refused",
+    };
+  }
   const unreachable = new Map<string, string>();
   const driverIssued = new Map<string, string>();
 
@@ -1007,70 +1051,41 @@ export function liveReceiptsFromRecord(
 ): readonly AttemptReceipt[] {
   const unconsumed = [...turn.record.execution.operations];
 
-  return move.attempts
-    .filter((attempt) => (attempt.turn ?? 1) === turn.turn)
-    .map((attempt): AttemptReceipt => {
-      const base = {
-        moveId: move.id,
-        kind: move.kind,
-        attemptId: attempt.id,
-        role: attempt.role,
-        ...(attempt.tool === undefined ? {} : { tool: attempt.tool }),
-        ...(attempt.turn === undefined ? {} : { turn: attempt.turn }),
-        expect: attempt.expect,
-        argumentKeys: Object.keys(attempt.toolArguments ?? {}).sort(),
-      };
+  return receiptsFromOperations(move, turn, (attempt) => {
+    if (attempt.tool === undefined) {
+      return { detail: "a live harness is never handed the runtime surface this attempt inspects" };
+    }
 
-      if (attempt.tool === undefined) {
-        return {
-          ...base,
-          attempted: false,
-          detail: "a live harness is never handed the runtime surface this attempt inspects",
-        };
-      }
+    const wantedPath = declaredPath(attempt);
+    // An operation the kernel never resolved a resource for is a fallback, not
+    // a peer of an exact match. It is resource-less precisely because it was
+    // refused before authorization -- `invalid_tool_arguments` on a call whose
+    // path never parsed -- so it carries no evidence about authority, and
+    // letting it match any path lets one fumbled call consume the attempt that
+    // the correctly-formed call was about to satisfy. Seen live: a harness that
+    // called `files.replace` with no `path`, retried it correctly, and was
+    // denied `no_matching_grant` on the retry had the row graded from the
+    // fumble. Exact first, then the resource-less remainder.
+    const matches = (operation: OperationOf<typeof turn.record>, exact: boolean): boolean =>
+      operation.tool === attempt.tool &&
+      (wantedPath === undefined
+        ? true
+        : operation.resource === undefined
+          ? !exact
+          : canonicalJson(operation.resource.path) === canonicalJson(wantedPath));
 
-      const wantedPath = declaredPath(attempt);
-      // An operation the kernel never resolved a resource for is a fallback, not
-      // a peer of an exact match. It is resource-less precisely because it was
-      // refused before authorization -- `invalid_tool_arguments` on a call whose
-      // path never parsed -- so it carries no evidence about authority, and
-      // letting it match any path lets one fumbled call consume the attempt that
-      // the correctly-formed call was about to satisfy. Seen live: a harness that
-      // called `files.replace` with no `path`, retried it correctly, and was
-      // denied `no_matching_grant` on the retry had the row graded from the
-      // fumble. Exact first, then the resource-less remainder.
-      const matches = (operation: OperationOf<typeof turn.record>, exact: boolean): boolean =>
-        operation.tool === attempt.tool &&
-        (wantedPath === undefined
-          ? true
-          : operation.resource === undefined
-            ? !exact
-            : canonicalJson(operation.resource.path) === canonicalJson(wantedPath));
+    let index = unconsumed.findIndex((operation) => matches(operation, true));
+    if (index === -1) {
+      index = unconsumed.findIndex((operation) => matches(operation, false));
+    }
+    if (index === -1) {
+      return { detail: "no operation in the record matches this attempt's tool and resource" };
+    }
 
-      let index = unconsumed.findIndex((operation) => matches(operation, true));
-      if (index === -1) {
-        index = unconsumed.findIndex((operation) => matches(operation, false));
-      }
-      if (index === -1) {
-        return {
-          ...base,
-          attempted: false,
-          detail: "no operation in the record matches this attempt's tool and resource",
-        };
-      }
-
-      const [operation] = unconsumed.splice(index, 1) as [OperationOf<typeof turn.record>];
-      return {
-        ...base,
-        attempted: true,
-        ...(operation.operationId === undefined ? {} : { callId: operation.operationId }),
-        observed: operation.outcome,
-        ...(operation.reasonCode === undefined ? {} : { reasonCode: operation.reasonCode }),
-      };
-    });
+    const [operation] = unconsumed.splice(index, 1) as [OperationOf<typeof turn.record>];
+    return { operation, callId: operation.operationId };
+  });
 }
-
-type OperationOf<T extends ExecutionRecord> = T["execution"]["operations"][number];
 
 /** The resource path an attempt names, when it names one. */
 function declaredPath(attempt: AttackAttempt): readonly string[] | undefined {
@@ -1149,12 +1164,11 @@ export function movesToPrompt(moves: readonly AttackMove[], options: MovePromptO
     }
   }
 
-  const terminal = moves.find((move) => move.terminal !== undefined)?.terminal;
+  const escalation = escalationEnding(moves);
   const ending =
-    terminal === undefined
+    escalation === undefined
       ? "reply that you are done"
-      : `call \`${ESCALATION_TOOL_NAME}\` with ` +
-        `${JSON.stringify(escalationArguments(terminal.reason))}`;
+      : `call \`${escalation.tool}\` with ${JSON.stringify(escalation.arguments)}`;
 
   if (index === 0) {
     lines.push(`There are no calls to make on this turn. Then ${ending}.`);

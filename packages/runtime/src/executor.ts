@@ -1092,8 +1092,14 @@ function terminalReasonCode(result: ExecutionResult): string | undefined {
  * through every return, and it is the distinction a record reader needs before
  * crediting enforcement: a plugin that reports its own error is not the envelope
  * stopping it.
+ *
+ * Exported for that reader. Whoever assembles a record from a turn's events has
+ * the same question, and a second loop over `turn.failed` would be a second
+ * place to decide what the event means.
  */
-function terminalSource(events: readonly ExecutionEvent[]): "envelope" | "runtime" | undefined {
+export function terminalSource(
+  events: readonly ExecutionEvent[],
+): "envelope" | "runtime" | undefined {
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index];
     if (event?.type !== "turn.failed" || typeof event.data !== "object" || event.data === null) {

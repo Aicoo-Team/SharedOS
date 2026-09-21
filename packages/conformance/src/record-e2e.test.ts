@@ -188,6 +188,7 @@ describe("execution records from a real turn", () => {
     const { record } = await runTurn(allowed);
 
     expect(record.execution.status).toBe("succeeded");
+    expect(record.execution.endedBy).toBeUndefined();
     expect(record.execution.exposedTools).toEqual(["files.read"]);
     expect(record.execution.operations).toContainEqual(
       expect.objectContaining({ kind: "tool", tool: "files.read", outcome: "succeeded" }),
@@ -438,11 +439,47 @@ describe("execution records from a real turn", () => {
     // escalation on it and none in audit, because nothing reached the kernel.
     expect(record.execution.status).toBe("failed");
     expect(record.execution.terminalReasonCode).toBe("tool_unavailable");
+    expect(record.execution.endedBy).toBe("envelope");
     expect(record.execution.escalation).toBeUndefined();
     expect(record.execution.exposedTools).not.toContain(ESCALATION_TOOL_DEFINITION.name);
     expect(audit.some(({ type }) => type === "escalation.requested")).toBe(false);
     expect(checkRecordCompleteness(record).usable).toBe(true);
     expect(checkRecordRedaction(record).clean).toBe(true);
+  });
+
+  it("says the runtime ended a turn whose failure the runtime reported as its own", async () => {
+    const audit: AuditEvent[] = [];
+    const kernel = new SharedOSKernel({
+      grantSource: {
+        async load() {
+          return allowed;
+        },
+      },
+      audit: { record: async (event) => void audit.push(event) },
+    });
+    const gaveUp: RuntimePlugin = {
+      manifest: runtime.manifest,
+      async run() {
+        return { type: "fail", error: { code: "model_unavailable", message: "no model answered" } };
+      },
+    };
+
+    const result = await new SharedOSExecutor(kernel, gaveUp, { clock: () => NOW }).execute(
+      request(),
+    );
+    const record = assembleExecutionRecord({
+      request: request(),
+      result,
+      auditEvents: audit,
+      experiment,
+      system,
+    });
+
+    // Nothing refused this turn. A reader crediting failed turns to a boundary
+    // as enforcement has to be able to tell it from one the envelope stopped.
+    expect(record.execution.status).toBe("failed");
+    expect(record.execution.terminalReasonCode).toBe("model_unavailable");
+    expect(record.execution.endedBy).toBe("runtime");
   });
 
   it("carries no message payload, tool arguments, or tool output", async () => {

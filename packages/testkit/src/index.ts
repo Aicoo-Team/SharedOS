@@ -20,11 +20,13 @@ import {
   type AuditSink,
   type DelegationChainResolver,
   type GrantSource,
+  type GrantUsageStore,
+  type MessageRequestRouter,
   type MessageTransport,
   type ResourceProvider,
   type ToolNamespaceSettingsStore,
-  canonicalJson,
 } from "@aicoo/sharedos-core";
+import { addressesEqual } from "@aicoo/sharedos-core/internal";
 
 export class InMemoryAuditSink implements AuditSink {
   readonly events: AuditEvent[] = [];
@@ -46,6 +48,47 @@ export class InMemoryMessageTransport implements MessageTransport {
       messageId: envelope.id,
       status: "accepted",
       timestamp: context.now,
+    };
+  }
+}
+
+/**
+ * Answers a request from the transport's own log of accepted deliveries.
+ *
+ * The reply is derived from the request, so a test can predict it: the id is
+ * the request's with `-reply` appended, the parties are swapped, and the
+ * payload names the message it answers. A request the transport never accepted
+ * has no reply to give, and asking for one throws.
+ */
+export class InMemoryMessageRequestRouter implements MessageRequestRouter {
+  readonly #transport: InMemoryMessageTransport;
+
+  constructor(transport: InMemoryMessageTransport) {
+    this.#transport = transport;
+  }
+
+  async resolveReply(
+    context: AccessContext,
+    request: MessageEnvelope,
+    delivery: MessageDeliveryResult,
+  ): Promise<MessageEnvelope> {
+    await Promise.resolve();
+    if (
+      (delivery.status !== "accepted" && delivery.status !== "delivered") ||
+      !this.#transport.deliveries.some(({ envelope }) => envelope.id === request.id)
+    ) {
+      throw new Error("request is absent from the accepted message log");
+    }
+    return {
+      version: request.version,
+      id: `${request.id}-reply`,
+      sender: request.receiver,
+      receiver: request.sender,
+      purpose: request.purpose,
+      payload: { messageId: request.id },
+      traceId: request.traceId,
+      createdAt: context.now,
+      replyTo: request.id,
     };
   }
 }
@@ -111,14 +154,25 @@ export class InMemoryGrantSource implements GrantSource {
     return this;
   }
 
+  /** Move a grant's expiry, the way a host store would record a shortened window. */
+  expire(grantId: string, expiresAt: string): this {
+    const index = this.#grants.findIndex((grant) => grant.id === grantId);
+    const grant = this.#grants[index];
+    if (grant === undefined) {
+      throw new Error(`grant is not registered: ${grantId}`);
+    }
+    this.#grants[index] = { ...grant, constraints: { ...grant.constraints, expiresAt } };
+    return this;
+  }
+
   async load(context: AccessContext): Promise<readonly CapabilityGrant[]> {
     await Promise.resolve();
     return this.#grants
       .filter(
         (grant) =>
           grant.namespaceId === context.namespaceId &&
-          sameAddress(grant.subject, context.actor) &&
-          sameAddress(grant.issuer, context.authority),
+          addressesEqual(grant.subject, context.actor) &&
+          addressesEqual(grant.issuer, context.authority),
       )
       .map((grant) => structuredClone(grant));
   }
@@ -162,10 +216,43 @@ export class InMemoryDelegationChainResolver implements DelegationChainResolver 
     return this;
   }
 
+  /** Move a grant's expiry in place, as {@link InMemoryGrantSource.expire} does. */
+  expire(namespaceId: string, grantId: string, expiresAt: string): this {
+    const grant = this.#grantsByNamespace.get(namespaceId)?.get(grantId);
+    if (grant === undefined) {
+      throw new Error(`grant is not registered: ${grantId}`);
+    }
+    this.#grantsByNamespace
+      .get(namespaceId)
+      ?.set(grantId, { ...grant, constraints: { ...grant.constraints, expiresAt } });
+    return this;
+  }
+
   async resolve(namespaceId: string, grantId: string): Promise<CapabilityGrant | undefined> {
     await Promise.resolve();
     const grant = this.#grantsByNamespace.get(namespaceId)?.get(grantId);
     return grant === undefined ? undefined : structuredClone(grant);
+  }
+}
+
+/**
+ * A usage store that cannot answer.
+ *
+ * Bounded use is the one authorization question SharedOS cannot decide from the
+ * grant set alone, so an unreachable counter is an unknown fact rather than a
+ * policy outcome. It throws on both reads and writes: a store that answered
+ * reads while failing writes would let discovery quietly disagree with
+ * execution.
+ */
+export class UnavailableGrantUsageStore implements GrantUsageStore {
+  async getUsage(): Promise<number> {
+    await Promise.resolve();
+    throw new Error("grant usage store is unavailable");
+  }
+
+  async tryConsume(): Promise<boolean> {
+    await Promise.resolve();
+    throw new Error("grant usage store is unavailable");
   }
 }
 
@@ -295,10 +382,6 @@ export function createTestGrant(options: TestGrantOptions): CapabilityGrant {
     ...(options.revokedAt === undefined ? {} : { revokedAt: options.revokedAt }),
     ...(options.parentGrantId === undefined ? {} : { parentGrantId: options.parentGrantId }),
   };
-}
-
-function sameAddress(left: Address, right: Address): boolean {
-  return canonicalJson(left) === canonicalJson(right);
 }
 
 async function echoResourceOperation(operation: ResourceOperation): Promise<ResourceResult> {

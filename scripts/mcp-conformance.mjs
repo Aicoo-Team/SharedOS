@@ -264,6 +264,10 @@ for (const harness of HARNESSES) {
     mcpColumn({
       id: `${harness.spec.id}-mcp`,
       label: harness.label,
+      // On every record the column produces, as well as in this script's own
+      // availability report: a reader of one record has to be able to tell a
+      // run whose only tools were SharedOS's from one that also had a shell.
+      toolPolicy: harness.policy,
       createRuntime: ({ prompt, executionId, turn }) =>
         createMcpHarnessRuntime(harness.spec, {
           prompt,

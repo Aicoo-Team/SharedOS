@@ -7,7 +7,11 @@ import type {
 } from "@aicoo/sharedos-contracts";
 import { RuntimeManifestSchema, isJsonObject } from "@aicoo/sharedos-contracts";
 import { type AuditEvent, isInfrastructureDenial } from "@aicoo/sharedos-core";
-import { ESCALATION_ASKED_ANNOTATION, PROMPT_HASH_ANNOTATION } from "@aicoo/sharedos-runtime";
+import {
+  ESCALATION_ASKED_ANNOTATION,
+  PROMPT_HASH_ANNOTATION,
+  terminalSource,
+} from "@aicoo/sharedos-runtime";
 
 import {
   type AuthoritySnapshotRecord,
@@ -95,6 +99,7 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
       agent: request.agent,
       status: result.status,
       ...terminalOutcome(result),
+      ...endedBy(result),
       ...escalationAsked(result),
       ...callsAfterEscalation(result),
       exposedTools: exposedTools(result.events),
@@ -126,6 +131,17 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
     throw new TypeError(`Assembled execution record is not valid: ${parsed.error.message}`);
   }
   return parsed.data;
+}
+
+/**
+ * Who ended a failed turn, read from the turn's events with the reader the
+ * envelope itself uses. From the events and not from the `turn.ended` audit
+ * event, which says the same thing: that write can be dropped, and a record is
+ * assembled from a result that always has its events.
+ */
+function endedBy(result: ExecutionResult): Partial<ExecutionRecordExecution> {
+  const source = terminalSource(result.events);
+  return source === undefined ? {} : { endedBy: source };
 }
 
 /**
@@ -363,21 +379,22 @@ function operations(
       // `refusedBy` a claim about who refused rather than about who happened to
       // own an audit sink (ADR 0023).
       source: event.source ?? "kernel",
-      // `interrupted` reads as `failed` here, never `denied`: the record's
-      // vocabulary has three outcomes, and a call that may have taken effect
-      // must not be credited to a boundary as a refusal it made.
+      // `interrupted` is carried as itself, never as `denied`: a call that may
+      // have taken effect must not be credited to a boundary as a refusal it
+      // made.
       outcome:
-        event.outcome === "succeeded"
-          ? "succeeded"
-          : event.outcome === "failed" || event.outcome === "interrupted"
-            ? "failed"
-            : "denied",
+        event.outcome === "succeeded" ||
+        event.outcome === "failed" ||
+        event.outcome === "interrupted"
+          ? event.outcome
+          : "denied",
       ...(event.operationId === undefined ? {} : { operationId: event.operationId }),
       ...(event.tool === undefined ? {} : { tool: event.tool }),
       ...(event.resource === undefined ? {} : { resource: event.resource }),
       ...(event.action === undefined ? {} : { action: event.action }),
       ...(event.grantId === undefined ? {} : { grantId: event.grantId }),
       ...(event.reason === undefined ? {} : { reasonCode: event.reason }),
+      ...(event.cause === undefined ? {} : { cause: event.cause }),
       failClosed: event.failClosed === true,
     });
   }
