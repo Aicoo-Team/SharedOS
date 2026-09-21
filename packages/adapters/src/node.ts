@@ -219,13 +219,15 @@ const VERSION_TIMEOUT_MS = 10_000;
  * reason to refuse to run. Both halves are kept -- the parsed token because a
  * table wants one, the line it came from because a token nobody can check
  * against the output is the same unverifiable claim in a new place.
+ *
+ * stdout is read before stderr: Codex warns on stderr ahead of its answer.
  */
 async function reportedVersion(
   executable: string,
   requirements: HarnessRequirements,
   environment: Readonly<Record<string, string | undefined>>,
 ): Promise<{ readonly version?: string; readonly output?: string }> {
-  const output = await new Promise<string | undefined>((resolve) => {
+  const streams = await new Promise<VersionProbeOutput | undefined>((resolve) => {
     const child = spawnVersionProbe(
       executable,
       [...(requirements.versionArguments ?? ["--version"])],
@@ -236,40 +238,75 @@ async function reportedVersion(
       return;
     }
 
-    let text = "";
+    let stdout = "";
+    let stderr = "";
     const timer = setTimeout(() => {
       child.kill();
       resolve(undefined);
     }, VERSION_TIMEOUT_MS);
     timer.unref?.();
-    const keep = (chunk: Buffer): void => {
-      text += chunk.toString("utf8");
-    };
 
-    child.stdout.on("data", keep);
-    // Some CLIs answer on stderr, and a version read from the wrong stream is
-    // still the version.
-    child.stderr.on("data", keep);
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString("utf8");
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString("utf8");
+    });
     child.on("error", () => {
       clearTimeout(timer);
       resolve(undefined);
     });
     child.on("close", (code) => {
       clearTimeout(timer);
-      resolve(code === 0 ? text : undefined);
+      resolve(code === 0 ? { stdout, stderr } : undefined);
     });
   });
-
-  const line = output
-    ?.split("\n")
-    .map((entry) => entry.trim())
-    .find((entry) => entry !== "");
-  if (line === undefined) {
+  if (streams === undefined) {
     return {};
   }
 
-  const semver = /\d+\.\d+\.\d+[\w.+-]*/u.exec(line)?.[0];
-  return { ...(semver === undefined ? {} : { version: semver }), output: line };
+  // Some CLIs answer on stderr.
+  const answer = versionLine(streams.stdout) ?? versionLine(streams.stderr);
+  if (answer !== undefined) {
+    return answer;
+  }
+  const said = firstLine(streams.stdout) ?? firstLine(streams.stderr);
+  return said === undefined ? {} : { output: said };
+}
+
+interface VersionProbeOutput {
+  readonly stdout: string;
+  readonly stderr: string;
+}
+
+/**
+ * A whole line that is a version answer: `codex-cli 0.149.0`,
+ * `2.1.278 (Claude Code)`, `v22.14.0`. Anchored so an update notice
+ * (`Update available: 0.149.0 -> 0.153.2`) is never read as the build that ran.
+ */
+const VERSION_LINE = /^(?:[\w@/.-]+\s+)?v?(\d+\.\d+\.\d+(?:[-+][\w.+-]+)?)(?:\s+\([^()]*\))?$/u;
+
+function versionLine(
+  text: string,
+): { readonly version: string; readonly output: string } | undefined {
+  const answers = nonEmptyLines(text).flatMap((line) => {
+    const version = VERSION_LINE.exec(line)?.[1];
+    return version === undefined ? [] : [{ version, output: line }];
+  });
+  // Answers naming different builds are no answer.
+  const [first] = answers;
+  return answers.every(({ version }) => version === first?.version) ? first : undefined;
+}
+
+function firstLine(text: string): string | undefined {
+  return nonEmptyLines(text)[0];
+}
+
+function nonEmptyLines(text: string): readonly string[] {
+  return text
+    .split("\n")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== "");
 }
 
 function spawnVersionProbe(
