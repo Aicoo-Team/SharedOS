@@ -246,12 +246,21 @@ describe("JSON-safe protocol contracts", () => {
     expect(CapabilityGrantSchema.safeParse(invalid).success).toBe(false);
   });
 
-  it.each([["."], [".."], ["project/secret"], ["project\\secret"], ["nul\u0000byte"]])(
-    "rejects unsafe structured path segment %j",
-    (path) => {
-      expect(ResourceRefSchema.safeParse({ namespace: "files", path }).success).toBe(false);
-    },
-  );
+  // Regression: trimming an opaque segment can redirect a request to a
+  // different resource, so padding is invalid rather than normalized.
+  it.each([
+    ["."],
+    [".."],
+    [" project"],
+    ["project "],
+    ["project/secret"],
+    ["project\\secret"],
+    ["nul\u0000byte"],
+  ])("rejects unsafe structured path segment %j", (segment) => {
+    expect(ResourceRefSchema.safeParse({ namespace: "files", path: [segment] }).success).toBe(
+      false,
+    );
+  });
 
   it("has one message purpose and rejects the removed intent field", () => {
     const message = {
