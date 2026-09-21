@@ -6,6 +6,21 @@ version and are published together under npm's `next` dist-tag.
 SharedOS is a `1.0.0` preview: contracts may change between previews, and
 each entry calls out what a host has to update.
 
+## Unreleased
+
+### Fixed
+
+- **Reading a Claude Code or Pi tool call no longer pays for a failed parse.**
+  The content-block walk the vendor codecs share recognised prose by running
+  `TextBlockSchema.safeParse` on every block, where each codec had compared
+  `block.type` before the walk was shared. A call block fails that parse, and
+  the failure cost more than the rest of the walk: parse-and-translate read
+  17.5 µs per call for Claude Code and 17.9 µs for Pi at `1.0.0-preview`,
+  against 12.9 and 12.2 µs at `0.1.0-alpha.5`. The walk compares again and
+  they read 11.9 and 12.4 µs. The same blocks are read as prose and as calls;
+  DeepSeek, whose calls arrive in a frame of their own, and Codex, which does
+  not use the walk, never paid it.
+
 ## 1.0.0-preview
 
 ### Changed — breaking
