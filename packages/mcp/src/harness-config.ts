@@ -32,6 +32,15 @@ export interface HarnessMcpConnection {
   readonly token?: string;
 }
 
+/**
+ * The server name a harness namespaces its aliases under: the connection's own,
+ * or `sharedos`. The one place the default is applied, so an emitted config, a
+ * launch argument and a turn's metadata cannot name different servers.
+ */
+export function mcpServerName(connection: Pick<HarnessMcpConnection, "name">): string {
+  return connection.name ?? SHAREDOS_MCP_SERVER_NAME;
+}
+
 /** One generated file: what to write, and what a harness expects it to be called. */
 export interface HarnessMcpConfigFile {
   readonly harness: string;
@@ -81,7 +90,7 @@ export function codexMcpServerSettings(
 
 /** Codex's `config.toml` fragment: {@link codexMcpServerSettings} as a table. */
 export function codexMcpConfig(connection: HarnessMcpConnection): string {
-  const name = connection.name ?? SHAREDOS_MCP_SERVER_NAME;
+  const name = mcpServerName(connection);
   const lines = [
     `[mcp_servers.${name}]`,
     ...codexMcpServerSettings(connection).map(([key, value]) => `${key} = ${value}`),
@@ -91,7 +100,7 @@ export function codexMcpConfig(connection: HarnessMcpConnection): string {
 
 /** Claude Code's `.mcp.json`. */
 export function claudeCodeMcpConfig(connection: HarnessMcpConnection): JsonObject {
-  const name = connection.name ?? SHAREDOS_MCP_SERVER_NAME;
+  const name = mcpServerName(connection);
   return {
     mcpServers: {
       [name]: {
@@ -115,7 +124,7 @@ export function claudeCodeMcpConfig(connection: HarnessMcpConnection): JsonObjec
  * every one of those calls is re-authorized by the kernel.
  */
 export function claudeAgentSdkMcpOptions(connection: HarnessMcpConnection): JsonObject {
-  const name = connection.name ?? SHAREDOS_MCP_SERVER_NAME;
+  const name = mcpServerName(connection);
   const servers = claudeCodeMcpConfig(connection)["mcpServers"] as JsonObject;
   return {
     mcpServers: servers,
@@ -147,7 +156,7 @@ export function claudeAgentSdkMcpOptions(connection: HarnessMcpConnection): Json
  * a harness that declined to use the catalogue, which is a different finding.
  */
 export function deepseekMcpConfig(connection: HarnessMcpConnection): string {
-  const name = connection.name ?? SHAREDOS_MCP_SERVER_NAME;
+  const name = mcpServerName(connection);
   const lines = [
     "- insert:",
     `    - id: mcp-${name}`,
@@ -193,7 +202,7 @@ export function deepseekMcpConfig(connection: HarnessMcpConnection): string {
  * some later moment the turn may already have closed.
  */
 export function piMcpConfig(connection: HarnessMcpConnection): JsonObject {
-  const name = connection.name ?? SHAREDOS_MCP_SERVER_NAME;
+  const name = mcpServerName(connection);
   return {
     mcpServers: {
       [name]: {

@@ -8,7 +8,7 @@ every declared attempt itself, and calls the host directly. It goes through no
 driver and no catalogue rendering, so its cell says what the kernel does to an
 attempt and nothing about the loop SharedOS ships.
 
-The `Standard` column is that loop: the native harness, `StandardRuntime` with
+The `Standard` column is that loop: the native harness, the standard loop with
 the model driver in the seat and the permission-filtered catalogue rendered
 into the model's own tool-call shape. In the committed manifest a transcript
 stands where the provider would, written here from the declared attempt, and
@@ -28,6 +28,10 @@ live session. Live-run columns are a separate claim and are not made here.
 - Grading rules: version `5`
 - Columns: `Adversary`, `Standard`, `Codex`, `Claude Code`, `DeepSeek`, `Pi`
 - Prompt set, `Standard`: `4dbefcbd4c3cd3a8e59a612a2deb64d8f1b7a6315fc580b4deb0dd584491a424`
+- Prompt set, `Codex`: `fb7c0108ce899ab01c814a4dafce7515e390c660657e8c07f6f873766d76dd91`
+- Prompt set, `Claude Code`: `fb7c0108ce899ab01c814a4dafce7515e390c660657e8c07f6f873766d76dd91`
+- Prompt set, `DeepSeek`: `fb7c0108ce899ab01c814a4dafce7515e390c660657e8c07f6f873766d76dd91`
+- Prompt set, `Pi`: `fb7c0108ce899ab01c814a4dafce7515e390c660657e8c07f6f873766d76dd91`
 
 The case-set hash covers the declarations only: ids, tools, arguments,
 conditions, expectations, and the markers that decide whether an attempt is
@@ -42,8 +46,9 @@ match. Tool prose is inside this one: a description and an input schema are
 served to the model, so rewording them is a different world.
 
 The prompt-set hash covers how the seat was asked: what the column's runtime
-told it before each turn -- the turn's reach as a system message or as MCP
-initialize instructions, and the prompt written from the declared attempts --
+told it before each turn -- the turn's reach as a system message, as MCP
+initialize instructions or on a driven harness's opening request, and the
+prompt written from the declared attempts --
 taken from each turn's record rather than from the code that wrote it. It is
 per column, because the wording differs by design between a seat whose
 channel carries any name and one behind an MCP router, and a column that
@@ -411,7 +416,7 @@ The world as issued, less the grant over the escalation affordance: `sharedos.es
 The world as issued. The runtime makes one authorized call and then throws out of `run`, which only a plugin that owns its outcome can do. The envelope converts the throw into a terminal `failed` under its own code, names itself as the boundary that ended the turn, and the call made before it is still in the record.
 
 - **Adversary** — pass; 1 of 1 attempts issued; refused by `envelope`; reason `runtime_failed`; record usable; the turn itself ended as `failed` with `runtime_failed`
-- **Standard** — not applicable; 1 attempt declared, none issued; a model driver returns a decision and `StandardRuntime` turns it into an outcome; neither a transcript nor a live model can express throwing out of the turn. Only a plugin that owns its outcome can, so the row is run where that is true and declared here rather than approximated
+- **Standard** — not applicable; 1 attempt declared, none issued; a model driver returns a decision and the standard loop turns it into an outcome; neither a transcript nor a live model can express throwing out of the turn. Only a plugin that owns its outcome can, so the row is run where that is true and declared here rather than approximated
 - **Codex** — not applicable; 1 attempt declared, none issued; a scripted harness returns frames and has no way to declare that it throws out of its turn. Making one throw would test the adapter's own error handling rather than what the envelope does with a plugin that stops obeying the protocol; only a plugin the column constructs can be made to throw on purpose
 - **Claude Code** — not applicable; 1 attempt declared, none issued; a scripted harness returns frames and has no way to declare that it throws out of its turn. Making one throw would test the adapter's own error handling rather than what the envelope does with a plugin that stops obeying the protocol; only a plugin the column constructs can be made to throw on purpose
 - **DeepSeek** — not applicable; 1 attempt declared, none issued; a scripted harness returns frames and has no way to declare that it throws out of its turn. Making one throw would test the adapter's own error handling rather than what the envelope does with a plugin that stops obeying the protocol; only a plugin the column constructs can be made to throw on purpose

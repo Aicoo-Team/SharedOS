@@ -9,6 +9,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { JsonObject, ToolDefinition } from "@aicoo/sharedos-contracts";
+import { hashJson } from "@aicoo/sharedos-core";
 import type {
   AgentTurnDecision,
   AgentTurnDriver,
@@ -31,12 +32,16 @@ export class AnthropicTurnDriver implements AgentTurnDriver {
 
   async open(request: RuntimeTurnRequest): Promise<AgentTurnSession> {
     const tools = request.tools.map(toAnthropicTool);
-    const messages: Array<Record<string, unknown>> = [
-      { role: "user", content: JSON.stringify(request.message.payload) },
-    ];
+    const prompt = JSON.stringify(request.message.payload);
+    const messages: Array<Record<string, unknown>> = [{ role: "user", content: prompt }];
     let pendingCallId: string | undefined;
 
     return {
+      // What the model is told before it answers, hashed in the shape every
+      // SharedOS seat uses. The loop states it for the record once `open`
+      // returns, so a turn cancelled in its first request still says what it
+      // was asked.
+      promptHash: await hashJson({ instructions: SYSTEM, prompt }),
       next: async (input: AgentTurnInput, signal: AbortSignal): Promise<AgentTurnDecision> => {
         if (input.type === "tool_result") {
           messages.push({

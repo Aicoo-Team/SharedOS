@@ -14,9 +14,11 @@ import type { McpToolInvocation, McpToolInvoker } from "./server.js";
  *
  * Structurally satisfied by `RuntimeHost`, which is the intended binding: a
  * bridge opened inside a turn puts every `tools/call` through the execution
- * envelope, so the call is counted against the turn's budgets, checked against
- * the effective catalogue, and re-authorized by the kernel -- the same path a
- * native runtime's calls take, with no second enforcement path added for MCP.
+ * envelope, so the call is counted against the turn's `maxToolCalls`, checked
+ * against the effective catalogue, and re-authorized by the kernel -- the same
+ * path a native runtime's calls take, with no second enforcement path added for
+ * MCP. A harness keeps its own loop and declares no step, so `maxSteps` does not
+ * apply on this path: it is bounded by calls.
  *
  * Declared structurally rather than imported so this package does not depend on
  * the runtime package. The dependency would be harmless; the absence is the
@@ -24,7 +26,7 @@ import type { McpToolInvocation, McpToolInvoker } from "./server.js";
  * turn machinery other than the one method that re-authorizes.
  */
 export interface BridgeToolInvoker {
-  invokeTool(call: ToolCall, options?: { readonly step?: number }): Promise<ToolResult>;
+  invokeTool(call: ToolCall): Promise<ToolResult>;
 }
 
 /** What the bridge needs of the turn's sanitised context: identity, not authority. */
@@ -46,12 +48,6 @@ export interface OpenToolBridgeOptions {
   /** The permission-filtered catalogue this turn resolved. */
   readonly tools: readonly ToolDefinition[];
   readonly host: BridgeToolInvoker;
-  /**
-   * Position in the harness's own loop, when the transport can report one.
-   * Neither caller passes it today, so an MCP-mediated call declares no step and
-   * is bounded by `maxToolCalls` alone; see `docs/open-items.md`.
-   */
-  readonly step?: number;
 }
 
 /**
@@ -74,7 +70,6 @@ export class SharedOSToolBridge implements McpToolInvoker {
   readonly #context: BridgeTurnContext;
   readonly #host: BridgeToolInvoker;
   readonly #tools: readonly ToolDefinition[];
-  readonly #step: number | undefined;
   readonly #aliases: ToolAliasRecord[] = [];
   #catalog: Promise<SharedOSToolCatalog> | undefined;
   #closed = false;
@@ -84,7 +79,6 @@ export class SharedOSToolBridge implements McpToolInvoker {
     this.#context = options.context;
     this.#host = options.host;
     this.#tools = [...options.tools];
-    this.#step = options.step;
   }
 
   /**
@@ -129,7 +123,7 @@ export class SharedOSToolBridge implements McpToolInvoker {
       traceId: this.#context.traceId,
       requestedAt: this.#context.now,
     };
-    return this.#host.invokeTool(call, this.#step === undefined ? {} : { step: this.#step });
+    return this.#host.invokeTool(call);
   }
 
   close(): void {

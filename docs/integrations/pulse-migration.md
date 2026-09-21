@@ -171,7 +171,7 @@ expected path` as a release blocker. Investigate legacy allows that SharedOS
 
 ### 6. Runtime and one-turn agent cutover
 
-- Wrap agent-v04's model/provider path in `StandardRuntime` rather than moving
+- Wrap agent-v04's model/provider path in the standard loop rather than moving
   its prompt, billing, or provider configuration into SharedOS.
 - Require a recipient-scoped execution grant before opening another agent and
   re-authorize every file/tool side effect during the turn.
@@ -355,7 +355,7 @@ never takes ownership of Pulse data.
 - Pulse persists namespace choices and connector credentials while SharedOS
   owns their portable control-plane semantics and execution gates.
 - File mutations are idempotent and outcome-audited durably.
-- Agent-v04 and shared-agent execution use `StandardRuntime` inside the same
+- Agent-v04 and shared-agent execution use the standard loop inside the same
   bounded-turn envelope.
 - Agent-v05 Codex implements `RuntimePlugin`, routes SharedOS effects through
   `RuntimeHost`, and records runtime/backend/model provenance separately.

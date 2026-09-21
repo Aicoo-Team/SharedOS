@@ -939,7 +939,7 @@ describe("what the harness is told at initialize", () => {
 /**
  * The same drain, reached over MCP.
  *
- * `StandardRuntime` and this runtime hand their calls to the same
+ * the standard loop and this runtime hand their calls to the same
  * `RuntimeHost.invokeTool`, so the envelope's grace is not something either of
  * them implements. What differs is who owns the loop: here it is the harness,
  * which is never asked for a decision and so cannot be told to stop asking. It

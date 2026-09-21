@@ -265,8 +265,8 @@ Six columns are committed, and the first two are different kinds of thing.
   the host without a driver or a catalogue rendering in between. It is the
   reference every other cell is read against, and the only column that can put
   the ungranted-escalation row. It is not the native harness.
-- `MODEL_SCRIPTED_COLUMN` (`Standard`) is the native harness: `ModelRuntime`,
-  which is `StandardRuntime` with the model driver in the seat and the
+- `MODEL_SCRIPTED_COLUMN` (`Standard`) is the native harness:
+  `createStandardRuntime` with `StandardTurnDriver` in the seat and the
   permission-filtered catalogue rendered into the model's own tool-call shape.
   In the committed manifest a transcript stands where the provider would —
   `movesToModelTranscript` writes each declared attempt as a model reply in the

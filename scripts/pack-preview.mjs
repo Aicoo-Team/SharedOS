@@ -118,13 +118,13 @@ function verifyFreshConsumer(archives) {
     writeFileSync(
       join(consumerDirectory, "smoke.mjs"),
       [
-        'import { AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, StandardRuntime } from "@aicoo/sharedos";',
+        'import { AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, createStandardRuntime } from "@aicoo/sharedos";',
         'import { createTestContext } from "@aicoo/sharedos-testkit";',
         'import { assembleExecutionRecord, runConformanceSuite } from "@aicoo/sharedos-conformance";',
-        'import { createCodexRuntime, TranscriptTransport } from "@aicoo/sharedos-adapters";',
+        'import { StandardTurnDriver, TranscriptModelClient } from "@aicoo/sharedos-adapters";',
         'import { probeCodex } from "@aicoo/sharedos-adapters/node";',
         "",
-        "const values = [AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, StandardRuntime, createTestContext, assembleExecutionRecord, runConformanceSuite, createCodexRuntime, TranscriptTransport, probeCodex];",
+        "const values = [AccessContextSchema, CapabilityAuthorizer, RuntimeRegistry, SharedOSClient, SharedOSExecutor, SharedOSKernel, createStandardRuntime, createTestContext, assembleExecutionRecord, runConformanceSuite, StandardTurnDriver, TranscriptModelClient, probeCodex];",
         'if (values.some((value) => value === undefined)) throw new Error("SharedOS export missing");',
         'console.log("SharedOS fresh-consumer runtime import passed.");',
         "",
@@ -135,9 +135,9 @@ function verifyFreshConsumer(archives) {
     writeFileSync(
       join(consumerDirectory, "smoke.ts"),
       [
-        'import { RuntimeRegistry, SharedOSExecutor, SharedOSKernel, type AccessContext, type GrantSource, type RuntimePlugin } from "@aicoo/sharedos";',
+        'import { RuntimeRegistry, SharedOSExecutor, SharedOSKernel, createStandardRuntime, type AccessContext, type GrantSource, type RuntimePlugin } from "@aicoo/sharedos";',
         'import { createTestContext } from "@aicoo/sharedos-testkit";',
-        'import { createCodexRuntime, TranscriptTransport } from "@aicoo/sharedos-adapters";',
+        'import { StandardTurnDriver, TranscriptModelClient } from "@aicoo/sharedos-adapters";',
         "",
         "const grantSource: GrantSource = { load: async () => [] };",
         "const kernel: SharedOSKernel = new SharedOSKernel({ grantSource });",
@@ -145,11 +145,11 @@ function verifyFreshConsumer(archives) {
         'const runtime: RuntimePlugin = { manifest: { id: "smoke.runtime", version: "1", protocolVersion: "1" }, run: async () => ({ type: "complete", output: null }) };',
         "const runtimes = new RuntimeRegistry([runtime]);",
         'const turns = new SharedOSExecutor(kernel, runtimes.resolve("smoke.runtime"));',
-        "const codex: RuntimePlugin = createCodexRuntime({ transport: new TranscriptTransport({ batches: [[]] }) });",
+        'const standard: RuntimePlugin = createStandardRuntime({ driver: new StandardTurnDriver({ manifest: { id: "smoke.model", version: "1", protocolVersion: "1" }, client: new TranscriptModelClient({ replies: [{ text: "done", toolCalls: [] }] }) }) });',
         "void kernel;",
         "void context;",
         "void turns;",
-        "void codex;",
+        "void standard;",
         "",
       ].join("\n"),
     );

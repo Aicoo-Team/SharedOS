@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ESCALATION_TOOL_NAME } from "@aicoo/sharedos-runtime";
+import { ESCALATION_TOOL_NAME, createStandardRuntime } from "@aicoo/sharedos-runtime";
 
 import type { ToolCall } from "@aicoo/sharedos-contracts";
 
@@ -15,8 +15,7 @@ import {
 import { hashJson } from "./hashing.js";
 import { judgeCase } from "./judge.js";
 import {
-  ModelDriver,
-  ModelRuntime,
+  StandardTurnDriver,
   TranscriptModelClient,
   claudeCodeFrameWriter,
   claudeCodeProtocol,
@@ -716,7 +715,7 @@ describe("the conformance suite", () => {
       ["model-scripted", "Standard"],
     ]);
     // The same kernel answer through a different seat: the adversary calls the
-    // host itself, the native harness goes through `StandardRuntime` and the
+    // host itself, the native harness goes through the standard loop and the
     // model driver's rendering, and both are refused at the same boundary.
     expect(mutation?.cells.map(({ status }) => status)).toEqual(["pass", "pass"]);
     expect(mutation?.cells.map(({ refusedBy }) => refusedBy)).toEqual([["kernel"], ["kernel"]]);
@@ -915,8 +914,8 @@ describe("the conformance suite", () => {
           turn: create.turn,
           context: conformanceRuntimeContext(create.turn),
         };
-        return new ModelRuntime(
-          new ModelDriver({
+        return createStandardRuntime({
+          driver: new StandardTurnDriver({
             manifest: { id: "sharedos.test.reworded", version: "1.0.0", protocolVersion: "1" },
             client: new TranscriptModelClient(movesToModelTranscript(moves, options), {
               provider: "sharedos-conformance",
@@ -925,7 +924,7 @@ describe("the conformance suite", () => {
             // question to the model and an identical case set and world set.
             prompt: () => movesToPrompt(moves, { context: options.context, turn: options.turn }),
           }),
-        );
+        });
       },
     };
     const columns = [ADVERSARY_COLUMN, MODEL_SCRIPTED_COLUMN, CODEX_SCRIPTED_COLUMN, reworded];
@@ -936,7 +935,12 @@ describe("the conformance suite", () => {
 
     expect(identity(run.manifest, MODEL_SCRIPTED_COLUMN.id)).toMatch(/^[0-9a-f]{64}$/u);
     expect(identity(run.manifest, ADVERSARY_COLUMN.id)).toBeUndefined();
-    expect(identity(run.manifest, CODEX_SCRIPTED_COLUMN.id)).toBeUndefined();
+    // A driven harness is handed the turn's reach and its prompt like any seat,
+    // in its own default wording, so it carries a set and not the model's.
+    expect(identity(run.manifest, CODEX_SCRIPTED_COLUMN.id)).toMatch(/^[0-9a-f]{64}$/u);
+    expect(identity(run.manifest, CODEX_SCRIPTED_COLUMN.id)).not.toBe(
+      identity(run.manifest, MODEL_SCRIPTED_COLUMN.id),
+    );
 
     // Same cases, same worlds, different wording: only the prompt set moves.
     expect(run.manifest.caseSetHash).toBe(again.manifest.caseSetHash);

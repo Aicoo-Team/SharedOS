@@ -80,7 +80,7 @@ Publishing a capability requirement would therefore be both a leak and a lie.
 The same projection applies wherever a model is shown a catalogue, not only over
 MCP. `GET /v1/tools` and `RuntimeTurnRequest.tools` carry full `ToolDefinition`s
 for the host's benefit; a client or driver that feeds a model from either
-applies `publishToolCatalog` first, as `ModelDriver` does. See the
+applies `publishToolCatalog` first, as `StandardTurnDriver` does. See the
 [HTTP reference](http-api.md#get-v1tools).
 
 ## Per turn, never global
@@ -164,7 +164,10 @@ system message by the model driver — and `prompt` is the task the harness was
 launched with. `instructions` is `null` when the host sent none.
 
 Both shipped runtimes compute it, in this one shape, before the seat is sent
-anything, and it lands in `SystemIdentity` beside `catalogHash`. The same words
+anything, and it lands in `SystemIdentity` beside `catalogHash`. The evaluation
+harness driver does too: it hands both texts to its transport on
+`HarnessTurnRequest`, and `harnessTurnText` is the two as one message for a
+harness whose opening frame has one slot. The same words
 carry the same hash whichever runtime said them. It covers what SharedOS said:
 a CLI's own system prompt is added on the far side of the wire and is not
 claimed.
@@ -241,6 +244,12 @@ try {
   await http.close();
 }
 ```
+
+A turn served this way is bounded by calls. The harness keeps its own loop and
+declares no step, so the envelope's `maxSteps` does not apply and
+`step_limit_exceeded` cannot arise; `maxToolCalls` and `timeoutMs` are the
+limits, and a call past the budget comes back `denied` /
+`tool_call_limit_exceeded` as a result the harness reads.
 
 ### Outside a turn
 

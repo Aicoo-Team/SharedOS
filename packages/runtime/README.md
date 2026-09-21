@@ -12,15 +12,15 @@ SharedOS is runtime-agnostic, not runtime-less. The package exports two layers:
 - `SharedOSExecutor` validates and admits a turn, exposes only authorized tools,
   rechecks every exact call, applies cancellation, and records runtime
   provenance. Runtime plugins cannot replace this layer.
-- `RuntimePlugin` owns the agent loop inside that envelope. `StandardRuntime` is
-  the included reference implementation over `AgentTurnDriver`.
+- `RuntimePlugin` owns the agent loop inside that envelope. `createStandardRuntime` is
+  the included one: the standard loop, with one `AgentTurnDriver` seated.
 
 ## Standard runtime
 
 ```ts
-import { SharedOSExecutor, StandardRuntime } from "@aicoo/sharedos-runtime";
+import { SharedOSExecutor, createStandardRuntime } from "@aicoo/sharedos-runtime";
 
-const runtime = new StandardRuntime(agentDriver);
+const runtime = createStandardRuntime({ driver: agentDriver });
 const turns = new SharedOSExecutor(kernel, runtime, {
   defaultMaxSteps: 16,
   defaultMaxToolCalls: 16,
@@ -50,7 +50,7 @@ escalate, which is the intended arrangement.
 
 The tool is never executed. A driver whose turn's catalogue offers it
 recognises the name with `escalationRequest(tool, arguments)` and returns
-`{ type: "escalate", reason }` instead of a tool call; `StandardRuntime` settles
+`{ type: "escalate", reason }` instead of a tool call; the standard loop settles
 the turn as `escalated`, the envelope records `escalation.requested`, and
 nothing is granted while the ask is pending. Without the grant the name is
 passed through and refused `tool_unavailable`, and `SharedOSExecutor` refuses an
@@ -113,7 +113,7 @@ authority, or namespace-management state. Its `RuntimeHost` contains only:
 - `emit`, which records plugin observations as wrapped `runtime.event` events.
 - `annotate`, which states one fact about the turn for its record. The envelope
   writes it into the result's metadata on every ending, a cancelled turn
-  included, and it never refuses on the state of the host (ADR 0027).
+  included, and it never refuses on the state of the host (ADR 0007).
 
 The broker closes when `run` returns. A plugin cannot use a retained host handle
 for later tool calls or emit authoritative `turn.*` and `tool.*` events.
@@ -124,7 +124,10 @@ for later tool calls or emit authoritative `turn.*` and `tool.*` events.
 configuration:
 
 ```ts
-const runtimes = new RuntimeRegistry([new StandardRuntime(agentDriver), codexRuntime]);
+const runtimes = new RuntimeRegistry([
+  createStandardRuntime({ driver: agentDriver }),
+  codexRuntime,
+]);
 const runtime = runtimes.resolve(serverPolicy.runtimeId);
 const turns = new SharedOSExecutor(kernel, runtime);
 ```

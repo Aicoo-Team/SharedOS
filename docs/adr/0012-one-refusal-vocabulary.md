@@ -34,7 +34,7 @@ to distinguish them because the scripted adversary re-reported its own reason
 codes, which is the runtime being trusted to describe its own refusals.
 
 A fourth gap sat beside them: the step budget was enforced only by
-`StandardRuntime`'s own loop. A `RuntimePlugin` is a replacement for exactly
+the standard loop. A `RuntimePlugin` is a replacement for exactly
 that loop, so a limit only the reference implementation honours is not a limit.
 
 ## Decision
@@ -73,7 +73,7 @@ The two boundaries share one vocabulary and are equally recorded.
   column possible for a runtime which cannot report on itself at all — a vendor
   harness replaying scripted frames has its attempts recovered from the record.
 - `step_limit_exceeded` can now come from the envelope as well as from
-  `StandardRuntime`. Both mean the same thing, which is the point.
+  the standard loop. Both mean the same thing, which is the point.
 
 ## Rejected alternatives
 

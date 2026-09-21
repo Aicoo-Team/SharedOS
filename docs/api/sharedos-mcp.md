@@ -48,6 +48,9 @@ try {
 }
 ```
 
+A harness declares no step, so a turn served this way is bounded by the
+envelope's `maxToolCalls` and `timeoutMs`, not by `maxSteps`.
+
 ## One name
 
 ```
@@ -103,7 +106,7 @@ SharedOS is currently an `0.x` prerelease.
 
 ### McpToolServer
 
-Defined in: [mcp/src/server.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L116)
+Defined in: [mcp/src/server.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L111)
 
 SharedOS's catalogue and authorization broker, spoken as MCP.
 
@@ -125,7 +128,7 @@ see [toCallToolResult](#tocalltoolresult).
 
 > **new McpToolServer**(`options`): [`McpToolServer`](#mcptoolserver)
 
-Defined in: [mcp/src/server.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L125)
+Defined in: [mcp/src/server.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L120)
 
 ###### Parameters
 
@@ -145,7 +148,7 @@ Defined in: [mcp/src/server.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/
 
 > **get** **initialized**(): `boolean`
 
-Defined in: [mcp/src/server.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L138)
+Defined in: [mcp/src/server.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L133)
 
 ###### Returns
 
@@ -157,7 +160,7 @@ Defined in: [mcp/src/server.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/
 
 > **get** **protocolVersion**(): `string` \| `undefined`
 
-Defined in: [mcp/src/server.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L134)
+Defined in: [mcp/src/server.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L129)
 
 The revision agreed with this client, once `initialize` has been answered.
 
@@ -171,7 +174,7 @@ The revision agreed with this client, once `initialize` has been answered.
 
 > **handle**(`message`, `signal`): `Promise`\<[`JsonRpcResponse`](#jsonrpcresponse) \| `undefined`>\>
 
-Defined in: [mcp/src/server.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L149)
+Defined in: [mcp/src/server.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L144)
 
 Handle one JSON-RPC message.
 
@@ -194,7 +197,7 @@ is malformed.
 
 ### SharedOSToolBridge
 
-Defined in: [mcp/src/bridge.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L72)
+Defined in: [mcp/src/bridge.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L68)
 
 A turn-scoped MCP tool broker.
 
@@ -220,7 +223,7 @@ door that is shut rather than one that still opens onto a turn that has ended.
 
 > **new SharedOSToolBridge**(`options`): [`SharedOSToolBridge`](#sharedostoolbridge)
 
-Defined in: [mcp/src/bridge.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L82)
+Defined in: [mcp/src/bridge.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L77)
 
 ###### Parameters
 
@@ -240,7 +243,7 @@ Defined in: [mcp/src/bridge.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/m
 
 > **get** **aliases**(): readonly [`ToolAliasRecord`](#toolaliasrecord)[]
 
-Defined in: [mcp/src/bridge.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L98)
+Defined in: [mcp/src/bridge.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L92)
 
 Names the harness rewrote, in the order they were seen.
 
@@ -259,7 +262,7 @@ readonly [`ToolAliasRecord`](#toolaliasrecord)[]
 
 > **get** **closed**(): `boolean`
 
-Defined in: [mcp/src/bridge.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L102)
+Defined in: [mcp/src/bridge.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L96)
 
 ###### Returns
 
@@ -271,7 +274,7 @@ Defined in: [mcp/src/bridge.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/
 
 > **catalog**(`signal`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
-Defined in: [mcp/src/bridge.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L106)
+Defined in: [mcp/src/bridge.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L100)
 
 The permission-filtered catalogue for this session.
 
@@ -293,7 +296,7 @@ The permission-filtered catalogue for this session.
 
 > **close**(): `void`
 
-Defined in: [mcp/src/bridge.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L135)
+Defined in: [mcp/src/bridge.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L129)
 
 ###### Returns
 
@@ -303,7 +306,7 @@ Defined in: [mcp/src/bridge.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/
 
 > **invoke**(`invocation`, `signal`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [mcp/src/bridge.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L115)
+Defined in: [mcp/src/bridge.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L109)
 
 One call, re-authorized against the arguments actually presented.
 
@@ -326,7 +329,7 @@ One call, re-authorized against the arguments actually presented.
 
 ### BridgeKernel
 
-Defined in: [mcp/src/bridge.ts:155](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L155)
+Defined in: [mcp/src/bridge.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L149)
 
 The kernel surface a bridge needs when it is not running inside a turn.
 
@@ -336,7 +339,7 @@ The kernel surface a bridge needs when it is not running inside a turn.
 
 > **invokeTool**(`context`, `call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [mcp/src/bridge.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L160)
+Defined in: [mcp/src/bridge.ts:154](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L154)
 
 ###### Parameters
 
@@ -368,7 +371,7 @@ Defined in: [mcp/src/bridge.ts:160](https://github.com/Aicoo-Team/SharedOS/blob/
 
 > **listPublishedTools**(`context`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
-Defined in: [mcp/src/bridge.ts:156](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L156)
+Defined in: [mcp/src/bridge.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L150)
 
 ###### Parameters
 
@@ -395,15 +398,17 @@ Defined in: [mcp/src/bridge.ts:156](https://github.com/Aicoo-Team/SharedOS/blob/
 
 ### BridgeToolInvoker
 
-Defined in: [mcp/src/bridge.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L26)
+Defined in: [mcp/src/bridge.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L28)
 
 The effectful surface a bridge is allowed to reach.
 
 Structurally satisfied by `RuntimeHost`, which is the intended binding: a
 bridge opened inside a turn puts every `tools/call` through the execution
-envelope, so the call is counted against the turn's budgets, checked against
-the effective catalogue, and re-authorized by the kernel -- the same path a
-native runtime's calls take, with no second enforcement path added for MCP.
+envelope, so the call is counted against the turn's `maxToolCalls`, checked
+against the effective catalogue, and re-authorized by the kernel -- the same
+path a native runtime's calls take, with no second enforcement path added for
+MCP. A harness keeps its own loop and declares no step, so `maxSteps` does not
+apply on this path: it is bounded by calls.
 
 Declared structurally rather than imported so this package does not depend on
 the runtime package. The dependency would be harmless; the absence is the
@@ -414,22 +419,20 @@ turn machinery other than the one method that re-authorizes.
 
 ##### invokeTool()
 
-> **invokeTool**(`call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
+> **invokeTool**(`call`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [mcp/src/bridge.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L27)
+Defined in: [mcp/src/bridge.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L29)
 
 ###### Parameters
 
-| Parameter           | Type                                                                                                                                                 |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `call`              | \{ `arguments`: [`JsonObject`](sharedos-contracts.md#jsonobject); `id`: `string`; `requestedAt`: `string`; `tool`: `string`; `traceId`: `string`; \} |
-| `call.arguments`    | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                     |
-| `call.id?`          | `string`                                                                                                                                             |
-| `call.requestedAt?` | `string`                                                                                                                                             |
-| `call.tool?`        | `string`                                                                                                                                             |
-| `call.traceId?`     | `string`                                                                                                                                             |
-| `options?`          | \{ `step?`: `number`; \}                                                                                                                             |
-| `options.step?`     | `number`                                                                                                                                             |
+| Parameter          | Type                                                                                                                                                 |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `call`             | \{ `arguments`: [`JsonObject`](sharedos-contracts.md#jsonobject); `id`: `string`; `requestedAt`: `string`; `tool`: `string`; `traceId`: `string`; \} |
+| `call.arguments`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                     |
+| `call.id`          | `string`                                                                                                                                             |
+| `call.requestedAt` | `string`                                                                                                                                             |
+| `call.tool`        | `string`                                                                                                                                             |
+| `call.traceId`     | `string`                                                                                                                                             |
 
 ###### Returns
 
@@ -439,7 +442,7 @@ Defined in: [mcp/src/bridge.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/m
 
 ### BridgeTurnContext
 
-Defined in: [mcp/src/bridge.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L31)
+Defined in: [mcp/src/bridge.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L33)
 
 What the bridge needs of the turn's sanitised context: identity, not authority.
 
@@ -447,8 +450,8 @@ What the bridge needs of the turn's sanitised context: identity, not authority.
 
 | Property                                | Modifier   | Type     | Defined in                                                                                              |
 | --------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------- |
-| <a id="property-now"></a> `now`         | `readonly` | `string` | [mcp/src/bridge.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L33) |
-| <a id="property-traceid"></a> `traceId` | `readonly` | `string` | [mcp/src/bridge.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L32) |
+| <a id="property-now"></a> `now`         | `readonly` | `string` | [mcp/src/bridge.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L35) |
+| <a id="property-traceid"></a> `traceId` | `readonly` | `string` | [mcp/src/bridge.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L34) |
 
 ---
 
@@ -478,7 +481,7 @@ that would let a run claim the first while being the second.
 
 ### HarnessMcpConfigFile
 
-Defined in: [mcp/src/harness-config.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L36)
+Defined in: [mcp/src/harness-config.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L45)
 
 One generated file: what to write, and what a harness expects it to be called.
 
@@ -486,9 +489,9 @@ One generated file: what to write, and what a harness expects it to be called.
 
 | Property                                  | Modifier   | Type     | Defined in                                                                                                              |
 | ----------------------------------------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-contents"></a> `contents` | `readonly` | `string` | [mcp/src/harness-config.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L39) |
-| <a id="property-filename"></a> `filename` | `readonly` | `string` | [mcp/src/harness-config.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L38) |
-| <a id="property-harness"></a> `harness`   | `readonly` | `string` | [mcp/src/harness-config.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L37) |
+| <a id="property-contents"></a> `contents` | `readonly` | `string` | [mcp/src/harness-config.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L48) |
+| <a id="property-filename"></a> `filename` | `readonly` | `string` | [mcp/src/harness-config.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L47) |
+| <a id="property-harness"></a> `harness`   | `readonly` | `string` | [mcp/src/harness-config.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L46) |
 
 ---
 
@@ -568,13 +571,13 @@ Defined in: [mcp/src/protocol.ts:67](https://github.com/Aicoo-Team/SharedOS/blob
 
 ### KernelToolBridgeOptions
 
-Defined in: [mcp/src/bridge.ts:167](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L167)
+Defined in: [mcp/src/bridge.ts:161](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L161)
 
 #### Properties
 
 | Property                                        | Modifier   | Type                                                                                                                                                                                                       | Description                                                      | Defined in                                                                                                |
 | ----------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| <a id="property-context"></a> `context`         | `readonly` | `object`                                                                                                                                                                                                   | The trusted context. Never built from anything the harness sent. | [mcp/src/bridge.ts:170](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L170) |
+| <a id="property-context"></a> `context`         | `readonly` | `object`                                                                                                                                                                                                   | The trusted context. Never built from anything the harness sent. | [mcp/src/bridge.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L164) |
 | `context.actor`                                 | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                | contracts/dist/access.d.ts:144                                                                            |
 | `context.authority`                             | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                | contracts/dist/access.d.ts:157                                                                            |
 | `context.enabledToolNamespaces`                 | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                | contracts/dist/access.d.ts:170                                                                            |
@@ -583,8 +586,8 @@ Defined in: [mcp/src/bridge.ts:167](https://github.com/Aicoo-Team/SharedOS/blob/
 | `context.owner`                                 | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                | contracts/dist/access.d.ts:128                                                                            |
 | `context.purpose`                               | `public`   | `string`                                                                                                                                                                                                   | -                                                                | contracts/dist/access.d.ts:142                                                                            |
 | `context.traceId`                               | `public`   | `string`                                                                                                                                                                                                   | -                                                                | contracts/dist/access.d.ts:143                                                                            |
-| <a id="property-executionid"></a> `executionId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                | [mcp/src/bridge.ts:171](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L171) |
-| <a id="property-kernel"></a> `kernel`           | `readonly` | [`BridgeKernel`](#bridgekernel)                                                                                                                                                                            | -                                                                | [mcp/src/bridge.ts:168](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L168) |
+| <a id="property-executionid"></a> `executionId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                | [mcp/src/bridge.ts:165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L165) |
+| <a id="property-kernel"></a> `kernel`           | `readonly` | [`BridgeKernel`](#bridgekernel)                                                                                                                                                                            | -                                                                | [mcp/src/bridge.ts:162](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L162) |
 
 ---
 
@@ -688,23 +691,22 @@ Defined in: [mcp/src/server.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/m
 
 ### OpenToolBridgeOptions
 
-Defined in: [mcp/src/bridge.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L43)
+Defined in: [mcp/src/bridge.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L45)
 
 #### Properties
 
-| Property                                          | Modifier   | Type                                      | Description                                                                                                                                                                                                       | Defined in                                                                                              |
-| ------------------------------------------------- | ---------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| <a id="property-context-1"></a> `context`         | `readonly` | [`BridgeTurnContext`](#bridgeturncontext) | -                                                                                                                                                                                                                 | [mcp/src/bridge.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L45) |
-| <a id="property-executionid-1"></a> `executionId` | `readonly` | `string`                                  | -                                                                                                                                                                                                                 | [mcp/src/bridge.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L44) |
-| <a id="property-host"></a> `host`                 | `readonly` | [`BridgeToolInvoker`](#bridgetoolinvoker) | -                                                                                                                                                                                                                 | [mcp/src/bridge.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L48) |
-| <a id="property-step"></a> `step?`                | `readonly` | `number`                                  | Position in the harness's own loop, when the transport can report one. Neither caller passes it today, so an MCP-mediated call declares no step and is bounded by `maxToolCalls` alone; see `docs/open-items.md`. | [mcp/src/bridge.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L54) |
-| <a id="property-tools"></a> `tools`               | `readonly` | readonly `object`[]                       | The permission-filtered catalogue this turn resolved.                                                                                                                                                             | [mcp/src/bridge.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L47) |
+| Property                                          | Modifier   | Type                                      | Description                                           | Defined in                                                                                              |
+| ------------------------------------------------- | ---------- | ----------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| <a id="property-context-1"></a> `context`         | `readonly` | [`BridgeTurnContext`](#bridgeturncontext) | -                                                     | [mcp/src/bridge.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L47) |
+| <a id="property-executionid-1"></a> `executionId` | `readonly` | `string`                                  | -                                                     | [mcp/src/bridge.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L46) |
+| <a id="property-host"></a> `host`                 | `readonly` | [`BridgeToolInvoker`](#bridgetoolinvoker) | -                                                     | [mcp/src/bridge.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L50) |
+| <a id="property-tools"></a> `tools`               | `readonly` | readonly `object`[]                       | The permission-filtered catalogue this turn resolved. | [mcp/src/bridge.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L49) |
 
 ---
 
 ### ToolAliasRecord
 
-Defined in: [mcp/src/bridge.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L37)
+Defined in: [mcp/src/bridge.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L39)
 
 One harness-side rewrite, kept for diagnosis and never for authorization.
 
@@ -712,9 +714,9 @@ One harness-side rewrite, kept for diagnosis and never for authorization.
 
 | Property                              | Modifier   | Type     | Defined in                                                                                              |
 | ------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------- |
-| <a id="property-alias-1"></a> `alias` | `readonly` | `string` | [mcp/src/bridge.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L38) |
-| <a id="property-at"></a> `at`         | `readonly` | `string` | [mcp/src/bridge.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L40) |
-| <a id="property-tool-1"></a> `tool`   | `readonly` | `string` | [mcp/src/bridge.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L39) |
+| <a id="property-alias-1"></a> `alias` | `readonly` | `string` | [mcp/src/bridge.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L40) |
+| <a id="property-at"></a> `at`         | `readonly` | `string` | [mcp/src/bridge.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L42) |
+| <a id="property-tool-1"></a> `tool`   | `readonly` | `string` | [mcp/src/bridge.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L41) |
 
 ---
 
@@ -807,7 +809,7 @@ Defined in: [mcp/src/protocol.ts:79](https://github.com/Aicoo-Team/SharedOS/blob
 
 > **McpHarnessId** = _typeof_ [`MCP_HARNESS_IDS`](#mcp_harness_ids)\[`number`\]
 
-Defined in: [mcp/src/harness-config.ts:213](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L213)
+Defined in: [mcp/src/harness-config.ts:222](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L222)
 
 ## Variables
 
@@ -931,23 +933,9 @@ Defined in: [mcp/src/protocol.ts:21](https://github.com/Aicoo-Team/SharedOS/blob
 
 > `const` **MCP\_HARNESS\_IDS**: readonly \[`"codex"`, `"claude-code"`, `"deepseek"`, `"pi"`\]
 
-Defined in: [mcp/src/harness-config.ts:212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L212)
+Defined in: [mcp/src/harness-config.ts:221](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L221)
 
 The harnesses this package emits a connection for, by id.
-
----
-
-### MCP\_SERVER\_VERSION
-
-> `const` **MCP\_SERVER\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
-
-Defined in: [mcp/src/server.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L94)
-
-The version a server built without `serverInfo` reports in `initialize`.
-
-It names the build a harness connected to, so it is kept equal to the
-synchronized package version by the release gate, like every other version
-constant that reaches a record or a wire.
 
 ---
 
@@ -998,7 +986,7 @@ a label for equality, not an encoding: nothing parses it back into an
 
 > **claudeAgentSdkMcpOptions**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L117)
+Defined in: [mcp/src/harness-config.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L126)
 
 Claude Agent SDK options for a non-interactive evaluation.
 
@@ -1024,7 +1012,7 @@ every one of those calls is re-authorized by the kernel.
 
 > **claudeCodeMcpConfig**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L93)
+Defined in: [mcp/src/harness-config.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L102)
 
 Claude Code's `.mcp.json`.
 
@@ -1044,7 +1032,7 @@ Claude Code's `.mcp.json`.
 
 > **codexMcpConfig**(`connection`): `string`
 
-Defined in: [mcp/src/harness-config.ts:83](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L83)
+Defined in: [mcp/src/harness-config.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L92)
 
 Codex's `config.toml` fragment: [codexMcpServerSettings](#codexmcpserversettings) as a table.
 
@@ -1064,7 +1052,7 @@ Codex's `config.toml` fragment: [codexMcpServerSettings](#codexmcpserversettings
 
 > **codexMcpServerSettings**(`connection`): readonly readonly \[`string`, `string`\][]
 
-Defined in: [mcp/src/harness-config.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L67)
+Defined in: [mcp/src/harness-config.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L76)
 
 The settings a Codex MCP server entry carries, as key and TOML value.
 
@@ -1138,7 +1126,7 @@ Defined in: [mcp/src/policy.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/m
 
 > **deepseekMcpConfig**(`connection`): `string`
 
-Defined in: [mcp/src/harness-config.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L149)
+Defined in: [mcp/src/harness-config.ts:158](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L158)
 
 DeepSeek Harness's plugin patch overlay.
 
@@ -1178,7 +1166,7 @@ a harness that declined to use the catalogue, which is a different finding.
 
 > **harnessMcpConfigFile**(`harness`, `connection`): [`HarnessMcpConfigFile`](#harnessmcpconfigfile)
 
-Defined in: [mcp/src/harness-config.ts:216](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L216)
+Defined in: [mcp/src/harness-config.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L225)
 
 Every emitter above, addressed by harness id.
 
@@ -1199,7 +1187,7 @@ Every emitter above, addressed by harness id.
 
 > **harnessToolAlias**(`serverName`, `tool`): `string`
 
-Defined in: [mcp/src/harness-config.ts:255](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L255)
+Defined in: [mcp/src/harness-config.ts:264](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L264)
 
 The harness-facing alias a tool is likely to appear under.
 
@@ -1270,7 +1258,7 @@ Defined in: [mcp/src/protocol.ts:81](https://github.com/Aicoo-Team/SharedOS/blob
 
 > **kernelToolBridge**(`options`): [`McpToolInvoker`](#mcptoolinvoker)
 
-Defined in: [mcp/src/bridge.ts:185](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L185)
+Defined in: [mcp/src/bridge.ts:179](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L179)
 
 A bridge that goes straight to the kernel, for a host serving MCP outside a
 turn.
@@ -1291,6 +1279,28 @@ long-running harness the host is supervising by other means.
 #### Returns
 
 [`McpToolInvoker`](#mcptoolinvoker)
+
+---
+
+### mcpServerName()
+
+> **mcpServerName**(`connection`): `string`
+
+Defined in: [mcp/src/harness-config.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L40)
+
+The server name a harness namespaces its aliases under: the connection's own,
+or `sharedos`. The one place the default is applied, so an emitted config, a
+launch argument and a turn's metadata cannot name different servers.
+
+#### Parameters
+
+| Parameter    | Type                                                                |
+| ------------ | ------------------------------------------------------------------- |
+| `connection` | `Pick`\<[`HarnessMcpConnection`](#harnessmcpconnection), `"name"`\> |
+
+#### Returns
+
+`string`
 
 ---
 
@@ -1354,7 +1364,7 @@ per the MCP negotiation rule: the client then decides whether it can proceed.
 
 > **openToolBridge**(`options`): [`SharedOSToolBridge`](#sharedostoolbridge)
 
-Defined in: [mcp/src/bridge.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L150)
+Defined in: [mcp/src/bridge.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L144)
 
 Open a turn-scoped bridge over the execution envelope.
 
@@ -1408,7 +1418,7 @@ Defined in: [mcp/src/policy.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/m
 
 > **piMcpConfig**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:195](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L195)
+Defined in: [mcp/src/harness-config.ts:204](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L204)
 
 Pi's `.mcp.json`, read by an MCP extension.
 
@@ -1449,7 +1459,7 @@ some later moment the turn may already have closed.
 
 > **resolveCanonicalName**(`tools`, `exposed`): `string`
 
-Defined in: [mcp/src/server.ts:309](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L309)
+Defined in: [mcp/src/server.ts:304](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L304)
 
 Map an exposed name back to the canonical SharedOS tool ID.
 
@@ -1482,7 +1492,7 @@ the permission-filtered catalogue, so it can never widen authority.
 
 > **toCallToolResult**(`result`, `published?`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/server.ts:336](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L336)
+Defined in: [mcp/src/server.ts:331](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L331)
 
 A SharedOS `ToolResult` as an MCP `CallToolResult`.
 
@@ -1526,7 +1536,7 @@ would make a denial rate uncountable from the evidence.
 
 > **toMcpTool**(`tool`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/server.ts:276](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L276)
+Defined in: [mcp/src/server.ts:271](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L271)
 
 One published tool in MCP's own shape.
 

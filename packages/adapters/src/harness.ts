@@ -31,11 +31,31 @@ export type HarnessStep =
 export interface HarnessTurnRequest {
   readonly executionId: string;
   readonly prompt: string;
+  /**
+   * What the harness is told before the prompt: by default where this turn's
+   * tools may operate. It is part of the turn's prompt hash, so a transport
+   * that opens the harness hands it over; {@link harnessTurnText} is the text
+   * for a harness whose opening frame has one slot.
+   */
+  readonly instructions?: string;
   /** The permission-filtered catalogue, already in the harness's own shape. */
   readonly tools: JsonValue;
   /** The sanitised context. It carries no grants and no issuing authority. */
   readonly context: RuntimeVisibleContext;
   readonly metadata?: JsonObject;
+}
+
+/**
+ * The instructions and the prompt as one text, instructions first, for a
+ * harness whose opening frame carries a single message.
+ */
+export function harnessTurnText(request: {
+  readonly instructions?: string;
+  readonly prompt: string;
+}): string {
+  return request.instructions === undefined
+    ? request.prompt
+    : `${request.instructions}\n\n${request.prompt}`;
 }
 
 /** One open harness turn. Reads and writes are frames, never SharedOS types. */

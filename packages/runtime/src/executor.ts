@@ -894,7 +894,7 @@ function toRuntimeTurnRequest(
 /**
  * Whether one declared step is inside the turn's step budget.
  *
- * `StandardRuntime` bounds its own loop, but a replacement plugin is a
+ * The standard loop bounds itself, but a replacement plugin is a
  * replacement for exactly that loop, so a limit only the reference
  * implementation honours is not a limit. The envelope holds the ceiling from
  * outside: a step at or past `maxSteps` is refused, and so is a new step once

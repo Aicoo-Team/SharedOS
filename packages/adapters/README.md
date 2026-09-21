@@ -1,52 +1,67 @@
 # @aicoo/sharedos-adapters
 
-Codex, Claude Code, DeepSeek Harness, and Pi as SharedOS runtimes, and a model
-API in the same seat.
+What sits in the SharedOS delegate seat: a model API behind the standard driver,
+or a vendor CLI (Codex, Claude Code, DeepSeek Harness, Pi) connected over MCP.
 
-An adapter is translation and nothing else. The turn loop, the
-permission-filtered tool catalogue, per-call re-authorization, and audit all
-come from the SharedOS execution envelope, so installing another harness
+An adapter is translation and nothing else. The permission-filtered tool
+catalogue, per-call re-authorization, the turn's limits and audit all come from
+the SharedOS execution envelope, so seating another model or another harness
 changes no kernel code and adds no second permission path.
 
-```ts
-import { SharedOSExecutor } from "@aicoo/sharedos-runtime";
-import { createCodexRuntime } from "@aicoo/sharedos-adapters";
-import { ChildProcessTransport } from "@aicoo/sharedos-adapters/node";
+## A model in the seat
 
-const codex = createCodexRuntime({
-  transport: new ChildProcessTransport({
-    command: "codex",
-    // `-` makes `codex exec` read its prompt from stdin, which is where the
-    // opening frame goes. Without both, nothing reaches Codex.
-    args: ["exec", "--json", "--skip-git-repo-check", "-"],
-    openingFrame: (request) => ({ type: "user_input", text: request.prompt }),
+```ts
+import { SharedOSExecutor, createStandardRuntime } from "@aicoo/sharedos-runtime";
+import { OpenAiCompatibleModelClient, StandardTurnDriver } from "@aicoo/sharedos-adapters";
+
+const runtime = createStandardRuntime({
+  driver: new StandardTurnDriver({
+    manifest: { id: "acme.assistant", version: "1.0.0", protocolVersion: "1" },
+    client: new OpenAiCompatibleModelClient({ baseUrl, apiKey, model }),
   }),
 });
-const turns = new SharedOSExecutor(kernel, codex);
+const turns = new SharedOSExecutor(kernel, runtime);
 ```
 
-Use `createCodexRuntime` rather than wrapping `createCodexDriver` in
-`StandardRuntime` yourself. The executor stamps the installed plugin's manifest
-onto every execution record, and `StandardRuntime` reports itself as
-`sharedos.standard`, so the driver-only form files a Codex turn's evidence under
-the reference loop. Comparing harnesses depends on each column's evidence naming
-the harness that produced it.
+`createStandardRuntime` is the SharedOS loop; `StandardTurnDriver` is the
+SharedOS driver for it. The driver renders the catalogue into the model's
+tool-call shape, reads each reply back into a decision, and recognises the
+escalate affordance only when the turn's catalogue offers it. The runtime reports
+the seated driver's manifest, so every record names what sat in the seat. A host
+with a model path of its own seats its own `AgentTurnDriver` in the same slot.
 
-## Four ways to occupy the seat
+## A vendor CLI in the seat
 
-| Path                    | What is in the delegate seat                                                                     | Entry points                                                                                                                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Driven harness          | A vendor CLI, run one turn at a time by SharedOS's own loop                                      | `createCodexRuntime`, `createClaudeCodeRuntime`, `createDeepseekRuntime`, `createPiRuntime`; `HarnessRuntime`                                                                         |
-| Driven model            | A model API, with no vendor between it and the kernel                                            | `ModelDriver`, `ModelRuntime`, `OpenAiCompatibleModelClient`; `TranscriptModelClient` for a scripted reply sequence                                                                   |
-| Native harness over MCP | A vendor CLI running its own loop, with the catalogue served to it                               | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                                                                                         |
-| Transcript              | Supplied vendor frames or model replies, for testing the translation without a CLI or a provider | `TranscriptTransport`, `HarnessTranscript`, and the `*FrameWriter`s that render a declared attempt in a vendor's shape; `TranscriptModelClient`, `ModelTranscript` for the model seat |
+```ts
+import { CLAUDE_CODE_MCP_HARNESS, createMcpHarnessRuntime } from "@aicoo/sharedos-adapters/node";
 
-The first two run inside `StandardRuntime`: SharedOS owns the loop, renders the
-permission-filtered catalogue into the harness's or the model's own tool shape,
-and mediates every call. The third hands the loop to the vendor and serves the
-catalogue over the Model Context Protocol instead; it is documented in
-`docs/mcp-toolshare.md`. All of them converge on
-`RuntimeHost.invokeTool`, which is the only place a tool is executed.
+const turns = new SharedOSExecutor(kernel, createMcpHarnessRuntime(CLAUDE_CODE_MCP_HARNESS));
+```
+
+The CLI keeps its own loop and its own model, and the turn's catalogue is served
+to it over the Model Context Protocol for the length of the turn. It is
+documented in `docs/mcp-toolshare.md`. A turn served this way is bounded by
+`maxToolCalls` and `timeoutMs`; a harness declares no step.
+
+## What can occupy the seat
+
+| Path                | What is in the delegate seat                                       | Entry points                                                                                                                    |
+| ------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Model               | A model API, with no vendor between it and the kernel              | `StandardTurnDriver` in `createStandardRuntime`; `OpenAiCompatibleModelClient`, or `TranscriptModelClient` for scripted replies |
+| Vendor CLI over MCP | A vendor CLI running its own loop, with the catalogue served to it | `createMcpHarnessRuntime` and the `*_MCP_HARNESS` specs, from `@aicoo/sharedos-adapters/node`                                   |
+| Host's own driver   | Whatever the host's `AgentTurnDriver` speaks to                    | `createStandardRuntime({ driver })`                                                                                             |
+
+Both converge on `RuntimeHost.invokeTool`, which is the only place a tool is
+executed.
+
+Evaluation only: `EvalHarnessDriver` seats a vendor's exact wire format in the
+standard loop, over a `HarnessTransport` (`TranscriptTransport` for recorded
+frames, `ChildProcessTransport` for a live CLI's stdio). The conformance columns
+use it to grade a vendor's codec against the kernel, and it is the one driver
+that can declare a step past its budget. It is not a way to run a vendor CLI in
+a product: no coding-agent CLI accepts a host-supplied catalogue on its own
+protocol, which is what the MCP path is for. Each vendor's codec, manifests and
+requirements are stated once as its `*_VENDOR` descriptor.
 
 ## What the delegate is told
 
@@ -56,11 +71,16 @@ the grants every decision in that turn is made against, narrowed to the
 namespaces the offered tools operate on. The adapters are where it reaches a
 model:
 
-| Path                    | Where the reach goes                                                                                                                                        |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Driven model            | A system message ahead of the prompt, rendered by `describeReach`; `ModelDriverOptions.instructions` overrides it                                           |
-| Native harness over MCP | The server's initialize `instructions`, after any standing text the host set; `McpHarnessRuntimeOptions.instructions` may be a function of the turn request |
-| Driven harness          | The `context` field of the opening `HarnessTurnRequest`, for the harness's own protocol to render                                                           |
+| Path                | Where the reach goes                                                                                        |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Model               | A system message ahead of the prompt                                                                        |
+| Vendor CLI over MCP | The server's initialize `instructions`, which a harness that honours them puts where its model reads        |
+| Evaluation driver   | `HarnessTurnRequest.instructions`, which the transport hands over; `harnessTurnText` is the two as one text |
+
+Every path takes the same `instructions` option (`SeatTextOptions`): a string is
+the host's standing guidance, placed before the turn's reach; a function says
+exactly what the seat is told, and `undefined` from it hands over nothing. What
+was handed over is hashed with the prompt as the turn's `promptHash`.
 
 `describeReach`, from `@aicoo/sharedos-runtime`, says the same thing on every
 path: each entry as its namespace, its path as the JSON array a `path` argument
@@ -70,18 +90,41 @@ list. Every rendering says it is descriptive. The kernel decides each call the
 model goes on to make, so an entry is not a permission and a missing one is not
 a refusal.
 
-## The three pieces of a driven harness
+## What a seat states about its turn
 
-An adapter is assembled from parts that are replaceable independently, which is
-what lets the translation be verified without the vendor's CLI present.
+Every seat here writes its facts about a turn onto `ExecutionResult.metadata`
+under one vocabulary, the exported `SeatMetadata` type, so the same fact is under
+the same key whichever seat ran. A seat states the keys that apply to it and
+leaves the rest absent.
 
-| Piece              | Responsibility                                                                    |
-| ------------------ | --------------------------------------------------------------------------------- |
-| `HarnessProtocol`  | The vendor's wire shapes: tool declarations, tool calls, tool results, completion |
-| `HarnessTransport` | How the harness is reached: a subprocess, an HTTP session, a supplied transcript  |
-| `HarnessDriver`    | An `AgentTurnDriver` that joins the two and hands every tool call to the envelope |
+| Key                                           | Stated by           | What it says                                                                                                                                                    |
+| --------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model`, `modelProvider`                      | both                | The standard driver states the model the provider **served**; the MCP harness runtime states the one the run **declared**, because a vendor CLI selects its own |
+| `requestedModel`, `modelSettings`             | standard driver     | What was asked for, when the served model may differ                                                                                                            |
+| `finishReason`, `inputTokens`, `outputTokens` | standard driver     | Why the last reply ended, and the turn's summed spend; absent, never zero, when the provider reports none                                                       |
+| `malformedToolCalls`                          | standard driver     | Calls refused in place for unreadable arguments; none reached the envelope                                                                                      |
+| `harness`, `toolshare`, `mcpServer`           | MCP harness runtime | Which vendor CLI ran and how it reached the catalogue                                                                                                           |
+| `catalogHash`, `toolAliases`                  | MCP harness runtime | The catalogue the harness was served, and the names it rewrote (diagnostic only)                                                                                |
+| `harnessOutcome`, `harnessErrorCode`          | MCP harness runtime | On an escalated turn, how the CLI itself ended                                                                                                                  |
+| `callsAfterEscalation`                        | MCP harness runtime | On an escalated turn, calls the CLI made after its ask; each was answered `escalation_pending` and reached no kernel                                            |
 
-`ModelDriver` is the same shape with the protocol folded in: the catalogue is
+The conformance record lifts `model`, `modelProvider`, `catalogHash`, the token
+counts and `callsAfterEscalation`; the rest are for the host that ran the turn.
+The envelope adds its own keys beside these: `runtime`, `promptHash` and
+`escalationAsked`.
+
+## The three pieces of the evaluation driver
+
+A vendor's codec is graded from parts that are replaceable independently, which
+is what lets the translation be verified without the vendor's CLI present.
+
+| Piece               | Responsibility                                                                    |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `HarnessProtocol`   | The vendor's wire shapes: tool declarations, tool calls, tool results, completion |
+| `HarnessTransport`  | How the harness is reached: a subprocess, an HTTP session, a supplied transcript  |
+| `EvalHarnessDriver` | An `AgentTurnDriver` that joins the two and hands every tool call to the envelope |
+
+`StandardTurnDriver` is the same shape with the protocol folded in: the catalogue is
 rendered straight into the model's tool-call format, and a `ModelClient` stands
 where the transport does.
 
@@ -149,7 +192,7 @@ whatever its caller hands it, and the conformance suite writes its own.
 `TranscriptTransport` replays vendor frames in batches and releases the next
 batch only once a result has been written, which is the shape of every
 tool-using harness. `TranscriptModelClient` is its counterpart for the model
-seat: it replays supplied replies through the real `ModelDriver`, one reply per
+seat: it replays supplied replies through the real `StandardTurnDriver`, one reply per
 model call, and treats a spent transcript as an error rather than a completion,
 so a script that ends too early fails the turn instead of reading as a model
 choosing to stop.

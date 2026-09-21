@@ -88,7 +88,7 @@ persistence effects remain behind host provider ports.
 ### `@aicoo/sharedos-runtime`
 
 Provides the fixed `SharedOSExecutor` security envelope, the replaceable
-`RuntimePlugin` contract, and `StandardRuntime`, the reference bounded driver
+`RuntimePlugin` contract, and the standard loop, the reference bounded driver
 loop. The envelope owns security-check ordering; plugins own harness behavior;
 neither owns the host's data implementation.
 
@@ -288,7 +288,7 @@ events. A runtime cannot turn a denied write into a best-effort write, silently
 retry with a wider identity, enumerate a hidden registry, or retain the broker
 after the turn closes.
 
-`StandardRuntime` uses `AgentTurnDriver` as its model/provider seam. A complete
+The standard loop uses `AgentTurnDriver` as its model/provider seam. A complete
 alternative harness implements `RuntimePlugin` instead. Both receive frozen,
 sanitized input without grants or issuing authority. Turn timeouts are bounded
 and their `AbortSignal` is propagated through plugins, drivers, tools,

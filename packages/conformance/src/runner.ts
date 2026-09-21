@@ -33,16 +33,10 @@ import {
   type ConformanceCondition,
 } from "./suite.js";
 import { createConformanceWorld, type ConformanceWorld } from "./world.js";
-import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
+import { PROTOCOL_VERSION, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
 
-/**
- * The SharedOS build an execution record was produced by.
- *
- * Pinned to the synchronized workspace version by the release gate, because a
- * record that names the wrong build is evidence attributed to code that never
- * ran.
- */
-export const SHAREDOS_VERSION = "0.1.0-alpha.5";
+/** The SharedOS build an execution record was produced by: the one in contracts. */
+export { SHAREDOS_VERSION };
 
 /**
  * One cell of the manifest.
@@ -593,7 +587,7 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
     "driver and no catalogue rendering, so its cell says what the kernel does to an",
     "attempt and nothing about the loop SharedOS ships.",
     "",
-    "The `Standard` column is that loop: the native harness, `StandardRuntime` with",
+    "The `Standard` column is that loop: the native harness, the standard loop with",
     "the model driver in the seat and the permission-filtered catalogue rendered",
     "into the model's own tool-call shape. In the committed manifest a transcript",
     "stands where the provider would, written here from the declared attempt, and",
@@ -629,8 +623,9 @@ export function renderConformanceSummary(manifest: ConformanceManifest): string 
     "served to the model, so rewording them is a different world.",
     "",
     "The prompt-set hash covers how the seat was asked: what the column's runtime",
-    "told it before each turn -- the turn's reach as a system message or as MCP",
-    "initialize instructions, and the prompt written from the declared attempts --",
+    "told it before each turn -- the turn's reach as a system message, as MCP",
+    "initialize instructions or on a driven harness's opening request, and the",
+    "prompt written from the declared attempts --",
     "taken from each turn's record rather than from the code that wrote it. It is",
     "per column, because the wording differs by design between a seat whose",
     "channel carries any name and one behind an MCP router, and a column that",

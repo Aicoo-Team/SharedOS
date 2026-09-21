@@ -13,11 +13,11 @@ import {
   RuntimeRegistry,
   SharedOSExecutor,
   SharedOSKernel,
-  StandardRuntime,
+  createStandardRuntime,
 } from "@aicoo/sharedos";
 ```
 
-`StandardRuntime` is the included bounded driver loop. Hosts can install a
+`createStandardRuntime` seats an `AgentTurnDriver` in the included bounded loop. Hosts can install a
 complete alternative harness through `RuntimePlugin`; `SharedOSExecutor` keeps
 admission, filtered tool discovery, exact-call authorization, cancellation, and
 runtime provenance outside the replaceable plugin.

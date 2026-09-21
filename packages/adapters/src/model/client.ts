@@ -1,6 +1,5 @@
 import type { JsonObject } from "@aicoo/sharedos-contracts";
 
-export { parseToolArguments } from "../internal.js";
 import { z } from "zod";
 
 /**

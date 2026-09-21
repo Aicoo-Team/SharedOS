@@ -141,7 +141,7 @@ the host.
 ## Pluggable runtimes
 
 SharedOS is runtime-agnostic, not runtime-less. `@aicoo/sharedos-runtime` ships
-`StandardRuntime`, a bounded reference loop over `AgentTurnDriver`, while
+`createStandardRuntime`, a bounded loop with one `AgentTurnDriver` seated, while
 `RuntimePlugin` allows a host to install a complete Codex, DeepSeek, or custom
 harness.
 
