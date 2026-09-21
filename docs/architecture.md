@@ -56,7 +56,10 @@ flowchart TD
   CF --> CO
   CF --> CT
   CF --> TK
+  PR["@aicoo/sharedos-precedent"] --> CO
+  PR --> CT
   AD["@aicoo/sharedos-adapters"] --> RT
+  AD --> CO
   AD --> CT
   AD --> MCP
   MCP["@aicoo/sharedos-mcp"] --> CO
@@ -89,8 +92,8 @@ persistence effects remain behind host provider ports.
 ### `@aicoo/sharedos-runtime`
 
 Provides the fixed `SharedOSExecutor` security envelope, the replaceable
-`RuntimePlugin` contract, and the standard loop, the reference bounded driver
-loop. The envelope owns security-check ordering; plugins own harness behavior;
+`RuntimePlugin` contract, and `createStandardRuntime({ driver })`, the bounded
+SharedOS loop with one `AgentTurnDriver` seated. The envelope owns security-check ordering; plugins own harness behavior;
 neither owns the host's data implementation.
 
 ### `@aicoo/sharedos-os`
@@ -99,7 +102,10 @@ Defines the portable `files` vocabulary—including list, stat, read, search,
 grep, create, replace, append, delete, and snapshot operations—and adapts those
 resources into permission-controlled agent tools. Hosts provide the storage
 implementation; the package provides schemas, exact per-call capability
-resolution, and stable tool definitions.
+resolution, and stable tool definitions. The `repo` plane is a second, separate
+vocabulary in the same package: five Git tools (`status`, `diff`, `log`, `stage`,
+`commit`) over a host `ResourceProvider`, sharing no authority with `files`
+([ADR 0024](adr/0024-git-is-its-own-resource-namespace.md)).
 
 ### Adapters
 
@@ -116,18 +122,27 @@ execution record, and runs the adversarial conformance suite that reports what
 the kernel refused and where. It holds no tasks, gold labels, or scores:
 SharedOS states what happened and never whether it was correct.
 
-`@aicoo/sharedos-adapters` installs Codex, Claude Code, DeepSeek Harness, and Pi
-as agent turn drivers. An adapter is translation only. The turn loop,
-permission-filtered catalogue, per-call re-authorization, and audit all come from
-the execution envelope, so a new harness changes no kernel code and adds no
-second permission path.
+`@aicoo/sharedos-adapters` holds what sits in the runtime's seat, and two things
+ship in it. `StandardTurnDriver` drives `createStandardRuntime` from a model API:
+SharedOS runs the loop and the driver is the model. `createMcpHarnessRuntime`,
+from `@aicoo/sharedos-adapters/node`, seats a vendor CLI (Codex, Claude Code,
+DeepSeek Harness, or Pi) that keeps its own loop, on whatever model it is
+configured with, and reaches SharedOS as a tool server. An adapter is translation
+only. The permission-filtered catalogue, per-call re-authorization, and audit all
+come from the execution envelope, so a new harness changes no kernel code and adds
+no second permission path.
 
-`@aicoo/sharedos-mcp` serves that same permission-filtered catalogue to a harness
-that runs its own loop, over the Model Context Protocol. It is the other half of
-the harness story: a driver puts SharedOS in the model provider's seat, while the
-MCP bridge lets the vendor CLI keep its own loop, on whatever model it is
-configured with, and connect to SharedOS as a tool server. Both paths converge on `RuntimeHost.invokeTool`, which stays the
-only execution path. See [MCP toolshare](mcp-toolshare.md).
+`@aicoo/sharedos-mcp` is the tool server that second runtime stands on: it serves
+the same permission-filtered catalogue over the Model Context Protocol and emits
+the connection file each harness expects. Both runtimes converge on
+`RuntimeHost.invokeTool`, which stays the only execution path. See
+[MCP toolshare](mcp-toolshare.md).
+
+`@aicoo/sharedos-precedent` admits or refuses an auto-decision a host proposes
+from an owner's earlier answers to escalations. It ranks nothing and stores
+nothing: the host proposes, and the package answers whether this may be decided
+without a human
+([ADR 0022](adr/0022-precedent-proposes-the-kernel-admits.md)).
 
 `@aicoo/sharedos` is an ergonomic distribution layer that re-exports the
 production packages from one install. It contains no policy, storage, or
@@ -219,6 +234,7 @@ names such as:
 - `files.list`, `files.stat`, `files.read`, `files.search`, `files.grep`
 - `files.create`, `files.replace`, `files.append`, `files.delete`
 - `files.snapshot.create`, `files.snapshot.list`, `files.snapshot.restore`
+- `repo.status`, `repo.diff`, `repo.log`, `repo.stage`, `repo.commit`
 
 External capabilities—calendar, email, GitHub, Notion, MCP servers, and similar
 connectors—are registered by a host. Both categories appear in one filtered
@@ -278,10 +294,10 @@ sequenceDiagram
   loop every requested call
     Envelope->>Kernel: re-authorize exact invocation
     Kernel->>Providers: invoke only when allowed
-    Kernel-->>Envelope: allowed, denied, or failed result
+    Kernel-->>Envelope: succeeded, denied, or failed result
     Envelope-->>Runtime: typed tool result
   end
-  Runtime-->>Envelope: complete or fail
+  Runtime-->>Envelope: complete, escalate, or fail
   Envelope-->>Host: result + events + runtime provenance
 ```
 
@@ -290,8 +306,10 @@ events. A runtime cannot turn a denied write into a best-effort write, silently
 retry with a wider identity, enumerate a hidden registry, or retain the broker
 after the turn closes.
 
-The standard loop uses `AgentTurnDriver` as its model/provider seam. A complete
-alternative harness implements `RuntimePlugin` instead. Both receive frozen,
+Two runtimes ship. `createStandardRuntime({ driver })` uses `AgentTurnDriver` as
+its model/provider seam, and `StandardTurnDriver` fills it from a model API.
+`createMcpHarnessRuntime` seats a vendor CLI that runs its own loop. A host can
+also install its own `RuntimePlugin`. All of them receive frozen,
 sanitized input without grants or issuing authority. Turn timeouts are bounded
 and their `AbortSignal` is propagated through plugins, drivers, tools,
 resources, and HTTP requests. Every plugin receives the effective step budget,
@@ -300,6 +318,14 @@ a hard tool-call limit, which needs nothing from the runtime, and a step limit
 over the steps a plugin declares. A plugin that declares no step is bounded by
 the call ceiling alone, because the envelope sees tool calls and cannot infer
 model turns from them.
+
+Two endings belong to the envelope rather than the runtime. With
+`drainGraceMs` set, the turn stops taking new calls that long before its
+deadline (`turn_draining`), so a handler already running can finish rather than
+be cut half-way. And when the audit sink fails on a record that must be written
+before an effect, the turn ends `failed` with `audit_unavailable`: an effect that
+cannot be recorded is not attempted. The codes, and what `retryable` says after
+each, are in [errors](errors.md#turns).
 
 `RuntimeRegistry` is instance-scoped and populated by trusted host
 configuration. The model-visible request does not contain a runtime selector.

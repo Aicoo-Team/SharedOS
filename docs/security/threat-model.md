@@ -76,7 +76,7 @@ Authenticated callers remain untrusted for authorization.
 | Cross-user MCP mutation  | One user's reload replaces another user's dynamic tools           | Resolve dynamic catalogs per trusted context; avoid shared mutable registration                                                                             |
 | Discovery leakage        | Tool list reveals a private connector or account                  | Permission-filter definitions and metadata before returning the catalog                                                                                     |
 | Tenant/world escape      | Crafted path reaches another run or user                          | Bind namespace/world and owner in every provider call; use segment-safe paths                                                                               |
-| Replay                   | Captured request repeats a destructive call                       | Host-owned durable deduplication and freshness checks; release remains blocked                                                                              |
+| Replay                   | Captured request repeats a destructive call                       | Host-owned durable deduplication and freshness checks; SharedOS ships no replay port                                                                        |
 | Revocation race          | Grant is revoked while a turn is running                          | Decided at admission and observed by the next turn (ADR 0010/0016); bound turn length, or issue short-lived grants, whose expiry is refused inside the turn |
 | Bounded-use race         | Two workers consume the last use                                  | Durable atomic compare-and-set; deny when the usage store is unavailable                                                                                    |
 | SSRF / connector escape  | MCP tool fetches metadata endpoints                               | Destination allowlists, DNS/IP validation, redirects policy, egress controls                                                                                |
@@ -136,8 +136,10 @@ recipient-scoped `sharedos.execution` + `invoke` grant before the model driver i
 opened. The driver receives sanitized context without grants or issuer identity.
 
 Loops, fan-out, and recursive delegation can exhaust budgets. The one-turn
-runtime enforces maximum steps and timeout, while the host scheduler limits
-cross-turn behavior.
+runtime enforces a tool-call ceiling and a timeout on every turn, and a step
+ceiling where the runtime declares steps. `createStandardRuntime` does;
+`createMcpHarnessRuntime` runs the vendor's own loop and declares none, so its
+count bound is `maxToolCalls`. The host scheduler limits cross-turn behavior.
 
 ### Runtime plugins
 
@@ -222,14 +224,24 @@ specific deployment policy allows them.
 
 ### Idempotency and concurrency
 
-The initial private workspace does **not** yet implement durable replay or
+SharedOS does **not** yet implement durable replay or
 idempotency enforcement for message IDs, call IDs, operation IDs, or execution
 IDs, and it does not impose a created-at freshness window. A production host
 must atomically bind each accepted identifier to namespace/world,
 authenticated actor, operation, target, and semantic input, and must reject a
-replay whose input changes. Public package release is blocked until this is a
-tested SharedOS port with production and isolated adapters rather than an
-undocumented host convention.
+replay whose input changes. This is a production gate, not a publication one: the
+packages are public, and until this is a tested SharedOS port with production and
+isolated adapters it stays a host obligation
+([release readiness](../release-readiness.md)).
+
+A retry is the commonest replay, and the envelope says when one is unsafe. A
+turn's ending carries `retryable`, and it is `false` once a call to a `write`
+tool not declared `idempotent` came back anything but `denied`, or was still
+running when the turn ended. A handler cut off by the deadline is recorded
+`interrupted` rather than left without a record, and `drainGraceMs` stops the
+turn taking new calls before the deadline so that fewer are cut off at all. The
+rule rests on the host's tool declarations; see
+[Before you retry a turn](../errors.md#before-you-retry-a-turn).
 
 Authorization and a side effect can have a time-of-check/time-of-use gap. For
 high-risk writes, hosts should combine grant-use consumption, their own
@@ -248,6 +260,13 @@ authorized resource.
 Clock skew and event reordering can obscure an incident; record sequence numbers
 per execution and use a trusted timestamp source where policy depends on time.
 
+An audit record that must precede an effect fails closed. If the sink throws on
+an authority load, a decision or a catalogue listing, the operation is refused
+and the turn ends `audit_unavailable`: an effect that cannot be recorded is not
+attempted. A sink that hangs there holds back an operation that has not run,
+which is the point. One that hangs after an effect would hold the result, so
+`auditWriteTimeoutMs` bounds it.
+
 If durable outcome-audit append fails after a side effect commits, returning a
 transport error can cause a retry and duplicate the effect. The kernel therefore
 preserves the typed provider result and reports `onAuditError`; production hosts
@@ -265,8 +284,8 @@ pooled.
 
 ## Availability
 
-SharedOS limits schema sizes, tool catalogs, standard-runtime steps, and turn
-duration. Cancellation is propagated with `AbortSignal`, but JavaScript cannot
+SharedOS limits schema sizes, tool catalogs, tool calls per turn,
+standard-runtime steps, and turn duration. Cancellation is propagated with `AbortSignal`, but JavaScript cannot
 forcibly stop arbitrary plugin or provider code; components in the trusted
 computing base must honor it before committing side effects. Hosts add request
 rate limits, concurrency limits, provider circuit breakers, and model or tool
@@ -281,7 +300,7 @@ SharedOS does not by itself:
 - verify that a declared purpose reflects a model's private motivation;
 - make arbitrary third-party tools trustworthy;
 - provide user authentication, credential custody, or network sandboxing;
-- provide durable replay protection in the initial private bootstrap;
+- provide durable replay protection; that remains a host obligation;
 - guarantee storage durability or deletion when a host provider violates its
   contract;
 - define host billing policy or the statistical validity of an evaluation.

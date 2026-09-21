@@ -331,17 +331,22 @@ list is returned with the result.
 
 ## Status codes
 
-| Status | `error.code`             | Cause                                                       |
-| ------ | ------------------------ | ----------------------------------------------------------- |
-| 200    | —                        | Success. **Includes authorization denials** — read `status` |
-| 202    | —                        | `/v1/messages` when delivery status is `accepted`           |
-| 400    | `invalid_json`           | Body is not JSON                                            |
-| 400    | `invalid_request`        | Body does not match the v1 contract                         |
-| 403    | `permission_denied`      | An error carrying that code reached the handler             |
-| 404    | `not_found`              | Unknown path                                                |
-| 405    | `method_not_allowed`     | Wrong verb for a known path                                 |
-| 500    | `invalid_access_context` | `resolveContext` returned something the schema rejects      |
-| 500    | `internal_error`         | Anything else. Details never leak into the response         |
+| Status | `error.code`             | Cause                                                             |
+| ------ | ------------------------ | ----------------------------------------------------------------- |
+| 200    | —                        | Success. **Includes authorization denials** — read `status`       |
+| 202    | —                        | `/v1/messages` when delivery status is `accepted`                 |
+| 400    | `invalid_json`           | Body is not JSON                                                  |
+| 400    | `invalid_request`        | Body does not match the v1 contract                               |
+| 403    | `permission_denied`      | An error carrying that code reached the handler                   |
+| 404    | `not_found`              | Unknown path                                                      |
+| 405    | `method_not_allowed`     | Wrong verb for a known path                                       |
+| 500    | `invalid_access_context` | `resolveContext` returned something the schema rejects            |
+| 500    | `internal_error`         | Anything else. Details never leak into the response               |
+| yours  | yours                    | `resolveContext` threw `SharedOSHttpError(status, code, message)` |
+
+Authentication is `resolveContext`'s job, and that last row is how it answers. Throw
+`new SharedOSHttpError(401, "unauthenticated", "…")` and the handler responds with
+that status and code; throw a plain `Error` and the caller gets a `500`.
 
 The important row is the first one. **A denied operation is a successful HTTP
 request.** `403` means the request never reached the kernel's decision; `200`
@@ -423,7 +428,9 @@ function for anything else. Each call also takes `{ signal?, headers?, purpose? 
 `purpose` is sent as `x-sharedos-purpose`, a hint the server's `resolveContext`
 may read into the trusted context — as the quickstart's does — and never
 authority in itself. Failures throw `SharedOSClientError` with `status`,
-`code`, and `requestId`.
+`code`, and `requestId`. `code` is the handler's, or one of two the client raises
+itself: `invalid_response` for an answer that is not JSON or fails the route's
+schema, and `request_failed` for a non-2xx answer with no error body.
 
 ## Choosing this boundary
 

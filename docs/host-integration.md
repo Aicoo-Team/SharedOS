@@ -460,7 +460,10 @@ Every tool declares:
 - a globally stable tool name, such as `notion.search`;
 - a logical namespace, such as `notion`;
 - a source, such as `native` or `mcp`;
-- a conservative read/write classification;
+- a read/write classification, and `annotations.idempotent` where it applies.
+  Both are conservative and both are load-bearing: they decide whether a turn
+  that ended early is reported `retryable`
+  (see [Before you retry a turn](errors.md#before-you-retry-a-turn));
 - an input schema;
 - a capability ceiling for discovery;
 - preferably, `resolveRequirement`, which derives the exact resource and action
@@ -517,17 +520,23 @@ The driver receives the same full `ToolDefinition`s the request listed,
 call will be authorized against, and it is not something a model should be
 told: a driver that talks to a model provider projects first with
 `publishToolCatalog`, which yields the `PublishedToolDefinition` the MCP
-boundary serves and what `StandardTurnDriver` sends. The
+boundary serves. `StandardTurnDriver` sends less still: a name, a description and
+the input schema. The
 [HTTP reference](http-api.md#get-v1tools) states the same rule for
 `GET /v1/tools`.
 
-To install a complete Codex, DeepSeek, or private harness, implement
-`RuntimePlugin` and register it from trusted host configuration:
+A vendor CLI that keeps its own loop (Codex, Claude Code, DeepSeek Harness, Pi)
+ships seated. `createMcpHarnessRuntime` starts the CLI for the turn and serves it
+the same permission-filtered catalogue over MCP; see
+[MCP toolshare](mcp-toolshare.md#the-installed-clis). A private harness implements
+`RuntimePlugin`. Either way, select the runtime from trusted host configuration:
 
 ```ts
 import { RuntimeRegistry, SharedOSExecutor } from "@aicoo/sharedos";
+import { CODEX_MCP_HARNESS, createMcpHarnessRuntime } from "@aicoo/sharedos-adapters/node";
 
-const runtimes = new RuntimeRegistry([standardRuntime, codexRuntime, deepseekRuntime]);
+const codexRuntime = createMcpHarnessRuntime(CODEX_MCP_HARNESS);
+const runtimes = new RuntimeRegistry([standardRuntime, codexRuntime, privateRuntime]);
 const runtime = runtimes.resolve(serverPolicy.runtimeId);
 const turns = new SharedOSExecutor(kernel, runtime);
 ```
@@ -536,8 +545,19 @@ Do not resolve `runtimeId` directly from a message, model output, or unverified
 request metadata. A runtime receives a frozen, sanitized context without grants
 or issuing authority. The envelope admits the target-agent invocation, filters
 discovery, and re-authorizes every exact tool call through `RuntimeHost`. A turn
-ends when the runtime completes or fails, the deadline expires, or the host
-cancels it. The standard runtime additionally enforces its driver step limit.
+ends when the runtime completes, escalates or fails, the deadline expires, the
+host cancels it, or the audit sink fails on a record that must precede an effect,
+which ends it `failed` with `audit_unavailable`. The standard runtime additionally
+enforces its driver step limit; a harness runtime declares no step and is bounded
+by `defaultMaxToolCalls`.
+
+Set `drainGraceMs` on the executor if your handlers have side effects. The turn
+then stops taking new calls that long before its deadline, so a handler already
+running answers with its real outcome rather than being cut half-way; one still
+running at the deadline is recorded `interrupted`. Before retrying a turn that
+ended early, read `retryable` on its error: it is `false` once a call that may
+have taken effect cannot safely be repeated. See
+[Turns](errors.md#turns).
 
 SharedOS does not decide when an entire agent network is complete. Runtime
 coordination, adaptive routing, retries, budgets, and network-level stopping

@@ -200,7 +200,9 @@ Fail-closed behaviour makes an infrastructure failure look like a denial at the
 call site. The reason codes listed in `INFRASTRUCTURE_DENIAL_REASONS`
 (`authority_unavailable`, `delegation_chain_unverified`,
 `usage_store_unavailable`, `host_policy_unavailable`) mark that case, and their
-audit records carry `failClosed: true`. A measurement must separate them from
+audit records carry `failClosed: true`. So does `audit_unavailable`, which is not
+an authorization code: it is the operation the kernel refused because the record
+that must precede it could not be written. A measurement must separate them from
 policy denials before computing any rate — and `host_policy_unavailable` is the
 one most easily miscounted, because a broken ceiling and a ceiling that refused
 are one line apart in the same table. Read `failClosed`, not the prefix.
@@ -228,8 +230,11 @@ where the system correctly asked for help.
 The execution envelope and the kernel both refuse, and they use the same
 vocabulary for the same refusal: a tool outside the permission-filtered
 catalogue is `tool_unavailable` at either boundary. Which one refused is
-recorded separately, as `OperationRecord.source`, because a code says what was
-refused and a source says who refused it.
+recorded separately, as `source` on the audit event (and `OperationRecord.source`
+in a conformance record), because a code says what was refused and a source says
+who refused it. `classifyRefusal` and `explainRefusal` read an audit event into
+the gate that refused; see
+[Naming the gate a refusal came from](../errors.md#naming-the-gate-a-refusal-came-from).
 
 Two codes that are easy to confuse are kept apart deliberately:
 
@@ -492,11 +497,20 @@ Every decision should be reconstructable from tamper-evident records containing:
 Denials are first-class events. Audit storage belongs to the host, while event
 shape and required provenance belong to SharedOS.
 
+The records written before an effect fail closed. If the sink throws on an
+authority load, a decision or a catalogue listing, the kernel refuses the
+operation with `AuditUnavailableError` and the execution envelope ends the turn
+`audit_unavailable`: an effect that cannot be recorded is not attempted. An
+operation whose port was entered and then stopped, by a deadline, a cancellation
+or that outage, is recorded `interrupted`, not `failed`, because part of its
+effect may have committed.
+
 If outcome audit persistence fails after a provider has committed a side effect,
 the kernel preserves the provider's typed result so callers do not retry an
 already-completed operation because observability returned 500. Production
 hosts must use a transactional outbox or equivalent durable audit design and
-surface the `onAuditError` signal operationally.
+surface the `onAuditError` signal operationally. `auditWriteTimeoutMs` bounds a
+sink that hangs on such a record, so a result already earned is not held.
 
 ## Review checklist
 

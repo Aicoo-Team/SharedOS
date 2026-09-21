@@ -92,8 +92,8 @@ is the boundary between them and the agents that act on them.
   outbound call — with the capability space they all resolve to.
 - [HTTP API reference](http-api.md): every route, request body, status code, and
   header, plus where authentication enters.
-- [Tool catalog](tools.md): the twelve `files` tools, the two standard tools
-  outside them, the three availability gates, and how to register native or MCP
+- [Tool catalog](tools.md): the twelve `files` tools, the five `repo` tools, the
+  two standard tools outside them, the three availability gates, and how to register native or MCP
   tools of your own.
 - [MCP toolshare](mcp-toolshare.md): the permission-filtered catalogue as an MCP
   server, the boundary presented to Codex, Claude Code, DeepSeek Harness, and Pi.
@@ -132,13 +132,13 @@ is the boundary between them and the agents that act on them.
 
 ## Architecture decisions
 
-- [ADR 0001: Library-first runtime](adr/0001-library-first-runtime.md)
-- [ADR 0002: Host-owned storage](adr/0002-host-owned-storage.md)
-- [ADR 0003: Scheduler boundary](adr/0003-scheduler-boundary.md)
+- [ADR 0001: Use a library-first runtime](adr/0001-library-first-runtime.md)
+- [ADR 0002: Keep production storage in the host](adr/0002-host-owned-storage.md)
+- [ADR 0003: Execute one turn and leave scheduling to the host](adr/0003-scheduler-boundary.md)
 - [ADR 0004: Canonical resource path segments](adr/0004-canonical-resource-path-segments.md)
 - [ADR 0005: Files are the canonical resource plane](adr/0005-files-resource-plane.md)
-- [ADR 0006: Tool namespace control plane](adr/0006-tool-namespace-control-plane.md)
-- [ADR 0007: Pluggable runtimes inside a fixed security envelope](adr/0007-pluggable-runtime-security-envelope.md)
+- [ADR 0006: Standardize the tool namespace control plane](adr/0006-tool-namespace-control-plane.md)
+- [ADR 0007: Put replaceable runtimes inside a fixed security envelope](adr/0007-pluggable-runtime-security-envelope.md)
 - [ADR 0008: Validate the complete delegation chain before use](adr/0008-delegation-chain-validation.md)
 - [ADR 0009: Load authority from a trusted grant source, never from a context](adr/0009-trusted-grant-source.md)
 - [ADR 0010: Resolve authority once per turn](adr/0010-per-turn-authority.md)
@@ -152,11 +152,11 @@ is the boundary between them and the agents that act on them.
 - [ADR 0018: Escalation over MCP is recovered from the call, not returned by it](adr/0018-escalation-over-mcp.md)
 - [ADR 0019: An escalation names the authority it needs](adr/0019-escalation-names-the-authority-it-needs.md)
 - [ADR 0020: The host ceiling is a port, not a convention](adr/0020-host-ceiling-is-a-port.md)
-- [ADR 0021: An agent card, with reach computed at read time](adr/0021-agent-card-reach-computed-at-read-time.md)
-- [ADR 0022: A precedent proposes; the kernel decides whether it may](adr/0022-precedent-proposes-the-kernel-admits.md)
+- [ADR 0021: An agent card, with reach computed at read time](adr/0021-agent-card-reach-computed-at-read-time.md) (proposed)
+- [ADR 0022: A precedent proposes; the kernel decides whether it may](adr/0022-precedent-proposes-the-kernel-admits.md) (proposed)
 - [ADR 0023: Every refusal reaches audit, and the record names the boundary](adr/0023-every-refusal-reaches-audit.md)
-- [ADR 0024: Git is its own resource namespace](adr/0024-git-is-its-own-resource-namespace.md)
-- [ADR 0025: A route lease is not an authority lease](adr/0025-route-lease-is-not-authority.md)
+- [ADR 0024: Git is its own resource namespace, and the vetted subset is a provider](adr/0024-git-is-its-own-resource-namespace.md) (proposed)
+- [ADR 0025: A route lease is not an authority lease](adr/0025-route-lease-is-not-authority.md) (proposed)
 - [ADR 0026: The effective catalogue is resolved once per turn](adr/0026-catalogue-resolved-once-per-turn.md)
 
 ## Project governance
