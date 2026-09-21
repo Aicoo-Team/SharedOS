@@ -1,4 +1,4 @@
-[**SharedOS API v0.1.0-alpha.5**](README.md)
+[**SharedOS API v1.0.0-preview**](README.md)
 
 ---
 
@@ -28,7 +28,7 @@ states about an event is a field it names; `metadata` holds what a host port
 supplied and the details particular to one event type. It is strict, so a
 persisted trail that parses is one the kernel could have written.
 
-SharedOS is currently an `0.x` prerelease.
+SharedOS is currently a `1.0.0` preview.
 
 ## Interfaces
 
@@ -1549,7 +1549,7 @@ in step. `docs/http-api.md` describes the same table for a reader.
 
 ### SHAREDOS\_VERSION
 
-> `const` **SHAREDOS\_VERSION**: `"0.1.0-alpha.5"` = `"0.1.0-alpha.5"`
+> `const` **SHAREDOS\_VERSION**: `"1.0.0-preview"` = `"1.0.0-preview"`
 
 Defined in: [common.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L22)
 

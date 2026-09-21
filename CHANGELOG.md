@@ -3,10 +3,10 @@
 All notable changes to SharedOS are recorded here. The packages share one
 version and are published together under npm's `next` dist-tag.
 
-SharedOS is a `0.x` prerelease: contracts may change between prereleases, and
+SharedOS is a `1.0.0` preview: contracts may change between previews, and
 each entry calls out what a host has to update.
 
-## Unreleased
+## 1.0.0-preview
 
 ### Changed — breaking
 

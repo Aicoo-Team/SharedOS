@@ -96,4 +96,4 @@ most of all in the deployments that were being careful.
 
 See [ADR 0022](https://github.com/Aicoo-Team/SharedOS/blob/main/docs/adr/0022-precedent-proposes-the-kernel-admits.md).
 
-SharedOS is currently an `0.x` prerelease.
+SharedOS is currently a `1.0.0` preview.

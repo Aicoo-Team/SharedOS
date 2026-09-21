@@ -9,7 +9,7 @@ npm install @aicoo/sharedos
 ```
 
 Node.js 20.11 or newer. The packages are ESM-only. Every SharedOS package is a
-`0.x` prerelease, so pin an exact version if you need reproducibility.
+`1.0.0` preview, so pin an exact version if you need reproducibility.
 
 ## What you have to bring
 

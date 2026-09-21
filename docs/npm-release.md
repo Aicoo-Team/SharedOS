@@ -108,8 +108,8 @@ every package's trusted publisher configured, that is the whole release:
 ```bash
 git switch main
 git pull --ff-only
-git tag -a v0.1.0-alpha.5 -m "SharedOS v0.1.0-alpha.5"
-git push origin v0.1.0-alpha.5
+git tag -a v1.0.0-preview -m "SharedOS v1.0.0-preview"
+git push origin v1.0.0-preview
 ```
 
 `release.yml` first checks that the tag names the version in
@@ -127,7 +127,7 @@ workflow could not reach, from a clean tagged checkout, with an npm account
 that controls `@aicoo`:
 
 ```bash
-SHAREDOS_RELEASE_CONFIRM=v0.1.0-alpha.5 pnpm release:publish
+SHAREDOS_RELEASE_CONFIRM=v1.0.0-preview pnpm release:publish
 ```
 
 Never paste an npm token, OTP, or recovery code into an issue, pull request,
@@ -148,7 +148,7 @@ trusted-publisher gap to close before the next release:
 ```bash
 for p in contracts core precedent os runtime client http testkit mcp adapters conformance; do
   printf '%-14s ' "$p"
-  curl -s "https://registry.npmjs.org/@aicoo%2fsharedos-$p/0.1.0-alpha.5" \
+  curl -s "https://registry.npmjs.org/@aicoo%2fsharedos-$p/1.0.0-preview" \
     | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).dist?.attestations?"provenance":"NONE"))'
 done
 ```

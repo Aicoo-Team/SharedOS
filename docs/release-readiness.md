@@ -6,8 +6,9 @@ Prerelease packages use the `next` dist-tag.
 
 ## Distribution gates
 
-- `0.1.0-alpha.0` was published by hand, and `alpha.1` and `alpha.2` since; the
-  root version is the next prerelease.
+- `0.1.0-alpha.0` was published by hand, and `alpha.1` and `alpha.2` since;
+  `0.1.0-alpha.5` was the first published by the workflow alone. The root
+  version is the next prerelease, `1.0.0-preview`.
 - Trusted publishing: `release.yml` publishes from a `v*` tag with OIDC. Confirm
   on npm that every package's trusted publisher is configured and that a
   prerelease has been published through a tag alone; the repository cannot show

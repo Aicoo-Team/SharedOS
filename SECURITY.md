@@ -8,7 +8,7 @@ tool accounts.
 
 SharedOS is currently in pre-release development and has no stable supported
 release line. Security fixes are made on the latest repository revision. Do not
-assume `0.x` APIs or deployments are production hardened unless a release says
+assume preview APIs or deployments are production hardened unless a release says
 so explicitly.
 
 | Version                     | Supported                   |

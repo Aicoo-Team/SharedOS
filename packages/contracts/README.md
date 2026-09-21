@@ -22,4 +22,4 @@ states about an event is a field it names; `metadata` holds what a host port
 supplied and the details particular to one event type. It is strict, so a
 persisted trail that parses is one the kernel could have written.
 
-SharedOS is currently an `0.x` prerelease.
+SharedOS is currently a `1.0.0` preview.
