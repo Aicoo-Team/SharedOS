@@ -520,7 +520,15 @@ to do next; it never reaches the envelope itself.
 
 > **open**(`request`, `signal`): `Promise`\<[`AgentTurnSession`](#agentturnsession)>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L128)
+Defined in: [packages/runtime/src/standard-runtime.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L137)
+
+Open the session one turn is driven through.
+
+A turn cancelled while this is in flight stops waiting for it. A session
+handed back after that is still closed, with the turn's ending, so `close`
+may be called on a session that was never asked for a decision. A driver
+whose `open` rejects releases whatever it had taken itself: there is no
+session to close.
 
 ###### Parameters
 
@@ -816,15 +824,15 @@ Defined in: [packages/runtime/src/executor.ts:56](https://github.com/Aicoo-Team/
 
 ### StandardRuntimeOptions
 
-Defined in: [packages/runtime/src/standard-runtime.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L131)
+Defined in: [packages/runtime/src/standard-runtime.ts:140](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L140)
 
 #### Properties
 
 | Property                                               | Type                                      | Description                                                                                                                                                                                                                                                                                                                    | Defined in                                                                                                                                     |
 | ------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-closetimeoutms"></a> `closeTimeoutMs?` | `number`                                  | -                                                                                                                                                                                                                                                                                                                              | [packages/runtime/src/standard-runtime.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L134) |
-| <a id="property-driver"></a> `driver`                  | [`AgentTurnDriver`](#agentturndriver)     | The one driver this runtime seats.                                                                                                                                                                                                                                                                                             | [packages/runtime/src/standard-runtime.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L133) |
-| <a id="property-onturnerror-1"></a> `onTurnError?`     | [`TurnErrorReporter`](#turnerrorreporter) | Notification for a throw the loop contained rather than propagated. A driver that throws ends the turn `driver_failed`, which is a cooperative outcome the envelope never sees as an exception -- so the executor's own hook cannot report it and this one exists. Same contract; see [TurnErrorReporter](#turnerrorreporter). | [packages/runtime/src/standard-runtime.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L143) |
+| <a id="property-closetimeoutms"></a> `closeTimeoutMs?` | `number`                                  | -                                                                                                                                                                                                                                                                                                                              | [packages/runtime/src/standard-runtime.ts:143](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L143) |
+| <a id="property-driver"></a> `driver`                  | [`AgentTurnDriver`](#agentturndriver)     | The one driver this runtime seats.                                                                                                                                                                                                                                                                                             | [packages/runtime/src/standard-runtime.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L142) |
+| <a id="property-onturnerror-1"></a> `onTurnError?`     | [`TurnErrorReporter`](#turnerrorreporter) | Notification for a throw the loop contained rather than propagated. A driver that throws ends the turn `driver_failed`, which is a cooperative outcome the envelope never sees as an exception -- so the executor's own hook cannot report it and this one exists. Same contract; see [TurnErrorReporter](#turnerrorreporter). | [packages/runtime/src/standard-runtime.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L152) |
 
 ---
 
@@ -1210,7 +1218,7 @@ the model or harness is sent anything.
 
 > `const` **STANDARD\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L146)
+Defined in: [packages/runtime/src/standard-runtime.ts:155](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L155)
 
 ---
 
@@ -1257,7 +1265,7 @@ record the wrong defect.
 
 > **createStandardRuntime**(`options`): [`RuntimePlugin`](#runtimeplugin)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:171](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L171)
+Defined in: [packages/runtime/src/standard-runtime.ts:180](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L180)
 
 The SharedOS loop, with one driver seated.
 

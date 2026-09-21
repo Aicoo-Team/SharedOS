@@ -125,6 +125,15 @@ export interface AgentTurnDriver {
    * it. A driver that states none is reported as `sharedos.standard`.
    */
   readonly manifest?: RuntimeManifest;
+  /**
+   * Open the session one turn is driven through.
+   *
+   * A turn cancelled while this is in flight stops waiting for it. A session
+   * handed back after that is still closed, with the turn's ending, so `close`
+   * may be called on a session that was never asked for a decision. A driver
+   * whose `open` rejects releases whatever it had taken itself: there is no
+   * session to close.
+   */
   open(request: RuntimeTurnRequest, signal: AbortSignal): Promise<AgentTurnSession>;
 }
 
@@ -194,9 +203,14 @@ class StandardLoop implements RuntimePlugin {
     signal: AbortSignal,
   ): Promise<RuntimeTurnOutcome> {
     let session: AgentTurnSession | undefined;
+    let opening: Promise<AgentTurnSession> | undefined;
     let closeOutcome: ExecutionResult["status"] = "failed";
     try {
-      session = await raceAbort(this.#driver.open(request, signal), signal);
+      // The promise is kept as well as the session, because a turn cancelled
+      // while this is still in flight never receives the session and would
+      // leave whatever it holds open with nothing left to close it.
+      opening = this.#driver.open(request, signal);
+      session = await raceAbort(opening, signal);
       if (typeof session.promptHash === "string") {
         // After `open`, before the first step, so a turn that stalls in its
         // first request still records what it was asked.
@@ -294,6 +308,16 @@ class StandardLoop implements RuntimePlugin {
         error: protocolError("driver_failed", "The agent turn driver failed.", true),
       };
     } finally {
+      if (session === undefined && opening !== undefined) {
+        // The turn stopped waiting for `open`, which may still answer: a driver
+        // need not honour its signal, and one that does can lose the race. The
+        // session is closed when it arrives, under the same limit, and the turn
+        // does not wait for it, since an `open` that never answers would then
+        // hold a turn its deadline had already ended.
+        const outcome = closeOutcome;
+        const timeoutMs = this.#closeTimeoutMs;
+        void opening.then((late) => closeSession(late, outcome, timeoutMs)).catch(() => undefined);
+      }
       await closeSession(session, closeOutcome, this.#closeTimeoutMs);
     }
   }

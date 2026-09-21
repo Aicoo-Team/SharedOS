@@ -702,6 +702,102 @@ describe("the standard composition", () => {
     expect(result.status).toBe("succeeded");
   });
 
+  it("closes a session that opens after its turn was cancelled", async () => {
+    // A driver that does not honour its signal, as a provider SDK part-way
+    // through a handshake does not. The turn stops waiting for it; whatever it
+    // then hands back still holds a connection that only `close` lets go of.
+    const close = vi.fn<NonNullable<AgentTurnSession["close"]>>();
+    let answer!: () => void;
+    const opened = new Promise<void>((resolve) => (answer = resolve));
+    let enter!: () => void;
+    const entered = new Promise<void>((resolve) => (enter = resolve));
+    const driver: AgentTurnDriver = {
+      open: async () => {
+        enter();
+        await opened;
+        return { next: async () => ({ type: "complete", output: null }), close };
+      },
+    };
+    const cancel = new AbortController();
+
+    const turn = turnExecutor(kernel(), driver, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request(), { signal: cancel.signal });
+    await entered;
+    cancel.abort(new Error("the host cancelled"));
+    const result = await turn;
+
+    // The turn ended without the session, so nothing has been closed yet.
+    expect(result.status).toBe("cancelled");
+    expect(close).not.toHaveBeenCalled();
+
+    answer();
+    await vi.waitFor(() => expect(close).toHaveBeenCalledTimes(1));
+    expect(close.mock.calls[0]?.[0]).toBe("cancelled");
+    expect(close.mock.calls[0]?.[1]).toBeInstanceOf(AbortSignal);
+  });
+
+  it("leaves nothing unhandled when a late session fails to open or to close", async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown): void => void unhandled.push(reason);
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      for (const late of ["rejects", "close throws"] as const) {
+        let answer!: () => void;
+        const opened = new Promise<void>((resolve) => (answer = resolve));
+        let enter!: () => void;
+        const entered = new Promise<void>((resolve) => (enter = resolve));
+        const driver: AgentTurnDriver = {
+          open: async () => {
+            enter();
+            await opened;
+            if (late === "rejects") {
+              throw new Error("the handshake failed");
+            }
+            return {
+              next: async () => ({ type: "complete", output: null }),
+              close: () => {
+                throw new Error("the connection was already gone");
+              },
+            };
+          },
+        };
+        const cancel = new AbortController();
+        const turn = turnExecutor(kernel(), driver, {
+          clock: () => now,
+          createId: () => "event-1",
+        }).execute(request(), { signal: cancel.signal });
+        await entered;
+        cancel.abort(new Error("the host cancelled"));
+
+        expect((await turn).status).toBe("cancelled");
+        answer();
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
+  });
+
+  it("closes a session that opened in time once", async () => {
+    const close = vi.fn<NonNullable<AgentTurnSession["close"]>>();
+    const driver: AgentTurnDriver = {
+      open: async () => ({ next: async () => ({ type: "complete", output: null }), close }),
+    };
+
+    const result = await turnExecutor(kernel(), driver, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(result.status).toBe("succeeded");
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(close.mock.calls[0]?.[0]).toBe("succeeded");
+  });
+
   it("forwards a span sink to the executor it fronts", async () => {
     const spans: Span[] = [];
     const sink: SpanSink = { record: (span) => void spans.push(span) };

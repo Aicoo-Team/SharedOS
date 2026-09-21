@@ -144,6 +144,15 @@ each entry calls out what a host has to update.
   same way; a host's own cancellation still stops the turn at once. Zero, the
   default, is the behaviour before. ADR 0007 is revised in place.
 
+- **A session that opens after its turn was cancelled is closed.** The standard
+  loop stops waiting for `AgentTurnDriver.open` when the turn is cancelled. A
+  driver that does not honour its signal, or loses the race with it, handed back
+  a session nothing held, so `close` was never called and whatever the session
+  had taken stayed open. The loop now keeps the promise and closes a session
+  that arrives late, with the turn's ending and under `closeTimeoutMs`. The turn
+  does not wait for it. A driver may therefore see `close` on a session that was
+  never asked for a decision.
+
 - **A sink that hangs after an effect no longer holds the result.** A sink that
   threw there was already handed to `onAuditError`; one that never answered kept
   the result of a committed effect waiting, and a turn that reached its deadline
