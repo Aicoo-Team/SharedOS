@@ -38,20 +38,20 @@ twelve tools. `files` is the canonical plane for accumulated knowledge — memor
 workspace, identity, history, and curated notes are roots or roles inside one
 file tree, not separate permission systems ([ADR 0005](adr/0005-files-resource-plane.md)).
 
-| Tool                     | Action             | Class       | Arguments beyond `path`                                             |
-| ------------------------ | ------------------ | ----------- | ------------------------------------------------------------------- |
-| `files.list`             | `list`             | read        | —                                                                   |
-| `files.stat`             | `stat`             | read        | —                                                                   |
-| `files.read`             | `read`             | read        | —                                                                   |
-| `files.search`           | `search`           | read        | `query`, `limit?`                                                   |
-| `files.grep`             | `grep`             | read        | `pattern`, `mode`, `caseSensitive`, `contextBefore`, `contextAfter` |
-| `files.create`           | `create`           | write       | `content`, `metadata?`                                              |
-| `files.replace`          | `replace`          | destructive | `content`, `expectedVersion?`                                       |
-| `files.append`           | `append`           | write       | `content`, `expectedVersion?`, `metadata?`                          |
-| `files.delete`           | `delete`           | destructive | `expectedVersion?`, `recursive`                                     |
-| `files.snapshot.create`  | `snapshot:create`  | write       | `label?`                                                            |
-| `files.snapshot.list`    | `snapshot:list`    | read        | `limit?`                                                            |
-| `files.snapshot.restore` | `snapshot:restore` | destructive | `snapshotId`, `expectedVersion?`                                    |
+| Tool                     | Action             | Class       | Arguments beyond `path`                                                 |
+| ------------------------ | ------------------ | ----------- | ----------------------------------------------------------------------- |
+| `files.list`             | `list`             | read        | —                                                                       |
+| `files.stat`             | `stat`             | read        | —                                                                       |
+| `files.read`             | `read`             | read        | —                                                                       |
+| `files.search`           | `search`           | read        | `query`, `limit?`                                                       |
+| `files.grep`             | `grep`             | read        | `pattern`, `mode?`, `caseSensitive?`, `contextBefore?`, `contextAfter?` |
+| `files.create`           | `create`           | write       | `content`, `metadata?`                                                  |
+| `files.replace`          | `replace`          | destructive | `content`, `expectedVersion?`                                           |
+| `files.append`           | `append`           | write       | `content`, `expectedVersion?`, `metadata?`                              |
+| `files.delete`           | `delete`           | destructive | `expectedVersion?`, `recursive?`                                        |
+| `files.snapshot.create`  | `snapshot:create`  | write       | `label?`                                                                |
+| `files.snapshot.list`    | `snapshot:list`    | read        | `limit?`                                                                |
+| `files.snapshot.restore` | `snapshot:restore` | destructive | `snapshotId`, `expectedVersion?`                                        |
 
 The **action** column is what a grant names. Granting `["search", "read"]`
 makes exactly `files.search` and `files.read` visible; the other ten do not
@@ -87,7 +87,7 @@ authority with them ([ADR 0024](adr/0024-git-is-its-own-resource-namespace.md)).
 | Tool          | Action   | Class | Arguments beyond `path` |
 | ------------- | -------- | ----- | ----------------------- |
 | `repo.status` | `status` | read  | —                       |
-| `repo.diff`   | `diff`   | read  | `staged`, `pathspec?`   |
+| `repo.diff`   | `diff`   | read  | `staged?`, `pathspec?`  |
 | `repo.log`    | `log`    | read  | `maxCount?`             |
 | `repo.stage`  | `stage`  | write | `pathspec`              |
 | `repo.commit` | `commit` | write | `message`               |
@@ -172,7 +172,9 @@ arrangement, not a gap.
 The resource namespace is `sharedos`, not `sharedos.escalation`, and that is
 deliberate. `sharedos.messaging` and `sharedos.execution` are planes with
 resources of their own; `sharedos` is the namespace for things about SharedOS
-itself, of which escalation — at path `["escalation"]` — is today the only one.
+itself. Escalation, at path `["escalation"]`, is the only tool in it; the agent
+card `kernel.readAgentCard` serves is authorized in the same namespace, at
+`["directory"]` with action `read` ([ADR 0021](adr/0021-agent-card-reach-computed-at-read-time.md)).
 The tool namespace, the second gate, is also `sharedos`.
 
 ## Registering your own tool
@@ -190,7 +192,7 @@ const calendarFreeBusy: ToolHandler = {
     description: "Read free/busy windows for one calendar.",
     namespace: "calendar", // the availability gate
     source: "native", // "native" | "mcp" | your own label
-    readWrite: "read", // conservative catalog classification
+    readWrite: "read", // "read" only if running it twice changes nothing
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -248,6 +250,14 @@ A `resolveRequirement` that returns a namespace the declared ceiling does not
 cover is rejected as `invalid_tool_requirement`. Declare the ceiling in the same
 plane you will resolve into.
 
+`readWrite` and `annotations.idempotent` are more than catalogue labels: they
+decide whether a turn that ended early is reported `retryable`. Once a call to a
+`write` tool not declared `idempotent` may have taken effect, the turn's ending
+says `retryable: false`. Declare `read` only if running the tool twice changes
+nothing, and `idempotent` only if the second run is a no-op; when in doubt, leave
+it a plain `write`. See
+[Before you retry a turn](errors.md#before-you-retry-a-turn).
+
 With that registered, a Notion-style search is usable only when all of these
 hold at once:
 
@@ -275,7 +285,7 @@ const mcpTools: ContextToolProvider = {
   },
 };
 
-const kernel = new SharedOSKernel({ toolProviders: [mcpTools] });
+const kernel = new SharedOSKernel({ grantSource, toolProviders: [mcpTools] });
 ```
 
 The provider is called with exactly one trusted context, once per turn, and the
@@ -285,9 +295,11 @@ through a turn does not change what that turn is answered from: the catalogue
 resolved for the turn is the one its listing published and the one its calls
 are decided against (ADR 0026).
 
-If a provider throws, the catalog request fails with `tool_catalog_unavailable`
-rather than silently returning a partial list — a truncated catalog would read
-as "you have no access to that" and be indistinguishable from a denial.
+If a provider throws, nothing is answered from a partial list — a truncated
+catalog would read as "you have no access to that" and be indistinguishable from
+a denial. A call made through `invokeTool` fails with `tool_catalog_unavailable`;
+`listTools` rejects, which inside a turn ends it `runtime_failed`. See
+[Diagnosing a contained throw](errors.md#diagnosing-a-contained-throw).
 
 ## Managing namespaces
 
