@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import type {
   ExecutionRequest,
   JsonObject,
@@ -554,6 +558,25 @@ describe("harness availability", () => {
 
     expect(availability.available).toBe(true);
     expect(availability.detail).toMatchObject({ credential: "ANTHROPIC_API_KEY" });
+  });
+
+  it("resolves executable suffixes declared by PATHEXT", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "sharedos-pathext-"));
+    const executable = join(directory, "fixture.EXE");
+    try {
+      await writeFile(executable, "");
+      await chmod(executable, 0o755);
+
+      const availability = await probeHarness(
+        { ...CLAUDE_CODE_REQUIREMENTS, executable: "fixture" },
+        { PATH: directory, PATHEXT: ".EXE", ANTHROPIC_API_KEY: "test-key" },
+      );
+
+      expect(availability.available).toBe(true);
+      expect(availability.detail).toMatchObject({ executable });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 
   it("records the build that answered, and the line it read that from", async () => {
