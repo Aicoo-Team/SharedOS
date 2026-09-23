@@ -1,7 +1,8 @@
-import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { spawnPnpmSync } from "./spawn-pnpm.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const summaryDirectory = join(root, "docs", "conformance");
@@ -16,8 +17,7 @@ const strict = flags.has("--strict");
 const skipBuild = flags.has("--no-build");
 
 if (!skipBuild) {
-  const command = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-  const build = spawnSync(command, ["build"], { cwd: root, stdio: "inherit" });
+  const build = spawnPnpmSync(["build"], { cwd: root, stdio: "inherit" });
   if (build.error) {
     throw build.error;
   }
