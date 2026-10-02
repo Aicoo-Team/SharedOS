@@ -278,7 +278,7 @@ function header(request: IncomingMessage, name: string): string | undefined {
 }
 
 function acceptsEventStream(request: IncomingMessage): boolean {
-  return (header(request, "accept") ?? "").includes("text/event-stream");
+  return (header(request, "accept") ?? "").toLowerCase().includes("text/event-stream");
 }
 
 async function readBody(request: IncomingMessage): Promise<string> {
