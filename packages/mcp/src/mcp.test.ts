@@ -669,6 +669,30 @@ describe("a harness talking to the real transport", () => {
     }
   });
 
+  it("serves SSE when the event-stream media type uses mixed case", async () => {
+    // Regression: media types are case-insensitive, but the transport matched
+    // the Accept header with a case-sensitive substring check.
+    const kernel = kernelWith([grant(["search"])]);
+    const http = await createStreamableHttpMcpServer({
+      server: new McpToolServer({
+        invoker: kernelToolBridge({ kernel, context: context(), executionId: "exec-1" }),
+      }),
+    });
+
+    try {
+      const response = await fetch(http.url, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "Text/Event-Stream" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+      });
+
+      expect(response.headers.get("content-type")).toContain("text/event-stream");
+      await expect(response.text()).resolves.toContain("event: message");
+    } finally {
+      await http.close();
+    }
+  });
+
   it("answers a session id from a turn that has ended with 404, not with tools", async () => {
     const kernel = kernelWith([grant(["search"])]);
     const http = await createStreamableHttpMcpServer({
