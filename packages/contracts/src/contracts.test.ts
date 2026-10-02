@@ -336,6 +336,35 @@ describe("JSON-safe protocol contracts", () => {
     }
   });
 
+  it("carries the longest model-authored Unicode recipient into an envelope", () => {
+    // Regression: the request schema counted code points while IdentifierSchema
+    // counted UTF-16 code units, so 256 astral characters failed at dispatch.
+    const message = {
+      version: PROTOCOL_VERSION,
+      id: "message-1",
+      sender: actor,
+      receiver: { kind: "agent" as const, agentId: "😀".repeat(256) },
+      purpose: "prepare-investor-update",
+      payload: {},
+      traceId: "trace-1",
+      createdAt: now,
+    };
+
+    expect(
+      MessageRequestArgumentsSchema.safeParse({
+        recipient: message.receiver,
+        payload: message.payload,
+      }).success,
+    ).toBe(true);
+    expect(MessageEnvelopeSchema.safeParse(message).success).toBe(true);
+    expect(
+      MessageEnvelopeSchema.safeParse({
+        ...message,
+        receiver: { ...message.receiver, agentId: "😀".repeat(257) },
+      }).success,
+    ).toBe(false);
+  });
+
   it("requires an error when message delivery fails", () => {
     expect(
       MessageDeliveryResultSchema.safeParse({
