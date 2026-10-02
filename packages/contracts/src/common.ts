@@ -22,7 +22,13 @@ export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export const SHAREDOS_VERSION = "1.0.0-preview";
 
 /** An opaque identifier. Callers choose its format; SharedOS only requires stability. */
-export const IdentifierSchema = z.string().trim().min(1).max(256);
+export const IdentifierSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .regex(/^[\s\S]{1,256}$/u, {
+    message: "identifiers must contain at most 256 Unicode code points",
+  });
 export type Identifier = z.infer<typeof IdentifierSchema>;
 
 /** An RFC 3339 timestamp, represented as a string to remain JSON-safe. */
