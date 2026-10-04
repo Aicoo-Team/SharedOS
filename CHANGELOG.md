@@ -20,6 +20,16 @@ each entry calls out what a host has to update.
   each package's npm trusted publisher has to name the new address
   (`docs/npm-release.md`).
 
+- **Protocol `"1"` is the `1.0.0-preview` shape, and it is frozen there.**
+  `0.1.0-alpha.4` added optional fields to `.strict()` schemas without moving
+  the version, and ADR 0019 deferred the move to a later release. The deferral
+  is closed without one. `"1"` names what `1.0.0-preview` ships; the
+  `0.1.0-alpha` builds are not supported peers of it, so a consumer still on
+  one upgrades. From here a change a `1.0.0-preview` reader would reject moves
+  the version in the same change. No object is re-stamped, the routes stay
+  under `/v1`, and existing records stay readable. ADR 0019 is revised and the
+  `ProtocolVersionSchema` row in `docs/open-items.md` is closed.
+
 ### Fixed
 
 - **Reading a Claude Code or Pi tool call no longer pays for a failed parse.**
