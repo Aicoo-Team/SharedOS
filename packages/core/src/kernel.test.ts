@@ -98,9 +98,15 @@ class TestGrantSource implements GrantSource {
 
 function kernelWith(
   grants: readonly CapabilityGrant[] = [],
-  options: Omit<SharedOSKernelOptions, "grantSource"> = {},
+  options: Omit<SharedOSKernelOptions, "grantSource" | "audit"> & {
+    audit?: SharedOSKernelOptions["audit"];
+  } = {},
 ): SharedOSKernel {
-  return new SharedOSKernel({ ...options, grantSource: new TestGrantSource(grants) });
+  return new SharedOSKernel({
+    audit: "discard",
+    ...options,
+    grantSource: new TestGrantSource(grants),
+  });
 }
 
 const FILE_RESOURCE: ResourceRef = {
@@ -358,7 +364,7 @@ describe("SharedOSKernel tools", () => {
   it("requires namespace enablement and capability authority independently", async () => {
     const invoke = vi.fn(successfulTool().invoke);
     const authority = new TestGrantSource();
-    const kernel = new SharedOSKernel({ grantSource: authority });
+    const kernel = new SharedOSKernel({ audit: "discard", grantSource: authority });
     kernel.registerTool({
       definition: FILE_TOOL,
       parseArguments: (arguments_) => arguments_,
@@ -545,7 +551,7 @@ describe("SharedOSKernel tools", () => {
     const invoke = vi.fn(successfulTool().invoke);
     const kernel = kernelWith(
       [grant("grant-search-once", FILE_RESOURCE, ["search"], { maxUses: 1 })],
-      { authorizer: new CapabilityAuthorizer({ usageStore: new InMemoryGrantUsageStore() }) },
+      { replayStore: new InMemoryGrantUsageStore() },
     );
     kernel.registerTool({
       definition: FILE_TOOL,
@@ -571,7 +577,7 @@ describe("SharedOSKernel tools", () => {
   it("rejects trace substitution before spending or calling a tool", async () => {
     const invoke = vi.fn(successfulTool().invoke);
     const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"], { maxUses: 1 })], {
-      authorizer: new CapabilityAuthorizer({ usageStore: new InMemoryGrantUsageStore() }),
+      replayStore: new InMemoryGrantUsageStore(),
     });
     kernel.registerTool({
       definition: FILE_TOOL,
@@ -581,7 +587,7 @@ describe("SharedOSKernel tools", () => {
     const access = context();
 
     await expect(
-      kernel.invokeTool(access, toolCall({ traceId: "trace-other" })),
+      kernel.invokeTool(access, toolCall({ id: "bad-trace-call", traceId: "trace-other" })),
     ).resolves.toMatchObject({
       status: "denied",
       error: { code: "trace_mismatch" },
@@ -1246,7 +1252,7 @@ describe("SharedOSKernel catalogue resolution", () => {
 describe("SharedOSKernel turn admission", () => {
   it("requires a recipient-scoped execution grant", async () => {
     const authority = new TestGrantSource();
-    const kernel = new SharedOSKernel({ grantSource: authority });
+    const kernel = new SharedOSKernel({ audit: "discard", grantSource: authority });
     const resource: ResourceRef = {
       namespace: "sharedos.execution",
       path: addressPath(RECEIVER),
@@ -1305,7 +1311,7 @@ describe("SharedOSKernel resources", () => {
       completedAt: NOW,
     }));
     const authority = new TestGrantSource();
-    const kernel = new SharedOSKernel({ grantSource: authority });
+    const kernel = new SharedOSKernel({ audit: "discard", grantSource: authority });
     kernel.registerResourceProvider({ namespace: "files", invoke });
     const request: ResourceInvocationRequest = {
       operationId: "operation-1",
@@ -1561,6 +1567,7 @@ describe("SharedOSKernel messaging and audit", () => {
     const usage = new InMemoryGrantUsageStore();
     const messagingGrant = grant("grant-message", messageResource(), ["send"], { maxUses: 1 });
     const kernel = kernelWith([messagingGrant], {
+      replayStore: usage,
       authorizer: new CapabilityAuthorizer({ usageStore: usage }),
       messageTransport: { deliver: vi.fn() },
       messageRequestRouter: { resolveReply: vi.fn() },
@@ -1669,6 +1676,7 @@ describe("SharedOSKernel messaging and audit", () => {
     );
     const messagingGrant = grant("grant-message", messageResource(), ["send"], { maxUses: 1 });
     const kernel = kernelWith([messagingGrant], {
+      replayStore: usage,
       authorizer: new CapabilityAuthorizer({ usageStore: usage }),
       messageTransport: { deliver },
       messageRequestRouter: { resolveReply },
@@ -1720,6 +1728,9 @@ describe("SharedOSKernel messaging and audit", () => {
 
     await expect(
       kernel.invokeTool(context(["messages"]), messageRequestCall()),
+    ).resolves.toMatchObject({ status: "succeeded" });
+    await expect(
+      kernel.invokeTool(context(["messages"]), { ...messageRequestCall(), id: "second-request" }),
     ).resolves.toMatchObject({ status: "denied", error: { code: "tool_unavailable" } });
     expect(deliver).toHaveBeenCalledOnce();
   });
@@ -1987,6 +1998,7 @@ describe("SharedOSKernel messaging and audit", () => {
     const kernel = kernelWith(
       [grant("grant-message", messageResource(), ["send"], { maxUses: 1 })],
       {
+        replayStore: usage,
         authorizer: new CapabilityAuthorizer({ usageStore: usage }),
         messageTransport: { deliver },
       },
@@ -3113,6 +3125,7 @@ describe("SharedOSKernel provider diagnostics", () => {
   it("leaves the authority ports it does not cover alone", async () => {
     const { onProviderError, seen } = reporter();
     const kernel = new SharedOSKernel({
+      audit: "discard",
       onProviderError,
       grantSource: {
         async load() {
@@ -3568,6 +3581,7 @@ describe("SharedOSKernel host policy", () => {
     expect(
       () =>
         new SharedOSKernel({
+          audit: "discard",
           grantSource: new TestGrantSource(),
           policySource: {} as PolicySource,
         }),
@@ -3894,6 +3908,7 @@ describe("SharedOSKernel.reach", () => {
 
   it("is unavailable rather than empty when the authority cannot be loaded", async () => {
     const kernel = new SharedOSKernel({
+      audit: "discard",
       grantSource: {
         load: async () => {
           throw new Error("grant store is unreachable");
@@ -3909,7 +3924,7 @@ describe("SharedOSKernel.reach", () => {
 
   it("reads the authority the turn holds, so a grant revoked mid-turn is reach until the next turn", async () => {
     const source = new TestGrantSource([grant("grant-files", FILE_RESOURCE, ["search"])]);
-    const kernel = new SharedOSKernel({ grantSource: source });
+    const kernel = new SharedOSKernel({ audit: "discard", grantSource: source });
 
     const turn = await kernel.openTurnAuthority(context());
     source.serve([]);
@@ -3924,6 +3939,7 @@ describe("SharedOSKernel.reach", () => {
   it("consumes nothing", async () => {
     const usageStore = new InMemoryGrantUsageStore();
     const kernel = kernelWith([grant("grant-bounded", FILE_RESOURCE, ["search"], { maxUses: 1 })], {
+      replayStore: usageStore,
       authorizer: new CapabilityAuthorizer({ usageStore }),
     });
 

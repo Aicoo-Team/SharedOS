@@ -34,7 +34,7 @@ SharedOS is currently a `1.0.0` preview.
 
 ### UnsupportedProtocolVersionError
 
-Defined in: [common.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L17)
+Defined in: [packages/contracts/src/common.ts:17](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L17)
 
 A version mismatch is distinct from malformed data within a supported epoch.
 
@@ -48,7 +48,7 @@ A version mismatch is distinct from malformed data within a supported epoch.
 
 > **new UnsupportedProtocolVersionError**(`receivedVersion`): [`UnsupportedProtocolVersionError`](#unsupportedprotocolversionerror)
 
-Defined in: [common.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L22)
+Defined in: [packages/contracts/src/common.ts:22](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L22)
 
 ###### Parameters
 
@@ -66,16 +66,16 @@ Defined in: [common.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 #### Properties
 
-| Property                                                  | Modifier   | Type                             | Default value                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Inherited from              | Defined in                                                                                 |
-| --------------------------------------------------------- | ---------- | -------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------ |
-| <a id="property-cause"></a> `cause?`                      | `public`   | `unknown`                        | `undefined`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `TypeError.cause`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26 |
-| <a id="property-code"></a> `code`                         | `readonly` | `"unsupported_protocol_version"` | `"unsupported_protocol_version"` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                           | [common.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L18)                                                        |
-| <a id="property-message"></a> `message`                   | `public`   | `string`                         | `undefined`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `TypeError.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077        |
-| <a id="property-name"></a> `name`                         | `public`   | `string`                         | `undefined`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `TypeError.name`            | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1076        |
-| <a id="property-receivedversion"></a> `receivedVersion`   | `readonly` | `string` \| `null`               | `undefined`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                           | [common.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L20)                                                        |
-| <a id="property-stack"></a> `stack?`                      | `public`   | `string`                         | `undefined`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `TypeError.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078        |
-| <a id="property-supportedversion"></a> `supportedVersion` | `readonly` | `"2"`                            | `PROTOCOL_VERSION`               | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                           | [common.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L19)                                                        |
-| <a id="property-stacktracelimit"></a> `stackTraceLimit`   | `static`   | `number`                         | `undefined`                      | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | `TypeError.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68          |
+| Property                                                  | Modifier   | Type                             | Default value                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Inherited from              | Defined in                                                                                                                                                                                                                                   |
+| --------------------------------------------------------- | ---------- | -------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-cause"></a> `cause?`                      | `public`   | `unknown`                        | `undefined`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `TypeError.cause`           | [node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26](https://github.com/systemind-team/SharedOS/blob/main/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.error.d.ts#L26) |
+| <a id="property-code"></a> `code`                         | `readonly` | `"unsupported_protocol_version"` | `"unsupported_protocol_version"` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                           | [packages/contracts/src/common.ts:18](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L18)                                                                                                             |
+| <a id="property-message"></a> `message`                   | `public`   | `string`                         | `undefined`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `TypeError.message`         | [node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077](https://github.com/systemind-team/SharedOS/blob/main/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es5.d.ts#L1077)               |
+| <a id="property-name"></a> `name`                         | `public`   | `string`                         | `undefined`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `TypeError.name`            | [node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1076](https://github.com/systemind-team/SharedOS/blob/main/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es5.d.ts#L1076)               |
+| <a id="property-receivedversion"></a> `receivedVersion`   | `readonly` | `string` \| `null`               | `undefined`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                           | [packages/contracts/src/common.ts:20](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L20)                                                                                                             |
+| <a id="property-stack"></a> `stack?`                      | `public`   | `string`                         | `undefined`                      | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `TypeError.stack`           | [node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078](https://github.com/systemind-team/SharedOS/blob/main/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es5.d.ts#L1078)               |
+| <a id="property-supportedversion"></a> `supportedVersion` | `readonly` | `"2"`                            | `PROTOCOL_VERSION`               | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                           | [packages/contracts/src/common.ts:19](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L19)                                                                                                             |
+| <a id="property-stacktracelimit"></a> `stackTraceLimit`   | `static`   | `number`                         | `undefined`                      | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | `TypeError.stackTraceLimit` | [node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68](https://github.com/systemind-team/SharedOS/blob/main/node_modules/.pnpm/@types+node@22.20.1/node_modules/@types/node/globals.d.ts#L68)                   |
 
 #### Methods
 
@@ -83,7 +83,7 @@ Defined in: [common.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > `static` **captureStackTrace**(`targetObject`, `constructorOpt?`): `void`
 
-Defined in: node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:52
+Defined in: [node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:52](https://github.com/systemind-team/SharedOS/blob/main/node_modules/.pnpm/@types+node@22.20.1/node_modules/@types/node/globals.d.ts#L52)
 
 Creates a `.stack` property on `targetObject`, which when accessed returns
 a string representing the location in the code at which
@@ -148,7 +148,7 @@ a();
 
 > `static` **prepareStackTrace**(`err`, `stackTraces`): `any`
 
-Defined in: node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:56
+Defined in: [node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:56](https://github.com/systemind-team/SharedOS/blob/main/node_modules/.pnpm/@types+node@22.20.1/node_modules/@types/node/globals.d.ts#L56)
 
 ###### Parameters
 
@@ -173,7 +173,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### JsonObject
 
-Defined in: [json.ts:4](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/json.ts#L4)
+Defined in: [packages/contracts/src/json.ts:4](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/json.ts#L4)
 
 #### Indexable
 
@@ -183,7 +183,7 @@ Defined in: [json.ts:4](https://github.com/Aicoo-Team/SharedOS/blob/main/package
 
 ### SharedOSRoute
 
-Defined in: [http.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L89)
+Defined in: [packages/contracts/src/http.ts:89](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L89)
 
 One HTTP operation: where it lives, its verb, and what crosses the wire each way.
 
@@ -196,18 +196,18 @@ One HTTP operation: where it lives, its verb, and what crosses the wire each way
 
 #### Properties
 
-| Property                                  | Modifier   | Type                                        | Description                            | Defined in                                                                                        |
-| ----------------------------------------- | ---------- | ------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| <a id="property-method"></a> `method`     | `readonly` | [`SharedOSHttpMethod`](#sharedoshttpmethod) | -                                      | [http.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L91) |
-| <a id="property-path"></a> `path`         | `readonly` | `` `/${string}` ``                          | -                                      | [http.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L90) |
-| <a id="property-request"></a> `request?`  | `readonly` | [`WireSchema`](#wireschema)\<`Request`\>    | Absent for a route that takes no body. | [http.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L93) |
-| <a id="property-response"></a> `response` | `readonly` | [`WireSchema`](#wireschema)\<`Response`\>   | -                                      | [http.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L94) |
+| Property                                  | Modifier   | Type                                        | Description                            | Defined in                                                                                                                   |
+| ----------------------------------------- | ---------- | ------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-method"></a> `method`     | `readonly` | [`SharedOSHttpMethod`](#sharedoshttpmethod) | -                                      | [packages/contracts/src/http.ts:91](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L91) |
+| <a id="property-path"></a> `path`         | `readonly` | `` `/${string}` ``                          | -                                      | [packages/contracts/src/http.ts:90](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L90) |
+| <a id="property-request"></a> `request?`  | `readonly` | [`WireSchema`](#wireschema)\<`Request`\>    | Absent for a route that takes no body. | [packages/contracts/src/http.ts:93](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L93) |
+| <a id="property-response"></a> `response` | `readonly` | [`WireSchema`](#wireschema)\<`Response`\>   | -                                      | [packages/contracts/src/http.ts:94](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L94) |
 
 ---
 
 ### WireSchema
 
-Defined in: [http.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L80)
+Defined in: [packages/contracts/src/http.ts:80](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L80)
 
 What either side of the HTTP boundary needs from a schema: a verdict and a
 typed value. Structural, so the handler and the client can name a route's
@@ -225,7 +225,7 @@ schemas without depending on the validation library themselves.
 
 > **safeParse**(`value`): \{ `data`: `T`; `success`: `true`; \} \| \{ `success`: `false`; \}
 
-Defined in: [http.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L81)
+Defined in: [packages/contracts/src/http.ts:81](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L81)
 
 ###### Parameters
 
@@ -243,7 +243,7 @@ Defined in: [http.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **AccessContext** = `z.infer`\<_typeof_ [`AccessContextSchema`](#accesscontextschema)>\>
 
-Defined in: [access.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/access.ts#L30)
+Defined in: [packages/contracts/src/access.ts:30](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/access.ts#L30)
 
 ---
 
@@ -251,7 +251,7 @@ Defined in: [access.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **Address** = `z.infer`\<_typeof_ [`AddressSchema`](#addressschema)>\>
 
-Defined in: [address.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/address.ts#L33)
+Defined in: [packages/contracts/src/address.ts:33](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/address.ts#L33)
 
 ---
 
@@ -259,7 +259,7 @@ Defined in: [address.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > **AgentAddress** = `z.infer`\<_typeof_ [`AgentAddressSchema`](#agentaddressschema)>\>
 
-Defined in: [address.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/address.ts#L13)
+Defined in: [packages/contracts/src/address.ts:13](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/address.ts#L13)
 
 ---
 
@@ -267,7 +267,7 @@ Defined in: [address.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > **AgentCard** = `z.infer`\<_typeof_ [`AgentCardSchema`](#agentcardschema)>\>
 
-Defined in: [card.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/card.ts#L107)
+Defined in: [packages/contracts/src/card.ts:107](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/card.ts#L107)
 
 ---
 
@@ -275,7 +275,7 @@ Defined in: [card.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **AgentCardView** = `z.infer`\<_typeof_ [`AgentCardViewSchema`](#agentcardviewschema)>\>
 
-Defined in: [card.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/card.ts#L31)
+Defined in: [packages/contracts/src/card.ts:31](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/card.ts#L31)
 
 ---
 
@@ -283,7 +283,7 @@ Defined in: [card.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **AuditEvent** = `z.infer`\<_typeof_ [`AuditEventSchema`](#auditeventschema)>\>
 
-Defined in: [audit.ts:175](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/audit.ts#L175)
+Defined in: [packages/contracts/src/audit.ts:177](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/audit.ts#L177)
 
 ---
 
@@ -291,7 +291,7 @@ Defined in: [audit.ts:175](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **AuditEventType** = `z.infer`\<_typeof_ [`AuditEventTypeSchema`](#auditeventtypeschema)>\>
 
-Defined in: [audit.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/audit.ts#L30)
+Defined in: [packages/contracts/src/audit.ts:31](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/audit.ts#L31)
 
 ---
 
@@ -299,7 +299,7 @@ Defined in: [audit.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **AuditOutcome** = `z.infer`\<_typeof_ [`AuditOutcomeSchema`](#auditoutcomeschema)>\>
 
-Defined in: [audit.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/audit.ts#L54)
+Defined in: [packages/contracts/src/audit.ts:55](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/audit.ts#L55)
 
 ---
 
@@ -307,7 +307,7 @@ Defined in: [audit.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **AuditSource** = `z.infer`\<_typeof_ [`AuditSourceSchema`](#auditsourceschema)>\>
 
-Defined in: [audit.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/audit.ts#L66)
+Defined in: [packages/contracts/src/audit.ts:67](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/audit.ts#L67)
 
 ---
 
@@ -315,7 +315,7 @@ Defined in: [audit.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **AuthorizationDecision** = `z.infer`\<_typeof_ [`AuthorizationDecisionSchema`](#authorizationdecisionschema)>\>
 
-Defined in: [access.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/access.ts#L72)
+Defined in: [packages/contracts/src/access.ts:72](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/access.ts#L72)
 
 ---
 
@@ -323,7 +323,7 @@ Defined in: [access.ts:72](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **Capability** = `z.infer`\<_typeof_ [`CapabilitySchema`](#capabilityschema)>\>
 
-Defined in: [capability.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L46)
+Defined in: [packages/contracts/src/capability.ts:46](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L46)
 
 ---
 
@@ -331,7 +331,7 @@ Defined in: [capability.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/
 
 > **CapabilityConstraints** = `z.infer`\<_typeof_ [`CapabilityConstraintsSchema`](#capabilityconstraintsschema)>\>
 
-Defined in: [capability.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L71)
+Defined in: [packages/contracts/src/capability.ts:72](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L72)
 
 ---
 
@@ -339,7 +339,7 @@ Defined in: [capability.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/
 
 > **CapabilityGrant** = `z.infer`\<_typeof_ [`CapabilityGrantSchema`](#capabilitygrantschema)>\>
 
-Defined in: [capability.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L142)
+Defined in: [packages/contracts/src/capability.ts:143](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L143)
 
 ---
 
@@ -347,7 +347,7 @@ Defined in: [capability.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main
 
 > **CapabilityRequest** = `z.infer`\<_typeof_ [`CapabilityRequestSchema`](#capabilityrequestschema)>\>
 
-Defined in: [capability.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L104)
+Defined in: [packages/contracts/src/capability.ts:105](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L105)
 
 ---
 
@@ -355,7 +355,7 @@ Defined in: [capability.ts:104](https://github.com/Aicoo-Team/SharedOS/blob/main
 
 > **CapabilityRequirement** = `z.infer`\<_typeof_ [`CapabilityRequirementSchema`](#capabilityrequirementschema)>\>
 
-Defined in: [capability.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L152)
+Defined in: [packages/contracts/src/capability.ts:153](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L153)
 
 ---
 
@@ -363,7 +363,7 @@ Defined in: [capability.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main
 
 > **EnabledToolNamespaces** = `z.infer`\<_typeof_ [`EnabledToolNamespacesSchema`](#enabledtoolnamespacesschema)>\>
 
-Defined in: [tool.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L63)
+Defined in: [packages/contracts/src/tool.ts:63](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L63)
 
 ---
 
@@ -371,7 +371,7 @@ Defined in: [tool.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **Escalation** = `z.infer`\<_typeof_ [`EscalationSchema`](#escalationschema)>\>
 
-Defined in: [execution.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L93)
+Defined in: [packages/contracts/src/execution.ts:93](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L93)
 
 ---
 
@@ -379,7 +379,7 @@ Defined in: [execution.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/p
 
 > **ExecutionEvent** = `z.infer`\<_typeof_ [`ExecutionEventSchema`](#executioneventschema)>\>
 
-Defined in: [execution.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L56)
+Defined in: [packages/contracts/src/execution.ts:56](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L56)
 
 ---
 
@@ -387,7 +387,7 @@ Defined in: [execution.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/p
 
 > **ExecutionOptions** = `z.infer`\<_typeof_ [`ExecutionOptionsSchema`](#executionoptionsschema)>\>
 
-Defined in: [execution.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L23)
+Defined in: [packages/contracts/src/execution.ts:23](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L23)
 
 ---
 
@@ -395,7 +395,7 @@ Defined in: [execution.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/p
 
 > **ExecutionRequest** = `z.infer`\<_typeof_ [`ExecutionRequestSchema`](#executionrequestschema)>\>
 
-Defined in: [execution.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L40)
+Defined in: [packages/contracts/src/execution.ts:40](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L40)
 
 ---
 
@@ -403,7 +403,7 @@ Defined in: [execution.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/p
 
 > **ExecutionResult** = `z.infer`\<_typeof_ [`ExecutionResultSchema`](#executionresultschema)>\>
 
-Defined in: [execution.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L128)
+Defined in: [packages/contracts/src/execution.ts:128](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L128)
 
 ---
 
@@ -411,7 +411,7 @@ Defined in: [execution.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/
 
 > **GroupAddress** = `z.infer`\<_typeof_ [`GroupAddressSchema`](#groupaddressschema)>\>
 
-Defined in: [address.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/address.ts#L18)
+Defined in: [packages/contracts/src/address.ts:18](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/address.ts#L18)
 
 ---
 
@@ -419,7 +419,7 @@ Defined in: [address.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > **HumanAddress** = `z.infer`\<_typeof_ [`HumanAddressSchema`](#humanaddressschema)>\>
 
-Defined in: [address.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/address.ts#L8)
+Defined in: [packages/contracts/src/address.ts:8](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/address.ts#L8)
 
 ---
 
@@ -427,7 +427,7 @@ Defined in: [address.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **Identifier** = `z.infer`\<_typeof_ [`IdentifierSchema`](#identifierschema)>\>
 
-Defined in: [common.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L55)
+Defined in: [packages/contracts/src/common.ts:55](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L55)
 
 ---
 
@@ -435,7 +435,7 @@ Defined in: [common.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **JsonArray** = [`JsonValue`](#jsonvalue)[]
 
-Defined in: [json.ts:7](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/json.ts#L7)
+Defined in: [packages/contracts/src/json.ts:7](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/json.ts#L7)
 
 ---
 
@@ -443,7 +443,7 @@ Defined in: [json.ts:7](https://github.com/Aicoo-Team/SharedOS/blob/main/package
 
 > **JsonPrimitive** = `string` \| `number` \| `boolean` \| `null`
 
-Defined in: [json.ts:3](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/json.ts#L3)
+Defined in: [packages/contracts/src/json.ts:3](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/json.ts#L3)
 
 ---
 
@@ -451,7 +451,7 @@ Defined in: [json.ts:3](https://github.com/Aicoo-Team/SharedOS/blob/main/package
 
 > **JsonValue** = [`JsonPrimitive`](#jsonprimitive) \| [`JsonObject`](#jsonobject) \| [`JsonArray`](#jsonarray)
 
-Defined in: [json.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/json.ts#L8)
+Defined in: [packages/contracts/src/json.ts:8](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/json.ts#L8)
 
 ---
 
@@ -459,7 +459,7 @@ Defined in: [json.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/package
 
 > **MessageDeliveryResult** = `z.infer`\<_typeof_ [`MessageDeliveryResultSchema`](#messagedeliveryresultschema)>\>
 
-Defined in: [message.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/message.ts#L95)
+Defined in: [packages/contracts/src/message.ts:95](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/message.ts#L95)
 
 ---
 
@@ -467,7 +467,7 @@ Defined in: [message.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > **MessageEnvelope** = `z.infer`\<_typeof_ [`MessageEnvelopeSchema`](#messageenvelopeschema)>\>
 
-Defined in: [message.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/message.ts#L42)
+Defined in: [packages/contracts/src/message.ts:42](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/message.ts#L42)
 
 ---
 
@@ -475,7 +475,7 @@ Defined in: [message.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > **MessageProvenance** = `z.infer`\<_typeof_ [`MessageProvenanceSchema`](#messageprovenanceschema)>\>
 
-Defined in: [message.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/message.ts#L21)
+Defined in: [packages/contracts/src/message.ts:21](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/message.ts#L21)
 
 ---
 
@@ -483,7 +483,7 @@ Defined in: [message.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > **MessageRequestArguments** = `z.infer`\<_typeof_ [`MessageRequestArgumentsSchema`](#messagerequestargumentsschema)>\>
 
-Defined in: [message.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/message.ts#L73)
+Defined in: [packages/contracts/src/message.ts:73](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/message.ts#L73)
 
 ---
 
@@ -491,7 +491,7 @@ Defined in: [message.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > **ProtocolError** = `z.infer`\<_typeof_ [`ProtocolErrorSchema`](#protocolerrorschema)>\>
 
-Defined in: [protocol-error.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/protocol-error.ts#L16)
+Defined in: [packages/contracts/src/protocol-error.ts:16](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/protocol-error.ts#L16)
 
 ---
 
@@ -499,7 +499,7 @@ Defined in: [protocol-error.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/m
 
 > **ProtocolVersion** = `z.infer`\<_typeof_ [`ProtocolVersionSchema`](#protocolversionschema)>\>
 
-Defined in: [common.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L40)
+Defined in: [packages/contracts/src/common.ts:40](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L40)
 
 ---
 
@@ -507,7 +507,7 @@ Defined in: [common.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **PublishedToolAnnotations** = `z.infer`\<_typeof_ [`PublishedToolAnnotationsSchema`](#publishedtoolannotationsschema)>\>
 
-Defined in: [tool.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L164)
+Defined in: [packages/contracts/src/tool.ts:164](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L164)
 
 ---
 
@@ -515,7 +515,7 @@ Defined in: [tool.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **PublishedToolDefinition** = `z.infer`\<_typeof_ [`PublishedToolDefinitionSchema`](#publishedtooldefinitionschema)>\>
 
-Defined in: [tool.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L200)
+Defined in: [packages/contracts/src/tool.ts:200](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L200)
 
 ---
 
@@ -523,7 +523,7 @@ Defined in: [tool.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **PublishedToolMetadata** = `z.infer`\<_typeof_ [`PublishedToolMetadataSchema`](#publishedtoolmetadataschema)>\>
 
-Defined in: [tool.ts:173](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L173)
+Defined in: [packages/contracts/src/tool.ts:173](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L173)
 
 ---
 
@@ -531,7 +531,7 @@ Defined in: [tool.ts:173](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **ReachResult** = `z.infer`\<_typeof_ [`ReachResultSchema`](#reachresultschema)>\>
 
-Defined in: [capability.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L211)
+Defined in: [packages/contracts/src/capability.ts:212](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L212)
 
 ---
 
@@ -539,7 +539,7 @@ Defined in: [capability.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main
 
 > **ReachSummary** = `z.infer`\<_typeof_ [`ReachSummarySchema`](#reachsummaryschema)>\>
 
-Defined in: [card.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/card.ts#L49)
+Defined in: [packages/contracts/src/card.ts:49](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/card.ts#L49)
 
 ---
 
@@ -547,7 +547,7 @@ Defined in: [card.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **ReachUnavailableReason** = `z.infer`\<_typeof_ [`ReachUnavailableReasonSchema`](#reachunavailablereasonschema)>\>
 
-Defined in: [capability.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L196)
+Defined in: [packages/contracts/src/capability.ts:197](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L197)
 
 ---
 
@@ -555,7 +555,7 @@ Defined in: [capability.ts:196](https://github.com/Aicoo-Team/SharedOS/blob/main
 
 > **RemoteExecutionRequest** = `z.infer`\<_typeof_ [`RemoteExecutionRequestSchema`](#remoteexecutionrequestschema)>\>
 
-Defined in: [http.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L31)
+Defined in: [packages/contracts/src/http.ts:31](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L31)
 
 ---
 
@@ -563,7 +563,7 @@ Defined in: [http.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **RemoteResourceOperation** = `z.infer`\<_typeof_ [`RemoteResourceOperationSchema`](#remoteresourceoperationschema)>\>
 
-Defined in: [http.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L24)
+Defined in: [packages/contracts/src/http.ts:24](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L24)
 
 ---
 
@@ -571,7 +571,7 @@ Defined in: [http.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **ReplayKey** = `z.infer`\<_typeof_ [`ReplayKeySchema`](#replaykeyschema)>\>
 
-Defined in: [replay.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/replay.ts#L15)
+Defined in: [packages/contracts/src/replay.ts:16](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/replay.ts#L16)
 
 ---
 
@@ -579,7 +579,7 @@ Defined in: [replay.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **ReplayRecord** = `z.infer`\<_typeof_ [`ReplayRecordSchema`](#replayrecordschema)>\>
 
-Defined in: [replay.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/replay.ts#L36)
+Defined in: [packages/contracts/src/replay.ts:57](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/replay.ts#L57)
 
 ---
 
@@ -587,7 +587,7 @@ Defined in: [replay.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **ResourceOperation** = `z.infer`\<_typeof_ [`ResourceOperationSchema`](#resourceoperationschema)>\>
 
-Defined in: [resource.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/resource.ts#L21)
+Defined in: [packages/contracts/src/resource.ts:21](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/resource.ts#L21)
 
 ---
 
@@ -595,7 +595,7 @@ Defined in: [resource.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/pa
 
 > **ResourceReach** = `z.infer`\<_typeof_ [`ResourceReachSchema`](#resourcereachschema)>\>
 
-Defined in: [capability.ts:177](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L177)
+Defined in: [packages/contracts/src/capability.ts:178](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L178)
 
 ---
 
@@ -603,7 +603,7 @@ Defined in: [capability.ts:177](https://github.com/Aicoo-Team/SharedOS/blob/main
 
 > **ResourceRef** = `z.infer`\<_typeof_ [`ResourceRefSchema`](#resourcerefschema)>\>
 
-Defined in: [capability.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L35)
+Defined in: [packages/contracts/src/capability.ts:35](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L35)
 
 ---
 
@@ -611,7 +611,7 @@ Defined in: [capability.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/
 
 > **ResourceResult** = `z.infer`\<_typeof_ [`ResourceResultSchema`](#resourceresultschema)>\>
 
-Defined in: [resource.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/resource.ts#L44)
+Defined in: [packages/contracts/src/resource.ts:44](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/resource.ts#L44)
 
 ---
 
@@ -619,7 +619,7 @@ Defined in: [resource.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/pa
 
 > **RuntimeEvent** = `z.infer`\<_typeof_ [`RuntimeEventSchema`](#runtimeeventschema)>\>
 
-Defined in: [runtime.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L27)
+Defined in: [packages/contracts/src/runtime.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L27)
 
 ---
 
@@ -627,7 +627,7 @@ Defined in: [runtime.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > **RuntimeManifest** = `z.infer`\<_typeof_ [`RuntimeManifestSchema`](#runtimemanifestschema)>\>
 
-Defined in: [runtime.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L17)
+Defined in: [packages/contracts/src/runtime.ts:17](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L17)
 
 ---
 
@@ -635,7 +635,7 @@ Defined in: [runtime.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > **RuntimeTurnOutcome** = `z.infer`\<_typeof_ [`RuntimeTurnOutcomeSchema`](#runtimeturnoutcomeschema)>\>
 
-Defined in: [runtime.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L59)
+Defined in: [packages/contracts/src/runtime.ts:59](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L59)
 
 ---
 
@@ -643,7 +643,7 @@ Defined in: [runtime.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > **ServiceAddress** = `z.infer`\<_typeof_ [`ServiceAddressSchema`](#serviceaddressschema)>\>
 
-Defined in: [address.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/address.ts#L23)
+Defined in: [packages/contracts/src/address.ts:23](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/address.ts#L23)
 
 ---
 
@@ -651,7 +651,7 @@ Defined in: [address.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > **SharedOSApiErrorCode** = _typeof_ [`SHAREDOS_API_ERROR_CODES`](#sharedos_api_error_codes)\[`number`\]
 
-Defined in: [http.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L60)
+Defined in: [packages/contracts/src/http.ts:60](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L60)
 
 ---
 
@@ -659,7 +659,7 @@ Defined in: [http.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **SharedOSApiErrorResponse** = `z.infer`\<_typeof_ [`SharedOSApiErrorResponseSchema`](#sharedosapierrorresponseschema)>\>
 
-Defined in: [http.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L73)
+Defined in: [packages/contracts/src/http.ts:73](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L73)
 
 ---
 
@@ -667,7 +667,7 @@ Defined in: [http.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **SharedOSHealth** = `z.infer`\<_typeof_ [`SharedOSHealthSchema`](#sharedoshealthschema)>\>
 
-Defined in: [http.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L39)
+Defined in: [packages/contracts/src/http.ts:39](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L39)
 
 ---
 
@@ -675,7 +675,7 @@ Defined in: [http.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **SharedOSHttpMethod** = `"GET"` \| `"POST"` \| `"PUT"`
 
-Defined in: [http.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L86)
+Defined in: [packages/contracts/src/http.ts:86](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L86)
 
 ---
 
@@ -683,7 +683,7 @@ Defined in: [http.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **SharedOSRouteName** = keyof _typeof_ [`SHAREDOS_ROUTES`](#sharedos_routes)
 
-Defined in: [http.ts:153](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L153)
+Defined in: [packages/contracts/src/http.ts:153](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L153)
 
 ---
 
@@ -691,7 +691,7 @@ Defined in: [http.ts:153](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **SharedOSToolCatalog** = `z.infer`\<_typeof_ [`SharedOSToolCatalogSchema`](#sharedostoolcatalogschema)>\>
 
-Defined in: [tool.ts:237](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L237)
+Defined in: [packages/contracts/src/tool.ts:237](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L237)
 
 ---
 
@@ -699,7 +699,7 @@ Defined in: [tool.ts:237](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **Timestamp** = `z.infer`\<_typeof_ [`TimestampSchema`](#timestampschema)>\>
 
-Defined in: [common.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L59)
+Defined in: [packages/contracts/src/common.ts:59](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L59)
 
 ---
 
@@ -707,7 +707,7 @@ Defined in: [common.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > **ToolAnnotations** = `z.infer`\<_typeof_ [`ToolAnnotationsSchema`](#toolannotationsschema)>\>
 
-Defined in: [tool.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L108)
+Defined in: [packages/contracts/src/tool.ts:108](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L108)
 
 ---
 
@@ -715,7 +715,7 @@ Defined in: [tool.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **ToolCall** = `z.infer`\<_typeof_ [`ToolCallSchema`](#toolcallschema)>\>
 
-Defined in: [tool.ts:344](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L344)
+Defined in: [packages/contracts/src/tool.ts:344](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L344)
 
 ---
 
@@ -723,7 +723,7 @@ Defined in: [tool.ts:344](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **ToolDefinition** = `z.infer`\<_typeof_ [`ToolDefinitionSchema`](#tooldefinitionschema)>\>
 
-Defined in: [tool.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L142)
+Defined in: [packages/contracts/src/tool.ts:142](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L142)
 
 ---
 
@@ -731,7 +731,7 @@ Defined in: [tool.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **ToolName** = `z.infer`\<_typeof_ [`ToolNameSchema`](#toolnameschema)>\>
 
-Defined in: [tool.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L35)
+Defined in: [packages/contracts/src/tool.ts:35](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L35)
 
 ---
 
@@ -739,7 +739,7 @@ Defined in: [tool.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **ToolNamespace** = `z.infer`\<_typeof_ [`ToolNamespaceSchema`](#toolnamespaceschema)>\>
 
-Defined in: [tool.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L39)
+Defined in: [packages/contracts/src/tool.ts:39](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L39)
 
 ---
 
@@ -747,7 +747,7 @@ Defined in: [tool.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **ToolNamespaceCatalog** = `z.infer`\<_typeof_ [`ToolNamespaceCatalogSchema`](#toolnamespacecatalogschema)>\>
 
-Defined in: [tool.ts:332](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L332)
+Defined in: [packages/contracts/src/tool.ts:332](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L332)
 
 ---
 
@@ -755,7 +755,7 @@ Defined in: [tool.ts:332](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **ToolNamespaceDescriptor** = `z.infer`\<_typeof_ [`ToolNamespaceDescriptorSchema`](#toolnamespacedescriptorschema)>\>
 
-Defined in: [tool.ts:294](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L294)
+Defined in: [packages/contracts/src/tool.ts:294](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L294)
 
 ---
 
@@ -763,7 +763,7 @@ Defined in: [tool.ts:294](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **ToolNamespaceUpdate** = `z.infer`\<_typeof_ [`ToolNamespaceUpdateSchema`](#toolnamespaceupdateschema)>\>
 
-Defined in: [tool.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L98)
+Defined in: [packages/contracts/src/tool.ts:98](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L98)
 
 ---
 
@@ -771,7 +771,7 @@ Defined in: [tool.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **ToolPolicy** = `z.infer`\<_typeof_ [`ToolPolicySchema`](#toolpolicyschema)>\>
 
-Defined in: [tool.ts:275](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L275)
+Defined in: [packages/contracts/src/tool.ts:275](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L275)
 
 ---
 
@@ -779,7 +779,7 @@ Defined in: [tool.ts:275](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **ToolReadWrite** = `z.infer`\<_typeof_ [`ToolReadWriteSchema`](#toolreadwriteschema)>\>
 
-Defined in: [tool.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L50)
+Defined in: [packages/contracts/src/tool.ts:50](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L50)
 
 ---
 
@@ -787,7 +787,7 @@ Defined in: [tool.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > **ToolResult** = `z.infer`\<_typeof_ [`ToolResultSchema`](#toolresultschema)>\>
 
-Defined in: [tool.ts:368](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L368)
+Defined in: [packages/contracts/src/tool.ts:368](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L368)
 
 ---
 
@@ -795,7 +795,7 @@ Defined in: [tool.ts:368](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > **ToolSource** = `z.infer`\<_typeof_ [`ToolSourceSchema`](#toolsourceschema)>\>
 
-Defined in: [tool.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L46)
+Defined in: [packages/contracts/src/tool.ts:46](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L46)
 
 ## Variables
 
@@ -803,7 +803,7 @@ Defined in: [tool.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > `const` **AccessContextSchema**: `ZodObject`\<\{ `actor`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `authority`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `enabledToolNamespaces`: `ZodEffects`\<`ZodArray`\<`ZodString`, `"many"`>\>, `string`[], `string`[]\>; `namespaceId`: `ZodString`; `now`: `ZodString`; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `purpose`: `ZodString`; `traceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}, \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}\>
 
-Defined in: [access.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/access.ts#L17)
+Defined in: [packages/contracts/src/access.ts:17](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/access.ts#L17)
 
 The identity, purpose, time, and tool-namespace inputs to a permission
 decision.
@@ -818,7 +818,7 @@ caller cannot present, extend, or replay authority by constructing a context.
 
 > `const` **AddressSchema**: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>
 
-Defined in: [address.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/address.ts#L26)
+Defined in: [packages/contracts/src/address.ts:26](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/address.ts#L26)
 
 A structured protocol address; no string suffix or prefix parsing is needed.
 
@@ -828,7 +828,7 @@ A structured protocol address; no string suffix or prefix parsing is needed.
 
 > `const` **AGENT\_CARD\_VIEWS**: readonly \[`"reach"`, `"identity"`, `"namespaces"`\]
 
-Defined in: [card.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/card.ts#L27)
+Defined in: [packages/contracts/src/card.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/card.ts#L27)
 
 The named shapes an agent card is served in.
 
@@ -855,7 +855,7 @@ Every view is bounded the same way. See [AgentCardSchema](#agentcardschema).
 
 > `const` **AgentAddressSchema**: `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>
 
-Defined in: [address.ts:10](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/address.ts#L10)
+Defined in: [packages/contracts/src/address.ts:10](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/address.ts#L10)
 
 ---
 
@@ -863,7 +863,7 @@ Defined in: [address.ts:10](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > `const` **AgentCardSchema**: `ZodDiscriminatedUnion`\<`"view"`, \[`ZodObject`\<\{ `namespaceId`: `ZodString`; `reach`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `namespace`: `ZodString`; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `readAt`: `ZodString`; `subject`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `view`: `ZodLiteral`\<`"reach"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespaceId`: `string`; `reach`: `object`[]; `readAt`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `view`: `"reach"`; \}, \{ `namespaceId`: `string`; `reach`: `object`[]; `readAt`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `view`: `"reach"`; \}\>, `ZodObject`\<\{ `namespaceId`: `ZodString`; `readAt`: `ZodString`; `subject`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `view`: `ZodLiteral`\<`"identity"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespaceId`: `string`; `readAt`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `view`: `"identity"`; \}, \{ `namespaceId`: `string`; `readAt`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `view`: `"identity"`; \}\>, `ZodObject`\<\{ `namespaceId`: `ZodString`; `namespaces`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `entries`: `ZodNumber`; `namespace`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `entries`: `number`; `namespace`: `string`; \}, \{ `actions`: `string`[]; `entries`: `number`; `namespace`: `string`; \}\>, `"many"`>\>; `readAt`: `ZodString`; `subject`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `view`: `ZodLiteral`\<`"namespaces"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespaceId`: `string`; `namespaces`: `object`[]; `readAt`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `view`: `"namespaces"`; \}, \{ `namespaceId`: `string`; `namespaces`: `object`[]; `readAt`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `view`: `"namespaces"`; \}\>\]\>
 
-Defined in: [card.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/card.ts#L89)
+Defined in: [packages/contracts/src/card.ts:89](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/card.ts#L89)
 
 The kernel's description of one agent: identity, computed reach, and nothing
 a product would want to put beside them.
@@ -893,15 +893,15 @@ not. A host composes those around this answer. See ADR 0021.
 
 > `const` **AgentCardViewSchema**: `ZodEnum`\<\[`"reach"`, `"identity"`, `"namespaces"`\]\>
 
-Defined in: [card.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/card.ts#L29)
+Defined in: [packages/contracts/src/card.ts:29](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/card.ts#L29)
 
 ---
 
 ### AuditEventSchema
 
-> `const` **AuditEventSchema**: `ZodObject`\<\{ `action`: `ZodOptional`\<`ZodString`>\>; `actor`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `at`: `ZodString`; `authority`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `authorityHash`: `ZodOptional`\<`ZodString`>\>; `cause`: `ZodOptional`\<`ZodString`>\>; `consumed`: `ZodOptional`\<`ZodBoolean`>\>; `endedBy`: `ZodOptional`\<`ZodEnum`\<\[`"envelope"`, `"runtime"`\]\>\>; `failClosed`: `ZodOptional`\<`ZodBoolean`>\>; `grantId`: `ZodOptional`\<`ZodString`>\>; `id`: `ZodString`; `messageId`: `ZodOptional`\<`ZodString`>\>; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `namespaceId`: `ZodString`; `operationId`: `ZodOptional`\<`ZodString`>\>; `outcome`: `ZodEnum`\<\[`"allowed"`, `"denied"`, `"succeeded"`, `"failed"`, `"escalated"`, `"interrupted"`\]\>; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `purpose`: `ZodString`; `reason`: `ZodOptional`\<`ZodString`>\>; `receiver`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>\>; `requestedAuthority`: `ZodOptional`\<`ZodObject`\<\{ `capabilities`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<...\>; `path`: `ZodArray`\<..., ...\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `constraints`: `ZodOptional`\<`ZodEffects`\<`ZodObject`\<\{ `delegationDepth`: `ZodOptional`\<`ZodNumber`>\>; `expiresAt`: `ZodOptional`\<`ZodString`>\>; `maxUses`: `ZodOptional`\<`ZodNumber`>\>; `notBefore`: `ZodOptional`\<`ZodString`>\>; `purposes`: `ZodOptional`\<`ZodArray`\<..., ...\>\>; \}, `"strict"`, `ZodTypeAny`, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: ...[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: ...[]; \}\>, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}\>\>; `id`: `ZodString`; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `namespaceId`: `ZodString`; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `purpose`: `ZodString`; `requestedAt`: `ZodString`; `requester`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}, \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}\>\>; `resource`: `ZodOptional`\<`ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<...\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<...\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<...\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<...\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>\>; `source`: `ZodOptional`\<`ZodEnum`\<\[`"kernel"`, `"envelope"`\]\>\>; `tool`: `ZodOptional`\<`ZodString`>\>; `traceId`: `ZodString`; `type`: `ZodEnum`\<\[`"authority.resolved"`, `"authorization.checked"`, `"escalation.requested"`, `"escalation.auto_decided"`, `"resource.invoked"`, `"tool.catalog.listed"`, `"tool.namespace.catalog.listed"`, `"tool.namespace.selection.updated"`, `"tool.invoked"`, `"message.sent"`, `"turn.ended"`\]\>; `version`: `ZodLiteral`\<`"2"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `action?`: `string`; `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `at`: `string`; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authorityHash?`: `string`; `cause?`: `string`; `consumed?`: `boolean`; `endedBy?`: `"envelope"` \| `"runtime"`; `failClosed?`: `boolean`; `grantId?`: `string`; `id`: `string`; `messageId?`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `operationId?`: `string`; `outcome`: `"succeeded"` \| `"denied"` \| `"failed"` \| `"allowed"` \| `"escalated"` \| `"interrupted"`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `reason?`: `string`; `receiver?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `resource?`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `source?`: `"kernel"` \| `"envelope"`; `tool?`: `string`; `traceId`: `string`; `type`: `"authority.resolved"` \| `"authorization.checked"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`; `version`: `"2"`; \}, \{ `action?`: `string`; `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `at`: `string`; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authorityHash?`: `string`; `cause?`: `string`; `consumed?`: `boolean`; `endedBy?`: `"envelope"` \| `"runtime"`; `failClosed?`: `boolean`; `grantId?`: `string`; `id`: `string`; `messageId?`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `operationId?`: `string`; `outcome`: `"succeeded"` \| `"denied"` \| `"failed"` \| `"allowed"` \| `"escalated"` \| `"interrupted"`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `reason?`: `string`; `receiver?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `resource?`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `source?`: `"kernel"` \| `"envelope"`; `tool?`: `string`; `traceId`: `string`; `type`: `"authority.resolved"` \| `"authorization.checked"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`; `version`: `"2"`; \}\>
+> `const` **AuditEventSchema**: `ZodObject`\<\{ `action`: `ZodOptional`\<`ZodString`>\>; `actor`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `at`: `ZodString`; `authority`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `authorityHash`: `ZodOptional`\<`ZodString`>\>; `cause`: `ZodOptional`\<`ZodString`>\>; `consumed`: `ZodOptional`\<`ZodBoolean`>\>; `endedBy`: `ZodOptional`\<`ZodEnum`\<\[`"envelope"`, `"runtime"`\]\>\>; `failClosed`: `ZodOptional`\<`ZodBoolean`>\>; `grantId`: `ZodOptional`\<`ZodString`>\>; `id`: `ZodString`; `messageId`: `ZodOptional`\<`ZodString`>\>; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `namespaceId`: `ZodString`; `operationId`: `ZodOptional`\<`ZodString`>\>; `outcome`: `ZodEnum`\<\[`"allowed"`, `"denied"`, `"succeeded"`, `"failed"`, `"escalated"`, `"interrupted"`\]\>; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `purpose`: `ZodString`; `reason`: `ZodOptional`\<`ZodString`>\>; `receiver`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>\>; `requestedAuthority`: `ZodOptional`\<`ZodObject`\<\{ `capabilities`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<...\>; `path`: `ZodArray`\<..., ...\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `constraints`: `ZodOptional`\<`ZodEffects`\<`ZodObject`\<\{ `delegationDepth`: `ZodOptional`\<`ZodNumber`>\>; `expiresAt`: `ZodOptional`\<`ZodString`>\>; `maxUses`: `ZodOptional`\<`ZodNumber`>\>; `notBefore`: `ZodOptional`\<`ZodString`>\>; `purposes`: `ZodOptional`\<`ZodArray`\<..., ...\>\>; \}, `"strict"`, `ZodTypeAny`, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: ...[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: ...[]; \}\>, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}\>\>; `id`: `ZodString`; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `namespaceId`: `ZodString`; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `purpose`: `ZodString`; `requestedAt`: `ZodString`; `requester`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}, \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}\>\>; `resource`: `ZodOptional`\<`ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<...\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<...\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<...\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<...\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>\>; `source`: `ZodOptional`\<`ZodEnum`\<\[`"kernel"`, `"envelope"`\]\>\>; `tool`: `ZodOptional`\<`ZodString`>\>; `traceId`: `ZodString`; `type`: `ZodEnum`\<\[`"authority.resolved"`, `"authorization.checked"`, `"grant.usage.released"`, `"escalation.requested"`, `"escalation.auto_decided"`, `"resource.invoked"`, `"tool.catalog.listed"`, `"tool.namespace.catalog.listed"`, `"tool.namespace.selection.updated"`\]\>; `usageState`: `ZodOptional`\<`ZodEnum`\<\[`"reserved"`, `"admitted"`, `"released"`\]\>\>; `version`: `ZodLiteral`\<`"2"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `action?`: `string`; `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `at`: `string`; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authorityHash?`: `string`; `cause?`: `string`; `consumed?`: `boolean`; `endedBy?`: `"envelope"` \| `"runtime"`; `failClosed?`: `boolean`; `grantId?`: `string`; `id`: `string`; `messageId?`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `operationId?`: `string`; `outcome`: `"succeeded"` \| `"denied"` \| `"failed"` \| `"allowed"` \| `"escalated"` \| `"interrupted"`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `reason?`: `string`; `receiver?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `resource?`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `source?`: `"kernel"` \| `"envelope"`; `tool?`: `string`; `traceId`: `string`; `type`: `"authority.resolved"` \| `"authorization.checked"` \| `"grant.usage.released"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`; `usageState?`: `"reserved"` \| `"admitted"` \| `"released"`; `version`: `"2"`; \}, \{ `action?`: `string`; `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `at`: `string`; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authorityHash?`: `string`; `cause?`: `string`; `consumed?`: `boolean`; `endedBy?`: `"envelope"` \| `"runtime"`; `failClosed?`: `boolean`; `grantId?`: `string`; `id`: `string`; `messageId?`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `operationId?`: `string`; `outcome`: `"succeeded"` \| `"denied"` \| `"failed"` \| `"allowed"` \| `"escalated"` \| `"interrupted"`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `reason?`: `string`; `receiver?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `resource?`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `source?`: `"kernel"` \| `"envelope"`; `tool?`: `string`; `traceId`: `string`; `type`: `"authority.resolved"` \| `"authorization.checked"` \| `"grant.usage.released"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`; `usageState?`: `"reserved"` \| `"admitted"` \| `"released"`; `version`: `"2"`; \}\>
 
-Defined in: [audit.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/audit.ts#L89)
+Defined in: [packages/contracts/src/audit.ts:90](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/audit.ts#L90)
 
 One audit record, the durable shape a host persists.
 
@@ -927,9 +927,9 @@ may rely on per event type.
 
 ### AuditEventTypeSchema
 
-> `const` **AuditEventTypeSchema**: `ZodEnum`\<\[`"authority.resolved"`, `"authorization.checked"`, `"escalation.requested"`, `"escalation.auto_decided"`, `"resource.invoked"`, `"tool.catalog.listed"`, `"tool.namespace.catalog.listed"`, `"tool.namespace.selection.updated"`, `"tool.invoked"`, `"message.sent"`, `"turn.ended"`\]\>
+> `const` **AuditEventTypeSchema**: `ZodEnum`\<\[`"authority.resolved"`, `"authorization.checked"`, `"grant.usage.released"`, `"escalation.requested"`, `"escalation.auto_decided"`, `"resource.invoked"`, `"tool.catalog.listed"`, `"tool.namespace.catalog.listed"`, `"tool.namespace.selection.updated"`\]\>
 
-Defined in: [audit.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/audit.ts#L8)
+Defined in: [packages/contracts/src/audit.ts:8](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/audit.ts#L8)
 
 ---
 
@@ -937,7 +937,7 @@ Defined in: [audit.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > `const` **AuditOutcomeSchema**: `ZodEnum`\<\[`"allowed"`, `"denied"`, `"succeeded"`, `"failed"`, `"escalated"`, `"interrupted"`\]\>
 
-Defined in: [audit.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/audit.ts#L46)
+Defined in: [packages/contracts/src/audit.ts:47](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/audit.ts#L47)
 
 `escalated` is its own outcome, not a denial.
 
@@ -958,7 +958,7 @@ interrupted call for one of those would retry something already done.
 
 > `const` **AuditSourceSchema**: `ZodEnum`\<\[`"kernel"`, `"envelope"`\]\>
 
-Defined in: [audit.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/audit.ts#L65)
+Defined in: [packages/contracts/src/audit.ts:66](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/audit.ts#L66)
 
 Which enforcement boundary performed or refused what an event records.
 
@@ -974,7 +974,7 @@ code says what was refused, and this says who refused it (ADR 0023).
 
 > `const` **AuthorizationDecisionSchema**: `ZodObject`\<\{ `allowed`: `ZodBoolean`; `matchedGrantId`: `ZodOptional`\<`ZodString`>\>; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `reasonCode`: `ZodString`; `requiredAuthority`: `ZodOptional`\<`ZodObject`\<\{ `capabilities`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<...\>; `path`: `ZodArray`\<..., ...\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `constraints`: `ZodOptional`\<`ZodEffects`\<`ZodObject`\<\{ `delegationDepth`: `ZodOptional`\<`ZodNumber`>\>; `expiresAt`: `ZodOptional`\<`ZodString`>\>; `maxUses`: `ZodOptional`\<`ZodNumber`>\>; `notBefore`: `ZodOptional`\<`ZodString`>\>; `purposes`: `ZodOptional`\<`ZodArray`\<..., ...\>\>; \}, `"strict"`, `ZodTypeAny`, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: ...[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: ...[]; \}\>, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}\>\>; `id`: `ZodString`; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `namespaceId`: `ZodString`; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `purpose`: `ZodString`; `requestedAt`: `ZodString`; `requester`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}, \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}\>\>; \}, `"strict"`, `ZodTypeAny`, \{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}, \{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [access.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/access.ts#L33)
+Defined in: [packages/contracts/src/access.ts:33](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/access.ts#L33)
 
 A portable explanation of one authorization check.
 
@@ -984,7 +984,7 @@ A portable explanation of one authorization check.
 
 > `const` **CapabilityConstraintsSchema**: `ZodEffects`\<`ZodObject`\<\{ `delegationDepth`: `ZodOptional`\<`ZodNumber`>\>; `expiresAt`: `ZodOptional`\<`ZodString`>\>; `maxUses`: `ZodOptional`\<`ZodNumber`>\>; `notBefore`: `ZodOptional`\<`ZodString`>\>; `purposes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; \}, `"strict"`, `ZodTypeAny`, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}\>, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}\>
 
-Defined in: [capability.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L48)
+Defined in: [packages/contracts/src/capability.ts:48](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L48)
 
 ---
 
@@ -992,7 +992,7 @@ Defined in: [capability.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/
 
 > `const` **CapabilityGrantSchema**: `ZodEffects`\<`ZodObject`\<\{ `capabilities`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[..., ..., ..., ...\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `constraints`: `ZodEffects`\<`ZodObject`\<\{ `delegationDepth`: `ZodOptional`\<`ZodNumber`>\>; `expiresAt`: `ZodOptional`\<`ZodString`>\>; `maxUses`: `ZodOptional`\<`ZodNumber`>\>; `notBefore`: `ZodOptional`\<`ZodString`>\>; `purposes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; \}, `"strict"`, `ZodTypeAny`, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}\>, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}\>; `id`: `ZodString`; `issuedAt`: `ZodString`; `issuer`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `namespaceId`: `ZodString`; `parentGrantId`: `ZodOptional`\<`ZodString`>\>; `revokedAt`: `ZodOptional`\<`ZodString`>\>; `subject`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}, \{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}\>, \{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}, \{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}\>
 
-Defined in: [capability.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L118)
+Defined in: [packages/contracts/src/capability.ts:119](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L119)
 
 Authority issued to one subject and bounded by explicit constraints.
 
@@ -1011,7 +1011,7 @@ issuing store at every decision instead.
 
 > `const` **CapabilityRequestSchema**: `ZodObject`\<\{ `capabilities`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `constraints`: `ZodOptional`\<`ZodEffects`\<`ZodObject`\<\{ `delegationDepth`: `ZodOptional`\<`ZodNumber`>\>; `expiresAt`: `ZodOptional`\<`ZodString`>\>; `maxUses`: `ZodOptional`\<`ZodNumber`>\>; `notBefore`: `ZodOptional`\<`ZodString`>\>; `purposes`: `ZodOptional`\<`ZodArray`\<`ZodString`, `"many"`>>\>\>; \}, `"strict"`, `ZodTypeAny`, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}\>, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}\>\>; `id`: `ZodString`; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `namespaceId`: `ZodString`; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `purpose`: `ZodString`; `requestedAt`: `ZodString`; `requester`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}, \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}\>
 
-Defined in: [capability.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L90)
+Defined in: [packages/contracts/src/capability.ts:91](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L91)
 
 A request for authority. A request is not itself proof of authority.
 
@@ -1035,7 +1035,7 @@ the identifier survives across turns.
 
 > `const` **CapabilityRequirementSchema**: `ZodObject`\<\{ `action`: `ZodString`; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>; \}, `"strict"`, `ZodTypeAny`, \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}, \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}\>
 
-Defined in: [capability.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L145)
+Defined in: [packages/contracts/src/capability.ts:146](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L146)
 
 The exact capability a tool invocation requires.
 
@@ -1045,7 +1045,7 @@ The exact capability a tool invocation requires.
 
 > `const` **CapabilitySchema**: `ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}\>
 
-Defined in: [capability.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L38)
+Defined in: [packages/contracts/src/capability.ts:38](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L38)
 
 A positive capability. SharedOS is deny-by-default when no grant matches.
 
@@ -1055,7 +1055,7 @@ A positive capability. SharedOS is deny-by-default when no grant matches.
 
 > `const` **EnabledToolNamespacesSchema**: `ZodEffects`\<`ZodArray`\<`ZodString`, `"many"`>\>, `string`[], `string`[]\>
 
-Defined in: [tool.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L52)
+Defined in: [packages/contracts/src/tool.ts:52](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L52)
 
 ---
 
@@ -1063,7 +1063,7 @@ Defined in: [tool.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > `const` **EscalationSchema**: `ZodObject`\<\{ `reason`: `ZodString`; `requestedAt`: `ZodString`; `requestedAuthority`: `ZodOptional`\<`ZodObject`\<\{ `capabilities`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<...\>; `path`: `ZodArray`\<..., ...\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `constraints`: `ZodOptional`\<`ZodEffects`\<`ZodObject`\<\{ `delegationDepth`: `ZodOptional`\<`ZodNumber`>\>; `expiresAt`: `ZodOptional`\<`ZodString`>\>; `maxUses`: `ZodOptional`\<`ZodNumber`>\>; `notBefore`: `ZodOptional`\<`ZodString`>\>; `purposes`: `ZodOptional`\<`ZodArray`\<..., ...\>\>; \}, `"strict"`, `ZodTypeAny`, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: ...[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: ...[]; \}\>, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}\>\>; `id`: `ZodString`; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `namespaceId`: `ZodString`; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `purpose`: `ZodString`; `requestedAt`: `ZodString`; `requester`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}, \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}\>\>; `reviewer`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `status`: `ZodLiteral`\<`"pending"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}, \{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}\>
 
-Defined in: [execution.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L70)
+Defined in: [packages/contracts/src/execution.ts:70](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L70)
 
 A stopped turn awaiting a human decision.
 
@@ -1082,7 +1082,7 @@ runs on behalf of. A host with a real review roster substitutes its own.
 
 > `const` **ExecutionEventSchema**: `ZodObject`\<\{ `data`: `ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>\>; `eventId`: `ZodString`; `executionId`: `ZodString`; `occurredAt`: `ZodString`; `sequence`: `ZodNumber`; `traceId`: `ZodString`; `type`: `ZodString`; `version`: `ZodLiteral`\<`"2"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `data`: [`JsonValue`](#jsonvalue); `eventId`: `string`; `executionId`: `string`; `occurredAt`: `string`; `sequence`: `number`; `traceId`: `string`; `type`: `string`; `version`: `"2"`; \}, \{ `data`: [`JsonValue`](#jsonvalue); `eventId`: `string`; `executionId`: `string`; `occurredAt`: `string`; `sequence`: `number`; `traceId`: `string`; `type`: `string`; `version`: `"2"`; \}\>
 
-Defined in: [execution.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L43)
+Defined in: [packages/contracts/src/execution.ts:43](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L43)
 
 An append-only event emitted while executing a request.
 
@@ -1092,7 +1092,7 @@ An append-only event emitted while executing a request.
 
 > `const` **ExecutionOptionsSchema**: `ZodObject`\<\{ `maxSteps`: `ZodOptional`\<`ZodNumber`>\>; `maxToolCalls`: `ZodOptional`\<`ZodNumber`>\>; `timeoutMs`: `ZodOptional`\<`ZodNumber`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `maxSteps?`: `number`; `maxToolCalls?`: `number`; `timeoutMs?`: `number`; \}, \{ `maxSteps?`: `number`; `maxToolCalls?`: `number`; `timeoutMs?`: `number`; \}\>
 
-Defined in: [execution.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L15)
+Defined in: [packages/contracts/src/execution.ts:15](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L15)
 
 ---
 
@@ -1100,7 +1100,7 @@ Defined in: [execution.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/p
 
 > `const` **ExecutionRequestSchema**: `ZodObject`\<\{ `agent`: `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>; `context`: `ZodObject`\<\{ `actor`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `authority`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `enabledToolNamespaces`: `ZodEffects`\<`ZodArray`\<`ZodString`, `"many"`>\>, `string`[], `string`[]\>; `namespaceId`: `ZodString`; `now`: `ZodString`; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `purpose`: `ZodString`; `traceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}, \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}\>; `executionId`: `ZodString`; `message`: `ZodObject`\<\{ `createdAt`: `ZodString`; `id`: `ZodString`; `payload`: `ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>\>; `provenance`: `ZodOptional`\<`ZodObject`\<\{ `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `parentIds`: `ZodArray`\<`ZodString`, `"many"`>\>; `source`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}, \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}\>\>; `purpose`: `ZodString`; `receiver`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `replyTo`: `ZodOptional`\<`ZodString`>\>; `sender`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `traceId`: `ZodString`; `version`: `ZodLiteral`\<`"2"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"2"`; \}, \{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"2"`; \}\>; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `options`: `ZodOptional`\<`ZodObject`\<\{ `maxSteps`: `ZodOptional`\<`ZodNumber`>\>; `maxToolCalls`: `ZodOptional`\<`ZodNumber`>\>; `timeoutMs`: `ZodOptional`\<`ZodNumber`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `maxSteps?`: `number`; `maxToolCalls?`: `number`; `timeoutMs?`: `number`; \}, \{ `maxSteps?`: `number`; `maxToolCalls?`: `number`; `timeoutMs?`: `number`; \}\>\>; `state`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `tools`: `ZodArray`\<`ZodEffects`\<`ZodObject`\<\{ `annotations`: `ZodOptional`\<`ZodObject`\<\{ `destructive`: `ZodOptional`\<`ZodBoolean`>\>; `idempotent`: `ZodOptional`\<`ZodBoolean`>\>; `readOnly`: `ZodOptional`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}, \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}\>\>; `description`: `ZodString`; `inputSchema`: `ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>\>; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `name`: `ZodString`; `namespace`: `ZodString`; `outputSchema`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `readWrite`: `ZodEnum`\<\[`"read"`, `"write"`\]\>; `requiredCapability`: `ZodObject`\<\{ `action`: `ZodString`; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<...\>; `path`: `ZodArray`\<..., ...\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}\>; \}, `"strict"`, `ZodTypeAny`, \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; \}, \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; \}\>; `source`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: [`JsonObject`](#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}; `source`: `string`; \}, \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: [`JsonObject`](#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}; `source`: `string`; \}\>, \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: [`JsonObject`](#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}; `source`: `string`; \}, \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: [`JsonObject`](#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}; `source`: `string`; \}\>, `"many"`>\>; `version`: `ZodLiteral`\<`"2"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agent`: \{ `agentId`: `string`; `kind`: `"agent"`; \}; `context`: \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}; `executionId`: `string`; `message`: \{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"2"`; \}; `metadata?`: [`JsonObject`](#jsonobject); `options?`: \{ `maxSteps?`: `number`; `maxToolCalls?`: `number`; `timeoutMs?`: `number`; \}; `state?`: [`JsonObject`](#jsonobject); `tools`: `object`[]; `version`: `"2"`; \}, \{ `agent`: \{ `agentId`: `string`; `kind`: `"agent"`; \}; `context`: \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}; `executionId`: `string`; `message`: \{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"2"`; \}; `metadata?`: [`JsonObject`](#jsonobject); `options?`: \{ `maxSteps?`: `number`; `maxToolCalls?`: `number`; `timeoutMs?`: `number`; \}; `state?`: [`JsonObject`](#jsonobject); `tools`: `object`[]; `version`: `"2"`; \}\>
 
-Defined in: [execution.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L26)
+Defined in: [packages/contracts/src/execution.ts:26](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L26)
 
 One permission-controlled agent turn. Tick scheduling stays with the host.
 
@@ -1110,7 +1110,7 @@ One permission-controlled agent turn. Tick scheduling stays with the host.
 
 > `const` **ExecutionResultSchema**: `ZodDiscriminatedUnion`\<`"status"`, \[`ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"2"`; \}, \{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"2"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"2"`; \}, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"2"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"2"`; \}, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"2"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"2"`; \}, \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"2"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: ...[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"2"`; \}, \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: ...[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"2"`; \}\>\]\>
 
-Defined in: [execution.ts:105](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L105)
+Defined in: [packages/contracts/src/execution.ts:105](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L105)
 
 ---
 
@@ -1118,7 +1118,7 @@ Defined in: [execution.ts:105](https://github.com/Aicoo-Team/SharedOS/blob/main/
 
 > `const` **GroupAddressSchema**: `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>
 
-Defined in: [address.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/address.ts#L15)
+Defined in: [packages/contracts/src/address.ts:15](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/address.ts#L15)
 
 ---
 
@@ -1126,7 +1126,7 @@ Defined in: [address.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > `const` **HumanAddressSchema**: `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>
 
-Defined in: [address.ts:5](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/address.ts#L5)
+Defined in: [packages/contracts/src/address.ts:5](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/address.ts#L5)
 
 ---
 
@@ -1134,7 +1134,7 @@ Defined in: [address.ts:5](https://github.com/Aicoo-Team/SharedOS/blob/main/pack
 
 > `const` **IdentifierSchema**: `ZodString`
 
-Defined in: [common.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L54)
+Defined in: [packages/contracts/src/common.ts:54](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L54)
 
 An opaque identifier. Callers choose its format; SharedOS only requires stability.
 
@@ -1144,7 +1144,7 @@ An opaque identifier. Callers choose its format; SharedOS only requires stabilit
 
 > `const` **JsonObjectSchema**: `z.ZodType`\<[`JsonObject`](#jsonobject)>\>
 
-Defined in: [json.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/json.ts#L27)
+Defined in: [packages/contracts/src/json.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/json.ts#L27)
 
 ---
 
@@ -1152,7 +1152,7 @@ Defined in: [json.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > `const` **JsonValueSchema**: `z.ZodType`\<[`JsonValue`](#jsonvalue)>\>
 
-Defined in: [json.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/json.ts#L16)
+Defined in: [packages/contracts/src/json.ts:16](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/json.ts#L16)
 
 Any value that can round-trip through JSON without custom serialization.
 In particular, this rejects undefined, bigint, Date, NaN, and Infinity.
@@ -1163,7 +1163,7 @@ In particular, this rejects undefined, bigint, Date, NaN, and Infinity.
 
 > `const` **MAX\_EXECUTION\_TIMEOUT\_MS**: `600000` = `600_000`
 
-Defined in: [execution.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L12)
+Defined in: [packages/contracts/src/execution.ts:12](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L12)
 
 ---
 
@@ -1171,7 +1171,7 @@ Defined in: [execution.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/p
 
 > `const` **MAX\_EXECUTION\_TOOL\_CALLS**: `10000` = `10_000`
 
-Defined in: [execution.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/execution.ts#L13)
+Defined in: [packages/contracts/src/execution.ts:13](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L13)
 
 ---
 
@@ -1179,7 +1179,7 @@ Defined in: [execution.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/p
 
 > `const` **MessageDeliveryResultSchema**: `ZodDiscriminatedUnion`\<`"status"`, \[`ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `messageId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \}, \{ `messageId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `messageId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \}, \{ `messageId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \}, \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}, \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>\]\>
 
-Defined in: [message.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/message.ts#L82)
+Defined in: [packages/contracts/src/message.ts:82](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/message.ts#L82)
 
 The transport-neutral outcome of submitting a message for delivery.
 
@@ -1189,7 +1189,7 @@ The transport-neutral outcome of submitting a message for delivery.
 
 > `const` **MessageEnvelopeSchema**: `ZodObject`\<\{ `createdAt`: `ZodString`; `id`: `ZodString`; `payload`: `ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>\>; `provenance`: `ZodOptional`\<`ZodObject`\<\{ `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `parentIds`: `ZodArray`\<`ZodString`, `"many"`>\>; `source`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}, \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}\>\>; `purpose`: `ZodString`; `receiver`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `replyTo`: `ZodOptional`\<`ZodString`>\>; `sender`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `traceId`: `ZodString`; `version`: `ZodLiteral`\<`"2"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"2"`; \}, \{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"2"`; \}\>
 
-Defined in: [message.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/message.ts#L27)
+Defined in: [packages/contracts/src/message.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/message.ts#L27)
 
 A message carries data and one host-bound purpose, never authority. Authority
 is supplied separately through AccessContext and evaluated at the point of use.
@@ -1200,7 +1200,7 @@ is supplied separately through AccessContext and evaluated at the point of use.
 
 > `const` **MessageProvenanceSchema**: `ZodObject`\<\{ `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `parentIds`: `ZodArray`\<`ZodString`, `"many"`>\>; `source`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}, \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}\>
 
-Defined in: [message.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/message.ts#L13)
+Defined in: [packages/contracts/src/message.ts:13](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/message.ts#L13)
 
 Hop provenance a host may attach to an envelope. It is host-owned metadata:
 the kernel checks its shape with the rest of the envelope, neither sets nor
@@ -1212,7 +1212,7 @@ reads it, and hands it to the transport as the host sent it.
 
 > `const` **MessageRequestArgumentsSchema**: `ZodObject`\<\{ `payload`: `ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>\>; `recipient`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>\>; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>\>; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `payload`: [`JsonValue`](#jsonvalue); `recipient`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}, \{ `payload`: [`JsonValue`](#jsonvalue); `recipient`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}\>
 
-Defined in: [message.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/message.ts#L66)
+Defined in: [packages/contracts/src/message.ts:66](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/message.ts#L66)
 
 The complete and intentionally narrow message input a model may author.
 
@@ -1222,7 +1222,7 @@ The complete and intentionally narrow message input a model may author.
 
 > `const` **PathSegmentSchema**: `ZodString`
 
-Defined in: [capability.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L15)
+Defined in: [packages/contracts/src/capability.ts:15](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L15)
 
 One opaque resource-path segment.
 
@@ -1237,7 +1237,7 @@ symlink escapes.
 
 > `const` **PROTOCOL\_VERSION**: `"2"`
 
-Defined in: [common.ts:7](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L7)
+Defined in: [packages/contracts/src/common.ts:7](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L7)
 
 The wire protocol version implemented by this package, as the one value
 every request, event, result, envelope and manifest stamps on itself.
@@ -1248,7 +1248,7 @@ every request, event, result, envelope and manifest stamps on itself.
 
 > `const` **ProtocolErrorSchema**: `ZodObject`\<\{ `code`: `ZodString`; `details`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `message`: `ZodString`; `retryable`: `ZodOptional`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}, \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}\>
 
-Defined in: [protocol-error.ts:7](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/protocol-error.ts#L7)
+Defined in: [packages/contracts/src/protocol-error.ts:7](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/protocol-error.ts#L7)
 
 A machine-readable error that is safe to return over npm and HTTP APIs.
 
@@ -1258,7 +1258,7 @@ A machine-readable error that is safe to return over npm and HTTP APIs.
 
 > `const` **ProtocolVersionSchema**: `ZodLiteral`\<`"2"`>\>
 
-Defined in: [common.ts:10](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L10)
+Defined in: [packages/contracts/src/common.ts:10](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L10)
 
 The wire protocol version implemented by this package.
 
@@ -1268,7 +1268,7 @@ The wire protocol version implemented by this package.
 
 > `const` **PublishedToolAnnotationsSchema**: `ZodObject`\<\{ `destructiveHint`: `ZodOptional`\<`ZodBoolean`>\>; `idempotentHint`: `ZodOptional`\<`ZodBoolean`>\>; `openWorldHint`: `ZodOptional`\<`ZodBoolean`>\>; `readOnlyHint`: `ZodOptional`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `destructiveHint?`: `boolean`; `idempotentHint?`: `boolean`; `openWorldHint?`: `boolean`; `readOnlyHint?`: `boolean`; \}, \{ `destructiveHint?`: `boolean`; `idempotentHint?`: `boolean`; `openWorldHint?`: `boolean`; `readOnlyHint?`: `boolean`; \}\>
 
-Defined in: [tool.ts:156](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L156)
+Defined in: [packages/contracts/src/tool.ts:156](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L156)
 
 MCP tool annotation hints, in the vocabulary a harness receives them in.
 
@@ -1287,7 +1287,7 @@ Inventing a value for it would put an unfixed field into `catalogHash`.
 
 > `const` **PublishedToolDefinitionSchema**: `ZodObject`\<\{ `annotations`: `ZodOptional`\<`ZodObject`\<\{ `destructiveHint`: `ZodOptional`\<`ZodBoolean`>\>; `idempotentHint`: `ZodOptional`\<`ZodBoolean`>\>; `openWorldHint`: `ZodOptional`\<`ZodBoolean`>\>; `readOnlyHint`: `ZodOptional`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `destructiveHint?`: `boolean`; `idempotentHint?`: `boolean`; `openWorldHint?`: `boolean`; `readOnlyHint?`: `boolean`; \}, \{ `destructiveHint?`: `boolean`; `idempotentHint?`: `boolean`; `openWorldHint?`: `boolean`; `readOnlyHint?`: `boolean`; \}\>\>; `description`: `ZodString`; `inputSchema`: `ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>\>; `metadata`: `ZodOptional`\<`ZodObject`\<\{ `namespace`: `ZodOptional`\<`ZodString`>\>; `source`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace?`: `string`; `source?`: `string`; \}, \{ `namespace?`: `string`; `source?`: `string`; \}\>\>; `name`: `ZodString`; `outputSchema`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; \}, `"strict"`, `ZodTypeAny`, \{ `annotations?`: \{ `destructiveHint?`: `boolean`; `idempotentHint?`: `boolean`; `openWorldHint?`: `boolean`; `readOnlyHint?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: \{ `namespace?`: `string`; `source?`: `string`; \}; `name`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); \}, \{ `annotations?`: \{ `destructiveHint?`: `boolean`; `idempotentHint?`: `boolean`; `openWorldHint?`: `boolean`; `readOnlyHint?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: \{ `namespace?`: `string`; `source?`: `string`; \}; `name`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); \}\>
 
-Defined in: [tool.ts:190](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L190)
+Defined in: [packages/contracts/src/tool.ts:190](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L190)
 
 Everything a model or harness is allowed to see about one tool.
 
@@ -1309,7 +1309,7 @@ canonical name is always carriable as-is.
 
 > `const` **PublishedToolMetadataSchema**: `ZodObject`\<\{ `namespace`: `ZodOptional`\<`ZodString`>\>; `source`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace?`: `string`; `source?`: `string`; \}, \{ `namespace?`: `string`; `source?`: `string`; \}\>
 
-Defined in: [tool.ts:167](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L167)
+Defined in: [packages/contracts/src/tool.ts:167](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L167)
 
 Catalogue provenance a harness may see. Metadata, never proof of authority.
 
@@ -1319,7 +1319,7 @@ Catalogue provenance a harness may see. Metadata, never proof of authority.
 
 > `const` **ReachListSchema**: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `namespace`: `ZodString`; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>
 
-Defined in: [capability.ts:180](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L180)
+Defined in: [packages/contracts/src/capability.ts:181](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L181)
 
 As many entries as one reach may carry, on a card or on the wire.
 
@@ -1329,7 +1329,7 @@ As many entries as one reach may carry, on a card or on the wire.
 
 > `const` **ReachResultSchema**: `ZodDiscriminatedUnion`\<`"status"`, \[`ZodObject`\<\{ `reach`: `ZodArray`\<`ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `namespace`: `ZodString`; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}\>, `"many"`>\>; `status`: `ZodLiteral`\<`"computed"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reach`: `object`[]; `status`: `"computed"`; \}, \{ `reach`: `object`[]; `status`: `"computed"`; \}\>, `ZodObject`\<\{ `reasonCode`: `ZodEnum`\<\[`"authority_unavailable"`, `"usage_store_unavailable"`\]\>; `status`: `ZodLiteral`\<`"unavailable"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `reasonCode`: `"authority_unavailable"` \| `"usage_store_unavailable"`; `status`: `"unavailable"`; \}, \{ `reasonCode`: `"authority_unavailable"` \| `"usage_store_unavailable"`; `status`: `"unavailable"`; \}\>\]\>
 
-Defined in: [capability.ts:207](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L207)
+Defined in: [packages/contracts/src/capability.ts:208](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L208)
 
 What asking for a reach answers.
 
@@ -1345,7 +1345,7 @@ the same result an embedded host does.
 
 > `const` **ReachSummarySchema**: `ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `entries`: `ZodNumber`; `namespace`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `entries`: `number`; `namespace`: `string`; \}, \{ `actions`: `string`[]; `entries`: `number`; `namespace`: `string`; \}\>
 
-Defined in: [card.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/card.ts#L41)
+Defined in: [packages/contracts/src/card.ts:41](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/card.ts#L41)
 
 One namespace the subject reaches, and how much of it, without paths.
 
@@ -1360,7 +1360,7 @@ exists, which is the lookup a card must never become.
 
 > `const` **ReachUnavailableReasonSchema**: `ZodEnum`\<\[`"authority_unavailable"`, `"usage_store_unavailable"`\]\>
 
-Defined in: [capability.ts:192](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L192)
+Defined in: [packages/contracts/src/capability.ts:193](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L193)
 
 Why a reach could not be established.
 
@@ -1377,7 +1377,7 @@ true, so the whole answer is withheld under a code the reader can act on
 
 > `const` **RemoteExecutionRequestSchema**: `ZodObject`\<`Omit`\<\{ `agent`: `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>; `context`: `ZodObject`\<\{ `actor`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `authority`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `enabledToolNamespaces`: `ZodEffects`\<`ZodArray`\<`ZodString`, `"many"`>\>, `string`[], `string`[]\>; `namespaceId`: `ZodString`; `now`: `ZodString`; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `purpose`: `ZodString`; `traceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}, \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}\>; `executionId`: `ZodString`; `message`: `ZodObject`\<\{ `createdAt`: `ZodString`; `id`: `ZodString`; `payload`: `ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>\>; `provenance`: `ZodOptional`\<`ZodObject`\<\{ `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `parentIds`: `ZodArray`\<`ZodString`, `"many"`>\>; `source`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}, \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}\>\>; `purpose`: `ZodString`; `receiver`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `replyTo`: `ZodOptional`\<`ZodString`>\>; `sender`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `traceId`: `ZodString`; `version`: `ZodLiteral`\<`"2"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"2"`; \}, \{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"2"`; \}\>; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `options`: `ZodOptional`\<`ZodObject`\<\{ `maxSteps`: `ZodOptional`\<`ZodNumber`>\>; `maxToolCalls`: `ZodOptional`\<`ZodNumber`>\>; `timeoutMs`: `ZodOptional`\<`ZodNumber`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `maxSteps?`: `number`; `maxToolCalls?`: `number`; `timeoutMs?`: `number`; \}, \{ `maxSteps?`: `number`; `maxToolCalls?`: `number`; `timeoutMs?`: `number`; \}\>\>; `state`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `tools`: `ZodArray`\<`ZodEffects`\<`ZodObject`\<\{ `annotations`: `ZodOptional`\<`ZodObject`\<\{ `destructive`: `ZodOptional`\<...\>; `idempotent`: `ZodOptional`\<...\>; `readOnly`: `ZodOptional`\<...\>; \}, `"strict"`, `ZodTypeAny`, \{ `destructive?`: ... \| ... \| ...; `idempotent?`: ... \| ... \| ...; `readOnly?`: ... \| ... \| ...; \}, \{ `destructive?`: ... \| ... \| ...; `idempotent?`: ... \| ... \| ...; `readOnly?`: ... \| ... \| ...; \}\>\>; `description`: `ZodString`; `inputSchema`: `ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>\>; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `name`: `ZodString`; `namespace`: `ZodString`; `outputSchema`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `readWrite`: `ZodEnum`\<\[`"read"`, `"write"`\]\>; `requiredCapability`: `ZodObject`\<\{ `action`: `ZodString`; `resource`: `ZodObject`\<\{ `namespace`: ...; `owner`: ...; `path`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: ...; `owner?`: ...; `path`: ...; \}, \{ `namespace`: ...; `owner?`: ...; `path`: ...; \}\>; \}, `"strict"`, `ZodTypeAny`, \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}; \}, \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}; \}\>; `source`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: [`JsonObject`](#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; \}; `source`: `string`; \}, \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: [`JsonObject`](#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; \}; `source`: `string`; \}\>, \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: [`JsonObject`](#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}; `source`: `string`; \}, \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: [`JsonObject`](#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}; `source`: `string`; \}\>, `"many"`>\>; `version`: `ZodLiteral`\<`"2"`>\>; \}, `"tools"` \| `"context"`>\>, `"strict"`, `ZodTypeAny`, \{ `agent`: \{ `agentId`: `string`; `kind`: `"agent"`; \}; `executionId`: `string`; `message`: \{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"2"`; \}; `metadata?`: [`JsonObject`](#jsonobject); `options?`: \{ `maxSteps?`: `number`; `maxToolCalls?`: `number`; `timeoutMs?`: `number`; \}; `state?`: [`JsonObject`](#jsonobject); `version`: `"2"`; \}, \{ `agent`: \{ `agentId`: `string`; `kind`: `"agent"`; \}; `executionId`: `string`; `message`: \{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"2"`; \}; `metadata?`: [`JsonObject`](#jsonobject); `options?`: \{ `maxSteps?`: `number`; `maxToolCalls?`: `number`; `timeoutMs?`: `number`; \}; `state?`: [`JsonObject`](#jsonobject); `version`: `"2"`; \}\>
 
-Defined in: [http.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L27)
+Defined in: [packages/contracts/src/http.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L27)
 
 Turn request accepted over HTTP; authority and visible tools are host-derived.
 
@@ -1387,7 +1387,7 @@ Turn request accepted over HTTP; authority and visible tools are host-derived.
 
 > `const` **RemoteResourceOperationSchema**: `ZodObject`\<`Omit`\<\{ `action`: `ZodString`; `context`: `ZodObject`\<\{ `actor`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `authority`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `enabledToolNamespaces`: `ZodEffects`\<`ZodArray`\<`ZodString`, `"many"`>\>, `string`[], `string`[]\>; `namespaceId`: `ZodString`; `now`: `ZodString`; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `purpose`: `ZodString`; `traceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}, \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}\>; `input`: `ZodOptional`\<`ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>>\>\>; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `operationId`: `ZodString`; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<...\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<...\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<...\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<...\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>; \}, `"context"`>\>, `"strict"`, `ZodTypeAny`, \{ `action`: `string`; `input?`: [`JsonValue`](#jsonvalue); `metadata?`: [`JsonObject`](#jsonobject); `operationId`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}, \{ `action`: `string`; `input?`: [`JsonValue`](#jsonvalue); `metadata?`: [`JsonObject`](#jsonobject); `operationId`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}\>
 
-Defined in: [http.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L21)
+Defined in: [packages/contracts/src/http.ts:21](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L21)
 
 Resource operation accepted over HTTP; authority is injected by the host.
 
@@ -1397,7 +1397,7 @@ Resource operation accepted over HTTP; authority is injected by the host.
 
 > `const` **ReplayKeySchema**: `ZodObject`\<\{ `id`: `ZodString`; `kind`: `ZodEnum`\<\[`"execution"`, `"tool"`, `"resource"`, `"message"`\]\>; `namespaceId`: `ZodString`; `scope`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}, \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}\>
 
-Defined in: [replay.ts:7](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/replay.ts#L7)
+Defined in: [packages/contracts/src/replay.ts:8](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/replay.ts#L8)
 
 A structural tenant-scoped identity; scope is an execution ID for tool calls.
 
@@ -1405,9 +1405,9 @@ A structural tenant-scoped identity; scope is an execution ID for tool calls.
 
 ### ReplayRecordSchema
 
-> `const` **ReplayRecordSchema**: `ZodEffects`\<`ZodObject`\<\{ `fingerprint`: `ZodString`; `key`: `ZodObject`\<\{ `id`: `ZodString`; `kind`: `ZodEnum`\<\[`"execution"`, `"tool"`, `"resource"`, `"message"`\]\>; `namespaceId`: `ZodString`; `scope`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}, \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}\>; `result`: `ZodOptional`\<`ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>>>>\>\>; `state`: `ZodEnum`\<\[`"pending"`, `"completed"`, `"failed"`, `"interrupted"`, `"expired"`\]\>; `token`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `result?`: [`JsonValue`](#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"pending"` \| `"completed"` \| `"expired"`; `token`: `string`; \}, \{ `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `result?`: [`JsonValue`](#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"pending"` \| `"completed"` \| `"expired"`; `token`: `string`; \}\>, \{ `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `result?`: [`JsonValue`](#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"pending"` \| `"completed"` \| `"expired"`; `token`: `string`; \}, \{ `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `result?`: [`JsonValue`](#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"pending"` \| `"completed"` \| `"expired"`; `token`: `string`; \}\>
+> `const` **ReplayRecordSchema**: `ZodEffects`\<`ZodObject`\<\{ `effect`: `ZodOptional`\<`ZodObject`\<\{ `grantId`: `ZodOptional`\<`ZodString`>\>; `maximumUses`: `ZodOptional`\<`ZodNumber`>\>; `state`: `ZodEnum`\<\[`"reserved"`, `"admitted"`, `"released"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `grantId?`: `string`; `maximumUses?`: `number`; `state`: `"reserved"` \| `"admitted"` \| `"released"`; \}, \{ `grantId?`: `string`; `maximumUses?`: `number`; `state`: `"reserved"` \| `"admitted"` \| `"released"`; \}\>\>; `fingerprint`: `ZodString`; `key`: `ZodObject`\<\{ `id`: `ZodString`; `kind`: `ZodEnum`\<\[`"execution"`, `"tool"`, `"resource"`, `"message"`\]\>; `namespaceId`: `ZodString`; `scope`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}, \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}\>; `pendingAudit`: `ZodOptional`\<`ZodArray`\<`ZodObject`\<\{ `action`: `ZodOptional`\<`ZodString`>\>; `actor`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: ...; `userId`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: ...; `userId`: ...; \}, \{ `kind`: ...; `userId`: ...; \}\>, `ZodObject`\<\{ `agentId`: ...; `kind`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: ...; `kind`: ...; \}, \{ `agentId`: ...; `kind`: ...; \}\>, `ZodObject`\<\{ `conversationId`: ...; `kind`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: ...; `kind`: ...; \}, \{ `conversationId`: ...; `kind`: ...; \}\>, `ZodObject`\<\{ `kind`: ...; `serviceId`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: ...; `serviceId`: ...; \}, \{ `kind`: ...; `serviceId`: ...; \}\>\]\>; `at`: `ZodString`; `authority`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: ...; `userId`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: ...; `userId`: ...; \}, \{ `kind`: ...; `userId`: ...; \}\>, `ZodObject`\<\{ `agentId`: ...; `kind`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: ...; `kind`: ...; \}, \{ `agentId`: ...; `kind`: ...; \}\>, `ZodObject`\<\{ `conversationId`: ...; `kind`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: ...; `kind`: ...; \}, \{ `conversationId`: ...; `kind`: ...; \}\>, `ZodObject`\<\{ `kind`: ...; `serviceId`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: ...; `serviceId`: ...; \}, \{ `kind`: ...; `serviceId`: ...; \}\>\]\>; `authorityHash`: `ZodOptional`\<`ZodString`>\>; `cause`: `ZodOptional`\<`ZodString`>\>; `consumed`: `ZodOptional`\<`ZodBoolean`>\>; `endedBy`: `ZodOptional`\<`ZodEnum`\<\[`"envelope"`, `"runtime"`\]\>\>; `failClosed`: `ZodOptional`\<`ZodBoolean`>\>; `grantId`: `ZodOptional`\<`ZodString`>\>; `id`: `ZodString`; `messageId`: `ZodOptional`\<`ZodString`>\>; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `namespaceId`: `ZodString`; `operationId`: `ZodOptional`\<`ZodString`>\>; `outcome`: `ZodEnum`\<\[`"allowed"`, `"denied"`, `"succeeded"`, `"failed"`, `"escalated"`, `"interrupted"`\]\>; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: ...; `userId`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: ...; `userId`: ...; \}, \{ `kind`: ...; `userId`: ...; \}\>, `ZodObject`\<\{ `agentId`: ...; `kind`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: ...; `kind`: ...; \}, \{ `agentId`: ...; `kind`: ...; \}\>, `ZodObject`\<\{ `conversationId`: ...; `kind`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: ...; `kind`: ...; \}, \{ `conversationId`: ...; `kind`: ...; \}\>, `ZodObject`\<\{ `kind`: ...; `serviceId`: ...; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: ...; `serviceId`: ...; \}, \{ `kind`: ...; `serviceId`: ...; \}\>\]\>; `purpose`: `ZodString`; `reason`: `ZodOptional`\<`ZodString`>\>; `receiver`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>\]\>\>; `requestedAuthority`: `ZodOptional`\<`ZodObject`\<\{ `capabilities`: `ZodArray`\<..., ...\>; `constraints`: `ZodOptional`\<...\>; `id`: `ZodString`; `metadata`: `ZodOptional`\<...\>; `namespaceId`: `ZodString`; `owner`: `ZodDiscriminatedUnion`\<..., ...\>; `purpose`: `ZodString`; `requestedAt`: `ZodString`; `requester`: `ZodDiscriminatedUnion`\<..., ...\>; \}, `"strict"`, `ZodTypeAny`, \{ `capabilities`: ...[]; `constraints?`: ... \| ...; `id`: `string`; `metadata?`: ... \| ...; `namespaceId`: `string`; `owner`: ... \| ... \| ... \| ...; `purpose`: `string`; `requestedAt`: `string`; `requester`: ... \| ... \| ... \| ...; \}, \{ `capabilities`: ...[]; `constraints?`: ... \| ...; `id`: `string`; `metadata?`: ... \| ...; `namespaceId`: `string`; `owner`: ... \| ... \| ... \| ...; `purpose`: `string`; `requestedAt`: `string`; `requester`: ... \| ... \| ... \| ...; \}\>\>; `resource`: `ZodOptional`\<`ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<...\>; `path`: `ZodArray`\<..., ...\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}, \{ `namespace`: `string`; `owner?`: ... \| ... \| ... \| ... \| ...; `path`: ...[]; \}\>\>; `source`: `ZodOptional`\<`ZodEnum`\<\[`"kernel"`, `"envelope"`\]\>\>; `tool`: `ZodOptional`\<`ZodString`>\>; `traceId`: `ZodString`; `type`: `ZodEnum`\<\[`"authority.resolved"`, `"authorization.checked"`, `"grant.usage.released"`, `"escalation.requested"`, `"escalation.auto_decided"`, `"resource.invoked"`, `"tool.catalog.listed"`, `"tool.namespace.catalog.listed"`, `"tool.namespace.selection.updated"`\]\>; `usageState`: `ZodOptional`\<`ZodEnum`\<\[`"reserved"`, `"admitted"`, `"released"`\]\>\>; `version`: `ZodLiteral`\<`"2"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `action?`: `string`; `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `at`: `string`; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authorityHash?`: `string`; `cause?`: `string`; `consumed?`: `boolean`; `endedBy?`: `"envelope"` \| `"runtime"`; `failClosed?`: `boolean`; `grantId?`: `string`; `id`: `string`; `messageId?`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `operationId?`: `string`; `outcome`: `"succeeded"` \| `"denied"` \| `"failed"` \| `"allowed"` \| `"escalated"` \| `"interrupted"`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `reason?`: `string`; `receiver?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: ...; `expiresAt?`: ...; `maxUses?`: ...; `notBefore?`: ...; `purposes?`: ...; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; \}; `resource?`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; `source?`: `"kernel"` \| `"envelope"`; `tool?`: `string`; `traceId`: `string`; `type`: `"authority.resolved"` \| `"authorization.checked"` \| `"grant.usage.released"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`; `usageState?`: `"reserved"` \| `"admitted"` \| `"released"`; `version`: `"2"`; \}, \{ `action?`: `string`; `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `at`: `string`; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authorityHash?`: `string`; `cause?`: `string`; `consumed?`: `boolean`; `endedBy?`: `"envelope"` \| `"runtime"`; `failClosed?`: `boolean`; `grantId?`: `string`; `id`: `string`; `messageId?`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `operationId?`: `string`; `outcome`: `"succeeded"` \| `"denied"` \| `"failed"` \| `"allowed"` \| `"escalated"` \| `"interrupted"`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `reason?`: `string`; `receiver?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: ...; `expiresAt?`: ...; `maxUses?`: ...; `notBefore?`: ...; `purposes?`: ...; \}; `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; \}; `resource?`: \{ `namespace`: `string`; `owner?`: \{ `kind`: ...; `userId`: ...; \} \| \{ `agentId`: ...; `kind`: ...; \} \| \{ `conversationId`: ...; `kind`: ...; \} \| \{ `kind`: ...; `serviceId`: ...; \}; `path`: `string`[]; \}; `source?`: `"kernel"` \| `"envelope"`; `tool?`: `string`; `traceId`: `string`; `type`: `"authority.resolved"` \| `"authorization.checked"` \| `"grant.usage.released"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`; `usageState?`: `"reserved"` \| `"admitted"` \| `"released"`; `version`: `"2"`; \}\>, `"many"`>>\>\>; `result`: `ZodOptional`\<`ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>>\>\>; `state`: `ZodEnum`\<\[`"pending"`, `"completed"`, `"failed"`, `"interrupted"`, `"expired"`\]\>; `token`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `effect?`: \{ `grantId?`: `string`; `maximumUses?`: `number`; `state`: `"reserved"` \| `"admitted"` \| `"released"`; \}; `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `pendingAudit?`: `object`[]; `result?`: [`JsonValue`](#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"pending"` \| `"completed"` \| `"expired"`; `token`: `string`; \}, \{ `effect?`: \{ `grantId?`: `string`; `maximumUses?`: `number`; `state`: `"reserved"` \| `"admitted"` \| `"released"`; \}; `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `pendingAudit?`: `object`[]; `result?`: [`JsonValue`](#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"pending"` \| `"completed"` \| `"expired"`; `token`: `string`; \}\>, \{ `effect?`: \{ `grantId?`: `string`; `maximumUses?`: `number`; `state`: `"reserved"` \| `"admitted"` \| `"released"`; \}; `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `pendingAudit?`: `object`[]; `result?`: [`JsonValue`](#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"pending"` \| `"completed"` \| `"expired"`; `token`: `string`; \}, \{ `effect?`: \{ `grantId?`: `string`; `maximumUses?`: `number`; `state`: `"reserved"` \| `"admitted"` \| `"released"`; \}; `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `pendingAudit?`: `object`[]; `result?`: [`JsonValue`](#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"pending"` \| `"completed"` \| `"expired"`; `token`: `string`; \}\>
 
-Defined in: [replay.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/replay.ts#L18)
+Defined in: [packages/contracts/src/replay.ts:19](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/replay.ts#L19)
 
 Durable identity survives result-body expiry and never becomes claimable again.
 
@@ -1417,7 +1417,7 @@ Durable identity survives result-body expiry and never becomes claimable again.
 
 > `const` **ResourceOperationSchema**: `ZodObject`\<\{ `action`: `ZodString`; `context`: `ZodObject`\<\{ `actor`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `authority`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `enabledToolNamespaces`: `ZodEffects`\<`ZodArray`\<`ZodString`, `"many"`>\>, `string`[], `string`[]\>; `namespaceId`: `ZodString`; `now`: `ZodString`; `owner`: `ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>; `purpose`: `ZodString`; `traceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}, \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}\>; `input`: `ZodOptional`\<`ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>>\>\>; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `operationId`: `ZodString`; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>; \}, `"strict"`, `ZodTypeAny`, \{ `action`: `string`; `context`: \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}; `input?`: [`JsonValue`](#jsonvalue); `metadata?`: [`JsonObject`](#jsonobject); `operationId`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}, \{ `action`: `string`; `context`: \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \}; `input?`: [`JsonValue`](#jsonvalue); `metadata?`: [`JsonObject`](#jsonobject); `operationId`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}\>
 
-Defined in: [resource.ts:10](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/resource.ts#L10)
+Defined in: [packages/contracts/src/resource.ts:10](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/resource.ts#L10)
 
 A self-contained request to perform one permission-controlled operation.
 
@@ -1427,7 +1427,7 @@ A self-contained request to perform one permission-controlled operation.
 
 > `const` **ResourceReachSchema**: `ZodObject`\<\{ `actions`: `ZodArray`\<`ZodString`, `"many"`>\>; `namespace`: `ZodString`; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `scope`: `ZodEnum`\<\[`"exact"`, `"descendants"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}, \{ `actions`: `string`[]; `namespace`: `string`; `path`: `string`[]; `scope`: `"exact"` \| `"descendants"`; \}\>
 
-Defined in: [capability.ts:168](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L168)
+Defined in: [packages/contracts/src/capability.ts:169](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L169)
 
 Where an actor may operate, with the authority stripped out.
 
@@ -1448,7 +1448,7 @@ invite a reader to treat an entry as portable to another.
 
 > `const` **ResourceRefSchema**: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<\{ `kind`: `ZodLiteral`\<`"human"`>\>; `userId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"human"`; `userId`: `string`; \}, \{ `kind`: `"human"`; `userId`: `string`; \}\>, `ZodObject`\<\{ `agentId`: `ZodString`; `kind`: `ZodLiteral`\<`"agent"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `agentId`: `string`; `kind`: `"agent"`; \}, \{ `agentId`: `string`; `kind`: `"agent"`; \}\>, `ZodObject`\<\{ `conversationId`: `ZodString`; `kind`: `ZodLiteral`\<`"group"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `conversationId`: `string`; `kind`: `"group"`; \}, \{ `conversationId`: `string`; `kind`: `"group"`; \}\>, `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>
 
-Defined in: [capability.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/capability.ts#L27)
+Defined in: [packages/contracts/src/capability.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/capability.ts#L27)
 
 A host-independent reference to a resource exposed through SharedOS.
 
@@ -1458,7 +1458,7 @@ A host-independent reference to a resource exposed through SharedOS.
 
 > `const` **ResourceResultSchema**: `ZodDiscriminatedUnion`\<`"status"`, \[`ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](#jsonvalue); `status`: `"succeeded"`; \}, \{ `completedAt`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](#jsonvalue); `status`: `"succeeded"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `operationId`: `string`; `status`: `"denied"`; \}, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `operationId`: `string`; `status`: `"denied"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}, \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>\]\>
 
-Defined in: [resource.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/resource.ts#L29)
+Defined in: [packages/contracts/src/resource.ts:29](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/resource.ts#L29)
 
 ---
 
@@ -1466,7 +1466,7 @@ Defined in: [resource.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/pa
 
 > `const` **RuntimeEventSchema**: `ZodObject`\<\{ `data`: `ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>\>; `type`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `data`: [`JsonValue`](#jsonvalue); `type`: `string`; \}, \{ `data`: [`JsonValue`](#jsonvalue); `type`: `string`; \}\>
 
-Defined in: [runtime.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L20)
+Defined in: [packages/contracts/src/runtime.ts:20](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L20)
 
 A runtime-originated observation. The SharedOS envelope assigns its audit identity.
 
@@ -1476,7 +1476,7 @@ A runtime-originated observation. The SharedOS envelope assigns its audit identi
 
 > `const` **RuntimeManifestSchema**: `ZodObject`\<\{ `id`: `ZodString`; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `protocolVersion`: `ZodLiteral`\<`"2"`>\>; `version`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `protocolVersion`: `"2"`; `version`: `string`; \}, \{ `id`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `protocolVersion`: `"2"`; `version`: `string`; \}\>
 
-Defined in: [runtime.ts:8](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L8)
+Defined in: [packages/contracts/src/runtime.ts:8](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L8)
 
 Stable, JSON-safe provenance for one installed runtime implementation.
 
@@ -1486,7 +1486,7 @@ Stable, JSON-safe provenance for one installed runtime implementation.
 
 > `const` **RuntimeTurnOutcomeSchema**: `ZodDiscriminatedUnion`\<`"type"`, \[`ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `type`: `"complete"`; \}, \{ `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `type`: `"complete"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `type`: `"fail"`; \}, \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `type`: `"fail"`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `metadata?`: [`JsonObject`](#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}, \{ `metadata?`: [`JsonObject`](#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}\>\]\>
 
-Defined in: [runtime.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L43)
+Defined in: [packages/contracts/src/runtime.ts:43](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/runtime.ts#L43)
 
 The only terminal outcomes a runtime plugin may return for one bounded turn.
 
@@ -1503,7 +1503,7 @@ the host would route it to, and stops.
 
 > `const` **ServiceAddressSchema**: `ZodObject`\<\{ `kind`: `ZodLiteral`\<`"service"`>\>; `serviceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `kind`: `"service"`; `serviceId`: `string`; \}, \{ `kind`: `"service"`; `serviceId`: `string`; \}\>
 
-Defined in: [address.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/address.ts#L20)
+Defined in: [packages/contracts/src/address.ts:20](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/address.ts#L20)
 
 ---
 
@@ -1511,7 +1511,7 @@ Defined in: [address.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/pac
 
 > `const` **SHAREDOS\_API\_ERROR\_CODES**: readonly \[`"unsupported_protocol_version"`, `"invalid_access_context"`, `"invalid_json"`, `"invalid_request"`, `"permission_denied"`, `"not_found"`, `"method_not_allowed"`, `"internal_error"`\]
 
-Defined in: [http.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L50)
+Defined in: [packages/contracts/src/http.ts:50](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L50)
 
 The codes the SharedOS HTTP handler itself answers with. A kernel refusal
 travels inside a `200` result under its own vocabulary (`docs/errors.md`);
@@ -1527,7 +1527,7 @@ for a reader that wants to switch on the known ones.
 
 > `const` **SHAREDOS\_PROTOCOL\_HEADER**: `"x-sharedos-protocol-version"` = `"x-sharedos-protocol-version"`
 
-Defined in: [http.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L18)
+Defined in: [packages/contracts/src/http.ts:18](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L18)
 
 SharedOS HTTP epoch stamp, independent of content negotiation.
 
@@ -1537,7 +1537,7 @@ SharedOS HTTP epoch stamp, independent of content negotiation.
 
 > `const` **SHAREDOS\_ROUTES**: `object`
 
-Defined in: [http.ts:103](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L103)
+Defined in: [packages/contracts/src/http.ts:103](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L103)
 
 The HTTP surface, as one table the handler routes from and the client calls
 through. A path with two verbs is two entries; the handler derives the
@@ -1736,7 +1736,7 @@ in step. `docs/http-api.md` describes the same table for a reader.
 
 > `const` **SHAREDOS\_VERSION**: `"1.0.0-preview"` = `"1.0.0-preview"`
 
-Defined in: [common.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L51)
+Defined in: [packages/contracts/src/common.ts:51](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L51)
 
 The SharedOS build, as every manifest, MCP server and conformance record
 names it.
@@ -1752,7 +1752,7 @@ to code that never ran.
 
 > `const` **SharedOSApiErrorResponseSchema**: `ZodObject`\<\{ `error`: `ZodObject`\<\{ `code`: `ZodString`; `message`: `ZodString`; `requestId`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `code`: `string`; `message`: `string`; `requestId?`: `string`; \}, \{ `code`: `string`; `message`: `string`; `requestId?`: `string`; \}\>; \}, `"strict"`, `ZodTypeAny`, \{ `error`: \{ `code`: `string`; `message`: `string`; `requestId?`: `string`; \}; \}, \{ `error`: \{ `code`: `string`; `message`: `string`; `requestId?`: `string`; \}; \}\>
 
-Defined in: [http.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L62)
+Defined in: [packages/contracts/src/http.ts:62](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L62)
 
 ---
 
@@ -1760,7 +1760,7 @@ Defined in: [http.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > `const` **SharedOSHealthSchema**: `ZodObject`\<\{ `protocolVersion`: `ZodLiteral`\<`"2"`>\>; `status`: `ZodLiteral`\<`"ok"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `protocolVersion`: `"2"`; `status`: `"ok"`; \}, \{ `protocolVersion`: `"2"`; `status`: `"ok"`; \}\>
 
-Defined in: [http.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/http.ts#L33)
+Defined in: [packages/contracts/src/http.ts:33](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L33)
 
 ---
 
@@ -1768,7 +1768,7 @@ Defined in: [http.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packag
 
 > `const` **SharedOSToolCatalogSchema**: `ZodEffects`\<`ZodObject`\<\{ `catalogHash`: `ZodString`; `executionId`: `ZodString`; `tools`: `ZodArray`\<`ZodObject`\<\{ `annotations`: `ZodOptional`\<`ZodObject`\<\{ `destructiveHint`: `ZodOptional`\<`ZodBoolean`>\>; `idempotentHint`: `ZodOptional`\<`ZodBoolean`>\>; `openWorldHint`: `ZodOptional`\<`ZodBoolean`>\>; `readOnlyHint`: `ZodOptional`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `destructiveHint?`: `boolean`; `idempotentHint?`: `boolean`; `openWorldHint?`: `boolean`; `readOnlyHint?`: `boolean`; \}, \{ `destructiveHint?`: `boolean`; `idempotentHint?`: `boolean`; `openWorldHint?`: `boolean`; `readOnlyHint?`: `boolean`; \}\>\>; `description`: `ZodString`; `inputSchema`: `ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>\>; `metadata`: `ZodOptional`\<`ZodObject`\<\{ `namespace`: `ZodOptional`\<`ZodString`>\>; `source`: `ZodOptional`\<`ZodString`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace?`: `string`; `source?`: `string`; \}, \{ `namespace?`: `string`; `source?`: `string`; \}\>\>; `name`: `ZodString`; `outputSchema`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; \}, `"strict"`, `ZodTypeAny`, \{ `annotations?`: \{ `destructiveHint?`: `boolean`; `idempotentHint?`: `boolean`; `openWorldHint?`: `boolean`; `readOnlyHint?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: \{ `namespace?`: `string`; `source?`: `string`; \}; `name`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); \}, \{ `annotations?`: \{ `destructiveHint?`: `boolean`; `idempotentHint?`: `boolean`; `openWorldHint?`: `boolean`; `readOnlyHint?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: \{ `namespace?`: `string`; `source?`: `string`; \}; `name`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); \}\>, `"many"`>\>; `version`: `ZodLiteral`\<`"2"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"2"`; \}, \{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"2"`; \}\>, \{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"2"`; \}, \{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"2"`; \}\>
 
-Defined in: [tool.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L211)
+Defined in: [packages/contracts/src/tool.ts:211](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L211)
 
 The effective, permission-filtered catalogue for exactly one turn.
 
@@ -1784,7 +1784,7 @@ on equal terms rather than assuming it.
 
 > `const` **TimestampSchema**: `ZodString`
 
-Defined in: [common.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L58)
+Defined in: [packages/contracts/src/common.ts:58](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L58)
 
 An RFC 3339 timestamp, represented as a string to remain JSON-safe.
 
@@ -1794,7 +1794,7 @@ An RFC 3339 timestamp, represented as a string to remain JSON-safe.
 
 > `const` **ToolAnnotationsSchema**: `ZodObject`\<\{ `destructive`: `ZodOptional`\<`ZodBoolean`>\>; `idempotent`: `ZodOptional`\<`ZodBoolean`>\>; `readOnly`: `ZodOptional`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}, \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}\>
 
-Defined in: [tool.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L100)
+Defined in: [packages/contracts/src/tool.ts:100](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L100)
 
 ---
 
@@ -1802,7 +1802,7 @@ Defined in: [tool.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **ToolCallSchema**: `ZodObject`\<\{ `arguments`: `ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>\>; `id`: `ZodString`; `requestedAt`: `ZodString`; `tool`: `ZodString`; `traceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `arguments`: [`JsonObject`](#jsonobject); `id`: `string`; `requestedAt`: `string`; `tool`: `string`; `traceId`: `string`; \}, \{ `arguments`: [`JsonObject`](#jsonobject); `id`: `string`; `requestedAt`: `string`; `tool`: `string`; `traceId`: `string`; \}\>
 
-Defined in: [tool.ts:334](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L334)
+Defined in: [packages/contracts/src/tool.ts:334](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L334)
 
 ---
 
@@ -1810,7 +1810,7 @@ Defined in: [tool.ts:334](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **ToolDefinitionSchema**: `ZodEffects`\<`ZodObject`\<\{ `annotations`: `ZodOptional`\<`ZodObject`\<\{ `destructive`: `ZodOptional`\<`ZodBoolean`>\>; `idempotent`: `ZodOptional`\<`ZodBoolean`>\>; `readOnly`: `ZodOptional`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}, \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}\>\>; `description`: `ZodString`; `inputSchema`: `ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>\>; `metadata`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `name`: `ZodString`; `namespace`: `ZodString`; `outputSchema`: `ZodOptional`\<`ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>>\>\>; `readWrite`: `ZodEnum`\<\[`"read"`, `"write"`\]\>; `requiredCapability`: `ZodObject`\<\{ `action`: `ZodString`; `resource`: `ZodObject`\<\{ `namespace`: `ZodString`; `owner`: `ZodOptional`\<`ZodDiscriminatedUnion`\<`"kind"`, \[`ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>, `ZodObject`\<..., ..., ..., ..., ...\>\]\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}, \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}\>; \}, `"strict"`, `ZodTypeAny`, \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}, \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}\>; `source`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: [`JsonObject`](#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}; `source`: `string`; \}, \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: [`JsonObject`](#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}; `source`: `string`; \}\>, \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: [`JsonObject`](#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}; `source`: `string`; \}, \{ `annotations?`: \{ `destructive?`: `boolean`; `idempotent?`: `boolean`; `readOnly?`: `boolean`; \}; `description`: `string`; `inputSchema`: [`JsonObject`](#jsonobject); `metadata?`: [`JsonObject`](#jsonobject); `name`: `string`; `namespace`: `string`; `outputSchema?`: [`JsonObject`](#jsonobject); `readWrite`: `"read"` \| `"write"`; `requiredCapability`: \{ `action`: `string`; `resource`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; \}; `source`: `string`; \}\>
 
-Defined in: [tool.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L111)
+Defined in: [packages/contracts/src/tool.ts:111](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L111)
 
 A JSON-Schema-described tool bound to one permission requirement.
 
@@ -1820,7 +1820,7 @@ A JSON-Schema-described tool bound to one permission requirement.
 
 > `const` **ToolNameSchema**: `ZodString`
 
-Defined in: [tool.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L28)
+Defined in: [packages/contracts/src/tool.ts:28](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L28)
 
 A canonical SharedOS tool identity.
 
@@ -1847,7 +1847,7 @@ and never participates in authorization.
 
 > `const` **ToolNamespaceCatalogSchema**: `ZodEffects`\<`ZodObject`\<\{ `namespaces`: `ZodArray`\<`ZodEffects`\<`ZodObject`\<\{ `enabled`: `ZodBoolean`; `namespace`: `ZodString`; `sources`: `ZodArray`\<`ZodString`, `"many"`>\>; `toolCount`: `ZodNumber`; \}, `"strict"`, `ZodTypeAny`, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}\>, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}\>, `"many"`>\>; `summary`: `ZodObject`\<\{ `disabled`: `ZodNumber`; `enabled`: `ZodNumber`; `total`: `ZodNumber`; \}, `"strict"`, `ZodTypeAny`, \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}, \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}, \{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>, \{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}, \{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [tool.ts:296](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L296)
+Defined in: [packages/contracts/src/tool.ts:296](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L296)
 
 ---
 
@@ -1855,7 +1855,7 @@ Defined in: [tool.ts:296](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **ToolNamespaceDescriptorSchema**: `ZodEffects`\<`ZodObject`\<\{ `enabled`: `ZodBoolean`; `namespace`: `ZodString`; `sources`: `ZodArray`\<`ZodString`, `"many"`>\>; `toolCount`: `ZodNumber`; \}, `"strict"`, `ZodTypeAny`, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}\>, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}\>
 
-Defined in: [tool.ts:277](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L277)
+Defined in: [packages/contracts/src/tool.ts:277](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L277)
 
 ---
 
@@ -1863,7 +1863,7 @@ Defined in: [tool.ts:277](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **ToolNamespaceSchema**: `ZodString` = `IdentifierSchema`
 
-Defined in: [tool.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L38)
+Defined in: [packages/contracts/src/tool.ts:38](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L38)
 
 A logical group of tools that a trusted host may enable for one access context.
 
@@ -1873,7 +1873,7 @@ A logical group of tools that a trusted host may enable for one access context.
 
 > `const` **ToolNamespaceUpdateSchema**: `ZodEffects`\<`ZodObject`\<\{ `disable`: `ZodOptional`\<`ZodEffects`\<`ZodArray`\<`ZodString`, `"many"`>\>, `string`[], `string`[]\>\>; `enable`: `ZodOptional`\<`ZodEffects`\<`ZodArray`\<`ZodString`, `"many"`>\>, `string`[], `string`[]\>\>; \}, `"strict"`, `ZodTypeAny`, \{ `disable?`: `string`[]; `enable?`: `string`[]; \}, \{ `disable?`: `string`[]; `enable?`: `string`[]; \}\>, \{ `disable?`: `string`[]; `enable?`: `string`[]; \}, \{ `disable?`: `string`[]; `enable?`: `string`[]; \}\>
 
-Defined in: [tool.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L71)
+Defined in: [packages/contracts/src/tool.ts:71](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L71)
 
 An idempotent patch to a host-owned tool namespace selection.
 
@@ -1886,7 +1886,7 @@ selection after product policy ceilings have been enforced.
 
 > `const` **ToolPolicySchema**: `ZodEffects`\<`ZodObject`\<\{ `externalDirect`: `ZodArray`\<`ZodString`, `"many"`>\>; `harnessLocal`: `ZodArray`\<`ZodString`, `"many"`>\>; `managedMcp`: `ZodArray`\<`ZodString`, `"many"`>\>; `mode`: `ZodEnum`\<\[`"strict"`, `"hybrid"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `managedMcp`: `string`[]; `mode`: `"strict"` \| `"hybrid"`; \}, \{ `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `managedMcp`: `string`[]; `mode`: `"strict"` \| `"hybrid"`; \}\>, \{ `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `managedMcp`: `string`[]; `mode`: `"strict"` \| `"hybrid"`; \}, \{ `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `managedMcp`: `string`[]; `mode`: `"strict"` \| `"hybrid"`; \}\>
 
-Defined in: [tool.ts:251](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L251)
+Defined in: [packages/contracts/src/tool.ts:251](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L251)
 
 The declared tool surface of one experiment or runtime configuration.
 
@@ -1905,7 +1905,7 @@ named, so a reader can see exactly which effects were outside the kernel.
 
 > `const` **ToolReadWriteSchema**: `ZodEnum`\<\[`"read"`, `"write"`\]\>
 
-Defined in: [tool.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L49)
+Defined in: [packages/contracts/src/tool.ts:49](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L49)
 
 A conservative catalog classification. Capabilities remain the authorization source.
 
@@ -1915,7 +1915,7 @@ A conservative catalog classification. Capabilities remain the authorization sou
 
 > `const` **ToolResultSchema**: `ZodDiscriminatedUnion`\<`"status"`, \[`ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \}, \{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"denied"`; `tool`: `string`; \}, \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"denied"`; `tool`: `string`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"failed"`; `tool`: `string`; \}, \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>\]\>
 
-Defined in: [tool.ts:353](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L353)
+Defined in: [packages/contracts/src/tool.ts:353](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L353)
 
 ---
 
@@ -1923,7 +1923,7 @@ Defined in: [tool.ts:353](https://github.com/Aicoo-Team/SharedOS/blob/main/packa
 
 > `const` **ToolSourceSchema**: `ZodString` = `IdentifierSchema`
 
-Defined in: [tool.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/tool.ts#L45)
+Defined in: [packages/contracts/src/tool.ts:45](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L45)
 
 The host-defined origin of a tool, for example `sharedos`, `native`, `mcp`,
 or `composio`. This is catalog metadata, never proof of authority.
@@ -1934,7 +1934,7 @@ or `composio`. This is catalog metadata, never proof of authority.
 
 > **assertProtocolVersion**(`received`): `asserts received is "2"`
 
-Defined in: [common.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/common.ts#L35)
+Defined in: [packages/contracts/src/common.ts:35](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L35)
 
 Check the boundary stamp before validating the rest of an untrusted payload.
 
@@ -1954,7 +1954,7 @@ Check the boundary stamp before validating the rest of an untrusted payload.
 
 > **isJsonObject**(`value`): `value is JsonObject`
 
-Defined in: [json.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/contracts/src/json.ts#L36)
+Defined in: [packages/contracts/src/json.ts:36](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/json.ts#L36)
 
 Whether a value is shaped like a JSON object: a non-null object that is not
 an array. It checks the shape of the top level only, which is what a reader

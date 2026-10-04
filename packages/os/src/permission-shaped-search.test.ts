@@ -108,7 +108,7 @@ describe("permission-shaped search", () => {
       completedAt: operation.context.now,
     }));
     const files: ResourceProvider = { namespace: "files", invoke };
-    const kernel = new SharedOSKernel({ grantSource: source });
+    const kernel = new SharedOSKernel({ audit: "discard", grantSource: source });
     registerStandardOsTools(kernel, { files });
 
     // One authority lease per turn, which is the shape `SharedOSExecutor` runs

@@ -111,7 +111,7 @@ SharedOS is currently a `1.0.0` preview.
 
 ### InMemoryPrecedentLookup
 
-Defined in: [precedent/src/lookup.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L71)
+Defined in: [packages/precedent/src/lookup.ts:71](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L71)
 
 A process-local lookup over a fixed set of rows, for tests and single-process
 hosts. Durable hosts inject their own store.
@@ -126,7 +126,7 @@ hosts. Durable hosts inject their own store.
 
 > **new InMemoryPrecedentLookup**(`precedents?`): [`InMemoryPrecedentLookup`](#inmemoryprecedentlookup)
 
-Defined in: [precedent/src/lookup.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L74)
+Defined in: [packages/precedent/src/lookup.ts:74](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L74)
 
 ###### Parameters
 
@@ -144,7 +144,7 @@ Defined in: [precedent/src/lookup.ts:74](https://github.com/Aicoo-Team/SharedOS/
 
 > **load**(`namespaceId`, `requestIds`): `Promise`\<readonly [`Precedent`](#precedent)[]\>
 
-Defined in: [precedent/src/lookup.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L90)
+Defined in: [packages/precedent/src/lookup.ts:90](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L90)
 
 ###### Parameters
 
@@ -165,7 +165,7 @@ Defined in: [precedent/src/lookup.ts:90](https://github.com/Aicoo-Team/SharedOS/
 
 > **record**(`precedent`): `void`
 
-Defined in: [precedent/src/lookup.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L80)
+Defined in: [packages/precedent/src/lookup.ts:80](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L80)
 
 ###### Parameters
 
@@ -181,7 +181,7 @@ Defined in: [precedent/src/lookup.ts:80](https://github.com/Aicoo-Team/SharedOS/
 
 ### AdmittedAllow
 
-Defined in: [precedent/src/admission.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L121)
+Defined in: [packages/precedent/src/admission.ts:121](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L121)
 
 An auto-decision that allows, at a width the kernel bounded.
 
@@ -197,26 +197,26 @@ and no turn is resumed by it.
 
 #### Properties
 
-| Property                                                | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                         | Inherited from                   | Defined in                                                                                                                  |
-| ------------------------------------------------------- | ---------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-allowed"></a> `allowed`                 | `readonly` | `true`                                           | -                                                                                                                                                                                                                                                                                                                                   | -                                | [precedent/src/admission.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L122) |
-| <a id="property-capabilities"></a> `capabilities`       | `readonly` | readonly `object`[]                              | -                                                                                                                                                                                                                                                                                                                                   | -                                | [precedent/src/admission.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L132) |
-| <a id="property-citedrequestids"></a> `citedRequestIds` | `readonly` | readonly `string`[]                              | -                                                                                                                                                                                                                                                                                                                                   | `AdmittedCommon.citedRequestIds` | [precedent/src/admission.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L94)   |
-| <a id="property-constraints"></a> `constraints`         | `readonly` | `object`                                         | R3's tightest envelope across every precedent cited.                                                                                                                                                                                                                                                                                | -                                | [precedent/src/admission.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L134) |
-| `constraints.delegationDepth?`                          | `public`   | `number`                                         | -                                                                                                                                                                                                                                                                                                                                   | -                                | contracts/dist/capability.d.ts:228                                                                                          |
-| `constraints.expiresAt?`                                | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                   | -                                | contracts/dist/capability.d.ts:226                                                                                          |
-| `constraints.maxUses?`                                  | `public`   | `number`                                         | -                                                                                                                                                                                                                                                                                                                                   | -                                | contracts/dist/capability.d.ts:227                                                                                          |
-| `constraints.notBefore?`                                | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                   | -                                | contracts/dist/capability.d.ts:225                                                                                          |
-| `constraints.purposes?`                                 | `public`   | `string`[]                                       | -                                                                                                                                                                                                                                                                                                                                   | -                                | contracts/dist/capability.d.ts:224                                                                                          |
-| <a id="property-match"></a> `match`                     | `readonly` | [`PrecedentMatch`](#precedentmatch)              | -                                                                                                                                                                                                                                                                                                                                   | `AdmittedCommon.match`           | [precedent/src/admission.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L95)   |
-| <a id="property-metadata"></a> `metadata`               | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | R4, ready to put on the grant and on the audit event.                                                                                                                                                                                                                                                                               | `AdmittedCommon.metadata`        | [precedent/src/admission.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L97)   |
-| <a id="property-narrowed"></a> `narrowed`               | `readonly` | `boolean`                                        | True when fuzzy evidence carried it, which is ADR 0022's `allow_narrowed`. Not a decision value. It serialises as an ordinary allow; what differs is that the capability below was additionally bounded by what this request actually asked for, because resemblance may not authorize more than the question in front of us needs. | -                                | [precedent/src/admission.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L131) |
+| Property                                                | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                         | Inherited from                   | Defined in                                                                                                                                       |
+| ------------------------------------------------------- | ---------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-allowed"></a> `allowed`                 | `readonly` | `true`                                           | -                                                                                                                                                                                                                                                                                                                                   | -                                | [packages/precedent/src/admission.ts:122](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L122)         |
+| <a id="property-capabilities"></a> `capabilities`       | `readonly` | readonly `object`[]                              | -                                                                                                                                                                                                                                                                                                                                   | -                                | [packages/precedent/src/admission.ts:132](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L132)         |
+| <a id="property-citedrequestids"></a> `citedRequestIds` | `readonly` | readonly `string`[]                              | -                                                                                                                                                                                                                                                                                                                                   | `AdmittedCommon.citedRequestIds` | [packages/precedent/src/admission.ts:94](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L94)           |
+| <a id="property-constraints"></a> `constraints`         | `readonly` | `object`                                         | R3's tightest envelope across every precedent cited.                                                                                                                                                                                                                                                                                | -                                | [packages/precedent/src/admission.ts:134](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L134)         |
+| `constraints.delegationDepth?`                          | `public`   | `number`                                         | -                                                                                                                                                                                                                                                                                                                                   | -                                | [packages/contracts/dist/capability.d.ts:229](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L229) |
+| `constraints.expiresAt?`                                | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                   | -                                | [packages/contracts/dist/capability.d.ts:227](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L227) |
+| `constraints.maxUses?`                                  | `public`   | `number`                                         | -                                                                                                                                                                                                                                                                                                                                   | -                                | [packages/contracts/dist/capability.d.ts:228](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L228) |
+| `constraints.notBefore?`                                | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                   | -                                | [packages/contracts/dist/capability.d.ts:226](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L226) |
+| `constraints.purposes?`                                 | `public`   | `string`[]                                       | -                                                                                                                                                                                                                                                                                                                                   | -                                | [packages/contracts/dist/capability.d.ts:225](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L225) |
+| <a id="property-match"></a> `match`                     | `readonly` | [`PrecedentMatch`](#precedentmatch)              | -                                                                                                                                                                                                                                                                                                                                   | `AdmittedCommon.match`           | [packages/precedent/src/admission.ts:95](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L95)           |
+| <a id="property-metadata"></a> `metadata`               | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | R4, ready to put on the grant and on the audit event.                                                                                                                                                                                                                                                                               | `AdmittedCommon.metadata`        | [packages/precedent/src/admission.ts:97](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L97)           |
+| <a id="property-narrowed"></a> `narrowed`               | `readonly` | `boolean`                                        | True when fuzzy evidence carried it, which is ADR 0022's `allow_narrowed`. Not a decision value. It serialises as an ordinary allow; what differs is that the capability below was additionally bounded by what this request actually asked for, because resemblance may not authorize more than the question in front of us needs. | -                                | [packages/precedent/src/admission.ts:131](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L131)         |
 
 ---
 
 ### AdmittedDeny
 
-Defined in: [precedent/src/admission.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L108)
+Defined in: [packages/precedent/src/admission.ts:108](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L108)
 
 An auto-decision that refuses.
 
@@ -231,18 +231,18 @@ the grants it opened.
 
 #### Properties
 
-| Property                                                  | Modifier   | Type                                             | Description                                           | Inherited from                   | Defined in                                                                                                                  |
-| --------------------------------------------------------- | ---------- | ------------------------------------------------ | ----------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-allowed-1"></a> `allowed`                 | `readonly` | `false`                                          | -                                                     | -                                | [precedent/src/admission.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L109) |
-| <a id="property-citedrequestids-1"></a> `citedRequestIds` | `readonly` | readonly `string`[]                              | -                                                     | `AdmittedCommon.citedRequestIds` | [precedent/src/admission.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L94)   |
-| <a id="property-match-1"></a> `match`                     | `readonly` | [`PrecedentMatch`](#precedentmatch)              | -                                                     | `AdmittedCommon.match`           | [precedent/src/admission.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L95)   |
-| <a id="property-metadata-1"></a> `metadata`               | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | R4, ready to put on the grant and on the audit event. | `AdmittedCommon.metadata`        | [precedent/src/admission.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L97)   |
+| Property                                                  | Modifier   | Type                                             | Description                                           | Inherited from                   | Defined in                                                                                                                               |
+| --------------------------------------------------------- | ---------- | ------------------------------------------------ | ----------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-allowed-1"></a> `allowed`                 | `readonly` | `false`                                          | -                                                     | -                                | [packages/precedent/src/admission.ts:109](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L109) |
+| <a id="property-citedrequestids-1"></a> `citedRequestIds` | `readonly` | readonly `string`[]                              | -                                                     | `AdmittedCommon.citedRequestIds` | [packages/precedent/src/admission.ts:94](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L94)   |
+| <a id="property-match-1"></a> `match`                     | `readonly` | [`PrecedentMatch`](#precedentmatch)              | -                                                     | `AdmittedCommon.match`           | [packages/precedent/src/admission.ts:95](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L95)   |
+| <a id="property-metadata-1"></a> `metadata`               | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | R4, ready to put on the grant and on the audit event. | `AdmittedCommon.metadata`        | [packages/precedent/src/admission.ts:97](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L97)   |
 
 ---
 
 ### ApprovedPrecedent
 
-Defined in: [precedent/src/lookup.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L14)
+Defined in: [packages/precedent/src/lookup.ts:14](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L14)
 
 A resolved escalation a human approved, and the width they approved.
 
@@ -254,25 +254,25 @@ much did they allow".
 
 #### Properties
 
-| Property                                            | Modifier   | Type                            | Description                                                 | Defined in                                                                                                          |
-| --------------------------------------------------- | ---------- | ------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-capabilities-1"></a> `capabilities` | `readonly` | readonly `object`[]             | -                                                           | [precedent/src/lookup.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L19) |
-| <a id="property-constraints-1"></a> `constraints`   | `readonly` | `object`                        | -                                                           | [precedent/src/lookup.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L20) |
-| `constraints.delegationDepth?`                      | `public`   | `number`                        | -                                                           | contracts/dist/capability.d.ts:228                                                                                  |
-| `constraints.expiresAt?`                            | `public`   | `string`                        | -                                                           | contracts/dist/capability.d.ts:226                                                                                  |
-| `constraints.maxUses?`                              | `public`   | `number`                        | -                                                           | contracts/dist/capability.d.ts:227                                                                                  |
-| `constraints.notBefore?`                            | `public`   | `string`                        | -                                                           | contracts/dist/capability.d.ts:225                                                                                  |
-| `constraints.purposes?`                             | `public`   | `string`[]                      | -                                                           | contracts/dist/capability.d.ts:224                                                                                  |
-| <a id="property-decidedat"></a> `decidedAt`         | `readonly` | `string`                        | -                                                           | [precedent/src/lookup.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L21) |
-| <a id="property-key"></a> `key`                     | `readonly` | [`PrecedentKey`](#precedentkey) | -                                                           | [precedent/src/lookup.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L18) |
-| <a id="property-outcome"></a> `outcome`             | `readonly` | `"approved"`                    | -                                                           | [precedent/src/lookup.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L15) |
-| <a id="property-requestid"></a> `requestId`         | `readonly` | `string`                        | The `CapabilityRequest.id` of the escalation this resolved. | [precedent/src/lookup.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L17) |
+| Property                                            | Modifier   | Type                            | Description                                                 | Defined in                                                                                                                                       |
+| --------------------------------------------------- | ---------- | ------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-capabilities-1"></a> `capabilities` | `readonly` | readonly `object`[]             | -                                                           | [packages/precedent/src/lookup.ts:19](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L19)                 |
+| <a id="property-constraints-1"></a> `constraints`   | `readonly` | `object`                        | -                                                           | [packages/precedent/src/lookup.ts:20](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L20)                 |
+| `constraints.delegationDepth?`                      | `public`   | `number`                        | -                                                           | [packages/contracts/dist/capability.d.ts:229](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L229) |
+| `constraints.expiresAt?`                            | `public`   | `string`                        | -                                                           | [packages/contracts/dist/capability.d.ts:227](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L227) |
+| `constraints.maxUses?`                              | `public`   | `number`                        | -                                                           | [packages/contracts/dist/capability.d.ts:228](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L228) |
+| `constraints.notBefore?`                            | `public`   | `string`                        | -                                                           | [packages/contracts/dist/capability.d.ts:226](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L226) |
+| `constraints.purposes?`                             | `public`   | `string`[]                      | -                                                           | [packages/contracts/dist/capability.d.ts:225](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L225) |
+| <a id="property-decidedat"></a> `decidedAt`         | `readonly` | `string`                        | -                                                           | [packages/precedent/src/lookup.ts:21](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L21)                 |
+| <a id="property-key"></a> `key`                     | `readonly` | [`PrecedentKey`](#precedentkey) | -                                                           | [packages/precedent/src/lookup.ts:18](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L18)                 |
+| <a id="property-outcome"></a> `outcome`             | `readonly` | `"approved"`                    | -                                                           | [packages/precedent/src/lookup.ts:15](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L15)                 |
+| <a id="property-requestid"></a> `requestId`         | `readonly` | `string`                        | The `CapabilityRequest.id` of the escalation this resolved. | [packages/precedent/src/lookup.ts:17](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L17)                 |
 
 ---
 
 ### AutoDecidedMarker
 
-Defined in: [precedent/src/admission.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L36)
+Defined in: [packages/precedent/src/admission.ts:36](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L36)
 
 What a host declares about the matcher behind a proposal.
 
@@ -289,15 +289,15 @@ matcher, never a single decision.
 
 #### Properties
 
-| Property                                | Modifier   | Type     | Defined in                                                                                                                |
-| --------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-matcher"></a> `matcher` | `readonly` | `string` | [precedent/src/admission.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L37) |
+| Property                                | Modifier   | Type     | Defined in                                                                                                                             |
+| --------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-matcher"></a> `matcher` | `readonly` | `string` | [packages/precedent/src/admission.ts:37](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L37) |
 
 ---
 
 ### AutoDecidedRecord
 
-Defined in: [precedent/src/admission.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L44)
+Defined in: [packages/precedent/src/admission.ts:44](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L44)
 
 The marker as it reaches the grant and the audit event, with the citation the
 kernel derived rather than the host asserted.
@@ -308,46 +308,46 @@ kernel derived rather than the host asserted.
 
 #### Properties
 
-| Property                                                  | Modifier   | Type                                | Description                                                       | Inherited from                                                           | Defined in                                                                                                                |
-| --------------------------------------------------------- | ---------- | ----------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-citedrequestids-2"></a> `citedRequestIds` | `readonly` | readonly `string`[]                 | -                                                                 | -                                                                        | [precedent/src/admission.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L45) |
-| <a id="property-match-2"></a> `match`                     | `readonly` | [`PrecedentMatch`](#precedentmatch) | Whether the cited evidence was the identical question. R1's axis. | -                                                                        | [precedent/src/admission.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L47) |
-| <a id="property-matcher-1"></a> `matcher`                 | `readonly` | `string`                            | -                                                                 | [`AutoDecidedMarker`](#autodecidedmarker).[`matcher`](#property-matcher) | [precedent/src/admission.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L37) |
+| Property                                                  | Modifier   | Type                                | Description                                                       | Inherited from                                                           | Defined in                                                                                                                             |
+| --------------------------------------------------------- | ---------- | ----------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-citedrequestids-2"></a> `citedRequestIds` | `readonly` | readonly `string`[]                 | -                                                                 | -                                                                        | [packages/precedent/src/admission.ts:45](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L45) |
+| <a id="property-match-2"></a> `match`                     | `readonly` | [`PrecedentMatch`](#precedentmatch) | Whether the cited evidence was the identical question. R1's axis. | -                                                                        | [packages/precedent/src/admission.ts:47](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L47) |
+| <a id="property-matcher-1"></a> `matcher`                 | `readonly` | `string`                            | -                                                                 | [`AutoDecidedMarker`](#autodecidedmarker).[`matcher`](#property-matcher) | [packages/precedent/src/admission.ts:37](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L37) |
 
 ---
 
 ### AutoDecisionProposal
 
-Defined in: [precedent/src/admission.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L71)
+Defined in: [packages/precedent/src/admission.ts:71](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L71)
 
 #### Properties
 
-| Property                                                  | Modifier   | Type                                                                                                                                                                                                       | Description                                                         | Defined in                                                                                                                |
-| --------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-citedrequestids-3"></a> `citedRequestIds` | `readonly` | readonly `string`[]                                                                                                                                                                                        | The precedents the host's matcher chose, by `CapabilityRequest.id`. | [precedent/src/admission.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L75) |
-| <a id="property-marker"></a> `marker`                     | `readonly` | [`AutoDecidedMarker`](#autodecidedmarker)                                                                                                                                                                  | -                                                                   | [precedent/src/admission.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L77) |
-| <a id="property-proposed"></a> `proposed`                 | `readonly` | [`ProposedAutoDecision`](#proposedautodecision)                                                                                                                                                            | -                                                                   | [precedent/src/admission.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L76) |
-| <a id="property-request"></a> `request`                   | `readonly` | `object`                                                                                                                                                                                                   | The escalation now in front of the control plane.                   | [precedent/src/admission.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L73) |
-| `request.capabilities`                                    | `public`   | `object`[]                                                                                                                                                                                                 | -                                                                   | contracts/dist/capability.d.ts:512 |
-| `request.constraints?`                                    | `public`   | `object`                                                                                                                                                                                                   | -                                                                   | contracts/dist/capability.d.ts:535 |
-| `request.constraints.delegationDepth?`                    | `public`   | `number`                                                                                                                                                                                                   | -                                                                   | contracts/dist/capability.d.ts:540 |
-| `request.constraints.expiresAt?`                          | `public`   | `string`                                                                                                                                                                                                   | -                                                                   | contracts/dist/capability.d.ts:538 |
-| `request.constraints.maxUses?`                            | `public`   | `number`                                                                                                                                                                                                   | -                                                                   | contracts/dist/capability.d.ts:539 |
-| `request.constraints.notBefore?`                          | `public`   | `string`                                                                                                                                                                                                   | -                                                                   | contracts/dist/capability.d.ts:537 |
-| `request.constraints.purposes?`                           | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                   | contracts/dist/capability.d.ts:536 |
-| `request.id`                                              | `public`   | `string`                                                                                                                                                                                                   | -                                                                   | contracts/dist/capability.d.ts:498 |
-| `request.metadata?`                                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                   | contracts/dist/capability.d.ts:534 |
-| `request.namespaceId`                                     | `public`   | `string`                                                                                                                                                                                                   | -                                                                   | contracts/dist/capability.d.ts:483 |
-| `request.owner`                                           | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                   | contracts/dist/capability.d.ts:484 |
-| `request.purpose`                                         | `public`   | `string`                                                                                                                                                                                                   | -                                                                   | contracts/dist/capability.d.ts:497 |
-| `request.requestedAt`                                     | `public`   | `string`                                                                                                                                                                                                   | -                                                                   | contracts/dist/capability.d.ts:533                                                                                        |
-| `request.requester`                                       | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                   | contracts/dist/capability.d.ts:499 |
+| Property                                                  | Modifier   | Type                                                                                                                                                                                                       | Description                                                         | Defined in                                                                                                                                       |
+| --------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-citedrequestids-3"></a> `citedRequestIds` | `readonly` | readonly `string`[]                                                                                                                                                                                        | The precedents the host's matcher chose, by `CapabilityRequest.id`. | [packages/precedent/src/admission.ts:75](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L75)           |
+| <a id="property-marker"></a> `marker`                     | `readonly` | [`AutoDecidedMarker`](#autodecidedmarker)                                                                                                                                                                  | -                                                                   | [packages/precedent/src/admission.ts:77](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L77)           |
+| <a id="property-proposed"></a> `proposed`                 | `readonly` | [`ProposedAutoDecision`](#proposedautodecision)                                                                                                                                                            | -                                                                   | [packages/precedent/src/admission.ts:76](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L76)           |
+| <a id="property-request"></a> `request`                   | `readonly` | `object`                                                                                                                                                                                                   | The escalation now in front of the control plane.                   | [packages/precedent/src/admission.ts:73](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L73)           |
+| `request.capabilities`                                    | `public`   | `object`[]                                                                                                                                                                                                 | -                                                                   | [packages/contracts/dist/capability.d.ts:513](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L513) |
+| `request.constraints?`                                    | `public`   | `object`                                                                                                                                                                                                   | -                                                                   | [packages/contracts/dist/capability.d.ts:536](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L536) |
+| `request.constraints.delegationDepth?`                    | `public`   | `number`                                                                                                                                                                                                   | -                                                                   | [packages/contracts/dist/capability.d.ts:541](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L541) |
+| `request.constraints.expiresAt?`                          | `public`   | `string`                                                                                                                                                                                                   | -                                                                   | [packages/contracts/dist/capability.d.ts:539](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L539) |
+| `request.constraints.maxUses?`                            | `public`   | `number`                                                                                                                                                                                                   | -                                                                   | [packages/contracts/dist/capability.d.ts:540](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L540) |
+| `request.constraints.notBefore?`                          | `public`   | `string`                                                                                                                                                                                                   | -                                                                   | [packages/contracts/dist/capability.d.ts:538](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L538) |
+| `request.constraints.purposes?`                           | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                   | [packages/contracts/dist/capability.d.ts:537](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L537) |
+| `request.id`                                              | `public`   | `string`                                                                                                                                                                                                   | -                                                                   | [packages/contracts/dist/capability.d.ts:498](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L498) |
+| `request.metadata?`                                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                   | [packages/contracts/dist/capability.d.ts:543](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L543) |
+| `request.namespaceId`                                     | `public`   | `string`                                                                                                                                                                                                   | -                                                                   | [packages/contracts/dist/capability.d.ts:499](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L499) |
+| `request.owner`                                           | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                   | [packages/contracts/dist/capability.d.ts:485](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L485) |
+| `request.purpose`                                         | `public`   | `string`                                                                                                                                                                                                   | -                                                                   | [packages/contracts/dist/capability.d.ts:534](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L534) |
+| `request.requestedAt`                                     | `public`   | `string`                                                                                                                                                                                                   | -                                                                   | [packages/contracts/dist/capability.d.ts:535](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L535) |
+| `request.requester`                                       | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                   | [packages/contracts/dist/capability.d.ts:500](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/dist/capability.d.ts#L500) |
 
 ---
 
 ### PrecedentKey
 
-Defined in: [precedent/src/key.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/key.ts#L24)
+Defined in: [packages/precedent/src/key.ts:24](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/key.ts#L24)
 
 The shape a precedent is filed under, as a structure rather than a string.
 
@@ -365,19 +365,19 @@ question. `requestedAt` is deliberately not among them: see
 
 #### Properties
 
-| Property                                            | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Defined in                                                                                                    |
-| --------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| <a id="property-capabilities-2"></a> `capabilities` | `readonly` | readonly `object`[]                                                                                                                                                                                        | The effective capability asked for: what the owner was actually answering about, not the grant set that answer produced. A host that holds authority down outside its grant set -- a tool map, an allow-list, an ADR 0020 ceiling -- has an effective authority narrower than its grants. Keying on the grants would record that a human approved authority the host was quietly withholding, and the next proposal would cite that record to justify the wider thing. See ADR 0022. | [precedent/src/key.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/key.ts#L41) |
-| <a id="property-namespaceid"></a> `namespaceId`     | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | [precedent/src/key.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/key.ts#L25) |
-| <a id="property-owner"></a> `owner`                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Whose answer this is. A precedent is one owner's record, never a pool.                                                                                                                                                                                                                                                                                                                                                                                                               | [precedent/src/key.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/key.ts#L27) |
-| <a id="property-purpose"></a> `purpose`             | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | [precedent/src/key.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/key.ts#L30) |
-| <a id="property-requester"></a> `requester`         | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Who was asking. Only an allow reads this; see `admitAutoDecision`.                                                                                                                                                                                                                                                                                                                                                                                                                   | [precedent/src/key.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/key.ts#L29) |
+| Property                                            | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Defined in                                                                                                                 |
+| --------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-capabilities-2"></a> `capabilities` | `readonly` | readonly `object`[]                                                                                                                                                                                        | The effective capability asked for: what the owner was actually answering about, not the grant set that answer produced. A host that holds authority down outside its grant set -- a tool map, an allow-list, an ADR 0020 ceiling -- has an effective authority narrower than its grants. Keying on the grants would record that a human approved authority the host was quietly withholding, and the next proposal would cite that record to justify the wider thing. See ADR 0022. | [packages/precedent/src/key.ts:41](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/key.ts#L41) |
+| <a id="property-namespaceid"></a> `namespaceId`     | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | [packages/precedent/src/key.ts:25](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/key.ts#L25) |
+| <a id="property-owner"></a> `owner`                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Whose answer this is. A precedent is one owner's record, never a pool.                                                                                                                                                                                                                                                                                                                                                                                                               | [packages/precedent/src/key.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/key.ts#L27) |
+| <a id="property-purpose"></a> `purpose`             | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | [packages/precedent/src/key.ts:30](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/key.ts#L30) |
+| <a id="property-requester"></a> `requester`         | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Who was asking. Only an allow reads this; see `admitAutoDecision`.                                                                                                                                                                                                                                                                                                                                                                                                                   | [packages/precedent/src/key.ts:29](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/key.ts#L29) |
 
 ---
 
 ### PrecedentLookup
 
-Defined in: [precedent/src/lookup.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L63)
+Defined in: [packages/precedent/src/lookup.ts:63](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L63)
 
 The trusted lookup for the precedents a proposal cites.
 
@@ -406,7 +406,7 @@ precisely the cited ids.
 
 > **load**(`namespaceId`, `requestIds`): `Promise`\<readonly [`Precedent`](#precedent)[]\>
 
-Defined in: [precedent/src/lookup.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L64)
+Defined in: [packages/precedent/src/lookup.ts:64](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L64)
 
 ###### Parameters
 
@@ -423,7 +423,7 @@ Defined in: [precedent/src/lookup.ts:64](https://github.com/Aicoo-Team/SharedOS/
 
 ### RefusedPrecedent
 
-Defined in: [precedent/src/lookup.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L32)
+Defined in: [packages/precedent/src/lookup.ts:32](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L32)
 
 A resolved escalation a human refused.
 
@@ -434,12 +434,12 @@ width to record. See `admitAutoDecision`.
 
 #### Properties
 
-| Property                                      | Modifier   | Type                            | Defined in                                                                                                          |
-| --------------------------------------------- | ---------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-decidedat-1"></a> `decidedAt` | `readonly` | `string`                        | [precedent/src/lookup.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L36) |
-| <a id="property-key-1"></a> `key`             | `readonly` | [`PrecedentKey`](#precedentkey) | [precedent/src/lookup.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L35) |
-| <a id="property-outcome-1"></a> `outcome`     | `readonly` | `"refused"`                     | [precedent/src/lookup.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L33) |
-| <a id="property-requestid-1"></a> `requestId` | `readonly` | `string`                        | [precedent/src/lookup.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L34) |
+| Property                                      | Modifier   | Type                            | Defined in                                                                                                                       |
+| --------------------------------------------- | ---------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-decidedat-1"></a> `decidedAt` | `readonly` | `string`                        | [packages/precedent/src/lookup.ts:36](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L36) |
+| <a id="property-key-1"></a> `key`             | `readonly` | [`PrecedentKey`](#precedentkey) | [packages/precedent/src/lookup.ts:35](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L35) |
+| <a id="property-outcome-1"></a> `outcome`     | `readonly` | `"refused"`                     | [packages/precedent/src/lookup.ts:33](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L33) |
+| <a id="property-requestid-1"></a> `requestId` | `readonly` | `string`                        | [packages/precedent/src/lookup.ts:34](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L34) |
 
 ## Type Aliases
 
@@ -447,7 +447,7 @@ width to record. See `admitAutoDecision`.
 
 > **AdmittedAutoDecision** = [`AdmittedDeny`](#admitteddeny) \| [`AdmittedAllow`](#admittedallow)
 
-Defined in: [precedent/src/admission.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L137)
+Defined in: [packages/precedent/src/admission.ts:137](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L137)
 
 ---
 
@@ -455,7 +455,7 @@ Defined in: [precedent/src/admission.ts:137](https://github.com/Aicoo-Team/Share
 
 > **Precedent** = [`ApprovedPrecedent`](#approvedprecedent) \| [`RefusedPrecedent`](#refusedprecedent)
 
-Defined in: [precedent/src/lookup.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L39)
+Defined in: [packages/precedent/src/lookup.ts:39](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/lookup.ts#L39)
 
 ---
 
@@ -463,7 +463,7 @@ Defined in: [precedent/src/lookup.ts:39](https://github.com/Aicoo-Team/SharedOS/
 
 > **PrecedentAdmission** = \{ `admitted`: `true`; `decision`: [`AdmittedAutoDecision`](#admittedautodecision); \} \| \{ `admitted`: `false`; `reason`: [`PrecedentInadmissibleReason`](#precedentinadmissiblereason); \}
 
-Defined in: [precedent/src/admission.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L139)
+Defined in: [packages/precedent/src/admission.ts:139](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L139)
 
 ---
 
@@ -471,7 +471,7 @@ Defined in: [precedent/src/admission.ts:139](https://github.com/Aicoo-Team/Share
 
 > **PrecedentInadmissibleReason** = `"no_precedent_cited"` \| `"auto_decision_unmarked"` \| `"empty_proposed_capability"` \| `"precedent_unavailable"` \| `"precedent_not_this_owner"` \| `"precedent_not_this_requester"` \| `"allow_cites_refusal"` \| `"wider_than_precedent"` \| `"wider_than_request"` \| `"envelope_unsatisfiable"`
 
-Defined in: [precedent/src/admission.ts:81](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L81)
+Defined in: [packages/precedent/src/admission.ts:81](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L81)
 
 Why a proposal may not be decided without a human.
 
@@ -481,7 +481,7 @@ Why a proposal may not be decided without a human.
 
 > **PrecedentMatch** = `"exact"` \| `"fuzzy"`
 
-Defined in: [precedent/src/admission.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L57)
+Defined in: [packages/precedent/src/admission.ts:57](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L57)
 
 Whether the cited precedents are the same question or merely a similar one.
 
@@ -495,7 +495,7 @@ self-report is a rule enforced against honest hosts only.
 
 > **ProposedAutoDecision** = \{ `allowed`: `false`; \} \| \{ `allowed`: `true`; `capabilities`: readonly [`Capability`](sharedos-contracts.md#capability)[]; \}
 
-Defined in: [precedent/src/admission.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L67)
+Defined in: [packages/precedent/src/admission.ts:67](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L67)
 
 What the host wants to happen, carrying no score, confidence, or match type.
 
@@ -510,7 +510,7 @@ nowhere to put one.
 
 > `const` **AUTO\_DECIDED\_METADATA\_KEY**: `"autoDecided"` = `"autoDecided"`
 
-Defined in: [precedent/src/admission.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L24)
+Defined in: [packages/precedent/src/admission.ts:24](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L24)
 
 The reserved metadata key an auto-decided grant carries.
 
@@ -527,7 +527,7 @@ checkable.
 
 > `const` **PRECEDENT\_KEY\_VERSION**: `"1"` = `"1"`
 
-Defined in: [precedent/src/key.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/key.ts#L98)
+Defined in: [packages/precedent/src/key.ts:98](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/key.ts#L98)
 
 The key shape this digest is over. Hashed, so versions cannot collide.
 
@@ -537,7 +537,7 @@ The key shape this digest is over. Hashed, so versions cannot collide.
 
 > **admitAutoDecision**(`proposal`, `lookup`): `Promise`\<[`PrecedentAdmission`](#precedentadmission)>\>
 
-Defined in: [precedent/src/admission.ts:186](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L186)
+Defined in: [packages/precedent/src/admission.ts:186](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L186)
 
 Decide whether one finished proposal may be decided without a human.
 
@@ -598,7 +598,7 @@ not happen and the request stays where it was.
 
 > **autoDecisionAuditEvent**(`context`, `decision`, `createId?`): `object`
 
-Defined in: [precedent/src/audit.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/audit.ts#L32)
+Defined in: [packages/precedent/src/audit.ts:32](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/audit.ts#L32)
 
 The `escalation.auto_decided` event for one admitted auto-decision.
 
@@ -803,7 +803,7 @@ nothing.
 
 ##### source?
 
-> `optional` **source?**: `"envelope"` \| `"kernel"`
+> `optional` **source?**: `"kernel"` \| `"envelope"`
 
 ##### tool?
 
@@ -815,7 +815,11 @@ nothing.
 
 ##### type
 
-> **type**: `"escalation.auto_decided"` \| `"authority.resolved"` \| `"authorization.checked"` \| `"escalation.requested"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`
+> **type**: `"escalation.auto_decided"` \| `"authority.resolved"` \| `"authorization.checked"` \| `"grant.usage.released"` \| `"escalation.requested"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`
+
+##### usageState?
+
+> `optional` **usageState?**: `"admitted"` \| `"reserved"` \| `"released"`
 
 ##### version
 
@@ -827,7 +831,7 @@ nothing.
 
 > **precedentKey**(`request`): [`PrecedentKey`](#precedentkey)
 
-Defined in: [precedent/src/key.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/key.ts#L52)
+Defined in: [packages/precedent/src/key.ts:52](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/key.ts#L52)
 
 The key of the request in front of us, or of the one a precedent recorded.
 
@@ -866,7 +870,7 @@ bounded by never reaches the issued grant.
 
 > **precedentKeyDigest**(`key`): `Promise`\<`string`>\>
 
-Defined in: [precedent/src/key.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/key.ts#L86)
+Defined in: [packages/precedent/src/key.ts:86](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/key.ts#L86)
 
 A deterministic fingerprint of one key, and the only thing exactness is
 derived from.
@@ -907,7 +911,7 @@ cannot collide with a digest computed under this one.
 
 > **readAutoDecided**(`metadata`): [`AutoDecidedRecord`](#autodecidedrecord) \| `undefined`
 
-Defined in: [precedent/src/admission.ts:411](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/precedent/src/admission.ts#L411)
+Defined in: [packages/precedent/src/admission.ts:411](https://github.com/systemind-team/SharedOS/blob/main/packages/precedent/src/admission.ts#L411)
 
 The marker on a grant, or `undefined` when it carries none.
 

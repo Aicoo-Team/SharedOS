@@ -36,6 +36,7 @@ import {
   measure,
   reachThroughTools,
   type SpanSink,
+  type ReplayClaim,
 } from "@aicoo/sharedos-core";
 import type { SharedOSKernel, TurnAuthorityScope } from "@aicoo/sharedos-core";
 import {
@@ -237,9 +238,13 @@ export class SharedOSExecutor implements TurnExecutionPort {
     input: ExecutionRequest,
     options: ExecuteTurnOptions,
   ): Promise<ExecutionResult> {
+    assertProtocolVersion(input?.version);
+    assertProtocolVersion(input?.message?.version);
     const parsed = ExecutionRequestSchema.safeParse(structuredClone(input));
     if (!parsed.success)
-      throw new TypeError("ExecutionRequest does not match the SharedOS v1 contract");
+      throw new TypeError(
+        `ExecutionRequest does not match the SharedOS v${PROTOCOL_VERSION} contract`,
+      );
     const request = parsed.data;
     if (options.signal?.aborted === true) return this.#execute(request, options);
     try {
@@ -261,7 +266,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
             drainGraceMs: this.#drainGraceMs,
           },
         },
-        () => this.#execute(request, options),
+        (claim) => this.#execute(request, options, claim),
         (value) => {
           const result = ExecutionResultSchema.parse(value);
           if (
@@ -293,6 +298,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
   async #execute(
     input: ExecutionRequest,
     options: ExecuteTurnOptions = {},
+    claim?: ReplayClaim,
   ): Promise<ExecutionResult> {
     assertProtocolVersion(input?.version);
     assertProtocolVersion(input?.message?.version);
@@ -304,8 +310,8 @@ export class SharedOSExecutor implements TurnExecutionPort {
     }
 
     const request = parsed.data;
-    const result = await this.#runTurn(request, options);
-    await this.#recordTurnEnd(request, result);
+    const result = await this.#runTurn(request, options, claim);
+    await this.#recordTurnEnd(request, result, claim);
     return result;
   }
 
@@ -322,16 +328,25 @@ export class SharedOSExecutor implements TurnExecutionPort {
    * `SharedOSKernelOptions.onAuditError` is for, and the kernel calls it -- but
    * it must not turn a turn that completed into one that threw.
    */
-  async #recordTurnEnd(request: ExecutionRequest, result: ExecutionResult): Promise<void> {
+  async #recordTurnEnd(
+    request: ExecutionRequest,
+    result: ExecutionResult,
+    claim?: ReplayClaim,
+  ): Promise<void> {
     const reasonCode = terminalReasonCode(result);
     const endedBy = terminalSource(result.events);
     try {
-      await this.#kernel.recordTurnEnd(contextAt(request.context, result.completedAt), {
-        executionId: result.executionId,
-        status: result.status,
-        ...(reasonCode === undefined ? {} : { reasonCode }),
-        ...(endedBy === undefined ? {} : { endedBy }),
-      });
+      await this.#kernel.recordTurnEnd(
+        contextAt(request.context, result.completedAt),
+        {
+          executionId: result.executionId,
+          status: result.status,
+          ...(reasonCode === undefined ? {} : { reasonCode }),
+          ...(endedBy === undefined ? {} : { endedBy }),
+        },
+        {},
+        claim,
+      );
     } catch {
       // Deliberately empty; see the docblock above.
     }
@@ -369,6 +384,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
   async #runTurn(
     request: ExecutionRequest,
     options: ExecuteTurnOptions = {},
+    claim?: ReplayClaim,
   ): Promise<ExecutionResult> {
     const startedAt = this.#clock();
     const events: ExecutionEvent[] = [];
@@ -475,7 +491,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
 
       const admission = await raceAbort(
         watchAudit(
-          this.#kernel.admitTurn(executionContext, request.agent, { signal: abort.signal }),
+          this.#kernel.admitTurn(executionContext, request.agent, { signal: abort.signal }, claim),
         ),
         abort.signal,
       );

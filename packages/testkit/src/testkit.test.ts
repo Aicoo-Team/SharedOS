@@ -216,6 +216,7 @@ describe("testkit", () => {
       maxUses: 1,
     });
     const kernel = new SharedOSKernel({
+      audit: "discard",
       grantSource: new InMemoryGrantSource([bounded]),
       authorizer: new CapabilityAuthorizer({ usageStore: new UnavailableGrantUsageStore() }),
     });

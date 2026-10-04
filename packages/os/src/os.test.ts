@@ -111,7 +111,10 @@ describe("standard OS file tools", () => {
       output: { hits: [] },
       completedAt: now,
     }));
-    const kernel = new SharedOSKernel({ grantSource: grantSource([grantFor(["search"])]) });
+    const kernel = new SharedOSKernel({
+      audit: "discard",
+      grantSource: grantSource([grantFor(["search"])]),
+    });
     for (const handler of createFileTools(provider(invoke))) kernel.registerTool(handler);
     const context = contextFor();
 
@@ -173,6 +176,7 @@ describe("standard OS file tools", () => {
       completedAt: now,
     }));
     const kernel = new SharedOSKernel({
+      audit: "discard",
       grantSource: grantSource([grantFor(["create", "replace", "append", "delete"])]),
     });
     for (const handler of createFileTools(provider(invoke))) kernel.registerTool(handler);
@@ -260,6 +264,7 @@ describe("standard OS file tools", () => {
     }
 
     const kernel = new SharedOSKernel({
+      audit: "discard",
       grantSource: grantSource([grantFor(["replace", "append", "delete", "snapshot:restore"])]),
     });
     for (const candidate of handlers) kernel.registerTool(candidate);
@@ -335,6 +340,7 @@ describe("standard OS file tools", () => {
       completedAt: now,
     }));
     const kernel = new SharedOSKernel({
+      audit: "discard",
       grantSource: grantSource([grantFor(["append"], ["Memory", "Self", "Logs"])]),
     });
     for (const handler of createFileTools(provider(invoke))) kernel.registerTool(handler);
@@ -366,6 +372,7 @@ describe("standard OS file tools", () => {
       completedAt: now,
     }));
     const kernel = new SharedOSKernel({
+      audit: "discard",
       grantSource: grantSource([
         grantFor([
           "read",
@@ -484,7 +491,7 @@ describe("standard OS repository tools", () => {
 
   /** Both planes registered over the same directory, so only the grant differs. */
   function kernelFor(grant: CapabilityGrant, files = tracked(), repo = tracked()) {
-    const kernel = new SharedOSKernel({ grantSource: grantSource([grant]) });
+    const kernel = new SharedOSKernel({ audit: "discard", grantSource: grantSource([grant]) });
     for (const handler of createFileTools(provider(files))) kernel.registerTool(handler);
     for (const handler of createRepoTools(repoProvider(repo))) kernel.registerTool(handler);
     return { kernel, files, repo };
@@ -622,7 +629,7 @@ describe("standard OS repository tools", () => {
 
     // The kernel's resource registry is keyed by namespace, so the second plane
     // needed no kernel change to sit beside the first.
-    const kernel = new SharedOSKernel({ grantSource: grantSource([]) });
+    const kernel = new SharedOSKernel({ audit: "discard", grantSource: grantSource([]) });
     kernel.registerResourceProvider(provider());
     expect(() => kernel.registerResourceProvider(repoProvider())).not.toThrow();
   });

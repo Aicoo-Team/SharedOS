@@ -163,6 +163,7 @@ check, an org-wide freeze — goes here:
 ```ts
 const kernel = new SharedOSKernel({
   grantSource: stores,
+  audit: durableAuditSink,
   authorizer: new CapabilityAuthorizer({
     usageStore: stores,
     hostCeiling: {
@@ -211,6 +212,7 @@ interface FolderPolicy {
 
 const kernel = new SharedOSKernel({
   grantSource: stores,
+  audit: durableAuditSink,
   // Loaded once per turn, in flight beside the grant load, and held for the
   // turn: a decision inside it never reads the store. Throw on an outage.
   policySource: {
@@ -419,10 +421,10 @@ Two grant features do not work on a default authorizer, and both fail closed
 rather than loudly: a grant is issued, everything about it looks right, and every
 call it should have allowed is denied.
 
-| Grant feature             | Port needed          | Without it                                |
-| ------------------------- | -------------------- | ----------------------------------------- |
-| `constraints.maxUses`     | `usageStore`         | denies with `usage_store_unavailable`     |
-| `parentGrantId` (derived) | `delegationResolver` | denies with `delegation_chain_unverified` |
+| Grant feature             | Port needed                       | Without it                                |
+| ------------------------- | --------------------------------- | ----------------------------------------- |
+| `constraints.maxUses`     | `EffectStore` (also `usageStore`) | denies with `usage_store_unavailable`     |
+| `parentGrantId` (derived) | `delegationResolver`              | denies with `delegation_chain_unverified` |
 
 ```ts
 const authorizer = new CapabilityAuthorizer({
@@ -431,11 +433,13 @@ const authorizer = new CapabilityAuthorizer({
 });
 ```
 
-`InMemoryGrantUsageStore` is process-local and suitable for tests and
-single-process hosts; a distributed host owes a durable compare-and-set store,
-because a bounded grant is only bounded if two nodes cannot both spend its last
-use. Both denials carry `missingDependency` on the audit record naming the port
-that was absent, so this is diagnosable from the trail rather than by inspection.
+`InMemoryGrantUsageStore` is a process-local replay/usage/outbox fixture. For a
+bounded kernel effect, pass the same store as `replayStore` on the kernel and
+`usageStore` on a custom authorizer. Production hosts implement `EffectStore`
+with atomic transactions on their replay records. `tryConsume` alone is no
+longer sufficient: reservation, audit acceptance and fenced admission must
+complete before entering a provider. Reservations count against capacity, and
+usage is never refunded after possible effect admission. See ADR 0029.
 
 **A denial you did not expect is answered by the audit record, not the response
 body.** The reason codes collapse deliberately — `no_matching_grant` covers nine

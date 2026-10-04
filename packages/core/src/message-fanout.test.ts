@@ -35,6 +35,7 @@ function setup(count: number, bounded = true) {
   let serial = 0;
   const kernel = new SharedOSKernel({
     grantSource: { load: async () => grants },
+    ...(bounded ? { replayStore: usage } : {}),
     authorizer: new CapabilityAuthorizer(bounded ? { usageStore: usage } : {}),
     audit: {
       record: async (event) => {

@@ -69,6 +69,7 @@ function createApi(): SharedOSApi {
 describe("createSharedOSHandler", () => {
   it("builds remote turns from server context and permission-filtered tools", async () => {
     const kernel = new SharedOSKernel({
+      audit: "discard",
       grantSource: {
         async load() {
           await Promise.resolve();

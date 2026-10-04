@@ -11,8 +11,6 @@ import {
   type ToolDefinition,
 } from "@aicoo/sharedos-contracts";
 import {
-  CapabilityAuthorizer,
-  InMemoryGrantUsageStore,
   ReplayProtection,
   ResourceProviderRegistry,
   SharedOSKernel,
@@ -116,12 +114,12 @@ function fixture(
   );
   const transport = new InMemoryMessageTransport();
   const kernel = new SharedOSKernel({
+    audit: "discard",
     grantSource: grants,
     resources,
     tools,
     messageTransport: transport,
     messageRequestRouter: new InMemoryMessageRequestRouter(transport),
-    authorizer: new CapabilityAuthorizer({ usageStore: new InMemoryGrantUsageStore() }),
     ...(store === undefined ? {} : { replayStore: store }),
   });
   return { kernel, store, transport, toolInvoke, effects: () => effects, resources, grants };
@@ -162,7 +160,11 @@ function expectCode(
 describe("durable replay gates", () => {
   it("reproduces the resource probe in the legacy unprotected path", async () => {
     const f = fixture();
-    const legacy = new SharedOSKernel({ grantSource: f.grants, resources: f.resources });
+    const legacy = new SharedOSKernel({
+      audit: "discard",
+      grantSource: f.grants,
+      resources: f.resources,
+    });
     await legacy.invokeResource(context, request);
     await legacy.invokeResource(context, request);
     expect(f.effects()).toBe(2);
@@ -459,6 +461,7 @@ describe("durable replay gates", () => {
     createFileTools(provider).forEach((handler) => tools.register(handler));
     const f = fixture();
     const kernel = new SharedOSKernel({
+      audit: "discard",
       grantSource: f.grants,
       tools,
       resources,

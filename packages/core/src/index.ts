@@ -23,3 +23,4 @@ export * from "./spans.js";
 export * from "./tool-registry.js";
 export * from "./tool-namespace-control.js";
 export * from "./replay.js";
+export * from "./effects.js";

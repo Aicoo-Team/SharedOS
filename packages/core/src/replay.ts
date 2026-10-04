@@ -2,6 +2,7 @@ import {
   JsonValueSchema,
   ReplayRecordSchema,
   type AccessContext,
+  type AuditEvent,
   type JsonValue,
   type ReplayKey,
   type ReplayRecord,
@@ -11,6 +12,13 @@ import { sha256Hex } from "./hashing.js";
 import { raceAbort } from "./internal.js";
 
 /** Host-owned durable storage. All changes must be atomic across workers. */
+export interface ReplayClaim {
+  readonly key: ReplayKey;
+  readonly token: string;
+  /** Transient batch; settlement persists it atomically with the result. */
+  readonly audit: AuditEvent[];
+}
+
 export interface ReplayStore {
   /** Insert pending or return the existing record, including a conflicting fingerprint. */
   claim(
@@ -27,6 +35,7 @@ export interface ReplayStore {
     outcome: {
       readonly state: "completed" | "failed" | "interrupted";
       readonly result?: JsonValue;
+      readonly audit?: readonly AuditEvent[];
     },
   ): Promise<boolean>;
 }
@@ -93,7 +102,7 @@ export class ReplayProtection {
   async run<Result>(
     key: ReplayKey,
     input: unknown,
-    invoke: () => Promise<Result>,
+    invoke: (claim?: ReplayClaim) => Promise<Result>,
     accept: (value: unknown) => Result,
     signal?: AbortSignal,
   ): Promise<Result> {
@@ -110,7 +119,10 @@ export class ReplayProtection {
       const record = ReplayRecordSchema.parse(claim.record);
       if (
         canonicalReplayJson(record.key) !== canonicalReplayJson(key) ||
-        (claim.claimed && (record.state !== "pending" || record.fingerprint !== fingerprint))
+        (claim.claimed &&
+          (record.state !== "pending" ||
+            record.fingerprint !== fingerprint ||
+            record.effect !== undefined))
       ) {
         throw new Error("Invalid replay claim");
       }
@@ -137,14 +149,17 @@ export class ReplayProtection {
             : "replay_interrupted",
       );
     }
+    const ownership: ReplayClaim = { key: structuredClone(key), token: record.token, audit: [] };
     let result: Result;
     try {
       signal?.throwIfAborted();
-      result = await raceAbort(invoke(), signal);
+      result = await raceAbort(invoke(ownership), signal);
       signal?.throwIfAborted();
     } catch (error) {
       try {
-        if (!(await store.settle(key, record.token, { state: "interrupted" })))
+        if (
+          !(await store.settle(key, record.token, { state: "interrupted", audit: ownership.audit }))
+        )
           throw new Error("Lost claim");
       } catch {
         throw new ReplayError("replay_unavailable");
@@ -162,6 +177,7 @@ export class ReplayProtection {
         !(await store.settle(key, record.token, {
           state: failed ? "failed" : "completed",
           result: json,
+          audit: ownership.audit,
         }))
       ) {
         throw new Error("Lost claim");

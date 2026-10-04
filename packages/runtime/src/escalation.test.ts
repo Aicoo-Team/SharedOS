@@ -82,7 +82,10 @@ const forwardedCall: ToolCall = {
 };
 
 function kernelWith(grants: readonly CapabilityGrant[]): SharedOSKernel {
-  const kernel = new SharedOSKernel({ grantSource: { load: async () => grants } });
+  const kernel = new SharedOSKernel({
+    audit: "discard",
+    grantSource: { load: async () => grants },
+  });
   kernel.registerTool(createEscalationTool());
   return kernel;
 }

@@ -873,6 +873,7 @@ describe("turn-scoped authority", () => {
     let releaseLoad: (() => void) | undefined;
 
     const kernel = new SharedOSKernel({
+      audit: "discard",
       grantSource: {
         async load() {
           loads += 1;

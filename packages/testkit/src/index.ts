@@ -13,7 +13,6 @@ import type {
 } from "@aicoo/sharedos-contracts";
 import {
   CapabilityAuthorizer,
-  InMemoryGrantUsageStore,
   SharedOSKernel,
   applyToolNamespaceUpdate,
   type AuditEvent,
@@ -33,7 +32,8 @@ export class InMemoryAuditSink implements AuditSink {
   readonly events: AuditEvent[] = [];
 
   async record(event: AuditEvent): Promise<void> {
-    this.events.push(structuredClone(event));
+    if (!this.events.some((existing) => existing.id === event.id))
+      this.events.push(structuredClone(event));
   }
 }
 
@@ -305,13 +305,14 @@ export function createTestKernel(options: TestKernelOptions = {}): TestKernel {
   const audit = new InMemoryAuditSink();
   const messages = new InMemoryMessageTransport();
   const grants = new InMemoryGrantSource(options.grants ?? []);
+  const replay = new InMemoryReplayStore();
   return {
     kernel: new SharedOSKernel({
       grantSource: options.grantSource ?? grants,
-      replayStore: new InMemoryReplayStore(),
+      replayStore: replay,
       audit,
       authorizer: new CapabilityAuthorizer({
-        usageStore: new InMemoryGrantUsageStore(),
+        usageStore: replay,
         ...(options.delegationResolver === undefined
           ? {}
           : { delegationResolver: options.delegationResolver }),

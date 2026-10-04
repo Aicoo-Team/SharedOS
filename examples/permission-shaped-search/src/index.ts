@@ -116,7 +116,7 @@ const files: ResourceProvider = {
   },
 };
 
-const kernel = new SharedOSKernel({ grantSource: store });
+const kernel = new SharedOSKernel({ audit: "discard", grantSource: store });
 registerStandardOsTools(kernel, { files });
 
 function context(agent: (typeof agents)[number], turn: string): AccessContext {

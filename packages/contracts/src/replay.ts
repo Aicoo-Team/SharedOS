@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { AuditEventSchema } from "./audit.js";
 import { IdentifierSchema } from "./common.js";
 import { JsonValueSchema } from "./json.js";
 
@@ -22,9 +23,29 @@ export const ReplayRecordSchema = z
     token: IdentifierSchema,
     state: z.enum(["pending", "completed", "failed", "interrupted", "expired"]),
     result: JsonValueSchema.optional(),
+    /** Host recovery data; never a new operation identity. */
+    effect: z
+      .object({
+        state: z.enum(["reserved", "admitted", "released"]),
+        grantId: IdentifierSchema.optional(),
+        maximumUses: z.number().int().positive().optional(),
+      })
+      .strict()
+      .optional(),
+    pendingAudit: z.array(AuditEventSchema).optional(),
   })
   .strict()
   .superRefine((record, context) => {
+    if (record.effect !== undefined) {
+      const paired =
+        (record.effect.grantId === undefined) === (record.effect.maximumUses === undefined);
+      if (!paired || (record.effect.state === "reserved" && record.effect.grantId === undefined)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Bounded reservations require grant and limit together",
+        });
+      }
+    }
     const terminal = record.state === "completed" || record.state === "failed";
     if (terminal !== (record.result !== undefined)) {
       context.addIssue({

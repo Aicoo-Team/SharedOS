@@ -10,9 +10,15 @@ export type {
 } from "@aicoo/sharedos-contracts";
 
 export interface AuditSink {
+  /**
+   * Resolve only after durable acceptance (possibly into a host outbox).
+   * Delivery retries preserve the event ID and must deduplicate by that ID.
+   * A rejection may be an ambiguous acknowledgement; it does not prove absence.
+   */
   record(event: AuditEvent): Promise<void>;
 }
 
+/** Intentional test/development disposal; provides no durability or recovery. */
 export class NoopAuditSink implements AuditSink {
   async record(_event: AuditEvent): Promise<void> {
     // Intentionally empty. Production hosts should install a durable sink.

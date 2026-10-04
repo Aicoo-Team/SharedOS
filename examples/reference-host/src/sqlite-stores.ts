@@ -2,7 +2,8 @@
  * Durable host stores backed by SQLite (node:sqlite, no dependency).
  *
  * SharedOS fails bounded grants closed when no usage store is supplied, so a
- * host that wants `maxUses` at all must implement `tryConsume` atomically.
+ * counter alone no longer authorizes bounded kernel effects. This example
+ * still needs the EffectStore/replay reservation and outbox extension (ADR 0029).
  */
 import { DatabaseSync } from "node:sqlite";
 

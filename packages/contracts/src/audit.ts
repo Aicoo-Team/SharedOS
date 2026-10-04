@@ -8,6 +8,7 @@ import { JsonObjectSchema } from "./json.js";
 export const AuditEventTypeSchema = z.enum([
   "authority.resolved",
   "authorization.checked",
+  "grant.usage.released",
   "escalation.requested",
   /**
    * An escalation answered from precedent instead of by a person.
@@ -114,6 +115,7 @@ export const AuditEventSchema = z
     resource: ResourceRefSchema.optional(),
     action: IdentifierSchema.optional(),
     grantId: IdentifierSchema.optional(),
+    usageState: z.enum(["reserved", "admitted", "released"]).optional(),
     /**
      * Content identifier of the exact authority set the decision was made
      * against. A turn resolves authority once, so every decision in it carries
@@ -150,7 +152,7 @@ export const AuditEventSchema = z
      * denial rate; a deliberate refusal never carries it.
      */
     failClosed: z.boolean().optional(),
-    /** Whether a bounded use was spent, on `authorization.checked`. */
+    /** Actual bounded commitment: false on a reserved decision, true on an admitted bounded outcome. */
     consumed: z.boolean().optional(),
     /**
      * Who ended a failed turn, on `turn.ended`: the envelope refusing, or the

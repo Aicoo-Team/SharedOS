@@ -31,3 +31,8 @@ See [ADR 0028](https://github.com/systemind-team/SharedOS/blob/main/docs/adr/002
 It is not durable or suitable for production. Protocol v1 without a configured
 store preserves legacy unprotected behavior. External effects still require
 provider idempotency or reconciliation for crash ambiguity.
+
+`InMemoryReplayStore` now also implements `EffectStore`: grant reservations,
+admission state, result settlement and pending audit events share its operation
+records. `createTestKernel` uses it for both replay and usage. It simulates
+restarts when reused by a new kernel instance but does not survive process death.

@@ -207,6 +207,7 @@ function kernel(
     tools.register(createEscalationTool());
   }
   return new SharedOSKernel({
+    audit: "discard",
     grantSource: grantSource(escalation),
     tools,
     ...(options.audit === undefined ? {} : { audit: options.audit }),

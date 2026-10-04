@@ -28,7 +28,7 @@ describe("embedded message protocol compatibility", () => {
     "rejects unsupported epoch %s before resolving authority",
     async (version) => {
       const load = vi.fn(async () => []);
-      const kernel = new SharedOSKernel({ grantSource: { load } });
+      const kernel = new SharedOSKernel({ audit: "discard", grantSource: { load } });
       await expect(
         kernel.sendMessage(context, { ...message, version } as unknown as MessageEnvelope),
       ).rejects.toMatchObject({ code: "unsupported_protocol_version", receivedVersion: version });
@@ -37,7 +37,7 @@ describe("embedded message protocol compatibility", () => {
   );
 
   it("accepts a current message but still denies it without a grant", async () => {
-    const kernel = new SharedOSKernel({ grantSource: { load: async () => [] } });
+    const kernel = new SharedOSKernel({ audit: "discard", grantSource: { load: async () => [] } });
     await expect(kernel.sendMessage(context, message)).resolves.toMatchObject({ status: "denied" });
   });
 });

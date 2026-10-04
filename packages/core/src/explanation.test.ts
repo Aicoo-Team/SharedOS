@@ -293,7 +293,10 @@ describe("the account on the audit record", () => {
   });
 
   it("keeps the grant out of the decision the caller receives", async () => {
-    const kernel = new SharedOSKernel({ grantSource: new OneGrantSource([grant()]) });
+    const kernel = new SharedOSKernel({
+      audit: "discard",
+      grantSource: new OneGrantSource([grant()]),
+    });
 
     const decision = await kernel.authorize(accessContext({ authority: CAROL }), {
       resource: RESOURCE,

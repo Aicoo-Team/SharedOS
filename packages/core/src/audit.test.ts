@@ -1,8 +1,9 @@
 import type { AccessContext } from "@aicoo/sharedos-contracts";
 import { describe, expect, it } from "vitest";
 
-import { auditEvent } from "./audit.js";
+import { auditEvent, NoopAuditSink } from "./audit.js";
 import { hashJson } from "./hashing.js";
+import { SharedOSKernel, type SharedOSKernelOptions } from "./kernel.js";
 
 const CONTEXT: AccessContext = {
   namespaceId: "world-alpha",
@@ -14,6 +15,27 @@ const CONTEXT: AccessContext = {
   traceId: "trace-1",
   now: "2026-08-03T09:00:00.000Z",
 };
+
+describe("explicit kernel audit configuration", () => {
+  const grantSource = { load: async () => [] };
+
+  it("rejects omitted or malformed audit configuration at construction", () => {
+    for (const audit of [undefined, null, {}, { record: true }]) {
+      expect(() => new SharedOSKernel({ grantSource, audit } as SharedOSKernelOptions)).toThrow(
+        'SharedOS requires an audit sink or explicit audit: "discard"',
+      );
+    }
+  });
+
+  it("permits intentional disposal and explicitly supplied sinks", async () => {
+    for (const audit of ["discard" as const, new NoopAuditSink()]) {
+      const kernel = new SharedOSKernel({ grantSource, audit });
+      await expect(
+        kernel.authorize(CONTEXT, { resource: { namespace: "files", path: [] }, action: "read" }),
+      ).resolves.toMatchObject({ allowed: false, reasonCode: "no_matching_grant" });
+    }
+  });
+});
 
 describe("auditEvent", () => {
   it("gives each record an identity of its own, so two that read the same are still two", async () => {

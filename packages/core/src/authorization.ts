@@ -30,6 +30,8 @@ import {
   reportProviderError,
 } from "./internal.js";
 
+import { MemoryEffectStore } from "./memory-effects.js";
+
 export { addressesEqual };
 
 export type AuthorizationReasonCode =
@@ -106,12 +108,13 @@ export interface AuthorizationExplanation {
   readonly reasonCode: AuthorizationReasonCode;
   readonly grantsResolved: number;
   readonly rejections: readonly GrantRejection[];
-  readonly missingDependency?: "usageStore" | "delegationResolver";
+  readonly missingDependency?: "usageStore" | "delegationResolver" | "effectStore";
 }
 
 export interface GrantUsageStore {
   getUsage(namespaceId: string, grantId: string): Promise<number>;
-  tryConsume(namespaceId: string, grantId: string, maximumUses: number): Promise<boolean>;
+  /** @deprecated Legacy low-level admission counter. The kernel never calls this port. */
+  tryConsume?(namespaceId: string, grantId: string, maximumUses: number): Promise<boolean>;
 }
 
 export interface CapabilityGrantVerifier {
@@ -251,6 +254,8 @@ export interface AuthorizeOptions extends AuthorizationInstantOptions {
    * false so merely viewing a catalog cannot spend a bounded grant.
    */
   readonly consume?: boolean;
+  /** Kernel reservation, tied to the replay claim; never a provider effect itself. */
+  readonly reserve?: (grantId: string, maximumUses: number) => Promise<boolean>;
   /**
    * Called once with the host-facing account of a denial, before it is
    * returned. Never called for an allow.
@@ -314,29 +319,7 @@ export interface CapabilityAuthorizerOptions {
  * An atomic, process-local usage store suitable for tests and single-process
  * hosts. Distributed hosts should inject a durable compare-and-set store.
  */
-export class InMemoryGrantUsageStore implements GrantUsageStore {
-  readonly #usageByNamespace = new Map<string, Map<string, number>>();
-
-  async getUsage(namespaceId: string, grantId: string): Promise<number> {
-    return this.#usageByNamespace.get(namespaceId)?.get(grantId) ?? 0;
-  }
-
-  async tryConsume(namespaceId: string, grantId: string, maximumUses: number): Promise<boolean> {
-    let namespaceUsage = this.#usageByNamespace.get(namespaceId);
-    if (namespaceUsage === undefined) {
-      namespaceUsage = new Map<string, number>();
-      this.#usageByNamespace.set(namespaceId, namespaceUsage);
-    }
-
-    const current = namespaceUsage.get(grantId) ?? 0;
-    if (current >= maximumUses) {
-      return false;
-    }
-
-    namespaceUsage.set(grantId, current + 1);
-    return true;
-  }
-}
+export class InMemoryGrantUsageStore extends MemoryEffectStore implements GrantUsageStore {}
 
 export class CapabilityAuthorizer {
   readonly #usageStore: GrantUsageStore | undefined;
@@ -382,6 +365,7 @@ export class CapabilityAuthorizer {
       // `describeRequiredCapability`.
       true,
       options.onExplain,
+      options.reserve,
     );
   }
 
@@ -555,6 +539,7 @@ export class CapabilityAuthorizer {
     operationNow: string | undefined,
     describeMissing: boolean,
     onExplain: ((explanation: AuthorizationExplanation) => void) | undefined,
+    reserve?: (grantId: string, maximumUses: number) => Promise<boolean>,
   ): Promise<AuthorizationDecision> {
     const context = structuredClone(authority.context);
     const grants = structuredClone([...authority.grants]);
@@ -656,7 +641,10 @@ export class CapabilityAuthorizer {
         return allow(grant.id);
       }
 
-      if (this.#usageStore === undefined) {
+      if (
+        (this.#usageStore === undefined && !(consume && reserve !== undefined)) ||
+        (consume && reserve === undefined && this.#usageStore?.tryConsume === undefined)
+      ) {
         // A grant that matched in every other respect. Nothing about the
         // request is wrong; the authorizer was built without the store a
         // bounded grant is spent against.
@@ -666,8 +654,10 @@ export class CapabilityAuthorizer {
 
       try {
         const available = consume
-          ? await this.#usageStore.tryConsume(context.namespaceId, grant.id, maximumUses)
-          : (await this.#usageStore.getUsage(context.namespaceId, grant.id)) < maximumUses;
+          ? reserve === undefined
+            ? await this.#usageStore!.tryConsume?.(context.namespaceId, grant.id, maximumUses)
+            : await reserve(grant.id, maximumUses)
+          : (await this.#usageStore!.getUsage(context.namespaceId, grant.id)) < maximumUses;
 
         if (available) {
           return allow(grant.id);

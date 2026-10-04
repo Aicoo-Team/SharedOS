@@ -17,6 +17,9 @@
     "packages/adapters"
   ],
   "packageOptions": {
+    "displayBasePath": "../..",
+    "disableGit": true,
+    "sourceLinkTemplate": "https://github.com/systemind-team/SharedOS/blob/{gitRevision}/{path}#L{line}",
     "entryPoints": ["src/index.ts"],
     "tsconfig": "tsconfig.json",
     "readme": "README.md",

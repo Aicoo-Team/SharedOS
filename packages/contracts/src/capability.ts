@@ -50,6 +50,7 @@ export const CapabilityConstraintsSchema = z
     purposes: z.array(PurposeSchema).min(1).max(64).optional(),
     notBefore: TimestampSchema.optional(),
     expiresAt: TimestampSchema.optional(),
+    /** Kernel effect admissions, including failed/ambiguous effects; reservations occupy capacity. */
     maxUses: z.number().int().positive().optional(),
     delegationDepth: z.number().int().nonnegative().optional(),
   })

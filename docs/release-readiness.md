@@ -28,13 +28,19 @@ vulnerability-reporting contact.
   SharedOS now defines atomic claim, conflict rejection, result replay and fenced
   interruption semantics; testkit supplies an isolated in-memory adapter. Verify
   host storage against these rules across processes, retain identity tombstones,
-  and configure host freshness policy. Protocol v1 without a store remains
-  unprotected; mandatory activation is coordinated with protocol versioning.
-- Use a trusted grant store or verifier and a durable compare-and-set usage store
-  for bounded grants. The kernel intentionally fails bounded grants closed when
-  no usage store is supplied.
-- Persist provider side effects and audit outcomes with a transactional outbox or
-  equivalent protocol; wire `onAuditError` to operational alerting.
+  and configure host freshness policy. Omitting a store still leaves unbounded legacy operations
+  unprotected; production hosts must install it. The unpublished compatibility
+  epoch 2 coordinates the replay, usage and wire changes.
+- Use a trusted grant store or verifier and a durable `EffectStore` extending
+  that same replay store for bounded grants (ADR 0029). Reservations and committed
+  uses both occupy capacity. The kernel releases reservations before admission
+  when audit prevents dispatch, and never refunds after a possible effect.
+  Counter-only `tryConsume` adapters cannot authorize bounded kernel effects.
+- Persist operation results and pending audit events with a transactional outbox
+  or equivalent protocol. A post-effect `onAuditError` callback is alerting, not
+  durable recovery. Never refund usage automatically after a possible effect.
+- Supply an explicit audit sink. `audit: "discard"` and `NoopAuditSink` are
+  intentional test/development options and cannot satisfy production gates.
 - Prove every production provider honors `AbortSignal` before committing side
   effects and enforces namespace/owner filtering inside its query.
 - Add authentication, payload/rate limits, connector egress controls, secret

@@ -130,7 +130,7 @@ function kernelWith(grants: readonly CapabilityGrant[]): SharedOSKernel {
   for (const handler of createFileTools(filesProvider())) {
     tools.register(handler);
   }
-  return new SharedOSKernel({ grantSource: grantSource(grants), tools });
+  return new SharedOSKernel({ audit: "discard", grantSource: grantSource(grants), tools });
 }
 
 const NEVER_ABORTED = new AbortController().signal;
@@ -271,6 +271,7 @@ describe("the permission-filtered catalogue on the wire", () => {
 
   it("publishes nothing, and still a well-formed catalogue, when authority is unavailable", async () => {
     const kernel = new SharedOSKernel({
+      audit: "discard",
       grantSource: {
         async load() {
           await Promise.resolve();

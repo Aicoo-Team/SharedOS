@@ -146,7 +146,11 @@ describe("measure", () => {
 describe("kernel measurement", () => {
   it("reports the authority load, the decision, the call, and the provider", async () => {
     const sink = new RecordingSink();
-    const kernel = new SharedOSKernel({ grantSource: grantSource([readGrant()]), spans: sink });
+    const kernel = new SharedOSKernel({
+      audit: "discard",
+      grantSource: grantSource([readGrant()]),
+      spans: sink,
+    });
     kernel.registerTool(readTool());
 
     const result = await kernel.invokeTool(context(), call());
@@ -160,7 +164,11 @@ describe("kernel measurement", () => {
 
   it("gives every span of one call the same call id, so the provider can be subtracted", async () => {
     const sink = new RecordingSink();
-    const kernel = new SharedOSKernel({ grantSource: grantSource([readGrant()]), spans: sink });
+    const kernel = new SharedOSKernel({
+      audit: "discard",
+      grantSource: grantSource([readGrant()]),
+      spans: sink,
+    });
     kernel.registerTool(readTool());
 
     await kernel.invokeTool(context(), call());
@@ -176,7 +184,11 @@ describe("kernel measurement", () => {
 
   it("measures a refused call as well as an allowed one", async () => {
     const sink = new RecordingSink();
-    const kernel = new SharedOSKernel({ grantSource: grantSource([]), spans: sink });
+    const kernel = new SharedOSKernel({
+      audit: "discard",
+      grantSource: grantSource([]),
+      spans: sink,
+    });
     kernel.registerTool(readTool());
 
     const result = await kernel.invokeTool(context(), call());
@@ -189,7 +201,11 @@ describe("kernel measurement", () => {
 
   it("keeps arguments, results, and payloads out of every span", async () => {
     const sink = new RecordingSink();
-    const kernel = new SharedOSKernel({ grantSource: grantSource([readGrant()]), spans: sink });
+    const kernel = new SharedOSKernel({
+      audit: "discard",
+      grantSource: grantSource([readGrant()]),
+      spans: sink,
+    });
     kernel.registerTool(readTool());
 
     await kernel.invokeTool(context(), call());
@@ -201,7 +217,10 @@ describe("kernel measurement", () => {
   });
 
   it("reads no monotonic clock and allocates no span when nothing is measuring", async () => {
-    const kernel = new SharedOSKernel({ grantSource: grantSource([readGrant()]) });
+    const kernel = new SharedOSKernel({
+      audit: "discard",
+      grantSource: grantSource([readGrant()]),
+    });
     kernel.registerTool(readTool());
 
     // The measured and unmeasured paths are the same path: an uninstrumented

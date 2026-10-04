@@ -8,7 +8,13 @@ import type {
   ToolCall,
   ToolDefinition,
 } from "@aicoo/sharedos-contracts";
-import { AuditUnavailableError, SharedOSKernel } from "@aicoo/sharedos-core";
+import {
+  CapabilityAuthorizer,
+  InMemoryGrantUsageStore,
+  AuditUnavailableError,
+  ReplayProtection,
+  SharedOSKernel,
+} from "@aicoo/sharedos-core";
 
 import { SharedOSExecutor, type RuntimePlugin, type TurnErrorContext } from "./index.js";
 
@@ -251,6 +257,7 @@ describe("an audit outage before an effect ends the turn", () => {
     // with the signal's reason. That reason is the outage error itself, so the
     // sibling's rejection looks exactly like a refusal made before any effect.
     const stub = {
+      replayProtection: new ReplayProtection(),
       admitTurn: async () => ({
         allowed: true as const,
         reasonCode: "allowed" as const,
@@ -334,5 +341,49 @@ describe("an audit outage before an effect ends the turn", () => {
     });
     expect(transfers).toEqual(["call-1"]);
     expect(dropped.map((event) => event.type)).toEqual(["tool.invoked"]);
+  });
+});
+
+describe("bounded usage audit outage probe", () => {
+  it("releases a reservation when audit prevents provider entry", async () => {
+    const usage = new InMemoryGrantUsageStore();
+    const bounded = { ...grants[1]!, constraints: { maxUses: 1 } };
+    const provider = vi.fn(async (_context: AccessContext, toolCall: ToolCall) => ({
+      callId: toolCall.id,
+      tool: toolCall.tool,
+      status: "succeeded" as const,
+      output: { moved: true },
+      completedAt: now,
+    }));
+    const kernel = new SharedOSKernel({
+      grantSource: { load: async () => [bounded] },
+      replayStore: usage,
+      authorizer: new CapabilityAuthorizer({ usageStore: usage }),
+      audit: {
+        record: async (event) => {
+          if (downForCall("bounded-call")(event)) throw new Error("audit offline");
+        },
+      },
+    });
+    kernel.registerTool({
+      definition: transfer,
+      parseArguments: (input) => input,
+      invoke: provider,
+    });
+    await expect(kernel.invokeTool(context, call("bounded-call"))).rejects.toBeInstanceOf(
+      AuditUnavailableError,
+    );
+    expect(provider).not.toHaveBeenCalled();
+    expect(await usage.getUsage(context.namespaceId, bounded.id)).toBe(0);
+    // A released reservation restores capacity, never an old operation identity.
+    await expect(kernel.invokeTool(context, call("fresh-call"))).resolves.toMatchObject({
+      status: "succeeded",
+    });
+    expect(provider).toHaveBeenCalledOnce();
+    expect(await usage.getUsage(context.namespaceId, bounded.id)).toBe(1);
+    await expect(kernel.invokeTool(context, call("fresh-call"))).resolves.toMatchObject({
+      status: "succeeded",
+    });
+    expect(provider).toHaveBeenCalledOnce();
   });
 });

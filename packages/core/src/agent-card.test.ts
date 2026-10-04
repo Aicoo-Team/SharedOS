@@ -93,9 +93,11 @@ class RecordingAuditSink implements AuditSink {
 
 function kernelWith(
   source: GrantSource,
-  options: Omit<SharedOSKernelOptions, "grantSource"> = {},
+  options: Omit<SharedOSKernelOptions, "grantSource" | "audit"> & {
+    audit?: SharedOSKernelOptions["audit"];
+  } = {},
 ): SharedOSKernel {
-  return new SharedOSKernel({ ...options, grantSource: source });
+  return new SharedOSKernel({ audit: "discard", ...options, grantSource: source });
 }
 
 const SUBJECT_FILES = grant("grant-subject-files", SUBJECT, [

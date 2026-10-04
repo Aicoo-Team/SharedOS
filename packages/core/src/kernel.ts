@@ -1,3 +1,5 @@
+import { isEffectStore, type EffectStore } from "./effects.js";
+import type { ReplayClaim } from "./replay.js";
 import type {
   AccessContext,
   Address,
@@ -59,6 +61,7 @@ import {
 } from "./authority.js";
 import {
   type AuthorizationExplanation,
+  type DiscoverOptions,
   CapabilityAuthorizer,
   addressesEqual,
   isInfrastructureDenial,
@@ -145,7 +148,8 @@ export interface SharedOSKernelOptions {
    * is exactly the loss `AuditEvent.id` exists to prevent.
    */
   readonly createAuditId?: () => string;
-  readonly audit?: AuditSink;
+  /** Explicit audit sink, or intentional test/development record disposal. */
+  readonly audit: AuditSink | "discard";
   /**
    * Notification for an audit write that failed after the effect it records.
    *
@@ -225,8 +229,18 @@ export interface RefusedCall {
   readonly cause?: string;
 }
 
+interface EffectAttempt {
+  readonly claim: ReplayClaim;
+  readonly store: EffectStore;
+  admitted: boolean;
+  admissionStarted: boolean;
+  reserved: boolean;
+  readonly accounting: boolean;
+}
+
 /** What a `tool.invoked` event carries beyond the call and its result. */
 interface ToolResultAuditDetail {
+  readonly attempt?: EffectAttempt | undefined;
   readonly grantId?: string;
   readonly requirement?: CapabilityRequirement;
   /**
@@ -387,7 +401,11 @@ export class SharedOSKernel {
       throw new TypeError("SharedOS requires a policy source that provides a load function");
     }
     this.#policySource = options.policySource;
-    this.#authorizer = options.authorizer ?? new CapabilityAuthorizer();
+    this.#authorizer =
+      options.authorizer ??
+      new CapabilityAuthorizer(
+        isEffectStore(options.replayStore) ? { usageStore: options.replayStore } : {},
+      );
     this.#resources = options.resources ?? new ResourceProviderRegistry();
     this.#tools = options.tools ?? new ToolRegistry();
     this.#toolProviders = new Map();
@@ -407,7 +425,10 @@ export class SharedOSKernel {
         return id;
       });
     this.#createAuditId = options.createAuditId ?? (() => crypto.randomUUID());
-    this.#audit = options.audit ?? new NoopAuditSink();
+    if (options.audit !== "discard" && typeof options.audit?.record !== "function") {
+      throw new TypeError('SharedOS requires an audit sink or explicit audit: "discard"');
+    }
+    this.#audit = options.audit === "discard" ? new NoopAuditSink() : options.audit;
     this.#onAuditError = options.onAuditError;
     this.#auditWriteTimeoutMs = options.auditWriteTimeoutMs;
     if (
@@ -506,7 +527,14 @@ export class SharedOSKernel {
     context: AccessContext,
     agent: Address,
     options: KernelOperationOptions = {},
+    claim?: ReplayClaim,
   ): Promise<AuthorizationDecision> {
+    if (
+      claim !== undefined &&
+      (claim.key.namespaceId !== context.namespaceId || claim.key.kind !== "execution")
+    ) {
+      throw new TypeError("Turn admission requires its own execution claim");
+    }
     options.signal?.throwIfAborted();
     context = structuredClone(context);
     agent = structuredClone(agent);
@@ -522,7 +550,18 @@ export class SharedOSKernel {
     if (authority.status !== "resolved") {
       return this.#denyUnavailableAuthority(context, request, authority.code, true);
     }
-    return this.#authorize(context, authority.authority, request, true);
+    return this.#withEffect(claim, async (attempt) => {
+      const decision = await this.#authorize(
+        context,
+        authority.authority,
+        request,
+        true,
+        claim?.key.id,
+        attempt,
+      );
+      if (decision.allowed) await this.#enterEffect(attempt, options.signal);
+      return decision;
+    });
   }
 
   /**
@@ -618,6 +657,7 @@ export class SharedOSKernel {
     context: AccessContext,
     turn: TurnEndRecord,
     options: KernelOperationOptions = {},
+    claim?: ReplayClaim,
   ): Promise<void> {
     options.signal?.throwIfAborted();
     context = structuredClone(context);
@@ -632,6 +672,16 @@ export class SharedOSKernel {
         ...(turn.endedBy === undefined ? {} : { endedBy: turn.endedBy }),
         ...failClosedFor(turn.reasonCode),
       }),
+      claim !== undefined && isEffectStore(this.replayProtection.store)
+        ? {
+            claim,
+            store: this.replayProtection.store,
+            admitted: false,
+            admissionStarted: true,
+            reserved: false,
+            accounting: false,
+          }
+        : undefined,
     );
   }
 
@@ -873,7 +923,7 @@ export class SharedOSKernel {
         withheldCount += 1;
         continue;
       }
-      const decision = await this.#authorizer.canDiscover(
+      const decision = await this.#discover(
         authority.authority,
         {
           resource: definition.requiredCapability.resource,
@@ -1064,7 +1114,8 @@ export class SharedOSKernel {
           id: call.id,
         },
         { context: replayContext(context), call: input },
-        () => this.#invokeTool(context, call, options),
+        (claim) =>
+          this.#withEffect(claim, (attempt) => this.#invokeTool(context, call, options, attempt)),
         (value) => {
           const result = ToolResultSchema.parse(value);
           if (result.callId !== call.id || result.tool !== call.tool)
@@ -1091,6 +1142,7 @@ export class SharedOSKernel {
     context: AccessContext,
     call: ToolCall,
     options: KernelOperationOptions = {},
+    attempt?: EffectAttempt,
   ): Promise<ToolResult> {
     options.signal?.throwIfAborted();
     context = structuredClone(context);
@@ -1103,7 +1155,7 @@ export class SharedOSKernel {
         "trace_mismatch",
         "Tool call traceId does not match its access context",
       );
-      await this.#recordToolResult(context, call, result);
+      await this.#recordToolResult(context, call, result, { attempt });
       return result;
     }
 
@@ -1116,7 +1168,7 @@ export class SharedOSKernel {
         "authority_unavailable",
         AUTHORITY_UNAVAILABLE_MESSAGE,
       );
-      await this.#recordToolResult(context, call, result);
+      await this.#recordToolResult(context, call, result, { attempt });
       return result;
     }
 
@@ -1150,7 +1202,7 @@ export class SharedOSKernel {
         "tool_catalog_unavailable",
         "The tool catalog could not be resolved",
       );
-      await this.#recordToolResult(context, call, result);
+      await this.#recordToolResult(context, call, result, { attempt });
       return result;
     }
 
@@ -1163,7 +1215,10 @@ export class SharedOSKernel {
         "tool_unavailable",
         "The requested tool is not available in this access context",
       );
-      await this.#recordToolResult(context, call, result, { cause: "not_registered" });
+      await this.#recordToolResult(context, call, result, {
+        attempt,
+        cause: "not_registered",
+      });
       return result;
     }
 
@@ -1175,7 +1230,10 @@ export class SharedOSKernel {
         "tool_unavailable",
         "The requested tool is not available in this access context",
       );
-      await this.#recordToolResult(context, call, result, { cause: "namespace_disabled" });
+      await this.#recordToolResult(context, call, result, {
+        attempt,
+        cause: "namespace_disabled",
+      });
       return result;
     }
 
@@ -1189,7 +1247,7 @@ export class SharedOSKernel {
       SPAN.TOOL_DISCOVER,
       (span) => {
         span.set("callId", call.id);
-        return this.#authorizer.canDiscover(
+        return this.#discover(
           authority.authority,
           {
             resource: handler.definition.requiredCapability.resource,
@@ -1234,6 +1292,7 @@ export class SharedOSKernel {
       // a host counting policy refusals from the operation events would get
       // zero (ADR 0023).
       await this.#recordToolResult(context, call, result, {
+        attempt,
         cause: discoverable.reasonCode,
         requirement: {
           resource: handler.definition.requiredCapability.resource,
@@ -1264,7 +1323,7 @@ export class SharedOSKernel {
         "invalid_tool_arguments",
         "The requested tool arguments are invalid",
       );
-      await this.#recordToolResult(context, call, result);
+      await this.#recordToolResult(context, call, result, { attempt });
       return result;
     }
 
@@ -1299,7 +1358,7 @@ export class SharedOSKernel {
         "tool_requirement_resolution_failed",
         "The tool could not resolve its required capability",
       );
-      await this.#recordToolResult(context, call, result);
+      await this.#recordToolResult(context, call, result, { attempt });
       return result;
     }
 
@@ -1325,7 +1384,10 @@ export class SharedOSKernel {
         crossing.reasonCode,
         "The requested resource lies outside this access context's world",
       );
-      await this.#recordToolResult(context, call, result, { requirement });
+      await this.#recordToolResult(context, call, result, {
+        attempt,
+        requirement,
+      });
       return result;
     }
 
@@ -1337,7 +1399,7 @@ export class SharedOSKernel {
         "invalid_tool_requirement",
         "The tool resolved a capability outside its declared boundary",
       );
-      await this.#recordToolResult(context, call, result);
+      await this.#recordToolResult(context, call, result, { attempt });
       return result;
     }
 
@@ -1347,6 +1409,7 @@ export class SharedOSKernel {
       { resource: requirement.resource, action: requirement.action },
       true,
       call.id,
+      attempt,
     );
     if (!decision.allowed) {
       const result = refusedToolResult(
@@ -1356,11 +1419,15 @@ export class SharedOSKernel {
         decision.reasonCode,
         "The access context does not grant this tool capability",
       );
-      await this.#recordToolResult(context, call, result, { requirement });
+      await this.#recordToolResult(context, call, result, {
+        attempt,
+        requirement,
+      });
       return result;
     }
 
     const result = await this.#invokePort<ToolResult>({
+      attempt,
       context,
       signal: options.signal,
       invoke: () =>
@@ -1399,6 +1466,7 @@ export class SharedOSKernel {
       },
       interrupted: (reasonCode) =>
         this.#recordToolInvoked(context, {
+          attempt,
           source: "kernel",
           callId: call.id,
           tool: call.tool,
@@ -1411,6 +1479,7 @@ export class SharedOSKernel {
 
     const dispatchCause = this.#dispatchCauses.get(parsedCall);
     await this.#recordToolResult(context, call, result, {
+      attempt,
       ...(decision.matchedGrantId === undefined ? {} : { grantId: decision.matchedGrantId }),
       requirement,
       ...(result.status === "succeeded" || dispatchCause === undefined
@@ -1435,7 +1504,10 @@ export class SharedOSKernel {
       return await this.replayProtection.run(
         { namespaceId: context.namespaceId, kind: "resource", scope: "", id: request.operationId },
         { context: replayContext(context), request },
-        () => this.#invokeResource(context, request, options),
+        (claim) =>
+          this.#withEffect(claim, (attempt) =>
+            this.#invokeResource(context, request, options, attempt),
+          ),
         (value) => {
           const result = ResourceResultSchema.parse(value);
           if (result.operationId !== request.operationId)
@@ -1462,6 +1534,7 @@ export class SharedOSKernel {
     context: AccessContext,
     request: ResourceInvocationRequest,
     options: KernelOperationOptions = {},
+    attempt?: EffectAttempt,
   ): Promise<ResourceResult> {
     options.signal?.throwIfAborted();
     context = structuredClone(context);
@@ -1482,7 +1555,7 @@ export class SharedOSKernel {
         "authority_unavailable",
         AUTHORITY_UNAVAILABLE_MESSAGE,
       );
-      await this.#recordResourceResult(context, request, result);
+      await this.#recordResourceResult(context, request, result, undefined, attempt);
       return result;
     }
 
@@ -1491,6 +1564,8 @@ export class SharedOSKernel {
       authority.authority,
       { resource: request.resource, action: request.action },
       true,
+      request.operationId,
+      attempt,
     );
     if (!decision.allowed) {
       const result = refusedResourceResult(
@@ -1500,7 +1575,7 @@ export class SharedOSKernel {
         decision.reasonCode,
         "The access context does not grant this resource capability",
       );
-      await this.#recordResourceResult(context, request, result);
+      await this.#recordResourceResult(context, request, result, undefined, attempt);
       return result;
     }
 
@@ -1516,6 +1591,7 @@ export class SharedOSKernel {
       );
     } else {
       result = await this.#invokePort<ResourceResult>({
+        attempt,
         context,
         signal: options.signal,
         invoke: () =>
@@ -1555,11 +1631,12 @@ export class SharedOSKernel {
                 : { grantId: decision.matchedGrantId }),
               ...operationFacts("kernel", reasonCode),
             }),
+            attempt,
           ),
       });
     }
 
-    await this.#recordResourceResult(context, request, result, decision.matchedGrantId);
+    await this.#recordResourceResult(context, request, result, decision.matchedGrantId, attempt);
     return result;
   }
 
@@ -1688,8 +1765,19 @@ export class SharedOSKernel {
           reportProviderError: (error, access, operation) =>
             this.#reportProviderError(error, access, operation),
           deliverAuthorizedMessage: async (access, envelope, operationSignal, call) => {
-            const delivery = await this.#replayMessage(access, envelope, operationSignal, () =>
-              this.#deliverAuthorizedMessage(access, envelope, operationSignal, undefined, call.id),
+            const delivery = await this.#replayMessage(
+              access,
+              envelope,
+              operationSignal,
+              (attempt) =>
+                this.#deliverAuthorizedMessage(
+                  access,
+                  envelope,
+                  operationSignal,
+                  undefined,
+                  call.id,
+                  attempt,
+                ),
             );
             if (delivery.status === "denied" || delivery.status === "failed") {
               this.#dispatchCauses.set(call, delivery.error.code);
@@ -1742,13 +1830,14 @@ export class SharedOSKernel {
     envelope: MessageEnvelope,
     options: KernelOperationOptions = {},
   ): Promise<MessageDeliveryResult> {
+    assertProtocolVersion(envelope?.version);
     context = structuredClone(context);
     const parsed = MessageEnvelopeSchema.safeParse(structuredClone(envelope));
     if (!parsed.success)
       throw new TypeError("message envelope does not match the SharedOS contract");
     envelope = parsed.data;
-    return this.#replayMessage(context, envelope, options.signal, () =>
-      this.#sendMessage(context, envelope, options),
+    return this.#replayMessage(context, envelope, options.signal, (attempt) =>
+      this.#sendMessage(context, envelope, options, attempt),
     );
   }
 
@@ -1756,13 +1845,13 @@ export class SharedOSKernel {
     context: AccessContext,
     envelope: MessageEnvelope,
     signal: AbortSignal | undefined,
-    invoke: () => Promise<MessageDeliveryResult>,
+    invoke: (attempt?: EffectAttempt) => Promise<MessageDeliveryResult>,
   ): Promise<MessageDeliveryResult> {
     try {
       return await this.replayProtection.run(
         { namespaceId: context.namespaceId, kind: "message", scope: "", id: envelope.id },
         { context: replayContext(context), envelope },
-        invoke,
+        (claim) => this.#withEffect(claim, invoke),
         (value) => {
           const result = MessageDeliveryResultSchema.parse(value);
           if (result.messageId !== envelope.id) throw new Error("Mismatched replay result");
@@ -1788,6 +1877,7 @@ export class SharedOSKernel {
     context: AccessContext,
     envelope: MessageEnvelope,
     options: KernelOperationOptions = {},
+    attempt?: EffectAttempt,
   ): Promise<MessageDeliveryResult> {
     options.signal?.throwIfAborted();
     assertProtocolVersion(envelope?.version);
@@ -1814,7 +1904,7 @@ export class SharedOSKernel {
         "message_context_mismatch",
         "Message sender, purpose, or trace does not match its access context",
       );
-      await this.#recordMessageResult(context, envelope, result);
+      await this.#recordMessageResult(context, envelope, result, undefined, undefined, attempt);
       return result;
     }
 
@@ -1836,7 +1926,7 @@ export class SharedOSKernel {
         "message_requirement_resolution_failed",
         "The message capability requirement could not be resolved",
       );
-      await this.#recordMessageResult(context, envelope, result);
+      await this.#recordMessageResult(context, envelope, result, undefined, undefined, attempt);
       return result;
     }
     const authority = await this.#resolveAuthority(context, options.signal);
@@ -1848,11 +1938,18 @@ export class SharedOSKernel {
         "authority_unavailable",
         AUTHORITY_UNAVAILABLE_MESSAGE,
       );
-      await this.#recordMessageResult(context, envelope, result);
+      await this.#recordMessageResult(context, envelope, result, undefined, undefined, attempt);
       return result;
     }
 
-    const decision = await this.#authorize(context, authority.authority, requirement, true);
+    const decision = await this.#authorize(
+      context,
+      authority.authority,
+      requirement,
+      true,
+      envelope.id,
+      attempt,
+    );
     if (!decision.allowed) {
       const result = refusedMessageResult(
         envelope,
@@ -1861,7 +1958,7 @@ export class SharedOSKernel {
         decision.reasonCode,
         "The access context does not grant permission to send this message",
       );
-      await this.#recordMessageResult(context, envelope, result);
+      await this.#recordMessageResult(context, envelope, result, undefined, undefined, attempt);
       return result;
     }
 
@@ -1870,6 +1967,8 @@ export class SharedOSKernel {
       envelope,
       options.signal ?? neverAbortedSignal(),
       decision.matchedGrantId,
+      envelope.id,
+      attempt,
     );
   }
 
@@ -1880,6 +1979,7 @@ export class SharedOSKernel {
     signal: AbortSignal,
     grantId?: string,
     operationId?: string,
+    attempt?: EffectAttempt,
   ): Promise<MessageDeliveryResult> {
     const trustedContext = deepFreeze(structuredClone(context));
     const trustedEnvelope = deepFreeze(structuredClone(envelope));
@@ -1897,12 +1997,14 @@ export class SharedOSKernel {
         result,
         grantId,
         operationId,
+        attempt,
       );
       return result;
     }
 
     const transport = this.#messageTransport;
     const result = await this.#invokePort<MessageDeliveryResult>({
+      attempt,
       context: trustedContext,
       signal,
       invoke: () =>
@@ -1936,11 +2038,45 @@ export class SharedOSKernel {
             ...(grantId === undefined ? {} : { grantId }),
             ...operationFacts("kernel", reasonCode),
           }),
+          attempt,
         ),
     });
 
-    await this.#recordMessageResult(trustedContext, trustedEnvelope, result, grantId, operationId);
+    await this.#recordMessageResult(
+      trustedContext,
+      trustedEnvelope,
+      result,
+      grantId,
+      operationId,
+      attempt,
+    );
     return result;
+  }
+
+  async #discover(
+    authority: ResolvedAuthority,
+    request: CapabilityRequirement,
+    options: DiscoverOptions,
+  ): Promise<AuthorizationDecision> {
+    const decision = await this.#authorizer.canDiscover(authority, request, options);
+    if (
+      decision.allowed &&
+      !isEffectStore(this.replayProtection.store) &&
+      authority.grants.some(
+        (grant) => grant.id === decision.matchedGrantId && grant.constraints.maxUses !== undefined,
+      )
+    ) {
+      options.onExplain?.(
+        deepFreeze({
+          reasonCode: "usage_store_unavailable",
+          grantsResolved: authority.grants.length,
+          rejections: [],
+          missingDependency: "effectStore",
+        }),
+      );
+      return { allowed: false, reasonCode: "usage_store_unavailable" };
+    }
+    return decision;
   }
 
   /**
@@ -1980,6 +2116,7 @@ export class SharedOSKernel {
      * is not a tool call -- a bare `authorize`, a turn admission -- has no id.
      */
     operationId?: string,
+    attempt?: EffectAttempt,
   ): Promise<AuthorizationDecision> {
     return measure(
       this.#spans,
@@ -1989,7 +2126,7 @@ export class SharedOSKernel {
           span.set("callId", operationId);
         }
         span.set("consumed", consume);
-        return this.#decideAndRecord(context, authority, request, consume, operationId);
+        return this.#decideAndRecord(context, authority, request, consume, operationId, attempt);
       },
       (decision, span) => span.set("outcome", decision.allowed ? "allowed" : "denied"),
     );
@@ -2001,13 +2138,32 @@ export class SharedOSKernel {
     request: CapabilityRequirement,
     consume: boolean,
     operationId?: string,
+    attempt?: EffectAttempt,
   ): Promise<AuthorizationDecision> {
     let explanation: AuthorizationExplanation | undefined;
     const decision = await this.#authorizer.authorize(authority, request, {
       consume,
+      ...(consume
+        ? {
+            reserve: async (grantId: string, maximumUses: number) => {
+              if (attempt === undefined)
+                throw new Error("Bounded effects require a recoverable replay store");
+              const reserved = await attempt.store.reserveUsage(
+                attempt.claim,
+                grantId,
+                maximumUses,
+              );
+              attempt.reserved ||= reserved;
+              return reserved;
+            },
+          }
+        : {}),
       now: context.now,
       onExplain: (received) => {
-        explanation = received;
+        explanation =
+          consume && attempt === undefined && received.reasonCode === "usage_store_unavailable"
+            ? { ...received, missingDependency: "effectStore" }
+            : received;
       },
     });
 
@@ -2019,6 +2175,7 @@ export class SharedOSKernel {
       authority.snapshot.hash,
       operationId,
       explanation,
+      attempt,
     );
 
     return decision;
@@ -2187,10 +2344,11 @@ export class SharedOSKernel {
     context: AccessContext,
     request: CapabilityRequirement,
     decision: AuthorizationDecision,
-    consume: boolean,
+    _consume: boolean,
     authorityHash?: string,
     operationId?: string,
     explanation?: AuthorizationExplanation,
+    attempt?: EffectAttempt,
   ): Promise<void> {
     await this.#recordDecision(
       this.#auditEvent(context, {
@@ -2208,13 +2366,15 @@ export class SharedOSKernel {
         // two lived in the same bag a port's `failClosed: true` would have
         // moved a deliberate refusal out of the policy counts it belongs in
         // (ADR 0023).
-        consumed: consume,
+        consumed: false,
+        ...(!attempt?.reserved ? {} : { usageState: "reserved" as const }),
         ...(decision.allowed ? {} : failClosedFor(decision.reasonCode)),
         ...metadataOf({
           ...decision.metadata,
           ...(explanation === undefined ? {} : explanationMetadata(explanation)),
         }),
       }),
+      attempt,
     );
   }
 
@@ -2275,6 +2435,7 @@ export class SharedOSKernel {
         ...operationFacts(invoked.source, invoked.reasonCode, invoked.cause),
         ...metadataOf(catalogueServed === undefined ? {} : { catalogHash: catalogueServed }),
       }),
+      invoked.attempt,
     );
   }
 
@@ -2283,6 +2444,7 @@ export class SharedOSKernel {
     request: ResourceInvocationRequest,
     result: ResourceResult,
     grantId?: string,
+    attempt?: EffectAttempt,
   ): Promise<void> {
     await this.#recordOutcome(
       this.#auditEvent(context, {
@@ -2294,6 +2456,7 @@ export class SharedOSKernel {
         ...(grantId === undefined ? {} : { grantId }),
         ...operationFacts("kernel", result.status === "succeeded" ? undefined : result.error.code),
       }),
+      attempt,
     );
   }
 
@@ -2303,6 +2466,7 @@ export class SharedOSKernel {
     result: MessageDeliveryResult,
     grantId?: string,
     operationId?: string,
+    attempt?: EffectAttempt,
   ): Promise<void> {
     await this.#recordOutcome(
       this.#auditEvent(context, {
@@ -2320,7 +2484,76 @@ export class SharedOSKernel {
           result.status === "denied" || result.status === "failed" ? result.error.code : undefined,
         ),
       }),
+      attempt,
     );
+  }
+
+  async #withEffect<Result>(
+    claim: ReplayClaim | undefined,
+    invoke: (attempt?: EffectAttempt) => Promise<Result>,
+  ): Promise<Result> {
+    const store = this.replayProtection.store;
+    const attempt: EffectAttempt | undefined =
+      claim !== undefined && isEffectStore(store)
+        ? {
+            claim,
+            store,
+            admitted: false,
+            admissionStarted: false,
+            reserved: false,
+            accounting: true,
+          }
+        : undefined;
+    try {
+      return await invoke(attempt);
+    } finally {
+      if (attempt !== undefined && !attempt.admissionStarted) {
+        try {
+          const decision = attempt.claim.audit.find(
+            (event) => event.type === "authorization.checked" && event.usageState === "reserved",
+          );
+          const released: AuditEvent | undefined =
+            decision === undefined
+              ? undefined
+              : deepFreeze({
+                  ...decision,
+                  id: this.#createAuditId?.() ?? crypto.randomUUID(),
+                  type: "grant.usage.released",
+                  outcome: "succeeded",
+                  usageState: "released",
+                  consumed: false,
+                  reason: "pre_admission_release",
+                  source: "kernel",
+                });
+          if (
+            !(await attempt.store.releaseUsage(
+              attempt.claim,
+              released === undefined ? [] : [released],
+            ))
+          )
+            throw new Error("Reservation release lost ownership");
+          if (released !== undefined) attempt.claim.audit.push(released);
+        } catch {
+          throw new ReplayError("replay_unavailable");
+        }
+      }
+    }
+  }
+
+  async #enterEffect(attempt: EffectAttempt | undefined, signal?: AbortSignal): Promise<void> {
+    signal?.throwIfAborted();
+    if (attempt !== undefined) {
+      // Set first: a lost acknowledgement can mean the admission committed.
+      attempt.admissionStarted = true;
+      try {
+        if (!(await attempt.store.admitEffect(attempt.claim, attempt.claim.audit)))
+          throw new Error("Effect admission lost ownership");
+        attempt.admitted = true;
+      } catch {
+        throw new ReplayError("replay_unavailable");
+      }
+    }
+    signal?.throwIfAborted();
   }
 
   /**
@@ -2343,6 +2576,7 @@ export class SharedOSKernel {
    * asked the kernel for, which is the kernel's failure and not the port's.
    */
   async #invokePort<Result>(port: {
+    readonly attempt?: EffectAttempt | undefined;
     readonly context: AccessContext;
     readonly signal: AbortSignal | undefined;
     readonly invoke: () => Promise<unknown>;
@@ -2356,6 +2590,7 @@ export class SharedOSKernel {
     readonly interrupted: (reasonCode: string) => Promise<void>;
   }): Promise<Result> {
     port.signal?.throwIfAborted();
+    await this.#enterEffect(port.attempt, port.signal);
     try {
       return port.accept(await port.invoke()) ?? port.refuse(...port.invalid);
     } catch (error) {
@@ -2404,9 +2639,10 @@ export class SharedOSKernel {
    * This and `#recordOutcome` are the only two callers of
    * the sink, so which rule a write follows is visible at its call site.
    */
-  async #recordDecision(event: AuditEvent): Promise<void> {
+  async #recordDecision(event: AuditEvent, attempt?: EffectAttempt): Promise<void> {
     try {
-      await this.#audit.record(event);
+      attempt?.claim.audit.push(event);
+      await this.#withinAuditWriteLimit(this.#audit.record(event));
     } catch (error) {
       throw new AuditUnavailableError(error);
     }
@@ -2423,7 +2659,29 @@ export class SharedOSKernel {
    * same way, so the result is released either once its record is written or
    * once the host has been told it was not.
    */
-  async #recordOutcome(event: AuditEvent): Promise<void> {
+  async #recordOutcome(event: AuditEvent, attempt?: EffectAttempt): Promise<void> {
+    if (attempt !== undefined) {
+      if (attempt.accounting)
+        event = deepFreeze({
+          ...event,
+          ...(attempt.admitted
+            ? { usageState: "admitted" as const }
+            : attempt.reserved
+              ? { usageState: "reserved" as const }
+              : {}),
+          consumed: attempt.admitted && attempt.reserved,
+        });
+      attempt.claim.audit.push(event);
+      try {
+        await this.#withinAuditWriteLimit(attempt.store.appendAudit(attempt.claim, event));
+      } catch (error) {
+        try {
+          await this.#withinAuditWriteLimit(this.#onAuditError?.(error, event));
+        } catch {
+          /* result stays final */
+        }
+      }
+    }
     try {
       await this.#withinAuditWriteLimit(this.#audit.record(event));
     } catch (error) {

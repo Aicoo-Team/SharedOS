@@ -339,6 +339,7 @@ describe("SharedOSKernel turn-scoped authority", () => {
     events?: AuditEvent[],
   ): SharedOSKernel =>
     new SharedOSKernel({
+      audit: "discard",
       grantSource: {
         load: async (accessContext, signal) => {
           if (loads !== undefined) {

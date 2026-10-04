@@ -33,10 +33,12 @@ the context's namespace, actor, and issuing authority: a superset is treated as
 `authority_unavailable` rather than quietly narrowed, and throwing is the right
 answer to an outage.
 
-**Bounded grants fail closed without a usage store.** `maxUses` is denied with
-`usage_store_unavailable` when `CapabilityAuthorizer` has no `usageStore`, and
-`tryConsume` must be one atomic statement or two concurrent turns both spend
-the last use.
+**Bounded effects require a recoverable operation store.** The SQLite example
+still implements a legacy atomic `tryConsume` counter, not `EffectStore`.
+Its bounded grants now fail closed with `usage_store_unavailable` at invocation.
+To enable them, extend the same durable replay record with reservation,
+fenced admission, release and result/audit outbox transactions (ADR 0029).
+Do not replace durable storage with the in-memory fixture in production.
 
 **Derived grants fail closed without a chain resolver.** A grant produced by
 `deriveGrant` is narrowed at derivation, but revocation and expiry happen

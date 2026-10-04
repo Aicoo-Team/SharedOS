@@ -1006,4 +1006,25 @@ describe("runtime protocol compatibility", () => {
     expect(turnKernel.admitTurn).not.toHaveBeenCalled();
     expect(runtime.run).not.toHaveBeenCalled();
   });
+
+  it.each(["1", "3"])(
+    "rejects incompatible embedded message epoch %s before admission",
+    async (version) => {
+      const turnKernel = kernel();
+      const runtime: RuntimePlugin = {
+        manifest,
+        run: vi.fn(async () => ({ type: "complete" as const, output: null })),
+      };
+      const executor = new SharedOSExecutor(turnKernel, runtime);
+      const input = request();
+      await expect(
+        executor.execute({
+          ...input,
+          message: { ...input.message, version },
+        } as unknown as ExecutionRequest),
+      ).rejects.toMatchObject({ code: "unsupported_protocol_version", receivedVersion: version });
+      expect(turnKernel.admitTurn).not.toHaveBeenCalled();
+      expect(runtime.run).not.toHaveBeenCalled();
+    },
+  );
 });
