@@ -9,6 +9,11 @@
 - Supersedes: the per-operation resolution decided in
   `docs/adr/0009-trusted-grant-source.md`
 
+> ADR 0027 adds an optional live revocation port which only narrows held authority.
+> The default grant-source behavior described here remains snapshot-bound; the
+> existing optional leaf verifier can also provide live checks. See
+> `docs/adr/0027-live-revocation-narrows-turn-authority.md`.
+
 ## Context
 
 ADR 0009 made `GrantSource` the only way authority enters SharedOS, and had

@@ -78,6 +78,7 @@ export type GrantRejectionReason =
   | "window"
   | "purpose"
   | "verifier"
+  | "revocation"
   | "capability"
   | "delegation"
   | "exhausted";
@@ -114,9 +115,35 @@ export interface GrantUsageStore {
   tryConsume(namespaceId: string, grantId: string, maximumUses: number): Promise<boolean>;
 }
 
+/** Legacy live leaf verification; false and throws both reject the candidate. */
 export interface CapabilityGrantVerifier {
   verify(grant: CapabilityGrant, context: AccessContext): Promise<boolean>;
 }
+
+/** A host-owned, atomic revocation read over a candidate and all its ancestors.
+ * The host must include all revocations committed before the read begins, must
+ * never reuse grant IDs or undo revocations, and must throw if freshness cannot
+ * be established. No grant contents or new authority are returned.
+ */
+export interface GrantRevocationSource {
+  check(context: AccessContext, grantIds: readonly string[]): Promise<GrantRevocationState>;
+}
+
+/** One namespace-scoped revision, read atomically for all requested IDs. */
+export interface GrantRevocationState {
+  readonly revision: string;
+  readonly revokedGrantIds: readonly string[];
+}
+
+/** Host-only evidence; the kernel joins this to the snapshot hash in audit. */
+export type RevocationEvidence =
+  | {
+      readonly status: "checked";
+      readonly grantIds: readonly string[];
+      readonly revision: string;
+      readonly revokedGrantIds: readonly string[];
+    }
+  | { readonly status: "unavailable"; readonly grantIds: readonly string[] };
 
 /**
  * A decision that allowed, and the grant that produced it.
@@ -242,6 +269,8 @@ export interface HostCeiling<Policy = HostPolicy> {
  * move and which do not, and ADR 0016 for why.
  */
 export interface AuthorizationInstantOptions {
+  /** Synchronous host diagnostic; must not throw. Never sent to a provider. */
+  readonly onRevocation?: (evidence: RevocationEvidence) => void;
   readonly now?: string;
 }
 
@@ -279,6 +308,8 @@ export interface DiscoverOptions extends AuthorizationInstantOptions {
 export interface CapabilityAuthorizerOptions {
   readonly usageStore?: GrantUsageStore;
   readonly grantVerifier?: CapabilityGrantVerifier;
+  /** Opt-in live narrowing, independent of the once-per-turn grant source. */
+  readonly revocationSource?: GrantRevocationSource;
   /**
    * Trusted ancestor lookup for delegated grants. Without it, a grant that
    * claims a parent can never authorize anything.
@@ -341,6 +372,7 @@ export class InMemoryGrantUsageStore implements GrantUsageStore {
 export class CapabilityAuthorizer {
   readonly #usageStore: GrantUsageStore | undefined;
   readonly #grantVerifier: CapabilityGrantVerifier | undefined;
+  readonly #revocationSource: GrantRevocationSource | undefined;
   readonly #delegationResolver: DelegationChainResolver | undefined;
   readonly #maxDelegationChainLength: number | undefined;
   readonly #hostCeiling: HostCeiling | undefined;
@@ -349,6 +381,7 @@ export class CapabilityAuthorizer {
   constructor(options: CapabilityAuthorizerOptions = {}) {
     this.#usageStore = options.usageStore;
     this.#grantVerifier = options.grantVerifier;
+    this.#revocationSource = options.revocationSource;
     this.#delegationResolver = options.delegationResolver;
     this.#maxDelegationChainLength = options.maxDelegationChainLength;
     this.#hostCeiling = options.hostCeiling;
@@ -382,6 +415,7 @@ export class CapabilityAuthorizer {
       // `describeRequiredCapability`.
       true,
       options.onExplain,
+      options.onRevocation,
     );
   }
 
@@ -409,6 +443,7 @@ export class CapabilityAuthorizer {
       options.now,
       false,
       options.onExplain,
+      options.onRevocation,
     );
   }
 
@@ -438,8 +473,8 @@ export class CapabilityAuthorizer {
    * Entries are deduplicated and canonically ordered, so the same authority
    * produces the same reach however the store happened to order its grants.
    *
-   * Only `usage_store_unavailable` is emitted here; `SharedOSKernel.reach` adds
-   * `authority_unavailable` when the authority itself could not be loaded.
+   * Unavailable usage or live revocation state makes this answer unavailable.
+   * `SharedOSKernel.reach` also handles a snapshot that could not be loaded.
    *
    * See ADR 0021, which reads this for a *subject* by deriving a context from
    * the reader's own, and `SharedOSKernel.reach`, which reads it for the turn's
@@ -469,7 +504,21 @@ export class CapabilityAuthorizer {
       if ((await this.#grantRejection(context, grant, at)) !== undefined) {
         continue;
       }
-      if ((await this.#validateDelegation(context, grant, at)).status !== "valid") {
+      const delegation = await this.#validateDelegation(context, grant, at);
+      if (delegation.status !== "valid") {
+        continue;
+      }
+      const revocation = await this.#checkRevocation(
+        context,
+        grant,
+        delegation.chain,
+        at,
+        options.onRevocation,
+      );
+      if (revocation === "unavailable") {
+        return { status: "unavailable", reasonCode: "authority_unavailable" };
+      }
+      if (revocation === "revoked") {
         continue;
       }
       const budget = await this.#budgetLeft(context, grant);
@@ -555,6 +604,7 @@ export class CapabilityAuthorizer {
     operationNow: string | undefined,
     describeMissing: boolean,
     onExplain: ((explanation: AuthorizationExplanation) => void) | undefined,
+    onRevocation: AuthorizationInstantOptions["onRevocation"],
   ): Promise<AuthorizationDecision> {
     const context = structuredClone(authority.context);
     const grants = structuredClone([...authority.grants]);
@@ -635,6 +685,21 @@ export class CapabilityAuthorizer {
           code: delegation.code,
           grantId: delegation.grantId,
         });
+        continue;
+      }
+
+      const revocation = await this.#checkRevocation(
+        context,
+        grant,
+        delegation.chain,
+        at,
+        onRevocation,
+      );
+      if (revocation === "unavailable") {
+        return explained(deny("authority_unavailable"));
+      }
+      if (revocation === "revoked") {
+        rejections.push({ grantId: grant.id, reason: "revocation" });
         continue;
       }
 
@@ -788,6 +853,57 @@ export class CapabilityAuthorizer {
       matchedGrantId: grantId,
       ...(isJsonObject(narrowed.metadata) ? { metadata: narrowed.metadata } : {}),
     };
+  }
+
+  async #checkRevocation(
+    context: AccessContext,
+    grant: CapabilityGrant,
+    ancestors: readonly string[],
+    at: GrantInstants,
+    onRevocation: AuthorizationInstantOptions["onRevocation"],
+  ): Promise<"active" | "revoked" | "unavailable"> {
+    if (this.#revocationSource === undefined) {
+      return "active";
+    }
+    const grantIds = [grant.id, ...ancestors];
+    let evidence: RevocationEvidence;
+    try {
+      const state = await this.#revocationSource.check(
+        {
+          ...structuredClone(context),
+          now: new Date(Math.max(at.now, at.admittedAt)).toISOString(),
+        },
+        [...grantIds],
+      );
+      if (
+        state === null ||
+        typeof state !== "object" ||
+        typeof state.revision !== "string" ||
+        state.revision.trim().length === 0 ||
+        !Array.isArray(state.revokedGrantIds) ||
+        !state.revokedGrantIds.every((id) => typeof id === "string" && grantIds.includes(id))
+      ) {
+        throw new TypeError("Invalid revocation state");
+      }
+      evidence = {
+        status: "checked",
+        grantIds,
+        revision: state.revision,
+        revokedGrantIds: [...new Set(state.revokedGrantIds)],
+      };
+    } catch {
+      evidence = { status: "unavailable", grantIds };
+    }
+    // Evidence is detached from host-owned data and cannot change the decision.
+    const diagnostic = structuredClone(evidence);
+    Object.freeze(diagnostic.grantIds);
+    if (diagnostic.status === "checked") Object.freeze(diagnostic.revokedGrantIds);
+    onRevocation?.(Object.freeze(diagnostic));
+    return evidence.status === "unavailable"
+      ? "unavailable"
+      : evidence.revokedGrantIds.length > 0
+        ? "revoked"
+        : "active";
   }
 
   async #validateDelegation(

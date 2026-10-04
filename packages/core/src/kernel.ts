@@ -58,6 +58,7 @@ import {
 } from "./authority.js";
 import {
   type AuthorizationExplanation,
+  type RevocationEvidence,
   CapabilityAuthorizer,
   addressesEqual,
   isInfrastructureDenial,
@@ -842,6 +843,7 @@ export class SharedOSKernel {
     const allowed: ToolDefinition[] = [];
     let withheldCount = 0;
     let withheldByOutage = false;
+    const revocationChecks: RevocationEvidence[] = [];
     const enabledNamespaces = new Set(context.enabledToolNamespaces);
     const tools = await this.#resolveToolRegistry(context, options.signal);
 
@@ -857,7 +859,7 @@ export class SharedOSKernel {
           resource: definition.requiredCapability.resource,
           action: definition.requiredCapability.action,
         },
-        { now: context.now },
+        { now: context.now, onRevocation: (evidence) => revocationChecks.push(evidence) },
       );
       if (decision.allowed) {
         allowed.push(definition);
@@ -876,6 +878,7 @@ export class SharedOSKernel {
         source: "kernel",
         ...(withheldByOutage ? { failClosed: true } : {}),
         metadata: {
+          ...revocationMetadata(revocationChecks),
           // What the listing was computed from and what it came to, as
           // identifiers and a count rather than as names. `catalogHash` is the
           // catalogue the caller was shown -- the identifier `listPublishedTools`
@@ -1122,6 +1125,7 @@ export class SharedOSKernel {
     // this check and nowhere else, and the record of it is the only place a
     // host can read which grant was turned away or which port was never wired.
     let discoveryExplanation: AuthorizationExplanation | undefined;
+    const discoveryRevocations: RevocationEvidence[] = [];
     const discoverable = await measure(
       this.#spans,
       SPAN.TOOL_DISCOVER,
@@ -1135,6 +1139,7 @@ export class SharedOSKernel {
           },
           {
             now: context.now,
+            onRevocation: (evidence) => discoveryRevocations.push(evidence),
             onExplain: (received) => {
               discoveryExplanation = received;
             },
@@ -1158,6 +1163,7 @@ export class SharedOSKernel {
         // and a reader with two turns on one sink joins the wrong pair.
         call.id,
         discoveryExplanation,
+        discoveryRevocations,
       );
       const result = refusedToolResult(
         call,
@@ -1834,9 +1840,11 @@ export class SharedOSKernel {
     operationId?: string,
   ): Promise<AuthorizationDecision> {
     let explanation: AuthorizationExplanation | undefined;
+    const revocationChecks: RevocationEvidence[] = [];
     const decision = await this.#authorizer.authorize(authority, request, {
       consume,
       now: context.now,
+      onRevocation: (evidence) => revocationChecks.push(evidence),
       onExplain: (received) => {
         explanation = received;
       },
@@ -1850,6 +1858,7 @@ export class SharedOSKernel {
       authority.snapshot.hash,
       operationId,
       explanation,
+      revocationChecks,
     );
 
     return decision;
@@ -2022,6 +2031,7 @@ export class SharedOSKernel {
     authorityHash?: string,
     operationId?: string,
     explanation?: AuthorizationExplanation,
+    revocationChecks: readonly RevocationEvidence[] = [],
   ): Promise<void> {
     await this.#recordDecision(
       this.#auditEvent(context, {
@@ -2043,6 +2053,7 @@ export class SharedOSKernel {
         ...(decision.allowed ? {} : failClosedFor(decision.reasonCode)),
         ...metadataOf({
           ...decision.metadata,
+          ...revocationMetadata(revocationChecks),
           ...(explanation === undefined ? {} : explanationMetadata(explanation)),
         }),
       }),
@@ -2498,4 +2509,21 @@ function hostPolicyState(
   hostPolicy: PolicyResolution | undefined,
 ): "loaded" | "unavailable" | "absent" {
   return hostPolicy === undefined ? "absent" : hostPolicy.status;
+}
+
+function revocationMetadata(checks: readonly RevocationEvidence[]): JsonObject {
+  return checks.length === 0
+    ? {}
+    : {
+        revocationChecks: checks.map((check) => ({
+          status: check.status,
+          grantIds: [...check.grantIds],
+          ...(check.status === "checked"
+            ? {
+                revision: check.revision,
+                revokedGrantIds: [...check.revokedGrantIds],
+              }
+            : {}),
+        })),
+      };
 }

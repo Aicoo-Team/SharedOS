@@ -7,6 +7,11 @@
 - Amends: the "Removals are frozen together" section of
   `docs/adr/0010-per-turn-authority.md`
 
+> ADR 0027 adds an optional live revocation port which only narrows held authority.
+> The default grant-source behavior described here remains snapshot-bound; the
+> existing optional leaf verifier can also provide live checks. See
+> `docs/adr/0027-live-revocation-narrows-turn-authority.md`.
+
 ## Context
 
 ADR 0010 resolved authority once, at the turn boundary, and held it. It also

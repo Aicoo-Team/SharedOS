@@ -148,13 +148,15 @@ For each concrete resource or tool operation, the kernel evaluates:
    admission, and grants that have expired as of this operation.
 7. Match the declared purpose when the grant restricts purposes.
 8. Match resource namespace, owner, path scope, and exact action together.
-9. Validate the delegation chain of a derived grant, or deny.
+9. Validate the delegation chain of a derived grant, or deny. When a revocation
+   source is installed, check the matched grant and all validated ancestors
+   together; reject revoked authority or fail closed if freshness is unavailable.
 10. Apply the host ceiling to the matched grant, or deny `host_policy_denied`.
 11. Atomically consume a bounded grant only for execution, not discovery.
 12. Return an explicit decision and append an audit event.
 
 If no complete grant matches, deny. If trusted grant state, a delegation
-ancestor, or an atomic usage store is unavailable, fail closed.
+ancestor, live revocation state, or an atomic usage store is unavailable, fail closed.
 
 Steps 10 and 11 are in that order deliberately. A call the ceiling refuses does
 not spend a bounded use, because `maxUses` counts what an actor did and a call
@@ -466,19 +468,34 @@ The rule is directional: the operation's clock may only take authority away. A
 turn carries the grant set it was admitted with and never gains more while it
 runs, and a window that opens mid-turn is therefore not honoured until the next
 turn. An ancestor follows the same split, so an ancestor expiring mid-turn
-invalidates its descendants immediately and an ancestor revoked mid-turn does
-not. See `docs/adr/0016-expiry-is-instant-bound.md`.
+invalidates its descendants immediately. Without a live verifier or revocation
+port, an ancestor revoked mid-turn remains snapshot-bound. See `docs/adr/0016-expiry-is-instant-bound.md`.
 
-A host whose revocation SLA is shorter than its longest turn must bound turn
-length; the kernel will not cut a turn short. Issuing short-lived grants is one
-way to bound it, because their expiry now lands inside the turn. A host that
-additionally caches inside its `GrantSource` owns that staleness window on top.
+Hosts requiring live revocation install `CapabilityAuthorizer.revocationSource`
+(`GrantRevocationSource`). After snapshot matching and delegation validation,
+before host policy and usage accounting, each candidate's leaf and all ancestor
+IDs are checked together. The host guarantees a consistent read including all
+revocations committed before the read begins; unavailable freshness, throws, or
+malformed state fail closed as `authority_unavailable`. Revocation rejects a
+candidate, never adds authority. Reach reports an outage as unavailable;
+discovery also applies the gate. No full grant catalogue is reloaded.
 
-Nothing inside a turn observes a store edit before the next turn. The
-per-operation path that once did was kept behind a build-time switch no host
-could set, and is removed. A kernel call made outside any turn still resolves
-its own authority, which is a turn of one operation. See
-`docs/adr/0010-per-turn-authority.md`.
+The existing optional `CapabilityGrantVerifier` can already perform live leaf
+checks. It retains its boolean interface: false and throws reject a grant, and
+it does not verify ancestor revocation. Hosts needing explicit outage evidence
+and complete-chain live checks use the revocation port.
+
+Concurrent operations have independent reads. A read overlapping revocation
+may authorize; an operation already past the gate may still dispatch and finish.
+Revocation cannot undo committed external effects. Cancellation or transactional
+provider fencing requires host coordination. Audit joins each live read's revision,
+checked IDs and result to the unchanged snapshot hash. See
+`docs/adr/0027-live-revocation-narrows-turn-authority.md` for freshness and evidence.
+
+Without live checks, hosts bound revocation latency by turn length or grant expiry.
+A host caching its `GrantSource` owns that additional staleness. Direct kernel
+calls still resolve their own authority as turns of one operation and apply the
+same optional live gate.
 
 ## Audit requirements
 
@@ -520,7 +537,8 @@ Any permission-related change must answer:
 - Where is the authenticated actor established?
 - How is the world/tenant boundary bound and checked?
 - Can two grants accidentally combine into broader authority?
-- Is expiry checked at the side effect, and revocation at the turn's admission?
+- Is expiry checked at authorization, and is the configured revocation freshness
+  enforced for both leaf grants and ancestors?
 - Is bounded use atomic across instances?
 - Are discovery and invocation both gated?
 - Are allow and deny paths tested?
