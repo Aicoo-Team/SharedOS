@@ -59,6 +59,7 @@ describe("classifyRefusal pins every code to one gate", () => {
     ["actor_mismatch", "request"],
     ["receiver_mismatch", "request"],
     ["message_context_mismatch", "request"],
+    ["execution_in_progress", "request"],
   ];
 
   it.each(byCode)("%s → %s", (code, gate) => {

@@ -22,6 +22,21 @@ each entry calls out what a host has to update.
 
 ### Fixed
 
+- **Two executions that share an actor, purpose and trace no longer share a
+  turn.** A turn's authority lease was keyed on namespace, actor, authority,
+  owner, purpose and trace, so a second execution that agreed on all six while
+  the first was still open was answered from the first's lease: authority
+  loaded before it began, no `authority.resolved` of its own, the first's
+  catalogue. `AccessContext` gains an optional `executionId` that is part of
+  the key, and `SharedOSExecutor` copies the request's onto the turn's context.
+  **A run submitted under an execution id that is still running is now refused**
+  `denied` with the new code `execution_in_progress`, where it used to share
+  the running turn's authority and do its work a second time; wait for the
+  original or use a new id. A finished id can still run again. Two opens of one
+  context with no id that raced also overwrote each other's lease, so the first
+  to close removed the authority the second still held; the later one now
+  joins. Nothing on the wire changes: the HTTP schemas omit the context. ADR
+  0010 is revised.
 - **Reading a Claude Code or Pi tool call no longer pays for a failed parse.**
   The content-block walk the vendor codecs share recognised prose by running
   `TextBlockSchema.safeParse` on every block, where each codec had compared

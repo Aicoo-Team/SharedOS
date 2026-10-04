@@ -23,11 +23,12 @@ export const AccessContextSchema = z
     purpose: z.string().trim().min(1).max(512),
     traceId: IdentifierSchema,
     /**
-     * Host-created identity of one turn, preserved by nested kernel calls.
-     * Independent turns must use distinct IDs, even when execution/trace IDs repeat.
-     * Omit for direct operations or legacy context-keyed turn scopes (ADR 0027).
+     * The execution this context belongs to, carried by every kernel call the
+     * turn makes. The executor copies it from the request. With one the turn is
+     * that execution's alone, and a second open while it runs is refused;
+     * without one, opens that share the other fields share a lease (ADR 0010).
      */
-    turnId: IdentifierSchema.optional(),
+    executionId: IdentifierSchema.optional(),
     enabledToolNamespaces: EnabledToolNamespacesSchema,
     now: TimestampSchema,
   })

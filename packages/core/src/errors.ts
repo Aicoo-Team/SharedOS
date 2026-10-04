@@ -23,6 +23,26 @@ export class MissingRegistrationError extends Error {
 /** The code a turn ends on, and an error carries, when audit could not record a decision. */
 export const AUDIT_UNAVAILABLE = "audit_unavailable";
 
+/** The code a turn is refused with when its execution id already has a turn open. */
+export const EXECUTION_IN_PROGRESS = "execution_in_progress";
+
+/**
+ * A turn was opened under an execution id whose turn is still open.
+ *
+ * One execution id is one turn. Joining the open one would decide the second
+ * run against authority loaded before it began and run its work twice, so
+ * `openTurnAuthority` rejects with this instead. Nothing was loaded and the
+ * open turn is untouched. The id is free again once that turn closes.
+ */
+export class ExecutionInProgressError extends Error {
+  override readonly name = "ExecutionInProgressError";
+  readonly code = EXECUTION_IN_PROGRESS;
+
+  constructor(executionId: string) {
+    super(`An execution with this id is still running: ${executionId}`);
+  }
+}
+
 /** The code on the error `onAuditError` is handed when a sink did not answer in time. */
 export const AUDIT_WRITE_TIMEOUT = "audit_write_timeout";
 

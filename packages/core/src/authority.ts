@@ -13,13 +13,14 @@ export const MAX_RESOLVED_GRANTS = 256;
  * `now` is excluded because the turn instant is precisely what a lease freezes,
  * and `enabledToolNamespaces` is excluded because namespace enablement is host
  * state that stays live per operation and is never read by an authorization
- * decision. The host-created `turnId` isolates executions, including repeated
- * execution IDs. Every other field an authorization decision reads is in the key, so
- * a lease can never answer for a context it was not resolved for.
+ * decision. Every other field an authorization decision reads is in the key, so
+ * a lease can never answer for a context it was not resolved for, and
+ * `executionId` is in it so one execution can never answer for another that
+ * shares those fields.
  */
 export function turnAuthorityKey(context: AccessContext): string {
   return canonicalJson({
-    ...(context.turnId === undefined ? {} : { turnId: context.turnId }),
+    ...(context.executionId === undefined ? {} : { executionId: context.executionId }),
     namespaceId: context.namespaceId,
     actor: context.actor,
     authority: context.authority,

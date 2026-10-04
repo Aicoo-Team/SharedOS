@@ -1,7 +1,6 @@
 # ADR 0026: The effective catalogue is resolved once per turn
 
-- Status: Accepted; turn identity and lease initialization amended by
-  `docs/adr/0027-turn-lease-isolation.md`
+- Status: Accepted
 - Date: 2026-09-08
 - Extends: `docs/adr/0010-per-turn-authority.md`
 

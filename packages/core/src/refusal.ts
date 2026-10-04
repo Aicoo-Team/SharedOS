@@ -44,6 +44,7 @@ const REQUEST_CODES: ReadonlySet<string> = new Set([
   "actor_mismatch",
   "receiver_mismatch",
   "message_context_mismatch",
+  "execution_in_progress",
 ]);
 
 const GRANT_CODES: ReadonlySet<string> = new Set([

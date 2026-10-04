@@ -928,8 +928,8 @@ describe("SharedOSKernel catalogue resolution", () => {
       available ? [successfulTool(NOTION_TOOL)] : [],
     );
     const kernel = kernelWith([NOTION_GRANT], { toolProviders: [providerOf(listTools)] });
-    const firstContext = { ...context(["notion"]), turnId: "execution-a" };
-    const secondContext = { ...context(["notion"]), turnId: "execution-b" };
+    const firstContext = { ...context(["notion"]), executionId: "execution-a" };
+    const secondContext = { ...context(["notion"]), executionId: "execution-b" };
     const first = await kernel.openTurnAuthority(firstContext);
     await expect(kernel.listTools(firstContext)).resolves.toEqual([NOTION_TOOL]);
     available = false;
@@ -969,7 +969,7 @@ describe("SharedOSKernel catalogue resolution", () => {
         return handler.invoke(access, call, signal);
       },
     });
-    const access = { ...context(["notion"]), turnId: "nested-turn" };
+    const access = { ...context(["notion"]), executionId: "nested-turn" };
     const scope = await kernel.openTurnAuthority(access);
     revoked = true;
     try {
