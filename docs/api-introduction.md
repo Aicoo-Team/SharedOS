@@ -51,5 +51,10 @@ the committed reference is current without modifying it, run:
 pnpm docs:api:check
 ```
 
+Source links are built from `sourceLinkTemplate` in `typedoc.json` rather than
+from the checkout's git remote, so the reference is the same wherever it is
+generated. The template names the repository; change it there if the repository
+moves.
+
 Package READMEs provide task-oriented introductions and examples. The pages
 below provide the complete generated signatures and member-level reference.
