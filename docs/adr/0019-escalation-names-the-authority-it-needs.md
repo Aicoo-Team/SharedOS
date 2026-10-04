@@ -128,6 +128,10 @@ end this way and exactly one queue a reviewer reads.
 
 ### The protocol version does not move, and that is a decision
 
+**Superseded by [ADR 0027](0027-wire-protocol-compatibility-epochs.md).** The
+following records the original deferral. Protocol epoch 2 now encodes this
+reader break; synchronized upgrades are explicit on the wire.
+
 Both fields are optional and both are additive for a writer. Neither is additive
 for a reader. The contract schemas are `.strict()`, so a consumer built against
 the current version rejects an object carrying an unknown key rather than

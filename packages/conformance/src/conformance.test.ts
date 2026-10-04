@@ -19,7 +19,7 @@ const HASH = "c".repeat(64);
 
 function request(): ExecutionRequest {
   return {
-    version: "1",
+    version: "2",
     executionId: "execution-1",
     agent: AGENT,
     context: {
@@ -33,7 +33,7 @@ function request(): ExecutionRequest {
       now: NOW,
     },
     message: {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: ACTOR,
       receiver: AGENT,
@@ -62,7 +62,7 @@ function request(): ExecutionRequest {
 
 function result(overrides: Partial<ExecutionResult> = {}): ExecutionResult {
   return {
-    version: "1",
+    version: "2",
     executionId: "execution-1",
     traceId: "trace-1",
     status: "succeeded",
@@ -70,11 +70,11 @@ function result(overrides: Partial<ExecutionResult> = {}): ExecutionResult {
     startedAt: NOW,
     completedAt: LATER,
     metadata: {
-      runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "1" },
+      runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "2" },
     },
     events: [
       {
-        version: "1",
+        version: "2",
         eventId: "event-1",
         executionId: "execution-1",
         traceId: "trace-1",
@@ -84,7 +84,7 @@ function result(overrides: Partial<ExecutionResult> = {}): ExecutionResult {
         occurredAt: NOW,
       },
       {
-        version: "1",
+        version: "2",
         eventId: "event-2",
         executionId: "execution-1",
         traceId: "trace-1",
@@ -100,7 +100,7 @@ function result(overrides: Partial<ExecutionResult> = {}): ExecutionResult {
 
 function auditEvent(overrides: Partial<AuditEvent>): AuditEvent {
   return {
-    version: "1",
+    version: "2",
     type: "authorization.checked",
     outcome: "allowed",
     at: NOW,
@@ -150,7 +150,7 @@ const experiment: ExperimentIdentity = {
 };
 
 const system: Omit<SystemIdentity, "runtime"> = {
-  protocolVersion: "1",
+  protocolVersion: "2",
   sharedOsVersion: "0.1.0-alpha.0",
   adapterId: "sharedos-embedded",
   policyHash: HASH,
@@ -181,7 +181,7 @@ describe("execution record assembly", () => {
     const hash = "ab".repeat(32);
     const cancelled = { status: "cancelled", output: undefined } as const;
     const provenance = {
-      runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "1" },
+      runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "2" },
     };
     const assemble = (metadata: JsonObject) =>
       assembleExecutionRecord({
@@ -431,7 +431,7 @@ describe("execution record assembly", () => {
     // otherwise.
     const reported = result({
       metadata: {
-        runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "1" },
+        runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "2" },
         inputTokens: 110,
         outputTokens: 17,
       },
@@ -456,7 +456,7 @@ describe("execution record assembly", () => {
       request: request(),
       result: result({
         metadata: {
-          runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "1" },
+          runtime: { id: "sharedos.standard", version: "0.1.0-alpha.0", protocolVersion: "2" },
           inputTokens: "lots",
           outputTokens: -1,
         },
@@ -635,5 +635,38 @@ describe("reproducibility hashes", () => {
         { specHash: HASH, worldHash: HASH },
       ),
     ).toMatchObject({ status: "identical", comparable: true });
+  });
+});
+
+describe("execution record protocol compatibility", () => {
+  it("stamps records with the same epoch as the runtime and evidence", () => {
+    const record = assembleExecutionRecord({
+      request: request(),
+      result: result(),
+      experiment,
+      system,
+    });
+    expect(record.version).toBe("2");
+    expect(record.system.protocolVersion).toBe(record.version);
+    expect(record.system.runtime.protocolVersion).toBe(record.version);
+  });
+
+  it("rejects historical source evidence rather than restamping it", () => {
+    const input = { request: request(), result: result(), experiment, system };
+    const oldRequest = { ...input.request, version: "1" } as unknown as ExecutionRequest;
+    const oldResult = { ...input.result, version: "1" } as unknown as ExecutionResult;
+    const oldAudit = { ...auditTrail()[0], version: "1" } as unknown as AuditEvent;
+    for (const changed of [
+      { ...input, request: oldRequest },
+      { ...input, result: oldResult },
+      { ...input, auditEvents: [oldAudit] },
+    ]) {
+      expect(() => assembleExecutionRecord(changed)).toThrow(
+        expect.objectContaining({
+          code: "unsupported_protocol_version",
+          receivedVersion: "1",
+        }),
+      );
+    }
   });
 });

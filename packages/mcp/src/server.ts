@@ -6,7 +6,14 @@ import type {
   SharedOSToolCatalog,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
-import { isJsonObject, SHAREDOS_VERSION } from "@aicoo/sharedos-contracts";
+import {
+  isJsonObject,
+  SHAREDOS_VERSION,
+  PROTOCOL_VERSION,
+  SharedOSToolCatalogSchema,
+  UnsupportedProtocolVersionError,
+  assertProtocolVersion,
+} from "@aicoo/sharedos-contracts";
 import {
   SPAN,
   measure,
@@ -27,6 +34,7 @@ import {
   JsonRpcNotificationSchema,
   JsonRpcRequestSchema,
   type JsonRpcResponse,
+  type InitializeParams,
   jsonRpcError,
   jsonRpcResult,
   negotiateProtocolVersion,
@@ -169,8 +177,13 @@ export class McpToolServer {
 
     try {
       switch (method) {
-        case "initialize":
-          return jsonRpcResult(id, this.#initialize(params));
+        case "initialize": {
+          const parsed = InitializeParamsSchema.safeParse(params ?? {});
+          if (!parsed.success) {
+            return jsonRpcError(id, JSON_RPC_INVALID_PARAMS, "initialize parameters are invalid.");
+          }
+          return jsonRpcResult(id, this.#initialize(parsed.data));
+        }
         case "ping":
           return jsonRpcResult(id, {});
         case "tools/list":
@@ -190,6 +203,12 @@ export class McpToolServer {
         // must not be reported to the harness as one.
         throw error;
       }
+      if (error instanceof UnsupportedProtocolVersionError) {
+        return jsonRpcError(id, JSON_RPC_INVALID_PARAMS, error.message, {
+          code: error.code,
+          supportedVersion: PROTOCOL_VERSION,
+        });
+      }
       return jsonRpcError(id, JSON_RPC_INTERNAL_ERROR, "SharedOS could not answer this request.");
     }
   }
@@ -200,15 +219,16 @@ export class McpToolServer {
     }
   }
 
-  #initialize(params: unknown): JsonObject {
-    const parsed = InitializeParamsSchema.safeParse(params ?? {});
-    const version = negotiateProtocolVersion(
-      parsed.success ? parsed.data.protocolVersion : undefined,
-    );
+  #initialize(params: InitializeParams): JsonObject {
+    if (params._meta !== undefined && "sharedos/protocolVersion" in params._meta) {
+      assertProtocolVersion(params._meta["sharedos/protocolVersion"]);
+    }
+    const version = negotiateProtocolVersion(params.protocolVersion);
     this.#negotiatedVersion = version;
 
     return {
       protocolVersion: version,
+      _meta: { "sharedos/protocolVersion": PROTOCOL_VERSION },
       // `listChanged` is false and stated rather than omitted. A SharedOS
       // catalogue is resolved once per turn and cannot change underneath a
       // running harness, so a client that polls for changes would be waiting on
@@ -219,14 +239,21 @@ export class McpToolServer {
     };
   }
 
-  async #listTools(signal: AbortSignal): Promise<JsonObject> {
+  async #catalog(signal: AbortSignal): Promise<SharedOSToolCatalog> {
     const catalog = await this.#invoker.catalog(signal);
+    assertProtocolVersion(catalog?.version);
+    return SharedOSToolCatalogSchema.parse(catalog);
+  }
+
+  async #listTools(signal: AbortSignal): Promise<JsonObject> {
+    const catalog = await this.#catalog(signal);
     return {
       tools: catalog.tools.map((tool) => toMcpTool(tool)),
       // The catalogue is served whole. Paginating it would let a harness see a
       // prefix and act on it, and a partially discovered catalogue is exactly
       // the stale-discovery failure `catalogHash` exists to catch.
       _meta: {
+        "sharedos/protocolVersion": PROTOCOL_VERSION,
         "sharedos/catalogHash": catalog.catalogHash,
         "sharedos/executionId": catalog.executionId,
       },
@@ -244,7 +271,10 @@ export class McpToolServer {
       return jsonRpcError(id, JSON_RPC_INVALID_PARAMS, "tools/call requires a tool name.");
     }
 
-    const catalog = await this.#invoker.catalog(signal);
+    if (parsed.data._meta !== undefined && "sharedos/protocolVersion" in parsed.data._meta) {
+      assertProtocolVersion(parsed.data._meta["sharedos/protocolVersion"]);
+    }
+    const catalog = await this.#catalog(signal);
     const resolved = resolveCanonicalName(catalog.tools, parsed.data.name);
     const invocation: McpToolInvocation = {
       callId: this.#createId(),
@@ -341,6 +371,7 @@ export function toCallToolResult(
       content: [{ type: "text", text: renderText(result.output) }],
       ...structured,
       isError: false,
+      _meta: { "sharedos/protocolVersion": PROTOCOL_VERSION },
     };
   }
 
@@ -353,7 +384,11 @@ export function toCallToolResult(
   return {
     content: [{ type: "text", text: JSON.stringify(body) }],
     isError: true,
-    _meta: { "sharedos/status": result.status, "sharedos/code": result.error.code },
+    _meta: {
+      "sharedos/protocolVersion": PROTOCOL_VERSION,
+      "sharedos/status": result.status,
+      "sharedos/code": result.error.code,
+    },
   };
 }
 

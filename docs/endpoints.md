@@ -20,7 +20,7 @@ that showed only the routes would miss most of the system.
 | [Outbound calls](#outbound-calls)   | Egress       | 1                       | —                              |
 
 The kernel behind all of them is one kernel, and the authorization decision is
-one decision. A `tools/call` over MCP, a `POST /v1/tools/invoke`, and an embedded
+one decision. A `tools/call` over MCP, a `POST /v2/tools/invoke`, and an embedded
 `kernel.invokeTool` converge on the same check against the same grant.
 
 ## Kernel HTTP API
@@ -31,15 +31,15 @@ runtime that speaks Fetch.
 | Method | Path                   | Purpose                                            |
 | ------ | ---------------------- | -------------------------------------------------- |
 | GET    | `/health`              | Liveness and protocol version                      |
-| POST   | `/v1/authorize`        | Would this be allowed? Performs nothing            |
-| GET    | `/v1/tools`            | The effective catalog for this context             |
-| GET    | `/v1/reach`            | Where this context may operate, authority left out |
-| GET    | `/v1/tools/namespaces` | Namespace descriptors and summary                  |
-| PUT    | `/v1/tools/namespaces` | Idempotent enable/disable patch                    |
-| POST   | `/v1/tools/invoke`     | Run one tool, re-authorized from its arguments     |
-| POST   | `/v1/resources/invoke` | Reach a resource plane directly                    |
-| POST   | `/v1/messages`         | Deliver one message envelope                       |
-| POST   | `/v1/turns`            | Run one bounded agent turn                         |
+| POST   | `/v2/authorize`        | Would this be allowed? Performs nothing            |
+| GET    | `/v2/tools`            | The effective catalog for this context             |
+| GET    | `/v2/reach`            | Where this context may operate, authority left out |
+| GET    | `/v2/tools/namespaces` | Namespace descriptors and summary                  |
+| PUT    | `/v2/tools/namespaces` | Idempotent enable/disable patch                    |
+| POST   | `/v2/tools/invoke`     | Run one tool, re-authorized from its arguments     |
+| POST   | `/v2/resources/invoke` | Reach a resource plane directly                    |
+| POST   | `/v2/messages`         | Deliver one message envelope                       |
+| POST   | `/v2/turns`            | Run one bounded agent turn                         |
 
 `/health` is the only route that resolves no context. Unknown paths are `404`; a
 known path with the wrong verb is `405`. There is no streaming route, no
@@ -118,9 +118,9 @@ authorization decision actually works in — a namespace, a path, and an action.
 
 | Namespace            | Path                     | Actions                                                                                                                                   | Reached by                                    |
 | -------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `files`              | File path, ≤ 64 segments | `list`, `stat`, `read`, `search`, `grep`, `create`, `replace`, `append`, `delete`, `snapshot:create`, `snapshot:list`, `snapshot:restore` | `files.*` tools, `/v1/resources/invoke`       |
-| `sharedos.messaging` | Recipient address        | `send`                                                                                                                                    | `/v1/messages`, `messages.request`            |
-| `sharedos.execution` | Target agent address     | `invoke`                                                                                                                                  | `/v1/turns` admission                         |
+| `files`              | File path, ≤ 64 segments | `list`, `stat`, `read`, `search`, `grep`, `create`, `replace`, `append`, `delete`, `snapshot:create`, `snapshot:list`, `snapshot:restore` | `files.*` tools, `/v2/resources/invoke`       |
+| `sharedos.messaging` | Recipient address        | `send`                                                                                                                                    | `/v2/messages`, `messages.request`            |
+| `sharedos.execution` | Target agent address     | `invoke`                                                                                                                                  | `/v2/turns` admission                         |
 | `repo`               | Repository path          | `status`, `diff`, `log`, `stage`, `commit`                                                                                                | `repo.*` tools                                |
 | `sharedos`           | `["escalation"]`         | `request`                                                                                                                                 | whether `sharedos.escalate` is offered at all |
 | `sharedos`           | `["directory", …]`       | `read`                                                                                                                                    | `kernel.readAgentCard`                        |

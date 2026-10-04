@@ -90,12 +90,12 @@ const driver: AgentTurnDriver = {
 
 const tools = await kernel.listTools(context);
 const request: ExecutionRequest = {
-  version: "1",
+  version: "2",
   executionId: "execution-1",
   agent: alice,
   context,
   message: {
-    version: "1",
+    version: "2",
     id: "message-1",
     sender: bob,
     receiver: alice,

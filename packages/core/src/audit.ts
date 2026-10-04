@@ -1,3 +1,4 @@
+import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
 import type { AccessContext, AuditEvent } from "@aicoo/sharedos-contracts";
 import { deepFreeze } from "./internal.js";
 
@@ -39,7 +40,7 @@ export function auditEvent(
   createId: () => string = randomAuditEventId,
 ): AuditEvent {
   return immutableAuditEvent({
-    version: "1",
+    version: PROTOCOL_VERSION,
     id: createId(),
     at: context.now,
     traceId: context.traceId,

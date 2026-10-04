@@ -1,5 +1,8 @@
 import {
   SHAREDOS_ROUTES,
+  assertProtocolVersion,
+  PROTOCOL_VERSION,
+  SHAREDOS_PROTOCOL_HEADER,
   type AuthorizationDecision,
   type CapabilityRequirement,
   type ExecutionResult,
@@ -186,6 +189,7 @@ export class SharedOSClient {
     const headers = new Headers(await resolveValue(this.#headers));
     new Headers(options?.headers).forEach((value, key) => headers.set(key, value));
     headers.set("accept", "application/json");
+    headers.set(SHAREDOS_PROTOCOL_HEADER, PROTOCOL_VERSION);
 
     if (init.body !== undefined) {
       headers.set("content-type", "application/json");
@@ -206,6 +210,8 @@ export class SharedOSClient {
       ...(options?.signal === undefined ? {} : { signal: options.signal }),
     });
 
+    // Every response identifies its epoch before its shape is read.
+    this.#assertResponseVersion(response, response.headers.get(SHAREDOS_PROTOCOL_HEADER));
     const payload = await readJson(response);
     if (!response.ok) {
       const error = readApiError(payload);
@@ -217,16 +223,45 @@ export class SharedOSClient {
       });
     }
 
+    if (typeof payload === "object" && payload !== null) {
+      if ("protocolVersion" in payload) {
+        this.#assertResponseVersion(response, payload.protocolVersion);
+      }
+      if ("version" in payload) {
+        this.#assertResponseVersion(response, payload.version);
+        if ("events" in payload && Array.isArray(payload.events)) {
+          for (const event of payload.events) {
+            if (typeof event === "object" && event !== null && "version" in event) {
+              this.#assertResponseVersion(response, event.version);
+            }
+          }
+        }
+      }
+    }
     const parsed = schema.safeParse(payload);
     if (!parsed.success) {
       throw new SharedOSClientError({
         status: response.status,
         code: "invalid_response",
-        message: "SharedOS returned a response that does not match the v1 contract.",
+        message: `SharedOS returned a response that does not match the v${PROTOCOL_VERSION} contract.`,
       });
     }
 
     return parsed.data;
+  }
+
+  #assertResponseVersion(response: Response, version: unknown): void {
+    try {
+      assertProtocolVersion(version);
+    } catch (error) {
+      const requestId = response.headers.get("x-request-id");
+      throw new SharedOSClientError({
+        status: response.status,
+        code: "unsupported_protocol_version",
+        message: (error as Error).message,
+        ...(requestId === null ? {} : { requestId }),
+      });
+    }
   }
 }
 

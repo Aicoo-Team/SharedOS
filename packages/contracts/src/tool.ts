@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { CapabilityRequirementSchema } from "./capability.js";
-import { IdentifierSchema, TimestampSchema } from "./common.js";
+import { IdentifierSchema, ProtocolVersionSchema, TimestampSchema } from "./common.js";
 import { JsonObjectSchema, JsonValueSchema } from "./json.js";
 import { ProtocolErrorSchema } from "./protocol-error.js";
 
@@ -210,7 +210,7 @@ export type PublishedToolDefinition = z.infer<typeof PublishedToolDefinitionSche
  */
 export const SharedOSToolCatalogSchema = z
   .object({
-    version: z.literal("1"),
+    version: ProtocolVersionSchema,
     executionId: IdentifierSchema,
     catalogHash: z.string().regex(/^[0-9a-f]{64}$/u),
     tools: z.array(PublishedToolDefinitionSchema).max(512),

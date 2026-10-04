@@ -4,10 +4,39 @@ import { z } from "zod";
  * The wire protocol version implemented by this package, as the one value
  * every request, event, result, envelope and manifest stamps on itself.
  */
-export const PROTOCOL_VERSION = "1" as const;
+export const PROTOCOL_VERSION = "2" as const;
 
 /** The wire protocol version implemented by this package. */
-export const ProtocolVersionSchema = z.literal(PROTOCOL_VERSION);
+export const ProtocolVersionSchema = z.literal(PROTOCOL_VERSION, {
+  errorMap: (_issue, context) => ({
+    message: unsupportedProtocolMessage(context.data),
+  }),
+});
+
+/** A version mismatch is distinct from malformed data within a supported epoch. */
+export class UnsupportedProtocolVersionError extends TypeError {
+  readonly code = "unsupported_protocol_version";
+  readonly supportedVersion = PROTOCOL_VERSION;
+  readonly receivedVersion: string | null;
+
+  constructor(receivedVersion: unknown) {
+    super(unsupportedProtocolMessage(receivedVersion));
+    this.name = "UnsupportedProtocolVersionError";
+    this.receivedVersion = typeof receivedVersion === "string" ? receivedVersion : null;
+  }
+}
+
+function unsupportedProtocolMessage(received: unknown): string {
+  const label = typeof received === "string" ? JSON.stringify(received) : "missing or invalid";
+  return `Unsupported SharedOS protocol version ${label}; supported version is "${PROTOCOL_VERSION}".`;
+}
+
+/** Check the boundary stamp before validating the rest of an untrusted payload. */
+export function assertProtocolVersion(received: unknown): asserts received is ProtocolVersion {
+  if (received !== PROTOCOL_VERSION) {
+    throw new UnsupportedProtocolVersionError(received);
+  }
+}
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 
 /**

@@ -82,12 +82,12 @@ function context(): AccessContext {
 
 function request(): ExecutionRequest {
   return {
-    version: "1",
+    version: "2",
     executionId: "execution-1",
     agent: AGENT,
     context: context(),
     message: {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: AGENT,
       receiver: AGENT,
@@ -114,7 +114,7 @@ const readHandler: ToolHandler = {
 
 /** A runtime that always calls the one exposed tool, then finishes. */
 const runtime: RuntimePlugin = {
-  manifest: { id: "test.deterministic", version: "0.0.1", protocolVersion: "1" },
+  manifest: { id: "test.deterministic", version: "0.0.1", protocolVersion: "2" },
   async run(turn, host) {
     const result = await host.invokeTool({
       id: "call-1",
@@ -137,7 +137,7 @@ const experiment: ExperimentIdentity = {
 };
 
 const system: Omit<SystemIdentity, "runtime"> = {
-  protocolVersion: "1",
+  protocolVersion: "2",
   sharedOsVersion: "0.1.0-alpha.0",
   adapterId: "sharedos-embedded",
   policyHash: HASH,

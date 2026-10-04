@@ -26,7 +26,7 @@ never authority. Enabling `calendar` grants nothing in it.
 **Capability** is authority: which exact resources and actions this actor may
 use. Checked when the catalog is listed, and checked again on every invocation.
 
-The second check is the one that matters. A tool visible in `/v1/tools` is not
+The second check is the one that matters. A tool visible in `/v2/tools` is not
 permitted; a model that rewrites the `path` in its own arguments does not reach
 outside the grant, because the requirement is re-derived from the parsed
 arguments immediately before execution.

@@ -217,12 +217,12 @@ async function main(): Promise<void> {
   console.log(`2. alice's agent can see: ${visible.map(({ name }) => name).join(", ")}`);
 
   const request: ExecutionRequest = {
-    version: "1",
+    version: "2",
     executionId: randomUUID(),
     agent: ALICE_AGENT,
     context: aliceTurn,
     message: {
-      version: "1",
+      version: "2",
       id: randomUUID(),
       sender: BOB_AGENT,
       receiver: ALICE_AGENT,

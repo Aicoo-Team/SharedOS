@@ -62,7 +62,7 @@ function client(
     apiKey: "secret-key",
     model: "requested-model",
     provider: "test-provider",
-    baseUrl: "https://provider.example/v1/",
+    baseUrl: "https://provider.example/v2/",
     fetch,
     ...options,
   });
@@ -90,7 +90,7 @@ describe("the chat-completions client", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     // One trailing slash on the base URL, none in the request: the root is
     // normalised so a host cannot produce `//chat/completions` by configuration.
-    expect(fetch.mock.calls[0]?.[0]).toBe("https://provider.example/v1/chat/completions");
+    expect(fetch.mock.calls[0]?.[0]).toBe("https://provider.example/v2/chat/completions");
     const init = requestInit(fetch);
     expect(init.method).toBe("POST");
     expect(init.headers).toEqual({

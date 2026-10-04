@@ -56,12 +56,12 @@ const grants = [
 
 function request(): ExecutionRequest {
   return {
-    version: "1",
+    version: "2",
     executionId: "execution-1",
     agent,
     context,
     message: {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: owner,
       receiver: agent,
@@ -78,7 +78,7 @@ function call(id: string): ToolCall {
   return { id, tool: transfer.name, arguments: {}, traceId: context.traceId, requestedAt: now };
 }
 
-const manifest = { id: "test.runtime", version: "1.0.0", protocolVersion: "1" } as const;
+const manifest = { id: "test.runtime", version: "1.0.0", protocolVersion: "2" } as const;
 
 /**
  * A real kernel whose sink refuses the events `down` selects, and records the

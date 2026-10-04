@@ -15,10 +15,10 @@ The host also supplies one trusted `TurnExecutionPort`, normally a
 cannot choose or replace that runtime; exposing runtime choice requires a
 separate authenticated host-policy decision.
 
-`GET /v1/tools/namespaces` returns the context-specific namespace catalog.
-`PUT /v1/tools/namespaces` applies a standard enable/disable patch through the
+`GET /v2/tools/namespaces` returns the context-specific namespace catalog.
+`PUT /v2/tools/namespaces` applies a standard enable/disable patch through the
 kernel's host-provided `ToolNamespaceSettingsStore`; this adapter never stores
 user settings itself. Treat both routes as an authenticated management surface;
-the turn runtime exposes only the filtered `GET /v1/tools` catalog to models.
+the turn runtime exposes only the filtered `GET /v2/tools` catalog to models.
 
 SharedOS is currently a `1.0.0` preview.

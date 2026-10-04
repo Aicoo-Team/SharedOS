@@ -24,7 +24,7 @@ const READ_TOOL: ToolDefinition = {
 
 function request(): ExecutionRequest {
   return {
-    version: "1",
+    version: "2",
     executionId: "execution-1",
     agent: AGENT,
     context: {
@@ -38,7 +38,7 @@ function request(): ExecutionRequest {
       now: NOW,
     },
     message: {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: AGENT,
       receiver: AGENT,
@@ -85,7 +85,7 @@ async function runWith(client: TranscriptModelClient) {
   });
   const runtime = createStandardRuntime({
     driver: new StandardTurnDriver({
-      manifest: { id: "sharedos.test.model", version: "1.0.0", protocolVersion: "1" },
+      manifest: { id: "sharedos.test.model", version: "1.0.0", protocolVersion: "2" },
       client,
     }),
   });

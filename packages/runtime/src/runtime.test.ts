@@ -59,14 +59,14 @@ const context: AccessContext = {
 function request(options: { readonly escalation?: boolean } = {}): ExecutionRequest {
   const escalation = options.escalation === true;
   return {
-    version: "1",
+    version: "2",
     executionId: "execution-1",
     agent: receiver,
     context: escalation
       ? { ...context, enabledToolNamespaces: ["files", ESCALATION_TOOL_NAMESPACE] }
       : context,
     message: {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender,
       receiver,
@@ -138,7 +138,7 @@ function turnExecutor(
 describe("the standard composition", () => {
   it("files the turn under the driver that sat in the seat", async () => {
     const next = async () => ({ type: "complete" as const, output: null });
-    const manifest = { id: "acme.assistant", version: "2.0.0", protocolVersion: "1" as const };
+    const manifest = { id: "acme.assistant", version: "2.0.0", protocolVersion: "2" as const };
     const named: AgentTurnDriver = { manifest, open: async () => ({ next }) };
     const unnamed: AgentTurnDriver = { open: async () => ({ next }) };
 

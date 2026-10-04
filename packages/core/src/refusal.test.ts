@@ -20,7 +20,7 @@ const OWNER = { kind: "human", userId: "user-alice" } as const;
 
 function event(overrides: Partial<AuditEvent> = {}): AuditEvent {
   return {
-    version: "1",
+    version: "2",
     id: "audit-1",
     type: "tool.invoked",
     outcome: "denied",

@@ -509,7 +509,7 @@ how a driver or plugin ends its turn, so they surface as a `failed`
 | Status | Code                     | Means                                           |
 | ------ | ------------------------ | ----------------------------------------------- |
 | 400    | `invalid_json`           | Body is not JSON                                |
-| 400    | `invalid_request`        | Body does not match the v1 contract             |
+| 400    | `invalid_request`        | Body does not match the v2 contract             |
 | 403    | `permission_denied`      | An error carrying that code reached the handler |
 | 404    | `not_found`              | Unknown path                                    |
 | 405    | `method_not_allowed`     | Wrong verb                                      |

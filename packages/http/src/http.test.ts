@@ -54,7 +54,7 @@ function createApi(): SharedOSApi {
       timestamp: "2026-08-03T00:00:00.000Z",
     })),
     executeTurn: vi.fn(async () => ({
-      version: "1" as const,
+      version: "2" as const,
       executionId: "execution-1",
       traceId: context.traceId,
       status: "succeeded" as const,
@@ -77,7 +77,7 @@ describe("createSharedOSHandler", () => {
       },
     });
     const execute = vi.fn(async () => ({
-      version: "1" as const,
+      version: "2" as const,
       executionId: "execution-1",
       traceId: "trace-1",
       status: "succeeded" as const,
@@ -92,11 +92,11 @@ describe("createSharedOSHandler", () => {
     });
 
     await api.executeTurn(context, {
-      version: "1",
+      version: "2",
       executionId: "execution-1",
       agent: { kind: "agent", agentId: "agent-alice" },
       message: {
-        version: "1",
+        version: "2",
         id: "message-1",
         sender: { kind: "agent", agentId: "agent-bob" },
         receiver: { kind: "agent", agentId: "agent-alice" },
@@ -115,7 +115,7 @@ describe("createSharedOSHandler", () => {
     const resolveContext = vi.fn(async () => context);
     const handler = createSharedOSHandler({ api, resolveContext });
 
-    const response = await handler(new Request("https://sharedos.test/v1/tools"));
+    const response = await handler(new Request("https://sharedos.test/v2/tools"));
 
     expect(response.status).toBe(200);
     expect(resolveContext).toHaveBeenCalledOnce();
@@ -130,7 +130,7 @@ describe("createSharedOSHandler", () => {
     const resolveContext = vi.fn(async () => context);
     const handler = createSharedOSHandler({ api, resolveContext });
 
-    const response = await handler(new Request("https://sharedos.test/v1/reach"));
+    const response = await handler(new Request("https://sharedos.test/v2/reach"));
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ status: "computed", reach: [] });
@@ -149,9 +149,9 @@ describe("createSharedOSHandler", () => {
     }));
     const handler = createSharedOSHandler({ api, resolveContext: async () => context });
 
-    const response = await handler(new Request("https://sharedos.test/v1/reach"));
+    const response = await handler(new Request("https://sharedos.test/v2/reach"));
     const wrongVerb = await handler(
-      new Request("https://sharedos.test/v1/reach", { method: "POST" }),
+      new Request("https://sharedos.test/v2/reach", { method: "POST" }),
     );
 
     expect(response.status).toBe(200);
@@ -168,12 +168,12 @@ describe("createSharedOSHandler", () => {
       resolveContext: async () => context,
     });
 
-    const unknown = await handler(new Request("https://sharedos.test/v1/nothing"));
+    const unknown = await handler(new Request("https://sharedos.test/v2/nothing"));
     expect(unknown.status).toBe(404);
     await expect(unknown.json()).resolves.toMatchObject({ error: { code: "not_found" } });
 
     const wrongVerb = await handler(
-      new Request("https://sharedos.test/v1/tools/namespaces", { method: "POST" }),
+      new Request("https://sharedos.test/v2/tools/namespaces", { method: "POST" }),
     );
     expect(wrongVerb.status).toBe(405);
     await expect(wrongVerb.json()).resolves.toMatchObject({
@@ -195,7 +195,7 @@ describe("createSharedOSHandler", () => {
     const api = createApi();
     const handler = createSharedOSHandler({ api, resolveContext: async () => context });
 
-    const response = await handler(new Request("https://sharedos.test/v1/tools/namespaces"));
+    const response = await handler(new Request("https://sharedos.test/v2/tools/namespaces"));
 
     expect(response.status).toBe(200);
     expect(api.listToolNamespaces).toHaveBeenCalledWith(
@@ -210,7 +210,7 @@ describe("createSharedOSHandler", () => {
     const update = { enable: ["calendar"], disable: ["files"] };
 
     const response = await handler(
-      new Request("https://sharedos.test/v1/tools/namespaces", {
+      new Request("https://sharedos.test/v2/tools/namespaces", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(update),
@@ -225,7 +225,7 @@ describe("createSharedOSHandler", () => {
     );
 
     const invalid = await handler(
-      new Request("https://sharedos.test/v1/tools/namespaces", {
+      new Request("https://sharedos.test/v2/tools/namespaces", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ enable: ["calendar"], disable: ["calendar"] }),
@@ -240,7 +240,7 @@ describe("createSharedOSHandler", () => {
       resolveContext: async () => ({ grants: [] }) as unknown as AccessContext,
     });
 
-    const response = await handler(new Request("https://sharedos.test/v1/tools"));
+    const response = await handler(new Request("https://sharedos.test/v2/tools"));
     const payload = (await response.json()) as { error: { code: string } };
 
     expect(response.status).toBe(500);
@@ -254,7 +254,7 @@ describe("createSharedOSHandler", () => {
     });
     const handler = createSharedOSHandler({ api, resolveContext: async () => context });
 
-    const response = await handler(new Request("https://sharedos.test/v1/tools"));
+    const response = await handler(new Request("https://sharedos.test/v2/tools"));
     const payload = (await response.json()) as { error: { message: string } };
 
     expect(response.status).toBe(403);
@@ -271,7 +271,7 @@ describe("createSharedOSHandler", () => {
     };
 
     const response = await handler(
-      new Request("https://sharedos.test/v1/resources/invoke", {
+      new Request("https://sharedos.test/v2/resources/invoke", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(operation),
@@ -286,7 +286,7 @@ describe("createSharedOSHandler", () => {
     );
 
     const forgedResponse = await handler(
-      new Request("https://sharedos.test/v1/resources/invoke", {
+      new Request("https://sharedos.test/v2/resources/invoke", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...operation, context }),
@@ -303,13 +303,13 @@ describe("createSharedOSHandler", () => {
       },
     });
 
-    const response = await handler(new Request("https://sharedos.test/v1/tools"));
+    const response = await handler(new Request("https://sharedos.test/v2/tools"));
     expect(response.status).toBe(401);
   });
 
   it("uses 202 only for asynchronously accepted messages", async () => {
     const envelope = {
-      version: "1" as const,
+      version: "2" as const,
       id: "message-1",
       sender: context.actor,
       receiver: { kind: "agent" as const, agentId: "agent-alice" },
@@ -323,7 +323,7 @@ describe("createSharedOSHandler", () => {
       api: acceptedApi,
       resolveContext: async () => context,
     })(
-      new Request("https://sharedos.test/v1/messages", {
+      new Request("https://sharedos.test/v2/messages", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(envelope),
@@ -341,7 +341,7 @@ describe("createSharedOSHandler", () => {
       api: deniedApi,
       resolveContext: async () => context,
     })(
-      new Request("https://sharedos.test/v1/messages", {
+      new Request("https://sharedos.test/v2/messages", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(envelope),
@@ -372,5 +372,105 @@ describe("createSharedOSHandler", () => {
       namespaces: [{ namespace: "calendar", sources: ["native"], toolCount: 5, enabled: true }],
       summary: { total: 1, enabled: 1, disabled: 0 },
     });
+  });
+});
+
+describe("HTTP protocol compatibility", () => {
+  it.each([
+    ["https://sharedos.test/v1/authorize", undefined],
+    ["https://sharedos.test/v3/tools", undefined],
+    ["https://sharedos.test/v2/tools", "1"],
+    ["https://sharedos.test/health", "3"],
+  ])(
+    "rejects an unsupported path or header before authority resolution: %s / %s",
+    async (url, version) => {
+      const api = createApi();
+      const resolveContext = vi.fn(async () => context);
+      const handler = createSharedOSHandler({ api, resolveContext });
+      const response = await handler(
+        new Request(url, {
+          headers: version === undefined ? {} : { "x-sharedos-protocol-version": version },
+        }),
+      );
+      expect(response.status).toBe(426);
+      expect(response.headers.get("x-sharedos-protocol-version")).toBe("2");
+      expect(await response.json()).toMatchObject({
+        error: {
+          code: "unsupported_protocol_version",
+          message: expect.stringContaining('supported version is "2"'),
+        },
+      });
+      expect(resolveContext).not.toHaveBeenCalled();
+      expect(api.authorize).not.toHaveBeenCalled();
+      expect(api.listTools).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects a mismatched message writer before dispatch", async () => {
+    const api = createApi();
+    const handler = createSharedOSHandler({ api, resolveContext: async () => context });
+    const response = await handler(
+      new Request("https://sharedos.test/v2/messages", {
+        method: "POST",
+        body: JSON.stringify({ version: "1" }),
+      }),
+    );
+    expect(response.status).toBe(426);
+    expect(await response.json()).toMatchObject({
+      error: { code: "unsupported_protocol_version" },
+    });
+    expect(api.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it("rejects a nested old message inside a current turn", async () => {
+    const api = createApi();
+    const handler = createSharedOSHandler({ api, resolveContext: async () => context });
+    const response = await handler(
+      new Request("https://sharedos.test/v2/turns", {
+        method: "POST",
+        body: JSON.stringify({ version: "2", message: { version: "1" } }),
+      }),
+    );
+    expect(response.status).toBe(426);
+    expect(api.executeTurn).not.toHaveBeenCalled();
+  });
+
+  it("keeps authority-related input strict under a compatible epoch", async () => {
+    const api = createApi();
+    const handler = createSharedOSHandler({ api, resolveContext: async () => context });
+    const requirement = { resource: { namespace: "files", path: ["note"] }, action: "read" };
+    const invoke = (body: unknown) =>
+      handler(
+        new Request("https://sharedos.test/v2/authorize", {
+          method: "POST",
+          headers: { "x-sharedos-protocol-version": "2" },
+          body: JSON.stringify(body),
+        }),
+      );
+    expect((await invoke(requirement)).status).toBe(200);
+    for (const body of [
+      { ...requirement, grants: [] },
+      { ...requirement, resource: { ...requirement.resource, authority: context.authority } },
+    ]) {
+      const response = await invoke(body);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({ error: { code: "invalid_request" } });
+    }
+    expect(api.authorize).toHaveBeenCalledTimes(1);
+  });
+
+  it("supports the current client and stamps success and error responses", async () => {
+    const api = createApi();
+    const handler = createSharedOSHandler({ api, resolveContext: async () => context });
+    const client = new SharedOSClient({
+      baseUrl: "https://sharedos.test",
+      fetch: async (input, init) => handler(new Request(input, init)),
+    });
+    expect(await client.health()).toEqual({ status: "ok", protocolVersion: "2" });
+    expect(
+      await client.authorize({ resource: { namespace: "files", path: [] }, action: "read" }),
+    ).toEqual({ allowed: false, reasonCode: "no_matching_grant" });
+    const error = await handler(new Request("https://sharedos.test/v2/unknown"));
+    expect(error.headers.get("x-sharedos-protocol-version")).toBe("2");
   });
 });

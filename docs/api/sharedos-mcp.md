@@ -106,7 +106,7 @@ SharedOS is currently a `1.0.0` preview.
 
 ### McpToolServer
 
-Defined in: [mcp/src/server.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L111)
+Defined in: [mcp/src/server.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L119)
 
 SharedOS's catalogue and authorization broker, spoken as MCP.
 
@@ -128,7 +128,7 @@ see [toCallToolResult](#tocalltoolresult).
 
 > **new McpToolServer**(`options`): [`McpToolServer`](#mcptoolserver)
 
-Defined in: [mcp/src/server.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L120)
+Defined in: [mcp/src/server.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L128)
 
 ###### Parameters
 
@@ -148,7 +148,7 @@ Defined in: [mcp/src/server.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/
 
 > **get** **initialized**(): `boolean`
 
-Defined in: [mcp/src/server.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L133)
+Defined in: [mcp/src/server.ts:141](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L141)
 
 ###### Returns
 
@@ -160,7 +160,7 @@ Defined in: [mcp/src/server.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/
 
 > **get** **protocolVersion**(): `string` \| `undefined`
 
-Defined in: [mcp/src/server.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L129)
+Defined in: [mcp/src/server.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L137)
 
 The revision agreed with this client, once `initialize` has been answered.
 
@@ -174,7 +174,7 @@ The revision agreed with this client, once `initialize` has been answered.
 
 > **handle**(`message`, `signal`): `Promise`\<[`JsonRpcResponse`](#jsonrpcresponse) \| `undefined`>\>
 
-Defined in: [mcp/src/server.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L144)
+Defined in: [mcp/src/server.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L152)
 
 Handle one JSON-RPC message.
 
@@ -272,7 +272,7 @@ Defined in: [mcp/src/bridge.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/m
 
 ##### catalog()
 
-> **catalog**(`signal`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
+> **catalog**(`signal`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"2"`; \}\>
 
 Defined in: [mcp/src/bridge.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L100)
 
@@ -286,7 +286,7 @@ The permission-filtered catalogue for this session.
 
 ###### Returns
 
-`Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
+`Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"2"`; \}\>
 
 ###### Implementation of
 
@@ -369,7 +369,7 @@ Defined in: [mcp/src/bridge.ts:154](https://github.com/Aicoo-Team/SharedOS/blob/
 
 ##### listPublishedTools()
 
-> **listPublishedTools**(`context`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
+> **listPublishedTools**(`context`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"2"`; \}\>
 
 Defined in: [mcp/src/bridge.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L150)
 
@@ -392,7 +392,7 @@ Defined in: [mcp/src/bridge.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/
 
 ###### Returns
 
-`Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
+`Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"2"`; \}\>
 
 ---
 
@@ -578,14 +578,14 @@ Defined in: [mcp/src/bridge.ts:161](https://github.com/Aicoo-Team/SharedOS/blob/
 | Property                                        | Modifier   | Type                                                                                                                                                                                                       | Description                                                      | Defined in                                                                                                |
 | ----------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | <a id="property-context"></a> `context`         | `readonly` | `object`                                                                                                                                                                                                   | The trusted context. Never built from anything the harness sent. | [mcp/src/bridge.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L164) |
-| `context.actor`                                 | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                | contracts/dist/access.d.ts:144                                                                            |
-| `context.authority`                             | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                | contracts/dist/access.d.ts:157                                                                            |
+| `context.actor`                                 | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                | contracts/dist/access.d.ts:129 |
+| `context.authority`                             | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                | contracts/dist/access.d.ts:142 |
 | `context.enabledToolNamespaces`                 | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                | contracts/dist/access.d.ts:170                                                                            |
-| `context.namespaceId`                           | `public`   | `string`                                                                                                                                                                                                   | -                                                                | contracts/dist/access.d.ts:141                                                                            |
+| `context.namespaceId`                           | `public`   | `string`                                                                                                                                                                                                   | -                                                                | contracts/dist/access.d.ts:128 |
 | `context.now`                                   | `public`   | `string`                                                                                                                                                                                                   | -                                                                | contracts/dist/access.d.ts:171                                                                            |
-| `context.owner`                                 | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                | contracts/dist/access.d.ts:128                                                                            |
-| `context.purpose`                               | `public`   | `string`                                                                                                                                                                                                   | -                                                                | contracts/dist/access.d.ts:142                                                                            |
-| `context.traceId`                               | `public`   | `string`                                                                                                                                                                                                   | -                                                                | contracts/dist/access.d.ts:143                                                                            |
+| `context.owner`                                 | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                | contracts/dist/access.d.ts:155 |
+| `context.purpose`                               | `public`   | `string`                                                                                                                                                                                                   | -                                                                | contracts/dist/access.d.ts:168 |
+| `context.traceId`                               | `public`   | `string`                                                                                                                                                                                                   | -                                                                | contracts/dist/access.d.ts:169 |
 | <a id="property-executionid"></a> `executionId` | `readonly` | `string`                                                                                                                                                                                                   | -                                                                | [mcp/src/bridge.ts:165](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L165) |
 | <a id="property-kernel"></a> `kernel`           | `readonly` | [`BridgeKernel`](#bridgekernel)                                                                                                                                                                            | -                                                                | [mcp/src/bridge.ts:162](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/bridge.ts#L162) |
 
@@ -593,20 +593,20 @@ Defined in: [mcp/src/bridge.ts:161](https://github.com/Aicoo-Team/SharedOS/blob/
 
 ### McpServerInfo
 
-Defined in: [mcp/src/server.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L60)
+Defined in: [mcp/src/server.ts:68](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L68)
 
 #### Properties
 
 | Property                                | Modifier   | Type     | Defined in                                                                                              |
 | --------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------- |
-| <a id="property-name-1"></a> `name`     | `readonly` | `string` | [mcp/src/server.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L61) |
-| <a id="property-version"></a> `version` | `readonly` | `string` | [mcp/src/server.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L62) |
+| <a id="property-name-1"></a> `name`     | `readonly` | `string` | [mcp/src/server.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L69) |
+| <a id="property-version"></a> `version` | `readonly` | `string` | [mcp/src/server.ts:70](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L70) |
 
 ---
 
 ### McpToolInvocation
 
-Defined in: [mcp/src/server.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L36)
+Defined in: [mcp/src/server.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L44)
 
 One `tools/call`, after the exposed name has been mapped back to canonical.
 
@@ -614,16 +614,16 @@ One `tools/call`, after the exposed name has been mapped back to canonical.
 
 | Property                                    | Modifier   | Type                                             | Description                                                               | Defined in                                                                                              |
 | ------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| <a id="property-alias"></a> `alias?`        | `readonly` | `string`                                         | The name the harness actually sent, when it was not the canonical one.    | [mcp/src/server.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L42) |
-| <a id="property-arguments"></a> `arguments` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                         | [mcp/src/server.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L40) |
-| <a id="property-callid"></a> `callId`       | `readonly` | `string`                                         | -                                                                         | [mcp/src/server.ts:37](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L37) |
-| <a id="property-tool"></a> `tool`           | `readonly` | `string`                                         | The canonical SharedOS tool name, or the raw one when it matched nothing. | [mcp/src/server.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L39) |
+| <a id="property-alias"></a> `alias?`        | `readonly` | `string`                                         | The name the harness actually sent, when it was not the canonical one.    | [mcp/src/server.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L50) |
+| <a id="property-arguments"></a> `arguments` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                         | [mcp/src/server.ts:48](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L48) |
+| <a id="property-callid"></a> `callId`       | `readonly` | `string`                                         | -                                                                         | [mcp/src/server.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L45) |
+| <a id="property-tool"></a> `tool`           | `readonly` | `string`                                         | The canonical SharedOS tool name, or the raw one when it matched nothing. | [mcp/src/server.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L47) |
 
 ---
 
 ### McpToolInvoker
 
-Defined in: [mcp/src/server.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L53)
+Defined in: [mcp/src/server.ts:61](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L61)
 
 What the MCP surface is allowed to do, and the only thing it is allowed to do.
 
@@ -636,9 +636,9 @@ on the other side of it.
 
 ##### catalog()
 
-> **catalog**(`signal`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
+> **catalog**(`signal`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"2"`; \}\>
 
-Defined in: [mcp/src/server.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L55)
+Defined in: [mcp/src/server.ts:63](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L63)
 
 The permission-filtered catalogue for this session.
 
@@ -650,13 +650,13 @@ The permission-filtered catalogue for this session.
 
 ###### Returns
 
-`Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
+`Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"2"`; \}\>
 
 ##### invoke()
 
 > **invoke**(`invocation`, `signal`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [mcp/src/server.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L57)
+Defined in: [mcp/src/server.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L65)
 
 One call, re-authorized against the arguments actually presented.
 
@@ -675,17 +675,17 @@ One call, re-authorized against the arguments actually presented.
 
 ### McpToolServerOptions
 
-Defined in: [mcp/src/server.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L65)
+Defined in: [mcp/src/server.ts:73](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L73)
 
 #### Properties
 
 | Property                                           | Modifier   | Type                                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Defined in                                                                                              |
 | -------------------------------------------------- | ---------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| <a id="property-createid"></a> `createId?`         | `readonly` | () => `string`                          | Mints the SharedOS call id for one `tools/call`.                                                                                                                                                                                                                                                                                                                                                                                                                | [mcp/src/server.ts:71](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L71) |
-| <a id="property-instructions"></a> `instructions?` | `readonly` | `string`                                | Guidance handed to the client at initialize time.                                                                                                                                                                                                                                                                                                                                                                                                               | [mcp/src/server.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L69) |
-| <a id="property-invoker"></a> `invoker`            | `readonly` | [`McpToolInvoker`](#mcptoolinvoker)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [mcp/src/server.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L66) |
-| <a id="property-serverinfo"></a> `serverInfo?`     | `readonly` | [`McpServerInfo`](#mcpserverinfo)       | -                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [mcp/src/server.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L67) |
-| <a id="property-spans"></a> `spans?`               | `readonly` | [`SpanSink`](sharedos-core.md#spansink) | Where the cost of answering one frame is reported. This is the span that bounds enforcement over the toolshare path: it opens when a frame arrives here and closes when the response leaves, so the model's own thinking time is outside it by construction rather than by subtraction. What is also outside it, and cannot be brought in, is the vendor CLI's own tool router -- that code runs before a frame reaches this server and SharedOS never sees it. | [mcp/src/server.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L82) |
+| <a id="property-createid"></a> `createId?`         | `readonly` | () => `string`                          | Mints the SharedOS call id for one `tools/call`.                                                                                                                                                                                                                                                                                                                                                                                                                | [mcp/src/server.ts:79](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L79) |
+| <a id="property-instructions"></a> `instructions?` | `readonly` | `string`                                | Guidance handed to the client at initialize time.                                                                                                                                                                                                                                                                                                                                                                                                               | [mcp/src/server.ts:77](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L77) |
+| <a id="property-invoker"></a> `invoker`            | `readonly` | [`McpToolInvoker`](#mcptoolinvoker)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [mcp/src/server.ts:74](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L74) |
+| <a id="property-serverinfo"></a> `serverInfo?`     | `readonly` | [`McpServerInfo`](#mcpserverinfo)       | -                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [mcp/src/server.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L75) |
+| <a id="property-spans"></a> `spans?`               | `readonly` | [`SpanSink`](sharedos-core.md#spansink) | Where the cost of answering one frame is reported. This is the span that bounds enforcement over the toolshare path: it opens when a frame arrives here and closes when the response leaves, so the model's own thinking time is outside it by construction rather than by subtraction. What is also outside it, and cannot be brought in, is the vendor CLI's own tool router -- that code runs before a frame reaches this server and SharedOS never sees it. | [mcp/src/server.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L90) |
 
 ---
 
@@ -737,7 +737,7 @@ Defined in: [mcp/src/token.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/ma
 
 > **CallToolParams** = `z.infer`\<_typeof_ [`CallToolParamsSchema`](#calltoolparamsschema)>\>
 
-Defined in: [mcp/src/protocol.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L117)
+Defined in: [mcp/src/protocol.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L118)
 
 ---
 
@@ -769,7 +769,7 @@ Defined in: [mcp/src/token.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/ma
 
 > **InitializeParams** = `z.infer`\<_typeof_ [`InitializeParamsSchema`](#initializeparamsschema)>\>
 
-Defined in: [mcp/src/protocol.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L108)
+Defined in: [mcp/src/protocol.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L109)
 
 ---
 
@@ -817,7 +817,7 @@ Defined in: [mcp/src/harness-config.ts:222](https://github.com/Aicoo-Team/Shared
 
 > `const` **CallToolParamsSchema**: `ZodObject`\<\{ `_meta`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `arguments`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `name`: `ZodString`; \}, `"passthrough"`, `ZodTypeAny`, `objectOutputType`\<\{ `_meta`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `arguments`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `name`: `ZodString`; \}, `ZodTypeAny`, `"passthrough"`>\>, `objectInputType`\<\{ `_meta`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `arguments`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `name`: `ZodString`; \}, `ZodTypeAny`, `"passthrough"`>>\>\>
 
-Defined in: [mcp/src/protocol.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L110)
+Defined in: [mcp/src/protocol.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L111)
 
 ---
 
@@ -845,7 +845,7 @@ shown.
 
 ### InitializeParamsSchema
 
-> `const` **InitializeParamsSchema**: `ZodObject`\<\{ `capabilities`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `clientInfo`: `ZodOptional`\<`ZodObject`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `"passthrough"`, `ZodTypeAny`, `objectOutputType`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>\>, `objectInputType`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>>>\>\>\>; `protocolVersion`: `ZodOptional`\<`ZodString`>\>; \}, `"passthrough"`, `ZodTypeAny`, `objectOutputType`\<\{ `capabilities`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `clientInfo`: `ZodOptional`\<`ZodObject`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `"passthrough"`, `ZodTypeAny`, `objectOutputType`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>\>, `objectInputType`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>>>\>\>\>; `protocolVersion`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>\>, `objectInputType`\<\{ `capabilities`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `clientInfo`: `ZodOptional`\<`ZodObject`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `"passthrough"`, `ZodTypeAny`, `objectOutputType`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>\>, `objectInputType`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>>>\>\>\>; `protocolVersion`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>>\>\>
+> `const` **InitializeParamsSchema**: `ZodObject`\<\{ `_meta`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `capabilities`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `clientInfo`: `ZodOptional`\<`ZodObject`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `"passthrough"`, `ZodTypeAny`, `objectOutputType`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>\>, `objectInputType`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>>>\>\>\>; `protocolVersion`: `ZodOptional`\<`ZodString`>\>; \}, `"passthrough"`, `ZodTypeAny`, `objectOutputType`\<\{ `_meta`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `capabilities`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `clientInfo`: `ZodOptional`\<`ZodObject`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `"passthrough"`, `ZodTypeAny`, `objectOutputType`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>\>, `objectInputType`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>>>\>\>\>; `protocolVersion`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>\>, `objectInputType`\<\{ `_meta`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `capabilities`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodUnknown`>>\>\>; `clientInfo`: `ZodOptional`\<`ZodObject`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `"passthrough"`, `ZodTypeAny`, `objectOutputType`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>\>, `objectInputType`\<\{ `name`: `ZodOptional`\<`ZodString`>\>; `version`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>>>\>\>\>; `protocolVersion`: `ZodOptional`\<`ZodString`>\>; \}, `ZodTypeAny`, `"passthrough"`>>\>\>
 
 Defined in: [mcp/src/protocol.ts:98](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L98)
 
@@ -943,7 +943,7 @@ The harnesses this package emits a connection for, by id.
 
 > `const` **SHAREDOS\_MCP\_SERVER\_NAME**: `"sharedos"` = `"sharedos"`
 
-Defined in: [mcp/src/server.ts:85](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L85)
+Defined in: [mcp/src/server.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L93)
 
 ---
 
@@ -1339,7 +1339,7 @@ revoked by the host that deployed it.
 
 > **negotiateProtocolVersion**(`requested`): `string`
 
-Defined in: [mcp/src/protocol.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L127)
+Defined in: [mcp/src/protocol.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/protocol.ts#L128)
 
 Negotiate a protocol revision.
 
@@ -1459,7 +1459,7 @@ some later moment the turn may already have closed.
 
 > **resolveCanonicalName**(`tools`, `exposed`): `string`
 
-Defined in: [mcp/src/server.ts:304](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L304)
+Defined in: [mcp/src/server.ts:334](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L334)
 
 Map an exposed name back to the canonical SharedOS tool ID.
 
@@ -1492,7 +1492,7 @@ the permission-filtered catalogue, so it can never widen authority.
 
 > **toCallToolResult**(`result`, `published?`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/server.ts:331](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L331)
+Defined in: [mcp/src/server.ts:361](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L361)
 
 A SharedOS `ToolResult` as an MCP `CallToolResult`.
 
@@ -1536,7 +1536,7 @@ would make a denial rate uncountable from the evidence.
 
 > **toMcpTool**(`tool`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/server.ts:271](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L271)
+Defined in: [mcp/src/server.ts:301](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/mcp/src/server.ts#L301)
 
 One published tool in MCP's own shape.
 

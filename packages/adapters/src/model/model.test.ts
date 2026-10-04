@@ -57,12 +57,12 @@ const SNAPSHOT_TOOL: ToolDefinition = {
 const MANIFEST = {
   id: "sharedos.test.model",
   version: "1.0.0",
-  protocolVersion: "1",
+  protocolVersion: "2",
 } as const;
 
 function request(): ExecutionRequest {
   return {
-    version: "1",
+    version: "2",
     executionId: "execution-1",
     agent: AGENT,
     context: {
@@ -76,7 +76,7 @@ function request(): ExecutionRequest {
       now: NOW,
     },
     message: {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: AGENT,
       receiver: AGENT,

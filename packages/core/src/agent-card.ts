@@ -183,7 +183,7 @@ export function composeAgentCard(
 
   const parsed = AgentCardSchema.safeParse(candidate);
   if (!parsed.success) {
-    throw new TypeError("agent card does not match the SharedOS v1 contract");
+    throw new TypeError("agent card does not match the SharedOS v2 contract");
   }
   return parsed.data;
 }
