@@ -97,8 +97,8 @@ cannot both claim to compute it and disagree. Two harnesses whose hashes match
 were served the same semantic tool set; two whose hashes differ cannot be
 compared until that is explained.
 
-Full design: [MCP toolshare](https://github.com/Aicoo-Team/SharedOS/blob/main/docs/mcp-toolshare.md)
-and [ADR 0014](https://github.com/Aicoo-Team/SharedOS/blob/main/docs/adr/0014-mcp-toolshare.md).
+Full design: [MCP toolshare](https://github.com/systemind-team/SharedOS/blob/main/docs/mcp-toolshare.md)
+and [ADR 0014](https://github.com/systemind-team/SharedOS/blob/main/docs/adr/0014-mcp-toolshare.md).
 
 SharedOS is currently a `1.0.0` preview.
 

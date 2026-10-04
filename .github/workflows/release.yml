@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   publish:
-    if: github.repository == 'Aicoo-Team/SharedOS'
+    if: github.repository == 'systemind-team/SharedOS'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
