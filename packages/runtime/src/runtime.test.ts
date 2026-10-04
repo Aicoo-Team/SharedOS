@@ -865,6 +865,51 @@ describe("turn-scoped authority", () => {
     open: async () => ({ next: async () => ({ type: "complete", output: { ok: true } }) }),
   };
 
+  it.each(["execution-2", "execution-1"])(
+    "isolates an overlapping run with executionId %s",
+    async (executionId) => {
+      let revoked = false;
+      let release!: () => void;
+      let started!: () => void;
+      const entered = new Promise<void>((resolve) => {
+        started = resolve;
+      });
+      const waiting = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const load = vi.fn(async () =>
+        revoked ? [] : [{ ...agentGrant, namespaceId: context.namespaceId }],
+      );
+      const kernel = new SharedOSKernel({ grantSource: { load } });
+      const driver: AgentTurnDriver = {
+        open: async () => {
+          started();
+          return {
+            next: async () => {
+              await waiting;
+              return { type: "complete", output: null };
+            },
+          };
+        },
+      };
+      const executor = turnExecutor(kernel, driver, { clock: () => now });
+      const sharedRequest = { ...request(), context: { ...context, turnId: "host-supplied" } };
+      const first = executor.execute(sharedRequest);
+      await entered;
+      revoked = true;
+      try {
+        await expect(executor.execute({ ...sharedRequest, executionId })).resolves.toMatchObject({
+          status: "denied",
+          error: { code: "no_matching_grant" },
+        });
+        expect(load).toHaveBeenCalledTimes(2);
+      } finally {
+        release();
+      }
+      await expect(first).resolves.toMatchObject({ status: "succeeded" });
+    },
+  );
+
   it("releases the turn's authority when the turn is cancelled while it is being resolved", async () => {
     let loads = 0;
     let revoked = false;

@@ -389,7 +389,12 @@ export class SharedOSExecutor implements TurnExecutionPort {
         return cancelledResult(request, events, startedAt, this.#clock(), resultMetadata(), true);
       }
 
-      const executionContext = structuredClone(contextAt(request.context, this.#clock()));
+      const executionContext = {
+        ...structuredClone(contextAt(request.context, this.#clock())),
+        // Each run is a distinct turn, even if the host repeats executionId or
+        // supplies a turnId. The runtime never chooses the kernel lease identity.
+        turnId: crypto.randomUUID(),
+      };
 
       // The turn boundary. Authority is resolved once here and held for every
       // decision the turn goes on to make, so a grant removed from the store
