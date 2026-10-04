@@ -3955,7 +3955,7 @@ Defined in: [conformance/src/world.ts:124](https://github.com/systemind-team/Sha
 
 > `const` **SHAREDOS\_VERSION**: `"1.0.0-preview"` = `"1.0.0-preview"`
 
-Defined in: contracts/dist/common.d.ts:19
+Defined in: contracts/dist/common.d.ts:22
 
 The SharedOS build, as every manifest, MCP server and conformance record
 names it.

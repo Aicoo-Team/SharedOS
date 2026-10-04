@@ -288,7 +288,7 @@ Defined in: [address.ts:8](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **Identifier** = `z.infer`\<_typeof_ [`IdentifierSchema`](#identifierschema)>\>
 
-Defined in: [common.ts:26](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L26)
+Defined in: [common.ts:29](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L29)
 
 ---
 
@@ -360,7 +360,7 @@ Defined in: [protocol-error.ts:16](https://github.com/systemind-team/SharedOS/bl
 
 > **ProtocolVersion** = `z.infer`\<_typeof_ [`ProtocolVersionSchema`](#protocolversionschema)>\>
 
-Defined in: [common.ts:11](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L11)
+Defined in: [common.ts:14](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L14)
 
 ---
 
@@ -544,7 +544,7 @@ Defined in: [tool.ts:237](https://github.com/systemind-team/SharedOS/blob/main/p
 
 > **Timestamp** = `z.infer`\<_typeof_ [`TimestampSchema`](#timestampschema)>\>
 
-Defined in: [common.ts:30](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L30)
+Defined in: [common.ts:33](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L33)
 
 ---
 
@@ -979,7 +979,7 @@ Defined in: [address.ts:5](https://github.com/systemind-team/SharedOS/blob/main/
 
 > `const` **IdentifierSchema**: `ZodString`
 
-Defined in: [common.ts:25](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L25)
+Defined in: [common.ts:28](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L28)
 
 An opaque identifier. Callers choose its format; SharedOS only requires stability.
 
@@ -1082,10 +1082,13 @@ symlink escapes.
 
 > `const` **PROTOCOL\_VERSION**: `"1"`
 
-Defined in: [common.ts:7](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L7)
+Defined in: [common.ts:10](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L10)
 
 The wire protocol version implemented by this package, as the one value
 every request, event, result, envelope and manifest stamps on itself.
+
+`"1"` is the shape `1.0.0-preview` shipped and is frozen there: a change a
+`1.0.0-preview` reader would reject moves this value (ADR 0019).
 
 ---
 
@@ -1103,7 +1106,7 @@ A machine-readable error that is safe to return over npm and HTTP APIs.
 
 > `const` **ProtocolVersionSchema**: `ZodLiteral`\<`"1"`>\>
 
-Defined in: [common.ts:10](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L10)
+Defined in: [common.ts:13](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L13)
 
 The wire protocol version implemented by this package.
 
@@ -1551,7 +1554,7 @@ in step. `docs/http-api.md` describes the same table for a reader.
 
 > `const` **SHAREDOS\_VERSION**: `"1.0.0-preview"` = `"1.0.0-preview"`
 
-Defined in: [common.ts:22](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L22)
+Defined in: [common.ts:25](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L25)
 
 The SharedOS build, as every manifest, MCP server and conformance record
 names it.
@@ -1599,7 +1602,7 @@ on equal terms rather than assuming it.
 
 > `const` **TimestampSchema**: `ZodString`
 
-Defined in: [common.ts:29](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L29)
+Defined in: [common.ts:32](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/common.ts#L32)
 
 An RFC 3339 timestamp, represented as a string to remain JSON-safe.
 

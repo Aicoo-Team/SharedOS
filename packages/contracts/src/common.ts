@@ -3,6 +3,9 @@ import { z } from "zod";
 /**
  * The wire protocol version implemented by this package, as the one value
  * every request, event, result, envelope and manifest stamps on itself.
+ *
+ * `"1"` is the shape `1.0.0-preview` shipped and is frozen there: a change a
+ * `1.0.0-preview` reader would reject moves this value (ADR 0019).
  */
 export const PROTOCOL_VERSION = "1" as const;
 

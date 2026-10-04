@@ -2,6 +2,9 @@
 
 - Status: Accepted
 - Date: 2026-08-31
+- Revised: 2026-10-04. Protocol `"1"` is the shape `1.0.0-preview` ships and is
+  frozen there. The `0.1.0-alpha` builds are not protocol `"1"` peers, and the
+  version bump this ADR deferred is withdrawn. In the Decision below.
 - Extends: `docs/adr/0011-escalation-terminal-outcome.md`
 
 ## Context
@@ -126,16 +129,16 @@ state, resolved the same way. The kernel never decides to escalate on its own �
 it describes, and the host chooses — so there is exactly one place a turn can
 end this way and exactly one queue a reviewer reads.
 
-### The protocol version does not move, and that is a decision
+### Protocol `"1"` is the `1.0.0-preview` shape, and it is frozen there
 
 Both fields are optional and both are additive for a writer. Neither is additive
-for a reader. The contract schemas are `.strict()`, so a consumer built against
-the current version rejects an object carrying an unknown key rather than
-ignoring it: an older client parsing a newer host's `ExecutionResult` fails on
-`escalation.requestedAuthority`, and one parsing an `AuthorizationDecision`
-fails on
-`requiredAuthority`. "Additive" is a statement about writers that this
-repository's own strictness makes false for everyone else.
+for a reader. The contract schemas are `.strict()`, so a consumer built before
+the fields existed rejects an object carrying one rather than ignoring it:
+`0.1.0-alpha.3` and earlier fail on `escalation.requestedAuthority` in an
+`ExecutionResult` and on `requiredAuthority` in an `AuthorizationDecision`
+written by `0.1.0-alpha.4` or later. Every one of those builds stamps `"1"`.
+"Additive" is a statement about writers that this repository's own strictness
+makes false for everyone else.
 
 The first draft of this ADR concluded that the version therefore moves with the
 fields. It does not, and the reason is what `ProtocolVersionSchema` actually is:
@@ -146,16 +149,26 @@ to signal one optional field on `Escalation`. A reader re-pinning because
 `MessageEnvelope` says `"2"` would find nothing about a message had changed,
 which is a version number that has stopped carrying information.
 
-So the break is documented rather than encoded, for this release. `0.x` is where
-that is affordable: the changelog names it under breaking changes, and the
-version moves at the next release that has its own reason to move, carrying this
-with it. `docs/open-items.md` holds the row until then.
+This ADR then deferred the move to "the next release that has its own reason to
+move". None has had one, `1.0.0-preview` shipped on `"1"` with both fields, and
+the deferral is closed the other way: the version stays, and what it names is
+stated.
 
-The failure mode being accepted is explicit: a host on a newer SharedOS talking
-to a client on an older one gets a strict-schema rejection reported as a
-malformed response, with no version difference to explain it. That is worse
-diagnostics than a version bump would give and better than a version number that
-means nothing.
+- **Protocol `"1"` is the shape `1.0.0-preview` ships**, both fields included.
+- **The `0.1.0-alpha` builds are excluded.** They were pre-release builds whose
+  shapes changed from one to the next under the one literal, and none is a
+  supported peer of `1.0.0-preview` or anything after it. An alpha reader that
+  meets a newer writer still gets a strict-schema rejection reported as a
+  malformed response, with no version difference to explain it. The remedy is
+  to upgrade the reader, and the changelog names the break.
+- **It is frozen.** From `1.0.0-preview` on, a writer that stamps `"1"` puts
+  nothing on the wire a `1.0.0-preview` reader rejects. A change that would,
+  one more optional key in a `.strict()` wire object included, is the reason
+  for the version to move and moves it in the same change.
+
+Nothing is re-stamped by this. Every record, manifest and audit event written
+under `"1"` stays readable by the schemas that wrote it, and the HTTP routes
+stay under `/v1`.
 
 ## Consequences
 
@@ -173,10 +186,11 @@ means nothing.
   denial names the capability that denial described. It lands with the
   implementation — ADR 0013's gate covers every declared row, so a row added
   ahead of the code would have to be declared `notImplemented` with a reason.
-- Every consumer of `ExecutionResult` and `AuthorizationDecision` upgrades in
-  step with any host that writes these fields. Nothing in the protocol version
-  says so, by the decision above, so the changelog and this ADR are the only
-  notice a reader gets.
+- A consumer on a `0.1.0-alpha` build upgrades before it reads from a host on
+  `1.0.0-preview` or later. Nothing in the protocol version says so, by the
+  decision above, so the changelog and this ADR are the only notice it gets.
+- Protocol `"1"` cannot take another change a reader would reject. The next one
+  moves the version, on every object that carries it.
 - `CapabilityRequest` stops being a type with no port. It is still not authority
   and still not accepted as input. Its row in `docs/open-items.md` — "define a
   port or delete it" — is closed by **the implementing PR**, not by this ADR: an
@@ -212,6 +226,16 @@ Asking is host work. SharedOS's part is to record what was asked.
 **Put the capability in `Escalation.reason` as structured text.** Rejected: it
 is a schema behind a string, unvalidated, and it would make the 512-character
 bound on `reason` a limit on how many capabilities an escalation may name.
+
+**Move the version to `"2"` now.** Rejected. The readers it would turn away
+are the alpha builds, which are excluded already. In exchange it re-stamps five
+objects of which four did not change, moves every route to `/v2` one release
+after `/v1` shipped, and leaves every record, manifest and audit event written
+under `"1"` rejected by the schemas that wrote it.
+
+**Split the literal so each object is versioned on its own.** Not rejected, and
+not needed here: no object is being re-versioned. It is still the way to move
+one object without re-stamping the others when one does change.
 
 **Leave it as prose and let hosts pattern-match denials.** Rejected. That is the
 status quo, and the status quo is two hosts' worth of parallel approval
