@@ -23,6 +23,7 @@ function context(): AccessContext {
     owner: OWNER,
     purpose: "prepare-update",
     traceId: "trace-1",
+    turnId: "turn-1",
     now: NOW,
   };
 }
@@ -351,6 +352,155 @@ describe("SharedOSKernel turn-scoped authority", () => {
         ? {}
         : { audit: { record: async (event: AuditEvent) => void events.push(event) } }),
     });
+
+  it("isolates executions sharing every access field", async () => {
+    let revoked = false;
+    const loads = { count: 0 };
+    const kernel = kernelWith(
+      sourceOf(async () => (revoked ? [] : [grant()])),
+      loads,
+    );
+    const firstContext = { ...context(), turnId: "execution-a" };
+    const secondContext = { ...context(), turnId: "execution-b" };
+    const first = await kernel.openTurnAuthority(firstContext);
+    revoked = true;
+    const second = await kernel.openTurnAuthority(secondContext);
+    try {
+      await expect(kernel.authorize(firstContext, READ_REQUEST)).resolves.toMatchObject({
+        allowed: true,
+      });
+      await expect(kernel.authorize(secondContext, READ_REQUEST)).resolves.toMatchObject({
+        allowed: false,
+      });
+      expect(loads.count).toBe(2);
+    } finally {
+      first.close();
+      second.close();
+    }
+  });
+
+  it("shares concurrent initialization and keeps authority until the last handle closes", async () => {
+    let finish!: (grants: readonly CapabilityGrant[]) => void;
+    const pending = new Promise<readonly CapabilityGrant[]>((resolve) => {
+      finish = resolve;
+    });
+    let revoked = false;
+    const loads = { count: 0 };
+    const kernel = kernelWith(
+      sourceOf(async () => (revoked ? [] : pending)),
+      loads,
+    );
+    const firstOpening = kernel.openTurnAuthority(context());
+    const secondOpening = kernel.openTurnAuthority(context());
+    const operation = kernel.authorize(context(), READ_REQUEST);
+    finish([grant()]);
+    const [first, second, decision] = await Promise.all([firstOpening, secondOpening, operation]);
+    expect(decision.allowed).toBe(true);
+    revoked = true;
+    first.close();
+    first.close();
+    try {
+      await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+        allowed: true,
+      });
+      expect(loads.count).toBe(1);
+    } finally {
+      second.close();
+    }
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: false,
+    });
+    expect(loads.count).toBe(2);
+  });
+
+  it("cancels one opener without aborting another opener's shared load", async () => {
+    let finish!: (grants: readonly CapabilityGrant[]) => void;
+    const pending = new Promise<readonly CapabilityGrant[]>((resolve) => {
+      finish = resolve;
+    });
+    let loadSignal!: AbortSignal;
+    const loads = { count: 0 };
+    const kernel = kernelWith(
+      sourceOf(async (_access, signal) => {
+        loadSignal = signal;
+        return pending;
+      }),
+      loads,
+    );
+    const controller = new AbortController();
+    const cancelled = kernel.openTurnAuthority(context(), { signal: controller.signal });
+    const surviving = kernel.openTurnAuthority(context());
+    await Promise.resolve();
+    controller.abort(new Error("opener cancelled"));
+    await expect(cancelled).rejects.toThrow("opener cancelled");
+    expect(loadSignal.aborted).toBe(false);
+    finish([grant()]);
+    const scope = await surviving;
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: true,
+    });
+    expect(loads.count).toBe(1);
+    scope.close();
+  });
+
+  it("abandons a cancelled initialization without removing its replacement on late completion", async () => {
+    let finish!: (grants: readonly CapabilityGrant[]) => void;
+    const pending = new Promise<readonly CapabilityGrant[]>((resolve) => {
+      finish = resolve;
+    });
+    let loadSignal!: AbortSignal;
+    const loads = { count: 0 };
+    const kernel = kernelWith(
+      sourceOf(async (_access, signal) => {
+        if (loads.count === 1) {
+          loadSignal = signal;
+          return pending; // Deliberately ignores cancellation.
+        }
+        return [];
+      }),
+      loads,
+    );
+    const controller = new AbortController();
+    const cancelled = kernel.openTurnAuthority(context(), { signal: controller.signal });
+    await Promise.resolve();
+    controller.abort(new Error("turn cancelled"));
+    await expect(cancelled).rejects.toThrow("turn cancelled");
+    expect(loadSignal.aborted).toBe(true);
+    const replacement = await kernel.openTurnAuthority(context());
+    finish([grant()]);
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: false,
+    });
+    expect(loads.count).toBe(2);
+    replacement.close();
+  });
+
+  it("releases all reservations when a shared initialization rejects and permits retry", async () => {
+    let failing = true;
+    const load = vi.fn<GrantSource["load"]>(async () => [grant()]);
+    const kernel = new SharedOSKernel({
+      grantSource: { load },
+      audit: {
+        record: async () => {
+          if (failing) throw new Error("audit down");
+        },
+      },
+    });
+    const results = await Promise.allSettled([
+      kernel.openTurnAuthority(context()),
+      kernel.openTurnAuthority(context()),
+    ]);
+    expect(results.map((result) => result.status)).toEqual(["rejected", "rejected"]);
+    expect(load).toHaveBeenCalledTimes(1);
+    failing = false;
+    const scope = await kernel.openTurnAuthority(context());
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: true,
+    });
+    expect(load).toHaveBeenCalledTimes(2);
+    scope.close();
+  });
 
   it("holds one authority state for the whole turn, however many decisions it makes", async () => {
     const loads = { count: 0 };

@@ -104,6 +104,12 @@ describe("JSON-safe protocol contracts", () => {
     expectTypeOf(AccessContextSchema.parse(context)).toEqualTypeOf<AccessContext>();
   });
 
+  it("round-trips an optional turn identity without granting authority", () => {
+    const turnContext = { ...context, turnId: "turn-1" };
+    expect(AccessContextSchema.parse(JSON.parse(JSON.stringify(turnContext)))).toEqual(turnContext);
+    expect(AccessContextSchema.safeParse({ ...context, turnId: "" }).success).toBe(false);
+  });
+
   it("keeps authority out of an access context", () => {
     expect(AccessContextSchema.safeParse({ ...context, grants: [grant] }).success).toBe(false);
   });

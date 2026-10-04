@@ -1,7 +1,8 @@
 # ADR 0010: Resolve authority once per turn
 
 - Status: Accepted, amended by
-  `docs/adr/0016-expiry-is-instant-bound.md`
+  `docs/adr/0016-expiry-is-instant-bound.md` and
+  `docs/adr/0027-turn-lease-isolation.md`
 - Date: 2026-08-21
 - Revised: 2026-09-20. The per-operation path this ADR kept behind
   `MID_TURN_AUTHORITY_REFRESH` is removed. "The old path" below says what it was
