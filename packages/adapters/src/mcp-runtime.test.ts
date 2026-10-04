@@ -215,14 +215,14 @@ function kernel(
 
 function executionRequest(escalation = false): ExecutionRequest {
   return {
-    version: "1",
+    version: "2",
     executionId: "execution-1",
     agent: DELEGATE,
     context: escalation
       ? { ...CONTEXT, enabledToolNamespaces: ["files", ESCALATION_TOOL_NAMESPACE] }
       : CONTEXT,
     message: {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: AGENT,
       receiver: DELEGATE,
@@ -308,7 +308,7 @@ function fakeHarness(calls: readonly unknown[]): McpHarnessSpec {
     manifest: {
       id: "sharedos.test.fake-mcp",
       version: "0.0.0",
-      protocolVersion: "1",
+      protocolVersion: "2",
       metadata: { harness: "fake", toolshare: "mcp" },
     },
     protocol: claudeCodeProtocol,
@@ -494,7 +494,7 @@ function sessionHarness(keepStdinOpen: boolean): McpHarnessSpec {
     manifest: {
       id: "sharedos.test.session-mcp",
       version: "0.0.0",
-      protocolVersion: "1",
+      protocolVersion: "2",
       metadata: { harness: "session", toolshare: "mcp" },
     },
     protocol: claudeCodeProtocol,

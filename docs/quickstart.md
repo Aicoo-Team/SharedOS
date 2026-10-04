@@ -247,12 +247,12 @@ const result = await new SharedOSExecutor(kernel, createStandardRuntime({ driver
   defaultMaxToolCalls: 8,
   defaultTimeoutMs: 30_000,
 }).execute({
-  version: "1",
+  version: "2",
   executionId: crypto.randomUUID(),
   agent: aliceAgent,
   context: turnContext,
   message: {
-    version: "1",
+    version: "2",
     id: crypto.randomUUID(),
     sender: bobAgent,
     receiver: aliceAgent,

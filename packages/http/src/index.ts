@@ -1,5 +1,8 @@
 import {
   AccessContextSchema,
+  assertProtocolVersion,
+  SHAREDOS_PROTOCOL_HEADER,
+  UnsupportedProtocolVersionError,
   PROTOCOL_VERSION,
   SHAREDOS_ROUTES,
   type AccessContext,
@@ -199,6 +202,11 @@ async function routeRequest(
 ): Promise<Response> {
   const { pathname } = new URL(request.url);
 
+  const pathVersion = /^\/v([^/]+)(?:\/|$)/u.exec(pathname)?.[1];
+  const headerVersion = request.headers.get(SHAREDOS_PROTOCOL_HEADER);
+  if (pathVersion !== undefined) assertProtocolVersion(pathVersion);
+  if (headerVersion !== null) assertProtocolVersion(headerVersion);
+
   if (pathname === SHAREDOS_ROUTES.health.path) {
     resolveRoute(request, pathname);
     return json({ status: "ok", protocolVersion: PROTOCOL_VERSION }, 200, requestId);
@@ -271,12 +279,23 @@ async function parseBody<T>(request: Request, schema: WireSchema<T>): Promise<T>
     throw new SharedOSHttpError(400, "invalid_json", "Request body must be valid JSON.");
   }
 
+  if (typeof body === "object" && body !== null && "version" in body) {
+    assertProtocolVersion(body.version);
+    if (
+      "message" in body &&
+      typeof body.message === "object" &&
+      body.message !== null &&
+      "version" in body.message
+    ) {
+      assertProtocolVersion(body.message.version);
+    }
+  }
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     throw new SharedOSHttpError(
       400,
       "invalid_request",
-      "Request body does not match the v1 contract.",
+      `Request body does not match the v${PROTOCOL_VERSION} contract.`,
     );
   }
 
@@ -289,11 +308,15 @@ function json(payload: unknown, status: number, requestId: string): Response {
     headers: {
       "cache-control": "no-store",
       "x-request-id": requestId,
+      [SHAREDOS_PROTOCOL_HEADER]: PROTOCOL_VERSION,
     },
   });
 }
 
 function errorResponse(error: unknown, requestId: string): Response {
+  if (error instanceof UnsupportedProtocolVersionError) {
+    return json({ error: { code: error.code, message: error.message, requestId } }, 426, requestId);
+  }
   if (error instanceof SharedOSHttpError) {
     return json(
       { error: { code: error.code, message: error.message, requestId } },

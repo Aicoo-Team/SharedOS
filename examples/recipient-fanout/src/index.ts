@@ -76,7 +76,7 @@ function world(recipients: number, { bounded = true } = {}) {
     },
     messageRequestRouter: {
       resolveReply: async (_context, message) => ({
-        version: "1",
+        version: "2",
         id: `reply-${message.id}`,
         sender: message.receiver,
         receiver: message.sender,

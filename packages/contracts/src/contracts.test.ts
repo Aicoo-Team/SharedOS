@@ -255,7 +255,7 @@ describe("JSON-safe protocol contracts", () => {
 
   it("has one message purpose and rejects the removed intent field", () => {
     const message = {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: actor,
       receiver: { kind: "agent" as const, agentId: "agent-alice" },
@@ -363,7 +363,7 @@ describe("JSON-safe protocol contracts", () => {
 
   it("validates resource and execution requests at their wire boundaries", () => {
     const message = {
-      version: "1" as const,
+      version: "2" as const,
       id: "message-1",
       sender: owner,
       receiver: actor,
@@ -401,7 +401,7 @@ describe("JSON-safe protocol contracts", () => {
 
     expect(
       ExecutionRequestSchema.safeParse({
-        version: "1",
+        version: "2",
         executionId: "execution-1",
         agent: actor,
         context,
@@ -411,7 +411,7 @@ describe("JSON-safe protocol contracts", () => {
     ).toBe(true);
     expect(
       ExecutionRequestSchema.safeParse({
-        version: "1",
+        version: "2",
         executionId: "execution-1",
         agent: actor,
         context,
@@ -422,7 +422,7 @@ describe("JSON-safe protocol contracts", () => {
     ).toBe(false);
     expect(
       ExecutionRequestSchema.safeParse({
-        version: "1",
+        version: "2",
         executionId: "execution-long-lived",
         agent: actor,
         context,
@@ -433,7 +433,7 @@ describe("JSON-safe protocol contracts", () => {
     ).toBe(true);
     expect(
       ExecutionRequestSchema.safeParse({
-        version: "1",
+        version: "2",
         executionId: "execution-too-long",
         agent: actor,
         context,
@@ -444,7 +444,7 @@ describe("JSON-safe protocol contracts", () => {
     ).toBe(false);
     expect(
       ExecutionRequestSchema.safeParse({
-        version: "1",
+        version: "2",
         executionId: "execution-1",
         agent: actor,
         context,
@@ -482,15 +482,15 @@ describe("JSON-safe protocol contracts", () => {
       RuntimeManifestSchema.parse({
         id: "sharedos.standard",
         version: "0.1.0-alpha.0",
-        protocolVersion: "1",
+        protocolVersion: "2",
         metadata: { executionModel: "bounded-driver-loop" },
       }),
-    ).toMatchObject({ id: "sharedos.standard", protocolVersion: "1" });
+    ).toMatchObject({ id: "sharedos.standard", protocolVersion: "2" });
     expect(
       RuntimeManifestSchema.safeParse({
         id: "broken",
         version: "1",
-        protocolVersion: "1",
+        protocolVersion: "2",
         load: () => undefined,
       }).success,
     ).toBe(false);
@@ -529,11 +529,11 @@ describe("JSON-safe protocol contracts", () => {
     ).toBe(false);
     expect(
       RemoteExecutionRequestSchema.safeParse({
-        version: "1",
+        version: "2",
         executionId: "execution-1",
         agent: actor,
         message: {
-          version: "1",
+          version: "2",
           id: "message-1",
           sender: owner,
           receiver: actor,
@@ -562,7 +562,7 @@ describe("the HTTP route table", () => {
     }
 
     expect(verbsByPath.size).toBe(9);
-    expect(verbsByPath.get("/v1/tools/namespaces")).toEqual(["GET", "PUT"]);
+    expect(verbsByPath.get("/v2/tools/namespaces")).toEqual(["GET", "PUT"]);
     for (const route of Object.values(SHAREDOS_ROUTES)) {
       expect(route.method === "GET" ? "request" in route : route.request !== undefined).toBe(
         route.method !== "GET",
@@ -571,7 +571,7 @@ describe("the HTTP route table", () => {
   });
 
   it("stamps the health answer with the one protocol version", () => {
-    expect(ProtocolVersionSchema.parse(PROTOCOL_VERSION)).toBe("1");
+    expect(ProtocolVersionSchema.parse(PROTOCOL_VERSION)).toBe("2");
     expect(
       SHAREDOS_ROUTES.health.response.safeParse({ status: "ok", protocolVersion: PROTOCOL_VERSION })
         .success,
@@ -592,7 +592,7 @@ describe("isJsonObject", () => {
 
 describe("AuditEventSchema", () => {
   const event = {
-    version: "1",
+    version: "2",
     id: "audit-1",
     type: "tool.invoked",
     outcome: "denied",

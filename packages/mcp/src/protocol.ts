@@ -98,6 +98,7 @@ export function jsonRpcError(
 export const InitializeParamsSchema = z
   .object({
     protocolVersion: z.string().min(1).optional(),
+    _meta: z.record(z.unknown()).optional(),
     capabilities: z.record(z.unknown()).optional(),
     clientInfo: z
       .object({ name: z.string().optional(), version: z.string().optional() })

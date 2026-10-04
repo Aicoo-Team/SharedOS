@@ -1368,7 +1368,7 @@ describe("SharedOSKernel resources", () => {
 describe("SharedOSKernel messaging and audit", () => {
   function envelope(overrides: Partial<MessageEnvelope> = {}): MessageEnvelope {
     return {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: ACTOR,
       receiver: RECEIVER,
@@ -1684,7 +1684,7 @@ describe("SharedOSKernel messaging and audit", () => {
       completedAt: NOW,
     });
     expect(acceptedRequest).toEqual({
-      version: "1",
+      version: "2",
       id: "message-generated-1",
       sender: ACTOR,
       receiver: RECEIVER,
@@ -2263,7 +2263,7 @@ describe("what a failing audit sink does, by when the record is written", () => 
   }
 
   const MESSAGE: MessageEnvelope = {
-    version: "1",
+    version: "2",
     id: "message-1",
     sender: ACTOR,
     receiver: RECEIVER,
@@ -2852,7 +2852,7 @@ describe("SharedOSKernel provider diagnostics", () => {
       action: "read",
     });
     await kernel.sendMessage(context(), {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: ACTOR,
       receiver: RECEIVER,
@@ -3007,7 +3007,7 @@ describe("SharedOSKernel provider diagnostics", () => {
     });
 
     const result = await kernel.sendMessage(context(), {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: ACTOR,
       receiver: RECEIVER,
@@ -3626,7 +3626,7 @@ describe("SharedOSKernel audit routing", () => {
       action: "search",
     });
     await kernel.sendMessage(context(), {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: ACTOR,
       receiver: RECEIVER,

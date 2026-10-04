@@ -60,7 +60,7 @@ export class AnthropicTurnDriver implements AgentTurnDriver {
         }
 
         const response = await fetch(
-          `${process.env.ANTHROPIC_BASE_URL ?? "https://api.anthropic.com"}/v1/messages`,
+          `${process.env.ANTHROPIC_BASE_URL ?? "https://api.anthropic.com"}/v2/messages`,
           {
             method: "POST",
             signal,

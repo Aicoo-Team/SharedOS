@@ -232,7 +232,7 @@ describe("testkit", () => {
     const router = new InMemoryMessageRequestRouter(transport);
     const context = createTestContext();
     const request: MessageEnvelope = {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: { kind: "agent", agentId: "agent-1" },
       receiver: { kind: "agent", agentId: "agent-2" },
@@ -243,7 +243,7 @@ describe("testkit", () => {
     };
     const delivery = await transport.deliver(context, request);
     await expect(router.resolveReply(context, request, delivery)).resolves.toEqual({
-      version: "1",
+      version: "2",
       id: "message-1-reply",
       sender: request.receiver,
       receiver: request.sender,

@@ -151,12 +151,12 @@ describe("createEscalationTool", () => {
       { clock: () => now, createId: () => `event-${(sequence += 1)}` },
     );
     const request: ExecutionRequest = {
-      version: "1",
+      version: "2",
       executionId: "execution-1",
       agent,
       context,
       message: {
-        version: "1",
+        version: "2",
         id: "message-1",
         sender: owner,
         receiver: agent,

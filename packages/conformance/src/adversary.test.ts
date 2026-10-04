@@ -60,7 +60,7 @@ const experiment: ExperimentIdentity = {
 };
 
 const system: Omit<SystemIdentity, "runtime"> = {
-  protocolVersion: "1",
+  protocolVersion: "2",
   sharedOsVersion: "0.1.0-alpha.0",
   adapterId: "sharedos-embedded",
   policyHash: HASH,

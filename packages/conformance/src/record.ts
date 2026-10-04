@@ -314,7 +314,7 @@ export type CostRecord = z.infer<typeof CostRecordSchema>;
  */
 export const ExecutionRecordSchema = z
   .object({
-    version: z.literal("1"),
+    version: ProtocolVersionSchema,
     recordedAt: TimestampSchema,
     experiment: ExperimentIdentitySchema,
     system: SystemIdentitySchema,

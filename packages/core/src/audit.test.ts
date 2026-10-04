@@ -45,7 +45,7 @@ describe("auditEvent", () => {
     const event = auditEvent(CONTEXT, { type: "turn.ended", outcome: "succeeded" });
 
     expect(event).toMatchObject({
-      version: "1",
+      version: "2",
       at: CONTEXT.now,
       traceId: CONTEXT.traceId,
       namespaceId: CONTEXT.namespaceId,

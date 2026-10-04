@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { AddressSchema } from "./address.js";
 import { CapabilityRequestSchema, ResourceRefSchema } from "./capability.js";
-import { IdentifierSchema, TimestampSchema } from "./common.js";
+import { IdentifierSchema, ProtocolVersionSchema, TimestampSchema } from "./common.js";
 import { JsonObjectSchema } from "./json.js";
 
 export const AuditEventTypeSchema = z.enum([
@@ -88,7 +88,7 @@ export type AuditSource = z.infer<typeof AuditSourceSchema>;
  */
 export const AuditEventSchema = z
   .object({
-    version: z.literal("1"),
+    version: ProtocolVersionSchema,
     /**
      * The identity of this record, unique among every record a kernel emits.
      *

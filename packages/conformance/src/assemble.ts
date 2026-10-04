@@ -1,3 +1,4 @@
+import { PROTOCOL_VERSION, assertProtocolVersion } from "@aicoo/sharedos-contracts";
 import type {
   ExecutionEvent,
   ExecutionRequest,
@@ -64,6 +65,11 @@ export interface AssembleExecutionRecordInput {
  */
 export function assembleExecutionRecord(input: AssembleExecutionRecordInput): ExecutionRecord {
   const { request, result } = input;
+  assertProtocolVersion(request.version);
+  assertProtocolVersion(request.message.version);
+  assertProtocolVersion(result.version);
+  for (const event of result.events) assertProtocolVersion(event.version);
+  for (const event of input.auditEvents ?? []) assertProtocolVersion(event.version);
   const reported = reportedTokens(result);
   const tokens = {
     inputTokens: input.cost?.inputTokens ?? reported.inputTokens,
@@ -74,7 +80,7 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
   );
 
   const record: ExecutionRecord = {
-    version: "1",
+    version: PROTOCOL_VERSION,
     recordedAt: input.recordedAt ?? result.completedAt,
     experiment: input.experiment,
     system: {

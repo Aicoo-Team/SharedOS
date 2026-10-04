@@ -105,7 +105,7 @@ function grants(escalation = false) {
 
 function request(escalation = false): ExecutionRequest {
   return {
-    version: "1",
+    version: "2",
     executionId: "execution-1",
     agent: AGENT,
     context: {
@@ -119,7 +119,7 @@ function request(escalation = false): ExecutionRequest {
       now: NOW,
     },
     message: {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: AGENT,
       receiver: AGENT,

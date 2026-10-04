@@ -11,7 +11,7 @@ and what is deliberately never published are in
 This is the second network surface. The first is the
 [HTTP API](http-api.md), which serves your own code. They are not alternatives:
 the kernel behind them is the same, and a `tools/call` here becomes exactly the
-`ToolCall` that `POST /v1/tools/invoke` would have made.
+`ToolCall` that `POST /v2/tools/invoke` would have made.
 
 ```ts
 import { McpToolServer } from "@aicoo/sharedos-mcp";
@@ -150,7 +150,7 @@ for a version string.
 }
 ```
 
-This is the same effective catalogue `GET /v1/tools` returns for the same
+This is the same effective catalogue `GET /v2/tools` returns for the same
 context: registered **and** namespace enabled **and** allowed by some grant. A
 tool the caller may not use does not appear, so a model driven by this list never
 learns it exists.
@@ -293,3 +293,10 @@ curl -s "$BRIDGE" -H "$AUTH" -H "$JSON" \
 - [HTTP API reference](http-api.md): the same kernel for your own code.
 - [Tool catalog](tools.md): the three availability gates behind every list.
 - [Reason and error codes](errors.md): what a `denied` status means.
+
+SharedOS epoch 2 is advertised separately from the MCP revision in
+`_meta["sharedos/protocolVersion"]` on initialization, catalogue and tool results.
+SharedOS-aware callers can pin that value in initialize or tool-call metadata;
+unsupported pins receive JSON-RPC invalid-params with
+`data.code = "unsupported_protocol_version"` before tool invocation.
+See [ADR 0027](adr/0027-wire-protocol-compatibility-epochs.md).

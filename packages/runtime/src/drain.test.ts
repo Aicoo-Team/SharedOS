@@ -78,12 +78,12 @@ const grants = [
 
 function request(): ExecutionRequest {
   return {
-    version: "1",
+    version: "2",
     executionId: "execution-1",
     agent,
     context,
     message: {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender: owner,
       receiver: agent,
@@ -440,7 +440,7 @@ describe("a turn that drains before its deadline", () => {
     );
     let refused = false;
     const plugin: RuntimePlugin = {
-      manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "1" },
+      manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "2" },
       run: async (_input, host) => {
         const first = host.invokeTool(call("call-1"));
         void first.catch(() => undefined);
@@ -474,7 +474,7 @@ describe("a turn that drains before its deadline", () => {
       const { kernel, ledger, state, failHeld } = world(0, () => false, "call-1");
       const late = vi.fn();
       const plugin: RuntimePlugin = {
-        manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "1" },
+        manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "2" },
         run: async (_input, host) => {
           // Left behind by a plugin that answers without waiting for it.
           host.invokeTool(call("call-1")).catch(late);
@@ -508,7 +508,7 @@ describe("a turn that drains before its deadline", () => {
       const { kernel, ledger, state, failHeld } = world(0, () => false, "call-1");
       const late = vi.fn();
       const plugin: RuntimePlugin = {
-        manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "1" },
+        manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "2" },
         run: async (_input, host) => {
           await host.invokeTool(call("call-1")).catch((error: unknown) => {
             late(error);
@@ -582,7 +582,7 @@ describe("retryable says whether running the turn again repeats anything", () =>
     const { kernel } = world(0);
     let stalled = false;
     const plugin: RuntimePlugin = {
-      manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "1" },
+      manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "2" },
       run: async (_input, host) => {
         await host.invokeTool(call("call-1", definition));
         stalled = true;
@@ -618,7 +618,7 @@ describe("retryable says whether running the turn again repeats anything", () =>
   it("refuses it while a read is fine and a write is still with the kernel", async () => {
     const { kernel, state } = world(600_000);
     const plugin: RuntimePlugin = {
-      manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "1" },
+      manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "2" },
       run: async (_input, host) => {
         await host.invokeTool(call("call-1"));
         return { type: "complete", output: {} };
@@ -641,7 +641,7 @@ describe("retryable says whether running the turn again repeats anything", () =>
     async (definition, retryable) => {
       const { kernel } = world(0);
       const plugin: RuntimePlugin = {
-        manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "1" },
+        manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "2" },
         run: async (_input, host) => {
           await host.invokeTool(call("call-1", definition));
           throw new Error("the plugin broke on something unrelated");
@@ -663,7 +663,7 @@ describe("retryable says whether running the turn again repeats anything", () =>
     async (definition, retryable) => {
       const { kernel } = world(0);
       const plugin: RuntimePlugin = {
-        manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "1" },
+        manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "2" },
         run: async (_input, host) => {
           await host.invokeTool(call("call-1", definition));
           // What the harness adapters state on any harness failure.
@@ -684,7 +684,7 @@ describe("retryable says whether running the turn again repeats anything", () =>
   it("never turns a plugin's false into true", async () => {
     const { kernel } = world(10);
     const plugin: RuntimePlugin = {
-      manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "1" },
+      manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "2" },
       run: async () => ({
         type: "fail",
         error: { code: "harness_failed", message: "The harness crashed.", retryable: false },

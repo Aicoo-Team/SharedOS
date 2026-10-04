@@ -501,7 +501,7 @@ const turns = new SharedOSExecutor(kernel, runtime, {
 
 const visibleTools = await kernel.listTools(context);
 const result = await turns.execute({
-  version: "1",
+  version: "2",
   executionId: crypto.randomUUID(),
   agent: targetAgent,
   context,
@@ -522,8 +522,8 @@ told: a driver that talks to a model provider projects first with
 `publishToolCatalog`, which yields the `PublishedToolDefinition` the MCP
 boundary serves. `StandardTurnDriver` sends less still: a name, a description and
 the input schema. The
-[HTTP reference](http-api.md#get-v1tools) states the same rule for
-`GET /v1/tools`.
+[HTTP reference](http-api.md#get-v2tools) states the same rule for
+`GET /v2/tools`.
 
 A vendor CLI that keeps its own loop (Codex, Claude Code, DeepSeek Harness, Pi)
 ships seated. `createMcpHarnessRuntime` starts the CLI for the turn and serves it

@@ -1,3 +1,4 @@
+import { PROTOCOL_VERSION } from "@aicoo/sharedos-contracts";
 import type {
   PublishedToolAnnotations,
   PublishedToolDefinition,
@@ -136,7 +137,7 @@ export async function buildToolCatalog(
 ): Promise<SharedOSToolCatalog> {
   const tools = publishToolCatalog(definitions);
   return deepFreeze({
-    version: "1" as const,
+    version: PROTOCOL_VERSION,
     executionId: options.executionId,
     catalogHash: await catalogHash(tools),
     tools: [...tools],

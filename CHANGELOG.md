@@ -8,6 +8,19 @@ each entry calls out what a host has to update.
 
 ## Unreleased
 
+### Changed — breaking
+
+- **Wire protocol epoch 2 makes incompatible readers explicit.** HTTP operations
+  move from `/v1` to `/v2`, and every response carries
+  `x-sharedos-protocol-version: 2`. Unsupported peers receive
+  `unsupported_protocol_version` instead of an unexplained schema rejection.
+  Runtime manifests, execution/message envelopes, audit events, published
+  catalogues and execution records use the same epoch. Upgrade communicating
+  clients, hosts, plugins and record readers together; retain historical evidence
+  under its original epoch. Strict authority input validation is unchanged.
+  [ADR 0027](docs/adr/0027-wire-protocol-compatibility-epochs.md) supersedes ADR
+  0019's deferral and defines the rules for subsequent breaking changes.
+
 ### Fixed
 
 - **Reading a Claude Code or Pi tool call no longer pays for a failed parse.**

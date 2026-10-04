@@ -54,7 +54,7 @@ const context: AccessContext = {
 const manifest: RuntimeManifest = {
   id: "test.custom-runtime",
   version: "1.2.3",
-  protocolVersion: "1",
+  protocolVersion: "2",
   metadata: { harness: "test" },
 };
 
@@ -62,14 +62,14 @@ const manifest: RuntimeManifest = {
 function request(options: { readonly escalation?: boolean } = {}): ExecutionRequest {
   const escalation = options.escalation === true;
   return {
-    version: "1",
+    version: "2",
     executionId: "execution-1",
     agent: receiver,
     context: escalation
       ? { ...context, enabledToolNamespaces: ["files", ESCALATION_TOOL_NAMESPACE] }
       : context,
     message: {
-      version: "1",
+      version: "2",
       id: "message-1",
       sender,
       receiver,
@@ -165,7 +165,7 @@ describe("RuntimePlugin security envelope", () => {
       runtime: {
         id: manifest.id,
         version: manifest.version,
-        protocolVersion: "1",
+        protocolVersion: "2",
         metadata: manifest.metadata,
       },
     });
@@ -966,5 +966,44 @@ describe("what the envelope writes into audit", () => {
     // it must not turn a turn that completed into one that threw.
     expect(result.status).toBe("succeeded");
     expect(host.recordTurnEnd).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("runtime protocol compatibility", () => {
+  it.each(["1", "3"])(
+    "rejects incompatible runtime epoch %s at registration and execution",
+    (protocolVersion) => {
+      const runtime = {
+        manifest: { ...manifest, protocolVersion },
+        run: vi.fn(async () => ({ type: "complete" as const, output: null })),
+      } as unknown as RuntimePlugin;
+      for (const build of [
+        () => new RuntimeRegistry([runtime]),
+        () => new SharedOSExecutor(kernel(), runtime),
+      ]) {
+        expect(build).toThrow(
+          expect.objectContaining({
+            code: "unsupported_protocol_version",
+            supportedVersion: "2",
+            receivedVersion: protocolVersion,
+          }),
+        );
+      }
+      expect(runtime.run).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["1", "3"])("rejects incompatible request epoch %s before admission", async (version) => {
+    const turnKernel = kernel();
+    const runtime: RuntimePlugin = {
+      manifest,
+      run: vi.fn(async () => ({ type: "complete" as const, output: null })),
+    };
+    const executor = new SharedOSExecutor(turnKernel, runtime);
+    await expect(
+      executor.execute({ ...request(), version } as unknown as ExecutionRequest),
+    ).rejects.toMatchObject({ code: "unsupported_protocol_version", receivedVersion: version });
+    expect(turnKernel.admitTurn).not.toHaveBeenCalled();
+    expect(runtime.run).not.toHaveBeenCalled();
   });
 });

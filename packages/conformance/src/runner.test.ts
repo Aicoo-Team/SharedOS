@@ -990,7 +990,7 @@ describe("the conformance suite", () => {
         };
         return createStandardRuntime({
           driver: new StandardTurnDriver({
-            manifest: { id: "sharedos.test.reworded", version: "1.0.0", protocolVersion: "1" },
+            manifest: { id: "sharedos.test.reworded", version: "1.0.0", protocolVersion: "2" },
             client: new TranscriptModelClient(movesToModelTranscript(moves, options), {
               provider: "sharedos-conformance",
             }),
@@ -1264,7 +1264,7 @@ describe("grading", () => {
       type: "turn.started" | "tool.requested" | "tool.completed" | "turn.failed",
       data: JsonObject,
     ) => ({
-      version: "1" as const,
+      version: "2" as const,
       eventId: `event-${sequence}`,
       sequence,
       executionId,
@@ -1507,7 +1507,7 @@ describe("a turn ending only the delegate can elect", () => {
         operations,
         events: [
           {
-            version: "1",
+            version: "2",
             eventId: "e1",
             executionId: "x",
             traceId: "t",
@@ -1684,7 +1684,7 @@ describe("grading a column whose harness owns the loop", () => {
 function emptyRecord(): Parameters<typeof judgeCase>[1]["record"] {
   const hash = "f".repeat(64);
   return {
-    version: "1",
+    version: "2",
     recordedAt: "2026-08-18T09:00:00.000Z",
     experiment: {
       experimentId: "e",
@@ -1695,9 +1695,9 @@ function emptyRecord(): Parameters<typeof judgeCase>[1]["record"] {
       evaluatorHash: hash,
     },
     system: {
-      protocolVersion: "1",
+      protocolVersion: "2",
       sharedOsVersion: "0",
-      runtime: { id: "none", version: "0", protocolVersion: "1" },
+      runtime: { id: "none", version: "0", protocolVersion: "2" },
       adapterId: "none",
       policyHash: hash,
     },

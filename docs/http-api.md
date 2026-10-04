@@ -53,15 +53,15 @@ safe to expose:
 | Method | Path                   | Request body              | 2xx response            |
 | ------ | ---------------------- | ------------------------- | ----------------------- |
 | GET    | `/health`              | —                         | `SharedOSHealth`        |
-| POST   | `/v1/authorize`        | `CapabilityRequirement`   | `AuthorizationDecision` |
-| GET    | `/v1/tools`            | —                         | `ToolDefinition[]`      |
-| GET    | `/v1/reach`            | —                         | `ReachResult`           |
-| GET    | `/v1/tools/namespaces` | —                         | `ToolNamespaceCatalog`  |
-| PUT    | `/v1/tools/namespaces` | `ToolNamespaceUpdate`     | `ToolNamespaceCatalog`  |
-| POST   | `/v1/tools/invoke`     | `ToolCall`                | `ToolResult`            |
-| POST   | `/v1/resources/invoke` | `RemoteResourceOperation` | `ResourceResult`        |
-| POST   | `/v1/messages`         | `MessageEnvelope`         | `MessageDeliveryResult` |
-| POST   | `/v1/turns`            | `RemoteExecutionRequest`  | `ExecutionResult`       |
+| POST   | `/v2/authorize`        | `CapabilityRequirement`   | `AuthorizationDecision` |
+| GET    | `/v2/tools`            | —                         | `ToolDefinition[]`      |
+| GET    | `/v2/reach`            | —                         | `ReachResult`           |
+| GET    | `/v2/tools/namespaces` | —                         | `ToolNamespaceCatalog`  |
+| PUT    | `/v2/tools/namespaces` | `ToolNamespaceUpdate`     | `ToolNamespaceCatalog`  |
+| POST   | `/v2/tools/invoke`     | `ToolCall`                | `ToolResult`            |
+| POST   | `/v2/resources/invoke` | `RemoteResourceOperation` | `ResourceResult`        |
+| POST   | `/v2/messages`         | `MessageEnvelope`         | `MessageDeliveryResult` |
+| POST   | `/v2/turns`            | `RemoteExecutionRequest`  | `ExecutionResult`       |
 
 Unknown paths are `404`. A known path with the wrong verb is `405`.
 
@@ -83,10 +83,10 @@ Liveness and protocol version. Requires no authentication and resolves no
 context, so it is safe as a load-balancer probe.
 
 ```json
-{ "status": "ok", "protocolVersion": "1" }
+{ "status": "ok", "protocolVersion": "2" }
 ```
 
-### `POST /v1/authorize`
+### `POST /v2/authorize`
 
 Ask whether an action would be allowed, without performing it. Discovery-style
 checks like this never consume a bounded (`maxUses`) grant.
@@ -105,7 +105,7 @@ checks like this never consume a bounded (`maxUses`) grant.
 A refusal is still `200` — the decision is the payload, not the status. See
 [reason codes](errors.md#authorization-reason-codes).
 
-### `GET /v1/tools`
+### `GET /v2/tools`
 
 The effective catalog for the resolved context: registered **and** namespace
 enabled **and** allowed by some grant. A tool the caller may not use does not
@@ -137,7 +137,7 @@ which is the same `PublishedToolDefinition` the MCP boundary serves and what
 `StandardTurnDriver` sends to a provider. See
 [what crosses the boundary](mcp-toolshare.md#what-crosses-the-boundary).
 
-### `GET /v1/reach`
+### `GET /v2/reach`
 
 Where the resolved context may operate, with the authority stripped out: the
 namespace, path, actions and scope of every place some grant would authorize
@@ -163,8 +163,8 @@ of guessing paths and collecting denials.
 Descriptive, never permissive: every call is still authorized on its own, so an
 entry here is not a permission. It is grant reach for the whole context — the
 host ceiling is not consulted, and it is not narrowed to the tool catalogue,
-because [`/v1/resources/invoke`](#post-v1resourcesinvoke) is not gated by tool
-namespaces. A client driving a model from `/v1/tools` keeps the entries whose
+because [`/v2/resources/invoke`](#post-v2resourcesinvoke) is not gated by tool
+namespaces. A client driving a model from `/v2/tools` keeps the entries whose
 namespace one of those tools operates on (`requiredCapability.resource.namespace`),
 which is what the execution envelope does for a turn.
 
@@ -181,7 +181,7 @@ quietly omitting the grant, because a reach missing a live grant looks exactly
 like one that is true. A spent budget simply does not appear. Nothing is
 consumed by asking. See ADR 0021.
 
-### `GET /v1/tools/namespaces` · `PUT /v1/tools/namespaces`
+### `GET /v2/tools/namespaces` · `PUT /v2/tools/namespaces`
 
 Namespaces are the product control plane: whether a _family_ of tools should be
 offered in this context at all. They are off by default and are not authority —
@@ -210,7 +210,7 @@ patch atomically against fresh state and may narrow it by organization policy �
 never widen it. The response is what actually took effect, which may be less
 than what was asked for.
 
-### `POST /v1/tools/invoke`
+### `POST /v2/tools/invoke`
 
 ```json
 {
@@ -225,7 +225,7 @@ than what was asked for.
 Four things happen in order: the arguments are parsed against the tool's schema,
 the exact resource is re-derived **from the parsed arguments**, that exact
 resource and action are authorized again, and only then does the handler run.
-Appearing in `/v1/tools` is not permission to invoke; changing the path in
+Appearing in `/v2/tools` is not permission to invoke; changing the path in
 `arguments` cannot reach outside the grant.
 
 ```json
@@ -241,7 +241,7 @@ Appearing in `/v1/tools` is not permission to invoke; changing the path in
 `status` is `succeeded`, `denied`, or `failed`; the latter two carry
 `error: { code, message, retryable?, details? }` instead of `output`.
 
-### `POST /v1/resources/invoke`
+### `POST /v2/resources/invoke`
 
 Direct access to a resource plane, bypassing the tool layer. Use it for host
 code paths that are not model-driven — your own UI, a migration, a cron job.
@@ -258,7 +258,7 @@ The `context` field of `ResourceOperation` is **not** accepted on the wire; the
 server attaches the one it resolved. Returns a `ResourceResult` with the same
 three statuses.
 
-### `POST /v1/messages`
+### `POST /v2/messages`
 
 Messages coordinate work. They never carry authority — sending one to an agent
 does not permit that agent to do anything, and does not permit you to run it.
@@ -280,7 +280,7 @@ Authorized against the _recipient_: namespace `sharedos.messaging`, action
 `send`, path scoped to the receiver's address. Delivery status is `accepted`
 (**HTTP 202**), `delivered`, `denied`, or `failed` (all **HTTP 200**).
 
-### `POST /v1/turns`
+### `POST /v2/turns`
 
 One bounded agent turn. The server lists the visible tools itself, which is why
 `tools` is absent from the wire schema.
@@ -334,9 +334,9 @@ list is returned with the result.
 | Status | `error.code`             | Cause                                                             |
 | ------ | ------------------------ | ----------------------------------------------------------------- |
 | 200    | —                        | Success. **Includes authorization denials** — read `status`       |
-| 202    | —                        | `/v1/messages` when delivery status is `accepted`                 |
+| 202    | —                        | `/v2/messages` when delivery status is `accepted`                 |
 | 400    | `invalid_json`           | Body is not JSON                                                  |
-| 400    | `invalid_request`        | Body does not match the v1 contract                               |
+| 400    | `invalid_request`        | Body does not match the v2 contract                               |
 | 403    | `permission_denied`      | An error carrying that code reached the handler                   |
 | 404    | `not_found`              | Unknown path                                                      |
 | 405    | `method_not_allowed`     | Wrong verb for a known path                                       |
@@ -384,12 +384,12 @@ AUTH="authorization: Bearer $TOKEN"
 
 curl -s "$BASE/health"
 
-curl -s "$BASE/v1/tools" -H "$AUTH"
+curl -s "$BASE/v2/tools" -H "$AUTH"
 
-curl -s "$BASE/v1/authorize" -H "$AUTH" -H 'content-type: application/json' \
+curl -s "$BASE/v2/authorize" -H "$AUTH" -H 'content-type: application/json' \
   -d '{"resource":{"namespace":"files","path":["Work","Projects","atlas"]},"action":"search"}'
 
-curl -s "$BASE/v1/tools/invoke" -H "$AUTH" -H 'content-type: application/json' \
+curl -s "$BASE/v2/tools/invoke" -H "$AUTH" -H 'content-type: application/json' \
   -d '{"id":"call-1","tool":"files.search","traceId":"trace-1","requestedAt":"2026-08-24T09:00:00.000Z","arguments":{"path":["Work","Projects","atlas"],"query":"ship date"}}'
 ```
 
@@ -411,15 +411,15 @@ const sharedos = new SharedOSClient({
 | Client method                  | Route                       |
 | ------------------------------ | --------------------------- |
 | `health()`                     | `GET /health`               |
-| `authorize(requirement)`       | `POST /v1/authorize`        |
-| `listTools()`                  | `GET /v1/tools`             |
-| `reach()`                      | `GET /v1/reach`             |
-| `listToolNamespaces()`         | `GET /v1/tools/namespaces`  |
-| `updateToolNamespaces(update)` | `PUT /v1/tools/namespaces`  |
-| `invokeTool(call)`             | `POST /v1/tools/invoke`     |
-| `invokeResource(operation)`    | `POST /v1/resources/invoke` |
-| `sendMessage(envelope)`        | `POST /v1/messages`         |
-| `executeTurn(request)`         | `POST /v1/turns`            |
+| `authorize(requirement)`       | `POST /v2/authorize`        |
+| `listTools()`                  | `GET /v2/tools`             |
+| `reach()`                      | `GET /v2/reach`             |
+| `listToolNamespaces()`         | `GET /v2/tools/namespaces`  |
+| `updateToolNamespaces(update)` | `PUT /v2/tools/namespaces`  |
+| `invokeTool(call)`             | `POST /v2/tools/invoke`     |
+| `invokeResource(operation)`    | `POST /v2/resources/invoke` |
+| `sendMessage(envelope)`        | `POST /v2/messages`         |
+| `executeTurn(request)`         | `POST /v2/turns`            |
 
 Options are `{ baseUrl, token?, fetch?, headers? }`. `token` is a value or an
 async function and is sent as `authorization: Bearer <token>`, set after
@@ -447,3 +447,14 @@ These routes are for code you control. An external coding-agent CLI is served by
 the other network surface — the same catalogue and the same kernel, presented as
 an MCP server, with its own transports and methods in the
 [MCP API reference](mcp-api.md).
+
+## Protocol compatibility
+
+[ADR 0027](adr/0027-wire-protocol-compatibility-epochs.md) defines epoch 2.
+Every response carries x-sharedos-protocol-version: 2; the client sends the
+same header and checks it before parsing responses. Unsupported paths, headers
+or body versions receive HTTP 426 with unsupported_protocol_version.
+There are no /v1 aliases. Authority-bearing inputs and outputs remain strict.
+
+Browser hosts must allow the request header in their CORS policy and expose
+`x-sharedos-protocol-version` to clients through `Access-Control-Expose-Headers`.

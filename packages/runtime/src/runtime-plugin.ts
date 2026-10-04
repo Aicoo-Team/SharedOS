@@ -1,4 +1,6 @@
 import {
+  assertProtocolVersion,
+  PROTOCOL_VERSION,
   RuntimeManifestSchema,
   type AccessContext,
   type ExecutionRequest,
@@ -231,9 +233,14 @@ export class RuntimeRegistry {
       throw new TypeError("Runtime plugin must provide a run function");
     }
 
+    if (runtime.manifest?.protocolVersion !== undefined) {
+      assertProtocolVersion(runtime.manifest.protocolVersion);
+    }
     const parsed = RuntimeManifestSchema.safeParse(runtime.manifest);
     if (!parsed.success) {
-      throw new TypeError("Runtime manifest does not match the SharedOS v1 contract");
+      throw new TypeError(
+        `Runtime manifest does not match the SharedOS v${PROTOCOL_VERSION} contract`,
+      );
     }
     if (this.#runtimes.has(parsed.data.id)) {
       throw new TypeError(`Runtime is already registered: ${parsed.data.id}`);

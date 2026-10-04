@@ -1,4 +1,5 @@
 import {
+  assertProtocolVersion,
   ExecutionRequestSchema,
   ExecutionResultSchema,
   JsonValueSchema,
@@ -161,9 +162,14 @@ export class SharedOSExecutor implements TurnExecutionPort {
     if (runtime === null || typeof runtime !== "object" || typeof runtime.run !== "function") {
       throw new TypeError("Runtime plugin must provide a run function");
     }
+    if (runtime.manifest?.protocolVersion !== undefined) {
+      assertProtocolVersion(runtime.manifest.protocolVersion);
+    }
     const manifest = RuntimeManifestSchema.safeParse(runtime.manifest);
     if (!manifest.success) {
-      throw new TypeError("Runtime manifest does not match the SharedOS v1 contract");
+      throw new TypeError(
+        `Runtime manifest does not match the SharedOS v${PROTOCOL_VERSION} contract`,
+      );
     }
 
     this.#kernel = kernel;
@@ -288,9 +294,13 @@ export class SharedOSExecutor implements TurnExecutionPort {
     input: ExecutionRequest,
     options: ExecuteTurnOptions = {},
   ): Promise<ExecutionResult> {
+    assertProtocolVersion(input?.version);
+    assertProtocolVersion(input?.message?.version);
     const parsed = ExecutionRequestSchema.safeParse(input);
     if (!parsed.success) {
-      throw new TypeError("ExecutionRequest does not match the SharedOS v1 contract");
+      throw new TypeError(
+        `ExecutionRequest does not match the SharedOS v${PROTOCOL_VERSION} contract`,
+      );
     }
 
     const request = parsed.data;
@@ -537,7 +547,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
         assertRuntimeHostActive(runtimeHostActive, abort.signal);
         const parsedCall = ToolCallSchema.safeParse(structuredClone(call));
         if (!parsedCall.success) {
-          throw new TypeError("Runtime tool call does not match the SharedOS v1 contract");
+          throw new TypeError(
+            `Runtime tool call does not match the SharedOS v${PROTOCOL_VERSION} contract`,
+          );
         }
         const step = parseRuntimeStep(invocationOptions.step);
         const eventData = toolEventData(parsedCall.data, step);
@@ -674,7 +686,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
           assertRuntimeHostActive(runtimeHostActive, abort.signal);
           const parsedEvent = RuntimeEventSchema.safeParse(structuredClone(event));
           if (!parsedEvent.success) {
-            throw new TypeError("Runtime event does not match the SharedOS v1 contract");
+            throw new TypeError(
+              `Runtime event does not match the SharedOS v${PROTOCOL_VERSION} contract`,
+            );
           }
           emit("runtime.event", {
             runtime: runtimeProvenance(this.#manifest),

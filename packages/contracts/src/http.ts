@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { AuthorizationDecisionSchema } from "./access.js";
 import { CapabilityRequirementSchema, ReachResultSchema } from "./capability.js";
-import { IdentifierSchema, ProtocolVersionSchema } from "./common.js";
+import { IdentifierSchema, PROTOCOL_VERSION, ProtocolVersionSchema } from "./common.js";
 import { ExecutionRequestSchema, ExecutionResultSchema } from "./execution.js";
 import { MessageDeliveryResultSchema, MessageEnvelopeSchema } from "./message.js";
 import { ResourceOperationSchema, ResourceResultSchema } from "./resource.js";
@@ -13,6 +13,9 @@ import {
   ToolNamespaceUpdateSchema,
   ToolResultSchema,
 } from "./tool.js";
+
+/** SharedOS HTTP epoch stamp, independent of content negotiation. */
+export const SHAREDOS_PROTOCOL_HEADER = "x-sharedos-protocol-version";
 
 /** Resource operation accepted over HTTP; authority is injected by the host. */
 export const RemoteResourceOperationSchema = ResourceOperationSchema.omit({
@@ -45,6 +48,7 @@ export type SharedOSHealth = z.infer<typeof SharedOSHealthSchema>;
  * for a reader that wants to switch on the known ones.
  */
 export const SHAREDOS_API_ERROR_CODES = [
+  "unsupported_protocol_version",
   "invalid_access_context",
   "invalid_json",
   "invalid_request",
@@ -99,44 +103,48 @@ export interface SharedOSRoute<Request = unknown, Response = unknown> {
 export const SHAREDOS_ROUTES = {
   health: { path: "/health", method: "GET", response: SharedOSHealthSchema },
   authorize: {
-    path: "/v1/authorize",
+    path: `/v${PROTOCOL_VERSION}/authorize`,
     method: "POST",
     request: CapabilityRequirementSchema,
     response: AuthorizationDecisionSchema,
   },
-  listTools: { path: "/v1/tools", method: "GET", response: z.array(ToolDefinitionSchema) },
-  reach: { path: "/v1/reach", method: "GET", response: ReachResultSchema },
+  listTools: {
+    path: `/v${PROTOCOL_VERSION}/tools`,
+    method: "GET",
+    response: z.array(ToolDefinitionSchema),
+  },
+  reach: { path: `/v${PROTOCOL_VERSION}/reach`, method: "GET", response: ReachResultSchema },
   listToolNamespaces: {
-    path: "/v1/tools/namespaces",
+    path: `/v${PROTOCOL_VERSION}/tools/namespaces`,
     method: "GET",
     response: ToolNamespaceCatalogSchema,
   },
   updateToolNamespaces: {
-    path: "/v1/tools/namespaces",
+    path: `/v${PROTOCOL_VERSION}/tools/namespaces`,
     method: "PUT",
     request: ToolNamespaceUpdateSchema,
     response: ToolNamespaceCatalogSchema,
   },
   invokeTool: {
-    path: "/v1/tools/invoke",
+    path: `/v${PROTOCOL_VERSION}/tools/invoke`,
     method: "POST",
     request: ToolCallSchema,
     response: ToolResultSchema,
   },
   invokeResource: {
-    path: "/v1/resources/invoke",
+    path: `/v${PROTOCOL_VERSION}/resources/invoke`,
     method: "POST",
     request: RemoteResourceOperationSchema,
     response: ResourceResultSchema,
   },
   sendMessage: {
-    path: "/v1/messages",
+    path: `/v${PROTOCOL_VERSION}/messages`,
     method: "POST",
     request: MessageEnvelopeSchema,
     response: MessageDeliveryResultSchema,
   },
   executeTurn: {
-    path: "/v1/turns",
+    path: `/v${PROTOCOL_VERSION}/turns`,
     method: "POST",
     request: RemoteExecutionRequestSchema,
     response: ExecutionResultSchema,

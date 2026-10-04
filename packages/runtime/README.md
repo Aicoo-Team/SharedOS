@@ -69,7 +69,7 @@ const codexRuntime: RuntimePlugin = {
   manifest: {
     id: "acme.codex",
     version: "1.0.0",
-    protocolVersion: "1",
+    protocolVersion: "2",
     metadata: { harness: "codex", backend: "vercel-sandbox" },
   },
   async run(request, host, signal) {

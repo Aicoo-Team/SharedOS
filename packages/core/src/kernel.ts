@@ -20,6 +20,7 @@ import type {
 } from "@aicoo/sharedos-contracts";
 import {
   AGENT_CARD_VIEWS,
+  assertProtocolVersion,
   AddressSchema,
   EnabledToolNamespacesSchema,
   EscalationSchema,
@@ -549,7 +550,7 @@ export class SharedOSKernel {
         ? undefined
         : await mintCapabilityRequest(context, structuredClone(options.requestedAuthority));
     if (options.requestedAuthority !== undefined && requestedAuthority === undefined) {
-      throw new TypeError("escalation requestedAuthority does not match the SharedOS v1 contract");
+      throw new TypeError("escalation requestedAuthority does not match the SharedOS v2 contract");
     }
     const parsed = EscalationSchema.safeParse({
       reason,
@@ -559,7 +560,7 @@ export class SharedOSKernel {
       ...(requestedAuthority === undefined ? {} : { requestedAuthority }),
     });
     if (!parsed.success) {
-      throw new TypeError("escalation does not match the SharedOS v1 contract");
+      throw new TypeError("escalation does not match the SharedOS v2 contract");
     }
 
     // The outcome path, not the decision path. This is the turn's terminal
@@ -706,7 +707,7 @@ export class SharedOSKernel {
     context = structuredClone(context);
     const parsedSubject = AddressSchema.safeParse(structuredClone(subject));
     if (!parsedSubject.success) {
-      throw new TypeError("agent card subject does not match the SharedOS v1 contract");
+      throw new TypeError("agent card subject does not match the SharedOS v2 contract");
     }
     subject = parsedSubject.data;
     const view = options.view ?? "reach";
@@ -1789,6 +1790,7 @@ export class SharedOSKernel {
     options: KernelOperationOptions = {},
   ): Promise<MessageDeliveryResult> {
     options.signal?.throwIfAborted();
+    assertProtocolVersion(envelope?.version);
     let parsedEnvelope: ReturnType<typeof MessageEnvelopeSchema.safeParse>;
     try {
       parsedEnvelope = MessageEnvelopeSchema.safeParse(structuredClone(envelope));
