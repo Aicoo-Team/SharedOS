@@ -8,6 +8,18 @@ each entry calls out what a host has to update.
 
 ## Unreleased
 
+### Changed
+
+- **The repository is `systemind-team/SharedOS`.** It moved from
+  `Aicoo-Team/SharedOS`, and old URLs redirect. Each package's `repository`
+  field, the release workflow's repository guard and the documentation links
+  name the new address. The API reference's source links are now built from
+  `sourceLinkTemplate` in `typedoc.json` rather than from the checkout's git
+  remote, so `pnpm docs:api:check` gives the same answer in a fork, a mirror
+  and CI. Nothing a host imports changes. Before the next release is tagged,
+  each package's npm trusted publisher has to name the new address
+  (`docs/npm-release.md`).
+
 ### Fixed
 
 - **Reading a Claude Code or Pi tool call no longer pays for a failed parse.**

@@ -77,7 +77,7 @@ packages.
 Requirements: Node.js 20.11 or newer and pnpm 9.15.
 
 ```bash
-git clone https://github.com/Aicoo-Team/SharedOS.git
+git clone https://github.com/systemind-team/SharedOS.git
 cd SharedOS
 pnpm install
 pnpm build
@@ -227,7 +227,7 @@ SDK, or runners.
 SharedOS stops at authorization, messaging, brokered tools, and one bounded
 runtime turn. Task-level self-organization, recursive delegation, recovery
 policy, and cross-task experience belong to the separate
-[Runtime Agent Coordination](https://github.com/Aicoo-Team/runtime-agent-coordination)
+[Runtime Agent Coordination](https://github.com/systemind-team/runtime-agent-coordination)
 host project.
 
 ## Development

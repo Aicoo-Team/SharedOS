@@ -23,7 +23,8 @@
     "excludeInternal": true,
     "excludePrivate": true,
     "excludeProtected": true,
-    "gitRevision": "main"
+    "gitRevision": "main",
+    "sourceLinkTemplate": "https://github.com/systemind-team/SharedOS/blob/{gitRevision}/{path}#L{line}"
   },
   "plugin": ["typedoc-plugin-markdown"],
   "readme": "docs/api-introduction.md",

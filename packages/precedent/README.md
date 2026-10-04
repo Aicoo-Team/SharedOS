@@ -94,6 +94,6 @@ ADR 0020 `HostCeiling` — has an effective authority narrower than its grant se
 and keying on the wider one would teach the system an authority nobody granted,
 most of all in the deployments that were being careful.
 
-See [ADR 0022](https://github.com/Aicoo-Team/SharedOS/blob/main/docs/adr/0022-precedent-proposes-the-kernel-admits.md).
+See [ADR 0022](https://github.com/systemind-team/SharedOS/blob/main/docs/adr/0022-precedent-proposes-the-kernel-admits.md).
 
 SharedOS is currently a `1.0.0` preview.

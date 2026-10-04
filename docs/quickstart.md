@@ -24,7 +24,7 @@ three things, and only the first is required to see anything work:
 | Durable stores         | `GrantSource`, `GrantUsageStore`, `CapabilityGrantVerifier`, `DelegationChainResolver`, `ToolNamespaceSettingsStore`, `AuditSink` | Production. Not this page               |
 
 The examples below use an in-memory provider so they run immediately.
-[`examples/reference-host`](https://github.com/Aicoo-Team/SharedOS/tree/main/examples/reference-host)
+[`examples/reference-host`](https://github.com/systemind-team/SharedOS/tree/main/examples/reference-host)
 is the same shape backed by a real filesystem and SQLite; it needs Node.js 22.5
 or newer for `node:sqlite`, where the packages themselves need 20.11.
 
@@ -376,7 +376,7 @@ as the `cause` on the audit record, tells you which one is missing.
 decided on the logical path; your provider serves the physical target. Staying
 under your root is not sufficient — a symlink that stays inside the tenant and
 points at another subtree voids the grant without SharedOS seeing it. See the
-[reference host](https://github.com/Aicoo-Team/SharedOS/tree/main/examples/reference-host).
+[reference host](https://github.com/systemind-team/SharedOS/tree/main/examples/reference-host).
 
 ## Next
 

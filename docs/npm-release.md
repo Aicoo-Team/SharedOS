@@ -47,11 +47,15 @@ workflow merged to `main`, and the license and security-reporting contact
 
 ## Trusted publishing
 
-All twelve packages have a GitHub Actions trusted publisher on npm —
-repository `Aicoo-Team/SharedOS`, workflow `release.yml` — configured on
-2026-09-08. `release.yml` sets `id-token: write` and passes no npm token, so
-OIDC is the workflow's only credential, and it is also what attaches
-provenance: `--provenance` appears nowhere because trusted publishing does it.
+All twelve packages have a GitHub Actions trusted publisher on npm — workflow
+`release.yml` — configured on 2026-09-08 for repository `Aicoo-Team/SharedOS`.
+The repository has since moved to `systemind-team/SharedOS`, and a publisher
+names the repository it trusts: before tagging a release, confirm with
+`npm trust list` that each package's publisher names the new address, and
+re-point any that does not. `release.yml` sets `id-token: write` and passes no
+npm token, so OIDC is the workflow's only credential, and it is also what
+attaches provenance: `--provenance` appears nowhere because trusted publishing
+does it.
 
 A trusted publisher can only be attached **after a package exists on the
 registry**. Any package added to the set in a future release therefore has to
@@ -69,7 +73,7 @@ bypass-2FA option is refused, as are the account endpoints generally:
 ```bash
 npm trust list @aicoo/sharedos-mcp
 npm trust github @aicoo/sharedos-mcp \
-  --file release.yml --repo Aicoo-Team/SharedOS --allow-publish
+  --file release.yml --repo systemind-team/SharedOS --allow-publish
 ```
 
 `npm trust github` is also the better audit of the two: it reports `409
