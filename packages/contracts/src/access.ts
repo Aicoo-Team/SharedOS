@@ -22,6 +22,13 @@ export const AccessContextSchema = z
     owner: AddressSchema,
     purpose: z.string().trim().min(1).max(512),
     traceId: IdentifierSchema,
+    /**
+     * The execution this context belongs to, carried by every kernel call the
+     * turn makes. The executor copies it from the request. With one the turn is
+     * that execution's alone, and a second open while it runs is refused;
+     * without one, opens that share the other fields share a lease (ADR 0010).
+     */
+    executionId: IdentifierSchema.optional(),
     enabledToolNamespaces: EnabledToolNamespacesSchema,
     now: TimestampSchema,
   })
