@@ -23,6 +23,19 @@ atomic, durable namespace updates while keeping its database and product policy.
 
 SharedOS is currently a `1.0.0` preview.
 
+## Replay storage
+
+`SharedOSKernelOptions.replayStore` enables the kernel-owned replay state machine
+for execution, tool, resource and message IDs. Hosts implement `ReplayStore` with
+atomic durable claims and fenced settlement. Keep identity tombstones after
+result expiry; never reclaim pending operations solely because a timeout passed.
+See [ADR 0028](https://github.com/systemind-team/SharedOS/blob/main/docs/adr/0028-durable-operation-replay.md).
+
+`InMemoryReplayStore` is exported by `@aicoo/sharedos-testkit` for isolated tests.
+It is not durable or suitable for production. Protocol v1 without a configured
+store preserves legacy unprotected behavior. External effects still require
+provider idempotency or reconciliation for crash ambiguity.
+
 ## Classes
 
 ### AuditUnavailableError
@@ -985,6 +998,205 @@ Defined in: [packages/core/src/message-service.ts:58](https://github.com/Aicoo-T
 
 ---
 
+### ReplayError
+
+Defined in: [packages/core/src/replay.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L34)
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+> **new ReplayError**(`code`): [`ReplayError`](#replayerror)
+
+Defined in: [packages/core/src/replay.ts:35](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L35)
+
+###### Parameters
+
+| Parameter | Type                                                                                                                |
+| --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `code`    | `"replay_conflict"` \| `"replay_pending"` \| `"replay_interrupted"` \| `"replay_expired"` \| `"replay_unavailable"` |
+
+###### Returns
+
+[`ReplayError`](#replayerror)
+
+###### Overrides
+
+`Error.constructor`
+
+#### Properties
+
+| Property                                                  | Modifier   | Type                                                                                                                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Inherited from          | Defined in                                                                                                         |
+| --------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-cause-4"></a> `cause?`                    | `public`   | `unknown`                                                                                                           | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.cause`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26                         |
+| <a id="property-code-2"></a> `code`                       | `readonly` | `"replay_conflict"` \| `"replay_pending"` \| `"replay_interrupted"` \| `"replay_expired"` \| `"replay_unavailable"` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | [packages/core/src/replay.ts:36](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L36) |
+| <a id="property-message-4"></a> `message`                 | `public`   | `string`                                                                                                            | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077                                |
+| <a id="property-name-4"></a> `name`                       | `public`   | `string`                                                                                                            | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name`            | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1076                                |
+| <a id="property-stack-4"></a> `stack?`                    | `public`   | `string`                                                                                                            | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078                                |
+| <a id="property-stacktracelimit-4"></a> `stackTraceLimit` | `static`   | `number`                                                                                                            | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68                                  |
+
+#### Methods
+
+##### captureStackTrace()
+
+> `static` **captureStackTrace**(`targetObject`, `constructorOpt?`): `void`
+
+Defined in: node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:52
+
+Creates a `.stack` property on `targetObject`, which when accessed returns
+a string representing the location in the code at which
+`Error.captureStackTrace()` was called.
+
+```js
+const myObject = {};
+Error.captureStackTrace(myObject);
+myObject.stack; // Similar to `new Error().stack`
+```
+
+The first line of the trace will be prefixed with
+`${myObject.name}: ${myObject.message}`.
+
+The optional `constructorOpt` argument accepts a function. If given, all frames
+above `constructorOpt`, including `constructorOpt`, will be omitted from the
+generated stack trace.
+
+The `constructorOpt` argument is useful for hiding implementation
+details of error generation from the user. For instance:
+
+```js
+function a() {
+  b();
+}
+
+function b() {
+  c();
+}
+
+function c() {
+  // Create an error without stack trace to avoid calculating the stack trace twice.
+  const { stackTraceLimit } = Error;
+  Error.stackTraceLimit = 0;
+  const error = new Error();
+  Error.stackTraceLimit = stackTraceLimit;
+
+  // Capture the stack trace above function b
+  Error.captureStackTrace(error, b); // Neither function c, nor b is included in the stack trace
+  throw error;
+}
+
+a();
+```
+
+###### Parameters
+
+| Parameter         | Type       |
+| ----------------- | ---------- |
+| `targetObject`    | `object`   |
+| `constructorOpt?` | `Function` |
+
+###### Returns
+
+`void`
+
+###### Inherited from
+
+`Error.captureStackTrace`
+
+##### prepareStackTrace()
+
+> `static` **prepareStackTrace**(`err`, `stackTraces`): `any`
+
+Defined in: node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:56
+
+###### Parameters
+
+| Parameter     | Type         |
+| ------------- | ------------ |
+| `err`         | `Error`      |
+| `stackTraces` | `CallSite`[] |
+
+###### Returns
+
+`any`
+
+###### See
+
+https://v8.dev/docs/stack-trace-api#customizing-stack-traces
+
+###### Inherited from
+
+`Error.prepareStackTrace`
+
+---
+
+### ReplayProtection
+
+Defined in: [packages/core/src/replay.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L90)
+
+Kernel-owned state machine. An omitted store retains legacy v1 behavior (ADR 0028).
+
+#### Constructors
+
+##### Constructor
+
+> **new ReplayProtection**(`store?`): [`ReplayProtection`](#replayprotection)
+
+Defined in: [packages/core/src/replay.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L91)
+
+###### Parameters
+
+| Parameter | Type                          |
+| --------- | ----------------------------- |
+| `store?`  | [`ReplayStore`](#replaystore) |
+
+###### Returns
+
+[`ReplayProtection`](#replayprotection)
+
+#### Properties
+
+| Property                             | Modifier   | Type                          | Defined in                                                                                                         |
+| ------------------------------------ | ---------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-store"></a> `store?` | `readonly` | [`ReplayStore`](#replaystore) | [packages/core/src/replay.ts:91](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L91) |
+
+#### Methods
+
+##### run()
+
+> **run**\<`Result`>>\>(`key`, `input`, `invoke`, `accept`, `signal?`): `Promise`\<`Result`>>\>
+
+Defined in: [packages/core/src/replay.ts:93](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L93)
+
+###### Type Parameters
+
+| Type Parameter |
+| -------------- |
+| `Result`       |
+
+###### Parameters
+
+| Parameter         | Type                                                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `key`             | \{ `id`: `string`; `kind`: `"tool"` \| `"resource"` \| `"message"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \} |
+| `key.id`          | `string`                                                                                                                            |
+| `key.kind`        | `"tool"` \| `"resource"` \| `"message"` \| `"execution"`                                                                            |
+| `key.namespaceId` | `string`                                                                                                                            |
+| `key.scope`       | `string`                                                                                                                            |
+| `input?`          | `unknown`                                                                                                                           |
+| `invoke?`         | () => `Promise`\<`Result`\>                                                                                                         |
+| `accept?`         | (`value`) => `Result`                                                                                                               |
+| `signal?`         | `AbortSignal`                                                                                                                       |
+
+###### Returns
+
+`Promise`\<`Result`\>
+
+---
+
 ### ResourceProviderRegistry
 
 Defined in: [packages/core/src/resource-registry.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/resource-registry.ts#L23)
@@ -1063,7 +1275,7 @@ Defined in: [packages/core/src/resource-registry.ts:26](https://github.com/Aicoo
 
 ### SharedOSKernel
 
-Defined in: [packages/core/src/kernel.ts:335](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L335)
+Defined in: [packages/core/src/kernel.ts:347](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L347)
 
 Host-neutral facade for every permission-controlled SharedOS operation.
 AccessContext is a trusted host-created boundary; never construct it from an
@@ -1075,7 +1287,7 @@ unverified request body.
 
 > **new SharedOSKernel**(`options`): [`SharedOSKernel`](#sharedoskernel)
 
-Defined in: [packages/core/src/kernel.ts:368](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L368)
+Defined in: [packages/core/src/kernel.ts:382](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L382)
 
 ###### Parameters
 
@@ -1087,13 +1299,19 @@ Defined in: [packages/core/src/kernel.ts:368](https://github.com/Aicoo-Team/Shar
 
 [`SharedOSKernel`](#sharedoskernel)
 
+#### Properties
+
+| Property                                                  | Modifier   | Type                                    | Defined in                                                                                                           |
+| --------------------------------------------------------- | ---------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-replayprotection"></a> `replayProtection` | `readonly` | [`ReplayProtection`](#replayprotection) | [packages/core/src/kernel.ts:348](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L348) |
+
 #### Methods
 
 ##### admitTurn()
 
 > **admitTurn**(`context`, `agent`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:483](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L483)
+Defined in: [packages/core/src/kernel.ts:504](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L504)
 
 Consume permission to invoke exactly one target agent turn.
 
@@ -1121,7 +1339,7 @@ Consume permission to invoke exactly one target agent turn.
 
 > **authorize**(`context`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:467](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L467)
+Defined in: [packages/core/src/kernel.ts:488](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L488)
 
 ###### Parameters
 
@@ -1152,7 +1370,7 @@ Defined in: [packages/core/src/kernel.ts:467](https://github.com/Aicoo-Team/Shar
 
 > **invokeResource**(`context`, `request`, `options?`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:1336](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1336)
+Defined in: [packages/core/src/kernel.ts:1422](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1422)
 
 ###### Parameters
 
@@ -1178,7 +1396,7 @@ Defined in: [packages/core/src/kernel.ts:1336](https://github.com/Aicoo-Team/Sha
 
 > **invokeTool**(`context`, `call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:1011](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1011)
+Defined in: [packages/core/src/kernel.ts:1032](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1032)
 
 Re-authorize and dispatch one tool call.
 
@@ -1217,7 +1435,7 @@ SharedOS. Both spans exist or neither does.
 
 > **listPublishedTools**(`context`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:923](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L923)
+Defined in: [packages/core/src/kernel.ts:944](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L944)
 
 The effective catalogue as an external harness receives it.
 
@@ -1256,7 +1474,7 @@ harness would have to interpret.
 
 > **listToolNamespaces**(`context`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:931](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L931)
+Defined in: [packages/core/src/kernel.ts:952](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L952)
 
 ###### Parameters
 
@@ -1281,7 +1499,7 @@ Defined in: [packages/core/src/kernel.ts:931](https://github.com/Aicoo-Team/Shar
 
 > **listTools**(`context`, `options?`): `Promise`\<readonly `object`[]\>
 
-Defined in: [packages/core/src/kernel.ts:816](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L816)
+Defined in: [packages/core/src/kernel.ts:837](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L837)
 
 ###### Parameters
 
@@ -1306,7 +1524,7 @@ Defined in: [packages/core/src/kernel.ts:816](https://github.com/Aicoo-Team/Shar
 
 > **openTurnAuthority**(`context`, `options?`): `Promise`\<[`TurnAuthorityScope`](#turnauthorityscope)>\>
 
-Defined in: [packages/core/src/kernel.ts:437](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L437)
+Defined in: [packages/core/src/kernel.ts:458](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L458)
 
 Resolve the authority one turn will be decided against, and hold it.
 
@@ -1347,7 +1565,7 @@ lease resolves its own authority, which is a turn of one operation.
 
 > **reach**(`context`, `options?`): `Promise`\<\{ `reach`: `object`[]; `status`: `"computed"`; \} \| \{ `reasonCode`: `"authority_unavailable"` \| `"usage_store_unavailable"`; `status`: `"unavailable"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:806](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L806)
+Defined in: [packages/core/src/kernel.ts:827](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L827)
 
 Where this actor may operate, with the authority stripped out.
 
@@ -1399,7 +1617,7 @@ recorded by the envelope as the turn's terminal.
 
 > **readAgentCard**(`context`, `subject`, `options?`): `Promise`\<[`AgentCardRead`](#agentcardread)>\>
 
-Defined in: [packages/core/src/kernel.ts:679](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L679)
+Defined in: [packages/core/src/kernel.ts:700](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L700)
 
 The kernel's description of one agent: identity, computed reach, nothing
 else.
@@ -1458,7 +1676,7 @@ field is useful but whether it is authority.
 
 > **recordEscalation**(`context`, `reason`, `options?`): `Promise`\<\{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:519](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L519)
+Defined in: [packages/core/src/kernel.ts:540](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L540)
 
 Record that a turn stopped and asked a human to decide.
 
@@ -1496,7 +1714,7 @@ deliberately no path from here back into the running turn.
 
 > **recordRefusedCall**(`context`, `call`, `options?`): `Promise`\<`void`>\>
 
-Defined in: [packages/core/src/kernel.ts:628](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L628)
+Defined in: [packages/core/src/kernel.ts:649](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L649)
 
 Record a tool call the envelope refused before the kernel was asked.
 
@@ -1533,7 +1751,7 @@ that stops being inferable the moment this method exists (ADR 0023).
 
 > **recordTurnEnd**(`context`, `turn`, `options?`): `Promise`\<`void`>\>
 
-Defined in: [packages/core/src/kernel.ts:595](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L595)
+Defined in: [packages/core/src/kernel.ts:616](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L616)
 
 Record how a turn ended, from the boundary that ended it.
 
@@ -1580,7 +1798,7 @@ separates a deadline from a defect.
 
 > **registerResourceProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:401](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L401)
+Defined in: [packages/core/src/kernel.ts:422](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L422)
 
 ###### Parameters
 
@@ -1596,7 +1814,7 @@ Defined in: [packages/core/src/kernel.ts:401](https://github.com/Aicoo-Team/Shar
 
 > **registerTool**(`handler`): `void`
 
-Defined in: [packages/core/src/kernel.ts:405](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L405)
+Defined in: [packages/core/src/kernel.ts:426](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L426)
 
 ###### Parameters
 
@@ -1612,7 +1830,7 @@ Defined in: [packages/core/src/kernel.ts:405](https://github.com/Aicoo-Team/Shar
 
 > **registerToolProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:409](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L409)
+Defined in: [packages/core/src/kernel.ts:430](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L430)
 
 ###### Parameters
 
@@ -1628,7 +1846,7 @@ Defined in: [packages/core/src/kernel.ts:409](https://github.com/Aicoo-Team/Shar
 
 > **sendMessage**(`context`, `envelope`, `options?`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:1619](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1619)
+Defined in: [packages/core/src/kernel.ts:1739](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L1739)
 
 ###### Parameters
 
@@ -1667,7 +1885,7 @@ Defined in: [packages/core/src/kernel.ts:1619](https://github.com/Aicoo-Team/Sha
 
 > **updateToolNamespaces**(`context`, `update`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:954](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L954)
+Defined in: [packages/core/src/kernel.ts:975](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L975)
 
 ###### Parameters
 
@@ -1695,7 +1913,7 @@ Defined in: [packages/core/src/kernel.ts:954](https://github.com/Aicoo-Team/Shar
 
 ### ToolRegistry
 
-Defined in: [packages/core/src/tool-registry.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L43)
+Defined in: [packages/core/src/tool-registry.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L50)
 
 #### Constructors
 
@@ -1713,7 +1931,7 @@ Defined in: [packages/core/src/tool-registry.ts:43](https://github.com/Aicoo-Tea
 
 > **copy**(): [`ToolRegistry`](#toolregistry)
 
-Defined in: [packages/core/src/tool-registry.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L117)
+Defined in: [packages/core/src/tool-registry.ts:124](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L124)
 
 A registry holding the same registrations as this one.
 
@@ -1738,7 +1956,7 @@ context-supplied tools beside it.
 
 > **definitions**(): readonly `object`[]
 
-Defined in: [packages/core/src/tool-registry.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L133)
+Defined in: [packages/core/src/tool-registry.ts:140](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L140)
 
 ###### Returns
 
@@ -1748,7 +1966,7 @@ readonly `object`[]
 
 > **get**(`name`): [`ToolHandler`](#toolhandler) \| `undefined`
 
-Defined in: [packages/core/src/tool-registry.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L125)
+Defined in: [packages/core/src/tool-registry.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L132)
 
 ###### Parameters
 
@@ -1764,7 +1982,7 @@ Defined in: [packages/core/src/tool-registry.ts:125](https://github.com/Aicoo-Te
 
 > **handlers**(): readonly [`ToolHandler`](#toolhandler)[]
 
-Defined in: [packages/core/src/tool-registry.ts:139](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L139)
+Defined in: [packages/core/src/tool-registry.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L146)
 
 ###### Returns
 
@@ -1774,7 +1992,7 @@ readonly [`ToolHandler`](#toolhandler)[]
 
 > **has**(`name`): `boolean`
 
-Defined in: [packages/core/src/tool-registry.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L129)
+Defined in: [packages/core/src/tool-registry.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L136)
 
 ###### Parameters
 
@@ -1790,7 +2008,7 @@ Defined in: [packages/core/src/tool-registry.ts:129](https://github.com/Aicoo-Te
 
 > **namespaceCatalog**(`enabledToolNamespaces`): `object`
 
-Defined in: [packages/core/src/tool-registry.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L145)
+Defined in: [packages/core/src/tool-registry.ts:152](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L152)
 
 ###### Parameters
 
@@ -1826,7 +2044,7 @@ Defined in: [packages/core/src/tool-registry.ts:145](https://github.com/Aicoo-Te
 
 > **register**(`handler`): `void`
 
-Defined in: [packages/core/src/tool-registry.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L46)
+Defined in: [packages/core/src/tool-registry.ts:53](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L53)
 
 ###### Parameters
 
@@ -1898,7 +2116,7 @@ Defined in: [packages/core/src/authority.ts:226](https://github.com/Aicoo-Team/S
 
 ### AgentCardReadOptions
 
-Defined in: [packages/core/src/kernel.ts:264](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L264)
+Defined in: [packages/core/src/kernel.ts:276](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L276)
 
 #### Extends
 
@@ -1906,10 +2124,11 @@ Defined in: [packages/core/src/kernel.ts:264](https://github.com/Aicoo-Team/Shar
 
 #### Properties
 
-| Property                               | Modifier   | Type                                        | Description                                                                                                                                                                                                                                                                                                                                                                      | Inherited from                                                                     | Defined in                                                                                                           |
-| -------------------------------------- | ---------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-signal"></a> `signal?` | `readonly` | `AbortSignal`                               | -                                                                                                                                                                                                                                                                                                                                                                                | [`KernelOperationOptions`](#kerneloperationoptions).[`signal`](#property-signal-2) | [packages/core/src/kernel.ts:189](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L189) |
-| <a id="property-view"></a> `view?`     | `readonly` | `"reach"` \| `"identity"` \| `"namespaces"` | The view to serve, defaulting to `reach`. `reach` is the default because a directory without reach is not the feature: an agent asking about a colleague's agent is asking what it can be asked for. A reader that holds only a narrower view is refused and told which views it may still ask for, rather than being quietly served a different card than the one it asked for. | -                                                                                  | [packages/core/src/kernel.ts:274](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L274) |
+| Property                                         | Modifier   | Type                                        | Description                                                                                                                                                                                                                                                                                                                                                                      | Inherited from                                                                               | Defined in                                                                                                           |
+| ------------------------------------------------ | ---------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-executionid"></a> `executionId?` | `readonly` | `string`                                    | Trusted executor scope for tool-call IDs; standalone calls use context.traceId.                                                                                                                                                                                                                                                                                                  | [`KernelOperationOptions`](#kerneloperationoptions).[`executionId`](#property-executionid-2) | [packages/core/src/kernel.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L200) |
+| <a id="property-signal"></a> `signal?`           | `readonly` | `AbortSignal`                               | -                                                                                                                                                                                                                                                                                                                                                                                | [`KernelOperationOptions`](#kerneloperationoptions).[`signal`](#property-signal-2)           | [packages/core/src/kernel.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L201) |
+| <a id="property-view"></a> `view?`               | `readonly` | `"reach"` \| `"identity"` \| `"namespaces"` | The view to serve, defaulting to `reach`. `reach` is the default because a directory without reach is not the feature: an agent asking about a colleague's agent is asking what it can be asked for. A reader that holds only a narrower view is refused and told which views it may still ask for, rather than being quietly served a different card than the one it asked for. | -                                                                                            | [packages/core/src/kernel.ts:286](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L286) |
 
 ---
 
@@ -2249,7 +2468,7 @@ Defined in: [packages/core/src/authorization.ts:118](https://github.com/Aicoo-Te
 
 ### ContextToolProvider
 
-Defined in: [packages/core/src/tool-registry.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L38)
+Defined in: [packages/core/src/tool-registry.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L45)
 
 Supplies tools for exactly one trusted access context.
 
@@ -2268,7 +2487,7 @@ namespace check still runs per operation over it.
 
 | Property                      | Modifier   | Type     | Defined in                                                                                                                       |
 | ----------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-id"></a> `id` | `readonly` | `string` | [packages/core/src/tool-registry.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L39) |
+| <a id="property-id"></a> `id` | `readonly` | `string` | [packages/core/src/tool-registry.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L46) |
 
 #### Methods
 
@@ -2276,7 +2495,7 @@ namespace check still runs per operation over it.
 
 > **listTools**(`context`, `signal`): `Promise`\<readonly [`ToolHandler`](#toolhandler)[]\>
 
-Defined in: [packages/core/src/tool-registry.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L40)
+Defined in: [packages/core/src/tool-registry.ts:47](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L47)
 
 ###### Parameters
 
@@ -2392,7 +2611,7 @@ move and which do not, and ADR 0016 for why.
 
 ### EscalationOptions
 
-Defined in: [packages/core/src/kernel.ts:229](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L229)
+Defined in: [packages/core/src/kernel.ts:241](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L241)
 
 #### Extends
 
@@ -2400,11 +2619,11 @@ Defined in: [packages/core/src/kernel.ts:229](https://github.com/Aicoo-Team/Shar
 
 #### Properties
 
-| Property                                                       | Modifier   | Type                                                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Inherited from                                                                     | Defined in                                                                                                           |
-| -------------------------------------------------------------- | ---------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-executionid"></a> `executionId?`               | `readonly` | `string`                                                | The execution the escalation ended, where the caller has one. Recorded as the event's `operationId`, which is what `turn.ended` carries for the same turn, so a reviewer's queue built from audit joins an escalation to its turn on an id rather than on `traceId` and time order. The execution envelope passes it; a host escalating outside a turn has none and omits it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | -                                                                                  | [packages/core/src/kernel.ts:239](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L239) |
-| <a id="property-requestedauthority"></a> `requestedAuthority?` | `readonly` | [`CapabilityRequestPayload`](#capabilityrequestpayload) | The authority this escalation is asking for. A host escalating a denial passes the `requiredAuthority` that denial described; a model-chosen escalation usually has none, because a sentence is all it produced. Either way nothing here advances the escalation -- resolution stays host-owned work that ends in a grant the next turn loads. The two names are one concept in two roles, and both end in the noun this package uses for what grants confer: a denial says what was _required_, and an escalation _requests_ it. `{ requestedAuthority: denial.requiredAuthority }` is the whole hop. What is recorded is minted, not copied. The ask -- capabilities, purpose, constraints, metadata -- is the caller's; `id`, `namespaceId`, `requester`, `owner`, and `requestedAt` come from the trusted context, whatever the caller wrote, because a request the caller authored would be a caller-chosen correlation for a decision the kernel made. The hop above still round-trips: the denial's description was minted from the same ask, so it comes back under the same identifier (ADR 0019). | -                                                                                  | [packages/core/src/kernel.ts:261](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L261) |
-| <a id="property-signal-1"></a> `signal?`                       | `readonly` | `AbortSignal`                                           | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [`KernelOperationOptions`](#kerneloperationoptions).[`signal`](#property-signal-2) | [packages/core/src/kernel.ts:189](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L189) |
+| Property                                                       | Modifier   | Type                                                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Overrides                                                                                    | Inherited from                                                                     | Defined in                                                                                                           |
+| -------------------------------------------------------------- | ---------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-executionid-1"></a> `executionId?`             | `readonly` | `string`                                                | The execution the escalation ended, where the caller has one. Recorded as the event's `operationId`, which is what `turn.ended` carries for the same turn, so a reviewer's queue built from audit joins an escalation to its turn on an id rather than on `traceId` and time order. The execution envelope passes it; a host escalating outside a turn has none and omits it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | [`KernelOperationOptions`](#kerneloperationoptions).[`executionId`](#property-executionid-2) | -                                                                                  | [packages/core/src/kernel.ts:251](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L251) |
+| <a id="property-requestedauthority"></a> `requestedAuthority?` | `readonly` | [`CapabilityRequestPayload`](#capabilityrequestpayload) | The authority this escalation is asking for. A host escalating a denial passes the `requiredAuthority` that denial described; a model-chosen escalation usually has none, because a sentence is all it produced. Either way nothing here advances the escalation -- resolution stays host-owned work that ends in a grant the next turn loads. The two names are one concept in two roles, and both end in the noun this package uses for what grants confer: a denial says what was _required_, and an escalation _requests_ it. `{ requestedAuthority: denial.requiredAuthority }` is the whole hop. What is recorded is minted, not copied. The ask -- capabilities, purpose, constraints, metadata -- is the caller's; `id`, `namespaceId`, `requester`, `owner`, and `requestedAt` come from the trusted context, whatever the caller wrote, because a request the caller authored would be a caller-chosen correlation for a decision the kernel made. The hop above still round-trips: the denial's description was minted from the same ask, so it comes back under the same identifier (ADR 0019). | -                                                                                            | -                                                                                  | [packages/core/src/kernel.ts:273](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L273) |
+| <a id="property-signal-1"></a> `signal?`                       | `readonly` | `AbortSignal`                                           | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | -                                                                                            | [`KernelOperationOptions`](#kerneloperationoptions).[`signal`](#property-signal-2) | [packages/core/src/kernel.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L201) |
 
 ---
 
@@ -2637,7 +2856,7 @@ to make its own refusal look like an absent grant. Say more in `metadata`.
 
 ### KernelOperationOptions
 
-Defined in: [packages/core/src/kernel.ts:188](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L188)
+Defined in: [packages/core/src/kernel.ts:198](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L198)
 
 #### Extended by
 
@@ -2646,9 +2865,10 @@ Defined in: [packages/core/src/kernel.ts:188](https://github.com/Aicoo-Team/Shar
 
 #### Properties
 
-| Property                                 | Modifier   | Type          | Defined in                                                                                                           |
-| ---------------------------------------- | ---------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-signal-2"></a> `signal?` | `readonly` | `AbortSignal` | [packages/core/src/kernel.ts:189](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L189) |
+| Property                                           | Modifier   | Type          | Description                                                                     | Defined in                                                                                                           |
+| -------------------------------------------------- | ---------- | ------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-executionid-2"></a> `executionId?` | `readonly` | `string`      | Trusted executor scope for tool-call IDs; standalone calls use context.traceId. | [packages/core/src/kernel.ts:200](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L200) |
+| <a id="property-signal-2"></a> `signal?`           | `readonly` | `AbortSignal` | -                                                                               | [packages/core/src/kernel.ts:201](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L201) |
 
 ---
 
@@ -2982,8 +3202,8 @@ sentence that drifts. Everything here is a fact the kernel recorded.
 
 | Property                                                  | Modifier   | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Description                                                                                                                                                                                                                                                                   | Defined in                                                                                                             |
 | --------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-cause-4"></a> `cause`                     | `readonly` | `string` \| `undefined`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Which situation a coarse code was, where it carried one.                                                                                                                                                                                                                      | [packages/core/src/refusal.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L123) |
-| <a id="property-code-2"></a> `code`                       | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | The code the caller was given.                                                                                                                                                                                                                                                | [packages/core/src/refusal.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L119) |
+| <a id="property-cause-5"></a> `cause`                     | `readonly` | `string` \| `undefined`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Which situation a coarse code was, where it carried one.                                                                                                                                                                                                                      | [packages/core/src/refusal.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L123) |
+| <a id="property-code-3"></a> `code`                       | `readonly` | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | The code the caller was given.                                                                                                                                                                                                                                                | [packages/core/src/refusal.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L119) |
 | <a id="property-decision"></a> `decision`                 | `readonly` | \{ `action?`: `string`; `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `at`: `string`; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authorityHash?`: `string`; `cause?`: `string`; `consumed?`: `boolean`; `endedBy?`: `"envelope"` \| `"runtime"`; `failClosed?`: `boolean`; `grantId?`: `string`; `id`: `string`; `messageId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `operationId?`: `string`; `outcome`: `"denied"` \| `"failed"` \| `"succeeded"` \| `"allowed"` \| `"escalated"` \| `"interrupted"`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `reason?`: `string`; `receiver?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `resource?`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `source?`: `"kernel"` \| `"envelope"`; `tool?`: `string`; `traceId`: `string`; `type`: `"authority.resolved"` \| `"authorization.checked"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`; `version`: `"1"`; \} \| `undefined` | The `authorization.checked` record the refusal followed from, where there was a decision. Its metadata carries `rejectedGrants`, `grantsResolved`, and `missingDependency`. Absent when nothing was checked: an unregistered tool, a disabled namespace, an envelope refusal. | [packages/core/src/refusal.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L132) |
 | <a id="property-gate"></a> `gate`                         | `readonly` | [`RefusalGate`](#refusalgate) \| `undefined`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                                                                                                                                                                                                             | [packages/core/src/refusal.ts:117](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L117) |
 | <a id="property-refusal"></a> `refusal`                   | `readonly` | `object`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | The `tool.invoked` record of the refusal.                                                                                                                                                                                                                                     | [packages/core/src/refusal.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/refusal.ts#L125) |
@@ -3037,7 +3257,7 @@ sentence that drifts. Everything here is a fact the kernel recorded.
 
 ### RefusedCall
 
-Defined in: [packages/core/src/kernel.ts:207](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L207)
+Defined in: [packages/core/src/kernel.ts:219](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L219)
 
 One call an enforcement boundary refused without invoking anything.
 
@@ -3045,10 +3265,69 @@ One call an enforcement boundary refused without invoking anything.
 
 | Property                                        | Modifier   | Type     | Description                                                 | Defined in                                                                                                           |
 | ----------------------------------------------- | ---------- | -------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-callid"></a> `callId`           | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:208](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L208) |
-| <a id="property-cause-5"></a> `cause?`          | `readonly` | `string` | Which situation a coarse code was, where it covers several. | [packages/core/src/kernel.ts:212](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L212) |
-| <a id="property-reasoncode-5"></a> `reasonCode` | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:210](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L210) |
-| <a id="property-tool-1"></a> `tool`             | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:209](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L209) |
+| <a id="property-callid"></a> `callId`           | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:220](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L220) |
+| <a id="property-cause-6"></a> `cause?`          | `readonly` | `string` | Which situation a coarse code was, where it covers several. | [packages/core/src/kernel.ts:224](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L224) |
+| <a id="property-reasoncode-5"></a> `reasonCode` | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:222](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L222) |
+| <a id="property-tool-1"></a> `tool`             | `readonly` | `string` | -                                                           | [packages/core/src/kernel.ts:221](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L221) |
+
+---
+
+### ReplayStore
+
+Defined in: [packages/core/src/replay.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L14)
+
+Host-owned durable storage. All changes must be atomic across workers.
+
+#### Methods
+
+##### claim()
+
+> **claim**(`key`, `fingerprint`): `Promise`\<\{ `claimed`: `boolean`; `record`: \{ `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"tool"` \| `"resource"` \| `"message"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `result?`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"completed"` \| `"pending"` \| `"expired"`; `token`: `string`; \}; \}\>
+
+Defined in: [packages/core/src/replay.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L16)
+
+Insert pending or return the existing record, including a conflicting fingerprint.
+
+###### Parameters
+
+| Parameter         | Type                                                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `key`             | \{ `id`: `string`; `kind`: `"tool"` \| `"resource"` \| `"message"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \} |
+| `key.id`          | `string`                                                                                                                            |
+| `key.kind`        | `"tool"` \| `"resource"` \| `"message"` \| `"execution"`                                                                            |
+| `key.namespaceId` | `string`                                                                                                                            |
+| `key.scope`       | `string`                                                                                                                            |
+| `fingerprint`     | `string`                                                                                                                            |
+
+###### Returns
+
+`Promise`\<\{ `claimed`: `boolean`; `record`: \{ `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"tool"` \| `"resource"` \| `"message"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `result?`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"completed"` \| `"pending"` \| `"expired"`; `token`: `string`; \}; \}\>
+
+##### settle()
+
+> **settle**(`key`, `token`, `outcome`): `Promise`\<`boolean`>>\>
+
+Defined in: [packages/core/src/replay.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L24)
+
+CAS pending -> terminal, fenced by token. False means ownership was lost.
+
+###### Parameters
+
+| Parameter         | Type                                                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `key`             | \{ `id`: `string`; `kind`: `"tool"` \| `"resource"` \| `"message"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \} |
+| `key.id`          | `string`                                                                                                                            |
+| `key.kind`        | `"tool"` \| `"resource"` \| `"message"` \| `"execution"`                                                                            |
+| `key.namespaceId` | `string`                                                                                                                            |
+| `key.scope`       | `string`                                                                                                                            |
+| `token`           | `string`                                                                                                                            |
+| `outcome`         | \{ `result?`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"completed"`; \}           |
+| `outcome.result?` | [`JsonValue`](sharedos-contracts.md#jsonvalue)                                                                                      |
+| `outcome.state`   | `"failed"` \| `"interrupted"` \| `"completed"`                                                                                      |
+
+###### Returns
+
+`Promise`\<`boolean`\>
 
 ---
 
@@ -3151,29 +3430,30 @@ Defined in: [packages/core/src/resource-registry.ts:20](https://github.com/Aicoo
 
 ### SharedOSKernelOptions
 
-Defined in: [packages/core/src/kernel.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L101)
+Defined in: [packages/core/src/kernel.ts:109](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L109)
 
 #### Properties
 
 | Property                                                                     | Modifier   | Type                                                        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Defined in                                                                                                           |
 | ---------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-audit"></a> `audit?`                                         | `readonly` | [`AuditSink`](#auditsink)                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L137) |
-| <a id="property-auditwritetimeoutms"></a> `auditWriteTimeoutMs?`             | `readonly` | `number`                                                    | How long a record written after an effect may keep a caller from its result. A sink that throws on such a record is already handed to `onAuditError`. A sink that does not answer at all is not a throw, and without a limit the result of an effect that has committed waits behind it for as long as the caller does: a turn that reaches its deadline first drops a result whose transfer went through. Past the limit the event is handed to `onAuditError` with an `AuditWriteTimeoutError` and the caller receives its result. The hook is held to the same limit, since it usually writes to the same store. Absent means no limit, which is the behaviour before this option. The records written before an effect are never limited: there a sink that does not answer holds back an operation that has not run, which is the point. | [packages/core/src/kernel.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L164) |
-| <a id="property-authorizer"></a> `authorizer?`                               | `readonly` | [`CapabilityAuthorizer`](#capabilityauthorizer)             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L119) |
-| <a id="property-createauditid"></a> `createAuditId?`                         | `readonly` | () => `string`                                              | How each audit record gets its identity. A random UUID by default. Override for a deterministic host -- a replayed fixture, a conformance run -- and nowhere else, and never with a factory that can repeat: two records with one id are one record to every sink that deduplicates, which is exactly the loss `AuditEvent.id` exists to prevent.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L136) |
-| <a id="property-createmessageid"></a> `createMessageId?`                     | `readonly` | (`context`, `call`) => `string`                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:127](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L127) |
-| <a id="property-grantsource"></a> `grantSource`                              | `readonly` | [`GrantSource`](#grantsource)                               | The trusted boundary that loads authority. It is required: a kernel with no authoritative grant source can only fail closed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L106) |
-| <a id="property-messagecapabilityresolver"></a> `messageCapabilityResolver?` | `readonly` | [`MessageCapabilityResolver`](#messagecapabilityresolver)   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L126) |
-| <a id="property-messagerequestrouter"></a> `messageRequestRouter?`           | `readonly` | [`MessageRequestRouter`](#messagerequestrouter)             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:125](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L125) |
-| <a id="property-messagetransport"></a> `messageTransport?`                   | `readonly` | [`MessageTransport`](#messagetransport)                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:124](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L124) |
-| <a id="property-onauditerror"></a> `onAuditError?`                           | `readonly` | (`error`, `event`) => `void` \| `Promise`\<`void`\>         | Notification for an audit write that failed after the effect it records. An operation's outcome, a turn's ending and an escalation are written once the answer is final; a sink that throws there is handed here and the caller receives the result it would have received. The writes made _before_ an effect -- an authority load, a decision, a catalogue listing -- are not reported here: a sink that throws on one of those rejects the operation with an `AuditUnavailableError`, and nothing runs.                                                                                                                                                                                                                                                                                                                                    | [packages/core/src/kernel.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L148) |
-| <a id="property-onprovidererror-1"></a> `onProviderError?`                   | `readonly` | [`ProviderErrorReporter`](#providererrorreporter)           | Notification for a throw the kernel contained rather than propagated. A provider, tool handler, transport, or router that throws is answered with a fixed reason code, and until a host installs this the error itself is gone: `tool_execution_failed` says an operation stopped and does not say why. One hook covers every such port, and [ProviderErrorContext.kind](#property-kind) is what a host branches on if it wants to treat them differently. Synchronous, unlike [SharedOSKernelOptions.onAuditError](#property-onauditerror), and see [reportContainedError](#reportcontainederror) for why the two differ.                                                                                                                                                                                                                    | [packages/core/src/kernel.ts:177](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L177) |
-| <a id="property-policysource"></a> `policySource?`                           | `readonly` | [`PolicySource`](#policysource)\<`unknown`\>                | The trusted boundary that loads host policy, once per turn, beside the grant set. See [PolicySource](#policysource). Optional. Without one the ceiling installed on the authorizer, if any, is handed `undefined` and decides over state it closes over. It is installed here rather than beside the ceiling because the load is a turn-boundary event and the kernel owns the turn boundary; a throw is reported to [SharedOSKernelOptions.onProviderError](#property-onprovidererror-1) as `kind: "policy"`, and the turn's policy fails closed.                                                                                                                                                                                                                                                                                            | [packages/core/src/kernel.ts:118](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L118) |
-| <a id="property-resources"></a> `resources?`                                 | `readonly` | [`ResourceProviderRegistry`](#resourceproviderregistry)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L120) |
-| <a id="property-spans"></a> `spans?`                                         | `readonly` | [`SpanSink`](#spansink)                                     | Where the cost of enforcement is reported, when a host is measuring it. Absent by default and absent in every production path that does not ask for it, which is what keeps a measured run and an unmeasured one the same run. See [SpanSink](#spansink).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | [packages/core/src/kernel.ts:185](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L185) |
-| <a id="property-toolnamespacesettings"></a> `toolNamespaceSettings?`         | `readonly` | [`ToolNamespaceSettingsStore`](#toolnamespacesettingsstore) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:123](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L123) |
-| <a id="property-toolproviders"></a> `toolProviders?`                         | `readonly` | readonly [`ContextToolProvider`](#contexttoolprovider)[]    | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L122) |
-| <a id="property-tools"></a> `tools?`                                         | `readonly` | [`ToolRegistry`](#toolregistry)                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:121](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L121) |
+| <a id="property-audit"></a> `audit?`                                         | `readonly` | [`AuditSink`](#auditsink)                                   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:147](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L147) |
+| <a id="property-auditwritetimeoutms"></a> `auditWriteTimeoutMs?`             | `readonly` | `number`                                                    | How long a record written after an effect may keep a caller from its result. A sink that throws on such a record is already handed to `onAuditError`. A sink that does not answer at all is not a throw, and without a limit the result of an effect that has committed waits behind it for as long as the caller does: a turn that reaches its deadline first drops a result whose transfer went through. Past the limit the event is handed to `onAuditError` with an `AuditWriteTimeoutError` and the caller receives its result. The hook is held to the same limit, since it usually writes to the same store. Absent means no limit, which is the behaviour before this option. The records written before an effect are never limited: there a sink that does not answer holds back an operation that has not run, which is the point. | [packages/core/src/kernel.ts:174](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L174) |
+| <a id="property-authorizer"></a> `authorizer?`                               | `readonly` | [`CapabilityAuthorizer`](#capabilityauthorizer)             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L129) |
+| <a id="property-createauditid"></a> `createAuditId?`                         | `readonly` | () => `string`                                              | How each audit record gets its identity. A random UUID by default. Override for a deterministic host -- a replayed fixture, a conformance run -- and nowhere else, and never with a factory that can repeat: two records with one id are one record to every sink that deduplicates, which is exactly the loss `AuditEvent.id` exists to prevent.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L146) |
+| <a id="property-createmessageid"></a> `createMessageId?`                     | `readonly` | (`context`, `call`) => `string`                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L137) |
+| <a id="property-grantsource"></a> `grantSource`                              | `readonly` | [`GrantSource`](#grantsource)                               | The trusted boundary that loads authority. It is required: a kernel with no authoritative grant source can only fail closed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:116](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L116) |
+| <a id="property-messagecapabilityresolver"></a> `messageCapabilityResolver?` | `readonly` | [`MessageCapabilityResolver`](#messagecapabilityresolver)   | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L136) |
+| <a id="property-messagerequestrouter"></a> `messageRequestRouter?`           | `readonly` | [`MessageRequestRouter`](#messagerequestrouter)             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L135) |
+| <a id="property-messagetransport"></a> `messageTransport?`                   | `readonly` | [`MessageTransport`](#messagetransport)                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:134](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L134) |
+| <a id="property-onauditerror"></a> `onAuditError?`                           | `readonly` | (`error`, `event`) => `void` \| `Promise`\<`void`\>         | Notification for an audit write that failed after the effect it records. An operation's outcome, a turn's ending and an escalation are written once the answer is final; a sink that throws there is handed here and the caller receives the result it would have received. The writes made _before_ an effect -- an authority load, a decision, a catalogue listing -- are not reported here: a sink that throws on one of those rejects the operation with an `AuditUnavailableError`, and nothing runs.                                                                                                                                                                                                                                                                                                                                    | [packages/core/src/kernel.ts:158](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L158) |
+| <a id="property-onprovidererror-1"></a> `onProviderError?`                   | `readonly` | [`ProviderErrorReporter`](#providererrorreporter)           | Notification for a throw the kernel contained rather than propagated. A provider, tool handler, transport, or router that throws is answered with a fixed reason code, and until a host installs this the error itself is gone: `tool_execution_failed` says an operation stopped and does not say why. One hook covers every such port, and [ProviderErrorContext.kind](#property-kind) is what a host branches on if it wants to treat them differently. Synchronous, unlike [SharedOSKernelOptions.onAuditError](#property-onauditerror), and see [reportContainedError](#reportcontainederror) for why the two differ.                                                                                                                                                                                                                    | [packages/core/src/kernel.ts:187](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L187) |
+| <a id="property-policysource"></a> `policySource?`                           | `readonly` | [`PolicySource`](#policysource)\<`unknown`\>                | The trusted boundary that loads host policy, once per turn, beside the grant set. See [PolicySource](#policysource). Optional. Without one the ceiling installed on the authorizer, if any, is handed `undefined` and decides over state it closes over. It is installed here rather than beside the ceiling because the load is a turn-boundary event and the kernel owns the turn boundary; a throw is reported to [SharedOSKernelOptions.onProviderError](#property-onprovidererror-1) as `kind: "policy"`, and the turn's policy fails closed.                                                                                                                                                                                                                                                                                            | [packages/core/src/kernel.ts:128](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L128) |
+| <a id="property-replaystore"></a> `replayStore?`                             | `readonly` | [`ReplayStore`](#replaystore)                               | Activate durable replay enforcement for all effect and execution paths (ADR 0028).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | [packages/core/src/kernel.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L111) |
+| <a id="property-resources"></a> `resources?`                                 | `readonly` | [`ResourceProviderRegistry`](#resourceproviderregistry)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:130](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L130) |
+| <a id="property-spans"></a> `spans?`                                         | `readonly` | [`SpanSink`](#spansink)                                     | Where the cost of enforcement is reported, when a host is measuring it. Absent by default and absent in every production path that does not ask for it, which is what keeps a measured run and an unmeasured one the same run. See [SpanSink](#spansink).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | [packages/core/src/kernel.ts:195](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L195) |
+| <a id="property-toolnamespacesettings"></a> `toolNamespaceSettings?`         | `readonly` | [`ToolNamespaceSettingsStore`](#toolnamespacesettingsstore) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:133](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L133) |
+| <a id="property-toolproviders"></a> `toolProviders?`                         | `readonly` | readonly [`ContextToolProvider`](#contexttoolprovider)[]    | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:132](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L132) |
+| <a id="property-tools"></a> `tools?`                                         | `readonly` | [`ToolRegistry`](#toolregistry)                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/kernel.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L131) |
 
 ---
 
@@ -3189,7 +3469,7 @@ One completed span of SharedOS-owned work.
 | --------------------------------------------- | ---------- | ----------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | <a id="property-attributes"></a> `attributes` | `readonly` | [`SpanAttributes`](#spanattributes) | -                                              | [packages/core/src/spans.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L41) |
 | <a id="property-durationms"></a> `durationMs` | `readonly` | `number`                            | Monotonic duration in fractional milliseconds. | [packages/core/src/spans.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L40) |
-| <a id="property-name-4"></a> `name`           | `readonly` | `string`                            | -                                              | [packages/core/src/spans.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L38) |
+| <a id="property-name-5"></a> `name`           | `readonly` | `string`                            | -                                              | [packages/core/src/spans.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/spans.ts#L38) |
 
 ---
 
@@ -3264,19 +3544,19 @@ Defined in: [packages/core/src/published-tool.ts:128](https://github.com/Aicoo-T
 
 | Property                                          | Modifier   | Type     | Defined in                                                                                                                           |
 | ------------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-executionid-1"></a> `executionId` | `readonly` | `string` | [packages/core/src/published-tool.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L129) |
+| <a id="property-executionid-3"></a> `executionId` | `readonly` | `string` | [packages/core/src/published-tool.ts:129](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/published-tool.ts#L129) |
 
 ---
 
 ### ToolHandler
 
-Defined in: [packages/core/src/tool-registry.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L15)
+Defined in: [packages/core/src/tool-registry.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L16)
 
 #### Properties
 
 | Property                                                       | Modifier   | Type                                                                                                                                                                                                       | Description                                                                | Defined in                                                                                                                       |
 | -------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-definition"></a> `definition`                  | `readonly` | `object`                                                                                                                                                                                                   | -                                                                          | [packages/core/src/tool-registry.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L16) |
+| <a id="property-definition"></a> `definition`                  | `readonly` | `object`                                                                                                                                                                                                   | -                                                                          | [packages/core/src/tool-registry.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L17) |
 | `definition.annotations?`                                      | `public`   | `object`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:309                                                                                            |
 | `definition.annotations.destructive?`                          | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:311                                                                                            |
 | `definition.annotations.idempotent?`                           | `public`   | `boolean`                                                                                                                                                                                                  | -                                                                          | packages/contracts/dist/tool.d.ts:312                                                                                            |
@@ -3295,16 +3575,18 @@ Defined in: [packages/core/src/tool-registry.ts:15](https://github.com/Aicoo-Tea
 | `definition.requiredCapability.resource.owner?`                | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                          | packages/contracts/dist/tool.d.ts:291                                                                                            |
 | `definition.requiredCapability.resource.path`                  | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                          | packages/contracts/dist/tool.d.ts:289                                                                                            |
 | `definition.source`                                            | `public`   | `string`                                                                                                                                                                                                   | -                                                                          | packages/contracts/dist/tool.d.ts:284                                                                                            |
-| <a id="property-parsearguments"></a> `parseArguments`          | `readonly` | (`arguments_`) => `unknown`                                                                                                                                                                                | Parse and normalize untrusted arguments before authorization or execution. | [packages/core/src/tool-registry.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L18) |
-| <a id="property-resolverequirement"></a> `resolveRequirement?` | `readonly` | (`context`, `call`) => `object`                                                                                                                                                                            | Resolve argument-selected resources immediately before execution.          | [packages/core/src/tool-registry.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L20) |
+| <a id="property-parsearguments"></a> `parseArguments`          | `readonly` | (`arguments_`) => `unknown`                                                                                                                                                                                | Parse and normalize untrusted arguments before authorization or execution. | [packages/core/src/tool-registry.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L19) |
+| <a id="property-resolverequirement"></a> `resolveRequirement?` | `readonly` | (`context`, `call`) => `object`                                                                                                                                                                            | Resolve argument-selected resources immediately before execution.          | [packages/core/src/tool-registry.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L21) |
 
 #### Methods
 
 ##### invoke()
 
-> **invoke**(`context`, `call`, `signal`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
+> **invoke**(`context`, `call`, `signal`, `identity?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [packages/core/src/tool-registry.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L21)
+Defined in: [packages/core/src/tool-registry.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/tool-registry.ts#L23)
+
+The optional identity is trusted kernel provenance for stable nested operation IDs.
 
 ###### Parameters
 
@@ -3314,18 +3596,23 @@ Defined in: [packages/core/src/tool-registry.ts:21](https://github.com/Aicoo-Tea
 | `context.actor`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `context.authority`             | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `context.enabledToolNamespaces` | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `context.namespaceId`           | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `context.now`                   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `context.owner`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `context.purpose`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `context.traceId`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `call`                          | \{ `arguments`: [`JsonObject`](sharedos-contracts.md#jsonobject); `id`: `string`; `requestedAt`: `string`; `tool`: `string`; `traceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `call.arguments`                | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `call.id`                       | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `call.requestedAt`              | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `call.tool`                     | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `call.traceId`                  | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `signal`                        | `AbortSignal`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `context.namespaceId?`          | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.now?`                  | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.owner?`                | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.purpose?`              | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.traceId?`              | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `call?`                         | \{ `arguments`: [`JsonObject`](sharedos-contracts.md#jsonobject); `id`: `string`; `requestedAt`: `string`; `tool`: `string`; `traceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `call.arguments?`               | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `call.id?`                      | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `call.requestedAt?`             | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `call.tool?`                    | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `call.traceId?`                 | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `signal?`                       | `AbortSignal`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `identity?`                     | \{ `id`: `string`; `kind`: `"tool"` \| `"resource"` \| `"message"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `identity.id?`                  | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `identity.kind?`                | `"tool"` \| `"resource"` \| `"message"` \| `"execution"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `identity.namespaceId?`         | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `identity.scope?`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ###### Returns
 
@@ -3377,7 +3664,7 @@ Defined in: [packages/core/src/tool-namespace-control.ts:12](https://github.com/
 
 ### TurnEndRecord
 
-Defined in: [packages/core/src/kernel.ts:193](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L193)
+Defined in: [packages/core/src/kernel.ts:205](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L205)
 
 How a turn finished, as the boundary that finished it saw it.
 
@@ -3385,10 +3672,10 @@ How a turn finished, as the boundary that finished it saw it.
 
 | Property                                          | Modifier   | Type                                                                        | Description                                                                                                                                                                                                                        | Defined in                                                                                                           |
 | ------------------------------------------------- | ---------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-endedby"></a> `endedBy?`          | `readonly` | `"envelope"` \| `"runtime"`                                                 | Who produced a failure: the envelope refusing, or the runtime reporting its own. The same distinction `ExecutionEvent` carries, kept because a record reader crediting enforcement must not credit a plugin's self-reported error. | [packages/core/src/kernel.ts:203](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L203) |
-| <a id="property-executionid-2"></a> `executionId` | `readonly` | `string`                                                                    | -                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:194](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L194) |
-| <a id="property-reasoncode-6"></a> `reasonCode?`  | `readonly` | `string`                                                                    | The terminal code, where the ending had one.                                                                                                                                                                                       | [packages/core/src/kernel.ts:197](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L197) |
-| <a id="property-status-2"></a> `status`           | `readonly` | `"denied"` \| `"failed"` \| `"succeeded"` \| `"escalated"` \| `"cancelled"` | -                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:195](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L195) |
+| <a id="property-endedby"></a> `endedBy?`          | `readonly` | `"envelope"` \| `"runtime"`                                                 | Who produced a failure: the envelope refusing, or the runtime reporting its own. The same distinction `ExecutionEvent` carries, kept because a record reader crediting enforcement must not credit a plugin's self-reported error. | [packages/core/src/kernel.ts:215](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L215) |
+| <a id="property-executionid-4"></a> `executionId` | `readonly` | `string`                                                                    | -                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:206](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L206) |
+| <a id="property-reasoncode-6"></a> `reasonCode?`  | `readonly` | `string`                                                                    | The terminal code, where the ending had one.                                                                                                                                                                                       | [packages/core/src/kernel.ts:209](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L209) |
+| <a id="property-status-2"></a> `status`           | `readonly` | `"denied"` \| `"failed"` \| `"succeeded"` \| `"escalated"` \| `"cancelled"` | -                                                                                                                                                                                                                                  | [packages/core/src/kernel.ts:207](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L207) |
 
 ## Type Aliases
 
@@ -3616,7 +3903,7 @@ what audit records -- never the policy.
 
 ### PolicyResolution
 
-> **PolicyResolution**\<`Policy`> \> = \{ `policy`: `Policy`; `status`: `"loaded"`; `version`: `string`; \} \| \{ `status`: `"unavailable"`; \}
+> **PolicyResolution**\<`Policy`> > \> = \{ `policy`: `Policy`; `status`: `"loaded"`; `version`: `string`; \} \| \{ `status`: `"unavailable"`; \}
 
 Defined in: [packages/core/src/authority.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/authority.ts#L135)
 
@@ -3813,7 +4100,7 @@ Defined in: [packages/core/src/authority.ts:49](https://github.com/Aicoo-Team/Sh
 
 > `const` **AGENT\_INVOKE\_ACTION**: `"invoke"` = `"invoke"`
 
-Defined in: [packages/core/src/kernel.ts:278](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L278)
+Defined in: [packages/core/src/kernel.ts:290](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L290)
 
 ---
 
@@ -3900,7 +4187,7 @@ The resource every card hangs beneath, and the one a host grants over.
 
 > `const` **EXECUTION\_NAMESPACE**: `"sharedos.execution"` = `"sharedos.execution"`
 
-Defined in: [packages/core/src/kernel.ts:277](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L277)
+Defined in: [packages/core/src/kernel.ts:289](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L289)
 
 ---
 
@@ -4154,7 +4441,7 @@ The authorization one card read is decided on.
 
 > **agentExecutionCapability**(`agent`, `owner`): `object`
 
-Defined in: [packages/core/src/kernel.ts:280](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L280)
+Defined in: [packages/core/src/kernel.ts:292](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/kernel.ts#L292)
 
 #### Parameters
 
@@ -4469,6 +4756,26 @@ Structural JSON equality for protocol values with unordered object keys.
 
 ---
 
+### canonicalReplayJson()
+
+> **canonicalReplayJson**(`value`): `string`
+
+Defined in: [packages/core/src/replay.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L49)
+
+Canonical JSON: code-unit key order, no locale dependence or unsupported values.
+
+#### Parameters
+
+| Parameter | Type      |
+| --------- | --------- |
+| `value`   | `unknown` |
+
+#### Returns
+
+`string`
+
+---
+
 ### capabilityIntersectsCeiling()
 
 > **capabilityIntersectsCeiling**(`capability`, `ceiling`, `context`): `boolean`
@@ -4622,6 +4929,32 @@ tool, and a stale discovery cache alike.
 | Parameter | Type                |
 | --------- | ------------------- |
 | `tools`   | readonly `object`[] |
+
+#### Returns
+
+`Promise`\<`string`\>
+
+---
+
+### childOperationId()
+
+> **childOperationId**(`parent`, `kind`, `slot`): `Promise`\<`string`>>\>
+
+Defined in: [packages/core/src/replay.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L75)
+
+Stable provider-facing identity for a named child of a claimed operation.
+
+#### Parameters
+
+| Parameter            | Type                                                                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `parent`             | \{ `id`: `string`; `kind`: `"tool"` \| `"resource"` \| `"message"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \} |
+| `parent.id`          | `string`                                                                                                                            |
+| `parent.kind`        | `"tool"` \| `"resource"` \| `"message"` \| `"execution"`                                                                            |
+| `parent.namespaceId` | `string`                                                                                                                            |
+| `parent.scope`       | `string`                                                                                                                            |
+| `kind`               | `"tool"` \| `"resource"` \| `"message"` \| `"execution"`                                                                            |
+| `slot`               | `string`                                                                                                                            |
 
 #### Returns
 
@@ -5367,6 +5700,34 @@ entry this keeps is not a permission and an entry it drops was not a refusal.
 #### Returns
 
 readonly `object`[]
+
+---
+
+### replayContext()
+
+> **replayContext**(`context`): `Omit`\<[`AccessContext`](sharedos-contracts.md#accesscontext), `"now"`>>\>
+
+Defined in: [packages/core/src/replay.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/core/src/replay.ts#L84)
+
+Bind replayed data to trusted identity and provenance, excluding observation time.
+
+#### Parameters
+
+| Parameter                       | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `context`                       | \{ `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `enabledToolNamespaces`: `string`[]; `namespaceId`: `string`; `now`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `traceId`: `string`; \} |
+| `context.actor`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.authority`             | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.enabledToolNamespaces` | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.namespaceId`           | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.now`                   | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.owner`                 | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `context.purpose`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `context.traceId`               | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+
+#### Returns
+
+`Omit`\<[`AccessContext`](sharedos-contracts.md#accesscontext), `"now"`\>
 
 ---
 
