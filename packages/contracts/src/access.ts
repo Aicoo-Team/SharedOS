@@ -22,6 +22,12 @@ export const AccessContextSchema = z
     owner: AddressSchema,
     purpose: z.string().trim().min(1).max(512),
     traceId: IdentifierSchema,
+    /**
+     * Host-created identity of one turn, preserved by nested kernel calls.
+     * Independent turns must use distinct IDs, even when execution/trace IDs repeat.
+     * Omit for direct operations or legacy context-keyed turn scopes (ADR 0027).
+     */
+    turnId: IdentifierSchema.optional(),
     enabledToolNamespaces: EnabledToolNamespacesSchema,
     now: TimestampSchema,
   })

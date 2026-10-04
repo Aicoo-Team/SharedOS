@@ -308,7 +308,8 @@ interface HeldRegistry {
 /** One turn's frozen authority, and the number of open handles on it. */
 interface AuthorityLease {
   refs: number;
-  readonly resolution: AuthorityResolution;
+  readonly resolution: Promise<AuthorityResolution>;
+  readonly controller: AbortController;
   /**
    * The effective registry this turn resolved, once an operation needed one.
    *
@@ -442,25 +443,45 @@ export class SharedOSKernel {
     context = structuredClone(context);
 
     const key = turnAuthorityKey(context);
-    const existing = this.#leases.get(key);
-    if (existing !== undefined) {
-      existing.refs += 1;
-      return scopeFor(existing.resolution, () => this.#releaseTurnAuthority(key));
+    let lease = this.#leases.get(key);
+    if (lease === undefined) {
+      const controller = new AbortController();
+      lease = {
+        refs: 0,
+        controller,
+        // Defer the load until the lease is registered. No opener can race
+        // another load, and no single opener owns the shared load's signal.
+        resolution: Promise.resolve().then(async () => {
+          controller.signal.throwIfAborted();
+          const resolution = await this.#loadAuthority(context, controller.signal);
+          controller.signal.throwIfAborted();
+          return resolution;
+        }),
+      };
+      this.#leases.set(key, lease);
     }
-
-    const resolution = await this.#loadAuthority(context, options.signal);
-    this.#leases.set(key, { refs: 1, resolution });
-    return scopeFor(resolution, () => this.#releaseTurnAuthority(key));
+    const owned = lease;
+    owned.refs += 1;
+    try {
+      const resolution = await raceAbort(owned.resolution, options.signal);
+      options.signal?.throwIfAborted();
+      return scopeFor(resolution, () => this.#releaseTurnAuthority(key, owned));
+    } catch (error) {
+      this.#releaseTurnAuthority(key, owned);
+      throw error;
+    }
   }
 
-  #releaseTurnAuthority(key: string): void {
-    const lease = this.#leases.get(key);
-    if (lease === undefined) {
-      return;
-    }
+  #releaseTurnAuthority(key: string, lease: AuthorityLease): void {
     lease.refs -= 1;
-    if (lease.refs <= 0) {
-      this.#leases.delete(key);
+    if (lease.refs === 0) {
+      // An abandoned initialization may finish after a replacement opened.
+      // Releasing an old instance must never delete that replacement.
+      if (this.#leases.get(key) === lease) {
+        this.#leases.delete(key);
+      }
+      lease.controller.abort();
+      lease.registry?.controller.abort();
     }
   }
 
@@ -1475,6 +1496,9 @@ export class SharedOSKernel {
       return this.#deriveToolRegistry(context, signal);
     }
 
+    await raceAbort(lease.resolution, signal);
+    signal?.throwIfAborted();
+    lease.controller.signal.throwIfAborted();
     const held = (lease.registry ??= this.#holdRegistry(lease, context));
     held.waiting += 1;
     try {
@@ -1868,7 +1892,9 @@ export class SharedOSKernel {
     signal: AbortSignal | undefined,
   ): Promise<AuthorityResolution> {
     const lease = this.#leases.get(turnAuthorityKey(context));
-    return lease === undefined ? this.#loadAuthority(context, signal) : lease.resolution;
+    return lease === undefined
+      ? this.#loadAuthority(context, signal)
+      : raceAbort(lease.resolution, signal);
   }
 
   /** Read authority from the trusted source once, and audit the attempt. */
@@ -1897,6 +1923,7 @@ export class SharedOSKernel {
       this.#authority.resolve(context, abort),
       this.#loadHostPolicy(context, abort),
     ]);
+    abort.throwIfAborted();
     const resolution: AuthorityResolution =
       resolved.status === "resolved" && hostPolicy !== undefined
         ? { status: "resolved", authority: { ...resolved.authority, hostPolicy } }
