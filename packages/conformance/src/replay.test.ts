@@ -395,6 +395,17 @@ describe("durable replay gates", () => {
     expect(f.toolInvoke).toHaveBeenCalledTimes(2);
   });
 
+  it("uses the trusted context execution identity for tool replay", async () => {
+    const f = fixture();
+    const one = { ...context, executionId: "one" },
+      two = { ...context, executionId: "two" };
+    const first = await f.kernel.invokeTool(one, call);
+    expect(first.status).toBe("succeeded");
+    expect(await f.kernel.invokeTool(one, call, { executionId: "ignored-option" })).toEqual(first);
+    expect((await f.kernel.invokeTool(two, call)).status).toBe("succeeded");
+    expect(f.toolInvoke).toHaveBeenCalledTimes(2);
+  });
+
   it("arbitrates concurrent tool-call duplicates", async () => {
     const f = fixture(),
       start = deferred<void>(),
@@ -521,6 +532,23 @@ describe("durable replay gates", () => {
       await e.turns.execute({ ...execution(), state: { changed: true } }),
       "replay_conflict",
     );
+  });
+
+  it("normalizes incoming context execution IDs before claiming a turn", async () => {
+    const f = fixture(),
+      e = executor(f.kernel);
+    const first = await e.turns.execute({
+      ...execution(),
+      context: { ...context, executionId: "incoming-one" },
+    });
+    expect(first.status).toBe("succeeded");
+    expect(
+      await e.turns.execute({
+        ...execution(),
+        context: { ...context, executionId: "incoming-two" },
+      }),
+    ).toEqual(first);
+    expect(e.run).toHaveBeenCalledTimes(1);
   });
 
   it("blocks concurrent execution IDs before opening a second runtime", async () => {

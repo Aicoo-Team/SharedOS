@@ -922,6 +922,69 @@ describe("SharedOSKernel catalogue resolution", () => {
     return { id: "user-mcp", listTools };
   }
 
+  it("isolates catalogues of executions sharing their access fields", async () => {
+    let available = true;
+    const listTools = vi.fn<ContextToolProvider["listTools"]>(async () =>
+      available ? [successfulTool(NOTION_TOOL)] : [],
+    );
+    const kernel = kernelWith([NOTION_GRANT], { toolProviders: [providerOf(listTools)] });
+    const firstContext = { ...context(["notion"]), executionId: "execution-a" };
+    const secondContext = { ...context(["notion"]), executionId: "execution-b" };
+    const first = await kernel.openTurnAuthority(firstContext);
+    await expect(kernel.listTools(firstContext)).resolves.toEqual([NOTION_TOOL]);
+    available = false;
+    const second = await kernel.openTurnAuthority(secondContext);
+    try {
+      await expect(kernel.listTools(secondContext)).resolves.toEqual([]);
+      await expect(kernel.listTools(firstContext)).resolves.toEqual([NOTION_TOOL]);
+      expect(listTools).toHaveBeenCalledTimes(2);
+    } finally {
+      first.close();
+      second.close();
+    }
+  });
+
+  it("preserves a turn's lease through nested kernel calls and live namespace checks", async () => {
+    let revoked = false;
+    const load = vi.fn<GrantSource["load"]>(async () => (revoked ? [] : [NOTION_GRANT]));
+    const kernel = new SharedOSKernel({ grantSource: { load } });
+    const handler = successfulTool(NOTION_TOOL);
+    kernel.registerTool({
+      ...handler,
+      invoke: async (access, call, signal) => {
+        const nested = { ...access, now: "2026-08-03T09:01:00.000Z" };
+        await expect(
+          kernel.authorize(nested, NOTION_TOOL.requiredCapability, { signal }),
+        ).resolves.toMatchObject({ allowed: true });
+        await expect(
+          kernel.authorize(
+            nested,
+            {
+              resource: { namespace: "notion", path: ["other-workspace"] },
+              action: "read",
+            },
+            { signal },
+          ),
+        ).resolves.toMatchObject({ allowed: false });
+        return handler.invoke(access, call, signal);
+      },
+    });
+    const access = { ...context(["notion"]), executionId: "nested-turn" };
+    const scope = await kernel.openTurnAuthority(access);
+    revoked = true;
+    try {
+      await expect(kernel.invokeTool(access, notionCall("nested"))).resolves.toMatchObject({
+        status: "succeeded",
+      });
+      await expect(
+        kernel.invokeTool({ ...access, enabledToolNamespaces: [] }, notionCall("disabled")),
+      ).resolves.toMatchObject({ status: "denied" });
+      expect(load).toHaveBeenCalledTimes(1);
+    } finally {
+      scope.close();
+    }
+  });
+
   it("resolves the effective catalogue once per turn, however many operations the turn makes", async () => {
     const listTools = vi.fn<ContextToolProvider["listTools"]>(async () => [
       successfulTool(NOTION_TOOL),

@@ -14,10 +14,13 @@ export const MAX_RESOLVED_GRANTS = 256;
  * and `enabledToolNamespaces` is excluded because namespace enablement is host
  * state that stays live per operation and is never read by an authorization
  * decision. Every other field an authorization decision reads is in the key, so
- * a lease can never answer for a context it was not resolved for.
+ * a lease can never answer for a context it was not resolved for, and
+ * `executionId` is in it so one execution can never answer for another that
+ * shares those fields.
  */
 export function turnAuthorityKey(context: AccessContext): string {
   return canonicalJson({
+    ...(context.executionId === undefined ? {} : { executionId: context.executionId }),
     namespaceId: context.namespaceId,
     actor: context.actor,
     authority: context.authority,

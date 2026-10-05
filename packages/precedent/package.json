@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Aicoo-Team/SharedOS.git",
+    "url": "git+https://github.com/systemind-team/SharedOS.git",
     "directory": "packages/precedent"
   },
   "type": "module",

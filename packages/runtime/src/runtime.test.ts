@@ -867,6 +867,72 @@ describe("turn-scoped authority", () => {
     open: async () => ({ next: async () => ({ type: "complete", output: { ok: true } }) }),
   };
 
+  // Two runs that agree on actor, authority, owner, purpose and trace, the
+  // second started while the first is still open and after its grant is gone.
+  it.each([
+    [
+      "decides a run under another execution id against authority of its own",
+      "execution-2",
+      { status: "denied", error: { code: "no_matching_grant" } },
+      2,
+    ],
+    [
+      "refuses a run under the execution id that is still running, and loads nothing",
+      "execution-1",
+      { status: "denied", error: { code: "execution_in_progress" } },
+      1,
+    ],
+  ] as const)("%s", async (_name, executionId, expected, loads) => {
+    let revoked = false;
+    let release!: () => void;
+    let started!: () => void;
+    const entered = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const waiting = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const load = vi.fn(async () =>
+      revoked ? [] : [{ ...agentGrant, namespaceId: context.namespaceId }],
+    );
+    const kernel = new SharedOSKernel({ grantSource: { load } });
+    // Only the first run is held open, so a second run that shared its lease
+    // would finish `succeeded` and fail the assertion instead of hanging.
+    let opened = 0;
+    const driver: AgentTurnDriver = {
+      open: async () => {
+        const held = (opened += 1) === 1;
+        started();
+        return {
+          next: async () => {
+            if (held) {
+              await waiting;
+            }
+            return { type: "complete", output: null };
+          },
+        };
+      },
+    };
+    const executor = turnExecutor(kernel, driver, { clock: () => now });
+    // What the host put on the context is not what the lease is keyed on.
+    const sharedRequest = {
+      ...request(),
+      context: { ...context, executionId: "host-supplied" },
+    };
+    const first = executor.execute(sharedRequest);
+    await entered;
+    revoked = true;
+    try {
+      await expect(executor.execute({ ...sharedRequest, executionId })).resolves.toMatchObject(
+        expected,
+      );
+      expect(load).toHaveBeenCalledTimes(loads);
+    } finally {
+      release();
+    }
+    await expect(first).resolves.toMatchObject({ status: "succeeded" });
+  });
+
   it("releases the turn's authority when the turn is cancelled while it is being resolved", async () => {
     let loads = 0;
     let revoked = false;

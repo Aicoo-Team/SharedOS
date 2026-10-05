@@ -8,8 +8,45 @@ each entry calls out what a host has to update.
 
 ## Unreleased
 
+### Changed
+
+- **The repository is `systemind-team/SharedOS`.** It moved from
+  `Aicoo-Team/SharedOS`, and old URLs redirect. Each package's `repository`
+  field, the release workflow's repository guard and the documentation links
+  name the new address. The API reference's source links are now built from
+  `sourceLinkTemplate` in `typedoc.json` rather than from the checkout's git
+  remote, so `pnpm docs:api:check` gives the same answer in a fork, a mirror
+  and CI. Nothing a host imports changes. Before the next release is tagged,
+  each package's npm trusted publisher has to name the new address
+  (`docs/npm-release.md`).
+
+- **Protocol `"1"` is the `1.0.0-preview` shape, and it is frozen there.**
+  `0.1.0-alpha.4` added optional fields to `.strict()` schemas without moving
+  the version, and ADR 0019 deferred the move to a later release. The deferral
+  is closed without one. `"1"` names what `1.0.0-preview` ships; the
+  `0.1.0-alpha` builds are not supported peers of it, so a consumer still on
+  one upgrades. From here a change a `1.0.0-preview` reader would reject moves
+  the version in the same change. No object is re-stamped, the routes stay
+  under `/v1`, and existing records stay readable. ADR 0019 is revised and the
+  `ProtocolVersionSchema` row in `docs/open-items.md` is closed.
+
 ### Fixed
 
+- **Two executions that share an actor, purpose and trace no longer share a
+  turn.** A turn's authority lease was keyed on namespace, actor, authority,
+  owner, purpose and trace, so a second execution that agreed on all six while
+  the first was still open was answered from the first's lease: authority
+  loaded before it began, no `authority.resolved` of its own, the first's
+  catalogue. `AccessContext` gains an optional `executionId` that is part of
+  the key, and `SharedOSExecutor` copies the request's onto the turn's context.
+  **A run submitted under an execution id that is still running is now refused**
+  `denied` with the new code `execution_in_progress`, where it used to share
+  the running turn's authority and do its work a second time; wait for the
+  original or use a new id. A finished id can still run again. Two opens of one
+  context with no id that raced also overwrote each other's lease, so the first
+  to close removed the authority the second still held; the later one now
+  joins. Nothing on the wire changes: the HTTP schemas omit the context. ADR
+  0010 is revised.
 - **Reading a Claude Code or Pi tool call no longer pays for a failed parse.**
   The content-block walk the vendor codecs share recognised prose by running
   `TextBlockSchema.safeParse` on every block, where each codec had compared

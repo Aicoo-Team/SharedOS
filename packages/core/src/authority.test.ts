@@ -5,6 +5,7 @@ import type { AccessContext, CapabilityGrant, ResourceRef } from "@aicoo/sharedo
 import type { AuditEvent } from "./audit.js";
 import { type GrantSource, MAX_RESOLVED_GRANTS, TrustedAuthorityResolver } from "./authority.js";
 import { isInfrastructureDenial } from "./authorization.js";
+import { ExecutionInProgressError } from "./errors.js";
 import { SharedOSKernel } from "./kernel.js";
 import type { ResourceInvocationRequest, ResourceProvider } from "./resource-registry.js";
 
@@ -351,6 +352,105 @@ describe("SharedOSKernel turn-scoped authority", () => {
         ? {}
         : { audit: { record: async (event: AuditEvent) => void events.push(event) } }),
     });
+
+  it("isolates executions sharing every access field", async () => {
+    let revoked = false;
+    const loads = { count: 0 };
+    const kernel = kernelWith(
+      sourceOf(async () => (revoked ? [] : [grant()])),
+      loads,
+    );
+    const firstContext = { ...context(), executionId: "execution-a" };
+    const secondContext = { ...context(), executionId: "execution-b" };
+    const first = await kernel.openTurnAuthority(firstContext);
+    revoked = true;
+    const second = await kernel.openTurnAuthority(secondContext);
+    try {
+      await expect(kernel.authorize(firstContext, READ_REQUEST)).resolves.toMatchObject({
+        allowed: true,
+      });
+      await expect(kernel.authorize(secondContext, READ_REQUEST)).resolves.toMatchObject({
+        allowed: false,
+      });
+      expect(loads.count).toBe(2);
+    } finally {
+      first.close();
+      second.close();
+    }
+  });
+
+  it("refuses a second open under an execution id whose turn is still open", async () => {
+    const loads = { count: 0 };
+    const events: AuditEvent[] = [];
+    const kernel = kernelWith(staticSource([grant()]), loads, events);
+    const running = { ...context(), executionId: "execution-a" };
+    const scope = await kernel.openTurnAuthority(running);
+
+    const refusal = await kernel.openTurnAuthority(running).then(
+      () => undefined,
+      (error: unknown) => error,
+    );
+    expect(refusal).toBeInstanceOf(ExecutionInProgressError);
+    expect(refusal).toMatchObject({ code: "execution_in_progress" });
+    // Refused from the lease table: no store read, no record, and the open
+    // turn still answers.
+    expect(loads.count).toBe(1);
+    expect(events.filter(({ type }) => type === "authority.resolved")).toHaveLength(1);
+    await expect(kernel.authorize(running, READ_REQUEST)).resolves.toMatchObject({ allowed: true });
+
+    scope.close();
+    const again = await kernel.openTurnAuthority(running);
+    expect(again.status).toBe("resolved");
+    again.close();
+  });
+
+  it("refuses the later of two opens that race under one execution id", async () => {
+    let finish!: (grants: readonly CapabilityGrant[]) => void;
+    const pending = new Promise<readonly CapabilityGrant[]>((resolve) => {
+      finish = resolve;
+    });
+    const kernel = kernelWith(sourceOf(async () => pending));
+    const racing = { ...context(), executionId: "execution-a" };
+    const first = kernel.openTurnAuthority(racing);
+    const second = kernel.openTurnAuthority(racing);
+    finish([grant()]);
+
+    const scope = await first;
+    expect(scope.status).toBe("resolved");
+    await expect(second).rejects.toMatchObject({ code: "execution_in_progress" });
+    await expect(kernel.authorize(racing, READ_REQUEST)).resolves.toMatchObject({ allowed: true });
+    scope.close();
+  });
+
+  it("keeps a turn's authority until the last of two racing opens closes", async () => {
+    let finish!: (grants: readonly CapabilityGrant[]) => void;
+    const pending = new Promise<readonly CapabilityGrant[]>((resolve) => {
+      finish = resolve;
+    });
+    let revoked = false;
+    const loads = { count: 0 };
+    const kernel = kernelWith(
+      sourceOf(async () => (revoked ? [] : pending)),
+      loads,
+    );
+    const firstOpening = kernel.openTurnAuthority(context());
+    const secondOpening = kernel.openTurnAuthority(context());
+    finish([grant()]);
+    const [first, second] = await Promise.all([firstOpening, secondOpening]);
+    revoked = true;
+    first.close();
+    try {
+      await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+        allowed: true,
+      });
+      expect(loads.count).toBe(2);
+    } finally {
+      second.close();
+    }
+    await expect(kernel.authorize(context(), READ_REQUEST)).resolves.toMatchObject({
+      allowed: false,
+    });
+  });
 
   it("holds one authority state for the whole turn, however many decisions it makes", async () => {
     const loads = { count: 0 };

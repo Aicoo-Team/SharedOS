@@ -95,6 +95,7 @@ import {
   AuditUnavailableError,
   AuditWriteTimeoutError,
   DuplicateRegistrationError,
+  ExecutionInProgressError,
   MissingRegistrationError,
 } from "./errors.js";
 import {
@@ -451,6 +452,11 @@ export class SharedOSKernel {
    * authority stays fail-closed for its whole length instead of retrying the
    * store on every call and possibly changing its mind.
    *
+   * A context that carries an `executionId` opens a turn of its own, and a
+   * second open while that turn is held rejects with an
+   * `ExecutionInProgressError`. One that carries none joins the lease its other
+   * fields already hold.
+   *
    * Callers must `close` the returned scope on every exit path. Hosts that call
    * kernel operations outside any turn need not open one: an operation with no
    * lease resolves its own authority, which is a turn of one operation.
@@ -463,15 +469,29 @@ export class SharedOSKernel {
     context = structuredClone(context);
 
     const key = turnAuthorityKey(context);
-    const existing = this.#leases.get(key);
-    if (existing !== undefined) {
-      existing.refs += 1;
-      return scopeFor(existing.resolution, () => this.#releaseTurnAuthority(key));
-    }
+    // The lease table is the record of what is running. A context that names
+    // its execution may not join a lease: one execution id is one turn.
+    const held = (): AuthorityLease | undefined => {
+      const lease = this.#leases.get(key);
+      if (lease !== undefined && context.executionId !== undefined) {
+        throw new ExecutionInProgressError(context.executionId);
+      }
+      return lease;
+    };
 
-    const resolution = await this.#loadAuthority(context, options.signal);
-    this.#leases.set(key, { refs: 1, resolution });
-    return scopeFor(resolution, () => this.#releaseTurnAuthority(key));
+    let lease = held();
+    if (lease === undefined) {
+      const resolution = await this.#loadAuthority(context, options.signal);
+      // Read again: another open of this turn may have installed its lease
+      // while this one loaded, and replacing it would let its close drop ours.
+      lease = held();
+      if (lease === undefined) {
+        lease = { refs: 0, resolution };
+        this.#leases.set(key, lease);
+      }
+    }
+    lease.refs += 1;
+    return scopeFor(lease.resolution, () => this.#releaseTurnAuthority(key));
   }
 
   #releaseTurnAuthority(key: string): void {
@@ -1059,7 +1079,7 @@ export class SharedOSKernel {
         {
           namespaceId: context.namespaceId,
           kind: "tool",
-          scope: options.executionId ?? context.traceId,
+          scope: context.executionId ?? options.executionId ?? context.traceId,
           id: call.id,
         },
         { context: replayContext(context), call: input },
@@ -1275,7 +1295,7 @@ export class SharedOSKernel {
           await sha256Hex(
             canonicalReplayJson([
               context.namespaceId,
-              options.executionId ?? context.traceId,
+              context.executionId ?? options.executionId ?? context.traceId,
               context.actor,
               call.id,
             ]),
@@ -1375,7 +1395,7 @@ export class SharedOSKernel {
               : deepFreeze({
                   namespaceId: context.namespaceId,
                   kind: "tool",
-                  scope: options.executionId ?? context.traceId,
+                  scope: context.executionId ?? options.executionId ?? context.traceId,
                   id: call.id,
                 }),
           );

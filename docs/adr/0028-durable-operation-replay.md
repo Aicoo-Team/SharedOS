@@ -15,8 +15,11 @@ The trusted `AccessContext.namespaceId` is the tenant/world boundary. A replay
 key is the tuple `(namespaceId, kind, scope, id)`, encoded structurally, never
 by delimiter concatenation. Execution, resource and message IDs are unique
 within their tenant and kind (`scope = ""`). Tool-call IDs are unique within
-an execution; embedded calls outside an execution use their trusted trace ID
-as scope. The executor supplies its execution ID, not a model-supplied value.
+an execution, taking their scope from trusted `AccessContext.executionId`.
+Embedded callers may supply the legacy operation option when the context has no
+execution ID; standalone calls outside an execution use their trusted trace ID.
+The executor normalizes the context to its request execution ID before both
+fingerprinting and dispatch, overriding any incoming context execution ID.
 Hosts must keep namespace IDs stable and never recycle them between tenants.
 
 SharedOS computes a SHA-256 fingerprint of canonical JSON with object keys
@@ -112,11 +115,10 @@ the kernel activates all four gates; executors use the kernel's replay port.
 Without it, v1 preserves its existing unprotected behavior for compatibility.
 Production hosts MUST supply a durable store; the isolated testkit adapter is
 not production storage. This transitional omission is deliberately documented,
-not an exactly-once guarantee. The protocol-versioning work on `t3code/wire-protocol-versioning` (ADR 0027,
-compatibility epoch 2 and `/v2` routes) establishes the coordinated migration
-boundary. It must activate a
-mandatory fail-closed store requirement in the next semantic protocol version,
-coordinate host construction migration, and document the new refusal codes.
+not an exactly-once guarantee. ADR 0019 freezes protocol `"1"` at the
+`1.0.0-preview` shape. A future mandatory fail-closed store requirement must be
+coordinated with the next semantic protocol version and host construction
+migration; no epoch 2 or `/v2` route is assumed by this change.
 Do not independently change the global version constant in this PR: older v1
 clients still parse these existing result shapes. No grant reservation or audit
 transaction changes are included.

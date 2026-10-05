@@ -268,7 +268,7 @@ opening a loopback server are host concerns rather than protocol ones.
 
 ### EvalHarnessDriver
 
-Defined in: [packages/adapters/src/driver.ts:59](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L59)
+Defined in: [packages/adapters/src/driver.ts:59](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/driver.ts#L59)
 
 One vendor's wire format, seated in the standard loop for evaluation.
 
@@ -302,7 +302,7 @@ recorded.
 
 > **new EvalHarnessDriver**(`options`): [`EvalHarnessDriver`](#evalharnessdriver)
 
-Defined in: [packages/adapters/src/driver.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L67)
+Defined in: [packages/adapters/src/driver.ts:67](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/driver.ts#L67)
 
 ###### Parameters
 
@@ -316,13 +316,13 @@ Defined in: [packages/adapters/src/driver.ts:67](https://github.com/Aicoo-Team/S
 
 #### Properties
 
-| Property                                  | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                 |
-| ----------------------------------------- | ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | Who this driver is, for the record. The executor stamps the plugin's manifest on every execution record, and the loop is the same whichever driver is seated, so the loop reports the seated driver's manifest as its own: evidence is filed under what produced it. A driver that states none is reported as `sharedos.standard`. | [packages/adapters/src/driver.ts:60](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L60) |
-| `manifest.id`                             | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:9                                                                                     |
-| `manifest.metadata?`                      | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:12                                                                                    |
-| `manifest.protocolVersion`                | `public`   | `"1"`                                            | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:11                                                                                    |
-| `manifest.version`                        | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:10                                                                                    |
+| Property                                  | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                     |
+| ----------------------------------------- | ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-manifest"></a> `manifest` | `readonly` | `object`                                         | Who this driver is, for the record. The executor stamps the plugin's manifest on every execution record, and the loop is the same whichever driver is seated, so the loop reports the seated driver's manifest as its own: evidence is filed under what produced it. A driver that states none is reported as `sharedos.standard`. | [packages/adapters/src/driver.ts:60](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/driver.ts#L60) |
+| `manifest.id`                             | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:9                                                                                         |
+| `manifest.metadata?`                      | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:12                                                                                        |
+| `manifest.protocolVersion`                | `public`   | `"1"`                                            | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:11                                                                                        |
+| `manifest.version`                        | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:10                                                                                        |
 
 #### Methods
 
@@ -330,7 +330,7 @@ Defined in: [packages/adapters/src/driver.ts:67](https://github.com/Aicoo-Team/S
 
 > **open**(`request`, `signal`): `Promise`\<[`AgentTurnSession`](sharedos-runtime.md#agentturnsession)>\>
 
-Defined in: [packages/adapters/src/driver.ts:82](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L82)
+Defined in: [packages/adapters/src/driver.ts:82](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/driver.ts#L82)
 
 Open the session one turn is driven through.
 
@@ -359,7 +359,7 @@ session to close.
 
 ### ModelRequestError
 
-Defined in: [packages/adapters/src/model/client.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L107)
+Defined in: [packages/adapters/src/model/client.ts:107](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L107)
 
 A model call that did not produce an answer. Carries no response body.
 
@@ -373,7 +373,7 @@ A model call that did not produce an answer. Carries no response body.
 
 > **new ModelRequestError**(`message`, `status?`): [`ModelRequestError`](#modelrequesterror)
 
-Defined in: [packages/adapters/src/model/client.ts:110](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L110)
+Defined in: [packages/adapters/src/model/client.ts:110](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L110)
 
 ###### Parameters
 
@@ -392,14 +392,14 @@ Defined in: [packages/adapters/src/model/client.ts:110](https://github.com/Aicoo
 
 #### Properties
 
-| Property                                                | Modifier   | Type      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Inherited from          | Defined in                                                                                                                               |
-| ------------------------------------------------------- | ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-cause"></a> `cause?`                    | `public`   | `unknown` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.cause`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26                                               |
-| <a id="property-message"></a> `message`                 | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077                                                      |
-| <a id="property-name"></a> `name`                       | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name`            | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1076                                                      |
-| <a id="property-stack"></a> `stack?`                    | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078                                                      |
-| <a id="property-status"></a> `status?`                  | `readonly` | `number`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | [packages/adapters/src/model/client.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L108) |
-| <a id="property-stacktracelimit"></a> `stackTraceLimit` | `static`   | `number`  | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68                                                        |
+| Property                                                | Modifier   | Type      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                       | Inherited from          | Defined in                                                                                                                                   |
+| ------------------------------------------------------- | ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-cause"></a> `cause?`                    | `public`   | `unknown` | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.cause`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es2022.error.d.ts:26                                                   |
+| <a id="property-message"></a> `message`                 | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077                                                          |
+| <a id="property-name"></a> `name`                       | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name`            | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1076                                                          |
+| <a id="property-stack"></a> `stack?`                    | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078                                                          |
+| <a id="property-status"></a> `status?`                  | `readonly` | `number`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | [packages/adapters/src/model/client.ts:108](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L108) |
+| <a id="property-stacktracelimit"></a> `stackTraceLimit` | `static`   | `number`  | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68                                                            |
 
 #### Methods
 
@@ -497,7 +497,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### OpenAiCompatibleModelClient
 
-Defined in: [packages/adapters/src/model/client.ts:213](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L213)
+Defined in: [packages/adapters/src/model/client.ts:213](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L213)
 
 A chat-completions client for any provider speaking the OpenAI wire shape.
 
@@ -516,7 +516,7 @@ than a second client.
 
 > **new OpenAiCompatibleModelClient**(`options`): [`OpenAiCompatibleModelClient`](#openaicompatiblemodelclient)
 
-Defined in: [packages/adapters/src/model/client.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L225)
+Defined in: [packages/adapters/src/model/client.ts:225](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L225)
 
 ###### Parameters
 
@@ -530,11 +530,11 @@ Defined in: [packages/adapters/src/model/client.ts:225](https://github.com/Aicoo
 
 #### Properties
 
-| Property                                   | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                               |
-| ------------------------------------------ | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-model"></a> `model`        | `readonly` | `string`                                         | The model this client was configured to ask for.                                                                                                                                                                                                                                                                   | [packages/adapters/src/model/client.ts:214](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L214) |
-| <a id="property-provider"></a> `provider`  | `readonly` | `string`                                         | The provider that serves it, recorded alongside the model on every turn.                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:215](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L215) |
-| <a id="property-settings"></a> `settings?` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Settings this client sends that change what the model does, beyond naming it -- a reasoning mode, say. Recorded on every turn beside the model so two runs under one model name are not read as the same configuration when they were not. Absent when the client sends nothing the provider would not default to. | [packages/adapters/src/model/client.ts:216](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L216) |
+| Property                                   | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                                   |
+| ------------------------------------------ | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-model"></a> `model`        | `readonly` | `string`                                         | The model this client was configured to ask for.                                                                                                                                                                                                                                                                   | [packages/adapters/src/model/client.ts:214](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L214) |
+| <a id="property-provider"></a> `provider`  | `readonly` | `string`                                         | The provider that serves it, recorded alongside the model on every turn.                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:215](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L215) |
+| <a id="property-settings"></a> `settings?` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Settings this client sends that change what the model does, beyond naming it -- a reasoning mode, say. Recorded on every turn beside the model so two runs under one model name are not read as the same configuration when they were not. Absent when the client sends nothing the provider would not default to. | [packages/adapters/src/model/client.ts:216](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L216) |
 
 #### Methods
 
@@ -542,7 +542,7 @@ Defined in: [packages/adapters/src/model/client.ts:225](https://github.com/Aicoo
 
 > **complete**(`request`, `signal`): `Promise`\<[`ModelReply`](#modelreply)>\>
 
-Defined in: [packages/adapters/src/model/client.ts:243](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L243)
+Defined in: [packages/adapters/src/model/client.ts:243](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L243)
 
 ###### Parameters
 
@@ -563,7 +563,7 @@ Defined in: [packages/adapters/src/model/client.ts:243](https://github.com/Aicoo
 
 ### StandardTurnDriver
 
-Defined in: [packages/adapters/src/model/driver.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L135)
+Defined in: [packages/adapters/src/model/driver.ts:135](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L135)
 
 The SharedOS driver for the standard loop: a model API in the seat.
 
@@ -596,7 +596,7 @@ the reason the deterministic column stays the reference.
 
 > **new StandardTurnDriver**(`options`): [`StandardTurnDriver`](#standardturndriver)
 
-Defined in: [packages/adapters/src/model/driver.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L142)
+Defined in: [packages/adapters/src/model/driver.ts:142](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L142)
 
 ###### Parameters
 
@@ -610,13 +610,13 @@ Defined in: [packages/adapters/src/model/driver.ts:142](https://github.com/Aicoo
 
 #### Properties
 
-| Property                                    | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                               |
-| ------------------------------------------- | ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest-1"></a> `manifest` | `readonly` | `object`                                         | Who this driver is, for the record. The executor stamps the plugin's manifest on every execution record, and the loop is the same whichever driver is seated, so the loop reports the seated driver's manifest as its own: evidence is filed under what produced it. A driver that states none is reported as `sharedos.standard`. | [packages/adapters/src/model/driver.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L136) |
-| `manifest.id`                               | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:9                                                                                                   |
-| `manifest.metadata?`                        | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:12                                                                                                  |
-| `manifest.protocolVersion`                  | `public`   | `"1"`                                            | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:11                                                                                                  |
-| `manifest.version`                          | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:10                                                                                                  |
+| Property                                    | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                                   |
+| ------------------------------------------- | ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-manifest-1"></a> `manifest` | `readonly` | `object`                                         | Who this driver is, for the record. The executor stamps the plugin's manifest on every execution record, and the loop is the same whichever driver is seated, so the loop reports the seated driver's manifest as its own: evidence is filed under what produced it. A driver that states none is reported as `sharedos.standard`. | [packages/adapters/src/model/driver.ts:136](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L136) |
+| `manifest.id`                               | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:9                                                                                                       |
+| `manifest.metadata?`                        | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:12                                                                                                      |
+| `manifest.protocolVersion`                  | `public`   | `"1"`                                            | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:11                                                                                                      |
+| `manifest.version`                          | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:10                                                                                                      |
 
 #### Methods
 
@@ -624,7 +624,7 @@ Defined in: [packages/adapters/src/model/driver.ts:142](https://github.com/Aicoo
 
 > **open**(`request`, `_signal`): `Promise`\<[`AgentTurnSession`](sharedos-runtime.md#agentturnsession)>\>
 
-Defined in: [packages/adapters/src/model/driver.ts:156](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L156)
+Defined in: [packages/adapters/src/model/driver.ts:156](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L156)
 
 Open the session one turn is driven through.
 
@@ -653,7 +653,7 @@ session to close.
 
 ### ToolNameCodec
 
-Defined in: [packages/adapters/src/model/driver.ts:54](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L54)
+Defined in: [packages/adapters/src/model/driver.ts:54](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L54)
 
 How a SharedOS tool name is spoken to a model, and read back.
 
@@ -675,7 +675,7 @@ a tool that was never tried, not as a tool that was refused.
 
 > **new ToolNameCodec**(`tools`): [`ToolNameCodec`](#toolnamecodec)
 
-Defined in: [packages/adapters/src/model/driver.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L58)
+Defined in: [packages/adapters/src/model/driver.ts:58](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L58)
 
 ###### Parameters
 
@@ -693,7 +693,7 @@ Defined in: [packages/adapters/src/model/driver.ts:58](https://github.com/Aicoo-
 
 > **fromWire**(`name`): `string`
 
-Defined in: [packages/adapters/src/model/driver.ts:84](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L84)
+Defined in: [packages/adapters/src/model/driver.ts:84](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L84)
 
 ###### Parameters
 
@@ -709,7 +709,7 @@ Defined in: [packages/adapters/src/model/driver.ts:84](https://github.com/Aicoo-
 
 > **toWire**(`name`): `string`
 
-Defined in: [packages/adapters/src/model/driver.ts:80](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L80)
+Defined in: [packages/adapters/src/model/driver.ts:80](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L80)
 
 ###### Parameters
 
@@ -725,7 +725,7 @@ Defined in: [packages/adapters/src/model/driver.ts:80](https://github.com/Aicoo-
 
 ### TranscriptModelClient
 
-Defined in: [packages/adapters/src/model/transcript.ts:38](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L38)
+Defined in: [packages/adapters/src/model/transcript.ts:38](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L38)
 
 Replays a supplied conversation through the real model driver.
 
@@ -752,7 +752,7 @@ which is the visible result.
 
 > **new TranscriptModelClient**(`transcript`, `options?`): [`TranscriptModelClient`](#transcriptmodelclient)
 
-Defined in: [packages/adapters/src/model/transcript.ts:46](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L46)
+Defined in: [packages/adapters/src/model/transcript.ts:46](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L46)
 
 ###### Parameters
 
@@ -767,11 +767,11 @@ Defined in: [packages/adapters/src/model/transcript.ts:46](https://github.com/Ai
 
 #### Properties
 
-| Property                                    | Modifier   | Type                                                  | Default value | Description                                                              | Defined in                                                                                                                                     |
-| ------------------------------------------- | ---------- | ----------------------------------------------------- | ------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-model-1"></a> `model`       | `readonly` | `string`                                              | `undefined`   | The model this client was configured to ask for.                         | [packages/adapters/src/model/transcript.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L39) |
-| <a id="property-provider-1"></a> `provider` | `readonly` | `string`                                              | `undefined`   | The provider that serves it, recorded alongside the model on every turn. | [packages/adapters/src/model/transcript.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L40) |
-| <a id="property-seen"></a> `seen`           | `readonly` | [`ModelCompletionRequest`](#modelcompletionrequest)[] | `[]`          | Every request the driver made, in order, for a test to read back.        | [packages/adapters/src/model/transcript.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L42) |
+| Property                                    | Modifier   | Type                                                  | Default value | Description                                                              | Defined in                                                                                                                                         |
+| ------------------------------------------- | ---------- | ----------------------------------------------------- | ------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-model-1"></a> `model`       | `readonly` | `string`                                              | `undefined`   | The model this client was configured to ask for.                         | [packages/adapters/src/model/transcript.ts:39](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L39) |
+| <a id="property-provider-1"></a> `provider` | `readonly` | `string`                                              | `undefined`   | The provider that serves it, recorded alongside the model on every turn. | [packages/adapters/src/model/transcript.ts:40](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L40) |
+| <a id="property-seen"></a> `seen`           | `readonly` | [`ModelCompletionRequest`](#modelcompletionrequest)[] | `[]`          | Every request the driver made, in order, for a test to read back.        | [packages/adapters/src/model/transcript.ts:42](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L42) |
 
 #### Methods
 
@@ -779,7 +779,7 @@ Defined in: [packages/adapters/src/model/transcript.ts:46](https://github.com/Ai
 
 > **complete**(`request`, `signal`): `Promise`\<[`ModelReply`](#modelreply)>\>
 
-Defined in: [packages/adapters/src/model/transcript.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L55)
+Defined in: [packages/adapters/src/model/transcript.ts:55](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L55)
 
 ###### Parameters
 
@@ -800,7 +800,7 @@ Defined in: [packages/adapters/src/model/transcript.ts:55](https://github.com/Ai
 
 ### TranscriptTransport
 
-Defined in: [packages/adapters/src/transcript.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L27)
+Defined in: [packages/adapters/src/transcript.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L27)
 
 Replays a supplied conversation through the real protocol translation.
 
@@ -818,7 +818,7 @@ only thing left unexercised is the transport that would have carried them.
 
 > **new TranscriptTransport**(`transcript`): [`TranscriptTransport`](#transcripttransport)
 
-Defined in: [packages/adapters/src/transcript.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L32)
+Defined in: [packages/adapters/src/transcript.ts:32](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L32)
 
 ###### Parameters
 
@@ -832,10 +832,10 @@ Defined in: [packages/adapters/src/transcript.ts:32](https://github.com/Aicoo-Te
 
 #### Properties
 
-| Property                                | Modifier   | Type                                               | Default value | Defined in                                                                                                                         |
-| --------------------------------------- | ---------- | -------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-opened"></a> `opened`   | `readonly` | [`HarnessTurnRequest`](#harnessturnrequest)[]      | `[]`          | [packages/adapters/src/transcript.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L28) |
-| <a id="property-written"></a> `written` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)[] | `[]`          | [packages/adapters/src/transcript.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L29) |
+| Property                                | Modifier   | Type                                               | Default value | Defined in                                                                                                                             |
+| --------------------------------------- | ---------- | -------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-opened"></a> `opened`   | `readonly` | [`HarnessTurnRequest`](#harnessturnrequest)[]      | `[]`          | [packages/adapters/src/transcript.ts:28](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L28) |
+| <a id="property-written"></a> `written` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)[] | `[]`          | [packages/adapters/src/transcript.ts:29](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L29) |
 
 #### Methods
 
@@ -843,7 +843,7 @@ Defined in: [packages/adapters/src/transcript.ts:32](https://github.com/Aicoo-Te
 
 > **open**(`request`): `Promise`\<[`HarnessChannel`](#harnesschannel)>\>
 
-Defined in: [packages/adapters/src/transcript.ts:39](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L39)
+Defined in: [packages/adapters/src/transcript.ts:39](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L39)
 
 ###### Parameters
 
@@ -863,7 +863,7 @@ Defined in: [packages/adapters/src/transcript.ts:39](https://github.com/Aicoo-Te
 
 ### EvalHarnessDriverOptions
 
-Defined in: [packages/adapters/src/driver.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L24)
+Defined in: [packages/adapters/src/driver.ts:24](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/driver.ts#L24)
 
 `instructions` reaches the harness on `HarnessTurnRequest.instructions`, for
 its transport to hand over with the prompt.
@@ -874,43 +874,43 @@ its transport to hand over with the prompt.
 
 #### Properties
 
-| Property                                                   | Modifier   | Type                                                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Inherited from                                                                   | Defined in                                                                                                                 |
-| ---------------------------------------------------------- | ---------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-declarestep"></a> `declareStep?`           | `readonly` | [`DeclareStep`](#declarestep)                        | See [DeclareStep](#declarestep).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | -                                                                                | [packages/adapters/src/driver.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L31) |
-| <a id="property-instructions"></a> `instructions?`         | `readonly` | `string` \| ((`request`) => `string` \| `undefined`) | What the seat is told before the prompt: a model's system message, an MCP server's initialize instructions, a harness's preamble. By default it is `request.context.reach` rendered by `describeReach`: where this turn's tools may operate, with the authority left out. The prompt carries the task and this carries the environment the task runs in. A string is the host's standing guidance, placed before the turn's reach so a seat that shows its model one block reads the guidance before the map. A function replaces the composition and says exactly what the seat is told; returning `undefined` hands over no instructions at all. | [`SeatTextOptions`](#seattextoptions).[`instructions`](#property-instructions-2) | [packages/adapters/src/seat.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L40)     |
-| <a id="property-manifest-2"></a> `manifest`                | `readonly` | `object`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/driver.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L25) |
-| `manifest.id`                                              | `public`   | `string`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:9                                                                                     |
-| `manifest.metadata?`                                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:12                                                                                    |
-| `manifest.protocolVersion`                                 | `public`   | `"1"`                                                | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:11                                                                                    |
-| `manifest.version`                                         | `public`   | `string`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:10                                                                                    |
-| <a id="property-maxignoredframes"></a> `maxIgnoredFrames?` | `readonly` | `number`                                             | Guard against a harness that streams unrelated frames without end.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                                                                                | [packages/adapters/src/driver.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L29) |
-| <a id="property-prompt"></a> `prompt?`                     | `readonly` | (`request`) => `string`                              | Overrides how the turn message becomes the prompt.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [`SeatTextOptions`](#seattextoptions).[`prompt`](#property-prompt-2)             | [packages/adapters/src/seat.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L27)     |
-| <a id="property-protocol"></a> `protocol`                  | `readonly` | [`HarnessProtocol`](#harnessprotocol)                | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/driver.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L26) |
-| <a id="property-transport"></a> `transport`                | `readonly` | [`HarnessTransport`](#harnesstransport)              | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/driver.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/driver.ts#L27) |
+| Property                                                   | Modifier   | Type                                                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Inherited from                                                                   | Defined in                                                                                                                     |
+| ---------------------------------------------------------- | ---------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-declarestep"></a> `declareStep?`           | `readonly` | [`DeclareStep`](#declarestep)                        | See [DeclareStep](#declarestep).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | -                                                                                | [packages/adapters/src/driver.ts:31](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/driver.ts#L31) |
+| <a id="property-instructions"></a> `instructions?`         | `readonly` | `string` \| ((`request`) => `string` \| `undefined`) | What the seat is told before the prompt: a model's system message, an MCP server's initialize instructions, a harness's preamble. By default it is `request.context.reach` rendered by `describeReach`: where this turn's tools may operate, with the authority left out. The prompt carries the task and this carries the environment the task runs in. A string is the host's standing guidance, placed before the turn's reach so a seat that shows its model one block reads the guidance before the map. A function replaces the composition and says exactly what the seat is told; returning `undefined` hands over no instructions at all. | [`SeatTextOptions`](#seattextoptions).[`instructions`](#property-instructions-2) | [packages/adapters/src/seat.ts:40](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L40)     |
+| <a id="property-manifest-2"></a> `manifest`                | `readonly` | `object`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/driver.ts:25](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/driver.ts#L25) |
+| `manifest.id`                                              | `public`   | `string`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:9                                                                                         |
+| `manifest.metadata?`                                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:12                                                                                        |
+| `manifest.protocolVersion`                                 | `public`   | `"1"`                                                | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:11                                                                                        |
+| `manifest.version`                                         | `public`   | `string`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:10                                                                                        |
+| <a id="property-maxignoredframes"></a> `maxIgnoredFrames?` | `readonly` | `number`                                             | Guard against a harness that streams unrelated frames without end.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                                                                                | [packages/adapters/src/driver.ts:29](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/driver.ts#L29) |
+| <a id="property-prompt"></a> `prompt?`                     | `readonly` | (`request`) => `string`                              | Overrides how the turn message becomes the prompt.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [`SeatTextOptions`](#seattextoptions).[`prompt`](#property-prompt-2)             | [packages/adapters/src/seat.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L27)     |
+| <a id="property-protocol"></a> `protocol`                  | `readonly` | [`HarnessProtocol`](#harnessprotocol)                | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/driver.ts:26](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/driver.ts#L26) |
+| <a id="property-transport"></a> `transport`                | `readonly` | [`HarnessTransport`](#harnesstransport)              | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/driver.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/driver.ts#L27) |
 
 ---
 
 ### HarnessAvailability
 
-Defined in: [packages/adapters/src/harness.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L100)
+Defined in: [packages/adapters/src/harness.ts:100](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L100)
 
 Whether a harness can actually be run here, and if not, why not.
 
 #### Properties
 
-| Property                                    | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Defined in                                                                                                                     |
-| ------------------------------------------- | ---------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-available"></a> `available` | `readonly` | `boolean`                                        | -                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/harness.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L102) |
-| <a id="property-detail"></a> `detail?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Includes `versionOutput`, the line `version` was read from, verbatim.                                                                                                                                                                                                                                                                                                                                                                                       | [packages/adapters/src/harness.ts:115](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L115) |
-| <a id="property-harness"></a> `harness`     | `readonly` | `string`                                         | -                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/harness.ts:101](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L101) |
-| <a id="property-reason"></a> `reason?`      | `readonly` | `string`                                         | -                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/harness.ts:103](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L103) |
-| <a id="property-version"></a> `version?`    | `readonly` | `string`                                         | The build that answered, as the harness itself reports it. A result about a vendor CLI is a result about one version of it, and the version is the harness's to state: nothing in this repository pins the installed binary, and a number carried in a runbook is a claim about what someone typed rather than about what ran. Absent when the executable declined to report one -- see [HarnessRequirements.versionArguments](#property-versionarguments). | [packages/adapters/src/harness.ts:113](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L113) |
+| Property                                    | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Defined in                                                                                                                         |
+| ------------------------------------------- | ---------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-available"></a> `available` | `readonly` | `boolean`                                        | -                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/harness.ts:102](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L102) |
+| <a id="property-detail"></a> `detail?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Includes `versionOutput`, the line `version` was read from, verbatim.                                                                                                                                                                                                                                                                                                                                                                                       | [packages/adapters/src/harness.ts:115](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L115) |
+| <a id="property-harness"></a> `harness`     | `readonly` | `string`                                         | -                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/harness.ts:101](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L101) |
+| <a id="property-reason"></a> `reason?`      | `readonly` | `string`                                         | -                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/harness.ts:103](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L103) |
+| <a id="property-version"></a> `version?`    | `readonly` | `string`                                         | The build that answered, as the harness itself reports it. A result about a vendor CLI is a result about one version of it, and the version is the harness's to state: nothing in this repository pins the installed binary, and a number carried in a runbook is a claim about what someone typed rather than about what ran. Absent when the executable declined to report one -- see [HarnessRequirements.versionArguments](#property-versionarguments). | [packages/adapters/src/harness.ts:113](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L113) |
 
 ---
 
 ### HarnessChannel
 
-Defined in: [packages/adapters/src/harness.ts:62](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L62)
+Defined in: [packages/adapters/src/harness.ts:62](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L62)
 
 One open harness turn. Reads and writes are frames, never SharedOS types.
 
@@ -920,7 +920,7 @@ One open harness turn. Reads and writes are frames, never SharedOS types.
 
 > **close**(): `Promise`\<`void`>\>
 
-Defined in: [packages/adapters/src/harness.ts:66](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L66)
+Defined in: [packages/adapters/src/harness.ts:66](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L66)
 
 ###### Returns
 
@@ -930,7 +930,7 @@ Defined in: [packages/adapters/src/harness.ts:66](https://github.com/Aicoo-Team/
 
 > **read**(`signal`): `Promise`\<[`JsonObject`](sharedos-contracts.md#jsonobject) \| `undefined`>\>
 
-Defined in: [packages/adapters/src/harness.ts:64](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L64)
+Defined in: [packages/adapters/src/harness.ts:64](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L64)
 
 The next frame, or `undefined` once the harness has finished speaking.
 
@@ -948,7 +948,7 @@ The next frame, or `undefined` once the harness has finished speaking.
 
 > **write**(`frame`, `signal`): `Promise`\<`void`>\>
 
-Defined in: [packages/adapters/src/harness.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L65)
+Defined in: [packages/adapters/src/harness.ts:65](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L65)
 
 ###### Parameters
 
@@ -965,7 +965,7 @@ Defined in: [packages/adapters/src/harness.ts:65](https://github.com/Aicoo-Team/
 
 ### HarnessFrameWriter
 
-Defined in: [packages/adapters/src/writer.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L22)
+Defined in: [packages/adapters/src/writer.ts:22](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/writer.ts#L22)
 
 The inverse of [HarnessProtocol.interpret](#interpret): frames a harness would send.
 
@@ -981,9 +981,9 @@ code in the security-relevant path.
 
 #### Properties
 
-| Property                                      | Modifier   | Type     | Description                                                                | Defined in                                                                                                                 |
-| --------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-protocolid"></a> `protocolId` | `readonly` | `string` | The protocol these frames belong to; must match the reading protocol's id. | [packages/adapters/src/writer.ts:24](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L24) |
+| Property                                      | Modifier   | Type     | Description                                                                | Defined in                                                                                                                     |
+| --------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-protocolid"></a> `protocolId` | `readonly` | `string` | The protocol these frames belong to; must match the reading protocol's id. | [packages/adapters/src/writer.ts:24](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/writer.ts#L24) |
 
 #### Methods
 
@@ -991,7 +991,7 @@ code in the security-relevant path.
 
 > **complete**(`output?`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/adapters/src/writer.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L27)
+Defined in: [packages/adapters/src/writer.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/writer.ts#L27)
 
 ###### Parameters
 
@@ -1007,7 +1007,7 @@ Defined in: [packages/adapters/src/writer.ts:27](https://github.com/Aicoo-Team/S
 
 > **message**(`text`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/adapters/src/writer.ts:26](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L26)
+Defined in: [packages/adapters/src/writer.ts:26](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/writer.ts#L26)
 
 ###### Parameters
 
@@ -1023,7 +1023,7 @@ Defined in: [packages/adapters/src/writer.ts:26](https://github.com/Aicoo-Team/S
 
 > **toolCall**(`callId`, `tool`, `arguments_`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/adapters/src/writer.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L25)
+Defined in: [packages/adapters/src/writer.ts:25](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/writer.ts#L25)
 
 ###### Parameters
 
@@ -1041,7 +1041,7 @@ Defined in: [packages/adapters/src/writer.ts:25](https://github.com/Aicoo-Team/S
 
 ### HarnessProtocol
 
-Defined in: [packages/adapters/src/harness.ts:86](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L86)
+Defined in: [packages/adapters/src/harness.ts:86](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L86)
 
 The translation between SharedOS and one vendor's wire shapes.
 
@@ -1051,9 +1051,9 @@ the SharedOS execution envelope and is not reimplemented per vendor.
 
 #### Properties
 
-| Property                      | Modifier   | Type     | Defined in                                                                                                                   |
-| ----------------------------- | ---------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-id"></a> `id` | `readonly` | `string` | [packages/adapters/src/harness.ts:87](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L87) |
+| Property                      | Modifier   | Type     | Defined in                                                                                                                       |
+| ----------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-id"></a> `id` | `readonly` | `string` | [packages/adapters/src/harness.ts:87](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L87) |
 
 #### Methods
 
@@ -1061,7 +1061,7 @@ the SharedOS execution envelope and is not reimplemented per vendor.
 
 > **describeTools**(`tools`): [`JsonValue`](sharedos-contracts.md#jsonvalue)
 
-Defined in: [packages/adapters/src/harness.ts:89](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L89)
+Defined in: [packages/adapters/src/harness.ts:89](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L89)
 
 Render the permission-filtered catalogue in the harness's own tool shape.
 
@@ -1079,7 +1079,7 @@ Render the permission-filtered catalogue in the harness's own tool shape.
 
 > **encodeToolResult**(`result`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/adapters/src/harness.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L96)
+Defined in: [packages/adapters/src/harness.ts:96](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L96)
 
 ###### Parameters
 
@@ -1095,7 +1095,7 @@ Defined in: [packages/adapters/src/harness.ts:96](https://github.com/Aicoo-Team/
 
 > **interpret**(`frame`): readonly [`HarnessStep`](#harnessstep)[]
 
-Defined in: [packages/adapters/src/harness.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L95)
+Defined in: [packages/adapters/src/harness.ts:95](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L95)
 
 Everything one frame means, in order. Frames carrying nothing relevant --
 progress notices, token counts, thinking blocks -- yield an empty array,
@@ -1115,25 +1115,25 @@ readonly [`HarnessStep`](#harnessstep)[]
 
 ### HarnessRequirements
 
-Defined in: [packages/adapters/src/harness.ts:119](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L119)
+Defined in: [packages/adapters/src/harness.ts:119](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L119)
 
 What a harness needs before it can run: an executable, credentials, or both.
 
 #### Properties
 
-| Property                                                        | Modifier   | Type                | Description                                                                                                                                     | Defined in                                                                                                                     |
-| --------------------------------------------------------------- | ---------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-credentialsoptional"></a> `credentialsOptional` | `readonly` | `boolean`           | True when the harness can authenticate from a stored session instead.                                                                           | [packages/adapters/src/harness.ts:126](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L126) |
-| <a id="property-credentialvariables"></a> `credentialVariables` | `readonly` | readonly `string`[] | Environment variables, any one of which satisfies the credential need.                                                                          | [packages/adapters/src/harness.ts:124](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L124) |
-| <a id="property-executable"></a> `executable`                   | `readonly` | `string`            | Executable expected on PATH.                                                                                                                    | [packages/adapters/src/harness.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L122) |
-| <a id="property-harness-1"></a> `harness`                       | `readonly` | `string`            | -                                                                                                                                               | [packages/adapters/src/harness.ts:120](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L120) |
-| <a id="property-versionarguments"></a> `versionArguments?`      | `readonly` | readonly `string`[] | How to ask this executable what it is. Defaults to `--version`, which all four harnesses here answer; declared so one that does not can say so. | [packages/adapters/src/harness.ts:131](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L131) |
+| Property                                                        | Modifier   | Type                | Description                                                                                                                                     | Defined in                                                                                                                         |
+| --------------------------------------------------------------- | ---------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-credentialsoptional"></a> `credentialsOptional` | `readonly` | `boolean`           | True when the harness can authenticate from a stored session instead.                                                                           | [packages/adapters/src/harness.ts:126](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L126) |
+| <a id="property-credentialvariables"></a> `credentialVariables` | `readonly` | readonly `string`[] | Environment variables, any one of which satisfies the credential need.                                                                          | [packages/adapters/src/harness.ts:124](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L124) |
+| <a id="property-executable"></a> `executable`                   | `readonly` | `string`            | Executable expected on PATH.                                                                                                                    | [packages/adapters/src/harness.ts:122](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L122) |
+| <a id="property-harness-1"></a> `harness`                       | `readonly` | `string`            | -                                                                                                                                               | [packages/adapters/src/harness.ts:120](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L120) |
+| <a id="property-versionarguments"></a> `versionArguments?`      | `readonly` | readonly `string`[] | How to ask this executable what it is. Defaults to `--version`, which all four harnesses here answer; declared so one that does not can say so. | [packages/adapters/src/harness.ts:131](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L131) |
 
 ---
 
 ### HarnessTranscript
 
-Defined in: [packages/adapters/src/transcript.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L16)
+Defined in: [packages/adapters/src/transcript.ts:16](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L16)
 
 A harness conversation, supplied by its caller.
 
@@ -1144,15 +1144,15 @@ exercises the same code path a live session does.
 
 #### Properties
 
-| Property                                | Modifier   | Type                                                                   | Defined in                                                                                                                         |
-| --------------------------------------- | ---------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-batches"></a> `batches` | `readonly` | readonly readonly [`JsonObject`](sharedos-contracts.md#jsonobject)[][] | [packages/adapters/src/transcript.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L17) |
+| Property                                | Modifier   | Type                                                                   | Defined in                                                                                                                             |
+| --------------------------------------- | ---------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-batches"></a> `batches` | `readonly` | readonly readonly [`JsonObject`](sharedos-contracts.md#jsonobject)[][] | [packages/adapters/src/transcript.ts:17](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/transcript.ts#L17) |
 
 ---
 
 ### HarnessTransport
 
-Defined in: [packages/adapters/src/harness.ts:75](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L75)
+Defined in: [packages/adapters/src/harness.ts:75](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L75)
 
 How a harness is reached: a subprocess, an HTTP session, or a recorded
 transcript. Keeping this separate from the protocol is what lets one adapter
@@ -1165,7 +1165,7 @@ translation code under test.
 
 > **open**(`request`, `signal`): `Promise`\<[`HarnessChannel`](#harnesschannel)>\>
 
-Defined in: [packages/adapters/src/harness.ts:76](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L76)
+Defined in: [packages/adapters/src/harness.ts:76](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L76)
 
 ###### Parameters
 
@@ -1182,69 +1182,69 @@ Defined in: [packages/adapters/src/harness.ts:76](https://github.com/Aicoo-Team/
 
 ### HarnessTurnRequest
 
-Defined in: [packages/adapters/src/harness.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L31)
+Defined in: [packages/adapters/src/harness.ts:31](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L31)
 
 Everything a harness needs to start one turn.
 
 #### Properties
 
-| Property                                             | Modifier   | Type                                                                 | Description                                                                                                                                                                                                                                                                            | Defined in                                                                                                                   |
-| ---------------------------------------------------- | ---------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-context"></a> `context`              | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | The sanitised context. It carries no grants and no issuing authority.                                                                                                                                                                                                                  | [packages/adapters/src/harness.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L44) |
-| <a id="property-executionid"></a> `executionId`      | `readonly` | `string`                                                             | -                                                                                                                                                                                                                                                                                      | [packages/adapters/src/harness.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L32) |
-| <a id="property-instructions-1"></a> `instructions?` | `readonly` | `string`                                                             | What the harness is told before the prompt: by default where this turn's tools may operate. It is part of the turn's prompt hash, so a transport that opens the harness hands it over; [harnessTurnText](#harnessturntext) is the text for a harness whose opening frame has one slot. | [packages/adapters/src/harness.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L40) |
-| <a id="property-metadata"></a> `metadata?`           | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                     | -                                                                                                                                                                                                                                                                                      | [packages/adapters/src/harness.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L45) |
-| <a id="property-prompt-1"></a> `prompt`              | `readonly` | `string`                                                             | -                                                                                                                                                                                                                                                                                      | [packages/adapters/src/harness.ts:33](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L33) |
-| <a id="property-tools"></a> `tools`                  | `readonly` | [`JsonValue`](sharedos-contracts.md#jsonvalue)                       | The permission-filtered catalogue, already in the harness's own shape.                                                                                                                                                                                                                 | [packages/adapters/src/harness.ts:42](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L42) |
+| Property                                             | Modifier   | Type                                                                 | Description                                                                                                                                                                                                                                                                            | Defined in                                                                                                                       |
+| ---------------------------------------------------- | ---------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-context"></a> `context`              | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | The sanitised context. It carries no grants and no issuing authority.                                                                                                                                                                                                                  | [packages/adapters/src/harness.ts:44](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L44) |
+| <a id="property-executionid"></a> `executionId`      | `readonly` | `string`                                                             | -                                                                                                                                                                                                                                                                                      | [packages/adapters/src/harness.ts:32](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L32) |
+| <a id="property-instructions-1"></a> `instructions?` | `readonly` | `string`                                                             | What the harness is told before the prompt: by default where this turn's tools may operate. It is part of the turn's prompt hash, so a transport that opens the harness hands it over; [harnessTurnText](#harnessturntext) is the text for a harness whose opening frame has one slot. | [packages/adapters/src/harness.ts:40](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L40) |
+| <a id="property-metadata"></a> `metadata?`           | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                     | -                                                                                                                                                                                                                                                                                      | [packages/adapters/src/harness.ts:45](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L45) |
+| <a id="property-prompt-1"></a> `prompt`              | `readonly` | `string`                                                             | -                                                                                                                                                                                                                                                                                      | [packages/adapters/src/harness.ts:33](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L33) |
+| <a id="property-tools"></a> `tools`                  | `readonly` | [`JsonValue`](sharedos-contracts.md#jsonvalue)                       | The permission-filtered catalogue, already in the harness's own shape.                                                                                                                                                                                                                 | [packages/adapters/src/harness.ts:42](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L42) |
 
 ---
 
 ### HarnessVendor
 
-Defined in: [packages/adapters/src/vendors.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L16)
+Defined in: [packages/adapters/src/vendors.ts:16](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L16)
 
 What one vendor harness is, stated once: its id, its codec, what it needs, how its records are named.
 
 #### Properties
 
-| Property                                          | Modifier   | Type                                                   | Description                                                                          | Defined in                                                                                                                   |
-| ------------------------------------------------- | ---------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-id-1"></a> `id`                   | `readonly` | `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` | The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. | [packages/adapters/src/vendors.ts:18](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L18) |
-| <a id="property-manifest-3"></a> `manifest`       | `readonly` | `object`                                               | The manifest of a turn the SharedOS loop drives, speaking the vendor's wire format.  | [packages/adapters/src/vendors.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L23) |
-| `manifest.id`                                     | `public`   | `string`                                               | -                                                                                    | packages/contracts/dist/runtime.d.ts:9                                                                                       |
-| `manifest.metadata?`                              | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)       | -                                                                                    | packages/contracts/dist/runtime.d.ts:12                                                                                      |
-| `manifest.protocolVersion`                        | `public`   | `"1"`                                                  | -                                                                                    | packages/contracts/dist/runtime.d.ts:11                                                                                      |
-| `manifest.version`                                | `public`   | `string`                                               | -                                                                                    | packages/contracts/dist/runtime.d.ts:10                                                                                      |
-| <a id="property-mcpmanifest"></a> `mcpManifest`   | `readonly` | `object`                                               | The manifest of a turn the vendor CLI runs itself, connected over MCP.               | [packages/adapters/src/vendors.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L25) |
-| `mcpManifest.id`                                  | `public`   | `string`                                               | -                                                                                    | packages/contracts/dist/runtime.d.ts:9                                                                                       |
-| `mcpManifest.metadata?`                           | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)       | -                                                                                    | packages/contracts/dist/runtime.d.ts:12                                                                                      |
-| `mcpManifest.protocolVersion`                     | `public`   | `"1"`                                                  | -                                                                                    | packages/contracts/dist/runtime.d.ts:11                                                                                      |
-| `mcpManifest.version`                             | `public`   | `string`                                               | -                                                                                    | packages/contracts/dist/runtime.d.ts:10                                                                                      |
-| <a id="property-protocol-1"></a> `protocol`       | `readonly` | [`HarnessProtocol`](#harnessprotocol)                  | -                                                                                    | [packages/adapters/src/vendors.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L19) |
-| <a id="property-requirements"></a> `requirements` | `readonly` | [`HarnessRequirements`](#harnessrequirements)          | What a live session needs before it can run.                                         | [packages/adapters/src/vendors.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L21) |
+| Property                                          | Modifier   | Type                                                   | Description                                                                          | Defined in                                                                                                                       |
+| ------------------------------------------------- | ---------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-id-1"></a> `id`                   | `readonly` | `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` | The id this harness goes by everywhere: manifests, requirements, MCP specs, scripts. | [packages/adapters/src/vendors.ts:18](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L18) |
+| <a id="property-manifest-3"></a> `manifest`       | `readonly` | `object`                                               | The manifest of a turn the SharedOS loop drives, speaking the vendor's wire format.  | [packages/adapters/src/vendors.ts:23](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L23) |
+| `manifest.id`                                     | `public`   | `string`                                               | -                                                                                    | packages/contracts/dist/runtime.d.ts:9                                                                                           |
+| `manifest.metadata?`                              | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)       | -                                                                                    | packages/contracts/dist/runtime.d.ts:12                                                                                          |
+| `manifest.protocolVersion`                        | `public`   | `"1"`                                                  | -                                                                                    | packages/contracts/dist/runtime.d.ts:11                                                                                          |
+| `manifest.version`                                | `public`   | `string`                                               | -                                                                                    | packages/contracts/dist/runtime.d.ts:10                                                                                          |
+| <a id="property-mcpmanifest"></a> `mcpManifest`   | `readonly` | `object`                                               | The manifest of a turn the vendor CLI runs itself, connected over MCP.               | [packages/adapters/src/vendors.ts:25](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L25) |
+| `mcpManifest.id`                                  | `public`   | `string`                                               | -                                                                                    | packages/contracts/dist/runtime.d.ts:9                                                                                           |
+| `mcpManifest.metadata?`                           | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)       | -                                                                                    | packages/contracts/dist/runtime.d.ts:12                                                                                          |
+| `mcpManifest.protocolVersion`                     | `public`   | `"1"`                                                  | -                                                                                    | packages/contracts/dist/runtime.d.ts:11                                                                                          |
+| `mcpManifest.version`                             | `public`   | `string`                                               | -                                                                                    | packages/contracts/dist/runtime.d.ts:10                                                                                          |
+| <a id="property-protocol-1"></a> `protocol`       | `readonly` | [`HarnessProtocol`](#harnessprotocol)                  | -                                                                                    | [packages/adapters/src/vendors.ts:19](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L19) |
+| <a id="property-requirements"></a> `requirements` | `readonly` | [`HarnessRequirements`](#harnessrequirements)          | What a live session needs before it can run.                                         | [packages/adapters/src/vendors.ts:21](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L21) |
 
 ---
 
 ### HarnessVendorDefinition
 
-Defined in: [packages/adapters/src/vendors.ts:28](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L28)
+Defined in: [packages/adapters/src/vendors.ts:28](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L28)
 
 #### Properties
 
-| Property                                                          | Modifier   | Type                                                   | Description                                                                                                                                                                                                                                                                         | Defined in                                                                                                                   |
-| ----------------------------------------------------------------- | ---------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-catalogueoutofband"></a> `catalogueOutOfBand?`    | `readonly` | `boolean`                                              | The harness runs its own tools, so the permission-filtered catalogue cannot be declared in a frame. Stamped on every record its driven manifest produces, because a column whose catalogue arrived out of band is making a narrower claim than one whose catalogue was on the wire. | [packages/adapters/src/vendors.ts:41](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L41) |
-| <a id="property-credentialvariables-1"></a> `credentialVariables` | `readonly` | readonly `string`[]                                    | Environment variables, any one of which satisfies the credential need.                                                                                                                                                                                                              | [packages/adapters/src/vendors.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L34) |
-| <a id="property-executable-1"></a> `executable`                   | `readonly` | `string`                                               | Executable expected on PATH.                                                                                                                                                                                                                                                        | [packages/adapters/src/vendors.ts:32](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L32) |
-| <a id="property-id-2"></a> `id`                                   | `readonly` | `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` | -                                                                                                                                                                                                                                                                                   | [packages/adapters/src/vendors.ts:29](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L29) |
-| <a id="property-mcpmetadata"></a> `mcpMetadata?`                  | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)       | What else the MCP manifest says about how this harness reaches MCP.                                                                                                                                                                                                                 | [packages/adapters/src/vendors.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L43) |
-| <a id="property-protocol-2"></a> `protocol`                       | `readonly` | [`HarnessProtocol`](#harnessprotocol)                  | -                                                                                                                                                                                                                                                                                   | [packages/adapters/src/vendors.ts:30](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L30) |
+| Property                                                          | Modifier   | Type                                                   | Description                                                                                                                                                                                                                                                                         | Defined in                                                                                                                       |
+| ----------------------------------------------------------------- | ---------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-catalogueoutofband"></a> `catalogueOutOfBand?`    | `readonly` | `boolean`                                              | The harness runs its own tools, so the permission-filtered catalogue cannot be declared in a frame. Stamped on every record its driven manifest produces, because a column whose catalogue arrived out of band is making a narrower claim than one whose catalogue was on the wire. | [packages/adapters/src/vendors.ts:41](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L41) |
+| <a id="property-credentialvariables-1"></a> `credentialVariables` | `readonly` | readonly `string`[]                                    | Environment variables, any one of which satisfies the credential need.                                                                                                                                                                                                              | [packages/adapters/src/vendors.ts:34](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L34) |
+| <a id="property-executable-1"></a> `executable`                   | `readonly` | `string`                                               | Executable expected on PATH.                                                                                                                                                                                                                                                        | [packages/adapters/src/vendors.ts:32](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L32) |
+| <a id="property-id-2"></a> `id`                                   | `readonly` | `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` | -                                                                                                                                                                                                                                                                                   | [packages/adapters/src/vendors.ts:29](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L29) |
+| <a id="property-mcpmetadata"></a> `mcpMetadata?`                  | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)       | What else the MCP manifest says about how this harness reaches MCP.                                                                                                                                                                                                                 | [packages/adapters/src/vendors.ts:43](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L43) |
+| <a id="property-protocol-2"></a> `protocol`                       | `readonly` | [`HarnessProtocol`](#harnessprotocol)                  | -                                                                                                                                                                                                                                                                                   | [packages/adapters/src/vendors.ts:30](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L30) |
 
 ---
 
 ### ModelClient
 
-Defined in: [packages/adapters/src/model/client.ts:90](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L90)
+Defined in: [packages/adapters/src/model/client.ts:90](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L90)
 
 A model API in the SharedOS driver seat.
 
@@ -1256,11 +1256,11 @@ interface and no new enforcement path.
 
 #### Properties
 
-| Property                                     | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                               |
-| -------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-model-2"></a> `model`        | `readonly` | `string`                                         | The model this client was configured to ask for.                                                                                                                                                                                                                                                                   | [packages/adapters/src/model/client.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L92)   |
-| <a id="property-provider-2"></a> `provider`  | `readonly` | `string`                                         | The provider that serves it, recorded alongside the model on every turn.                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:94](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L94)   |
-| <a id="property-settings-1"></a> `settings?` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Settings this client sends that change what the model does, beyond naming it -- a reasoning mode, say. Recorded on every turn beside the model so two runs under one model name are not read as the same configuration when they were not. Absent when the client sends nothing the provider would not default to. | [packages/adapters/src/model/client.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L102) |
+| Property                                     | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                                   |
+| -------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-model-2"></a> `model`        | `readonly` | `string`                                         | The model this client was configured to ask for.                                                                                                                                                                                                                                                                   | [packages/adapters/src/model/client.ts:92](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L92)   |
+| <a id="property-provider-2"></a> `provider`  | `readonly` | `string`                                         | The provider that serves it, recorded alongside the model on every turn.                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:94](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L94)   |
+| <a id="property-settings-1"></a> `settings?` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Settings this client sends that change what the model does, beyond naming it -- a reasoning mode, say. Recorded on every turn beside the model so two runs under one model name are not read as the same configuration when they were not. Absent when the client sends nothing the provider would not default to. | [packages/adapters/src/model/client.ts:102](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L102) |
 
 #### Methods
 
@@ -1268,7 +1268,7 @@ interface and no new enforcement path.
 
 > **complete**(`request`, `signal`): `Promise`\<[`ModelReply`](#modelreply)>\>
 
-Defined in: [packages/adapters/src/model/client.ts:103](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L103)
+Defined in: [packages/adapters/src/model/client.ts:103](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L103)
 
 ###### Parameters
 
@@ -1285,54 +1285,54 @@ Defined in: [packages/adapters/src/model/client.ts:103](https://github.com/Aicoo
 
 ### ModelCompletionRequest
 
-Defined in: [packages/adapters/src/model/client.ts:43](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L43)
+Defined in: [packages/adapters/src/model/client.ts:43](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L43)
 
 #### Properties
 
-| Property                                  | Modifier   | Type                                       | Defined in                                                                                                                             |
-| ----------------------------------------- | ---------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-messages"></a> `messages` | `readonly` | readonly [`ModelMessage`](#modelmessage)[] | [packages/adapters/src/model/client.ts:44](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L44) |
-| <a id="property-tools-1"></a> `tools`     | `readonly` | readonly [`ModelTool`](#modeltool)[]       | [packages/adapters/src/model/client.ts:45](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L45) |
+| Property                                  | Modifier   | Type                                       | Defined in                                                                                                                                 |
+| ----------------------------------------- | ---------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-messages"></a> `messages` | `readonly` | readonly [`ModelMessage`](#modelmessage)[] | [packages/adapters/src/model/client.ts:44](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L44) |
+| <a id="property-tools-1"></a> `tools`     | `readonly` | readonly [`ModelTool`](#modeltool)[]       | [packages/adapters/src/model/client.ts:45](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L45) |
 
 ---
 
 ### ModelReply
 
-Defined in: [packages/adapters/src/model/client.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L55)
+Defined in: [packages/adapters/src/model/client.ts:55](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L55)
 
 What the model answered with.
 
 #### Properties
 
-| Property                                           | Modifier   | Type                                         | Description                                                                                                                                                                                                                                                                                                                                                                                                                               | Defined in                                                                                                                             |
-| -------------------------------------------------- | ---------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-finishreason"></a> `finishReason?` | `readonly` | `string`                                     | Why generation stopped, in the provider's own vocabulary. `stop` and `tool_calls` are the model ending its reply; `length` is the provider ending it at the output-token ceiling. Carried because the two are different facts about the same reply: a completion that was cut off mid-way looks, without this, exactly like a completion the model chose to end, and a record whose purpose is honest attribution has to tell them apart. | [packages/adapters/src/model/client.ts:67](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L67) |
-| <a id="property-model-3"></a> `model?`             | `readonly` | `string`                                     | The model the provider says actually answered. Recorded separately from the one that was asked for because they differ: DeepSeek maps an unrecognised name onto a default rather than rejecting it, so a run configured for one model can be served by another. The record should say what answered, which is the weaker claim and the honest one.                                                                                        | [packages/adapters/src/model/client.ts:78](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L78) |
-| <a id="property-text"></a> `text`                  | `readonly` | `string`                                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:56](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L56) |
-| <a id="property-toolcalls"></a> `toolCalls`        | `readonly` | readonly [`ModelToolCall`](#modeltoolcall)[] | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L57) |
-| <a id="property-usage"></a> `usage?`               | `readonly` | [`ModelUsage`](#modelusage)                  | Absent when the provider reported no usage; never estimated.                                                                                                                                                                                                                                                                                                                                                                              | [packages/adapters/src/model/client.ts:69](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L69) |
+| Property                                           | Modifier   | Type                                         | Description                                                                                                                                                                                                                                                                                                                                                                                                                               | Defined in                                                                                                                                 |
+| -------------------------------------------------- | ---------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-finishreason"></a> `finishReason?` | `readonly` | `string`                                     | Why generation stopped, in the provider's own vocabulary. `stop` and `tool_calls` are the model ending its reply; `length` is the provider ending it at the output-token ceiling. Carried because the two are different facts about the same reply: a completion that was cut off mid-way looks, without this, exactly like a completion the model chose to end, and a record whose purpose is honest attribution has to tell them apart. | [packages/adapters/src/model/client.ts:67](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L67) |
+| <a id="property-model-3"></a> `model?`             | `readonly` | `string`                                     | The model the provider says actually answered. Recorded separately from the one that was asked for because they differ: DeepSeek maps an unrecognised name onto a default rather than rejecting it, so a run configured for one model can be served by another. The record should say what answered, which is the weaker claim and the honest one.                                                                                        | [packages/adapters/src/model/client.ts:78](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L78) |
+| <a id="property-text"></a> `text`                  | `readonly` | `string`                                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:56](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L56) |
+| <a id="property-toolcalls"></a> `toolCalls`        | `readonly` | readonly [`ModelToolCall`](#modeltoolcall)[] | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:57](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L57) |
+| <a id="property-usage"></a> `usage?`               | `readonly` | [`ModelUsage`](#modelusage)                  | Absent when the provider reported no usage; never estimated.                                                                                                                                                                                                                                                                                                                                                                              | [packages/adapters/src/model/client.ts:69](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L69) |
 
 ---
 
 ### ModelTool
 
-Defined in: [packages/adapters/src/model/client.ts:20](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L20)
+Defined in: [packages/adapters/src/model/client.ts:20](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L20)
 
 A tool offered to the model, already rendered into the provider's alphabet.
 
 #### Properties
 
-| Property                                        | Modifier   | Type                                             | Defined in                                                                                                                             |
-| ----------------------------------------------- | ---------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-description"></a> `description` | `readonly` | `string`                                         | [packages/adapters/src/model/client.ts:22](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L22) |
-| <a id="property-name-1"></a> `name`             | `readonly` | `string`                                         | [packages/adapters/src/model/client.ts:21](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L21) |
-| <a id="property-parameters"></a> `parameters`   | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/adapters/src/model/client.ts:23](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L23) |
+| Property                                        | Modifier   | Type                                             | Defined in                                                                                                                                 |
+| ----------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-description"></a> `description` | `readonly` | `string`                                         | [packages/adapters/src/model/client.ts:22](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L22) |
+| <a id="property-name-1"></a> `name`             | `readonly` | `string`                                         | [packages/adapters/src/model/client.ts:21](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L21) |
+| <a id="property-parameters"></a> `parameters`   | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/adapters/src/model/client.ts:23](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L23) |
 
 ---
 
 ### ModelToolCall
 
-Defined in: [packages/adapters/src/model/client.ts:13](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L13)
+Defined in: [packages/adapters/src/model/client.ts:13](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L13)
 
 One tool call a model asked for, exactly as it came off the wire.
 
@@ -1343,17 +1343,17 @@ an unrecognised name means is a policy question that belongs to the driver.
 
 #### Properties
 
-| Property                                    | Modifier   | Type     | Defined in                                                                                                                             |
-| ------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-arguments"></a> `arguments` | `readonly` | `string` | [packages/adapters/src/model/client.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L16) |
-| <a id="property-id-3"></a> `id`             | `readonly` | `string` | [packages/adapters/src/model/client.ts:14](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L14) |
-| <a id="property-name-2"></a> `name`         | `readonly` | `string` | [packages/adapters/src/model/client.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L15) |
+| Property                                    | Modifier   | Type     | Defined in                                                                                                                                 |
+| ------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-arguments"></a> `arguments` | `readonly` | `string` | [packages/adapters/src/model/client.ts:16](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L16) |
+| <a id="property-id-3"></a> `id`             | `readonly` | `string` | [packages/adapters/src/model/client.ts:14](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L14) |
+| <a id="property-name-2"></a> `name`         | `readonly` | `string` | [packages/adapters/src/model/client.ts:15](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L15) |
 
 ---
 
 ### ModelTranscript
 
-Defined in: [packages/adapters/src/model/transcript.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L11)
+Defined in: [packages/adapters/src/model/transcript.ts:11](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L11)
 
 A model conversation, supplied by its caller.
 
@@ -1364,50 +1364,50 @@ provider, so a transcript exercises the same code path a live model does.
 
 #### Properties
 
-| Property                                | Modifier   | Type                                   | Defined in                                                                                                                                     |
-| --------------------------------------- | ---------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-replies"></a> `replies` | `readonly` | readonly [`ModelReply`](#modelreply)[] | [packages/adapters/src/model/transcript.ts:12](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L12) |
+| Property                                | Modifier   | Type                                   | Defined in                                                                                                                                         |
+| --------------------------------------- | ---------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-replies"></a> `replies` | `readonly` | readonly [`ModelReply`](#modelreply)[] | [packages/adapters/src/model/transcript.ts:12](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L12) |
 
 ---
 
 ### ModelUsage
 
-Defined in: [packages/adapters/src/model/client.ts:49](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L49)
+Defined in: [packages/adapters/src/model/client.ts:49](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L49)
 
 What a provider billed for one reply, when it said.
 
 #### Properties
 
-| Property                                           | Modifier   | Type     | Defined in                                                                                                                             |
-| -------------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-inputtokens"></a> `inputTokens?`   | `readonly` | `number` | [packages/adapters/src/model/client.ts:50](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L50) |
-| <a id="property-outputtokens"></a> `outputTokens?` | `readonly` | `number` | [packages/adapters/src/model/client.ts:51](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L51) |
+| Property                                           | Modifier   | Type     | Defined in                                                                                                                                 |
+| -------------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-inputtokens"></a> `inputTokens?`   | `readonly` | `number` | [packages/adapters/src/model/client.ts:50](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L50) |
+| <a id="property-outputtokens"></a> `outputTokens?` | `readonly` | `number` | [packages/adapters/src/model/client.ts:51](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L51) |
 
 ---
 
 ### OpenAiCompatibleModelClientOptions
 
-Defined in: [packages/adapters/src/model/client.ts:157](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L157)
+Defined in: [packages/adapters/src/model/client.ts:157](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L157)
 
 #### Properties
 
-| Property                                                   | Modifier   | Type                                                                                           | Description                                                                                                                                                                                                                                                                                                                                                                           | Defined in                                                                                                                               |
-| ---------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-apikey"></a> `apiKey`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                     | [packages/adapters/src/model/client.ts:158](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L158) |
-| <a id="property-baseurl"></a> `baseUrl`                    | `readonly` | `string`                                                                                       | The chat-completions root, without a trailing slash.                                                                                                                                                                                                                                                                                                                                  | [packages/adapters/src/model/client.ts:163](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L163) |
-| <a id="property-fetch"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                                                                                                                 | [packages/adapters/src/model/client.ts:183](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L183) |
-| <a id="property-maxoutputtokens"></a> `maxOutputTokens?`   | `readonly` | `number`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                     | [packages/adapters/src/model/client.ts:164](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L164) |
-| <a id="property-model-4"></a> `model`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                     | [packages/adapters/src/model/client.ts:159](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L159) |
-| <a id="property-provider-3"></a> `provider`                | `readonly` | `string`                                                                                       | Names the provider on every record this client's turns produce.                                                                                                                                                                                                                                                                                                                       | [packages/adapters/src/model/client.ts:161](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L161) |
-| <a id="property-requesttimeoutms"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one model call may take, independently of the turn's own budget.                                                                                                                                                                                                                                                                                                             | [packages/adapters/src/model/client.ts:173](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L173) |
-| <a id="property-temperature"></a> `temperature?`           | `readonly` | `number`                                                                                       | Left at zero by default, which reduces variation between runs but does not remove it. This column is not deterministic and must not be described as if it were: a temperature of zero is not a seed, and the same prompt can still produce a different call sequence on a different day.                                                                                              | [packages/adapters/src/model/client.ts:171](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L171) |
-| <a id="property-thinking"></a> `thinking?`                 | `readonly` | `"enabled"` \| `"disabled"`                                                                    | Whether the model reasons before it answers, sent as DeepSeek's `thinking` request field. Opt-in: the field is not part of the OpenAI wire shape, and a provider that does not know it rejects the request, so nothing is sent until a host asks. When set it is reported through [ModelClient.settings](#property-settings-1) so the turn's record says which mode the model ran in. | [packages/adapters/src/model/client.ts:181](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L181) |
+| Property                                                   | Modifier   | Type                                                                                           | Description                                                                                                                                                                                                                                                                                                                                                                           | Defined in                                                                                                                                   |
+| ---------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-apikey"></a> `apiKey`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                     | [packages/adapters/src/model/client.ts:158](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L158) |
+| <a id="property-baseurl"></a> `baseUrl`                    | `readonly` | `string`                                                                                       | The chat-completions root, without a trailing slash.                                                                                                                                                                                                                                                                                                                                  | [packages/adapters/src/model/client.ts:163](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L163) |
+| <a id="property-fetch"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                                                                                                                 | [packages/adapters/src/model/client.ts:183](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L183) |
+| <a id="property-maxoutputtokens"></a> `maxOutputTokens?`   | `readonly` | `number`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                     | [packages/adapters/src/model/client.ts:164](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L164) |
+| <a id="property-model-4"></a> `model`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                     | [packages/adapters/src/model/client.ts:159](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L159) |
+| <a id="property-provider-3"></a> `provider`                | `readonly` | `string`                                                                                       | Names the provider on every record this client's turns produce.                                                                                                                                                                                                                                                                                                                       | [packages/adapters/src/model/client.ts:161](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L161) |
+| <a id="property-requesttimeoutms"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one model call may take, independently of the turn's own budget.                                                                                                                                                                                                                                                                                                             | [packages/adapters/src/model/client.ts:173](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L173) |
+| <a id="property-temperature"></a> `temperature?`           | `readonly` | `number`                                                                                       | Left at zero by default, which reduces variation between runs but does not remove it. This column is not deterministic and must not be described as if it were: a temperature of zero is not a seed, and the same prompt can still produce a different call sequence on a different day.                                                                                              | [packages/adapters/src/model/client.ts:171](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L171) |
+| <a id="property-thinking"></a> `thinking?`                 | `readonly` | `"enabled"` \| `"disabled"`                                                                    | Whether the model reasons before it answers, sent as DeepSeek's `thinking` request field. Opt-in: the field is not part of the OpenAI wire shape, and a provider that does not know it rejects the request, so nothing is sent until a host asks. When set it is reported through [ModelClient.settings](#property-settings-1) so the turn's record says which mode the model ran in. | [packages/adapters/src/model/client.ts:181](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L181) |
 
 ---
 
 ### SeatTextOptions
 
-Defined in: [packages/adapters/src/seat.ts:25](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L25)
+Defined in: [packages/adapters/src/seat.ts:25](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L25)
 
 How a turn's message and reach become the two texts a seat is handed.
 
@@ -1418,16 +1418,16 @@ How a turn's message and reach become the two texts a seat is handed.
 
 #### Properties
 
-| Property                                             | Modifier   | Type                                                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                             |
-| ---------------------------------------------------- | ---------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-instructions-2"></a> `instructions?` | `readonly` | `string` \| ((`request`) => `string` \| `undefined`) | What the seat is told before the prompt: a model's system message, an MCP server's initialize instructions, a harness's preamble. By default it is `request.context.reach` rendered by `describeReach`: where this turn's tools may operate, with the authority left out. The prompt carries the task and this carries the environment the task runs in. A string is the host's standing guidance, placed before the turn's reach so a seat that shows its model one block reads the guidance before the map. A function replaces the composition and says exactly what the seat is told; returning `undefined` hands over no instructions at all. | [packages/adapters/src/seat.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L40) |
-| <a id="property-prompt-2"></a> `prompt?`             | `readonly` | (`request`) => `string`                              | Overrides how the turn message becomes the prompt.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/adapters/src/seat.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L27) |
+| Property                                             | Modifier   | Type                                                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                 |
+| ---------------------------------------------------- | ---------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-instructions-2"></a> `instructions?` | `readonly` | `string` \| ((`request`) => `string` \| `undefined`) | What the seat is told before the prompt: a model's system message, an MCP server's initialize instructions, a harness's preamble. By default it is `request.context.reach` rendered by `describeReach`: where this turn's tools may operate, with the authority left out. The prompt carries the task and this carries the environment the task runs in. A string is the host's standing guidance, placed before the turn's reach so a seat that shows its model one block reads the guidance before the map. A function replaces the composition and says exactly what the seat is told; returning `undefined` hands over no instructions at all. | [packages/adapters/src/seat.ts:40](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L40) |
+| <a id="property-prompt-2"></a> `prompt?`             | `readonly` | (`request`) => `string`                              | Overrides how the turn message becomes the prompt.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/adapters/src/seat.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L27) |
 
 ---
 
 ### StandardTurnDriverOptions
 
-Defined in: [packages/adapters/src/model/driver.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L95)
+Defined in: [packages/adapters/src/model/driver.ts:95](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L95)
 
 `instructions` reaches the model as a system message, which is what a
 chat-completions provider's system role is for, and it is the same layer a
@@ -1440,31 +1440,31 @@ is sent.
 
 #### Properties
 
-| Property                                                     | Modifier   | Type                                                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Inherited from                                                                   | Defined in                                                                                                                               |
-| ------------------------------------------------------------ | ---------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-client"></a> `client`                        | `readonly` | [`ModelClient`](#modelclient)                        | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/model/driver.ts:97](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L97)   |
-| <a id="property-declarestep-1"></a> `declareStep?`           | `readonly` | [`DeclareStep`](#declarestep)                        | See [DeclareStep](#declarestep).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | -                                                                                | [packages/adapters/src/model/driver.ts:108](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L108) |
-| <a id="property-instructions-3"></a> `instructions?`         | `readonly` | `string` \| ((`request`) => `string` \| `undefined`) | What the seat is told before the prompt: a model's system message, an MCP server's initialize instructions, a harness's preamble. By default it is `request.context.reach` rendered by `describeReach`: where this turn's tools may operate, with the authority left out. The prompt carries the task and this carries the environment the task runs in. A string is the host's standing guidance, placed before the turn's reach so a seat that shows its model one block reads the guidance before the map. A function replaces the composition and says exactly what the seat is told; returning `undefined` hands over no instructions at all. | [`SeatTextOptions`](#seattextoptions).[`instructions`](#property-instructions-2) | [packages/adapters/src/seat.ts:40](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L40)                   |
-| <a id="property-manifest-4"></a> `manifest`                  | `readonly` | `object`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/model/driver.ts:96](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L96)   |
-| `manifest.id`                                                | `public`   | `string`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:9                                                                                                   |
-| `manifest.metadata?`                                         | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:12                                                                                                  |
-| `manifest.protocolVersion`                                   | `public`   | `"1"`                                                | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:11                                                                                                  |
-| `manifest.version`                                           | `public`   | `string`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:10                                                                                                  |
-| <a id="property-maxmalformedcalls"></a> `maxMalformedCalls?` | `readonly` | `number`                                             | Guard against a model that never forms a readable call. A call whose arguments do not parse is refused by the driver and answered back to the model, which costs the turn no step; a model that kept producing them would otherwise be spoken to until the turn timed out. Past this many in one turn, the turn fails instead.                                                                                                                                                                                                                                                                                                                     | -                                                                                | [packages/adapters/src/model/driver.ts:106](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L106) |
-| <a id="property-prompt-3"></a> `prompt?`                     | `readonly` | (`request`) => `string`                              | Overrides how the turn message becomes the prompt.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [`SeatTextOptions`](#seattextoptions).[`prompt`](#property-prompt-2)             | [packages/adapters/src/seat.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L27)                   |
+| Property                                                     | Modifier   | Type                                                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Inherited from                                                                   | Defined in                                                                                                                                   |
+| ------------------------------------------------------------ | ---------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-client"></a> `client`                        | `readonly` | [`ModelClient`](#modelclient)                        | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/model/driver.ts:97](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L97)   |
+| <a id="property-declarestep-1"></a> `declareStep?`           | `readonly` | [`DeclareStep`](#declarestep)                        | See [DeclareStep](#declarestep).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | -                                                                                | [packages/adapters/src/model/driver.ts:108](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L108) |
+| <a id="property-instructions-3"></a> `instructions?`         | `readonly` | `string` \| ((`request`) => `string` \| `undefined`) | What the seat is told before the prompt: a model's system message, an MCP server's initialize instructions, a harness's preamble. By default it is `request.context.reach` rendered by `describeReach`: where this turn's tools may operate, with the authority left out. The prompt carries the task and this carries the environment the task runs in. A string is the host's standing guidance, placed before the turn's reach so a seat that shows its model one block reads the guidance before the map. A function replaces the composition and says exactly what the seat is told; returning `undefined` hands over no instructions at all. | [`SeatTextOptions`](#seattextoptions).[`instructions`](#property-instructions-2) | [packages/adapters/src/seat.ts:40](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L40)                   |
+| <a id="property-manifest-4"></a> `manifest`                  | `readonly` | `object`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | [packages/adapters/src/model/driver.ts:96](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L96)   |
+| `manifest.id`                                                | `public`   | `string`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:9                                                                                                       |
+| `manifest.metadata?`                                         | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject)     | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:12                                                                                                      |
+| `manifest.protocolVersion`                                   | `public`   | `"1"`                                                | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:11                                                                                                      |
+| `manifest.version`                                           | `public`   | `string`                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                                                                | packages/contracts/dist/runtime.d.ts:10                                                                                                      |
+| <a id="property-maxmalformedcalls"></a> `maxMalformedCalls?` | `readonly` | `number`                                             | Guard against a model that never forms a readable call. A call whose arguments do not parse is refused by the driver and answered back to the model, which costs the turn no step; a model that kept producing them would otherwise be spoken to until the turn timed out. Past this many in one turn, the turn fails instead.                                                                                                                                                                                                                                                                                                                     | -                                                                                | [packages/adapters/src/model/driver.ts:106](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L106) |
+| <a id="property-prompt-3"></a> `prompt?`                     | `readonly` | (`request`) => `string`                              | Overrides how the turn message becomes the prompt.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [`SeatTextOptions`](#seattextoptions).[`prompt`](#property-prompt-2)             | [packages/adapters/src/seat.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L27)                   |
 
 ---
 
 ### TranscriptModelClientOptions
 
-Defined in: [packages/adapters/src/model/transcript.ts:15](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L15)
+Defined in: [packages/adapters/src/model/transcript.ts:15](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L15)
 
 #### Properties
 
-| Property                                     | Modifier   | Type     | Description                                                      | Defined in                                                                                                                                     |
-| -------------------------------------------- | ---------- | -------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-model-5"></a> `model?`       | `readonly` | `string` | What the record names as the model; defaults to `transcript`.    | [packages/adapters/src/model/transcript.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L17) |
-| <a id="property-provider-4"></a> `provider?` | `readonly` | `string` | What the record names as the provider; defaults to `transcript`. | [packages/adapters/src/model/transcript.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L19) |
+| Property                                     | Modifier   | Type     | Description                                                      | Defined in                                                                                                                                         |
+| -------------------------------------------- | ---------- | -------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-model-5"></a> `model?`       | `readonly` | `string` | What the record names as the model; defaults to `transcript`.    | [packages/adapters/src/model/transcript.ts:17](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L17) |
+| <a id="property-provider-4"></a> `provider?` | `readonly` | `string` | What the record names as the provider; defaults to `transcript`. | [packages/adapters/src/model/transcript.ts:19](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/transcript.ts#L19) |
 
 ## Type Aliases
 
@@ -1472,7 +1472,7 @@ Defined in: [packages/adapters/src/model/transcript.ts:15](https://github.com/Ai
 
 > **DeclareStep** = (`index`, `request`) => `number` \| `undefined`
 
-Defined in: [packages/adapters/src/seat.ts:111](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L111)
+Defined in: [packages/adapters/src/seat.ts:111](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L111)
 
 The step to declare for the nth call a driver releases this turn, if any.
 
@@ -1501,7 +1501,7 @@ choosing it, and a column that uses it should say so.
 
 > **HarnessFrame** = [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/adapters/src/harness.ts:11](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L11)
+Defined in: [packages/adapters/src/harness.ts:11](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L11)
 
 One raw protocol frame, in whatever shape the harness speaks.
 
@@ -1511,7 +1511,7 @@ One raw protocol frame, in whatever shape the harness speaks.
 
 > **HarnessStep** = \{ `arguments`: [`JsonObject`](sharedos-contracts.md#jsonobject); `callId`: `string`; `tool`: `string`; `type`: `"tool_call"`; \} \| \{ `text`: `string`; `type`: `"message"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output?`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: [`ProtocolError`](sharedos-contracts.md#protocolerror); `type`: `"failed"`; \}
 
-Defined in: [packages/adapters/src/harness.ts:19](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L19)
+Defined in: [packages/adapters/src/harness.ts:19](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L19)
 
 What one frame means once the vendor protocol has interpreted it.
 
@@ -1524,7 +1524,7 @@ whose terminal frame carries no text still produces a turn output.
 
 > **ModelMessage** = \{ `content`: `string`; `role`: `"system"` \| `"user"`; \} \| \{ `content`: `string`; `role`: `"assistant"`; `toolCalls`: readonly [`ModelToolCall`](#modeltoolcall)[]; \} \| \{ `content`: `string`; `role`: `"tool"`; `toolCallId`: `string`; \}
 
-Defined in: [packages/adapters/src/model/client.ts:34](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L34)
+Defined in: [packages/adapters/src/model/client.ts:34](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L34)
 
 One turn of conversation.
 
@@ -1539,7 +1539,7 @@ before the next one is sent.
 
 > **ModelToolCallReading** = \{ `reason`: `string`; `type`: `"escalate"`; \} \| \{ `call`: [`ToolCall`](sharedos-contracts.md#toolcall); `type`: `"tool_call"`; \} \| \{ `refusal`: [`ToolResult`](sharedos-contracts.md#toolresult); `type`: `"malformed"`; \}
 
-Defined in: [packages/adapters/src/model/driver.ts:413](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L413)
+Defined in: [packages/adapters/src/model/driver.ts:413](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L413)
 
 Where one call the model asked for goes once it has been read.
 
@@ -1577,7 +1577,7 @@ The refusal the model is shown for a call made with unreadable arguments.
 
 > **SeatMetadata** = `object`
 
-Defined in: [packages/adapters/src/seat.ts:202](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L202)
+Defined in: [packages/adapters/src/seat.ts:202](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L202)
 
 What a seat states about its turn, on the turn's result metadata.
 
@@ -1597,7 +1597,7 @@ the turn.
 
 > `readonly` `optional` **callsAfterEscalation?**: `number`
 
-Defined in: [packages/adapters/src/seat.ts:249](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L249)
+Defined in: [packages/adapters/src/seat.ts:249](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L249)
 
 On a turn that ended `escalated` over MCP: calls the harness made after its
 ask. Each was answered `escalation_pending` and reached neither the
@@ -1607,7 +1607,7 @@ envelope nor the kernel, so this is the only place they can be read.
 
 > `readonly` `optional` **catalogHash?**: `string`
 
-Defined in: [packages/adapters/src/seat.ts:233](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L233)
+Defined in: [packages/adapters/src/seat.ts:233](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L233)
 
 The catalogue the harness was served, so a run can prove which tool set it received.
 
@@ -1615,7 +1615,7 @@ The catalogue the harness was served, so a run can prove which tool set it recei
 
 > `readonly` `optional` **finishReason?**: `string`
 
-Defined in: [packages/adapters/src/seat.ts:217](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L217)
+Defined in: [packages/adapters/src/seat.ts:217](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L217)
 
 Why the last reply ended, in the provider's words.
 
@@ -1623,7 +1623,7 @@ Why the last reply ended, in the provider's words.
 
 > `readonly` `optional` **harness?**: `string`
 
-Defined in: [packages/adapters/src/seat.ts:227](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L227)
+Defined in: [packages/adapters/src/seat.ts:227](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L227)
 
 The vendor harness that ran, by its id.
 
@@ -1631,7 +1631,7 @@ The vendor harness that ran, by its id.
 
 > `readonly` `optional` **harnessErrorCode?**: `string`
 
-Defined in: [packages/adapters/src/seat.ts:243](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L243)
+Defined in: [packages/adapters/src/seat.ts:243](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L243)
 
 With `harnessOutcome: "fail"`, the code the harness failed under.
 
@@ -1639,7 +1639,7 @@ With `harnessOutcome: "fail"`, the code the harness failed under.
 
 > `readonly` `optional` **harnessOutcome?**: `"complete"` \| `"fail"` \| `"escalate"`
 
-Defined in: [packages/adapters/src/seat.ts:241](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L241)
+Defined in: [packages/adapters/src/seat.ts:241](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L241)
 
 On a turn that ended `escalated` over MCP: how the harness itself ended.
 "The CLI reported success after asking" and "the CLI crashed after asking"
@@ -1649,7 +1649,7 @@ are different runs.
 
 > `readonly` `optional` **inputTokens?**: `number`
 
-Defined in: [packages/adapters/src/seat.ts:219](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L219)
+Defined in: [packages/adapters/src/seat.ts:219](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L219)
 
 Summed over every model call this turn; absent until a reply reports one.
 
@@ -1657,7 +1657,7 @@ Summed over every model call this turn; absent until a reply reports one.
 
 > `readonly` `optional` **malformedToolCalls?**: `number`
 
-Defined in: [packages/adapters/src/seat.ts:225](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L225)
+Defined in: [packages/adapters/src/seat.ts:225](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L225)
 
 Calls the standard driver refused in place because their arguments were not
 a JSON object. None of them reached the envelope, so no operation shows them.
@@ -1666,7 +1666,7 @@ a JSON object. None of them reached the envelope, so no operation shows them.
 
 > `readonly` `optional` **mcpServer?**: `string`
 
-Defined in: [packages/adapters/src/seat.ts:231](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L231)
+Defined in: [packages/adapters/src/seat.ts:231](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L231)
 
 The MCP server name the harness namespaced its aliases under.
 
@@ -1674,7 +1674,7 @@ The MCP server name the harness namespaced its aliases under.
 
 > `readonly` `optional` **model?**: `string`
 
-Defined in: [packages/adapters/src/seat.ts:209](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L209)
+Defined in: [packages/adapters/src/seat.ts:209](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L209)
 
 The model behind the seat. The standard driver states the one the provider
 served, because a provider may substitute; the MCP harness runtime states
@@ -1685,7 +1685,7 @@ SharedOS cannot confirm which answered.
 
 > `readonly` `optional` **modelProvider?**: `string`
 
-Defined in: [packages/adapters/src/seat.ts:211](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L211)
+Defined in: [packages/adapters/src/seat.ts:211](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L211)
 
 Who served it (standard driver), or who the run declared (MCP harness runtime).
 
@@ -1693,7 +1693,7 @@ Who served it (standard driver), or who the run declared (MCP harness runtime).
 
 > `readonly` `optional` **modelSettings?**: [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/adapters/src/seat.ts:215](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L215)
+Defined in: [packages/adapters/src/seat.ts:215](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L215)
 
 The sampling settings the model client was configured with.
 
@@ -1701,13 +1701,13 @@ The sampling settings the model client was configured with.
 
 > `readonly` `optional` **outputTokens?**: `number`
 
-Defined in: [packages/adapters/src/seat.ts:220](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L220)
+Defined in: [packages/adapters/src/seat.ts:220](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L220)
 
 ##### requestedModel?
 
 > `readonly` `optional` **requestedModel?**: `string`
 
-Defined in: [packages/adapters/src/seat.ts:213](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L213)
+Defined in: [packages/adapters/src/seat.ts:213](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L213)
 
 The model the standard driver asked for, when the served one may differ.
 
@@ -1715,7 +1715,7 @@ The model the standard driver asked for, when the served one may differ.
 
 > `readonly` `optional` **toolAliases?**: `object`[]
 
-Defined in: [packages/adapters/src/seat.ts:235](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L235)
+Defined in: [packages/adapters/src/seat.ts:235](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L235)
 
 Names the harness rewrote, for reading its transcript back; never an authorization input.
 
@@ -1731,7 +1731,7 @@ Names the harness rewrote, for reading its transcript back; never an authorizati
 
 > `readonly` `optional` **toolshare?**: `"mcp"`
 
-Defined in: [packages/adapters/src/seat.ts:229](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/seat.ts#L229)
+Defined in: [packages/adapters/src/seat.ts:229](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/seat.ts#L229)
 
 How the harness reached the catalogue.
 
@@ -1741,7 +1741,7 @@ How the harness reached the catalogue.
 
 > `const` **CLAUDE\_CODE\_HARNESS\_ID**: `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` = `CLAUDE_CODE_VENDOR.id`
 
-Defined in: [packages/adapters/src/vendors.ts:140](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L140)
+Defined in: [packages/adapters/src/vendors.ts:140](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L140)
 
 ---
 
@@ -1749,7 +1749,7 @@ Defined in: [packages/adapters/src/vendors.ts:140](https://github.com/Aicoo-Team
 
 > `const` **CLAUDE\_CODE\_PROTOCOL\_ID**: `"anthropic.messages.stream-json"` = `"anthropic.messages.stream-json"`
 
-Defined in: [packages/adapters/src/claude-code/protocol.ts:16](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L16)
+Defined in: [packages/adapters/src/claude-code/protocol.ts:16](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L16)
 
 Claude Code speaks Anthropic message content blocks inside a stream-json
 envelope.
@@ -1764,7 +1764,7 @@ part and are what this module translates. The `{type:"assistant"|"user"|
 
 > `const` **CLAUDE\_CODE\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements) = `CLAUDE_CODE_VENDOR.requirements`
 
-Defined in: [packages/adapters/src/vendors.ts:142](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L142)
+Defined in: [packages/adapters/src/vendors.ts:142](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L142)
 
 ---
 
@@ -1772,7 +1772,7 @@ Defined in: [packages/adapters/src/vendors.ts:142](https://github.com/Aicoo-Team
 
 > `const` **CLAUDE\_CODE\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest) = `CLAUDE_CODE_VENDOR.manifest`
 
-Defined in: [packages/adapters/src/vendors.ts:141](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L141)
+Defined in: [packages/adapters/src/vendors.ts:141](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L141)
 
 ---
 
@@ -1780,7 +1780,7 @@ Defined in: [packages/adapters/src/vendors.ts:141](https://github.com/Aicoo-Team
 
 > `const` **CLAUDE\_CODE\_VENDOR**: [`HarnessVendor`](#harnessvendor)
 
-Defined in: [packages/adapters/src/vendors.ts:107](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L107)
+Defined in: [packages/adapters/src/vendors.ts:107](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L107)
 
 ---
 
@@ -1788,7 +1788,7 @@ Defined in: [packages/adapters/src/vendors.ts:107](https://github.com/Aicoo-Team
 
 > `const` **claudeCodeFrameWriter**: [`HarnessFrameWriter`](#harnessframewriter)
 
-Defined in: [packages/adapters/src/writer.ts:58](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L58)
+Defined in: [packages/adapters/src/writer.ts:58](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/writer.ts#L58)
 
 Frames in the Anthropic content-block shape Claude Code speaks.
 
@@ -1798,7 +1798,7 @@ Frames in the Anthropic content-block shape Claude Code speaks.
 
 > `const` **claudeCodeProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/claude-code/protocol.ts:57](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L57)
+Defined in: [packages/adapters/src/claude-code/protocol.ts:57](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L57)
 
 ---
 
@@ -1806,7 +1806,7 @@ Defined in: [packages/adapters/src/claude-code/protocol.ts:57](https://github.co
 
 > `const` **CODEX\_HARNESS\_ID**: `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` = `CODEX_VENDOR.id`
 
-Defined in: [packages/adapters/src/vendors.ts:136](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L136)
+Defined in: [packages/adapters/src/vendors.ts:136](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L136)
 
 ---
 
@@ -1814,7 +1814,7 @@ Defined in: [packages/adapters/src/vendors.ts:136](https://github.com/Aicoo-Team
 
 > `const` **CODEX\_PROTOCOL\_ID**: `"openai.responses.function-calling"` = `"openai.responses.function-calling"`
 
-Defined in: [packages/adapters/src/codex/protocol.ts:17](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L17)
+Defined in: [packages/adapters/src/codex/protocol.ts:17](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L17)
 
 Codex speaks the OpenAI Responses function-calling shape.
 
@@ -1830,7 +1830,7 @@ Responses call -- is the transport's problem, not the protocol's.
 
 > `const` **CODEX\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements) = `CODEX_VENDOR.requirements`
 
-Defined in: [packages/adapters/src/vendors.ts:138](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L138)
+Defined in: [packages/adapters/src/vendors.ts:138](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L138)
 
 ---
 
@@ -1838,7 +1838,7 @@ Defined in: [packages/adapters/src/vendors.ts:138](https://github.com/Aicoo-Team
 
 > `const` **CODEX\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest) = `CODEX_VENDOR.manifest`
 
-Defined in: [packages/adapters/src/vendors.ts:137](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L137)
+Defined in: [packages/adapters/src/vendors.ts:137](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L137)
 
 ---
 
@@ -1846,7 +1846,7 @@ Defined in: [packages/adapters/src/vendors.ts:137](https://github.com/Aicoo-Team
 
 > `const` **CODEX\_VENDOR**: [`HarnessVendor`](#harnessvendor)
 
-Defined in: [packages/adapters/src/vendors.ts:100](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L100)
+Defined in: [packages/adapters/src/vendors.ts:100](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L100)
 
 The four vendor harnesses SharedOS ships a codec for.
 
@@ -1860,7 +1860,7 @@ behind `EvalHarnessDriver`, and that turn is filed under `manifest`.
 
 > `const` **codexFrameWriter**: [`HarnessFrameWriter`](#harnessframewriter)
 
-Defined in: [packages/adapters/src/writer.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L31)
+Defined in: [packages/adapters/src/writer.ts:31](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/writer.ts#L31)
 
 Frames in the OpenAI Responses function-calling shape Codex speaks.
 
@@ -1870,7 +1870,7 @@ Frames in the OpenAI Responses function-calling shape Codex speaks.
 
 > `const` **codexProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/codex/protocol.ts:65](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L65)
+Defined in: [packages/adapters/src/codex/protocol.ts:65](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L65)
 
 ---
 
@@ -1878,7 +1878,7 @@ Defined in: [packages/adapters/src/codex/protocol.ts:65](https://github.com/Aico
 
 > `const` **DEEPSEEK\_HARNESS\_ID**: `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` = `DEEPSEEK_VENDOR.id`
 
-Defined in: [packages/adapters/src/vendors.ts:144](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L144)
+Defined in: [packages/adapters/src/vendors.ts:144](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L144)
 
 ---
 
@@ -1886,7 +1886,7 @@ Defined in: [packages/adapters/src/vendors.ts:144](https://github.com/Aicoo-Team
 
 > `const` **DEEPSEEK\_PROTOCOL\_ID**: `"deepseek.harness.session-events"` = `"deepseek.harness.session-events"`
 
-Defined in: [packages/adapters/src/deepseek/protocol.ts:27](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L27)
+Defined in: [packages/adapters/src/deepseek/protocol.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L27)
 
 DeepSeek Harness speaks its own session-log vocabulary over a
 newline-delimited JSON-RPC 2.0 stdio transport.
@@ -1912,7 +1912,7 @@ that out-of-band channel carries, and no frame is emitted for it.
 
 > `const` **DEEPSEEK\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements) = `DEEPSEEK_VENDOR.requirements`
 
-Defined in: [packages/adapters/src/vendors.ts:146](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L146)
+Defined in: [packages/adapters/src/vendors.ts:146](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L146)
 
 ---
 
@@ -1920,7 +1920,7 @@ Defined in: [packages/adapters/src/vendors.ts:146](https://github.com/Aicoo-Team
 
 > `const` **DEEPSEEK\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest) = `DEEPSEEK_VENDOR.manifest`
 
-Defined in: [packages/adapters/src/vendors.ts:145](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L145)
+Defined in: [packages/adapters/src/vendors.ts:145](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L145)
 
 ---
 
@@ -1928,7 +1928,7 @@ Defined in: [packages/adapters/src/vendors.ts:145](https://github.com/Aicoo-Team
 
 > `const` **DEEPSEEK\_VENDOR**: [`HarnessVendor`](#harnessvendor)
 
-Defined in: [packages/adapters/src/vendors.ts:114](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L114)
+Defined in: [packages/adapters/src/vendors.ts:114](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L114)
 
 ---
 
@@ -1936,7 +1936,7 @@ Defined in: [packages/adapters/src/vendors.ts:114](https://github.com/Aicoo-Team
 
 > `const` **deepseekFrameWriter**: [`HarnessFrameWriter`](#harnessframewriter)
 
-Defined in: [packages/adapters/src/writer.ts:92](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L92)
+Defined in: [packages/adapters/src/writer.ts:92](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/writer.ts#L92)
 
 Frames in the session-log shape DeepSeek Harness streams.
 
@@ -1950,7 +1950,7 @@ envelope would exercise only half of what the parser has to accept.
 
 > `const` **deepseekProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/deepseek/protocol.ts:102](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L102)
+Defined in: [packages/adapters/src/deepseek/protocol.ts:102](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L102)
 
 ---
 
@@ -1958,7 +1958,7 @@ Defined in: [packages/adapters/src/deepseek/protocol.ts:102](https://github.com/
 
 > `const` **PI\_HARNESS\_ID**: `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` = `PI_VENDOR.id`
 
-Defined in: [packages/adapters/src/vendors.ts:148](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L148)
+Defined in: [packages/adapters/src/vendors.ts:148](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L148)
 
 ---
 
@@ -1966,7 +1966,7 @@ Defined in: [packages/adapters/src/vendors.ts:148](https://github.com/Aicoo-Team
 
 > `const` **PI\_PROTOCOL\_ID**: `"pi.rpc.jsonl"` = `"pi.rpc.jsonl"`
 
-Defined in: [packages/adapters/src/pi/protocol.ts:31](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L31)
+Defined in: [packages/adapters/src/pi/protocol.ts:31](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L31)
 
 Pi speaks newline-delimited JSON events in its RPC mode (`pi --mode rpc`).
 
@@ -1996,7 +1996,7 @@ harness rather than of this adapter:
 
 > `const` **PI\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements) = `PI_VENDOR.requirements`
 
-Defined in: [packages/adapters/src/vendors.ts:150](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L150)
+Defined in: [packages/adapters/src/vendors.ts:150](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L150)
 
 ---
 
@@ -2004,7 +2004,7 @@ Defined in: [packages/adapters/src/vendors.ts:150](https://github.com/Aicoo-Team
 
 > `const` **PI\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest) = `PI_VENDOR.manifest`
 
-Defined in: [packages/adapters/src/vendors.ts:149](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L149)
+Defined in: [packages/adapters/src/vendors.ts:149](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L149)
 
 ---
 
@@ -2012,7 +2012,7 @@ Defined in: [packages/adapters/src/vendors.ts:149](https://github.com/Aicoo-Team
 
 > `const` **PI\_VENDOR**: [`HarnessVendor`](#harnessvendor)
 
-Defined in: [packages/adapters/src/vendors.ts:122](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L122)
+Defined in: [packages/adapters/src/vendors.ts:122](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L122)
 
 ---
 
@@ -2020,7 +2020,7 @@ Defined in: [packages/adapters/src/vendors.ts:122](https://github.com/Aicoo-Team
 
 > `const` **piFrameWriter**: [`HarnessFrameWriter`](#harnessframewriter)
 
-Defined in: [packages/adapters/src/writer.ts:135](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/writer.ts#L135)
+Defined in: [packages/adapters/src/writer.ts:135](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/writer.ts#L135)
 
 Frames in the RPC message shape Pi speaks.
 
@@ -2030,7 +2030,7 @@ Frames in the RPC message shape Pi speaks.
 
 > `const` **piProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/pi/protocol.ts:95](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L95)
+Defined in: [packages/adapters/src/pi/protocol.ts:95](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/pi/protocol.ts#L95)
 
 ## Functions
 
@@ -2038,7 +2038,7 @@ Defined in: [packages/adapters/src/pi/protocol.ts:95](https://github.com/Aicoo-T
 
 > **decodeChatCompletion**(`payload`): [`ModelReply`](#modelreply) \| `undefined`
 
-Defined in: [packages/adapters/src/model/client.ts:331](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L331)
+Defined in: [packages/adapters/src/model/client.ts:331](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L331)
 
 One chat-completions response body, read into what the driver needs of it.
 
@@ -2064,7 +2064,7 @@ the bench charges it per call the way it charges the others.
 
 > **defineHarnessVendor**(`definition`): [`HarnessVendor`](#harnessvendor)
 
-Defined in: [packages/adapters/src/vendors.ts:55](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L55)
+Defined in: [packages/adapters/src/vendors.ts:55](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L55)
 
 One vendor's manifests and requirements from its few facts.
 
@@ -2088,7 +2088,7 @@ Every harness here can also authenticate from a session it stored itself
 
 > **encodeModelMessage**(`message`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/adapters/src/model/client.ts:363](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L363)
+Defined in: [packages/adapters/src/model/client.ts:363](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L363)
 
 One message in the shape the provider's wire carries it.
 
@@ -2108,7 +2108,7 @@ One message in the shape the provider's wire carries it.
 
 > **harnessTurnText**(`request`): `string`
 
-Defined in: [packages/adapters/src/harness.ts:52](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/harness.ts#L52)
+Defined in: [packages/adapters/src/harness.ts:52](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L52)
 
 The instructions and the prompt as one text, instructions first, for a
 harness whose opening frame carries a single message.
@@ -2131,7 +2131,7 @@ harness whose opening frame carries a single message.
 
 > **modelToolResultMessage**(`result`): [`ModelMessage`](#modelmessage)
 
-Defined in: [packages/adapters/src/model/driver.ts:465](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L465)
+Defined in: [packages/adapters/src/model/driver.ts:465](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L465)
 
 The message that answers one call, in the shape the model reads it back.
 
@@ -2151,7 +2151,7 @@ The message that answers one call, in the shape the model reads it back.
 
 > **readModelToolCall**(`call`, `codec`, `offered`, `context`): [`ModelToolCallReading`](#modeltoolcallreading)
 
-Defined in: [packages/adapters/src/model/driver.ts:434](https://github.com/Aicoo-Team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L434)
+Defined in: [packages/adapters/src/model/driver.ts:434](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L434)
 
 Read one call off a reply: the provider's alphabet back to the catalogue's,
 the argument blob parsed, and the escalate affordance recognised by name when

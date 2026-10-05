@@ -30,6 +30,7 @@ import {
   replayContext,
   AUDIT_UNAVAILABLE,
   AuditUnavailableError,
+  ExecutionInProgressError,
   SPAN,
   canonicalJson,
   measure,
@@ -234,7 +235,10 @@ export class SharedOSExecutor implements TurnExecutionPort {
     const parsed = ExecutionRequestSchema.safeParse(structuredClone(input));
     if (!parsed.success)
       throw new TypeError("ExecutionRequest does not match the SharedOS v1 contract");
-    const request = parsed.data;
+    const request = {
+      ...parsed.data,
+      context: { ...parsed.data.context, executionId: parsed.data.executionId },
+    };
     if (options.signal?.aborted === true) return this.#execute(request, options);
     try {
       return await this.#kernel.replayProtection.run(
@@ -450,7 +454,12 @@ export class SharedOSExecutor implements TurnExecutionPort {
         return cancelledResult(request, events, startedAt, this.#clock(), resultMetadata(), true);
       }
 
-      const executionContext = structuredClone(contextAt(request.context, this.#clock()));
+      const executionContext = {
+        ...structuredClone(contextAt(request.context, this.#clock())),
+        // The request's id, over any the context arrived with: it is what makes
+        // this turn's lease its own.
+        executionId: request.executionId,
+      };
 
       // The turn boundary. Authority is resolved once here and held for every
       // decision the turn goes on to make, so a grant removed from the store
@@ -461,7 +470,27 @@ export class SharedOSExecutor implements TurnExecutionPort {
       opening = watchAudit(
         this.#kernel.openTurnAuthority(executionContext, { signal: abort.signal }),
       );
-      authority = await raceAbort(opening, abort.signal);
+      try {
+        authority = await raceAbort(opening, abort.signal);
+      } catch (error) {
+        // Read where the envelope asked, not off what the turn body throws
+        // later, so a plugin cannot be credited with this refusal. The run
+        // already open under this id is untouched.
+        if (!(error instanceof ExecutionInProgressError)) {
+          throw error;
+        }
+        const refusal = protocolError(error.code, "An execution with this id is still running.");
+        emit("turn.denied", { code: refusal.code });
+        return resultFor(
+          request,
+          events,
+          startedAt,
+          this.#clock(),
+          "denied",
+          refusal,
+          resultMetadata(),
+        );
+      }
 
       const admission = await raceAbort(
         watchAudit(
