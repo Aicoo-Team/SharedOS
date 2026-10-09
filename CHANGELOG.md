@@ -32,6 +32,23 @@ each entry calls out what a host has to update.
 
 ### Fixed
 
+- **A turn Codex answers in prose now has that prose as its output.** The
+  Codex protocol read the OpenAI Responses shape and said the CLI's own
+  event envelope was the transport's to carry; but `CODEX_MCP_HARNESS` is
+  that transport, and `codex exec --json` prints nothing of the
+  Responses shape on stdout. The model's prose is an `agent_message` item in
+  `item.completed`, and the turn ends with `turn.completed` or `turn.failed`.
+  Read as Responses frames they all meant nothing, so the turn was read from
+  the CLI's exit alone: a turn answered in prose ended `succeeded` with empty
+  output, and a failed one ended `harness_exited_without_outcome` with the
+  exit code and not the CLI's reason. It did not show while Codex answered
+  through a tool, since tool calls travel over MCP, not stdout. The protocol now reads those
+  three events as well: the prose is a message, `turn.completed` completes
+  the turn with the messages as its output, and `turn.failed` fails it as
+  `harness_failed` with the CLI's message. The CLI's progress events still
+  yield nothing. Responses frames read as before, so a scripted column and a
+  direct Responses transport are unchanged. A host that read the CLI's events
+  itself before handing frames to the protocol can stop.
 - **Two executions that share an actor, purpose and trace no longer share a
   turn.** A turn's authority lease was keyed on namespace, actor, authority,
   owner, purpose and trace, so a second execution that agreed on all six while

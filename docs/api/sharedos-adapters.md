@@ -1814,15 +1814,24 @@ Defined in: [packages/adapters/src/vendors.ts:136](https://github.com/systemind-
 
 > `const` **CODEX\_PROTOCOL\_ID**: `"openai.responses.function-calling"` = `"openai.responses.function-calling"`
 
-Defined in: [packages/adapters/src/codex/protocol.ts:17](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L17)
+Defined in: [packages/adapters/src/codex/protocol.ts:26](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L26)
 
-Codex speaks the OpenAI Responses function-calling shape.
+Codex is read in two shapes, for the two ways it is reached.
 
-That is the layer this module targets: function tool declarations,
-`function_call` items, and `function_call_output` results. It is deliberately
-not the Codex CLI's own event envelope, which differs between releases. What
-carries these frames -- the CLI in JSON mode, the Codex SDK, or a direct
-Responses call -- is the transport's problem, not the protocol's.
+The OpenAI Responses function-calling shape serves a transport that speaks
+the API directly, and the scripted conformance column: function tool
+declarations, `function_call` items, `function_call_output` results. The CLI
+in JSON mode (`codex exec --json`), which `CODEX_MCP_HARNESS` (mcp-runtime)
+launches, prints none of that on stdout: a turn there is `thread.started`,
+`turn.started`, a series of `item.*` events and a `turn.completed` or
+`turn.failed`, the model's prose is an `agent_message` item, and its tool
+calls travel over MCP. A protocol that read only the Responses shape
+completed a turn Codex answered in prose with nothing to show, and the host
+heard silence.
+
+The CLI's envelope is the vendor's to change, so only the events a turn's
+outcome turns on are read; the rest are progress and yield nothing. A frame
+of neither shape yields nothing as well.
 
 ---
 
@@ -1870,7 +1879,7 @@ Frames in the OpenAI Responses function-calling shape Codex speaks.
 
 > `const` **codexProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/codex/protocol.ts:65](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L65)
+Defined in: [packages/adapters/src/codex/protocol.ts:97](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L97)
 
 ---
 
