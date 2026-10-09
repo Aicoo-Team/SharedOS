@@ -42,7 +42,7 @@ import { piProtocol } from "./pi/protocol.js";
 import { probeHarness } from "./node.js";
 import { deepseekFrameWriter, piFrameWriter } from "./writer.js";
 import { TranscriptTransport, type HarnessTranscript } from "./transcript.js";
-import { harnessTurnText } from "./harness.js";
+import { harnessTurnText, type HarnessFrame } from "./harness.js";
 import { handedPromptHash } from "./seat.js";
 
 const NOW = "2026-08-18T09:00:00.000Z";
@@ -178,6 +178,24 @@ async function runWith(driver: AgentTurnDriver, options: { readonly escalation?:
   return { result, audit };
 }
 
+// `codex exec --json` for "Hi", recorded live, answered in prose with no tool
+// call. The CLI prints only its own events on stdout: read as Responses
+// frames they all meant nothing, so the turn completed with no output.
+const cliTurn: HarnessFrame[] = [
+  { type: "thread.started", thread_id: "019a4c6e-0000-7000-8000-000000000000" },
+  { type: "turn.started" },
+  { type: "item.started", item: { id: "item_0", type: "reasoning", text: "" } },
+  { type: "item.completed", item: { id: "item_0", type: "reasoning", text: "A greeting." } },
+  {
+    type: "item.completed",
+    item: { id: "item_1", type: "agent_message", text: "Hi! What can I help you with?" },
+  },
+  {
+    type: "turn.completed",
+    usage: { input_tokens: 1200, cached_input_tokens: 0, output_tokens: 12 },
+  },
+];
+
 describe("the Codex protocol", () => {
   it("declares the permission-filtered catalogue as function tools", () => {
     expect(codexProtocol.describeTools([READ_TOOL])).toEqual([
@@ -238,6 +256,46 @@ describe("the Codex protocol", () => {
 
   it("ignores frames that carry nothing relevant to the turn", () => {
     expect(codexProtocol.interpret({ type: "response.output_item.added" })).toEqual([]);
+  });
+
+  it("reads the prose of a CLI turn as its message, and turn.completed as its end", () => {
+    expect(cliTurn.flatMap((frame) => codexProtocol.interpret(frame))).toEqual([
+      { type: "message", text: "Hi! What can I help you with?" },
+      { type: "complete" },
+    ]);
+  });
+
+  it("reads the CLI's progress events as nothing", () => {
+    const progress: HarnessFrame[] = [
+      { type: "thread.started", thread_id: "t" },
+      { type: "turn.started" },
+      { type: "item.started", item: { id: "i", type: "agent_message", text: "partial" } },
+      { type: "item.updated", item: { id: "i", type: "agent_message", text: "partial" } },
+      {
+        type: "item.completed",
+        item: { id: "i", type: "mcp_tool_call", server: "sharedos", tool: "files.read" },
+      },
+      { type: "item.completed", item: { id: "i", type: "agent_message", text: "   " } },
+      { type: "item.completed", item: "not an item" },
+    ];
+    for (const frame of progress) {
+      expect(codexProtocol.interpret(frame), JSON.stringify(frame)).toEqual([]);
+    }
+  });
+
+  it("reads turn.failed as a failed turn with the CLI's reason, or a stated one without", () => {
+    expect(
+      codexProtocol.interpret({ type: "turn.failed", error: { message: "401 Unauthorized" } }),
+    ).toEqual([
+      {
+        type: "failed",
+        error: { code: "harness_failed", message: "401 Unauthorized", retryable: true },
+      },
+    ]);
+    expect(codexProtocol.interpret({ type: "turn.failed" })[0]).toMatchObject({
+      type: "failed",
+      error: { code: "harness_failed", message: "The Codex CLI reported a failed turn." },
+    });
   });
 
   it("keeps the failure text whichever shape Codex reports it in", () => {
@@ -334,6 +392,16 @@ describe("a harness driven as a SharedOS turn", () => {
       [{ type: "response.completed", response: { output_text: "read it" } }],
     ],
   };
+
+  it("gives a turn the CLI answered in prose that prose as its output", async () => {
+    const transport = new TranscriptTransport({ batches: [cliTurn] });
+    const { result } = await runWith(createCodexDriver({ transport }));
+
+    expect(result.status).toBe("succeeded");
+    expect(result.status === "succeeded" ? result.output : undefined).toEqual({
+      text: "Hi! What can I help you with?",
+    });
+  });
 
   it("routes every harness tool call through the security envelope", async () => {
     const transport = new TranscriptTransport(codexTranscript);

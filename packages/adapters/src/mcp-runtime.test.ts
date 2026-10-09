@@ -6,6 +6,7 @@ import type {
   Capability,
   ExecutionRequest,
   ExecutionResult,
+  JsonObject,
   ResourceOperation,
   ResourceResult,
   ToolDefinition,
@@ -1194,5 +1195,69 @@ describe("a harness connected over MCP toolshare, on a turn that drains", () => 
     expect(ledger).toEqual(["debit A", "credit B"]);
     expect(transfers(trail)).toMatchObject([{ outcome: "succeeded" }]);
     expect(result.events.filter(({ type }) => type === "tool.completed")).toHaveLength(1);
+  }, 30_000);
+});
+
+/**
+ * A stand-in for `codex exec --json`: it prints the CLI's own events, which is
+ * all the real CLI puts on stdout, and exits as told. Nothing of the Responses
+ * shape appears, so this is the output the Codex spec's protocol has to read.
+ */
+const CODEX_CLI = `
+for (const event of JSON.parse(process.argv[2])) {
+  process.stdout.write(JSON.stringify(event) + "\\n");
+}
+process.exitCode = Number(process.argv[3]);
+`;
+
+function codexCli(events: readonly JsonObject[], exitCode: number): McpHarnessSpec {
+  return {
+    ...CODEX_MCP_HARNESS,
+    configFiles: () => [{ harness: "codex", filename: "codex.mjs", contents: CODEX_CLI }],
+    launch: ({ configPaths }) => ({
+      command: process.execPath,
+      args: [configPaths["codex.mjs"] as string, JSON.stringify(events), String(exitCode)],
+    }),
+  };
+}
+
+describe("the Codex CLI's own events, on the MCP toolshare path", () => {
+  // `codex exec --json` for "Hi", recorded live, answered in prose with no tool
+  // call. Before the protocol read these, the turn was read from the exit code
+  // alone: a clean exit with nothing to show, or a failure without its reason.
+  const prose = "Hi! What can I help you with?";
+  const answered: JsonObject[] = [
+    { type: "thread.started", thread_id: "019a4c6e-0000-7000-8000-000000000000" },
+    { type: "turn.started" },
+    { type: "item.started", item: { id: "item_0", type: "reasoning", text: "" } },
+    { type: "item.completed", item: { id: "item_0", type: "reasoning", text: "A greeting." } },
+    { type: "item.completed", item: { id: "item_1", type: "agent_message", text: prose } },
+    {
+      type: "turn.completed",
+      usage: { input_tokens: 1200, cached_input_tokens: 0, output_tokens: 12 },
+    },
+  ];
+
+  it("gives a turn answered in prose that prose as its output", async () => {
+    const executor = new SharedOSExecutor(kernel(), createMcpHarnessRuntime(codexCli(answered, 0)));
+    const result = await executor.execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
+    expect(result.status === "succeeded" ? result.output : undefined).toEqual({ text: prose });
+  }, 30_000);
+
+  it("fails a turn the CLI failed, with the CLI's reason rather than its exit code", async () => {
+    const failed: JsonObject[] = [
+      { type: "thread.started", thread_id: "t" },
+      { type: "turn.started" },
+      { type: "turn.failed", error: { message: "401 Unauthorized" } },
+    ];
+    const executor = new SharedOSExecutor(kernel(), createMcpHarnessRuntime(codexCli(failed, 1)));
+    const result = await executor.execute(executionRequest());
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: { code: "harness_failed", message: "401 Unauthorized", retryable: true },
+    });
   }, 30_000);
 });
